@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `folders` folder in the `python-backend` codebase contains various text files that serve as templates and guides for summarizing the contents of a software folder, using different methods such as single sentences or paragraphs derived from descriptions of child files and folders.
+Various text files that provide templates and instructions for summarizing folder contents in single sentences or paragraphs.
 
 
 ## Files
-- **[chunk_description.txt](chunk_description.txt.md)**: The `chunk_description.txt` file provides instructions for summarizing the contents of a folder based on descriptions of its child files and folders.
-- **[compress_chunks.txt](compress_chunks.txt.md)**: The `compress_chunks.txt` file in the `python-backend` codebase is part of the `content_services/inspector/src/inspection/prompt_templates/folders` directory and serves as a guide for summarizing content within a folder by providing descriptions of its child files and folders. This file is designed to assist in generating concise summaries that capture the purpose and functionality of the folder's contents, ensuring that the information is derived directly from the provided descriptions without introducing any additional details.
-- **[single_paragraph_from_child_list.txt](single_paragraph_from_child_list.txt.md)**: The `single_paragraph_from_child_list.txt` file is a template used within the `python-backend` codebase, specifically located in the `python-backend/content_services/inspector/src/inspection/prompt_templates/folders` directory, to guide the creation of a single paragraph description for a software folder by summarizing its child files and folders.
-- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for generating a single paragraph summary of a folder in a software codebase by using slightly overlapping descriptions of its subcomponents.
-- **[single_sentence_from_child_list.txt](single_sentence_from_child_list.txt.md)**: The `single_sentence_from_child_list.txt` file provides instructions for summarizing a software folder by using a list of its child files and folders to create a high-level single sentence description.
-- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing a folder's content into a single sentence using detailed descriptions of its subcomponents.
+- **[chunk_description.txt](chunk_description.txt.md)**: The `chunk_description.txt` file provides instructions for summarizing the contents of a folder based on descriptions of its child files and folders, specifically for use in the `python-backend` codebase.
+- **[compress_chunks.txt](compress_chunks.txt.md)**: The `compress_chunks.txt` file in the `python-backend` codebase is a part of the `content_services/inspector/src/inspection/prompt_templates/folders` directory and serves as a guide for summarizing content within a folder by providing descriptions of its child files and folders.
+- **[single_paragraph_from_child_list.txt](single_paragraph_from_child_list.txt.md)**: The `single_paragraph_from_child_list.txt` file is a template used in the `python-backend` codebase to guide the creation of a single paragraph description for a software folder based on its child files and folders.
+- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for writing a single paragraph description of a folder in a software codebase by synthesizing slightly overlapping descriptions of its subcomponents.
+- **[single_sentence_from_child_list.txt](single_sentence_from_child_list.txt.md)**: The `single_sentence_from_child_list.txt` file outlines the task of summarizing the contents of a software folder by using concise descriptions of its child files and folders.
+- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing the contents of a folder in a software codebase into a single sentence based on detailed descriptions of its subcomponents.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

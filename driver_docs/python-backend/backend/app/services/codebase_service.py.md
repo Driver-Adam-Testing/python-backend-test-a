@@ -6,9 +6,9 @@
 The `codebase_service.py` file in the `python-backend` codebase provides functionality for executing and managing codebase analysis, including validating presigned URLs, handling modal function calls, and triggering codebase onboarding.
 
 # Purpose
-This Python file is a component of a larger system designed to handle codebase analysis and onboarding processes, likely within a cloud-based infrastructure. The file defines a `CodebaseService` class that provides static methods for executing codebase analysis, retrieving analysis results, and triggering codebase onboarding. The functionality is centered around interacting with a service called "modal," which appears to be responsible for running codebase analysis tasks. The file also includes security checks to validate presigned URLs and object keys, ensuring that only authorized access to codebase resources is permitted. These checks are crucial for maintaining the integrity and security of the codebase analysis process.
+This Python file is a component of a larger system designed to handle codebase analysis and onboarding processes, likely within a cloud-based infrastructure. The file defines a `CodebaseService` class that provides methods for executing codebase analysis, retrieving analysis results, and triggering codebase onboarding. The functionality is centered around managing and validating interactions with AWS S3 storage, particularly through the use of presigned URLs, which are validated to ensure security and proper access control. The file also includes exception handling for unauthorized access attempts, encapsulated in the `CodebaseAnalysisAuthException` class.
 
-The file imports several modules and components, including JSON handling, path manipulation, and custom schemas and utilities for AWS S3 interactions. It defines a custom exception, `CodebaseAnalysisAuthException`, to handle authorization errors. The [`execute_modal_function_call`](#execute_modal_function_call) function is responsible for managing the lifecycle of a modal function call, handling different statuses such as "pending," "running," "completed," and "error." The `CodebaseService` class methods utilize these components to perform their respective tasks, such as validating URLs, executing analysis, and managing the transfer of analyzed codebases within an S3 bucket. This file is likely part of a backend service that integrates with cloud services to automate and secure the process of analyzing and onboarding codebases.
+The code leverages the `modal` library to manage asynchronous function calls, specifically for executing codebase analysis tasks. The [`execute_modal_function_call`](<#execute_modal_function_call>) function is responsible for handling the lifecycle of these function calls, including error handling and status updates. The file imports several schemas and utility functions, indicating its integration with a broader application architecture. The presence of logging and configuration settings suggests that this code is part of a production-level system, with a focus on security, reliability, and maintainability. The file is structured to be a library module, intended to be imported and used by other parts of the application rather than executed as a standalone script.
 # Imports and Dependencies
 
 ---
@@ -32,7 +32,7 @@ The file imports several modules and components, including JSON handling, path m
 
 ---
 ### CodebaseAnalysisAuthException<!-- {{#class:python-backend/backend/app/services/codebase_service.CodebaseAnalysisAuthException}} -->
-- **Description**: The `CodebaseAnalysisAuthException` class is a custom exception that inherits from the base `Exception` class. It is used to signal authentication or authorization errors specifically related to codebase analysis operations, such as validating presigned URLs or object keys in the context of codebase analysis security checks.
+- **Description**: The `CodebaseAnalysisAuthException` class is a custom exception that inherits from the base `Exception` class. It is used to signal authentication or authorization errors specifically related to codebase analysis operations. This exception can be raised when there is an unauthorized access attempt or when validation checks fail during codebase analysis processes.
 - **Inherits From**:
     - `Exception`
 
@@ -41,55 +41,56 @@ The file imports several modules and components, including JSON handling, path m
 ### CodebaseService<!-- {{#class:python-backend/backend/app/services/codebase_service.CodebaseService}} -->
 - **Description**: The `CodebaseService` class provides static methods for managing codebase analysis and onboarding processes. It includes functionality to execute codebase analysis by validating presigned URLs and spawning modal functions, retrieve analysis results by executing modal function calls, and trigger codebase onboarding by validating and moving analyzed codebase objects within an S3 bucket. The class is designed to handle these operations securely, ensuring that only authorized access is permitted through validation checks.
 - **Methods**:
-    - [`python-backend/backend/app/services/codebase_service.CodebaseService.execute_codebase_analysis`](#CodebaseServiceexecute_codebase_analysis)
-    - [`python-backend/backend/app/services/codebase_service.CodebaseService.get_codebase_analysis_results`](#CodebaseServiceget_codebase_analysis_results)
-    - [`python-backend/backend/app/services/codebase_service.CodebaseService.trigger_codebase_onboarding`](#CodebaseServicetrigger_codebase_onboarding)
+    - [`python-backend/backend/app/services/codebase_service.CodebaseService.execute_codebase_analysis`](<#CodebaseServiceexecute_codebase_analysis>)
+    - [`python-backend/backend/app/services/codebase_service.CodebaseService.get_codebase_analysis_results`](<#CodebaseServiceget_codebase_analysis_results>)
+    - [`python-backend/backend/app/services/codebase_service.CodebaseService.trigger_codebase_onboarding`](<#CodebaseServicetrigger_codebase_onboarding>)
 
 **Methods**
 
 ---
 #### CodebaseService\.execute\_codebase\_analysis<!-- {{#callable:python-backend/backend/app/services/codebase_service.CodebaseService.execute_codebase_analysis}} -->
-The `execute_codebase_analysis` method validates a presigned URL and initiates a codebase analysis by spawning a modal function, returning a response with the call ID and codebase object key.
+The `execute_codebase_analysis` method initiates a codebase analysis by validating a presigned URL and spawning a modal function to process the codebase.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
     - `organization_id`: A string representing the unique identifier of the organization requesting the codebase analysis.
-    - `download_url`: A string representing the presigned URL for downloading the codebase to be analyzed.
+    - `download_url`: A string containing the presigned URL for downloading the codebase to be analyzed.
 - **Control Flow**:
-    - The method starts by validating the presigned URL using [`validate_codebase_analysis_presigned_url`](#validate_codebase_analysis_presigned_url) to ensure it is authorized for the given organization and analysis purpose.
-    - It looks up a modal function named 'run_pre_codebase_analysis' in the 'inspector-v2' environment using `Function.lookup`.
-    - The method parses the presigned URL to extract the codebase object key using [`parse_presigned_url`](../utils/aws_s3.py.md#parse_presigned_url).
-    - It spawns the modal function with the download URL, creating an instance of the function call.
-    - Finally, it returns a [`CodebaseAnalysisResponse`](../schemas/codebase_schema.py.md#CodebaseAnalysisResponse) object containing the call ID of the spawned function instance and the codebase object key.
-- **Output**: The method returns a [`CodebaseAnalysisResponse`](../schemas/codebase_schema.py.md#CodebaseAnalysisResponse) object containing the call ID of the spawned modal function instance and the codebase object key extracted from the presigned URL.
-- **Functions called**:
-    - [`python-backend/backend/app/services/codebase_service.validate_codebase_analysis_presigned_url`](#validate_codebase_analysis_presigned_url)
-    - [`python-backend/backend/app/utils/aws_s3.parse_presigned_url`](../utils/aws_s3.py.md#parse_presigned_url)
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisResponse`](../schemas/codebase_schema.py.md#CodebaseAnalysisResponse)
-- **See also**: [`python-backend/backend/app/services/codebase_service.CodebaseService`](#CodebaseService)  (Base Class)
+    - The method begins by validating the presigned URL using the [`validate_codebase_analysis_presigned_url`](<#validate_codebase_analysis_presigned_url>) function to ensure it is authorized for the specified organization and analysis type.
+    - It then looks up a modal function named `run_pre_codebase_analysis` in the `inspector-v2` environment using the `Function.lookup` method, specifying the environment name from settings.
+    - The presigned URL is parsed to extract the codebase object key using the [`parse_presigned_url`](<../utils/aws_s3.py.md#parse_presigned_url>) function.
+    - A new instance of the modal function is spawned with the download URL as an argument, initiating the codebase analysis process.
+    - Finally, the method returns a [`CodebaseAnalysisResponse`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResponse>) object containing the call ID of the spawned function instance and the codebase object key.
+- **Output**: The method returns a [`CodebaseAnalysisResponse`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResponse>) object, which includes the call ID of the spawned modal function instance and the S3 object key for the codebase.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/codebase_service.validate_codebase_analysis_presigned_url`](<#validate_codebase_analysis_presigned_url>)
+    - [`python-backend/backend/app/utils/aws_s3.parse_presigned_url`](<../utils/aws_s3.py.md#parse_presigned_url>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisResponse`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResponse>)
+- **See also**: [`python-backend/backend/app/services/codebase_service.CodebaseService`](<#CodebaseService>)  (Base Class)
 
 
 ---
 #### CodebaseService\.get\_codebase\_analysis\_results<!-- {{#callable:python-backend/backend/app/services/codebase_service.CodebaseService.get_codebase_analysis_results}} -->
-The `get_codebase_analysis_results` method retrieves the results of a codebase analysis using a given call ID and returns a structured result object.
+The `get_codebase_analysis_results` method retrieves and constructs the results of a codebase analysis using a given call ID.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `call_id`: A string representing the unique identifier for the codebase analysis call.
+    - `call_id`: A string representing the unique identifier for the modal function call whose results are to be retrieved.
 - **Control Flow**:
-    - The method begins by executing a modal function call using the provided `call_id` to retrieve the analysis status and response.
-    - A [`CodebaseAnalysisResult`](../schemas/codebase_schema.py.md#CodebaseAnalysisResult) object is instantiated with the `call_id`, status, and any error from the modal response.
-    - If the modal response status is 'completed', a [`CodebaseAnalysisMetrics`](../schemas/codebase_schema.py.md#CodebaseAnalysisMetrics) object is created using the response data, and this object is assigned to the `result` attribute of the [`CodebaseAnalysisResult`](../schemas/codebase_schema.py.md#CodebaseAnalysisResult).
-    - Finally, the method returns the [`CodebaseAnalysisResult`](../schemas/codebase_schema.py.md#CodebaseAnalysisResult) object.
-- **Output**: The method returns a [`CodebaseAnalysisResult`](../schemas/codebase_schema.py.md#CodebaseAnalysisResult) object containing the call ID, status, error (if any), and the analysis metrics if the analysis is completed.
-- **Functions called**:
-    - [`python-backend/backend/app/services/codebase_service.execute_modal_function_call`](#execute_modal_function_call)
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisResult`](../schemas/codebase_schema.py.md#CodebaseAnalysisResult)
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](../schemas/codebase_schema.py.md#CodebaseAnalysisMetrics)
-- **See also**: [`python-backend/backend/app/services/codebase_service.CodebaseService`](#CodebaseService)  (Base Class)
+    - The method begins by executing a modal function call using the provided `call_id` to obtain a `modal_response`.
+    - A [`CodebaseAnalysisResult`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResult>) object is instantiated with the `call_id`, `status`, and `error` from the `modal_response`.
+    - If the `status` of the `modal_response` is 'completed', a [`CodebaseAnalysisMetrics`](<../schemas/codebase_schema.py.md#CodebaseAnalysisMetrics>) object is created using the response data from the `modal_response`.
+    - The `result` attribute of the [`CodebaseAnalysisResult`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResult>) object is set to the [`CodebaseAnalysisMetrics`](<../schemas/codebase_schema.py.md#CodebaseAnalysisMetrics>) object if the status is 'completed'.
+    - Finally, the method returns the [`CodebaseAnalysisResult`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResult>) object.
+- **Output**: The method returns a [`CodebaseAnalysisResult`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResult>) object containing the analysis results, status, and any error information.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/codebase_service.execute_modal_function_call`](<#execute_modal_function_call>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisResult`](<../schemas/codebase_schema.py.md#CodebaseAnalysisResult>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<../schemas/codebase_schema.py.md#CodebaseAnalysisMetrics>)
+- **See also**: [`python-backend/backend/app/services/codebase_service.CodebaseService`](<#CodebaseService>)  (Base Class)
 
 
 ---
 #### CodebaseService\.trigger\_codebase\_onboarding<!-- {{#callable:python-backend/backend/app/services/codebase_service.CodebaseService.trigger_codebase_onboarding}} -->
-The `trigger_codebase_onboarding` method initiates the onboarding process for a codebase by validating and moving the analyzed codebase to a designated folder in an S3 bucket.
+The `trigger_codebase_onboarding` method initiates the onboarding process for a codebase by validating and moving the analyzed codebase object to a designated folder in an S3 bucket.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
     - `organization_id`: A string representing the unique identifier of the organization.
@@ -97,18 +98,18 @@ The `trigger_codebase_onboarding` method initiates the onboarding process for a 
 - **Control Flow**:
     - The method starts by validating the `codebase_object_key` against the `organization_id` to ensure it is authorized for onboarding.
     - Logs an informational message indicating the start of the onboarding process.
-    - Retrieves the name of the S3 bucket designated for the dropzone.
+    - Retrieves the name of the S3 bucket used for the dropzone.
     - Extracts the real file name from the `codebase_object_key`.
     - Constructs the destination object key by combining the hashed organization ID and the real file name.
-    - Copies the analyzed codebase from its current location to the destination location within the same S3 bucket.
-    - Logs an informational message indicating the successful triggering of the codebase onboarding.
-- **Output**: The method does not return any value; it performs actions to move the codebase within the S3 bucket and logs the process.
-- **Functions called**:
-    - [`python-backend/backend/app/services/codebase_service.validate_analyzed_codebase_object_key`](#validate_analyzed_codebase_object_key)
-    - [`python-backend/backend/app/utils/aws_s3.dropzone_bucket_name`](../utils/aws_s3.py.md#dropzone_bucket_name)
-    - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](../utils/aws_s3.py.md#org_id_to_hash)
-    - [`python-backend/backend/app/utils/aws_s3.copy_s3_object`](../utils/aws_s3.py.md#copy_s3_object)
-- **See also**: [`python-backend/backend/app/services/codebase_service.CodebaseService`](#CodebaseService)  (Base Class)
+    - Copies the analyzed codebase from its current location to the designated codebase folder within the same S3 bucket.
+    - Logs an informational message confirming the successful triggering of the codebase onboarding.
+- **Output**: The method does not return any value (returns `None`).
+- **Functions Called**:
+    - [`python-backend/backend/app/services/codebase_service.validate_analyzed_codebase_object_key`](<#validate_analyzed_codebase_object_key>)
+    - [`python-backend/backend/app/utils/aws_s3.dropzone_bucket_name`](<../utils/aws_s3.py.md#dropzone_bucket_name>)
+    - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](<../utils/aws_s3.py.md#org_id_to_hash>)
+    - [`python-backend/backend/app/utils/aws_s3.copy_s3_object`](<../utils/aws_s3.py.md#copy_s3_object>)
+- **See also**: [`python-backend/backend/app/services/codebase_service.CodebaseService`](<#CodebaseService>)  (Base Class)
 
 
 
@@ -116,19 +117,19 @@ The `trigger_codebase_onboarding` method initiates the onboarding process for a 
 
 ---
 ### execute\_modal\_function\_call<!-- {{#callable:python-backend/backend/app/services/codebase_service.execute_modal_function_call}} -->
-The function `execute_modal_function_call` retrieves and processes the result of a modal function call using its call ID.
+The `execute_modal_function_call` function retrieves and processes the result of a modal function call using its call ID.
 - **Inputs**:
     - `call_id`: A string representing the unique identifier of the modal function call to be executed.
 - **Control Flow**:
     - Retrieve the function call object using the provided call ID.
-    - Initialize a [`ModalFunctionCallResponse`](../schemas/codebase_schema.py.md#ModalFunctionCallResponse) object with the call ID and a status of 'pending'.
+    - Initialize a [`ModalFunctionCallResponse`](<../schemas/codebase_schema.py.md#ModalFunctionCallResponse>) object with the call ID and a status of 'pending'.
     - Attempt to get the response from the function call with a timeout of 0 seconds.
-    - If successful, parse the response as JSON, update the modal response with the parsed data, and set the status to 'completed'.
+    - If the response is successfully retrieved, parse it as JSON, update the modal response with the parsed data, and set the status to 'completed'.
     - If a `TimeoutError` occurs, set the status to 'running'.
     - If any other exception occurs, set the status to 'error' and record the exception message in the modal response.
-- **Output**: Returns a [`ModalFunctionCallResponse`](../schemas/codebase_schema.py.md#ModalFunctionCallResponse) object containing the call ID, status, and response or error information.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/codebase_schema.ModalFunctionCallResponse`](../schemas/codebase_schema.py.md#ModalFunctionCallResponse)
+- **Output**: Returns a [`ModalFunctionCallResponse`](<../schemas/codebase_schema.py.md#ModalFunctionCallResponse>) object containing the call ID, status, and response or error information.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/codebase_schema.ModalFunctionCallResponse`](<../schemas/codebase_schema.py.md#ModalFunctionCallResponse>)
 
 
 ---
@@ -137,37 +138,37 @@ The function validates a presigned URL to ensure it is authorized for codebase a
 - **Inputs**:
     - `url`: A string representing the presigned URL to be validated.
     - `object_key_prefix`: A string representing the expected prefix of the object key in the URL.
-    - `org_id`: A string representing the organization ID that should be part of the object key.
+    - `org_id`: A string representing the organization ID to be validated against the object key.
 - **Control Flow**:
-    - Convert the organization ID to a hash using the [`org_id_to_hash`](../utils/aws_s3.py.md#org_id_to_hash) function.
-    - Retrieve the valid bucket name using the [`dropzone_bucket_name`](../utils/aws_s3.py.md#dropzone_bucket_name) function.
-    - Parse the provided URL to extract the bucket name and object key using the [`parse_presigned_url`](../utils/aws_s3.py.md#parse_presigned_url) function.
+    - Convert the organization ID to a hash using the [`org_id_to_hash`](<../utils/aws_s3.py.md#org_id_to_hash>) function.
+    - Retrieve the valid bucket name using the [`dropzone_bucket_name`](<../utils/aws_s3.py.md#dropzone_bucket_name>) function.
+    - Parse the provided URL to extract the bucket name and object key using the [`parse_presigned_url`](<../utils/aws_s3.py.md#parse_presigned_url>) function.
     - Split the object key into parts and check if the parsed bucket matches the valid bucket, and if both the organization hash and object key prefix are present in the object key parts.
-    - If the validation fails, raise a [`CodebaseAnalysisAuthException`](#CodebaseAnalysisAuthException) with the message 'Forbidden'.
+    - If the validation fails, raise a [`CodebaseAnalysisAuthException`](<#CodebaseAnalysisAuthException>) with the message 'Forbidden'.
 - **Output**: The function does not return any value; it raises an exception if the validation fails.
-- **Functions called**:
-    - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](../utils/aws_s3.py.md#org_id_to_hash)
-    - [`python-backend/backend/app/utils/aws_s3.dropzone_bucket_name`](../utils/aws_s3.py.md#dropzone_bucket_name)
-    - [`python-backend/backend/app/utils/aws_s3.parse_presigned_url`](../utils/aws_s3.py.md#parse_presigned_url)
-    - [`python-backend/backend/app/services/codebase_service.CodebaseAnalysisAuthException`](#CodebaseAnalysisAuthException)
+- **Functions Called**:
+    - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](<../utils/aws_s3.py.md#org_id_to_hash>)
+    - [`python-backend/backend/app/utils/aws_s3.dropzone_bucket_name`](<../utils/aws_s3.py.md#dropzone_bucket_name>)
+    - [`python-backend/backend/app/utils/aws_s3.parse_presigned_url`](<../utils/aws_s3.py.md#parse_presigned_url>)
+    - [`python-backend/backend/app/services/codebase_service.CodebaseAnalysisAuthException`](<#CodebaseAnalysisAuthException>)
 
 
 ---
 ### validate\_analyzed\_codebase\_object\_key<!-- {{#callable:python-backend/backend/app/services/codebase_service.validate_analyzed_codebase_object_key}} -->
-The function validates whether a given codebase object key is authorized for analysis based on the organization ID.
+The function validates whether a given codebase object key is authorized for an analyzed codebase by checking its components against an organization hash and a predefined prefix.
 - **Inputs**:
     - `codebase_object_key`: A string representing the key of the codebase object to be validated.
-    - `org_id`: A string representing the organization ID used to validate the codebase object key.
+    - `org_id`: A string representing the organization ID used to generate a hash for validation.
 - **Control Flow**:
-    - Convert the organization ID to a hash using the [`org_id_to_hash`](../utils/aws_s3.py.md#org_id_to_hash) function.
+    - Convert the organization ID into a hash using the [`org_id_to_hash`](<../utils/aws_s3.py.md#org_id_to_hash>) function.
     - Split the `codebase_object_key` by '/' and take the first two parts to form `object_key_parts`.
     - Define `object_key_prefix` as 'analysis'.
-    - Check if `org_hash` is not in `object_key_parts` and `object_key_prefix` is in `object_key_parts`.
-    - If the condition is met, raise a [`CodebaseAnalysisAuthException`](#CodebaseAnalysisAuthException) with the message 'Forbidden'.
+    - Check if the organization hash is not in `object_key_parts` and `object_key_prefix` is in `object_key_parts`.
+    - If the condition is met, raise a [`CodebaseAnalysisAuthException`](<#CodebaseAnalysisAuthException>) with the message 'Forbidden'.
 - **Output**: The function does not return any value; it raises an exception if the validation fails.
-- **Functions called**:
-    - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](../utils/aws_s3.py.md#org_id_to_hash)
-    - [`python-backend/backend/app/services/codebase_service.CodebaseAnalysisAuthException`](#CodebaseAnalysisAuthException)
+- **Functions Called**:
+    - [`python-backend/backend/app/utils/aws_s3.org_id_to_hash`](<../utils/aws_s3.py.md#org_id_to_hash>)
+    - [`python-backend/backend/app/services/codebase_service.CodebaseAnalysisAuthException`](<#CodebaseAnalysisAuthException>)
 
 
 

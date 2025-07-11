@@ -6,21 +6,21 @@
 The `technical_context_interface.py` file defines a system message prompt that instructs a response to be based solely on technical context, delaying final answers until sufficient context is provided and ensuring responses are relevant and supported by source documentation.
 
 # Purpose
-This code defines a configuration for a system message prompt used in a conversational AI or chatbot application. It consists of a single string variable, `PROMPT`, which contains a detailed instruction set for how the AI should handle technical context and respond to user queries. Additionally, a dictionary named `MESSAGE` is created, which pairs a role identifier with the `PROMPT` content, likely to be used in a messaging or dialogue system to guide the AI's behavior. The functionality provided is narrow, focusing specifically on setting up a predefined system message for a specific role within the application.
+This code defines a configuration setup for a system that involves a prompt and a message structure. It consists of two global variables: `PROMPT`, a multi-line string that outlines guidelines for generating responses based on technical context, and `MESSAGE`, a dictionary with a "role" key set to "system" and a "content" key containing the `PROMPT`. The functionality is narrow, focusing on establishing a template for system messages, likely used in a context where automated or guided responses are generated based on specific criteria. This setup is typical in applications involving chatbots or automated response systems where maintaining a consistent message format is crucial.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `string`
+- **Type**: `str`
 - **Description**: The variable `PROMPT` is a multi-line string that provides instructions for generating responses based on technical context. It emphasizes the importance of responding with information relevant to the technical context and source documentation, and advises against providing general or unsupported information.
-- **Use**: This variable is used to define the content of a system message, guiding the behavior of a response generation system.
+- **Use**: This variable is used to define the content of a system message, likely for a chatbot or automated response system, ensuring that responses are contextually accurate and relevant.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
 - **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for generating responses based on technical context.
-- **Use**: This variable is used to define a structured message format, likely for a system that processes or generates responses based on the given prompt.
+- **Use**: This variable is used to define a system message template that guides the behavior of a response system, ensuring it adheres to specific instructions when processing technical context.
 
 
 

@@ -6,7 +6,9 @@
 The `2025_01_14_1003-cd839fe094c1_cascade_source_and_derived_content_.py` file contains an Alembic migration script that modifies foreign key constraints to enable cascading deletions for the `derived_contents` and `document_sources` tables.
 
 # Purpose
-This Python file is an Alembic migration script, which provides narrow functionality specifically for managing database schema changes. The script is designed to modify foreign key constraints in a database, ensuring that deletions in the `v2_node` table cascade to related entries in the `derived_contents` and `document_sources` tables. The [`upgrade`](#upgrade) function implements these changes by dropping existing constraints and creating new ones with the `ondelete="CASCADE"` option, while the [`downgrade`](#downgrade) function reverses these changes to restore the original constraints. This script is part of a version-controlled database migration process, allowing for safe and reversible schema updates.
+This Python file is an Alembic migration script designed to modify the database schema by altering foreign key constraints. The primary purpose of this script is to ensure that deletions in the `v2_node` table cascade to related entries in the `derived_contents` and `document_sources` tables. This is achieved by dropping existing foreign key constraints and creating new ones with the `ondelete="CASCADE"` option. This functionality ensures that when a record in the `v2_node` table is deleted, all associated records in the `derived_contents` and `document_sources` tables are automatically removed, maintaining referential integrity.
+
+The script contains two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function implements the changes to the database schema by dropping the existing constraints and creating new cascading foreign key constraints. Conversely, the `downgrade()` function reverses these changes, restoring the original foreign key constraints without the cascading delete behavior. This script is part of a broader database migration process, allowing developers to apply and revert schema changes as needed. It does not define public APIs or external interfaces but serves as an internal tool for managing database schema evolution.
 # Imports and Dependencies
 
 ---
@@ -17,29 +19,29 @@ This Python file is an Alembic migration script, which provides narrow functiona
 
 ---
 ### revision
-- **Type**: ``str``
-- **Description**: The `revision` variable is a string that uniquely identifies the current database schema migration revision in an Alembic migration script. It is used to track the specific changes made to the database schema at this point in time.
-- **Use**: This variable is used by Alembic to manage and apply database schema migrations in a version-controlled manner.
+- **Type**: `string`
+- **Description**: The `revision` variable is a string that uniquely identifies the current database migration script in the Alembic migration framework. It is used to track the specific changes made to the database schema in this migration.
+- **Use**: This variable is used by Alembic to identify and apply the correct migration when upgrading or downgrading the database schema.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Use**: This variable is used by Alembic to determine the order of database migrations.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to potentially label a branch in a database migration context, but in this script, it is not assigned any specific value or label.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which can be used to label branches in a migration context.
+- **Use**: This variable is used to potentially label branches in database migration scripts, although it is currently not assigned any value.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
 - **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
 
 
@@ -51,11 +53,10 @@ The `upgrade` function modifies database schema constraints by dropping existing
 - **Inputs**: None
 - **Control Flow**:
     - Drop the foreign key constraint 'derived_contents_node_id_fkey' from the 'derived_contents' table.
-    - Create a new foreign key constraint on 'derived_contents' linking 'node_id' to 'id' in 'v2_node' with 'CASCADE' on delete.
+    - Create a new foreign key on 'derived_contents' referencing 'v2_node' with 'ondelete' set to 'CASCADE'.
     - Drop the foreign key constraints 'document_sources_page_node_id_fkey' and 'document_sources_source_node_id_fkey' from the 'document_sources' table.
-    - Create a new foreign key constraint on 'document_sources' linking 'page_node_id' to 'id' in 'v2_node' with 'CASCADE' on delete.
-    - Create a new foreign key constraint on 'document_sources' linking 'source_node_id' to 'id' in 'v2_node' with 'CASCADE' on delete.
-- **Output**: The function does not return any value; it performs schema modifications on the database.
+    - Create new foreign keys on 'document_sources' referencing 'v2_node' for 'page_node_id' and 'source_node_id' with 'ondelete' set to 'CASCADE'.
+- **Output**: The function does not return any value; it performs operations on the database schema.
 
 
 ---
@@ -63,11 +64,11 @@ The `upgrade` function modifies database schema constraints by dropping existing
 The `downgrade` function reverts database schema changes by dropping and recreating foreign key constraints without cascade delete options.
 - **Inputs**: None
 - **Control Flow**:
-    - Drop two foreign key constraints from the 'document_sources' table.
-    - Recreate the 'document_sources_source_node_id_fkey' foreign key constraint on the 'document_sources' table linking 'source_node_id' to 'id' in the 'v2_node' table.
-    - Recreate the 'document_sources_page_node_id_fkey' foreign key constraint on the 'document_sources' table linking 'page_node_id' to 'id' in the 'v2_node' table.
-    - Drop a foreign key constraint from the 'derived_contents' table.
-    - Recreate the 'derived_contents_node_id_fkey' foreign key constraint on the 'derived_contents' table linking 'node_id' to 'id' in the 'v2_node' table.
+    - Drop two unnamed foreign key constraints from the 'document_sources' table.
+    - Create a foreign key constraint 'document_sources_source_node_id_fkey' on 'document_sources' referencing 'v2_node'.
+    - Create a foreign key constraint 'document_sources_page_node_id_fkey' on 'document_sources' referencing 'v2_node'.
+    - Drop an unnamed foreign key constraint from the 'derived_contents' table.
+    - Create a foreign key constraint 'derived_contents_node_id_fkey' on 'derived_contents' referencing 'v2_node'.
 - **Output**: The function does not return any value; it performs schema modifications on the database.
 
 

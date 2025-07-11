@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tools` folder in the `python-backend` codebase contains initialization and module import files, specifically `__init__.py` for package marking and `think.py` for importing a module and defining an empty variable.
+Initialization and module import files, specifically `__init__.py` for package marking and `think.py` for importing a `think` module and defining an empty `PROMPT` variable.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend/packages/shared/shared/prompts/tools` directory is likely used to mark the directory as a Python package, but it contains no specific code or functionality as indicated by the `# flake8: noqa` comment.
+- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase at `__init__.py.md` is likely used to mark the directory as a Python package and has flake8 linting disabled.
 - **[think.py](think.py.md)**: The `think.py` file in the `python-backend` codebase imports a module named `think` and defines an empty string variable `PROMPT`.
 
 ---

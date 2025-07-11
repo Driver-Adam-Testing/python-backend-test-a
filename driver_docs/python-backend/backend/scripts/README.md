@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `scripts` folder in the `python-backend` codebase contains various Python and shell scripts for database and S3 operations, server configuration, code linting, application startup, and test execution.
+Various Python and shell scripts for database and S3 operations, server configuration, code linting, application startup, and testing with coverage reporting.
 
 
 ## Files
-- **[copy_records_and_s3.py](copy_records_and_s3.py.md)**: The `copy_records_and_s3.py` file in the `python-backend` codebase is a script that migrates records between two databases and copies objects from source S3 buckets to target S3 buckets, handling both database and S3 operations.
-- **[gunicorn_conf.py](gunicorn_conf.py.md)**: The `gunicorn_conf.py` file in the `python-backend` codebase configures Gunicorn server settings such as worker count, logging, and timeouts based on environment variables and system resources.
-- **[lint.sh](lint.sh.md)**: The `lint.sh` file is a shell script for running static type checks and code formatting checks on the `app` and `driver_db` directories using `mypy` and `ruff`.
+- **[copy_records_and_s3.py](copy_records_and_s3.py.md)**: The `copy_records_and_s3.py` file in the `python-backend` codebase is a script that migrates database records between two databases and copies S3 bucket contents from a source to a target, handling both database and S3 operations.
+- **[gunicorn_conf.py](gunicorn_conf.py.md)**: The `gunicorn_conf.py` file configures Gunicorn server settings such as worker count, logging, and timeouts based on environment variables for the `python-backend` project.
+- **[lint.sh](lint.sh.md)**: The `lint.sh` file is a shell script that runs type checking and code formatting checks on the `app` and `driver_db` directories using `mypy` and `ruff`.
 - **[move_s3_objects.py](move_s3_objects.py.md)**: The `move_s3_objects.py` file in the `python-backend` codebase is a script that updates S3 object keys for codebase files associated with primary assets and versions, using concurrent processing to handle multiple updates simultaneously.
-- **[start-reload.sh](start-reload.sh.md)**: The `start-reload.sh` file is a shell script for starting a Python backend application using Uvicorn with automatic reloading and optional pre-start script execution.
-- **[start.sh](start.sh.md)**: The `start.sh` file in the `python-backend` codebase is a shell script that configures and starts a Gunicorn server for a Python application, checking for and executing a prestart script if available.
-- **[test-cov-html.sh](test-cov-html.sh.md)**: The `test-cov-html.sh` file is a Bash script in the `python-backend` codebase that runs tests with an HTML coverage report using the `test.sh` script.
-- **[test.sh](test.sh.md)**: The `test.sh` file is a bash script used to run tests with coverage reporting for the `app` source in the `python-backend` codebase.
+- **[start-reload.sh](start-reload.sh.md)**: The `start-reload.sh` file is a shell script for starting a Python application using Uvicorn with automatic reloading, configurable host, port, and log level, and an optional prestart script execution.
+- **[start.sh](start.sh.md)**: The `start.sh` file is a shell script for setting up and starting a Python application using Gunicorn, with configurable module names, worker classes, and optional pre-start scripts.
+- **[test-cov-html.sh](test-cov-html.sh.md)**: The `test-cov-html.sh` file is a bash script in the `python-backend` codebase that runs tests with an HTML coverage report using the `test.sh` script.
+- **[test.sh](test.sh.md)**: The `test.sh` file is a bash script that runs tests using pytest with coverage reporting for the `app` source, and generates both a terminal and HTML coverage report.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

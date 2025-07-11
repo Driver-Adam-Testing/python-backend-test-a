@@ -6,9 +6,9 @@
 The `ops_stack.py` file defines the `OpsStack` class, which sets up various AWS CDK constructs including a backend, asset onboarding lambda, inspector, and metrics lambda for the "ops" environment.
 
 # Purpose
-The provided Python code defines a class `OpsStack` that extends the AWS CDK `Stack` class, indicating that it is part of an infrastructure-as-code setup using the AWS Cloud Development Kit (CDK). This code is designed to define and configure a set of AWS resources and services that are part of an operational environment, specifically for a project related to "driverai.com". The `OpsStack` class is initialized with several components, each represented by a construct: `Backend`, `AssetOnboardingLambda`, `Inspector`, and `MetricsLambda`. These constructs are likely custom-defined within the project, as they are imported from the `cdk.constructs` module, and they encapsulate specific functionalities such as API backend setup, asset onboarding, inspection, and metrics collection.
+The provided Python code defines an AWS Cloud Development Kit (CDK) stack named `OpsStack`, which is designed to deploy and manage cloud infrastructure components for an operational environment. This code is structured as a class that inherits from the `Stack` class provided by the AWS CDK, indicating that it is intended to be part of a larger infrastructure-as-code project. The primary purpose of this stack is to set up various AWS resources and services that are essential for the operations of a specific application, as indicated by the use of the "ops" environment configuration.
 
-The `OpsStack` class is a cohesive collection of components that together form a part of the operational infrastructure. Each component is instantiated with specific parameters, such as environment settings, CORS origins, API URLs, and authentication details, which are crucial for configuring the services correctly. The code is structured to be part of a larger application, likely intended to be deployed as part of a continuous integration/continuous deployment (CI/CD) pipeline. It does not define public APIs or external interfaces directly but rather sets up the necessary backend infrastructure to support such functionalities. The use of environment variables and specific configuration parameters suggests that this code is designed to be flexible and adaptable to different deployment environments.
+Within the `OpsStack` class, several key components are instantiated, each serving a distinct role in the infrastructure. The `Backend` component is configured to handle API backend operations, with specific CORS origins and IP restrictions. The `AssetOnboardingLambda` is responsible for managing asset onboarding processes, interfacing with an API and authentication services. The `Inspector` component is likely used for security or compliance inspections, while the `MetricsLambda` is set up to handle metrics collection, with its configuration partially driven by environment variables. This code is not a standalone script but rather a part of a larger CDK application, intended to be deployed using AWS CDK tools, and it does not define public APIs or external interfaces directly.
 # Imports and Dependencies
 
 ---
@@ -31,12 +31,12 @@ The `OpsStack` class is a cohesive collection of components that together form a
 ### OpsStack<!-- {{#class:python-backend/cdk/ops_stack.OpsStack}} -->
 - **Members**:
     - `backend`: An instance of Backend configured for the 'ops' environment with specific CORS origins and allowed IPs.
-    - `onboarding_lambda`: An instance of AssetOnboardingLambda configured for the 'ops' environment with specific API and Auth0 URLs.
+    - `onboarding_lambda`: An instance of AssetOnboardingLambda configured for the 'ops' environment with specific API and Auth0 settings.
     - `inspector`: An instance of Inspector configured for the 'ops' environment.
-    - `metrics_lambda`: An instance of MetricsLambda configured with environment and database URL settings.
-- **Description**: The OpsStack class is a specialized AWS CDK Stack that sets up various components for the 'ops' environment. It initializes a Backend with specific CORS settings and allowed IPs, an AssetOnboardingLambda for handling asset onboarding with specific API and Auth0 configurations, an Inspector for monitoring, and a MetricsLambda for handling metrics with environment and database configurations. This class is designed to facilitate the deployment and management of these components within the AWS infrastructure.
+    - `metrics_lambda`: An instance of MetricsLambda configured for the 'ops' environment with environment and database URL settings.
+- **Description**: The OpsStack class is a specialized AWS CDK Stack that sets up various components for the 'ops' environment, including a backend, asset onboarding lambda, inspector, and metrics lambda. It configures these components with specific parameters such as CORS origins, API URLs, and environment settings, facilitating the deployment and management of operational infrastructure.
 - **Methods**:
-    - [`python-backend/cdk/ops_stack.OpsStack.__init__`](#OpsStack__init__)
+    - [`python-backend/cdk/ops_stack.OpsStack.__init__`](<#OpsStack__init__>)
 - **Inherits From**:
     - `Stack`
 
@@ -46,28 +46,28 @@ The `OpsStack` class is a cohesive collection of components that together form a
 #### OpsStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/ops_stack.OpsStack.__init__}} -->
 The `__init__` method initializes an instance of the `OpsStack` class, setting up various components such as backend, onboarding lambda, inspector, and metrics lambda with specific parameters.
 - **Inputs**:
-    - `scope`: A `Construct` object that defines the scope in which this stack is created.
+    - `scope`: A `Construct` object that represents the scope in which this stack is defined.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
     - `kwargs`: Additional keyword arguments that can be passed to the parent class constructor.
 - **Control Flow**:
     - Calls the parent class `__init__` method with `scope`, `construct_id`, and `kwargs`.
     - Prints the `kwargs` to the console for debugging purposes.
     - Defines a string `cors_origins` containing a list of allowed CORS origins.
-    - Initializes a [`Backend`](constructs/backend.py.md#Backend) instance with specific parameters including `environment`, `cors_origins`, and `allowed_ips`.
-    - Initializes an [`AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda) instance with parameters such as `environment`, `api_url`, `auth0_audience`, `auth0_url`, and `dropzone_bucket`.
-    - Initializes an [`Inspector`](constructs/inspector.py.md#Inspector) instance with the `environment` parameter.
-    - Initializes a [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda) instance with parameters `environment` and `database_url`, which are fetched from environment variables.
-- **Output**: The method does not return any value; it sets up the initial state of the `OpsStack` instance by creating and configuring several components.
-- **Functions called**:
-    - [`python-backend/cdk/constructs/backend.Backend`](constructs/backend.py.md#Backend)
-    - [`python-backend/cdk/constructs/backend.BackendParams`](constructs/backend.py.md#BackendParams)
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda)
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams)
-    - [`python-backend/cdk/constructs/inspector.Inspector`](constructs/inspector.py.md#Inspector)
-    - [`python-backend/cdk/constructs/inspector.InspectorParams`](constructs/inspector.py.md#InspectorParams)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](constructs/metrics_lambda.py.md#MetricsLambdaParams)
-- **See also**: [`python-backend/cdk/ops_stack.OpsStack`](#OpsStack)  (Base Class)
+    - Initializes a [`Backend`](<constructs/backend.py.md#Backend>) instance with parameters including environment, CORS origins, allowed IPs, and a flag for legacy dropzone usage.
+    - Initializes an [`AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>) instance with parameters including environment, API URL, Auth0 audience and URL, and dropzone bucket.
+    - Initializes an [`Inspector`](<constructs/inspector.py.md#Inspector>) instance with the environment parameter.
+    - Initializes a [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>) instance with parameters including environment and database URL, using environment variables if available.
+- **Output**: The method does not return any value; it initializes the instance with several attributes representing different components of the stack.
+- **Functions Called**:
+    - [`python-backend/cdk/constructs/backend.Backend`](<constructs/backend.py.md#Backend>)
+    - [`python-backend/cdk/constructs/backend.BackendParams`](<constructs/backend.py.md#BackendParams>)
+    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>)
+    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams>)
+    - [`python-backend/cdk/constructs/inspector.Inspector`](<constructs/inspector.py.md#Inspector>)
+    - [`python-backend/cdk/constructs/inspector.InspectorParams`](<constructs/inspector.py.md#InspectorParams>)
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>)
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](<constructs/metrics_lambda.py.md#MetricsLambdaParams>)
+- **See also**: [`python-backend/cdk/ops_stack.OpsStack`](<#OpsStack>)  (Base Class)
 
 
 

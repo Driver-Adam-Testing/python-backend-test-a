@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `integrations` folder in the `python-backend` codebase contains configuration files for setting up and deploying a GitLab Enterprise Edition service using Docker.
+Configuration files for deploying GitLab Enterprise Edition with Docker, including setup instructions.
 
 ## Folders
-- **[gitlab](gitlab/README.md)**: The `gitlab` folder in the `python-backend` codebase contains configuration files for setting up and deploying a GitLab Enterprise Edition service using Docker, including a `.gitignore` file, a `docker-compose.yml` file, and a `README.md` with setup instructions.
+- **[gitlab](gitlab/README.md)**: Configuration files for deploying GitLab Enterprise Edition with Docker, including setup instructions.
 
 
 ---

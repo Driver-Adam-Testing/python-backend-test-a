@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_08_13_0955-2f79ea9294a7_new_embedding_model.py` file contains an Alembic migration script that creates a new table `chunkandembedding` with various columns including a vector type for embeddings, and removes the `setup_completed` table.
+The `2024_08_13_0955-2f79ea9294a7_new_embedding_model.py` file contains an Alembic migration script that creates a new table `chunkandembedding` with various columns including a vector type for embeddings, and drops the `setup_completed` table.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema. It introduces a new table named `chunkandembedding` and removes an existing table called `setup_completed`. The `chunkandembedding` table is structured to store data related to text chunks and their embeddings, which are likely used for machine learning or natural language processing tasks. The table includes columns for a unique identifier (`id`), a foreign key reference to `content_id`, the text content itself, a vector for text embeddings (`text_embedding_3_small`), a chunk number, and timestamps for creation and updates. The use of `pgvector` for the `text_embedding_3_small` column indicates that this table is designed to handle high-dimensional vector data, which is common in embedding models.
+This Python file is an Alembic migration script designed to modify the database schema. It introduces a new table named `chunkandembedding` and removes an existing table called `setup_completed`. The `chunkandembedding` table is structured to store data related to text chunks and their embeddings, featuring columns for unique identifiers (`id` and `content_id`), text content, a vector for text embeddings, chunk numbers, and timestamps for creation and updates. The use of the `pgvector` library for the `text_embedding_3_small` column indicates that this table is intended to store high-dimensional vector data, likely for machine learning or natural language processing purposes. The script also includes a foreign key constraint linking `content_id` to the `id` column of another table, `derived_contents`, ensuring referential integrity.
 
-The script provides both [`upgrade`](#upgrade) and [`downgrade`](#downgrade) functions, which are standard in Alembic migrations to apply and revert schema changes, respectively. The [`upgrade`](#upgrade) function creates the `chunkandembedding` table and drops the `setup_completed` table, while the [`downgrade`](#downgrade) function reverses these actions. This script is part of a broader database migration process, ensuring that the database schema evolves in a controlled manner. It is not intended to be a standalone script but rather a component of a larger system that manages database schema changes.
+The script is part of a broader database migration process, as indicated by the use of Alembic, a database migration tool for SQLAlchemy. It defines two primary functions: `upgrade()` and `downgrade()`. The `upgrade()` function applies the changes to the database, creating the new table and dropping the old one, while the `downgrade()` function reverses these changes, restoring the `setup_completed` table and removing the `chunkandembedding` table. This script is a crucial component of a version-controlled database schema, allowing developers to manage and apply changes consistently across different environments.
 # Imports and Dependencies
 
 ---
@@ -30,21 +30,21 @@ The script provides both [`upgrade`](#upgrade) and [`downgrade`](#downgrade) fun
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: This variable is used by Alembic to determine the order of migrations and to apply them in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script, which is used for database schema migrations in Python applications.
-- **Use**: This variable is used to define branch labels for Alembic migrations, but in this script, it is not assigned any specific value, indicating no branch labels are used.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to manage database schema changes.
+- **Use**: This variable is used to define branch labels for the migration script, but currently, it is not assigned any value, indicating no specific branch labeling is applied.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
+- **Description**: The variable `depends_on` is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts.
 - **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
 
 
@@ -56,11 +56,13 @@ The `upgrade` function modifies the database schema by creating a new table `chu
 - **Inputs**: None
 - **Control Flow**:
     - The function begins by creating a new table named `chunkandembedding` with several columns including `id`, `content_id`, `text`, `text_embedding_3_small`, `chunk_number`, `created_at`, and `updated_at`.
-    - Each column is defined with specific data types and constraints, such as `Uuid` for `id` and `content_id`, `AutoString` for `text`, and `Vector` for `text_embedding_3_small`.
-    - The `created_at` and `updated_at` columns are set to use the current timestamp as their default value.
-    - A foreign key constraint is added to the `content_id` column, linking it to the `id` column of the `derived_contents` table.
-    - A primary key constraint is set on the `id` column of the `chunkandembedding` table.
-    - After creating the new table, the function drops the existing `setup_completed` table.
+    - The `id` and `content_id` columns are of type UUID and are not nullable, with `id` serving as the primary key.
+    - The `text` column is of type `AutoString` and is not nullable.
+    - The `text_embedding_3_small` column is a vector with a dimension of 1536 and is nullable.
+    - The `chunk_number` column is an integer and is not nullable.
+    - The `created_at` and `updated_at` columns are datetime types with timezone support, defaulting to the current time, and are not nullable.
+    - A foreign key constraint is added to the `content_id` column referencing the `id` column of the `derived_contents` table.
+    - After creating the `chunkandembedding` table, the function drops the `setup_completed` table.
 - **Output**: The function does not return any value; it performs schema changes on the database.
 
 

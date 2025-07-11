@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `billing` folder in the `python-backend` codebase contains files that implement a `BillingService` class for managing subscription operations and define pricing tiers for consumption and seat pricing plans.
+Implements a billing service for managing subscription operations and defines pricing tiers for consumption and seat pricing.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[billing_service.py](billing_service.py.md)**: The `billing_service.py` file implements a `BillingService` class that manages subscription operations, such as retrieving active subscriptions and creating new ones, for organizations.
-- **[consumption_tiers.py](consumption_tiers.py.md)**: The `consumption_tiers.py` file defines pricing tiers for consumption and seat pricing plans, detailing the minimum and maximum usage limits and corresponding prices for each tier.
+- **[billing_service.py](billing_service.py.md)**: The `billing_service.py` file implements a `BillingService` class that manages subscription operations, such as retrieving active subscriptions and creating new ones, for organizations using a database session.
+- **[consumption_tiers.py](consumption_tiers.py.md)**: The `consumption_tiers.py` file defines pricing tiers for consumption and seat pricing, detailing the minimum and maximum usage limits and corresponding prices for each tier.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

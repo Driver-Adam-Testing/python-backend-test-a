@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.py` file in the `python-backend` codebase is responsible for handling AWS Lambda events by logging event details, retrieving database connection settings from AWS Secrets Manager, and storing usage event data in a database.
+The `main.py` file in the `python-backend` codebase is responsible for handling AWS Lambda events by logging event details and storing usage events in a database using SQLModel.
 
 # Purpose
-This Python code is designed to function as an AWS Lambda handler that processes usage events and logs them into a database. The script is structured to handle incoming event data, extract relevant details, and store them in a database using SQLModel. It utilizes AWS Secrets Manager to securely retrieve the database URL, ensuring that sensitive information is not hardcoded. The code configures logging based on an environment variable, allowing for dynamic adjustment of log verbosity. The primary components include the [`handler`](#handler) function, which serves as the entry point for the Lambda function, and the [`get_engine`](#get_engine) function, which manages the creation and reuse of a database engine connection.
+This Python code is designed to function as an AWS Lambda handler that processes usage events and logs them into a database. The script is structured to handle incoming event data, extract relevant details, and store them in a database using SQLModel. It utilizes AWS Secrets Manager to securely retrieve the database URL, ensuring that sensitive information is not hardcoded. The code configures logging based on an environment variable, allowing for dynamic adjustment of log verbosity. The primary components include the [`handler`](<#handler>) function, which serves as the entry point for the Lambda function, and the [`get_engine`](<#get_engine>) function, which manages the creation and reuse of a database engine connection.
 
-The script imports necessary modules for logging, database interaction, and AWS Secrets Manager caching. It defines a [`handler`](#handler) function that processes incoming events, extracts event details, and creates a `UsageEvent` object, which is then added to the database session and committed. The code is designed to be synchronous, as required by AWS Lambda, and it leverages SQLModel for ORM capabilities. The use of environment variables and AWS Secrets Manager highlights a focus on secure and flexible configuration management, making the script suitable for deployment in cloud environments where security and scalability are paramount.
+The script imports necessary modules for logging, database interaction, and AWS Secrets Manager caching. It defines a [`handler`](<#handler>) function that logs incoming event details and uses a SQLModel session to persist a `UsageEvent` object to the database. The `UsageEvent` model captures various attributes of the event, such as session ID, event source, and data metrics. This code is intended to be deployed as an AWS Lambda function, providing a specific and narrow functionality of logging usage events to a database, with a focus on secure configuration management and efficient database connection handling.
 # Imports and Dependencies
 
 ---
@@ -36,42 +36,42 @@ The script imports necessary modules for logging, database interaction, and AWS 
 ### logger
 - **Type**: `logging.Logger`
 - **Description**: The `logger` variable is an instance of the `Logger` class from the Python `logging` module. It is configured to log messages at a level specified by the `log_level` variable, which is determined by the `LOG_LEVEL` environment variable or defaults to `logging.INFO`. The logger is used throughout the code to log informational messages, particularly within the `handler` function to log event and context details.
-- **Use**: This variable is used to log messages for monitoring and debugging purposes throughout the application.
+- **Use**: This variable is used to log messages for monitoring and debugging purposes.
 
 
 ---
 ### sm\_client
 - **Type**: `botocore.client.BaseClient`
-- **Description**: The `sm_client` variable is an instance of a Secrets Manager client created using the `botocore` library. It is used to interact with AWS Secrets Manager, allowing the application to retrieve and manage secrets securely.
-- **Use**: This variable is used to create a client for AWS Secrets Manager, which is then utilized to fetch secret strings, such as database URLs, in a secure manner.
+- **Description**: The `sm_client` variable is an instance of a Boto3 client for AWS Secrets Manager, created using the `botocore` library. It is used to interact with AWS Secrets Manager to manage secrets, such as retrieving secret values.
+- **Use**: This variable is used to create a `SecretCache` instance, which is then utilized to fetch the database URL secret for connecting to the database.
 
 
 ---
 ### cache\_config
 - **Type**: `SecretCacheConfig`
-- **Description**: The `cache_config` variable is an instance of the `SecretCacheConfig` class, which is part of the `aws_secretsmanager_caching` library. This configuration object is used to set up parameters for caching secrets retrieved from AWS Secrets Manager.
-- **Use**: This variable is used to configure the `SecretCache` instance, which caches secrets to improve performance and reduce the number of calls to AWS Secrets Manager.
+- **Description**: `cache_config` is an instance of the `SecretCacheConfig` class, which is part of the `aws_secretsmanager_caching` library. This configuration object is used to set up parameters for caching secrets from AWS Secrets Manager.
+- **Use**: This variable is used to configure the `SecretCache` instance, which caches secrets retrieved from AWS Secrets Manager to improve performance and reduce the number of API calls.
 
 
 ---
 ### cache
 - **Type**: `SecretCache`
 - **Description**: The `cache` variable is an instance of the `SecretCache` class, which is part of the `aws_secretsmanager_caching` library. It is initialized with a configuration object `cache_config` and a client `sm_client` for AWS Secrets Manager. This setup allows for efficient caching and retrieval of secrets from AWS Secrets Manager.
-- **Use**: This variable is used to retrieve secret strings, such as the database URL, from AWS Secrets Manager, optimizing access through caching.
+- **Use**: The `cache` variable is used to retrieve secret strings, such as the database URL, from AWS Secrets Manager, optimizing access by caching the secrets.
 
 
 ---
 ### database\_url
 - **Type**: `str`
 - **Description**: The `database_url` variable is a string that holds the URL for connecting to the database. It is determined based on the environment setting; if the environment is not 'local', it retrieves the URL from a secret manager using the secret name specified in the settings, otherwise, it uses a predefined URL from the settings.
-- **Use**: This variable is used to create a database engine connection in the `get_engine` function.
+- **Use**: This variable is used to create a database engine for establishing connections to the database.
 
 
 ---
 ### engine
 - **Type**: `NoneType`
-- **Description**: The `engine` variable is initially set to `None` and is intended to hold a database engine instance created by the `create_engine` function from the `sqlmodel` package. It is used to manage connections to a database, with the actual engine being lazily initialized when the `get_engine` function is called.
-- **Use**: This variable is used to store and manage the database engine instance for database operations.
+- **Description**: The `engine` variable is initially set to `None` and is intended to hold a database engine instance created by the `create_engine` function from the `sqlmodel` library. It is used to manage database connections and execute SQL queries.
+- **Use**: The `engine` variable is used to store a database engine instance, which is lazily initialized when the `get_engine` function is called for the first time.
 
 
 # Functions
@@ -89,25 +89,23 @@ The `get_engine` function returns a singleton database engine instance, creating
 
 ---
 ### handler<!-- {{#callable:python-backend/lambdas/metrics_handler/src/main.handler}} -->
-The `handler` function processes an event by logging its details, creating a [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) object, storing it in the database, and returning the event's ID.
+The `handler` function processes an event by logging its details, creating a [`UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>) object from the event data, storing it in a database, and returning the event's ID as a string.
 - **Inputs**:
-    - `event`: A dictionary containing event details, specifically under the 'detail' key, which includes information such as session ID, event source, event type, organization ID, user ID, bytes in/out, tokens in/out, timestamp, and event metadata.
-    - `context`: An object providing runtime information about the Lambda function execution, though it is not used directly in the function logic.
+    - `event`: A dictionary containing event details, including a 'detail' key with specific event data.
+    - `context`: An object providing runtime information about the Lambda function execution.
 - **Control Flow**:
     - Log the event and context information using the logger.
     - Extract the 'detail' part of the event into `event_data`.
     - Log the extracted `event_data`.
-    - Open a database session using the `Session` context manager and the engine obtained from `get_engine()`.
-    - Extract the session ID from `event_data`.
-    - Create a [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) object using the details from `event_data`.
-    - Add the [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) object to the session.
-    - Commit the session to save the [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) to the database.
-    - Refresh the session to update the [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) object with the database-generated ID.
-    - Return the ID of the [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) as a string.
-- **Output**: A string representation of the ID of the [`UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent) object that was stored in the database.
-- **Functions called**:
-    - [`python-backend/lambdas/metrics_handler/src/main.get_engine`](#get_engine)
-    - [`python-backend/driver_db/database/models_v1.UsageEvent`](../../../driver_db/database/models_v1.py.md#UsageEvent)
+    - Open a database session using the `Session` context manager and `get_engine()` function.
+    - Extract various fields from `event_data` to create a [`UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>) object.
+    - Add the [`UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>) object to the session and commit the transaction to save it to the database.
+    - Refresh the session to update the [`UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>) object with the database-generated ID.
+    - Return the ID of the [`UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>) object as a string.
+- **Output**: A string representing the ID of the newly created [`UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>) object.
+- **Functions Called**:
+    - [`python-backend/lambdas/metrics_handler/src/main.get_engine`](<#get_engine>)
+    - [`python-backend/driver_db/database/models_v1.UsageEvent`](<../../../driver_db/database/models_v1.py.md#UsageEvent>)
 
 
 

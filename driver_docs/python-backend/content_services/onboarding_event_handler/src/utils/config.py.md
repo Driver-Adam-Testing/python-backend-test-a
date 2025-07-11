@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `config.py` file defines a `Settings` class using Pydantic to manage environment configurations for the onboarding event handler, including API URLs, authentication details, and AWS S3 settings.
+The `config.py` file defines a `Settings` class using Pydantic to manage environment-specific configuration settings for the application, including API URLs, authentication details, and AWS S3 configurations.
 
 # Purpose
-This code defines a configuration class using Pydantic's `BaseSettings` to manage application settings, typically loaded from environment variables. It provides narrow functionality focused on configuration management, allowing for easy access and validation of environment-specific settings such as API URLs, authentication details, and AWS S3 configurations. The `Settings` class specifies various configuration options, including required fields like `API_URL` and optional fields like `AWS_S3_ENDPOINT_URL`, with default values for some settings. The use of `SettingsConfigDict` allows customization of how environment variables are loaded, such as specifying an `.env` file and ignoring empty variables. This code is a configuration management utility, essential for applications that need to adapt to different environments like development, staging, and production.
+This Python code defines a configuration management class using the Pydantic library, specifically leveraging the `BaseSettings` class from `pydantic_settings`. The primary purpose of this file is to manage application settings by loading them from environment variables, which are specified in a `.env` file. The `Settings` class encapsulates various configuration parameters such as API URLs, authentication details, environment types, and AWS S3 settings. The use of `Literal` for the `ENVIRONMENT` attribute ensures that only predefined environment types are allowed, enhancing type safety and reducing configuration errors.
+
+The code is structured to be a configuration module, likely intended to be imported and used in other parts of an application to access these settings. By using Pydantic's `BaseSettings`, it automatically handles the parsing and validation of environment variables, providing a robust and flexible way to manage application configuration. The `SettingsConfigDict` is used to specify additional configuration options, such as the location of the `.env` file and how to handle extra environment variables. This file does not define a public API or external interfaces but serves as an internal utility to centralize and streamline configuration management across the application.
 # Imports and Dependencies
 
 ---
@@ -20,8 +22,8 @@ This code defines a configuration class using Pydantic's `BaseSettings` to manag
 ---
 ### settings
 - **Type**: `Settings`
-- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is configured to load environment variables from a `.env` file and includes various configuration parameters such as API URLs, authentication details, environment type, and AWS S3 settings. The `Settings` class uses Pydantic's data validation and settings management features to ensure that the configuration is correctly loaded and validated.
-- **Use**: The `settings` variable is used to access application configuration parameters throughout the codebase, providing a centralized and validated configuration management system.
+- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is configured to load environment variables from a `.env` file and includes various configuration parameters such as API URLs, authentication details, environment type, and AWS S3 settings.
+- **Use**: The `settings` variable is used to access application configuration parameters that are loaded from environment variables, providing a centralized configuration management system.
 
 
 # Classes
@@ -35,12 +37,12 @@ This code defines a configuration class using Pydantic's `BaseSettings` to manag
     - `AUTH0_AUDIENCE`: The audience identifier for Auth0.
     - `CLIENT_ID_SECRET`: The client ID secret for authentication.
     - `CLIENT_SECRET_SECRET`: The client secret for authentication.
-    - `ENVIRONMENT`: The environment setting, which can be one of several predefined values.
+    - `ENVIRONMENT`: The deployment environment setting.
     - `AWS_S3_ENDPOINT_URL`: The endpoint URL for AWS S3, which can be None.
     - `AWS_S3_CODE_BUCKET_SUFFIX`: The suffix for the AWS S3 code bucket, defaulting to 'codebase-dropzone'.
     - `USE_LEGACY_DROPZONE`: A boolean indicating whether to use the legacy dropzone, defaulting to True.
     - `DROPZONE_BUCKET_NAME`: The name of the dropzone bucket, which can be None.
-- **Description**: The `Settings` class is a configuration class that extends `BaseSettings` from the `pydantic_settings` module, designed to manage application settings through environment variables. It includes various configuration parameters such as API and Auth0 URLs, client secrets, environment type, and AWS S3 settings. The class uses a `SettingsConfigDict` to specify environment file handling and behavior for extra fields, ensuring that only specified settings are loaded and used. This class is essential for managing and accessing configuration settings in a structured and type-safe manner.
+- **Description**: The `Settings` class is a configuration class that extends `BaseSettings` from the `pydantic_settings` module, designed to manage application settings through environment variables. It includes various configuration parameters such as API URLs, authentication secrets, environment types, and AWS S3 settings. The class uses a `SettingsConfigDict` to specify environment file handling and behavior for extra fields, ensuring that only specified settings are loaded and used.
 - **Inherits From**:
     - `BaseSettings`
 

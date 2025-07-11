@@ -6,14 +6,14 @@
 The `test_func_declarations.c` file contains various function declarations, a function definition, a variable declaration, and a typedef for a function pointer, likely for testing purposes in the `python-backend` codebase.
 
 # Purpose
-This C source code file appears to be a header file that provides function declarations and macro definitions, likely for use in a larger project involving memory management and cluster node operations. The code includes conditional compilation to modify the behavior of the `inline` keyword when using the GNU Compiler Collection (GCC) with Position Independent Code (PIC), ensuring that functions are always inlined. It declares several functions related to memory operations ([`__mmap`](#__mmap), [`__munmap`](#__munmap), [`__mremap`](#__mremap), [`__madvise`](#__madvise)) and cluster management ([`createClusterNode`](#createClusterNode), [`clusterAddNode`](#clusterAddNode), [`clusterAcceptHandler`](#clusterAcceptHandler), [`clusterReadHandler`](#clusterReadHandler)). Additionally, the file includes a function definition ([`some_function`](#some_function)) and a variable declaration (`not_a_function`) to demonstrate differentiation between functions and variables, as well as a typedef for a function pointer (`signal_handler_t`). The presence of a function with a complex return type ([`complex_function`](#complex_function)) suggests that the file is part of a system dealing with advanced data structures or operations.
+This C source code file appears to be a header file that provides function declarations and macro definitions, likely for use in a larger project involving memory management and cluster node operations. The file includes conditional compilation to modify the behavior of the `inline` keyword when using the GNU Compiler Collection (GCC) with Position Independent Code (PIC), ensuring that functions are always inlined. It declares several functions related to memory operations ([`__mmap`](<#__mmap>), [`__munmap`](<#__munmap>), [`__mremap`](<#__mremap>), [`__madvise`](<#__madvise>)) and cluster node management ([`createClusterNode`](<#createClusterNode>), [`clusterAddNode`](<#clusterAddNode>), [`clusterAcceptHandler`](<#clusterAcceptHandler>), [`clusterReadHandler`](<#clusterReadHandler>)). Additionally, the file includes a function definition ([`some_function`](<#some_function>)) and a variable declaration (`not_a_function`) to demonstrate differentiation between functions and variables, as well as a typedef for a function pointer (`signal_handler_t`) and a function with a complex return type ([`complex_function`](<#complex_function>)). This setup suggests the file is intended to provide necessary interfaces and type definitions for memory and cluster management functionalities.
 # Global Variables
 
 ---
 ### not\_a\_function
 - **Type**: `int`
 - **Description**: The variable `not_a_function` is a global integer variable declared at the top level of the file. It is not initialized, so it defaults to zero.
-- **Use**: This variable is declared to ensure it is not mistakenly identified as a function, as its name might suggest.
+- **Use**: This variable is used as a global integer that can be accessed and modified by any function within the file or other files that include this file.
 
 
 # Functions

@@ -6,9 +6,9 @@
 The `backend_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection and optionally configuring database extensions.
 
 # Purpose
-This Python script is designed to initialize a database service, ensuring that the database is awake and ready for operations. It employs the `tenacity` library to implement a retry mechanism, which attempts to establish a session with the database up to a maximum of 300 attempts, with a one-second wait between each attempt. This is crucial for scenarios where the database might not be immediately available, such as during startup or after a restart. The script uses SQLAlchemy and SQLModel to manage database connections and sessions, and it logs the initialization process using Python's built-in `logging` module, providing informative messages before and after each retry attempt.
+This Python script is designed to initialize a database service, ensuring that the database is awake and ready for operations. It uses the SQLAlchemy and SQLModel libraries to manage database connections and sessions. The script employs the `tenacity` library to implement a retry mechanism, which attempts to establish a session with the database up to a maximum of 300 attempts (5 minutes), with a 1-second wait between each attempt. This is crucial for scenarios where the database might not be immediately available, providing resilience and robustness to the initialization process. The logging module is used extensively to provide informative logs at various stages of the process, aiding in monitoring and debugging.
 
-The script also includes a function, [`config_extensions`](#config_extensions), which is intended to configure database extensions, specifically the "uuid-ossp" extension, if it is not already present. However, this function is currently commented out in the [`main`](#main) function, indicating that it is not being executed in the current version of the script. The script is structured to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](#main) function to initiate the service. This setup suggests that the script is intended for use as a utility to prepare a database environment, rather than as a library to be imported by other modules.
+The script also contains a function, [`config_extensions`](<#config_extensions>), which is intended to configure database extensions, specifically the "uuid-ossp" extension, although this functionality is currently commented out in the [`main`](<#main>) function. This suggests that the script is modular and can be extended to include additional database configuration tasks as needed. The script is structured to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](<#main>) function to initiate the service. This design makes it suitable for use as a startup script in a larger application, ensuring that the database is properly initialized before other components begin their operations.
 # Imports and Dependencies
 
 ---
@@ -30,63 +30,65 @@ The script also includes a function, [`config_extensions`](#config_extensions), 
 ---
 ### logger
 - **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the module's name as its logger name, which helps in identifying the source of log messages.
-- **Use**: This variable is used to log informational and error messages throughout the application, aiding in debugging and monitoring.
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module, configured to use the module's name as its logger name. It is set up to handle logging messages for the module, with a logging level of INFO, which means it will capture and display messages at the INFO level and above.
+- **Use**: This variable is used to log informational and error messages throughout the module, particularly in the `init` and `main` functions, to provide runtime feedback and error reporting.
 
 
 ---
 ### max\_tries
 - **Type**: `int`
-- **Description**: The variable `max_tries` is an integer that represents the maximum number of retry attempts allowed for a certain operation, calculated as 60 multiplied by 5, which equals 300. This is intended to represent a duration of 5 minutes, assuming each retry attempt occurs once per second.
-- **Use**: This variable is used to define the stopping condition for the retry mechanism in the `init` function, limiting the number of retry attempts to 300.
+- **Description**: The variable `max_tries` is an integer that represents the maximum number of retry attempts allowed for a certain operation, calculated as 60 attempts per minute over a span of 5 minutes, resulting in a total of 300 attempts. This value is used to control the retry mechanism in the `init` function, ensuring that the operation is retried a finite number of times before giving up.
+- **Use**: This variable is used to set the limit for retry attempts in the `retry` decorator applied to the `init` function.
 
 
 ---
 ### wait\_seconds
 - **Type**: `int`
-- **Description**: The `wait_seconds` variable is an integer that specifies the fixed amount of time, in seconds, to wait between retry attempts when initializing the service. It is set to a value of 1, indicating a 1-second wait period between retries.
-- **Use**: This variable is used in the retry mechanism to define the wait time between attempts to connect to the database.
+- **Description**: The `wait_seconds` variable is an integer that specifies the fixed amount of time, in seconds, to wait between retry attempts when initializing the service. It is used in conjunction with the `tenacity` library to manage retry behavior.
+- **Use**: This variable is used to define the wait time between retry attempts in the `init` function's retry mechanism.
 
 
 # Functions
 
 ---
 ### init<!-- {{#callable:python-backend/backend/app/backend_pre_start.init}} -->
-The `init` function initializes a database service by attempting to establish a session with the provided database engine, retrying on failure.
+The `init` function initializes a database connection and checks if the database is responsive, retrying the operation if it fails.
 - **Decorators**: `@retry`
 - **Inputs**:
     - `db_engine`: An instance of `Engine` representing the database engine to connect to.
 - **Control Flow**:
-    - Logs an informational message indicating the start of the service initialization.
-    - Attempts to create a session with the provided `db_engine` to check if the database is responsive.
-    - Executes a simple SQL select statement to verify the database connection.
-    - Catches any exceptions that occur during the session creation or execution, logs the error, and re-raises the exception.
-- **Output**: The function does not return any value; it raises an exception if the database connection attempt fails after the specified retry attempts.
+    - Log the message 'Initializing service' at the INFO level.
+    - Attempt to create a session with the provided `db_engine`.
+    - Execute a simple SQL query `select(1)` to check if the database is responsive.
+    - If an exception occurs during the session creation or query execution, log the error at the ERROR level and re-raise the exception.
+    - The function is decorated with `@retry`, which will retry the function execution based on the specified retry strategy if an exception is raised.
+- **Output**: The function does not return any value; it raises an exception if the database is not responsive after the retry attempts.
 
 
 ---
 ### config\_extensions<!-- {{#callable:python-backend/backend/app/backend_pre_start.config_extensions}} -->
-The `config_extensions` function attempts to create the 'uuid-ossp' extension in a database if it does not already exist.
+The function configures a PostgreSQL database to use the 'uuid-ossp' extension if it is not already installed.
 - **Inputs**:
-    - `db_engine`: An instance of `Engine` from SQLAlchemy, representing the database connection engine.
+    - `db_engine`: An instance of sqlalchemy.Engine representing the database connection engine.
 - **Control Flow**:
-    - The function attempts to establish a connection to the database using the provided `db_engine`.
-    - Within the context of the database connection, it executes a SQL command to create the 'uuid-ossp' extension if it does not already exist.
-    - If an exception occurs during the execution of the SQL command, it logs the exception and re-raises it.
-- **Output**: The function does not return any value; it performs its operations for side effects on the database.
+    - Attempts to establish a connection to the database using the provided db_engine.
+    - Executes a SQL command to create the 'uuid-ossp' extension if it does not already exist.
+    - Catches any exceptions that occur during the execution of the SQL command.
+    - Logs the exception using a logger if an error occurs and re-raises the exception.
+- **Output**: The function does not return any value; it performs a side effect of configuring the database.
 
 
 ---
 ### main<!-- {{#callable:python-backend/backend/app/backend_pre_start.main}} -->
-The `main` function initializes a service by calling the [`init`](#init) function and logs the start and completion of the initialization process.
+The `main` function initializes the service by calling the [`init`](<#init>) function and logs the start and completion of the initialization process.
 - **Inputs**: None
 - **Control Flow**:
     - Logs the message 'Initializing service' to indicate the start of the service initialization.
-    - Calls the [`init`](#init) function with the `engine` as an argument to initialize the database connection.
+    - Calls the [`init`](<#init>) function with the `engine` object to initialize the database connection.
     - Logs the message 'Service finished initializing' to indicate the completion of the service initialization.
-- **Output**: The function does not return any value; it performs logging and calls the [`init`](#init) function as side effects.
-- **Functions called**:
-    - [`python-backend/backend/app/backend_pre_start.init`](#init)
+- **Output**: The function does not return any value as its return type is `None`.
+- **Functions Called**:
+    - [`python-backend/backend/app/backend_pre_start.init`](<#init>)
 
 
 

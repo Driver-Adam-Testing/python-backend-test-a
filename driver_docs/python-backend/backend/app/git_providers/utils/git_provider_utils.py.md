@@ -6,7 +6,7 @@
 The `git_provider_utils.py` file contains a function to generate metadata for a codebase, including hashed organization ID and other repository details.
 
 # Purpose
-This Python code defines a function [`generate_codebase_metadata`](#generate_codebase_metadata) that generates and returns a dictionary containing metadata about a codebase. The function takes several parameters related to an organization and its code repository, such as `org_id`, `org_name`, `repo`, `repo_id`, `owner`, `provider`, `commit`, and `upload_key`. It uses a utility function `org_id_to_hash` from an imported module to hash the organization ID, which is then included in the metadata. The metadata dictionary includes both the unhashed and hashed organization IDs, along with other details like the organization name, repository name, and commit version. This code provides narrow functionality, specifically for creating structured metadata for codebase management, likely intended for use in a larger system that interacts with AWS S3 for file storage.
+This Python code defines a function [`generate_codebase_metadata`](<#generate_codebase_metadata>) that generates a dictionary containing metadata about a codebase. The function takes several parameters related to an organization and a code repository, such as `org_id`, `org_name`, `repo`, `repo_id`, `owner`, `provider`, `commit`, and `upload_key`. It uses a utility function `org_id_to_hash` from an imported module to convert the organization ID into a hashed format, which is then included in the metadata. The purpose of this code is relatively narrow, focusing on creating a structured metadata dictionary that can be used for tracking or storing information about a codebase in a consistent format, likely for integration with AWS S3 storage or similar services.
 # Imports and Dependencies
 
 ---
@@ -19,22 +19,20 @@ This Python code defines a function [`generate_codebase_metadata`](#generate_cod
 ### generate\_codebase\_metadata<!-- {{#callable:python-backend/backend/app/git_providers/utils/git_provider_utils.generate_codebase_metadata}} -->
 The function `generate_codebase_metadata` creates a dictionary containing metadata for a codebase using provided organization and repository details.
 - **Inputs**:
-    - `org_id`: The unique identifier for the organization.
-    - `org_name`: The name of the organization.
-    - `repo`: The name of the repository.
-    - `repo_id`: The unique identifier for the repository.
-    - `owner`: The owner of the repository.
-    - `provider`: The service provider for the repository, such as GitHub or Bitbucket.
-    - `commit`: The commit hash or version identifier for the codebase.
-    - `upload_key`: The file path or key used for uploading the codebase.
+    - `org_id`: A string representing the organization ID.
+    - `org_name`: A string representing the name of the organization.
+    - `repo`: A string representing the repository name.
+    - `repo_id`: A string representing the repository ID.
+    - `owner`: A string representing the owner of the repository.
+    - `provider`: A string representing the service provider of the repository.
+    - `commit`: A string representing the commit hash or version of the codebase.
+    - `upload_key`: A string representing the file path or key for the uploaded codebase.
 - **Control Flow**:
-    - Call the function [`org_id_to_hash`](../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash) with `org_id` to get a hashed version of the organization ID.
-    - Create a dictionary with keys such as 'unhashed_organization_id', 'organization_id', 'org_bucket', 'org_name', 'creator_id', 'file_path', 'codebase_name', 'content_type', 'provider', 'version', and 'repository_id'.
-    - Assign the corresponding input values or processed values to each key in the dictionary.
-    - Return the constructed dictionary.
+    - The function begins by converting the `org_id` to a hashed value using the [`org_id_to_hash`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>) function.
+    - It then constructs and returns a dictionary with various metadata fields, including both the unhashed and hashed organization ID, organization name, repository details, and other relevant information.
 - **Output**: A dictionary containing metadata about the codebase, including organization and repository details.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.org_id_to_hash`](../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.org_id_to_hash`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>)
 
 
 

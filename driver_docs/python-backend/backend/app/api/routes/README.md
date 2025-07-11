@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `routes` folder in the `python-backend` codebase contains organized subfolders for defining FastAPI and GraphQL endpoints across different API versions and legacy systems, with an empty `__init__.py` file.
+Subfolders define API routes and functionalities using FastAPI and GraphQL, including legacy support and versioned endpoints.
 
 ## Folders
-- **[api](api/README.md)**: The `api` folder in the `python-backend` codebase contains Python files that define various FastAPI endpoints for health checks, user authentication, chat requests, asset retrieval, and search functionalities.
-- **[legacy](legacy/README.md)**: The `legacy` folder in the `python-backend` codebase contains various Python files that define GraphQL types, queries, mutations, and schema using the Strawberry library, manage Auth0 organizations and users, handle document sets and S3 bucket interactions, and provide logging and ORM operations.
-- **[v1](v1/README.md)**: The `v1` folder in the `python-backend` codebase contains a collection of FastAPI route definitions for various functionalities, including agent execution, codebase management, content handling, document source management, Git provider integration, health checks, onboarding processes, organization management, search capabilities, subscription management, tag operations, file uploads, usage tracking, and user account management.
-- **[v2](v2/README.md)**: The `v2` folder in the `python-backend` codebase contains a collection of FastAPI-based API endpoint definitions and utility functions for managing various entities such as API keys, autodocs, chats, contents, document sources, nodes, primary assets, tags, and versions, along with query utilities and schema definitions.
+- **[api](api/README.md)**: Defines API routes for health checks, chat handling, asset management, search, and user profile access.
+- **[legacy](legacy/README.md)**: Various Python files define GraphQL types, queries, mutations, and schemas using Strawberry, manage Auth0, handle document sets and S3 storage, and provide logging and ORM operations within a FastAPI context.
+- **[v1](v1/README.md)**: FastAPI route definitions for agent execution, codebase management, content handling, document sources, Git operations, health checks, onboarding, organization management, search, subscriptions, tags, uploads, usage, and user accounts.
+- **[v2](v2/README.md)**: FastAPI-based API endpoint definitions and utility functions for managing entities like API keys, autodocs, chat, content, document sources, nodes, primary assets, tags, and versions, with query utilities and schema definitions.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

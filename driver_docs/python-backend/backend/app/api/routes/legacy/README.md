@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `legacy` folder in the `python-backend` codebase contains various Python files that define GraphQL types, queries, mutations, and schema using the Strawberry library, manage Auth0 organizations and users, handle document sets and S3 bucket interactions, and provide logging and ORM operations.
+Various Python files define GraphQL types, queries, mutations, and schemas using Strawberry, manage Auth0, handle document sets and S3 storage, and provide logging and ORM operations within a FastAPI context.
 
 
 ## Files
 - **[api_types.py](api_types.py.md)**: The `api_types.py` file defines GraphQL types for a Git provider and a Git repository using the Strawberry library.
-- **[auth0.py](auth0.py.md)**: The `auth0.py` file in the `python-backend` codebase provides functions for managing Auth0 organizations and users, including creating, retrieving, and deleting organizations, with automatic token refresh handling.
-- **[document_set.py](document_set.py.md)**: The `document_set.py` file in the `python-backend` codebase defines various data structures and functions for managing and retrieving document sets, including handling different content types and fetching code metadata and content from an S3 bucket.
-- **[logging_extension.py](logging_extension.py.md)**: The `logging_extension.py` file defines a `LoggingExtension` class that logs the first 128 characters of a GraphQL query execution using the `logging` module.
-- **[mutations.py](mutations.py.md)**: The `mutations.py` file in the `python-backend` codebase defines GraphQL mutations for managing application notes, documents, and uploading content, including handling access checks and generating presigned URLs for uploads.
+- **[auth0.py](auth0.py.md)**: The `auth0.py` file in the `python-backend` codebase provides functions for managing Auth0 organizations and users, including creating, retrieving, and deleting organizations, with automatic token refresh and error handling.
+- **[document_set.py](document_set.py.md)**: The `document_set.py` file in the `python-backend` codebase defines various data structures and functions to manage and retrieve document sets, including content descriptions and metadata, from a database and S3 storage, using the FastAPI framework and Strawberry for GraphQL types.
+- **[logging_extension.py](logging_extension.py.md)**: The `logging_extension.py` file defines a `LoggingExtension` class that logs the first 128 characters of a GraphQL query execution context.
+- **[mutations.py](mutations.py.md)**: The `mutations.py` file in the `python-backend` codebase defines GraphQL mutations for managing application notes, documents, and uploading content, including generating presigned URLs for AWS S3 uploads, with access control and error handling.
 - **[orm_ops.py](orm_ops.py.md)**: The `orm_ops.py` file contains functions for retrieving derived content by ID and checking access permissions based on various identifiers within a session.
-- **[queries.py](queries.py.md)**: The `queries.py` file defines a set of GraphQL query endpoints using the Strawberry library, including operations for retrieving organization details, document sets, codebase trees, user information, connected Git providers, and repositories by Git provider.
-- **[s3.py](s3.py.md)**: The `s3.py` file implements the `S3BucketAccess` class, which provides methods for interacting with an S3 bucket, including uploading, retrieving, and deleting files, using hashed organization IDs for bucket naming.
+- **[queries.py](queries.py.md)**: The `queries.py` file defines a set of GraphQL query endpoints using the Strawberry library, including operations for fetching organization details, document sets, codebase trees, user information, connected Git providers, and repositories by Git provider.
+- **[s3.py](s3.py.md)**: The `s3.py` file implements the `S3BucketAccess` class, which provides methods for uploading, retrieving, and deleting files in an S3 bucket, using hashed organization IDs for bucket naming.
 - **[scalars.py](scalars.py.md)**: The `scalars.py` file defines custom scalar types for JSON, ID, and NodeType using the Strawberry library to handle serialization and parsing in a GraphQL API.
-- **[schema.py](schema.py.md)**: The `schema.py` file defines a GraphQL schema with custom context and logging extensions for a FastAPI application, utilizing Strawberry and SQLModel for query and mutation handling.
+- **[schema.py](schema.py.md)**: The `schema.py` file defines a GraphQL schema with custom context and middleware for a FastAPI application, utilizing Strawberry for schema creation and including routes for both standard and Apollo Sandbox GraphQL interfaces.
 - **[tree.py](tree.py.md)**: The `tree.py` file defines a function to construct a tree representation of a codebase's directory and file structure using SQLModel and Strawberry, based on a given version and organization ID.
 
 ---

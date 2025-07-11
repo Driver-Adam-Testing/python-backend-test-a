@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `openai` folder in the `python-backend` codebase contains a file, `file_search.py`, which implements a function to query and summarize documents using OpenAI's API with tools like file search and code interpreter.
+The `openai` folder in the `python-backend` codebase contains a file, `file_search.py`, which defines a function for querying and summarizing documents using OpenAI's API with tools such as a document summarizer assistant, file search, and code interpreter.
 
 
 ## Files
-- **[file_search.py](file_search.py.md)**: The `file_search.py` file implements a function to query and summarize documents using OpenAI's API, specifically leveraging a document summarizer assistant and tools like file search and code interpreter.
+- **[file_search.py](file_search.py.md)**: The `file_search.py` file defines a function to query and summarize documents using OpenAI's API, specifically leveraging a document summarizer assistant and tools like file search and code interpreter.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

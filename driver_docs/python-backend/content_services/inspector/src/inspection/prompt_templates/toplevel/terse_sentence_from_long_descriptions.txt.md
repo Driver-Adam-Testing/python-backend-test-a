@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `terse_sentence_from_long_descriptions.txt` file provides guidelines for creating concise, high-level descriptions of a codebase from detailed module descriptions.
+The `terse_sentence_from_long_descriptions.txt` file provides instructions for creating concise, high-level descriptions of a codebase from detailed module descriptions.
 
 # Purpose
-The provided content outlines a structured approach for generating a concise, high-level description of a software codebase based on detailed descriptions of its components. The process involves analyzing descriptions of individual files and folders within the codebase, which are provided with their respective paths and detailed explanations. The goal is to synthesize this information into a single, succinct sentence of 140 characters or less that encapsulates the essence of the entire codebase. This task requires distilling complex and potentially voluminous information into a brief summary, ensuring clarity and precision without introducing any additional information not present in the descriptions provided.
+The provided content outlines a structured template for generating a concise, high-level description of a software codebase based on detailed descriptions of its individual components, such as files and folders. The template specifies that the user will receive detailed descriptions of each module within the codebase, including the name and path of files and folders, along with their respective descriptions. The task is to synthesize this information into a single, succinct sentence that encapsulates the overall purpose and content of the codebase. This approach ensures that the final description is both accurate and derived directly from the provided data, without any speculative or extraneous information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

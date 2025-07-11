@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_02_11_1648-a8b7cafaa51f_add_pa_and_node_parentage_indexes.py` file is an Alembic migration script that adds several indexes to the `v2_node`, `v2_primary_asset`, `v2_primary_asset_tag`, and `v2_version` tables to optimize database queries.
+The `2025_02_11_1648-a8b7cafaa51f_add_pa_and_node_parentage_indexes.py` file is an Alembic migration script that adds several indexes to the `v2_node`, `v2_primary_asset`, `v2_primary_asset_tag`, and `v2_version` tables in the database.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify the database schema by adding several indexes to various tables. Alembic is a database migration tool for SQLAlchemy, and this script is part of a version-controlled series of migrations. The primary purpose of this script is to enhance database query performance by creating indexes on specific columns of the tables `v2_node`, `v2_primary_asset`, `v2_primary_asset_tag`, and `v2_version`. These indexes are intended to optimize search and retrieval operations, particularly those involving columns like `version_id`, `display_name`, `kind`, `organization_id`, `primary_asset_id`, `tag_id`, and `updated_at`.
+This Python file is an Alembic migration script designed to modify the database schema by adding several indexes to various tables. Alembic is a database migration tool for SQLAlchemy, and this script is part of a version-controlled series of migrations. The primary purpose of this script is to enhance database query performance by creating indexes on specific columns of the tables `v2_node`, `v2_primary_asset`, `v2_primary_asset_tag`, and `v2_version`. These indexes are intended to optimize the retrieval of data based on frequently queried fields such as `version_id`, `display_name`, `kind`, `organization_id`, `primary_asset_id`, `tag_id`, and `updated_at`.
 
-The script defines two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function is responsible for applying the changes, which include creating the indexes. Conversely, the `downgrade()` function is designed to reverse these changes by dropping the indexes, thus allowing for rollback to a previous database state if necessary. The use of Alembic's `op` object facilitates the creation and deletion of these indexes, ensuring that the migration process is both systematic and reversible. This script is a part of a broader database schema management strategy, ensuring that the database structure evolves in a controlled and efficient manner.
+The script defines two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function is responsible for applying the changes, specifically creating the indexes, while the `downgrade()` function reverses these changes by dropping the indexes. This allows for easy rollback in case the migration needs to be undone. The script includes revision identifiers, which are unique IDs used by Alembic to track the order of migrations. This file is a part of a broader database schema management process, ensuring that the database structure evolves in a controlled and reversible manner.
 # Imports and Dependencies
 
 ---
@@ -21,13 +21,13 @@ The script defines two main functions: `upgrade()` and `downgrade()`. The `upgra
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration version in the database schema history.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific version of the database schema that this migration script represents.
+- **Use**: This variable is used by Alembic to identify the current migration version when applying or rolling back database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
+- **Type**: `string`
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
 - **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
 
@@ -35,15 +35,15 @@ The script defines two main functions: `upgrade()` and `downgrade()`. The `upgra
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration, such as branch labels for branching migrations.
-- **Use**: This variable is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision IDs and dependencies.
+- **Use**: `branch_labels` is used to specify labels for a branch in Alembic migrations, but in this script, it is not utilized and remains `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
+- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -69,13 +69,13 @@ The `downgrade` function removes specific database indexes as part of a database
 - **Control Flow**:
     - The function begins by dropping the index 'ix_v2_version_updated_at' from the 'v2_version' table.
     - It then drops the index 'ix_v2_version_primary_asset_id' from the 'v2_version' table.
-    - Next, it drops the index 'ix_v2_primary_asset_tag_tag_id' from the 'v2_primary_asset_tag' table.
-    - It proceeds to drop the index 'ix_v2_primary_asset_tag_primary_asset_id' from the 'v2_primary_asset_tag' table.
-    - The function continues by dropping the index 'ix_v2_primary_asset_organization_id' from the 'v2_primary_asset' table.
-    - It drops the index 'ix_v2_primary_asset_kind' from the 'v2_primary_asset' table.
-    - The index 'ix_v2_primary_asset_display_name' is then dropped from the 'v2_primary_asset' table.
-    - The function drops the index 'ix_v2_node_version_id' from the 'v2_node' table.
-    - It drops the index 'ix_node_version_id_relative_path_pattern_ops' from the 'v2_node' table, specifying PostgreSQL operations for 'relative_path'.
+    - Next, it removes the index 'ix_v2_primary_asset_tag_tag_id' from the 'v2_primary_asset_tag' table.
+    - The function continues by dropping the index 'ix_v2_primary_asset_tag_primary_asset_id' from the 'v2_primary_asset_tag' table.
+    - It proceeds to drop the index 'ix_v2_primary_asset_organization_id' from the 'v2_primary_asset' table.
+    - The index 'ix_v2_primary_asset_kind' is then removed from the 'v2_primary_asset' table.
+    - The function drops the index 'ix_v2_primary_asset_display_name' from the 'v2_primary_asset' table.
+    - It removes the index 'ix_v2_node_version_id' from the 'v2_node' table.
+    - The function drops the index 'ix_node_version_id_relative_path_pattern_ops' from the 'v2_node' table, specifying PostgreSQL operations for 'relative_path'.
     - Finally, it drops the index 'idx_node_version_id_relative_path_length' from the 'v2_node' table.
 - **Output**: The function does not return any value; it performs database schema changes by dropping indexes.
 

@@ -6,7 +6,7 @@
 The `alembic.ini` file in the `python-backend` codebase provides configuration settings for Alembic, including migration script locations, file templates, and logging configurations.
 
 # Purpose
-The provided configuration file is for Alembic, a database migration tool used in Python applications. It specifies settings for managing and generating database migration scripts, including the location of migration scripts (`script_location`), the template for naming migration files (`file_template`), and options for handling timezones and slug lengths. Additionally, it includes logging configurations to manage how Alembic and related components like SQLAlchemy log their activities, specifying log levels and handlers for different loggers. The file allows developers to customize how migrations are created and logged, ensuring that database schema changes are tracked and applied consistently across different environments.
+The provided configuration file is for Alembic, a database migration tool used in Python applications. It specifies settings for managing and generating database migration scripts, including the location of migration scripts (`script_location`) and the template for naming migration files (`file_template`). The file also includes optional settings for timezone handling, slug length truncation, and the detection of sourceless Python files as revisions. Additionally, it configures logging for Alembic and related components, defining loggers, handlers, and formatters to control the output and format of log messages. This configuration ensures that database migrations are organized, timestamped, and logged appropriately, facilitating version control and debugging.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

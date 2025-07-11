@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README.md` file provides setup instructions for configuring and running a GitLab-ee:17.3.5 instance using Docker and ngrok.
+The `README.md` file provides setup instructions for configuring and running a GitLab-ee:17.3.5 instance using Docker in the `python-backend` codebase.
 
 # Purpose
-The provided content is a step-by-step setup guide for deploying GitLab Enterprise Edition version 17.3.5 using Docker. It outlines the necessary commands and configurations to create a local GitLab instance, starting with the creation of a directory to store GitLab data and setting an environment variable for the GitLab home directory. The guide instructs users to configure the `docker-compose.yml` file with a root password and to start the GitLab container. It also details how to modify the `gitlab.rb` configuration file to set the external URL and disable Let's Encrypt and HTTP to HTTPS redirection. The instructions include commands to reconfigure GitLab within the Docker container and, if using ngrok, to set up a tunnel for external access. Finally, it directs users to access the GitLab instance via a web browser using the specified domain and login credentials. A link to the official GitLab documentation for further reference is also provided.
+The provided content is a step-by-step setup guide for deploying GitLab-ee version 17.3.5 using Docker. It outlines the process of creating a directory for GitLab's Docker configuration, setting up environment variables, and configuring the `docker-compose.yml` file with a root password. The instructions guide the user through starting the GitLab container, modifying the `gitlab.rb` configuration file to set the external URL and disable certain features like Let's Encrypt and HTTP to HTTPS redirection. The guide also includes steps for reconfiguring GitLab within the Docker container and, if using ngrok, setting up a tunnel to expose the local server to the internet. Finally, it instructs the user to access the GitLab instance via a web browser using the configured domain and login credentials.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

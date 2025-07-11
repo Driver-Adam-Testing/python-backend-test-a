@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `codemap_ctags.py` file in the `python-backend` codebase is a utility module for generating a symbol map from a source file using ctags, with a command-line interface for symbol detection.
+The `codemap_ctags.py` file in the `python-backend` codebase is a utility module for generating a symbol map from a source file using universal ctags, with a command-line interface for symbol detection.
 
 # Purpose
-This Python script is designed to generate a symbol map from a source file using the Universal Ctags tool. It provides a command-line interface (CLI) for users to specify a source file path, from which it extracts and displays symbols such as functions, classes, and variables, along with their line numbers and types. The script leverages the `subprocess` module to execute the Ctags command, capturing its output in JSON format, which is then parsed and processed to present a structured view of the symbols found in the source file. The script also includes color-coded terminal output to enhance readability, using ANSI escape codes to highlight different symbol types.
+This Python script is designed to generate a symbol map from a source file using the Universal Ctags tool. It provides a specific functionality that involves parsing a source file to extract symbols such as functions, classes, and variables, and then outputs this information in a structured format. The script leverages the `subprocess` module to execute the Ctags command-line tool, capturing its output in JSON format, which is then parsed and returned as a list of dictionaries. Each dictionary contains details about a symbol, including its type and location within the source file.
 
-The script is both a standalone executable and a module, as it contains a main block that allows it to be run directly from the command line. The primary function, [`extract_symbols_w_ctags`](#extract_symbols_w_ctags), is responsible for interacting with Ctags, handling temporary file creation, and parsing the output. This function can be reused in other Python programs, making the script versatile. The script requires Universal Ctags to be installed on the system, as it relies on this tool to perform the actual symbol extraction. Overall, the script provides a focused utility for developers needing to analyze and understand the structure of source code files.
+The script can be executed as a standalone command-line interface (CLI) tool, as indicated by the presence of the `if __name__ == "__main__":` block. This block handles command-line arguments to specify the path of the target source file, reads the file content, and utilizes the [`extract_symbols_w_ctags`](<#extract_symbols_w_ctags>) function to obtain and display the symbol information. The output is formatted to highlight the kind of symbol and its location in the file, with color-coded terminal output for better readability. This script is not intended to be a library for importation but rather a utility for developers to analyze and understand the structure of source code files.
 # Imports and Dependencies
 
 ---
@@ -25,33 +25,32 @@ The script is both a standalone executable and a module, as it contains a main b
 ---
 ### GREEN
 - **Type**: `str`
-- **Description**: The variable `GREEN` is a string that contains the ANSI escape code for setting the text color to green in terminal outputs. This escape code is used to change the color of text printed to the console, making it visually distinct.
-- **Use**: `GREEN` is used to format console output by changing the text color to green, enhancing readability and emphasis.
+- **Description**: The `GREEN` variable is a string that contains the ANSI escape code for setting the text color to green in terminal output. It is used to format text output in a visually distinct way by changing its color.
+- **Use**: This variable is used to change the color of text output to green in the terminal, typically for highlighting or emphasis.
 
 
 ---
 ### RESET
 - **Type**: `str`
 - **Description**: The `RESET` variable is a string that contains the ANSI escape code for resetting terminal text formatting to default. It is used to ensure that any text formatting applied (such as color) is reverted back to the terminal's default settings.
-- **Use**: This variable is used to reset text formatting in terminal output after colored text has been printed.
+- **Use**: This variable is used to reset the terminal text formatting after colored output is printed.
 
 
 # Functions
 
 ---
 ### extract\_symbols\_w\_ctags<!-- {{#callable:python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags}} -->
-The function `extract_symbols_w_ctags` generates a list of symbols from a source file using ctags by writing the file content to a temporary file and executing a ctags command.
+The function `extract_symbols_w_ctags` generates a list of symbols from a source file using ctags by writing the file content to a temporary file, executing a ctags command, and parsing the output.
 - **Inputs**:
     - `root_rel_path`: A `Path` object representing the relative path of the source file, used to determine the file suffix for the temporary file.
     - `file_content`: A string containing the content of the source file to be analyzed for symbols.
 - **Control Flow**:
-    - Create a temporary file with the same suffix as the source file and write the file content to it.
-    - Construct a ctags command to analyze the temporary file and specify JSON output format with additional fields.
-    - Execute the ctags command using `subprocess.run` and capture the output.
-    - Handle any `subprocess.CalledProcessError` exceptions by printing an error message and re-raising the exception.
-    - Ensure the temporary file is deleted after the command execution, regardless of success or failure.
-    - Parse the JSON output from ctags, line by line, into a list of dictionaries representing symbols.
-- **Output**: A list of dictionaries, each representing a symbol extracted from the source file, with details such as name, line number, and kind.
+    - A temporary file is created with the same suffix as the source file, and the file content is written to it.
+    - The ctags command is constructed to generate JSON output with additional fields and is executed using `subprocess.run`.
+    - If the subprocess call raises a `CalledProcessError`, an error message is printed and the exception is re-raised.
+    - The temporary file is deleted in the `finally` block to ensure cleanup.
+    - The output from the ctags command is parsed line by line into JSON objects, which are collected into a list.
+- **Output**: A list of dictionaries, each representing a symbol extracted from the source file, with details such as the symbol's kind and location.
 
 
 

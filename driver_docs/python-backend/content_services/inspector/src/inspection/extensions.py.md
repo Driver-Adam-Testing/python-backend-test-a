@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `extensions.py` file in the `python-backend` codebase lists various code and metadata file extensions, with a note indicating that the logic is handled elsewhere and some extensions are marked for possible removal.
+The `extensions.py` file lists various code and metadata file extensions, with notes indicating some entries may be removed as the logic is handled elsewhere.
 
 # Purpose
-This source code file is a collection of global configuration variables, specifically two lists named `CODE_EXT` and `META_EXT`. These lists categorize file extensions into two groups: code-related extensions and metadata/documentation-related extensions. The presence of comments such as "TODO remove" and "TODO: Possibly remove" suggests that this file is undergoing refactoring or cleanup, indicating that some of the logic or functionality might have been moved elsewhere. The file provides narrow functionality, serving primarily as a reference or configuration for file type categorization, which could be used in a larger system for tasks like file processing, filtering, or organization.
+This source code file is a configuration-like script that defines two lists of file extensions, `CODE_EXT` and `META_EXT`, which categorize different types of files based on their extensions. The `CODE_EXT` list includes extensions typically associated with source code files across various programming languages, while the `META_EXT` list contains extensions for metadata or configuration files. The presence of comments such as "TODO remove" and "TODO: Possibly remove" suggests that this file is undergoing refactoring or cleanup, indicating that some of the logic or categorization might be handled elsewhere in the codebase. The file provides narrow functionality, serving primarily as a reference or configuration for file type categorization, which could be used in broader applications like file processing or project management tools.
 # Global Variables
 
 ---
 ### CODE\_EXT
 - **Type**: `list`
-- **Description**: `CODE_EXT` is a list of file extensions representing various programming and scripting languages. It includes extensions for languages such as Python, Java, C, JavaScript, and many others, as well as some build and configuration file types. The list also contains comments indicating potential removals of certain extensions.
-- **Use**: This variable is used to identify and categorize files based on their extensions, likely for processing or filtering purposes in a software application.
+- **Description**: `CODE_EXT` is a list of file extensions representing various programming and scripting languages, as well as configuration and markup files. It includes common extensions like `.py` for Python, `.java` for Java, and `.html` for HTML, among others. The list also contains some duplicate entries and comments indicating potential removals.
+- **Use**: This variable is used to identify or filter files based on their extensions, likely for processing or categorization purposes.
 
 
 ---
 ### META\_EXT
 - **Type**: `list`
-- **Description**: `META_EXT` is a list of file extensions that are typically associated with metadata or configuration files. These extensions include common formats like JSON, YAML, and XML, as well as various documentation and configuration file types such as Markdown, INI, and TOML. The list also includes some less common extensions and an empty string, which is marked with a TODO comment indicating it might be removed in the future.
-- **Use**: This variable is used to identify and handle files with extensions that are typically associated with metadata or configuration purposes.
+- **Description**: `META_EXT` is a list of file extensions that are typically associated with metadata or configuration files. These extensions include common formats like JSON, YAML, and XML, as well as various documentation and configuration file types such as Markdown, INI, and TOML. The list also includes an empty string, which is marked with a TODO comment indicating it might be removed in the future.
+- **Use**: This variable is used to identify and handle files that are considered metadata or configuration files based on their extensions.
 
 
 

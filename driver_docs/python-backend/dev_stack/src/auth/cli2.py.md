@@ -6,9 +6,9 @@
 The `cli2.py` file implements a command-line interface for authentication using Auth0's device flow, providing commands to log in, check the current user, and log out.
 
 # Purpose
-This Python script is a command-line interface (CLI) tool designed to manage user authentication using the Auth0 device flow. It leverages the `click` library to define a CLI with commands for logging in, checking the current authenticated user, and logging out. The script uses the `Auth0DeviceAuthenticator` class from the `auth0_device_flow` package to handle the authentication process. The [`login`](#login) command initiates the authentication process and stores the tokens, while the [`whoami`](#whoami) command retrieves and displays the authenticated user's information by making an HTTP request to the Auth0 userinfo endpoint using the `httpx` library. The [`logout`](#logout) command clears the authentication cache, effectively logging the user out.
+This Python script is a command-line interface (CLI) tool that facilitates user authentication and management using Auth0's device flow. It leverages the `click` library to define a CLI with commands for logging in, checking the current user's identity, and logging out. The script uses the `Auth0DeviceAuthenticator` class from the `auth0_device_flow` module to handle authentication processes. The [`login`](<#login>) command initiates the authentication process and provides feedback upon successful login. The [`whoami`](<#whoami>) command retrieves and displays the authenticated user's information by making an HTTP request to the Auth0 userinfo endpoint, using the `httpx` library to handle HTTP requests. The [`logout`](<#logout>) command clears the authentication cache, effectively logging the user out.
 
-The script is structured as a standalone executable program, as indicated by the `if __name__ == "__main__":` block, which calls the [`cli`](#cli) function to start the command-line interface. The use of the `click` library allows for a modular and user-friendly CLI experience, with each command encapsulating a specific functionality related to user authentication. The script does not define a public API or external interfaces beyond the CLI commands, focusing instead on providing a straightforward tool for managing Auth0-based authentication from the command line.
+The script is designed to be executed as a standalone application, as indicated by the `if __name__ == "__main__":` block, which calls the `cli()` function to start the CLI. The primary purpose of this script is to provide a simple interface for managing user authentication via Auth0, making it easier for users to log in, verify their identity, and log out from the command line. The use of environment-specific constants like `CLIENT_ID` and `DOMAIN` suggests that this script is tailored for a specific Auth0 application setup, and it may require adjustments for use in different environments.
 # Imports and Dependencies
 
 ---
@@ -22,35 +22,35 @@ The script is structured as a standalone executable program, as indicated by the
 ---
 ### CLIENT\_ID
 - **Type**: `string`
-- **Description**: The `CLIENT_ID` is a string variable that holds the client identifier used for authentication purposes with the Auth0 service. It is a unique identifier assigned to the application by Auth0, which is used to identify the application during the authentication process.
-- **Use**: This variable is used to initialize the `Auth0DeviceAuthenticator` to facilitate user authentication.
+- **Description**: The `CLIENT_ID` is a string that represents the unique identifier for the client application in the Auth0 authentication system. It is used to identify the application when making authentication requests to the Auth0 service.
+- **Use**: This variable is used to initialize the `Auth0DeviceAuthenticator` to authenticate users via the Auth0 service.
 
 
 ---
 ### DOMAIN
 - **Type**: `string`
-- **Description**: The `DOMAIN` variable is a string that holds the domain name for the Auth0 authentication service used in the application. It specifies the Auth0 tenant domain where authentication requests are sent.
-- **Use**: This variable is used to configure the `Auth0DeviceAuthenticator` for handling authentication requests.
+- **Description**: The `DOMAIN` variable is a string that holds the domain name for the Auth0 authentication service used in the application. It specifies the Auth0 tenant domain, which is necessary for the authentication process.
+- **Use**: This variable is used to configure the `Auth0DeviceAuthenticator` instance, which handles user authentication against the specified Auth0 domain.
 
 
 ---
 ### auth
 - **Type**: `Auth0DeviceAuthenticator`
-- **Description**: The `auth` variable is an instance of the `Auth0DeviceAuthenticator` class, initialized with a client ID and domain specific to the Auth0 service. This instance is responsible for handling authentication flows using the Auth0 device authorization grant.
-- **Use**: This variable is used to authenticate users and manage their session tokens within the command-line interface application.
+- **Description**: The `auth` variable is an instance of the `Auth0DeviceAuthenticator` class, initialized with a client ID and domain specific to the Auth0 service. This instance is used to handle authentication flows for a device, allowing the application to authenticate users via Auth0's device authorization flow.
+- **Use**: This variable is used to authenticate users and manage authentication tokens within the command-line interface application.
 
 
 # Functions
 
 ---
 ### cli<!-- {{#callable:python-backend/dev_stack/src/auth/cli2.cli}} -->
-The `cli` function initializes a Click command-line interface group for managing authentication commands.
+The `cli` function defines a Click command-line interface group for managing authentication commands.
 - **Decorators**: `@click.group`
 - **Inputs**: None
 - **Control Flow**:
-    - The function is decorated with `@click.group`, which designates it as a command group for Click, a Python package for creating command-line interfaces.
-    - The function body contains only the `pass` statement, indicating that it serves as a placeholder for grouping related commands without any additional logic.
-- **Output**: The function does not produce any output as it only serves as a command group initializer.
+    - The function is decorated with `@click.group`, indicating it is a command group in a Click CLI application.
+    - The function body contains only a `pass` statement, meaning it does not perform any operations itself but serves as a container for subcommands.
+- **Output**: The function does not produce any output directly, as it is a placeholder for grouping CLI commands.
 
 
 ---
@@ -59,12 +59,11 @@ The `login` function authenticates the user using Auth0 and confirms successful 
 - **Decorators**: `@cli.command`
 - **Inputs**: None
 - **Control Flow**:
-    - The function calls `auth.authenticate()` to perform user authentication using the Auth0 device flow.
-    - After successful authentication, it stores the returned tokens in the `tokens` variable.
-    - It then outputs a success message '✅ Logged in successfully.' to the console using `click.echo()`.
+    - The function calls `auth.authenticate()` to perform user authentication and retrieve tokens.
+    - It then uses `click.echo()` to print a success message to the console.
 - **Output**: The function does not return any value; it outputs a success message to the console.
-- **Functions called**:
-    - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](auth0_device_flow.py.md#Auth0DeviceAuthenticatorauthenticate)
+- **Functions Called**:
+    - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](<auth0_device_flow.py.md#Auth0DeviceAuthenticatorauthenticate>)
 
 
 ---
@@ -76,14 +75,14 @@ The `whoami` function retrieves and displays the current user's information usin
     - Authenticate the user and retrieve tokens using `auth.authenticate()`.
     - Extract the `access_token` from the retrieved tokens.
     - Set up the authorization headers using the `access_token`.
-    - Construct the user information URL using the `DOMAIN` constant.
-    - Create an HTTP client using `httpx.Client()` and send a GET request to the user information URL with the authorization headers.
+    - Construct the user info URL using the predefined `DOMAIN`.
+    - Create an HTTP client using `httpx.Client()` and send a GET request to the user info URL with the authorization headers.
     - Raise an exception if the HTTP response indicates an error using `resp.raise_for_status()`.
     - Parse the JSON response to get the user information.
-    - Display the user information using `click.echo()`.
+    - Display the message '👤 You are logged in as:' followed by the user information using `click.echo()`.
 - **Output**: The function outputs the current user's information to the console.
-- **Functions called**:
-    - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](auth0_device_flow.py.md#Auth0DeviceAuthenticatorauthenticate)
+- **Functions Called**:
+    - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.authenticate`](<auth0_device_flow.py.md#Auth0DeviceAuthenticatorauthenticate>)
 
 
 ---
@@ -94,9 +93,9 @@ The `logout` function clears the authentication cache and notifies the user that
 - **Control Flow**:
     - The function calls `auth.clear_cache()` to clear any stored authentication data.
     - It then uses `click.echo()` to print a message indicating the user has been logged out.
-- **Output**: The function outputs a message to the console stating '👋 Logged out.'.
-- **Functions called**:
-    - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.clear_cache`](auth0_device_flow.py.md#Auth0DeviceAuthenticatorclear_cache)
+- **Output**: The function does not return any value; it outputs a message to the console.
+- **Functions Called**:
+    - [`python-backend/dev_stack/src/auth/auth0_device_flow.Auth0DeviceAuthenticator.clear_cache`](<auth0_device_flow.py.md#Auth0DeviceAuthenticatorclear_cache>)
 
 
 

@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_js_ts.py` file defines a template for inspecting and categorizing large JavaScript and TypeScript source code, including sections for imports, global variables, classes, interfaces, types, and functions.
+The `source_code_large_js_ts.py` file defines a template for inspecting and structuring JavaScript and TypeScript source code, focusing on elements like imports, global variables, classes, interfaces, types, and functions.
 
 # Purpose
-This Python code is a configuration file that defines a template for analyzing and documenting JavaScript and TypeScript source code. It imports various components from utility modules that specialize in language-specific analysis, particularly for JavaScript and TypeScript. The primary purpose of this file is to set up a structured template, `SOURCE_CODE_LARGE_TEMPLATE_JS_TS`, which outlines how different elements of JavaScript and TypeScript code—such as imports, global variables, classes, interfaces, types, and functions—should be processed and documented. Each element in the template is associated with specific functions that perform static analysis and leverage language models to extract and organize information about the code.
+This Python code file is designed to facilitate the structured analysis and documentation of JavaScript and TypeScript source code. It imports various components and utilities from shared and specialized modules, indicating its role as a library file intended for use in a larger system. The primary functionality revolves around defining templates and instructions for generating structured prompts and extracting information from JavaScript and TypeScript code. The file defines a template, `SOURCE_CODE_LARGE_TEMPLATE_JS_TS`, which outlines a series of steps to document different aspects of the source code, such as imports, global variables, classes, interfaces, types, and functions. Each step involves using static analysis and language model (LLM) outputs to gather and format the necessary information.
 
-The file is not a standalone script but rather a part of a larger system, likely intended to be imported and used by other components that handle code analysis and documentation generation. It defines a series of tuples, each representing a section of the documentation, with specific prompts and processing functions. These sections are designed to extract and present detailed information about the structure and components of JavaScript and TypeScript codebases, making it a specialized tool for developers or systems that need to generate comprehensive documentation for these languages.
+The code is organized into a collection of components that work together to provide a comprehensive analysis of JavaScript and TypeScript codebases. It leverages specialized collections and prompts to extract and format data, ensuring that the documentation generated is both detailed and structured. The use of components like `Prompt` and `Component` suggests a modular approach to building documentation, allowing for flexibility and reuse across different contexts. This file does not define public APIs or external interfaces directly but rather serves as an internal utility to support the documentation process within a larger system.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.ir_common.ListData`
 - `utils.lang_specialization.js_ts.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.js_ts.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JS_TS`
@@ -34,8 +39,8 @@ The file is not a standalone script but rather a part of a larger system, likely
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_JS_TS` is a list of tuples, each representing a section of a template for analyzing JavaScript and TypeScript source code. Each tuple contains a section identifier, a section title, and functions or lambdas for processing raw symbol collections and generating data from static analysis or language model outputs.
-- **Use**: This variable is used to define a structured template for processing and analyzing different components of JavaScript and TypeScript code, such as imports, global variables, classes, interfaces, types, and functions.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_JS_TS` is a list of tuples, each representing a different section of a JavaScript/TypeScript code analysis template. Each tuple contains a section identifier, a section title, and a combination of static analysis and LLM-based methods to extract and process code elements such as imports, global variables, classes, interfaces, types, and functions.
+- **Use**: This variable is used to define a structured template for analyzing and documenting various components of JavaScript/TypeScript source code.
 
 
 

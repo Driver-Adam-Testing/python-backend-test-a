@@ -3,23 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `app` folder in the `python-backend` codebase is a comprehensive directory that organizes the setup and functionality of a FastAPI application, including API routing, authentication, core configurations, Git provider integrations, database operations, schema definitions, service implementations, utility functions, and testing infrastructure.
+API configurations, authentication, core settings, Git provider management, database operations, Pydantic schemas, service implementations, utility functions, and testing infrastructure, all primarily built around FastAPI.
 
 ## Folders
-- **[api](api/README.md)**: The `api` folder in the `python-backend` codebase contains configuration and implementation files for setting up FastAPI routes, authentication, logging middleware, and database sessions, along with a `routes` subfolder for organizing API endpoints.
-- **[auth](auth/README.md)**: The `auth` folder in the `python-backend` codebase contains middleware and model definitions for handling API key validation, JWT verification, and permission management using Auth0 in a FastAPI application.
-- **[core](core/README.md)**: The `core` folder in the `python-backend` codebase contains essential configuration and logging setup files, including `config.py` for application settings and `logger.py` for logging, with an empty `__init__.py` file.
-- **[git_providers](git_providers/README.md)**: The `git_providers` folder in the `python-backend` codebase contains various subfolders that manage GitLab integration, including configuration, OAuth strategy, provider management, resource interaction, and utility functions.
-- **[repositories](repositories/README.md)**: The `repositories` folder in the `python-backend` codebase contains Python files that define repository classes and functions for handling database operations related to generic data management and specific Git provider and GitHub app installations.
-- **[schemas](schemas/README.md)**: The `schemas` folder in the `python-backend` codebase contains various Pydantic model definitions and related unit tests for handling user roles, codebase analysis, content operations, document sources, Git provider entities, secret management, tagging, uploads, and user responses.
-- **[services](services/README.md)**: The `services` folder in the `python-backend` codebase contains various service implementations and their corresponding unit tests, including functionalities for interacting with Auth0, managing codebase analysis, handling content and tags, managing GitLab provider applications, and facilitating file uploads, along with utility functions in a separate `utils` folder.
-- **[tests](tests/README.md)**: The `tests` folder in the `python-backend` codebase contains unit tests for repository CRUD operations and utility functions for authentication, with subfolders for `repositories` and `utils`.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains utility modules for interacting with AWS S3, AWS Secrets Manager, and GitHub's API.
+- **[api](api/README.md)**: Configurations and definitions for API routes, authentication, logging middleware, and session management using FastAPI.
+- **[auth](auth/README.md)**: Middleware and model definitions for API key validation, JWT verification, and permission management using Auth0.
+- **[core](core/README.md)**: Essential configuration and logging setup files, including a Pydantic-based settings manager and a deprecated logger configuration.
+- **[git_providers](git_providers/README.md)**: Various components for managing GitLab integration, including configuration, OAuth, providers, API, and utilities.
+- **[repositories](repositories/README.md)**: Repository classes and functions for managing database operations related to SQLModel models and Git apps.
+- **[schemas](schemas/README.md)**: Various Pydantic models and related unit tests for handling user roles, codebase analysis, content operations, document sources, Git provider configurations, secret management, tagging, uploads, and user responses.
+- **[services](services/README.md)**: Service implementations and unit tests for Auth0, codebase analysis, content, tags, GitLab, uploads, and utility functions.
+- **[tests](tests/README.md)**: Unit tests for repository CRUD operations and utility functions for authentication token retrieval.
+- **[utils](utils/README.md)**: Utility modules for AWS S3, AWS Secrets Manager, and GitHub API interactions, including presigned URLs and secret management.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[backend_pre_start.py](backend_pre_start.py.md)**: The `backend_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection and optionally configuring database extensions.
-- **[conftest.py](conftest.py.md)**: The `conftest.py` file in the `python-backend` codebase provides pytest fixtures for database session management and mock user authentication for testing purposes.
+- **[conftest.py](conftest.py.md)**: The `conftest.py` file in the `python-backend` codebase defines pytest fixtures for database session management and mock user tokens for testing purposes.
 - **[initial_data.py](initial_data.py.md)**: The `initial_data.py` file initializes the database with initial data when the environment is set to "local" and logs the process.
 - **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase sets up a FastAPI application with logging, Sentry integration, CORS, middleware, and routers for handling unprotected, JWT-protected, and API-key-protected routes.
 - **[tests_pre_start.py](tests/README.md_pre_start.py)**: The `tests_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection using a retry mechanism to ensure the database is awake before proceeding.

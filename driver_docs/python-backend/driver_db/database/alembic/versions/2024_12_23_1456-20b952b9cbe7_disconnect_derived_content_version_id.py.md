@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_12_23_1456-20b952b9cbe7_disconnect_derived_content_version_id.py` file contains an Alembic migration script that updates the `version_id` field in the `derived_contents` table and removes certain foreign key constraints and indexes.
+The `2024_12_23_1456-20b952b9cbe7_disconnect_derived_content_version_id.py` file contains an Alembic migration script that modifies the `derived_contents` table by dropping certain indexes and constraints, updating `version_id` values, and providing a downgrade path to revert these changes.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify the database schema and data for a specific application. The script is part of a version control system for database schemas, which is used to manage changes to the database structure over time. The primary purpose of this script is to disconnect the `version_id` field from its current constraints and indices in the `derived_contents` and `inspection_versions` tables, and to update the `version_id` field in the `derived_contents` table based on certain conditions. The [`upgrade`](#upgrade) function removes specific indices and foreign key constraints, and updates the `version_id` field in the `derived_contents` table using SQL `UPDATE` statements. These updates are conditional, ensuring that the `version_id` is set to `codebase_id`, `source_content_id`, or `id` when it is currently `NULL`.
+This Python file is an Alembic migration script designed to modify the database schema and data for a specific application. The script is part of a version control system for database schemas, which is used to manage changes to the database structure over time. The primary purpose of this script is to disconnect the `version_id` field from its current constraints and indices in the `derived_contents` and `inspection_versions` tables, update the `version_id` field based on certain conditions, and then provide a mechanism to revert these changes if necessary.
 
-The [`downgrade`](#downgrade) function reverses these changes, restoring the original state of the database schema. It sets the `version_id` field back to `NULL` where it was previously updated, and re-establishes the foreign key constraints and indices that were removed during the upgrade. This script is a critical component of the database migration process, ensuring that changes can be applied and reverted safely and consistently. It does not define public APIs or external interfaces, but rather serves as an internal tool for managing database schema evolution.
+The [`upgrade`](<#upgrade>) function removes specific indices and foreign key constraints related to the `version_id` field, and updates the `version_id` field in the `derived_contents` table based on various conditions. This involves setting the `version_id` to values from other fields like `codebase_id`, `source_content_id`, or `id` when it is currently `NULL`. The [`downgrade`](<#downgrade>) function reverses these changes by setting the `version_id` back to `NULL` where it was updated, and re-establishes the original indices and foreign key constraints. This script is a critical component of database schema management, ensuring that changes can be applied and rolled back safely, maintaining the integrity and consistency of the database.
 # Imports and Dependencies
 
 ---
@@ -21,12 +21,12 @@ The [`downgrade`](#downgrade) function reverses these changes, restoring the ori
 ### revision
 - **Type**: `string`
 - **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
+- **Use**: This variable is used by Alembic to identify the current migration script in the version control system for database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
+- **Type**: `str`
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
 - **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
 
@@ -34,15 +34,15 @@ The [`downgrade`](#downgrade) function reverses these changes, restoring the ori
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script, which is used for database schema migrations.
+- **Use**: `branch_labels` is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies on other migrations, but in this case, it indicates that there are no dependencies for this migration script.
-- **Use**: This variable is used to indicate that the current Alembic migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts.
+- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -52,19 +52,19 @@ The [`downgrade`](#downgrade) function reverses these changes, restoring the ori
 The `upgrade` function modifies the database schema and updates data in the `derived_contents` table by dropping certain indexes and constraints, and setting `version_id` based on specific conditions.
 - **Inputs**: None
 - **Control Flow**:
-    - Drop the index `ix_derived_contents_version_id` from the `derived_contents` table.
-    - Drop the foreign key constraint `derived_contents_version_id_fkey` from the `derived_contents` table.
-    - Drop the index `ix_inspection_versions_previous_version_id` from the `inspection_versions` table.
-    - Drop the foreign key constraint `inspection_versions_previous_version_id_fkey` from the `inspection_versions` table.
-    - Execute an SQL update statement to set `version_id` to `codebase_id` in `derived_contents` where `version_id` is NULL and `content_kind` is not in a specified list of values.
-    - Execute an SQL update statement to set `version_id` to `source_content_id` in `derived_contents` where `version_id` is NULL.
-    - Execute an SQL update statement to set `version_id` to `id` in `derived_contents` where `version_id` is NULL.
+    - Drop the index 'ix_derived_contents_version_id' from the 'derived_contents' table.
+    - Drop the foreign key constraint 'derived_contents_version_id_fkey' from the 'derived_contents' table.
+    - Drop the index 'ix_inspection_versions_previous_version_id' from the 'inspection_versions' table.
+    - Drop the foreign key constraint 'inspection_versions_previous_version_id_fkey' from the 'inspection_versions' table.
+    - Execute an SQL update to set 'version_id' to 'codebase_id' in 'derived_contents' where 'version_id' is NULL and 'content_kind' is not in a specified list of values.
+    - Execute an SQL update to set 'version_id' to 'source_content_id' in 'derived_contents' where 'version_id' is NULL.
+    - Execute an SQL update to set 'version_id' to 'id' in 'derived_contents' where 'version_id' is NULL.
 - **Output**: The function does not return any value; it performs database schema modifications and data updates.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1456-20b952b9cbe7_disconnect_derived_content_version_id.downgrade}} -->
-The `downgrade` function reverts database schema changes by setting certain `version_id` fields to NULL and recreating foreign keys and indexes.
+The `downgrade` function reverts database schema changes by setting `version_id` to NULL in `derived_contents` and recreating foreign keys and indexes.
 - **Inputs**: None
 - **Control Flow**:
     - Execute SQL command to set `version_id` to NULL where it matches `codebase_id` in `derived_contents`.

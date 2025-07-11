@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_code.txt` file provides instructions for summarizing a software file in a single sentence, including an example of how to do so.
+The `single_sentence_from_code.txt` file outlines guidelines for writing concise, single-sentence descriptions of software files, emphasizing clarity and brevity.
 
 # Purpose
-The `complex_num` file provides an implementation of complex numbers, including the ability to add and multiply them.
+The provided text outlines a task for a software engineering expert to create concise, single-sentence descriptions of software files, focusing on summarizing the contents and purpose without adding extraneous information. The example given demonstrates how to describe a Python class that implements complex numbers, highlighting its ability to perform addition and multiplication operations. The guidance emphasizes clarity and brevity, advising against unnecessary leading verbs unless they add meaningful context, such as indicating a specific function or purpose of the file.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

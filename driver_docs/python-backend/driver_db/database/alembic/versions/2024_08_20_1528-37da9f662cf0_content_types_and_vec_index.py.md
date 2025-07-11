@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_08_20_1528-37da9f662cf0_content_types_and_vec_index.py` file is an Alembic migration script that adds new content types to the `derived_content_types` table if they do not already exist and provides a downgrade function to remove them.
+The `2024_08_20_1528-37da9f662cf0_content_types_and_vec_index.py` file contains an Alembic migration script that adds new content types to the `derived_content_types` table if they do not already exist and provides a downgrade function to remove them.
 
 # Purpose
-This Python file is an Alembic migration script designed to manage changes to a database schema, specifically focusing on the `derived_content_types` table. The script defines two primary functions, [`upgrade`](#upgrade) and [`downgrade`](#downgrade), which are used to apply and revert changes to the database, respectively. The [`upgrade`](#upgrade) function checks for the existence of specific content types in the `derived_content_types` table and inserts new types if they are not already present. Conversely, the [`downgrade`](#downgrade) function removes these content types from the table, effectively reversing the changes made by the [`upgrade`](#upgrade) function. This script is part of a version-controlled database migration process, ensuring that the database schema can be consistently updated and rolled back as needed.
+This Python file is an Alembic migration script designed to manage database schema changes related to content types in a SQL database. The script specifically handles the addition and removal of certain content types within a table named `derived_content_types`. The primary functionality is encapsulated in two functions: `upgrade()` and `downgrade()`. The `upgrade()` function inserts new content types into the database if they do not already exist, ensuring that the database schema is updated with the latest content types. Conversely, the `downgrade()` function removes these content types, effectively rolling back the changes made by the `upgrade()` function. This script is part of a version-controlled database migration process, as indicated by the use of Alembic's revision identifiers, which help track and manage changes over time.
 
-The script uses SQLAlchemy and Alembic, which are popular tools for database interaction and migration in Python applications. The `revision` and `down_revision` identifiers are used by Alembic to track the order of migrations, ensuring that they are applied in the correct sequence. The list `content_types` defines the specific content types that the migration will manage, indicating a focused scope on handling different types of PDF content summaries and extractions. This script is not intended to be a standalone application but rather a component of a larger system that manages database schema evolution.
+The script is not intended to be a standalone application but rather a component of a larger system that uses Alembic for database migrations. It does not define public APIs or external interfaces beyond the standard Alembic migration functions. The script's primary technical components include SQLAlchemy for database interaction and Alembic's operations module for executing SQL commands. The list of content types defined at the beginning of the script represents the specific data that the migration will manage, highlighting the script's focused purpose on maintaining the integrity and consistency of content type data within the database.
 # Imports and Dependencies
 
 ---
@@ -21,36 +21,36 @@ The script uses SQLAlchemy and Alembic, which are popular tools for database int
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
 - **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database schema changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring that migrations are applied in the correct order.
+- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a link between the current revision and its predecessor, allowing Alembic to track the order of migrations.
+- **Use**: This variable is used by Alembic to determine the parent revision of the current migration script, ensuring proper migration sequencing.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision and down_revision.
-- **Use**: `branch_labels` is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
+- **Use**: This variable is used to define branch labels for the migration script, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations, where it typically indicates that the current migration does not depend on any other migrations to be applied first.
-- **Use**: This variable is used to specify dependencies between database migrations, but in this case, it indicates no dependencies.
+- **Description**: The variable `depends_on` is a global variable set to `None`. It is used in the context of Alembic migrations, where it typically indicates that the current migration does not depend on any other migrations.
+- **Use**: This variable is used to specify dependencies between Alembic migration scripts, but in this case, it indicates no dependencies.
 
 
 ---
 ### content\_types
 - **Type**: `list`
 - **Description**: The `content_types` variable is a list of strings, each representing a different type of content that can be derived from a PDF. These types include visual summaries, text summaries, image summaries, extracted text, and extracted tables.
-- **Use**: This variable is used to determine which content types should be inserted into or deleted from the `derived_content_types` table in the database during the upgrade and downgrade operations.
+- **Use**: This variable is used to determine which content types need to be inserted into or deleted from the `derived_content_types` table in the database during the upgrade and downgrade operations.
 
 
 # Functions
@@ -62,9 +62,9 @@ The `upgrade` function adds new content types to the `derived_content_types` tab
 - **Control Flow**:
     - Execute a SQL query to retrieve existing type names from the `derived_content_types` table.
     - Store the existing type names in a set for quick lookup.
-    - Determine which content types from the predefined `content_types` list are not present in the existing types set.
-    - If there are new types, construct an SQL `INSERT` statement to add these new types to the `derived_content_types` table.
-    - Execute the constructed SQL `INSERT` statement to update the database.
+    - Identify new content types by comparing the predefined `content_types` list with the existing types.
+    - If there are new types, construct an SQL `INSERT` statement to add them to the table.
+    - Execute the `INSERT` statement to update the database.
 - **Output**: The function does not return any value; it performs a database update operation.
 
 
@@ -73,10 +73,10 @@ The `upgrade` function adds new content types to the `derived_content_types` tab
 The `downgrade` function removes specific content types from the `derived_content_types` table in the database.
 - **Inputs**: None
 - **Control Flow**:
-    - Constructs a comma-separated string of content type names from the `content_types` list.
-    - Forms a SQL DELETE query to remove entries from the `derived_content_types` table where the `type_name` matches any of the specified content types.
-    - Establishes a database connection using `op.get_bind()`.
-    - Executes the DELETE query using the established connection.
+    - A comma-separated string of content types is created from the `content_types` list.
+    - A SQL DELETE query is constructed to remove entries from the `derived_content_types` table where the `type_name` matches any of the specified content types.
+    - A database connection is obtained using `op.get_bind()`.
+    - The DELETE query is executed using the database connection.
 - **Output**: The function does not return any value; it performs a database operation to delete specific rows.
 
 

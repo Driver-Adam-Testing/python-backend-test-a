@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_12_11_1554-3605f4802da1_add_usage_subscription_tables.py` file in the `python-backend` codebase defines an Alembic migration script to create a `subscription` table with various columns and indexes, including constraints for unique active subscriptions per organization.
+The `2024_12_11_1554-3605f4802da1_add_usage_subscription_tables.py` file is an Alembic migration script that adds a `subscription` table with various columns and indexes to the database, and defines the logic for upgrading and downgrading this schema change.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding a new table called "subscription" to track usage subscriptions. The script is part of a version-controlled database migration system, as indicated by the use of Alembic, a popular database migration tool for SQLAlchemy. The primary function of this script is to define the structure of the "subscription" table, which includes columns for storing subscription details such as `id`, `organization_id`, `plan_type`, `status`, `billing_frequency`, `created_at`, and `updated_at`. The script also creates several indexes to optimize queries, including a unique index to ensure that each organization can have only one active subscription at a time.
+This Python file is an Alembic migration script designed to modify a database schema by adding a new table called "subscription" to track usage subscriptions. The script defines an [`upgrade`](<#upgrade>) function that creates the "subscription" table with several columns, including `id`, `organization_id`, `plan_type`, `status`, `billing_frequency`, `created_at`, and `updated_at`. The `plan_type`, `status`, and `billing_frequency` columns use enumerated types to restrict their values to predefined sets, ensuring data consistency. Additionally, the script creates indexes on the `organization_id` and `plan_type` columns to optimize query performance and enforces a unique constraint on active subscriptions per organization, ensuring that each organization can have only one active subscription at a time.
 
-The script contains two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function is responsible for applying the changes to the database, such as creating the "subscription" table and its associated indexes. Conversely, the `downgrade()` function is designed to reverse these changes, removing the table and indexes, and dropping the custom enumerated types used for `plan_type`, `status`, and `billing_frequency`. This script is a crucial component of a broader database management system, ensuring that the database schema can be evolved in a controlled and reversible manner.
+The [`downgrade`](<#downgrade>) function is also defined to reverse the changes made by the [`upgrade`](<#upgrade>) function, allowing for the migration to be rolled back if necessary. This function drops the "subscription" table, its associated indexes, and the enumerated types used in the table. This script is a part of a broader database migration process, typically used in applications that require version-controlled schema changes. It does not define public APIs or external interfaces but serves as an internal tool for managing database schema evolution in a structured and reversible manner.
 # Imports and Dependencies
 
 ---
@@ -22,29 +22,29 @@ The script contains two main functions: `upgrade()` and `downgrade()`. The `upgr
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the specific version of the database schema that this script represents.
-- **Use**: This variable is used by Alembic to identify and apply the correct database migration when upgrading or downgrading the database schema.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
+- **Use**: This variable is used by Alembic to identify the specific migration script when applying or rolling back database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current migration and the one that immediately precedes it, allowing Alembic to maintain a linear history of database changes.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Type**: `string`
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current migration and the one that immediately precedes it, ensuring a proper sequence of database changes.
+- **Use**: This variable is used by Alembic to determine the order of migrations and to apply them in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for database schema revisions.
-- **Use**: This variable is used to define branch labels for the Alembic migration, but is currently not set to any specific value.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision IDs and dependencies.
+- **Use**: This variable is used to define branch labels for the migration, but is currently not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
+- **Use**: This variable is used to specify that this migration does not depend on any other migrations.
 
 
 # Functions
@@ -54,25 +54,26 @@ The script contains two main functions: `upgrade()` and `downgrade()`. The `upgr
 The `upgrade` function creates a new database table named 'subscription' with specified columns and indexes to manage subscription data.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by creating a new table named 'subscription' with several columns, including 'id', 'organization_id', 'plan_type', 'status', 'billing_frequency', 'created_at', and 'updated_at'.
-    - Each column is defined with specific data types and constraints, such as UUID for 'id', AutoString for 'organization_id', and Enums for 'plan_type', 'status', and 'billing_frequency'.
-    - The 'created_at' and 'updated_at' columns are set to default to the current timestamp using `server_default=sa.text('now()')`.
-    - A primary key constraint is added to the 'id' column.
-    - The function then creates three indexes: one on 'organization_id', one on 'plan_type', and a unique index on 'organization_id' with a condition that 'status' must be 'ACTIVE'.
+    - The function begins by creating a new table named 'subscription' using the `op.create_table` method.
+    - Several columns are defined for the table, including 'id', 'organization_id', 'plan_type', 'status', 'billing_frequency', 'created_at', and 'updated_at'.
+    - The 'id' column is set as the primary key of the table.
+    - The 'plan_type', 'status', and 'billing_frequency' columns use enumerated types to restrict their values to predefined sets.
+    - The 'created_at' and 'updated_at' columns are set to automatically use the current timestamp as their default value.
+    - After defining the table, the function creates three indexes on the 'subscription' table using the `op.create_index` method.
+    - The first index is on the 'organization_id' column, the second is on the 'plan_type' column, and the third is a unique index on the 'organization_id' column with a condition that the 'status' must be 'ACTIVE'.
 - **Output**: The function does not return any value; it performs database schema modifications.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_11_1554-3605f4802da1_add_usage_subscription_tables.downgrade}} -->
-The `downgrade` function reverses the database schema changes made by the `upgrade` function, specifically by dropping the `subscription` table, its associated indexes, and related PostgreSQL types.
+The `downgrade` function reverses the database schema changes made by the `upgrade` function, specifically by dropping the `subscription` table, its associated indexes, and the custom PostgreSQL types used in the table.
 - **Inputs**: None
 - **Control Flow**:
     - The function begins by dropping the index 'unique_active_subscription_per_org' from the 'subscription' table, which is conditioned on the 'status' being 'ACTIVE'.
-    - It then drops the index on the 'plan_type' column of the 'subscription' table.
-    - Next, it drops the index on the 'organization_id' column of the 'subscription' table.
-    - The 'subscription' table itself is then dropped from the database.
-    - Finally, the function executes SQL commands to drop the PostgreSQL types 'plantype', 'subscriptionstatus', and 'billingfrequency' if they exist.
-- **Output**: The function does not return any value; it performs schema changes on the database.
+    - It then drops two other indexes: 'ix_subscription_plan_type' and 'ix_subscription_organization_id' from the 'subscription' table.
+    - The 'subscription' table itself is dropped from the database.
+    - Finally, the function executes SQL commands to drop the custom PostgreSQL types 'plantype', 'subscriptionstatus', and 'billingfrequency' if they exist.
+- **Output**: The function does not return any value; it performs database schema modifications as a side effect.
 
 
 

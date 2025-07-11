@@ -6,9 +6,9 @@
 The `decorators.py` file in the `python-backend` codebase provides several decorators for enhancing function behavior, including caching with expiration, suppressing logging, and retrying with exponential backoff for both synchronous and asynchronous functions.
 
 # Purpose
-This Python source code file defines a set of utility decorators aimed at enhancing function behavior with caching, logging suppression, and retry mechanisms. The [`expiring_cache`](#expiring_cache) decorator provides a thread-safe caching mechanism that stores the result of a function call for a specified duration, using a lock to ensure thread safety. It includes a method to clear the cache manually. The [`suppress_logging`](#suppress_logging) decorator temporarily suppresses logging messages for the duration of a function call, restoring the original logging level afterward. This is useful for reducing log noise during specific operations.
+This Python source code file defines a set of utility decorators aimed at enhancing function behavior with caching, logging suppression, and retry mechanisms. The [`expiring_cache`](<#expiring_cache>) decorator provides a thread-safe caching mechanism that stores the result of a function call for a specified duration, using a lock to ensure thread safety. It includes a method to clear the cache manually. The [`suppress_logging`](<#suppress_logging>) decorator temporarily suppresses logging messages for the duration of a function call, restoring the original logging level afterward. This is useful for reducing log noise during specific operations.
 
-Additionally, the file includes two retry decorators: [`async_retry_with_exponential_backoff`](#async_retry_with_exponential_backoff) and [`retry_with_exponential_backoff`](#retry_with_exponential_backoff). These decorators implement retry logic with exponential backoff, allowing functions to be retried multiple times in the event of specified exceptions. The retry mechanism includes optional jitter to randomize delay intervals, reducing the likelihood of collision in distributed systems. The asynchronous version is designed for use with asynchronous functions, while the synchronous version is for regular functions. These decorators are particularly useful for handling transient errors in network or I/O operations, ensuring robustness in applications.
+Additionally, the file includes two retry decorators, [`async_retry_with_exponential_backoff`](<#async_retry_with_exponential_backoff>) and [`retry_with_exponential_backoff`](<#retry_with_exponential_backoff>), which implement retry logic with exponential backoff for asynchronous and synchronous functions, respectively. These decorators attempt to re-execute a function upon encountering specified exceptions, increasing the delay between retries exponentially, with optional jitter to randomize the delay slightly. This approach is beneficial for handling transient errors in network or I/O operations. Overall, the file serves as a library of decorators that can be imported and used to enhance the robustness and efficiency of function calls in Python applications.
 # Imports and Dependencies
 
 ---
@@ -35,7 +35,7 @@ Additionally, the file includes two retry decorators: [`async_retry_with_exponen
 ---
 ### logger
 - **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the current module's name as its logger name, which helps in identifying the source of log messages.
+- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the name of the current module (`__name__`) as its logger name, which helps in identifying the source of log messages.
 - **Use**: This variable is used to log informational messages, particularly when cache expiration occurs in the `expiring_cache` decorator.
 
 
@@ -50,12 +50,12 @@ The `expiring_cache` function is a decorator that caches the result of a functio
     - Defines a decorator function that takes a function `func` as an argument.
     - Initializes a cache dictionary with keys 'value' and 'expires_at', and a lock for thread safety.
     - Defines a `wrapped` function that checks if the cache has expired by comparing the current time with `expires_at`.
-    - If the cache has expired, logs a message, calls the original function `func`, updates the cache with the new value and sets a new expiration time.
+    - If the cache has expired, logs a message, calls the original function to update the cache value, and sets a new expiration time.
     - Returns the cached value if it is still valid.
     - Defines a `clear_cache` function to manually clear the cache by resetting its values.
     - Attaches the `clear_cache` function to the `wrapped` function as an attribute.
     - Returns the `wrapped` function from the decorator.
-- **Output**: Returns a decorator function that wraps the original function with caching logic, including a method to clear the cache.
+- **Output**: Returns a decorator function that, when applied to another function, caches its result for a specified duration and provides a method to clear the cache.
 
 
 ---
@@ -67,10 +67,10 @@ The `suppress_logging` function is a decorator that temporarily suppresses loggi
 - **Control Flow**:
     - Retrieve the root logger using `logging.getLogger()`.
     - Store the current logging level using `logger.getEffectiveLevel()`.
-    - Set the logging level to CRITICAL to suppress lower-level logging messages.
+    - Set the logging level to `logging.CRITICAL` to suppress logging messages.
     - Execute the wrapped function `func` with any provided arguments and keyword arguments.
     - After the function execution, restore the original logging level regardless of whether the function execution was successful or raised an exception.
-- **Output**: The output is a callable that behaves like the input function but with logging messages suppressed during its execution.
+- **Output**: A callable function that, when executed, runs the original function with logging messages suppressed.
 
 
 ---
@@ -87,38 +87,35 @@ The `async_retry_with_exponential_backoff` function is a decorator that retries 
     - Within `retry_decorator`, define an asynchronous `wrapper` function that wraps the original function `func`.
     - Initialize `num_retries` to 0 and `delay` to `initial_delay`.
     - Enter a `while True` loop to repeatedly attempt to execute `func`.
-    - Use a `try` block to attempt to `await` the execution of `func` with provided arguments.
-    - If `func` executes successfully, return its result immediately.
-    - If an exception specified in `errors` is raised, log the exception and increment `num_retries`.
+    - Use a `try` block to attempt to `await` the execution of `func` with provided `args` and `kwargs`.
+    - If `func` raises an exception specified in `errors`, log the exception and increment `num_retries`.
     - Check if `num_retries` exceeds `max_retries`; if so, raise an exception indicating the maximum retries have been exceeded.
-    - Calculate the next delay using exponential backoff and optional jitter, then log the retry attempt.
+    - Calculate the new `delay` using exponential backoff and optional jitter, then log the retry attempt.
     - Use `time.sleep(delay)` to wait before the next retry attempt.
     - If an exception not specified in `errors` is raised, re-raise it immediately.
-- **Output**: Returns a decorator function that can be applied to an asynchronous function to enable retrying with exponential backoff.
+- **Output**: Returns a decorator function `retry_decorator` that can be applied to an asynchronous function to enable retry logic with exponential backoff.
 
 
 ---
 ### retry\_with\_exponential\_backoff<!-- {{#callable:python-backend/packages/shared/shared/utils/decorators.retry_with_exponential_backoff}} -->
-The `retry_with_exponential_backoff` function is a decorator that retries a function call with exponential backoff upon encountering specified exceptions.
+The `retry_with_exponential_backoff` function is a decorator that retries a given function with exponential backoff upon encountering specified exceptions.
 - **Inputs**:
     - `initial_delay`: The initial delay in seconds before the first retry attempt.
     - `exponential_base`: The base of the exponential function used to calculate the delay between retries.
-    - `jitter`: A boolean indicating whether to add randomness to the delay to prevent thundering herd problems.
+    - `jitter`: A boolean indicating whether to add a random jitter to the delay to prevent thundering herd problems.
     - `max_retries`: The maximum number of retry attempts before giving up.
     - `errors`: A tuple of exception types that should trigger a retry.
 - **Control Flow**:
     - Define a nested `retry_decorator` function that takes a function `func` as an argument.
     - Within `retry_decorator`, define a `wrapper` function that executes the retry logic.
     - Initialize `num_retries` to 0 and `delay` to `initial_delay`.
-    - Enter a `while True` loop to repeatedly attempt to call `func`.
-    - Use a `try` block to attempt to call `func` with the provided arguments and return its result if successful.
+    - Enter a `while True` loop to continuously attempt to execute `func`.
+    - Use a `try` block to attempt to execute `func` with the provided arguments and return its result if successful.
     - Catch exceptions specified in `errors` and log the exception details.
-    - Increment `num_retries` and check if it exceeds `max_retries`; if so, raise an exception indicating the retry limit was exceeded.
-    - Calculate the new delay using exponential backoff and optional jitter, then log the retry attempt details.
-    - Pause execution for the calculated delay using `time.sleep(delay)`.
+    - Increment `num_retries` and check if it exceeds `max_retries`; if so, raise an exception indicating the maximum retries have been exceeded.
+    - Calculate the new `delay` using the exponential backoff formula, optionally adding jitter.
+    - Log the retry attempt details and sleep for the calculated `delay` before retrying.
     - Catch any other exceptions not specified in `errors` and re-raise them.
-    - Return the `wrapper` function from `retry_decorator`.
-    - Return the `retry_decorator` function from `retry_with_exponential_backoff`.
 - **Output**: A decorator function that can be applied to other functions to enable retrying with exponential backoff.
 
 

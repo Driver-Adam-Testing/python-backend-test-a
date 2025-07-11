@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase configures the project using Poetry, specifying dependencies for AWS CDK, Python version, and development tools like pytest and mypy, while also setting up a strict mypy configuration.
+Configuration for a Python project using Poetry, specifying dependencies, development tools, and build settings.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. This file defines the metadata and dependencies for a Python project named "python-backend-cdk" with version "0.1.0". It specifies the project's dependencies, including AWS CDK libraries and other Python packages, ensuring compatibility with Python version 3.12. Additionally, it outlines development dependencies such as `pytest` and `mypy` for testing and type checking, respectively. The `[build-system]` section indicates that Poetry is used as the build backend, while the `[tool.mypy]` section configures the `mypy` static type checker to operate in strict mode, excluding certain directories from type checking.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project. It specifies the project metadata, including the project name `python-backend-cdk`, version `0.1.0`, and author information. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, such as `aws-cdk-lib`, `constructs`, and `pydantic`, along with their version constraints. The `[tool.poetry.group.dev.dependencies]` section defines development dependencies like `pytest`, `mypy`, and `pre-commit`, which are used for testing and code quality checks. The `[build-system]` section indicates that Poetry is the build system, and the `[tool.mypy]` section configures the `mypy` static type checker with strict type checking enabled and excludes directories like `venv` and `alembic` from type checking.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

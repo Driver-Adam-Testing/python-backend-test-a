@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `migrated_studio_endpoints.py` file defines several FastAPI endpoints for handling chat requests, retrieving primary assets, contents, codebase trees, and document sets within the `python-backend` codebase.
+The `migrated_studio_endpoints.py` file defines several API endpoints for handling chat requests, retrieving primary assets, contents, codebase trees, and document sets within the `python-backend` codebase.
 
 # Purpose
-This Python file defines a FastAPI router that provides a set of API endpoints for interacting with various resources such as chat, primary assets, contents, codebase trees, and document sets. The file imports necessary components from different modules, including authentication, session management, and utility functions, to facilitate these interactions. The endpoints are designed to handle HTTP requests and return structured responses, often in the form of JSON objects or streaming responses. The endpoints include a POST endpoint for creating a streaming chat session and several GET endpoints for retrieving primary assets, contents, codebase trees, and document sets. Each endpoint is associated with a specific response model, ensuring that the data returned is consistent and well-structured.
+This Python file defines a set of API endpoints using the FastAPI framework, which are part of a larger application. The primary purpose of this file is to handle HTTP requests related to chat interactions, primary assets, content listings, codebase trees, and document sets. The endpoints are organized under a FastAPI `APIRouter` instance, which facilitates modular routing in the application. Each endpoint is designed to interact with specific components of the application, such as chat pipelines, content management, and codebase structures, providing a structured interface for client applications to access these functionalities.
 
-The file serves as a part of a larger application, likely a backend service, that provides a public API for clients to interact with. The endpoints are designed to be accessed by authenticated users, as indicated by the use of `ApiKeyToken` for user authentication. The use of FastAPI's `APIRouter` allows for modular and organized routing of API requests, making it easier to manage and extend the API as needed. The file is not a standalone script but rather a component of a larger application, intended to be imported and used within the context of a FastAPI application.
+The file imports various modules and classes that are essential for its operation, including authentication tokens, session management, and data schemas. The endpoints utilize these components to process requests and return appropriate responses. For instance, the `/chat` endpoint processes chat requests and streams responses, while the `/primary_assets` and `/contents` endpoints return paginated lists of primary assets and content details, respectively. The `/tree` and `/document_set` endpoints provide structured data about codebase trees and document sets. This file is a crucial part of the application's API layer, offering a well-defined interface for interacting with different aspects of the system's data and operations.
 # Imports and Dependencies
 
 ---
@@ -34,8 +34,8 @@ The file serves as a part of a larger application, likely a backend service, tha
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a collection of API routes that can be included in a FastAPI application. This allows for modular route definitions and helps in organizing the API endpoints.
-- **Use**: The `router` is used to register and manage API endpoints for the application, enabling the definition of HTTP methods and their corresponding handlers.
+- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a set of API routes that can be included in a FastAPI application. This instance allows for the organization and modularization of route definitions, making it easier to manage and maintain the API endpoints.
+- **Use**: The `router` is used to register and manage API endpoints for the application, facilitating the routing of HTTP requests to the appropriate handler functions.
 
 
 # Functions
@@ -45,17 +45,16 @@ The file serves as a part of a larger application, likely a backend service, tha
 The `create_streaming_post_endpoint` function handles POST requests to the '/chat' endpoint, creating a streaming response based on a chat pipeline request.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current session context.
-    - `user`: An instance of `ApiKeyToken` representing the authenticated user making the request.
-    - `payload`: An instance of `ChatHttpRequest` containing the data for the chat request, including user prompt and node IDs.
+    - `session`: An instance of CurrentSession, representing the current user session.
+    - `user`: An instance of ApiKeyToken, representing the authenticated user making the request.
+    - `payload`: An instance of ChatHttpRequest, containing the data sent in the POST request, such as user prompt and node IDs.
 - **Control Flow**:
-    - A [`ChatPipelineRequest`](../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#ChatPipelineRequest) object is instantiated using data from the `payload` and `user` arguments.
-    - The [`ChatPipelineRequest`](../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#ChatPipelineRequest) object is configured with user prompt, node IDs, page node ID, organization ID, user ID, relative paths, and LLM session ID.
-    - A `StreamingResponse` is returned, which streams the output of the `request.stream()` method with a media type of 'text/event-stream'.
-- **Output**: The function returns a `StreamingResponse` object that streams data as a server-sent event.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest`](../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#ChatPipelineRequest)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](../../../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream)
+    - A ChatPipelineRequest object is instantiated using data from the payload and user, including user prompt, node IDs, and session information.
+    - The function returns a StreamingResponse object, which streams the output of the request's stream method with a media type of 'text/event-stream'.
+- **Output**: A StreamingResponse object that streams data as a server-sent event.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/chat.ChatPipelineRequest`](<../../../../../packages/shared/shared/v3/app/pipelines/chat.py.md#ChatPipelineRequest>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream>)
 
 
 ---
@@ -69,10 +68,10 @@ The `get_primary_assets_endpoint` function retrieves a list of primary assets wi
     - `pagination`: An instance of `Pagination` containing pagination parameters for the request.
     - `tag_ids`: An optional string representing tag IDs to filter the primary assets.
 - **Control Flow**:
-    - The function directly calls the [`_list_primary_assets`](../v2/primary_assets.py.md#_list_primary_assets) function, passing all received arguments to it.
+    - The function directly calls the [`_list_primary_assets`](<../v2/primary_assets.py.md#_list_primary_assets>) function, passing all received arguments to it.
 - **Output**: The function returns a `ListWithCount` of `PrimaryAssetDetailRead` objects, representing the primary assets retrieved.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/v2/primary_assets._list_primary_assets`](../v2/primary_assets.py.md#_list_primary_assets)
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/v2/primary_assets._list_primary_assets`](<../v2/primary_assets.py.md#_list_primary_assets>)
 
 
 ---
@@ -80,15 +79,15 @@ The `get_primary_assets_endpoint` function retrieves a list of primary assets wi
 The `get_contents_endpoint` function retrieves a list of content details with pagination support.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `request`: An instance of `Request` representing the incoming HTTP request.
-    - `session`: An instance of `CurrentSession` representing the current session context.
-    - `user`: An instance of `ApiKeyToken` representing the authenticated user making the request.
-    - `pagination`: An instance of `Pagination` containing pagination parameters for the request.
+    - `request`: An instance of FastAPI's Request object, representing the incoming HTTP request.
+    - `session`: An instance of CurrentSession, representing the current database session.
+    - `user`: An instance of ApiKeyToken, representing the authenticated user making the request.
+    - `pagination`: An instance of Pagination, providing pagination parameters for the request.
 - **Control Flow**:
-    - The function directly calls the [`_list_contents`](../v2/contents.py.md#_list_contents) function, passing the `request`, `session`, `user`, and `pagination` arguments to it.
+    - The function directly calls the [`_list_contents`](<../v2/contents.py.md#_list_contents>) function, passing the `request`, `session`, `user`, and `pagination` arguments to it.
 - **Output**: The function returns a `ListWithCount[ContentDetailRead]`, which is a list of content details along with a count of the total number of items.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/v2/contents._list_contents`](../v2/contents.py.md#_list_contents)
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/v2/contents._list_contents`](<../v2/contents.py.md#_list_contents>)
 
 
 ---
@@ -96,20 +95,20 @@ The `get_contents_endpoint` function retrieves a list of content details with pa
 The `get_tree_endpoint` function retrieves and returns a structured representation of a codebase tree for a given organization and version.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `request`: An instance of FastAPI's Request object, representing the incoming HTTP request.
-    - `session`: An instance of CurrentSession, representing the current session context.
-    - `user`: An instance of ApiKeyToken, representing the authenticated user making the request.
-    - `codebaseId`: An optional string representing the ID of the codebase to retrieve the tree for.
-    - `workspaceId`: An optional string representing the ID of the workspace, though it is not used in the function.
-    - `versionId`: An optional string representing the version ID of the codebase to retrieve the tree for.
+    - `request`: An instance of `Request` representing the incoming HTTP request.
+    - `session`: An instance of `CurrentSession` representing the current session context.
+    - `user`: An instance of `ApiKeyToken` representing the authenticated user making the request.
+    - `codebaseId`: An optional string representing the ID of the codebase to retrieve.
+    - `workspaceId`: An optional string representing the ID of the workspace to retrieve.
+    - `versionId`: An optional string representing the version ID of the codebase to retrieve.
 - **Control Flow**:
-    - Call the [`get_codebase_tree`](../legacy/tree.py.md#get_codebase_tree) function with the current session, user's organization ID, and optional version ID to retrieve the codebase tree.
+    - Call the [`get_codebase_tree`](<../legacy/tree.py.md#get_codebase_tree>) function with the current session, organization ID from the user, and the optional version ID to retrieve the codebase tree.
     - Iterate over each node in the retrieved tree.
-    - For each node, construct a dictionary containing its id, name, path, kind, and children.
+    - For each node, create a dictionary containing its ID, name, path, kind, and children.
     - Return a list of these dictionaries representing the codebase tree structure.
-- **Output**: A list of dictionaries, each representing a node in the codebase tree with its id, name, path, kind, and children.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/tree.get_codebase_tree`](../legacy/tree.py.md#get_codebase_tree)
+- **Output**: A list of dictionaries, each representing a node in the codebase tree with its ID, name, path, kind, and children.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/tree.get_codebase_tree`](<../legacy/tree.py.md#get_codebase_tree>)
 
 
 ---
@@ -124,13 +123,12 @@ The `get_document_set_endpoint` function retrieves a document set based on provi
     - `path`: A string representing the path to the document set.
     - `versionId`: A string representing the version ID of the document set.
 - **Control Flow**:
-    - The function calls [`get_document_set`](../legacy/document_set.py.md#get_document_set) with the provided parameters, including a hardcoded `node_kind` value and `fetch_code_content` set to `True`.
-    - The result from [`get_document_set`](../legacy/document_set.py.md#get_document_set) is stored in the `document_set` variable.
-    - The function constructs a dictionary with various attributes from the `document_set` object, such as `source_content_id`, `architecture`, `long`, `short`, etc.
-    - The constructed dictionary is returned as the response.
-- **Output**: A dictionary containing details of the document set, including attributes like `source_content_id`, `architecture`, `long`, `short`, and others.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/document_set.get_document_set`](../legacy/document_set.py.md#get_document_set)
+    - The function calls [`get_document_set`](<../legacy/document_set.py.md#get_document_set>) with the provided parameters and additional hardcoded values to retrieve a document set object.
+    - The function constructs a dictionary from the attributes of the retrieved document set object.
+    - The function returns the constructed dictionary containing details of the document set.
+- **Output**: A dictionary containing details of the document set, including source content ID, architecture, documents, descriptions, code, and application notes.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/document_set.get_document_set`](<../legacy/document_set.py.md#get_document_set>)
 
 
 

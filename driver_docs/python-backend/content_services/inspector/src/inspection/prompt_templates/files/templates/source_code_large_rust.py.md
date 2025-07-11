@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_rust.py` file defines a template for inspecting and analyzing large Rust source code files, focusing on elements such as imports, global variables, macros, traits, data structures, and functions.
+The `source_code_large_rust.py` file defines a template for inspecting and structuring large Rust source code, including prompts for purpose, imports, global variables, macros, traits, data structures, and functions.
 
 # Purpose
-This Python code file is designed to facilitate the analysis and processing of Rust source code by defining a structured template for extracting and organizing various components of Rust code. The file imports several specialized modules from a utility library, which are focused on handling different aspects of Rust code, such as data structures, functions, macros, traits, and variables. The primary purpose of this file is to define a template, `SOURCE_CODE_LARGE_TEMPLATE_RUST`, which outlines a series of steps or checks to be performed on Rust source code. Each step in the template is associated with a specific aspect of the code, such as imports, global variables, macros, traits, data structures, and functions, and utilizes both static analysis and language model (LLM) techniques to gather and process information.
+This Python code file is designed to facilitate the structured analysis and documentation of Rust source code. It imports various components and utilities from shared and utility modules, which are used to define a template for generating structured prompts and analyses of Rust code. The primary purpose of this file is to create a comprehensive framework for extracting and organizing information about Rust code, such as its purpose, imports, global variables, macros, traits, data structures, and functions. This is achieved through a series of tuples that define different sections of the analysis, each associated with specific components and instructions for processing and formatting the information.
 
-The template is structured as a list of tuples, where each tuple represents a specific analysis task. These tasks involve using static analysis methods and LLM-based methods to extract raw symbols and then refine them into more structured collections. This approach allows for a comprehensive examination of Rust code, making it suitable for applications such as code documentation, refactoring, or understanding code dependencies. The file does not define a public API or external interface directly but serves as a configuration or setup file that can be used by other parts of a larger system to perform detailed Rust code analysis.
+The file is structured to be part of a larger system, likely a documentation or code analysis tool, that processes Rust code to produce detailed reports or documentation. It leverages a combination of static analysis and language model (LLM) insights to gather and format information about the Rust codebase. The use of components like `Prompt` and `Component`, along with specific instructions for style and content, indicates that this file is intended to be used as a library or module within a larger application, rather than as a standalone script. The focus on Rust-specific elements, such as traits and macros, highlights its specialization in handling Rust language constructs.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default.default_imports_checker`
 - `utils.lang_specialization.rust.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.rust.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUST`
@@ -33,8 +38,8 @@ The template is structured as a list of tuples, where each tuple represents a sp
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_RUST
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_RUST` is a list of tuples, each representing a section of a Rust source code analysis template. Each tuple contains a condition type, a section header, and functions or methods for analyzing or processing specific aspects of Rust code, such as imports, global variables, macros, traits, data structures, and functions. The list is designed to facilitate the static analysis and processing of Rust code by providing a structured template for different code components.
-- **Use**: This variable is used to define a structured template for analyzing and processing various components of Rust source code.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_RUST` is a list of tuples, each representing a different section of a Rust code analysis template. Each tuple contains a section identifier, a section title, and a series of components or functions that define how to process or generate content for that section. The sections cover various aspects of Rust code, such as purpose, imports, global variables, macros, traits, data structures, and functions.
+- **Use**: This variable is used to define a structured template for analyzing and generating documentation or prompts for Rust code, leveraging both static analysis and language model outputs.
 
 
 

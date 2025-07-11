@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_05_09_1221-5cb5d4dd5fb6_make_org_and_user_ids_strings.py` file contains an Alembic migration script that alters the `creator_id` and `organization_id` columns in the `codebases`, `users`, and `workspaces` tables from UUID to string types, and provides a downgrade path to revert these changes.
+The `2024_05_09_1221-5cb5d4dd5fb6_make_org_and_user_ids_strings.py` file contains an Alembic migration script that alters the `creator_id` and `organization_id` columns in the `codebases`, `users`, and `workspaces` tables from UUID to string types.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify the database schema by altering the data types of certain columns. Specifically, it changes the `creator_id` column in the `codebases` table and the `organization_id` columns in the `users` and `workspaces` tables from UUIDs to strings. This is achieved by using the `sqlmodel.sql.sqltypes.AutoString()` type, which likely represents a string type in the SQLModel library. The script also removes existing foreign key constraints on these columns before altering their types and reinstates them in the [`downgrade`](#downgrade) function, which reverses the changes by converting the columns back to UUIDs and re-establishing the foreign key constraints.
+This Python file is an Alembic migration script designed to modify the database schema by altering the data types of certain columns in the database. Specifically, it changes the data types of the `creator_id` column in the `codebases` table and the `organization_id` columns in both the `users` and `workspaces` tables from `UUID` to `AutoString`. This change is likely intended to accommodate a different way of handling identifiers, possibly to allow for more flexible or human-readable IDs. The script also removes existing foreign key constraints associated with these columns during the upgrade process and reinstates them during the downgrade process, ensuring that the database integrity is maintained when rolling back the migration.
 
-The script is structured to be used with Alembic, a database migration tool for SQLAlchemy, and includes metadata such as `revision`, `down_revision`, `branch_labels`, and `depends_on` to manage the migration's place in the sequence of database changes. The [`upgrade`](#upgrade) function implements the forward migration, while the [`downgrade`](#downgrade) function provides the steps to revert the changes if needed. This script is part of a broader database migration strategy, ensuring that the database schema can evolve over time while maintaining data integrity and consistency.
+The script is structured with two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function executes the necessary operations to apply the migration, while the `downgrade()` function reverses these changes, allowing for a rollback if needed. This script is part of a broader database migration management system, as indicated by the use of Alembic, a popular database migration tool for SQLAlchemy. The presence of revision identifiers and dependencies suggests that this script is part of a sequence of migrations, each building upon the previous changes to evolve the database schema over time.
 # Imports and Dependencies
 
 ---
@@ -24,14 +24,14 @@ The script is structured to be used with Alembic, a database migration tool for 
 ---
 ### revision
 - **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the current migration version in the database schema history.
+- **Description**: The `revision` variable is a string that uniquely identifies the current database schema revision in an Alembic migration script. It is used to track changes to the database schema over time.
+- **Use**: This variable is used by Alembic to apply or rollback database migrations to the specific revision identified by this string.
 
 
 ---
 ### down\_revision
 - **Type**: `Union[str, None]`
-- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the identifier of the previous revision in the migration chain. It is set to a string representing the revision ID 'c6744cecca4d', which indicates the immediate predecessor of the current migration.
+- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the identifier of the previous revision in the migration chain. It is set to a string value representing the revision ID of the migration that directly precedes the current one.
 - **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
 
 
@@ -39,14 +39,14 @@ The script is structured to be used with Alembic, a database migration tool for 
 ### branch\_labels
 - **Type**: `Union[str, Sequence[str], None]`
 - **Description**: The `branch_labels` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a migration script.
-- **Use**: This variable is used to define labels for branches in Alembic migration scripts, allowing for more organized and identifiable migration paths.
+- **Use**: This variable is used to specify labels for a branch in a database migration script, allowing for more organized and identifiable migration paths.
 
 
 ---
 ### depends\_on
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic migrations, which are part of the SQLAlchemy library for handling database schema changes.
-- **Use**: This variable is used to specify dependencies between database schema revisions, indicating which revisions must be applied before the current one.
+- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic migrations, which are part of the SQLAlchemy library for database schema management.
+- **Use**: This variable is used to specify dependencies for a particular database migration, indicating which other migrations must be applied before this one.
 
 
 # Functions
@@ -67,12 +67,12 @@ The `upgrade` function modifies the database schema by dropping certain foreign 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_05_09_1221-5cb5d4dd5fb6_make_org_and_user_ids_strings.downgrade}} -->
-The `downgrade` function reverts database schema changes by altering column types back to UUID and recreating foreign key constraints.
+The `downgrade` function reverts database schema changes by altering column types back to UUID and re-establishing foreign key constraints.
 - **Inputs**: None
 - **Control Flow**:
-    - Execute SQL command to alter the 'organization_id' column type in the 'workspaces' table to UUID.
-    - Execute SQL command to alter the 'organization_id' column type in the 'users' table to UUID.
-    - Execute SQL command to alter the 'creator_id' column type in the 'codebases' table to UUID.
+    - Execute SQL command to alter the 'organization_id' column in the 'workspaces' table to type UUID.
+    - Execute SQL command to alter the 'organization_id' column in the 'users' table to type UUID.
+    - Execute SQL command to alter the 'creator_id' column in the 'codebases' table to type UUID.
     - Create a foreign key constraint on the 'organization_id' column in the 'workspaces' table referencing the 'id' column in the 'organizations' table.
     - Create a foreign key constraint on the 'organization_id' column in the 'users' table referencing the 'id' column in the 'organizations' table.
     - Create a foreign key constraint on the 'creator_id' column in the 'codebases' table referencing the 'id' column in the 'users' table.

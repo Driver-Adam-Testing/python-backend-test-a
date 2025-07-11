@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models_v2.py` file in the `python-backend` codebase defines SQLAlchemy models for various entities such as `PrimaryAsset`, `Version`, `Node`, and others, which are used to represent and manage database tables related to assets, versions, nodes, and user sessions.
+The `models_v2.py` file in the `python-backend` codebase defines SQLAlchemy models for various entities such as `PrimaryAsset`, `Version`, `Node`, and others, which are used to represent and manage database tables related to assets, versions, nodes, and user sessions in a PostgreSQL database.
 
 # Purpose
-This Python source code file defines a set of SQLAlchemy ORM models using the SQLModel library, which is an extension of SQLAlchemy designed to simplify the creation of database models. The primary purpose of this file is to define the schema and relationships for a database that manages assets, versions, nodes, and related entities in a software system. The code includes several classes, each representing a table in the database, such as `PrimaryAsset`, `Version`, `Node`, `UserCache`, and others. These classes define fields that correspond to columns in the database tables, including primary keys, foreign keys, and various attributes with constraints and default values. The relationships between these tables are also defined, allowing for complex queries and operations on the data.
+This Python source code file defines a set of SQLAlchemy ORM models using the SQLModel library, which is designed to facilitate the interaction with a relational database, specifically PostgreSQL in this case. The code is structured to represent a database schema for managing assets, versions, nodes, and related entities within an application. The primary classes defined include `PrimaryAsset`, `Version`, `Node`, `UserCache`, `RuntimeLlmSession`, and `ApiKey`, among others. Each class corresponds to a database table and includes fields that map to table columns, with relationships defined to establish connections between different tables. For instance, the `PrimaryAsset` class represents a primary asset in the system, with fields for identifiers, display names, and relationships to versions and tags. The `Version` class tracks different versions of a primary asset, while the `Node` class represents hierarchical structures within a version.
 
-The file provides a comprehensive data model for managing entities related to software assets and their versions, including metadata, relationships, and history tracking. It includes functionality for handling versioning, tagging, and user associations, as well as managing runtime sessions and message histories for a language model pipeline. The code is structured to be part of a larger application, likely serving as a backend component that interacts with a PostgreSQL database. It defines public APIs for interacting with the database through the ORM, enabling developers to perform CRUD operations and complex queries without writing raw SQL. The use of SQLModel and SQLAlchemy ensures that the code is both efficient and maintainable, leveraging Python's type hinting and modern ORM features.
+The code also includes several utility classes and methods, such as `ApiKey` for generating unique API keys and `RuntimeLlmSession` for managing sessions related to language model interactions. The use of SQLModel allows for the definition of complex relationships and constraints, such as cascading deletes and unique indexes, which are crucial for maintaining data integrity and efficient querying. The file is intended to be part of a larger application, likely serving as a backend component that interfaces with a database to store and retrieve structured data. It provides a broad functionality by defining a comprehensive data model that can be extended or integrated with other parts of the application, such as user interfaces or API endpoints.
 # Imports and Dependencies
 
 ---
@@ -53,34 +53,35 @@ The file provides a comprehensive data model for managing entities related to so
     - `installation_id`: An optional identifier for the installation, with a foreign key reference to git provider app installations.
     - `codebase_settings_auto_commit_docs`: An optional boolean indicating if auto-commit for documentation is enabled.
     - `created_at`: The timestamp when the primary asset was created, with a server default of the current time.
-    - `updated_at`: The timestamp when the primary asset was last updated, automatically updated on changes.
+    - `updated_at`: The timestamp when the primary asset was last updated, automatically updated to the current time.
     - `related_content_last_updated`: The timestamp when related content was last updated, nullable.
     - `most_recent_version`: A relationship to the most recent version of the primary asset.
     - `versions`: A list of versions associated with the primary asset, with cascading delete-orphan behavior.
     - `tags`: A list of tags associated with the primary asset, using a secondary table for many-to-many relationships.
-- **Description**: The PrimaryAsset class represents a primary asset in a database, extending SQLModel and configured as a table with specific indexing and foreign key constraints. It includes various fields such as id, display_name, repository_id, organization_id, and kind, each serving a specific purpose in identifying and categorizing the asset. The class also manages relationships with versions and tags, allowing for complex interactions and data integrity within the database. Additionally, it tracks creation and update timestamps, and includes optional fields for installation and codebase settings.
+- **Description**: The PrimaryAsset class represents a primary asset in the system, serving as a central entity with various attributes such as display name, organization ID, and kind. It includes relationships to versions and tags, allowing for version tracking and categorization. The class is designed to integrate with a SQL database, using SQLModel for ORM capabilities, and includes indexing and foreign key constraints to optimize database operations. It also supports automatic timestamping for creation and updates, and provides a structure for managing related content and installation details.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### Version<!-- {{#class:python-backend/driver_db/database/models_v2.Version}} -->
+- **Decorators**: `@table`
 - **Members**:
     - `id`: A unique identifier for the version, generated by default.
-    - `primary_asset_id`: References the primary asset associated with this version, with a foreign key constraint.
+    - `primary_asset_id`: References the primary asset associated with this version.
     - `display_name`: The display name of the version.
-    - `status`: Indicates the current status of the version, indexed for quick access.
-    - `previous_version_id`: References the previous version, if any, with a foreign key constraint.
-    - `created_at`: Timestamp indicating when the version was created, with a server default of the current time.
-    - `updated_at`: Timestamp indicating when the version was last updated, with automatic updates on modification.
-    - `primary_asset`: Relationship to the PrimaryAsset, linking versions to their primary asset.
-    - `nodes`: A list of nodes associated with this version, with cascading delete behavior.
-    - `creator`: Relationship to the UserCache, indicating the creator of the version.
-    - `root_node`: Optional relationship to the root node of the version, view-only.
-    - `inspector_runs`: A list of inspector runs associated with this version, ordered by update time.
-- **Description**: The Version class represents a version of a primary asset in the database, with fields for unique identification, status, timestamps, and relationships to other entities such as nodes, creators, and inspector runs. It includes indexing for efficient querying and supports cascading operations for related entities. The class also provides a property to determine if the version is browsable based on its status.
+    - `status`: The current status of the version, indexed for querying.
+    - `previous_version_id`: References the previous version, if any, allowing for version history tracking.
+    - `created_at`: Timestamp indicating when the version was created.
+    - `updated_at`: Timestamp indicating when the version was last updated.
+    - `primary_asset`: Relationship to the PrimaryAsset associated with this version.
+    - `nodes`: List of nodes associated with this version.
+    - `creator`: Relationship to the user who created this version.
+    - `root_node`: The root node of the version, if applicable.
+    - `inspector_runs`: List of inspector runs associated with this version.
+- **Description**: The Version class represents a version of a primary asset in the system, providing fields for unique identification, status tracking, and timestamps for creation and updates. It establishes relationships with primary assets, nodes, creators, and inspector runs, facilitating comprehensive version management and history tracking. The class also includes indexing for efficient querying and supports cascading operations for related entities.
 - **Methods**:
-    - [`python-backend/driver_db/database/models_v2.Version.browsable`](#Versionbrowsable)
+    - [`python-backend/driver_db/database/models_v2.Version.browsable`](<#Versionbrowsable>)
 - **Inherits From**:
     - `SQLModel`
 
@@ -88,15 +89,14 @@ The file provides a comprehensive data model for managing entities related to so
 
 ---
 #### Version\.browsable<!-- {{#callable:python-backend/driver_db/database/models_v2.Version.browsable}} -->
-The `browsable` property method checks if the current version's status allows it to be browsed by verifying if it is in a set of specific statuses.
+The `browsable` property method checks if the current version's status allows it to be browsed.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - The method checks if the `status` attribute of the `Version` instance is in a predefined set of statuses: `VersionStatus.GENERATING`, `VersionStatus.GENERATION_ERROR`, and `VersionStatus.GENERATION_COMPLETE`.
-    - If the `status` is in this set, the method returns `True`, indicating the version is browsable.
-    - If the `status` is not in this set, the method returns `False`, indicating the version is not browsable.
-- **Output**: A boolean value indicating whether the version is browsable based on its status.
-- **See also**: [`python-backend/driver_db/database/models_v2.Version`](#Version)  (Base Class)
+    - The method checks if the `status` attribute of the `Version` instance is one of the specified statuses: `VersionStatus.GENERATING`, `VersionStatus.GENERATION_ERROR`, or `VersionStatus.GENERATION_COMPLETE`.
+    - If the `status` is in the specified set, the method returns `True`; otherwise, it returns `False`.
+- **Output**: A boolean value indicating whether the version is in a browsable state based on its status.
+- **See also**: [`python-backend/driver_db/database/models_v2.Version`](<#Version>)  (Base Class)
 
 
 
@@ -104,22 +104,22 @@ The `browsable` property method checks if the current version's status allows it
 ### Node<!-- {{#class:python-backend/driver_db/database/models_v2.Node}} -->
 - **Decorators**: `@table`
 - **Members**:
-    - `id`: A unique identifier for the node, generated by default.
-    - `kind`: Specifies the type of node.
-    - `version_id`: References the version to which this node belongs.
-    - `relative_path`: The path relative to the root of the version.
-    - `depth`: Indicates the depth of the node in the hierarchy.
-    - `total_files`: Stores the total number of files, if available.
-    - `misc_metadata`: Holds additional metadata in a dictionary format.
-    - `created_at`: Timestamp of when the node was created.
-    - `updated_at`: Timestamp of the last update to the node.
-    - `version`: Relationship to the Version this node is part of.
-    - `contents`: List of derived content associated with this node.
-    - `document_sources`: List of document sources linked to this node.
-    - `page_sources`: List of page sources linked to this node.
-- **Description**: The Node class represents a node in a versioned hierarchy, storing information such as its unique identifier, type, version association, and relative path. It includes metadata about its creation and update timestamps, as well as relationships to other entities like derived content and document sources. The class also defines several database indices to optimize queries related to versioning and path operations.
+    - `id`: A unique identifier for the node, generated using UUID.
+    - `kind`: Specifies the type of node, represented by the NodeKind enum.
+    - `version_id`: References the version to which this node belongs, with a foreign key constraint.
+    - `relative_path`: Stores the path relative to the root of the version.
+    - `depth`: Indicates the depth of the node in the directory structure, computed from the relative path.
+    - `total_files`: Optionally stores the total number of files, computed from misc_metadata.
+    - `misc_metadata`: Holds additional metadata for the node in a JSONB format.
+    - `created_at`: Records the timestamp when the node was created.
+    - `updated_at`: Records the timestamp when the node was last updated.
+    - `version`: Defines a relationship to the Version class, linking nodes to their version.
+    - `contents`: Holds a list of DerivedContent objects related to this node.
+    - `document_sources`: Contains a list of DocumentSource objects where this node is the source.
+    - `page_sources`: Contains a list of DocumentSource objects where this node is the page.
+- **Description**: The Node class represents a node in a versioned file system, storing information about its type, path, and associated metadata. It is part of a SQLModel-based ORM setup, with relationships to other entities like Version, DerivedContent, and DocumentSource. The class includes computed fields for depth and total files, and it manages timestamps for creation and updates. It also provides a property to generate an S3 URL for accessing the node's content.
 - **Methods**:
-    - [`python-backend/driver_db/database/models_v2.Node.s3_url`](#Nodes3_url)
+    - [`python-backend/driver_db/database/models_v2.Node.s3_url`](<#Nodes3_url>)
 - **Inherits From**:
     - `SQLModel`
 
@@ -127,14 +127,14 @@ The `browsable` property method checks if the current version's status allows it
 
 ---
 #### Node\.s3\_url<!-- {{#callable:python-backend/driver_db/database/models_v2.Node.s3_url}} -->
-The `s3_url` property generates a URL for accessing a file stored in an S3 bucket, using a hash of the organization ID and other version-related identifiers.
+The `s3_url` method generates a URL for accessing an S3 object based on the node's version and relative path.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - Compute a SHA-256 hash of the organization ID from the primary asset associated with the version, and truncate it to 63 characters.
-    - Construct the S3 URL using the hashed organization ID, primary asset ID, version ID, and relative path.
-- **Output**: A string representing the S3 URL for accessing the file.
-- **See also**: [`python-backend/driver_db/database/models_v2.Node`](#Node)  (Base Class)
+    - Compute a SHA-256 hash of the organization ID from the primary asset of the node's version, and truncate it to 63 characters.
+    - Construct an S3 URL using the hashed organization ID, primary asset ID, version ID, and relative path of the node.
+- **Output**: A string representing the S3 URL for the node's asset.
+- **See also**: [`python-backend/driver_db/database/models_v2.Node`](<#Node>)  (Base Class)
 
 
 
@@ -142,9 +142,9 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 ### PrimaryAssetTag<!-- {{#class:python-backend/driver_db/database/models_v2.PrimaryAssetTag}} -->
 - **Decorators**: `@table`
 - **Members**:
-    - `tag_id`: A UUID representing the unique identifier for the tag, serving as a primary key and indexed with a foreign key constraint to the tags table.
-    - `primary_asset_id`: A UUID representing the unique identifier for the primary asset, serving as a primary key and indexed with a foreign key constraint to the v2_primary_asset table.
-- **Description**: The PrimaryAssetTag class is a SQLModel-based table representation that establishes a many-to-many relationship between tags and primary assets. It uses two UUID fields, tag_id and primary_asset_id, both of which are primary keys and indexed, to link entries in the tags and v2_primary_asset tables, respectively. This class facilitates the association of multiple tags with primary assets, enabling efficient querying and management of these relationships in a database context.
+    - `tag_id`: A UUID serving as the primary key and foreign key to the tags table.
+    - `primary_asset_id`: A UUID serving as the primary key and foreign key to the primary asset table.
+- **Description**: The PrimaryAssetTag class is a SQLModel-based table representation that establishes a many-to-many relationship between primary assets and tags. It uses two UUID fields, tag_id and primary_asset_id, both of which are indexed and serve as primary keys, to link entries in the tags and primary assets tables, respectively. This class facilitates the association of multiple tags with a primary asset and vice versa, enabling efficient querying and management of these relationships in a database context.
 - **Inherits From**:
     - `SQLModel`
 
@@ -152,11 +152,11 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 ---
 ### UserCache<!-- {{#class:python-backend/driver_db/database/models_v2.UserCache}} -->
 - **Members**:
-    - `id`: This is the auth0 ID in the form 'auth0|1234567890' and serves as the primary key.
+    - `id`: This is the primary key representing the auth0 ID in the form 'auth0|1234567890'.
     - `full_name`: Stores the full name of the user.
     - `email`: Stores the email address of the user.
     - `created_versions`: A list of versions created by the user, establishing a relationship with the Version class.
-- **Description**: The UserCache class is a SQLModel-based ORM class that represents a cache of user information in a database table named 'user_cache'. It includes fields for storing a user's unique identifier (auth0 ID), full name, and email address. Additionally, it maintains a relationship with the Version class to track versions created by the user, facilitating the management of user-related versioning data within the application.
+- **Description**: The UserCache class is a SQLModel-based table representation that stores user information such as the user's unique auth0 ID, full name, and email address. It also maintains a relationship with the Version class to track versions created by the user, facilitating the management of user-related version data within the database.
 - **Inherits From**:
     - `SQLModel`
 
@@ -165,9 +165,9 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 ### VersionCreator<!-- {{#class:python-backend/driver_db/database/models_v2.VersionCreator}} -->
 - **Decorators**: `@table`
 - **Members**:
-    - `version_id`: A UUID representing the version, serving as a primary key and indexed with a foreign key constraint.
-    - `user_id`: A string representing the user ID, indexed with a foreign key constraint.
-- **Description**: The VersionCreator class is a SQLModel-based table that establishes a relationship between versions and users, linking a version ID to a user ID. It is designed to facilitate the tracking of which user created a specific version, using foreign key constraints to ensure referential integrity with the 'v2_version' and 'user_cache' tables.
+    - `version_id`: A UUID that serves as the primary key and foreign key to the 'v2_version' table.
+    - `user_id`: A string that serves as a foreign key to the 'user_cache' table.
+- **Description**: The VersionCreator class is a SQLModel-based table that establishes a relationship between versions and users by linking version IDs to user IDs. It uses UUIDs for version identification and strings for user identification, with both fields indexed and set to cascade on delete, ensuring referential integrity with the 'v2_version' and 'user_cache' tables.
 - **Inherits From**:
     - `SQLModel`
 
@@ -184,7 +184,7 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
     - `created_at`: The timestamp when the session was created, with a default value of the current time.
     - `updated_at`: The timestamp when the session was last updated, automatically set to the current time on update.
     - `message_histories`: A list of message histories associated with the session, establishing a relationship with RuntimeLlmMessageHistory.
-- **Description**: The RuntimeLlmSession class represents a session for a runtime large language model (LLM) within a database, storing information about the user, organization, and associated nodes. It includes timestamps for creation and updates, and maintains a relationship with message histories to track interactions within the session.
+- **Description**: The RuntimeLlmSession class represents a session for runtime large language model (LLM) interactions, storing essential metadata such as user and organization identifiers, node references, and timestamps for creation and updates. It also maintains a relationship with message histories, allowing for tracking of interactions within the session.
 - **Inherits From**:
     - `SQLModel`
 
@@ -198,7 +198,7 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
     - `pipeline_kind`: Specifies the kind of LLM pipeline used.
     - `messages`: A list of messages associated with this message history.
     - `llm_session`: The LLM session to which this message history belongs.
-- **Description**: The `RuntimeLlmMessageHistory` class is a SQLModel-based ORM class that represents the history of messages exchanged during a runtime LLM session. It is designed to store and manage the details of each message history entry, including its unique identifier, associated session, pipeline kind, and the list of messages. The class establishes relationships with the `RuntimeLlmSession` and `RuntimeLlmMessage` classes to facilitate the organization and retrieval of message histories within the context of LLM sessions.
+- **Description**: The `RuntimeLlmMessageHistory` class is a SQLModel-based table that records the history of messages exchanged during a runtime LLM session. It includes a unique identifier, a reference to the associated LLM session, the type of LLM pipeline used, and a list of messages that are part of this history. The class establishes relationships with the `RuntimeLlmSession` and `RuntimeLlmMessage` classes to maintain the integrity and order of message exchanges.
 - **Inherits From**:
     - `SQLModel`
 
@@ -207,14 +207,15 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 ### RuntimeLlmMessage<!-- {{#class:python-backend/driver_db/database/models_v2.RuntimeLlmMessage}} -->
 - **Decorators**: `@table`
 - **Members**:
-    - `id`: A unique identifier for the message, generated by default using UUID.
+    - `__tablename__`: Specifies the name of the database table as 'v2_runtime_llm_messages'.
+    - `id`: A unique identifier for each message, generated using UUID.
     - `message_history_id`: References the ID of the associated message history, with a foreign key constraint.
-    - `llm_message_hash`: Stores a hash of the LLM message as a string.
-    - `llm_message_json`: Contains the LLM message data in JSON format, which can be nullable.
+    - `llm_message_hash`: Stores a hash of the LLM message for integrity verification.
+    - `llm_message_json`: Holds the JSON representation of the LLM message, which can be nullable.
     - `created_at`: Records the timestamp when the message was created, with a default value of the current time.
-    - `updated_at`: Records the timestamp when the message was last updated, automatically set to the current time on updates.
-    - `message_history`: Establishes a relationship with the RuntimeLlmMessageHistory class, linking to the message history.
-- **Description**: The RuntimeLlmMessage class is a SQLModel-based ORM class that represents a message in a runtime LLM (Language Learning Model) system. It is designed to store and manage information about individual messages, including their unique identifiers, associated message history, and message content in JSON format. The class also tracks the creation and update timestamps for each message, and it establishes a relationship with the RuntimeLlmMessageHistory class to maintain the linkage between messages and their histories.
+    - `updated_at`: Records the timestamp when the message was last updated, automatically updated to the current time.
+    - `message_history`: Establishes a relationship with the RuntimeLlmMessageHistory class, linking messages to their history.
+- **Description**: The RuntimeLlmMessage class is a SQLModel-based ORM class that represents a message in a runtime LLM (Language Learning Model) system. It is mapped to the 'v2_runtime_llm_messages' table in the database and includes fields for storing a unique message ID, a reference to the message history, a hash of the message, and the message content in JSON format. The class also tracks creation and update timestamps and maintains a relationship with the RuntimeLlmMessageHistory class to associate messages with their respective histories.
 - **Inherits From**:
     - `SQLModel`
 
@@ -223,13 +224,13 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 ### AutoDocStatusHistory<!-- {{#class:python-backend/driver_db/database/models_v2.AutoDocStatusHistory}} -->
 - **Decorators**: `@table`
 - **Members**:
-    - `id`: Unique identifier for the status history entry.
-    - `page_node_id`: Identifier for the associated page node.
-    - `status_kind`: Type of status message associated with the entry.
-    - `content`: Optional content or message related to the status.
-    - `created_at`: Timestamp indicating when the entry was created.
-    - `call_id`: Optional identifier for the call associated with the status.
-- **Description**: The `AutoDocStatusHistory` class represents a record of status changes for an auto-documentation process, storing information such as the status type, associated page node, and optional content or call identifiers. It is designed to be used with a SQL database, leveraging SQLModel for ORM capabilities, and includes fields for tracking creation timestamps and foreign key relationships to other entities in the system.
+    - `id`: A unique identifier for each AutoDocStatusHistory entry.
+    - `page_node_id`: References the node associated with this status history entry.
+    - `status_kind`: Indicates the type of status message for the entry.
+    - `content`: Optional content related to the status message.
+    - `created_at`: Timestamp indicating when the status history entry was created.
+    - `call_id`: Optional identifier for the call associated with this status entry.
+- **Description**: The AutoDocStatusHistory class is a SQLModel-based table that records the history of status messages related to a specific page node in the system. It includes fields for a unique identifier, the associated page node, the kind of status message, optional content, a creation timestamp, and an optional call identifier. This class is used to track changes and updates to the status of documentation processes within the application.
 - **Inherits From**:
     - `SQLModel`
 
@@ -238,15 +239,15 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 ### ApiKey<!-- {{#class:python-backend/driver_db/database/models_v2.ApiKey}} -->
 - **Decorators**: `@table`
 - **Members**:
-    - `id`: A unique identifier for the API key, generated by default as a UUID.
+    - `id`: A unique identifier for the API key, generated using UUID.
     - `key`: A unique API key string generated using a custom method.
     - `organization_id`: The identifier for the organization associated with the API key.
     - `user_id`: The identifier for the user associated with the API key.
     - `created_at`: The timestamp indicating when the API key was created.
     - `updated_at`: The timestamp indicating when the API key was last updated.
-- **Description**: The ApiKey class represents an API key entity within a database, utilizing SQLModel for ORM capabilities. It includes fields for a unique identifier, the API key itself, and associated organization and user IDs. The class also tracks creation and update timestamps. The API key is generated using a custom method that ensures uniqueness and security by combining a prefix with a random alphanumeric string.
+- **Description**: The ApiKey class represents an API key entity within a database, utilizing SQLModel for ORM capabilities. It includes fields for a unique identifier, the API key itself, and associations to an organization and user. The class also tracks creation and update timestamps, and features a method to generate a unique API key string with a specific prefix and entropy.
 - **Methods**:
-    - [`python-backend/driver_db/database/models_v2.ApiKey.gen_drv_key`](#ApiKeygen_drv_key)
+    - [`python-backend/driver_db/database/models_v2.ApiKey.gen_drv_key`](<#ApiKeygen_drv_key>)
 - **Inherits From**:
     - `SQLModel`
 
@@ -254,17 +255,17 @@ The `s3_url` property generates a URL for accessing a file stored in an S3 bucke
 
 ---
 #### ApiKey\.gen\_drv\_key<!-- {{#callable:python-backend/driver_db/database/models_v2.ApiKey.gen_drv_key}} -->
-The `gen_drv_key` method generates a unique driver key string composed of a prefix and a random alphanumeric sequence.
+The `gen_drv_key` method generates a unique driver key string prefixed with 'drv' followed by a random alphanumeric sequence.
 - **Inputs**: None
 - **Control Flow**:
     - Define a constant `PREFIX` with the value 'drv'.
     - Define a constant `ENTROPY` with the value 32, representing the length of the random part of the key.
     - Define a constant `ALPHABET` containing all ASCII letters and digits.
     - Generate a `random_part` by selecting 32 random characters from `ALPHABET`.
-    - Concatenate `PREFIX` and `random_part` with a hyphen in between to form the final key.
+    - Concatenate `PREFIX` and `random_part` with a hyphen to form the final key.
     - Return the generated key string.
-- **Output**: A string representing the generated driver key, which includes a fixed prefix and a random alphanumeric sequence.
-- **See also**: [`python-backend/driver_db/database/models_v2.ApiKey`](#ApiKey)  (Base Class)
+- **Output**: A string representing a unique driver key, prefixed with 'drv' and followed by a 32-character random alphanumeric sequence.
+- **See also**: [`python-backend/driver_db/database/models_v2.ApiKey`](<#ApiKey>)  (Base Class)
 
 
 

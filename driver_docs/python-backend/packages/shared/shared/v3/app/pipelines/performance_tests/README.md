@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `performance_tests` folder in the `python-backend` codebase contains a file dedicated to executing performance tests on smart instruction pipelines, focusing on generating requests, processing them with various LLM clients, and measuring execution times.
+The `performance_tests` folder in the `python-backend` codebase contains the `smart_instruction.py` file, which is used for conducting performance tests on smart instruction pipelines by generating requests, processing them with various LLM clients, and measuring execution times.
 
 
 ## Files

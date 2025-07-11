@@ -3,23 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `edit_document.py` file contains a prompt configuration for a technical document editor system, specifying when to execute tools for additional context or modify language without context.
+The `edit_document.py` file contains a prompt configuration for a technical document editor, specifying when to execute tools for additional context or modify text without context.
 
 # Purpose
-This code defines a configuration for a system message in a software application, providing narrow functionality. It consists of two global variables: `PROMPT` and `MESSAGE`. The `PROMPT` variable is a multi-line string that outlines instructions for a technical document editor, specifying when to execute tools for additional context or when to modify language without additional context. The `MESSAGE` variable is a dictionary that uses the `PROMPT` string as its content, with a role specified as "system". This setup is likely used in a larger application to guide automated or semi-automated editing processes based on user requests.
+This code defines a couple of global variables intended for use in a larger application, likely related to a chatbot or a system that processes user requests. The `PROMPT` variable contains a string that serves as an instruction or guideline for a technical document editor, specifying how to handle user requests for information or text modification. The `MESSAGE` variable is a dictionary with two keys: "role" and "content", where "role" is set to "system" and "content" is assigned the value of `PROMPT`. This setup suggests that the code is part of a configuration or initialization script, providing specific instructions for handling user interactions within a system, but it does not perform any operations by itself.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The `PROMPT` variable is a multi-line string that provides instructions for a technical document editor. It outlines the actions to be taken based on user requests, such as executing tools for additional context or modifying language without context.
+- **Description**: The variable `PROMPT` is a multi-line string that provides instructions for a technical document editor. It outlines the actions to be taken based on user requests, such as executing tools for additional context or modifying language without context.
 - **Use**: This variable is used to define the content of a system message, guiding the behavior of a document editing system.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', indicating the function or context of the message, while the 'content' key is assigned the value of the `PROMPT` variable, which is a string providing instructions for a technical document editor.
+- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', indicating the function or context of the message, while the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for a technical document editor.
 - **Use**: This variable is used to encapsulate a system message with specific instructions for a technical document editor, likely to be used in a context where such a message needs to be processed or displayed.
 
 

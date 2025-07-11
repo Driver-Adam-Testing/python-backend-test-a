@@ -6,7 +6,7 @@
 The `custom_types.py` file defines a custom SQLAlchemy type decorator for PostgreSQL's TSVECTOR type.
 
 # Purpose
-This code defines a custom SQLAlchemy type decorator for PostgreSQL's `TSVECTOR` type, which is used for full-text search indexing. The `TSVector` class extends `TypeDecorator`, allowing for customization of how the `TSVECTOR` type is handled within SQLAlchemy's ORM. By setting `impl` to `TSVECTOR`, it specifies that the underlying database type is PostgreSQL's `TSVECTOR`. The `cache_ok` attribute is set to `True`, indicating that the type can be safely cached by SQLAlchemy's type system. This code provides narrow functionality, specifically enhancing SQLAlchemy's capabilities to work with PostgreSQL's full-text search features.
+This code defines a custom SQLAlchemy type decorator for PostgreSQL's `TSVECTOR` type, which is used for full-text search capabilities. The `TSVector` class extends `TypeDecorator`, allowing for customization of how the `TSVECTOR` type is handled within SQLAlchemy ORM models. By setting `impl` to `TSVECTOR`, it specifies that the underlying database type is PostgreSQL's `TSVECTOR`, and `cache_ok = True` indicates that the type can be safely cached by SQLAlchemy's type system. This code provides narrow functionality, specifically enhancing SQLAlchemy's type system to support PostgreSQL's full-text search features.
 # Imports and Dependencies
 
 ---
@@ -20,8 +20,8 @@ This code defines a custom SQLAlchemy type decorator for PostgreSQL's `TSVECTOR`
 ### TSVector<!-- {{#class:python-backend/driver_db/database/custom_types.TSVector}} -->
 - **Members**:
     - `impl`: Specifies the underlying database type as TSVECTOR.
-    - `cache_ok`: Indicates that the type is safe to cache.
-- **Description**: The TSVector class is a SQLAlchemy type decorator that customizes the behavior of the PostgreSQL TSVECTOR type. It inherits from SQLAlchemy's TypeDecorator, allowing for additional functionality or customization of the TSVECTOR type, which is used for full-text search indexing in PostgreSQL. The class sets the 'impl' attribute to TSVECTOR, indicating the underlying database type, and marks the type as cacheable with the 'cache_ok' attribute set to True.
+    - `cache_ok`: Indicates that the type can be safely cached.
+- **Description**: The TSVector class is a SQLAlchemy type decorator that customizes the behavior of the PostgreSQL TSVECTOR type. It inherits from SQLAlchemy's TypeDecorator, allowing for additional functionality or behavior to be added to the base TSVECTOR type. The 'impl' attribute specifies that the underlying database type is TSVECTOR, and the 'cache_ok' attribute indicates that this type can be safely cached, optimizing performance.
 - **Inherits From**:
     - `sa.types.TypeDecorator`
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `billing` folder in the `python-backend` codebase contains files related to defining data models for subscription records and requests, with a focus on billing frequency.
+Files related to subscription data models, including an empty `__init__.py` and `subscription_schema.py`.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[subscription_schema.py](subscription_schema.py.md)**: The `subscription_schema.py` file defines data models for subscription records and subscription creation requests, including properties for start and end dates based on billing frequency.
+- **[subscription_schema.py](subscription_schema.py.md)**: The `subscription_schema.py` file defines data models for subscription records and creation requests, including properties for start and end dates based on billing frequency.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

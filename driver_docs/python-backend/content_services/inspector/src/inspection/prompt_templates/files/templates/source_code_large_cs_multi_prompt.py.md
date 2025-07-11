@@ -3,20 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_cs_multi_prompt.py` file defines a template for generating multi-prompt structures specifically for analyzing C# source code, including handling of classes, structs, interfaces, and enums.
+The `source_code_large_cs_multi_prompt.py` file defines a template for generating multi-prompt structures specifically for analyzing and processing large C# source code files, including handling classes, structs, and interfaces.
 
 # Purpose
-This Python code defines a template for generating multi-prompt outputs specifically tailored for analyzing C# source code. It imports several components from utility modules that specialize in language-specific analysis and multi-context processing. The primary purpose of this file is to facilitate the structured extraction and presentation of information from C# code, such as classes, structs, interfaces, and enums. The template is organized into sections that guide the analysis process, including determining the purpose of the code, checking imports and dependencies, and identifying key C# constructs through both static analysis and language model (LLM) insights.
+This Python code defines a structured template for generating multi-prompt instructions specifically tailored for analyzing C# source code. The file is part of a larger system that appears to facilitate the extraction and organization of information from C# codebases. It imports various components and instructions from shared and utility modules, which are then used to construct a series of prompts. These prompts are designed to guide the analysis of C# code, focusing on different aspects such as the purpose of the code, its imports and dependencies, and the identification of classes, structs, and interfaces within the code. The template is structured to handle large systems by breaking down the analysis into manageable components, leveraging both static analysis and language model (LLM) insights.
 
-The file is structured as a collection of tuples, each representing a different aspect of the C# code analysis. These tuples define the type of analysis to be performed, the section header for the output, and the specific functions or prompts to be used for extracting information. The use of collections like `CsClassCollection` and `CsEnumCollection` indicates that the code is designed to aggregate and process symbols related to C# constructs. This file is likely part of a larger system that automates the documentation or analysis of C# codebases, providing a systematic approach to understanding and documenting the structure and dependencies of C# projects.
+The code is not a standalone script but rather a library component intended to be integrated into a larger system that processes and analyzes C# code. It defines a public API in the form of the `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS` variable, which is a list of tuples. Each tuple represents a specific aspect of the code analysis, such as purpose, imports, classes, structs, and interfaces, and specifies the method of analysis, whether through static analysis or LLM. This structured approach allows for a comprehensive and systematic examination of C# code, making it a valuable tool for developers and analysts working with large C# codebases.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.c_sharp.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CS`
 - `utils.lang_specialization.c_sharp.CsClassCollection`
 - `utils.lang_specialization.c_sharp.CsClassRawSymbolCollection`
-- `utils.lang_specialization.c_sharp.CsEnumCollection`
-- `utils.lang_specialization.c_sharp.CsEnumRawSymbolCollection`
 - `utils.lang_specialization.c_sharp.CsInterfaceCollection`
 - `utils.lang_specialization.c_sharp.CsInterfaceRawSymbolCollection`
 - `utils.lang_specialization.c_sharp.CsStructCollection`
@@ -32,8 +35,8 @@ The file is structured as a collection of tuples, each representing a different 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_CS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS` is a list of tuples, each representing a different aspect of C# source code analysis. Each tuple contains a type identifier, a description string, and a series of functions or methods that are used to analyze or process specific components of C# code, such as classes, structs, interfaces, and enums. The list is designed to facilitate multi-prompt processing of C# source code by providing structured prompts and analysis functions.
-- **Use**: This variable is used to define a template for processing and analyzing various components of C# source code using multiple prompts and specialized functions.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS` is a list of tuples, each representing a different aspect of C# source code analysis and generation. Each tuple contains a type identifier, a description string, and a series of components or functions that are used to generate or analyze specific parts of C# code, such as purpose, imports, classes, structs, and interfaces.
+- **Use**: This variable is used to define a structured template for generating and analyzing C# code using multiple prompts and conditions.
 
 
 

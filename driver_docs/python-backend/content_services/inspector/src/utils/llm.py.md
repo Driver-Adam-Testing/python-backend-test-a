@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm.py` file contains utility functions for handling string chunking and estimating the number of tokens used by messages in OpenAI's chat completions API, with specific handling for different model versions.
+The `llm.py` file contains utility functions for handling string chunking and estimating the number of tokens used by messages in OpenAI's chat completions API, specifically for various GPT models.
 
 # Purpose
-This Python code file provides utility functions related to string manipulation and token counting, specifically in the context of using OpenAI's chat completions API. The file includes two main functions: [`chunk_str`](#chunk_str) and [`num_tokens_from_messages_open_ai`](#num_tokens_from_messages_open_ai). The [`chunk_str`](#chunk_str) function is designed to divide a given string into chunks of a specified size with a defined overlap, which can be useful for processing large strings in manageable parts. The [`num_tokens_from_messages_open_ai`](#num_tokens_from_messages_open_ai) function estimates the number of tokens used by a list of messages when interacting with OpenAI's models, such as "gpt-3.5-turbo" and "gpt-4". This function is adapted from the OpenAI cookbook and uses the `tiktoken` library to handle token encoding, providing a rough estimate of token usage based on the model specified.
+This Python code file provides utility functions related to string manipulation and token counting for OpenAI's chat completions API. The file includes two primary functions: [`chunk_str`](<#chunk_str>) and [`num_tokens_from_messages_open_ai`](<#num_tokens_from_messages_open_ai>). The [`chunk_str`](<#chunk_str>) function is designed to divide a given string into chunks of a specified size with a defined overlap, which can be useful for processing large strings in manageable parts. The [`num_tokens_from_messages_open_ai`](<#num_tokens_from_messages_open_ai>) function estimates the number of tokens used by a list of messages when interacting with OpenAI's models, specifically tailored for models like "gpt-3.5-turbo" and "gpt-4". This function uses the `tiktoken` library to handle token encoding and includes logic to handle different model versions, providing warnings and fallbacks for unrecognized models.
 
-The file is structured as a utility module, likely intended to be imported and used in other parts of a larger application. It includes logging capabilities to handle warnings and errors, particularly when dealing with model-specific token encoding. The use of decorators from a shared utilities module suggests an emphasis on modularity and reusability. The code does not define a public API or external interfaces but rather serves as a backend utility to support other components that require string chunking or token counting functionalities.
+The file appears to be part of a larger codebase, as indicated by the import statements and the use of a decorator from a shared utilities module. It is likely intended to be used as a utility module within a larger application or library, rather than as a standalone script. The presence of logging and error handling suggests that it is designed to be robust and informative in its operation, providing feedback through warnings and exceptions when necessary. The code also includes a reference to the OpenAI cookbook, indicating that it builds upon existing examples to tailor functionality for specific use cases involving OpenAI's API.
 # Imports and Dependencies
 
 ---
@@ -22,8 +22,8 @@ The file is structured as a utility module, likely intended to be imported and u
 ---
 ### logger
 - **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a Logger object obtained from the logging module, configured to use the current module's name as its identifier. This allows for logging messages that are specific to the module, aiding in debugging and monitoring the application's behavior.
-- **Use**: The `logger` is used to log warning messages when certain conditions are met, such as when a model is not found or when a model may update over time.
+- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the name of the current module (`__name__`) as its logger name, which helps in identifying the source of log messages.
+- **Use**: This logger is used to output warning messages when certain conditions are met, such as when a model is not found or when a model may update over time.
 
 
 # Functions
@@ -33,7 +33,7 @@ The file is structured as a utility module, likely intended to be imported and u
 The `chunk_str` function divides a given string into overlapping chunks of specified size.
 - **Inputs**:
     - `chunk_size`: The size of each chunk to be created from the input string.
-    - `chunk_overlap`: The number of characters that each chunk should overlap with the previous chunk.
+    - `chunk_overlap`: The number of characters that overlap between consecutive chunks.
     - `str_in`: The input string to be divided into chunks.
 - **Control Flow**:
     - Calculate the number of chunks needed by dividing the length of the input string by the effective chunk size (chunk_size - chunk_overlap) and adding one.
@@ -45,18 +45,23 @@ The `chunk_str` function divides a given string into overlapping chunks of speci
 
 ---
 ### num\_tokens\_from\_messages\_open\_ai<!-- {{#callable:python-backend/content_services/inspector/src/utils/llm.num_tokens_from_messages_open_ai}} -->
-The function estimates the number of tokens used by a list of messages for a specified OpenAI model using the chat completions API.
+The function calculates the estimated number of tokens used by a list of messages for a specified OpenAI model.
 - **Decorators**: `@suppress_logging`
 - **Inputs**:
     - `messages`: A list of string messages for which the token count is to be estimated.
-    - `model`: An optional string specifying the OpenAI model to use for encoding, defaulting to 'gpt-3.5-turbo-0613'.
+    - `model`: A string representing the OpenAI model to be used for encoding, defaulting to 'gpt-3.5-turbo-0613'.
 - **Control Flow**:
-    - Attempt to get the encoding for the specified model using tiktoken; if the model is not found, use a default encoding and log a warning.
-    - Check the model type to determine the number of tokens per message, with specific handling for different versions of 'gpt-3.5-turbo' and 'gpt-4'.
-    - If the model is not recognized, raise a NotImplementedError with a message indicating the lack of implementation for the specified model.
-    - Iterate over each message in the input list, adding the tokens per message and the length of the encoded message to the total token count.
-    - Add an additional 3 tokens to account for the reply priming and return the total token count.
-- **Output**: Returns an integer representing the estimated number of tokens used by the list of messages for the specified model.
+    - Attempt to get the encoding for the specified model using tiktoken.encoding_for_model().
+    - If a KeyError occurs, log a warning and use the 'cl100k_base' encoding as a fallback.
+    - Determine the number of tokens per message based on the specified model.
+    - If the model is 'gpt-3.5-turbo-0301', set tokens_per_message to 4; otherwise, set it to 3 for other specified models.
+    - If the model is a variant of 'gpt-3.5-turbo' or 'gpt-4', log a warning and recursively call the function with a default model version.
+    - Raise a NotImplementedError if the model is not supported.
+    - Initialize num_tokens to 0 and iterate over each message in the messages list.
+    - For each message, add tokens_per_message and the length of the encoded message to num_tokens.
+    - Add 3 additional tokens to num_tokens to account for the reply priming.
+    - Return the total num_tokens.
+- **Output**: An integer representing the estimated number of tokens used by the messages for the specified model.
 
 
 

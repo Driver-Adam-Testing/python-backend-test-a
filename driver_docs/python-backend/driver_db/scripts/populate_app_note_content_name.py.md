@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `populate_app_note_content_name.py` file is a script that populates the `content_name` field for application notes and PDFs in a database, ensuring the names fit within a specified index length and handling JSON parsing errors.
+The `populate_app_note_content_name.py` file is a script that populates the `content_name` field for application notes and PDFs in a database, ensuring names are truncated to fit within a specified index length.
 
 # Purpose
-This Python script is designed to populate and update the `content_name` field for specific types of content stored in a database. It primarily interacts with a database using SQLAlchemy, a popular ORM (Object-Relational Mapping) library, to query and update records. The script focuses on two types of content: "application notes" and "supplemental documents," which are identified using the `DerivedContentTypeNames` enumeration. For "application notes," it extracts the content name from a JSON field, ensuring it does not exceed a predefined maximum length by truncating it if necessary. For "supplemental documents," it derives the content name from the file path if it is not already set. The script includes error handling for JSON decoding issues and database transaction management to ensure data integrity.
+This Python script is designed to populate the `content_name` field for specific types of content stored in a database. It connects to a database using SQLAlchemy, a popular ORM (Object-Relational Mapping) library, and performs operations on two types of derived content: application notes and supplemental documents (PDFs). The script first retrieves application notes from the database, parses their JSON content to extract the `name` field, and assigns it to the `content_name` attribute, truncating it if necessary to fit within a predefined maximum length. It then processes supplemental documents by setting their `content_name` to a modified version of their file path if the `content_name` is not already set. The script handles potential JSON decoding errors and ensures database integrity by committing changes only after successful operations, with rollback in case of exceptions.
 
-The script is intended to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which calls the [`populate_content_name`](#populate_content_name) function. This function encapsulates the main logic of the script, including database session management, querying, and updating operations. The script does not define a public API or external interfaces, as its purpose is to perform a specific data maintenance task within the context of a database-backed application. The use of SQLAlchemy's session and transaction management ensures that changes are committed only if all operations are successful, with rollback mechanisms in place to handle exceptions.
+The script is intended to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which calls the [`populate_content_name`](<#populate_content_name>) function. This function encapsulates the main logic of the script, including database session management and error handling. The script does not define a public API or external interfaces, as its primary purpose is to perform a specific data population task within a database, likely as part of a larger data processing or migration workflow. The use of SQLAlchemy for database interactions and JSON for content parsing are key technical components of this script.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ The script is intended to be executed as a standalone program, as indicated by t
 ---
 ### MAX\_INDEX\_LENGTH
 - **Type**: `int`
-- **Description**: `MAX_INDEX_LENGTH` is an integer that defines the maximum allowable length for an index, specifically set to 2704. This value is used to ensure that content names do not exceed the index size limit in the database.
-- **Use**: This variable is used to truncate content names to ensure they fit within the defined index size limit.
+- **Description**: `MAX_INDEX_LENGTH` is an integer variable that defines the maximum allowable length for an index, set to 2704. This value is used to ensure that content names do not exceed the specified length limit, which is likely a constraint imposed by the database or application logic.
+- **Use**: This variable is used to truncate content names to ensure they fit within the maximum index length when processing and storing data.
 
 
 # Functions
@@ -49,17 +49,17 @@ The function `truncate_content_name` truncates a given content name string to en
 The function `populate_content_name` populates the `content_name` field for application notes and PDFs in the database by parsing JSON content and updating records accordingly.
 - **Inputs**: None
 - **Control Flow**:
-    - Open a database session using SQLAlchemy's Session with the provided engine.
+    - Open a database session using SQLAlchemy's Session context manager.
     - Execute a SQL query to select `DerivedContent` records joined with `DerivedContentType` where the type is `APPLICATION_NOTE`.
     - Iterate over the results, parse the JSON content, and update the `content_name` field if a valid name is found, truncating it if necessary.
     - Handle JSON decoding errors by printing an error message with the content ID.
     - Execute another SQL query to select `DerivedContent` records for `SUPPLEMENTAL_DOCUMENT` type.
     - Iterate over these results and update the `content_name` field using the `relative_path` if it is currently `None`.
     - Commit the changes to the database.
-    - Rollback the session and print an error message if any exception occurs during the process.
+    - Rollback the transaction and print an error message if any exception occurs.
 - **Output**: The function does not return any value; it performs database updates and commits changes.
-- **Functions called**:
-    - [`python-backend/driver_db/scripts/populate_app_note_content_name.truncate_content_name`](#truncate_content_name)
+- **Functions Called**:
+    - [`python-backend/driver_db/scripts/populate_app_note_content_name.truncate_content_name`](<#truncate_content_name>)
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models.py` file in the `python-backend` codebase defines various Pydantic models and enumerations for handling configurations and resources related to Auth0 applications, Ngrok domains, developer resources, and GitHub applications.
+The `models.py` file in the `python-backend` codebase defines various Pydantic models and enumerations for handling configurations and resources related to Auth0 applications, Ngrok domains, developer resources, GitHub apps, and database connections.
 
 # Purpose
-This Python code defines a set of data models and enumerations using the Pydantic library, which is used for data validation and settings management using Python type annotations. The primary purpose of this file is to provide structured representations of various resources and configurations related to application development and deployment, particularly in the context of Auth0 applications, Ngrok domains, and GitHub applications. The code includes models for creating different types of Auth0 applications (SPA, API, and M2M), managing Ngrok reserved domains and TCP addresses, and configuring developer resources such as web apps, APIs, databases, and GitHub apps. Each model is a subclass of `BaseModel`, ensuring that the data adheres to specified constraints and types.
+This Python code defines a set of data models using the Pydantic library, which is used for data validation and settings management using Python type annotations. The primary purpose of this file is to provide structured representations of various configuration and resource entities related to application development and deployment, particularly in the context of Auth0, Ngrok, and GitHub integrations. The code includes models for creating Auth0 applications and APIs, managing Ngrok reserved domains and TCP addresses, and configuring various developer resources such as web applications, APIs, databases, and GitHub applications. These models ensure that the data adheres to specific constraints and formats, facilitating the management and deployment of these resources in a consistent and validated manner.
 
-The file also defines several enumerations to categorize domain types, domain statuses, and developer resource types, which help in maintaining consistency and clarity across the models. Additionally, the code includes computed properties that generate URLs and other derived data based on the model's attributes. This file is likely intended to be part of a larger system where these models are used to facilitate the configuration and management of cloud-based resources and services, providing a clear and structured API for developers to interact with these resources programmatically.
+The file is organized into several classes, each representing a distinct type of resource or configuration. For instance, `Auth0SpaCreateAppRequest`, `Auth0ApiCreateRequest`, and `Auth0M2MCreateRequest` are models for creating different types of Auth0 applications. Similarly, `NgrokReservedDomain` and `NgrokReservedTcpAddress` manage domain and TCP address configurations for Ngrok. The `DeveloperResource` and its associated configurations, such as `WebAppResourceConfig` and `DatabaseResourceConfig`, provide a framework for defining and managing various developer resources. Additionally, the `GitHubAppResource` class encapsulates the configuration for GitHub applications, including permissions and webhook settings. The use of enums, such as `DomainType` and `DeveloperResourceType`, helps categorize and manage different resource types, while computed fields provide dynamic properties like URLs and sanitized names. Overall, this code serves as a comprehensive library for managing application and resource configurations in a structured and validated manner.
 # Imports and Dependencies
 
 ---
@@ -26,21 +26,21 @@ The file also defines several enumerations to categorize domain types, domain st
 ### PermissionAccess
 - **Type**: `Literal`
 - **Description**: `PermissionAccess` is a type alias for a Literal type that can take one of three string values: 'read-only', 'read-write', or 'no-access'. This type is used to define specific permission levels for accessing resources.
-- **Use**: This variable is used to specify the access level permissions in the `GitHubAppPermissionsConfig` class, which manages permissions for repositories, organizations, and accounts.
+- **Use**: This variable is used to specify the access level permissions in the `GitHubAppPermissionsConfig` class, ensuring that only predefined permission levels are used.
 
 
 ---
 ### AssetLambdaSecretMap
 - **Type**: `dict`
-- **Description**: `AssetLambdaSecretMap` is a dictionary that maps specific secret identifiers to their corresponding output names used in a Lambda function context. It contains two key-value pairs, where the keys are identifiers for secrets related to client ID and client secret, and the values are the respective output names used in the Lambda environment.
-- **Use**: This variable is used to store and retrieve the output names of secrets related to client credentials for a Lambda function, facilitating secure access to these secrets.
+- **Description**: `AssetLambdaSecretMap` is a dictionary that maps secret identifiers to their corresponding output names for a Lambda function related to asset onboarding. It contains two key-value pairs: 'CLIENT_ID_SECRET' mapped to 'CodeLambdaClientIdOutput' and 'CLIENT_SECRET_SECRET' mapped to 'CodeLambdaClientSecretOutput'.
+- **Use**: This variable is used to store and retrieve secret output names for the asset onboarding Lambda function, facilitating secure access to sensitive information.
 
 
 ---
 ### MetricsLambdaSecretMap
 - **Type**: `dict`
 - **Description**: `MetricsLambdaSecretMap` is a dictionary that maps secret names to their corresponding output values for the Metrics Lambda function. In this case, it contains a single key-value pair where the key is 'DATABASE_URL_SECRET_NAME' and the value is 'MetricsLambdaDBSecretOutput'.
-- **Use**: This variable is used to store and retrieve secret names and their corresponding outputs for the Metrics Lambda function.
+- **Use**: This variable is used to store and retrieve secret names and their corresponding output values for the Metrics Lambda function.
 
 
 # Classes
@@ -57,10 +57,10 @@ The file also defines several enumerations to categorize domain types, domain st
     - `initiate_login_uri`: The URI to initiate login, which can be None.
     - `oidc_conformant`: A boolean indicating if the application is OIDC conformant, defaulting to True.
     - `token_endpoint_auth_method`: The authentication method for the token endpoint, defaulting to 'none'.
-    - `grant_types`: A list of grant types allowed for the application, defaulting to ['authorization_code', 'refresh_token', 'implicit'].
+    - `grant_types`: A list of grant types, defaulting to ['authorization_code', 'refresh_token', 'implicit'].
     - `organization_usage`: The usage policy for organizations, defaulting to 'require'.
     - `organization_require_behavior`: The behavior for organization requirement, defaulting to 'pre_login_prompt'.
-- **Description**: The Auth0SpaCreateAppRequest class is a Pydantic model that defines the structure and default values for creating a Single Page Application (SPA) in Auth0. It includes various configuration options such as callback URLs, allowed origins, and authentication methods, ensuring the application adheres to OIDC standards and supports organization-specific behaviors.
+- **Description**: The Auth0SpaCreateAppRequest class is a Pydantic model that defines the structure and default values for creating a Single Page Application (SPA) in Auth0. It includes various configuration options such as callback URLs, allowed logout URLs, web origins, and authentication methods. The class ensures that the application is OIDC conformant by default and supports multiple grant types. It also specifies organization usage policies and behaviors, providing a comprehensive setup for SPA creation in Auth0.
 - **Inherits From**:
     - `BaseModel`
 
@@ -79,7 +79,7 @@ The file also defines several enumerations to categorize domain types, domain st
     - `scopes`: A list of dictionaries defining the scopes for the API.
     - `allow_skip_consent`: A boolean indicating if consent can be skipped, defaulting to True.
     - `enable_permissions_in_token`: A boolean indicating if permissions are enabled in the token, defaulting to True.
-- **Description**: The Auth0ApiCreateRequest class is a Pydantic model that defines the structure and default values for creating an API in Auth0. It includes various configuration options such as the API's name, identifier, signing algorithm, token lifetime, and several boolean flags to control consent, offline access, policy enforcement, and token content. The class also allows specifying scopes as a list of dictionaries, providing a flexible way to define API permissions.
+- **Description**: The Auth0ApiCreateRequest class is a Pydantic model designed to facilitate the creation of an API request in the Auth0 platform. It includes various configuration options such as the API's name, identifier, signing algorithm, token lifetime, and several boolean flags to control consent, offline access, and policy enforcement. Additionally, it allows for the specification of scopes and permissions within tokens, providing a comprehensive setup for API creation in Auth0.
 - **Inherits From**:
     - `BaseModel`
 
@@ -87,18 +87,18 @@ The file also defines several enumerations to categorize domain types, domain st
 ---
 ### Auth0M2MCreateRequest<!-- {{#class:python-backend/dev_stack/src/models.Auth0M2MCreateRequest}} -->
 - **Members**:
-    - `name`: A string representing the name of the M2M application, with whitespace stripped and a minimum length of 1.
-    - `app_type`: A string indicating the type of application, defaulting to 'non_interactive'.
-    - `logo_uri`: An optional string representing the URI of the application's logo.
-    - `grant_types`: A list of strings specifying the grant types, defaulting to ['client_credentials'].
-- **Description**: The `Auth0M2MCreateRequest` class is a Pydantic model used to define the structure and validation rules for creating a machine-to-machine (M2M) application request in Auth0. It includes fields for the application's name, type, logo URI, and supported grant types, with default values provided for some fields to streamline the creation process.
+    - `name`: The name of the machine-to-machine application, with whitespace stripped and a minimum length of 1.
+    - `app_type`: The type of application, defaulting to 'non_interactive'.
+    - `logo_uri`: The URI for the application's logo, which can be None.
+    - `grant_types`: A list of grant types, defaulting to ['client_credentials'].
+- **Description**: The Auth0M2MCreateRequest class is a Pydantic model designed to represent a request for creating a machine-to-machine (M2M) application in Auth0. It includes fields for specifying the application's name, type, logo URI, and supported grant types, with default values provided for the application type and grant types. This class ensures that the name field is validated to strip whitespace and meet a minimum length requirement, facilitating the creation of M2M applications with consistent and validated data.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DomainType<!-- {{#class:python-backend/dev_stack/src/models.DomainType}} -->
-- **Description**: The `DomainType` class is an enumeration that defines three possible domain types: WEBAPP, API, and TCP. It is used to categorize different types of domains within the application, providing a clear and standardized way to refer to these domain types.
+- **Description**: The `DomainType` class is an enumeration that defines three types of domain categories: WEBAPP, API, and TCP, each represented by a string value. This class is used to categorize different types of domains in the application.
 - **Inherits From**:
     - `enum.Enum`
 
@@ -114,15 +114,15 @@ The file also defines several enumerations to categorize domain types, domain st
 ### NgrokReservedDomain<!-- {{#class:python-backend/dev_stack/src/models.NgrokReservedDomain}} -->
 - **Members**:
     - `domain_type`: Specifies the type of domain as a DomainType enum.
-    - `subdomain`: Holds the subdomain as a string.
-    - `domain`: Stores the domain name as a string.
-    - `description`: Contains a description of the domain.
+    - `subdomain`: Holds the subdomain part of the reserved domain.
+    - `domain`: Stores the main domain name.
+    - `description`: Provides a description of the reserved domain.
     - `region`: Indicates the region for the domain, defaulting to 'us'.
     - `status`: Represents the status of the domain as a DomainStatus enum.
-    - `metadata`: Optional dictionary for additional metadata about the domain.
-- **Description**: The NgrokReservedDomain class is a Pydantic model that represents a reserved domain in the Ngrok system. It includes attributes for specifying the domain type, subdomain, domain name, description, region, status, and optional metadata. The class also provides a computed property to generate the full domain URL.
+    - `metadata`: Contains optional metadata as a dictionary.
+- **Description**: The NgrokReservedDomain class is a Pydantic model that represents a reserved domain in the Ngrok system, encapsulating details such as the domain type, subdomain, main domain, description, region, status, and optional metadata. It also provides a computed property to generate the full domain URL.
 - **Methods**:
-    - [`python-backend/dev_stack/src/models.NgrokReservedDomain.domain_url`](#NgrokReservedDomaindomain_url)
+    - [`python-backend/dev_stack/src/models.NgrokReservedDomain.domain_url`](<#NgrokReservedDomaindomain_url>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -136,7 +136,7 @@ The `domain_url` method constructs and returns a URL string using the domain att
 - **Control Flow**:
     - The method constructs a URL string by concatenating 'https://' with the `domain` attribute of the `NgrokReservedDomain` instance.
 - **Output**: A string representing the full URL of the domain, prefixed with 'https://'.
-- **See also**: [`python-backend/dev_stack/src/models.NgrokReservedDomain`](#NgrokReservedDomain)  (Base Class)
+- **See also**: [`python-backend/dev_stack/src/models.NgrokReservedDomain`](<#NgrokReservedDomain>)  (Base Class)
 
 
 
@@ -148,9 +148,9 @@ The `domain_url` method constructs and returns a URL string using the domain att
     - `region`: The region where the TCP address is reserved, defaulting to 'us'.
     - `status`: The status of the TCP address, represented by a DomainStatus enum.
     - `metadata`: Optional metadata associated with the TCP address, stored as a dictionary.
-- **Description**: The NgrokReservedTcpAddress class is a Pydantic model that represents a reserved TCP address in the Ngrok system. It includes attributes for the address, description, region, status, and optional metadata. The class also provides a computed property to generate a TCP URL from the address.
+- **Description**: The NgrokReservedTcpAddress class represents a reserved TCP address in the Ngrok system, encapsulating details such as the address itself, a description, the region of reservation, its status, and optional metadata. It extends the BaseModel from Pydantic, ensuring data validation and serialization, and includes a computed property to generate a TCP URL from the address.
 - **Methods**:
-    - [`python-backend/dev_stack/src/models.NgrokReservedTcpAddress.address_url`](#NgrokReservedTcpAddressaddress_url)
+    - [`python-backend/dev_stack/src/models.NgrokReservedTcpAddress.address_url`](<#NgrokReservedTcpAddressaddress_url>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -162,15 +162,17 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - The method constructs a string by concatenating 'tcp://' with the `address` attribute of the `NgrokReservedTcpAddress` instance.
-- **Output**: A string representing the TCP URL, formatted as 'tcp://<address>'.
-- **See also**: [`python-backend/dev_stack/src/models.NgrokReservedTcpAddress`](#NgrokReservedTcpAddress)  (Base Class)
+    - The method accesses the `address` attribute of the `NgrokReservedTcpAddress` instance.
+    - It constructs a string in the format `tcp://{self.address}`.
+    - The constructed string is returned as the output.
+- **Output**: A string representing the TCP URL constructed from the `address` attribute.
+- **See also**: [`python-backend/dev_stack/src/models.NgrokReservedTcpAddress`](<#NgrokReservedTcpAddress>)  (Base Class)
 
 
 
 ---
 ### DeveloperResourceType<!-- {{#class:python-backend/dev_stack/src/models.DeveloperResourceType}} -->
-- **Description**: The `DeveloperResourceType` class is an enumeration that defines various types of developer resources, such as web applications, APIs, machine-to-machine (M2M) applications, databases, GitHub applications, AWS Lambda functions, S3 buckets, CDK stacks, content services, and Docker containers. This enumeration is used to categorize and identify different types of resources that developers might work with or manage.
+- **Description**: The `DeveloperResourceType` class is an enumeration that defines various types of developer resources, such as web applications, APIs, machine-to-machine (M2M) services, databases, GitHub applications, AWS Lambda functions, S3 buckets, CDK stacks, content services, and Docker containers. This enumeration is used to categorize and identify different types of resources that developers may work with or manage.
 - **Inherits From**:
     - `enum.Enum`
 
@@ -180,8 +182,8 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
 - **Members**:
     - `resource_name`: The name of the developer resource.
     - `resource_type`: The type of the developer resource, defined by DeveloperResourceType.
-    - `resource`: A dictionary containing additional details about the developer resource.
-- **Description**: The DeveloperResource class is a Pydantic model that represents a resource associated with a developer, characterized by its name, type, and additional details stored in a dictionary. It leverages the DeveloperResourceType enumeration to specify the type of resource, ensuring that the resource is categorized correctly within a predefined set of types.
+    - `resource`: A dictionary containing the details of the developer resource.
+- **Description**: The DeveloperResource class is a Pydantic model that represents a resource associated with a developer, characterized by its name, type, and a dictionary of resource-specific details. It leverages the DeveloperResourceType enumeration to specify the type of resource, ensuring that the resource is categorized correctly within a predefined set of types.
 - **Inherits From**:
     - `BaseModel`
 
@@ -189,10 +191,10 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
 ---
 ### CDKResourceConfig<!-- {{#class:python-backend/dev_stack/src/models.CDKResourceConfig}} -->
 - **Members**:
-    - `resource_name`: The name of the CDK resource, defaulting to 'cdk-stack'.
+    - `resource_name`: The name of the resource, defaulting to 'cdk-stack'.
     - `execute`: A string representing the execution command or script for the resource.
     - `env`: A dictionary containing environment variables for the resource.
-- **Description**: The CDKResourceConfig class is a Pydantic model that defines the configuration for a CDK (Cloud Development Kit) resource. It includes attributes for specifying the resource name, an execution command, and environment variables, providing a structured way to manage and validate the configuration of CDK resources within a Python application.
+- **Description**: The `CDKResourceConfig` class is a Pydantic model that defines the configuration for a CDK (Cloud Development Kit) stack resource. It includes attributes for specifying the resource name, an execution command, and a set of environment variables. This class is used to encapsulate the necessary configuration details required to deploy or manage a CDK stack within a cloud infrastructure.
 - **Inherits From**:
     - `BaseModel`
 
@@ -205,7 +207,7 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
     - `setup_str`: A string representing the setup configuration for the web application.
     - `vite_config`: A dictionary containing the Vite configuration settings.
     - `env`: A dictionary representing the environment variables for the web application.
-- **Description**: The `WebAppResourceConfig` class is a configuration model for a web application resource, extending the `BaseModel` from Pydantic. It includes attributes for specifying the resource name, setup string, Vite configuration, and environment variables, providing a structured way to manage and validate the configuration of a web application frontend.
+- **Description**: The WebAppResourceConfig class is a configuration model for a web application resource, extending the BaseModel from Pydantic. It includes attributes for specifying the resource name, setup string, Vite configuration, and environment variables, providing a structured way to manage and validate configuration data for web applications.
 - **Inherits From**:
     - `BaseModel`
 
@@ -215,7 +217,7 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
 - **Members**:
     - `resource_name`: The name of the API resource, defaulting to 'backend'.
     - `env`: A dictionary containing environment-specific configurations for the API resource.
-- **Description**: The `ApiResourceConfig` class is a configuration model for API resources, inheriting from Pydantic's `BaseModel`. It defines the structure for specifying the name of the API resource and its associated environment configurations, providing a default resource name of 'backend'. This class is part of a larger system for managing various types of resources and their configurations.
+- **Description**: The `ApiResourceConfig` class is a configuration model for API resources, inheriting from Pydantic's `BaseModel`. It defines the structure for specifying the name of the API resource and its associated environment configurations, providing a default resource name of 'backend'. This class is part of a larger system for managing various types of resources, such as web applications and databases, within a development environment.
 - **Inherits From**:
     - `BaseModel`
 
@@ -226,7 +228,7 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
     - `resource_name`: The name of the resource, defaulting to 'database'.
     - `env`: A dictionary containing environment-specific configurations.
     - `secret_map`: An optional dictionary mapping secret names to their values.
-- **Description**: The `DatabaseResourceConfig` class is a configuration model for database resources, extending the `BaseModel` from Pydantic. It includes attributes for specifying the resource name, environment configurations, and an optional mapping of secrets. This class is designed to facilitate the structured representation and validation of database-related configuration data within an application.
+- **Description**: The `DatabaseResourceConfig` class is a configuration model for database resources, extending the `BaseModel` from Pydantic. It includes a default resource name, a dictionary for environment configurations, and an optional secret map for storing sensitive information related to the database.
 - **Inherits From**:
     - `BaseModel`
 
@@ -240,8 +242,8 @@ The `address_url` method constructs and returns a TCP URL string using the `addr
     - `password`: The password for database authentication.
 - **Description**: The `DatabaseResource` class is a Pydantic model that represents the configuration details required to connect to a database. It includes essential connection parameters such as the database name, host address, username, and password. Additionally, it provides computed properties to generate both synchronous and asynchronous database URLs for connecting to a PostgreSQL database using different drivers.
 - **Methods**:
-    - [`python-backend/dev_stack/src/models.DatabaseResource.db_url`](#DatabaseResourcedb_url)
-    - [`python-backend/dev_stack/src/models.DatabaseResource.async_db_url`](#DatabaseResourceasync_db_url)
+    - [`python-backend/dev_stack/src/models.DatabaseResource.db_url`](<#DatabaseResourcedb_url>)
+    - [`python-backend/dev_stack/src/models.DatabaseResource.async_db_url`](<#DatabaseResourceasync_db_url>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -253,10 +255,10 @@ The `db_url` method constructs and returns a PostgreSQL database connection URL 
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - The method constructs a database connection URL string using the format 'postgresql+psycopg2://{user_name}:{password}@{host_address}/{db_name}'.
-    - It accesses the instance attributes `user_name`, `password`, `host_address`, and `db_name` to populate the URL.
+    - The method constructs a database connection URL string using the format `postgresql+psycopg2://{user_name}:{password}@{host_address}/{db_name}`.
+    - The method accesses the instance's attributes `user_name`, `password`, `host_address`, and `db_name` to populate the URL.
 - **Output**: A string representing the PostgreSQL database connection URL.
-- **See also**: [`python-backend/dev_stack/src/models.DatabaseResource`](#DatabaseResource)  (Base Class)
+- **See also**: [`python-backend/dev_stack/src/models.DatabaseResource`](<#DatabaseResource>)  (Base Class)
 
 
 ---
@@ -266,9 +268,9 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
 - **Inputs**: None
 - **Control Flow**:
     - The method constructs a formatted string representing the database URL using the `asyncpg` driver.
-    - It uses the instance attributes `user_name`, `password`, `host_address`, and `db_name` to fill in the respective parts of the URL.
+    - It uses the instance's `user_name`, `password`, `host_address`, and `db_name` attributes to fill in the URL template.
 - **Output**: A string representing the asynchronous database connection URL.
-- **See also**: [`python-backend/dev_stack/src/models.DatabaseResource`](#DatabaseResource)  (Base Class)
+- **See also**: [`python-backend/dev_stack/src/models.DatabaseResource`](<#DatabaseResource>)  (Base Class)
 
 
 
@@ -277,7 +279,7 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
 - **Members**:
     - `resource_name`: The name of the resource.
     - `env`: A dictionary containing environment variables for the resource.
-- **Description**: The `ModalSecretResource` class is a Pydantic model that represents a resource with a name and associated environment variables. It is used to define resources that require specific environmental configurations, typically for secret management or configuration purposes in a modal context.
+- **Description**: The `ModalSecretResource` class is a Pydantic model that represents a resource with a name and associated environment variables. It is used to define the structure of a resource that includes a name and a dictionary of environment settings, which can be utilized in various configurations or deployments.
 - **Inherits From**:
     - `BaseModel`
 
@@ -287,7 +289,7 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
 - **Members**:
     - `modal_environment`: Specifies the environment for the modal.
     - `secrets`: Holds a list of ModalSecretResource objects.
-- **Description**: The ContentServicesResource class is a Pydantic model that represents a resource configuration for content services, including the environment and associated secrets. It extends the BaseModel from Pydantic, ensuring data validation and serialization for its attributes. The class is designed to encapsulate the environment settings and a collection of secrets necessary for the operation of content services within a specified modal environment.
+- **Description**: The ContentServicesResource class is a Pydantic model that represents a resource configuration for content services, including the environment and associated secrets. It extends the BaseModel from Pydantic, ensuring data validation and serialization. The class contains two main attributes: 'modal_environment', which specifies the environment context, and 'secrets', which is a list of ModalSecretResource instances, each representing a secret resource with its own environment configuration.
 - **Inherits From**:
     - `BaseModel`
 
@@ -298,7 +300,7 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
     - `resource_name`: The name of the Lambda resource.
     - `env`: A dictionary containing environment variables for the Lambda resource.
     - `secret_map`: A dictionary mapping secret names to their corresponding values for the Lambda resource.
-- **Description**: The `LambdaResourceConfig` class is a Pydantic model that defines the configuration for a Lambda resource. It includes the resource's name, environment variables, and a mapping of secret names to their values. This class is used to encapsulate the necessary configuration details required to deploy or manage a Lambda function within a cloud environment.
+- **Description**: The `LambdaResourceConfig` class is a Pydantic model that defines the configuration for a Lambda resource, including its name, environment variables, and a mapping of secret names to their values. This class is used to encapsulate the necessary configuration details required to deploy or manage a Lambda function within a cloud environment.
 - **Inherits From**:
     - `BaseModel`
 
@@ -308,9 +310,9 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
 - **Decorators**: `@dataclass`
 - **Members**:
     - `webhook_url`: The URL to which the GitHub app will send webhook events.
-    - `webhook_secret`: An optional secret key used to secure webhook payloads.
-    - `ssl_verification_enabled`: A boolean indicating if SSL verification is enabled for the webhook URL.
-- **Description**: The `GitHubAppWebhookConfig` class is a Pydantic model that defines the configuration for a GitHub App's webhook. It includes the URL where webhook events are sent, an optional secret for securing the payloads, and a flag to enable or disable SSL verification. This class is used to ensure that the webhook configuration adheres to the expected structure and data types.
+    - `webhook_secret`: An optional secret key used to secure the webhook payloads.
+    - `ssl_verification_enabled`: A boolean indicating if SSL verification is enabled for the webhook URL, defaulting to True.
+- **Description**: The `GitHubAppWebhookConfig` class is a Pydantic model that defines the configuration for a GitHub App's webhook. It includes the URL where webhook events are sent, an optional secret for securing the webhook payloads, and a flag to enable or disable SSL verification for the webhook URL. This class is used to encapsulate the necessary settings for managing webhook interactions with a GitHub App.
 - **Inherits From**:
     - `BaseModel`
 
@@ -319,10 +321,10 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
 ### GitHubAppPermissionsConfig<!-- {{#class:python-backend/dev_stack/src/models.GitHubAppPermissionsConfig}} -->
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `repository_permissions`: A dictionary mapping repository names to their permission access levels.
-    - `organization_permissions`: A dictionary mapping organization names to their permission access levels.
-    - `account_permissions`: A dictionary mapping account names to their permission access levels.
-- **Description**: The GitHubAppPermissionsConfig class is a Pydantic model that defines the permission configurations for a GitHub App, categorizing permissions into repository, organization, and account levels. Each category is represented as a dictionary where the keys are names (converted to lowercase) and the values are permission access levels, which can be 'read-only', 'read-write', or 'no-access'. This class is used to manage and validate the permissions required by a GitHub App for different scopes of access.
+    - `repository_permissions`: A dictionary mapping repository permission names to their access levels.
+    - `organization_permissions`: A dictionary mapping organization permission names to their access levels.
+    - `account_permissions`: A dictionary mapping account permission names to their access levels.
+- **Description**: The GitHubAppPermissionsConfig class is a Pydantic model that defines the structure for configuring permissions for a GitHub App. It includes dictionaries for repository, organization, and account permissions, each mapping permission names to their respective access levels, which can be 'read-only', 'read-write', or 'no-access'. This class ensures that permission names are stored in lowercase and validates the access levels using the PermissionAccess literal type.
 - **Inherits From**:
     - `BaseModel`
 
@@ -335,26 +337,25 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
     - `app_id`: The unique identifier for the GitHub app, which can be None.
     - `client_id`: The client ID for the GitHub app, which can be None.
     - `client_secret`: The client secret for the GitHub app, which can be None.
-    - `homepage_url`: The homepage URL of the GitHub app.
-    - `callback_url`: The callback URL for the GitHub app.
-    - `request_oauth_on_installation`: A boolean indicating if OAuth should be requested on installation, defaulting to True.
-    - `enable_device_flow`: A boolean indicating if device flow is enabled, defaulting to True.
-    - `setup_url`: The setup URL for the GitHub app, which can be None.
-    - `redirect_on_update`: A boolean indicating if redirection should occur on update, defaulting to True.
+    - `homepage_url`: The URL of the homepage for the GitHub app.
+    - `callback_url`: The URL for the callback endpoint of the GitHub app.
+    - `request_oauth_on_installation`: A boolean indicating if OAuth should be requested upon installation.
+    - `enable_device_flow`: A boolean indicating if device flow is enabled for the app.
+    - `setup_url`: The URL for the setup page of the GitHub app, which can be None.
+    - `redirect_on_update`: A boolean indicating if redirection should occur on update.
     - `webhook`: Configuration for the GitHub app's webhook.
     - `permissions`: Configuration for the GitHub app's permissions.
     - `subscribed_events`: A list of events the GitHub app is subscribed to.
-    - `public_in_marketplace`: A boolean indicating if the app is public in the marketplace, defaulting to False.
+    - `public_in_marketplace`: A boolean indicating if the app is public in the marketplace.
     - `private_key_pem_path`: The file path to the private key PEM, which can be None.
     - `base64_private_key_pem`: The base64 encoded private key PEM, which can be None.
-- **Description**: The GitHubAppResource class is a Pydantic model that represents the configuration and properties of a GitHub application. It includes various attributes such as the app's name, ID, client credentials, URLs for homepage and callback, and settings for OAuth and device flow. Additionally, it holds configurations for webhooks and permissions, a list of subscribed events, and options for marketplace visibility. The class also supports optional private key configurations, either through a file path or a base64 encoded string.
+- **Description**: The GitHubAppResource class is a Pydantic model that represents the configuration and properties of a GitHub application. It includes various attributes such as the app's name, ID, client credentials, URLs for homepage and callback, and settings for OAuth and device flow. Additionally, it holds configurations for webhooks and permissions, a list of subscribed events, and flags for marketplace visibility and redirection behavior. The class also supports optional private key configurations for secure operations.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### Developer<!-- {{#class:python-backend/dev_stack/src/models.Developer}} -->
-- **Decorators**: `@computed_field`
 - **Members**:
     - `full_name`: The full name of the developer.
     - `email`: The email address of the developer.
@@ -369,8 +370,8 @@ The `async_db_url` method constructs and returns an asynchronous PostgreSQL data
     - `resources`: A list of DeveloperResource objects associated with the developer.
 - **Description**: The Developer class is a Pydantic model that represents a developer's profile, including personal information such as full name and email, as well as various resources and configurations associated with the developer. These resources include reserved domains, TCP addresses, Auth0 configurations, GitHub applications, databases, and other developer-specific resources. The class also provides computed properties for generating an S3 bucket name and a sanitized version of the developer's full name.
 - **Methods**:
-    - [`python-backend/dev_stack/src/models.Developer.s3_bucket_name`](#Developers3_bucket_name)
-    - [`python-backend/dev_stack/src/models.Developer.sanitized_full_name`](#Developersanitized_full_name)
+    - [`python-backend/dev_stack/src/models.Developer.s3_bucket_name`](<#Developers3_bucket_name>)
+    - [`python-backend/dev_stack/src/models.Developer.sanitized_full_name`](<#Developersanitized_full_name>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -388,7 +389,7 @@ The `s3_bucket_name` method generates a sanitized S3 bucket name based on the de
     - Strips any leading or trailing whitespace from the `full_name`.
     - Appends the string '-asset-dropzone' to the sanitized `full_name`.
 - **Output**: A string representing the S3 bucket name, formatted as a sanitized version of the developer's full name followed by '-asset-dropzone'.
-- **See also**: [`python-backend/dev_stack/src/models.Developer`](#Developer)  (Base Class)
+- **See also**: [`python-backend/dev_stack/src/models.Developer`](<#Developer>)  (Base Class)
 
 
 ---
@@ -399,11 +400,11 @@ The `sanitized_full_name` method returns a sanitized version of the `full_name` 
 - **Control Flow**:
     - The method accesses the `full_name` attribute of the `Developer` class instance.
     - It converts the `full_name` to lowercase and replaces spaces with hyphens.
-    - It uses a regular expression to remove all characters from the `full_name` that are not lowercase letters, numbers, or hyphens.
+    - It uses a regular expression to remove all characters that are not lowercase letters, digits, or hyphens.
     - The sanitized string is stored in the `sanitized_name` variable.
     - The method returns the `sanitized_name`.
-- **Output**: A string representing the sanitized version of the `full_name` attribute.
-- **See also**: [`python-backend/dev_stack/src/models.Developer`](#Developer)  (Base Class)
+- **Output**: The method outputs a string that is a sanitized version of the `full_name` attribute, suitable for use in contexts where only lowercase alphanumeric characters and hyphens are allowed.
+- **See also**: [`python-backend/dev_stack/src/models.Developer`](<#Developer>)  (Base Class)
 
 
 

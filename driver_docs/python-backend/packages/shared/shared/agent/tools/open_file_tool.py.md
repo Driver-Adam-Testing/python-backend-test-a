@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `open_file_tool.py` file defines the `OpenFileTool` class, which is a strict tool designed to open a file at a specified path, retrieve its content from a database, and display it, while handling exceptions and ensuring the content is not too lengthy.
+The `open_file_tool.py` file defines the `OpenFileTool` class, which is a strict tool designed to open a file at a specified path, retrieve its content from a database, and display it, while handling exceptions and ensuring the file is not too long.
 
 # Purpose
-The provided Python code defines a class `OpenFileTool`, which is a specialized tool designed to open and read the content of a file specified by a file path, excluding PDFs. This class inherits from `ToolStrict`, indicating that it adheres to a strict set of rules or behaviors defined in its parent class. The primary functionality of `OpenFileTool` is encapsulated in its [`execute`](#OpenFileToolexecute) method, which interacts with a database to retrieve and format content associated with the specified file path. It uses SQLAlchemy and SQLModel to perform database operations, specifically selecting and ordering chunks of content from the `ChunkAndEmbedding` and `DerivedContent` models. The method then processes these chunks to reconstruct the full text of the file, ensuring that overlapping text between chunks is handled appropriately.
+The provided Python code defines a class `OpenFileTool`, which is a specialized tool designed to open and read the content of a file specified by a file path, excluding PDFs. This class inherits from `ToolStrict`, indicating that it adheres to a strict set of rules or behaviors defined in its parent class. The primary functionality of `OpenFileTool` is encapsulated in its [`execute`](<#OpenFileToolexecute>) method, which interacts with a database to retrieve and format content associated with the specified file path. It uses SQLAlchemy and SQLModel to perform database operations, specifically selecting and ordering chunks of content from the `ChunkAndEmbedding` and `DerivedContent` models. The method then processes these chunks to reconstruct the full text of the file, ensuring that overlapping text between chunks is handled appropriately.
 
-The code is structured as a library component intended to be used within a larger system, likely involving agents that perform various tasks. It defines a public API through the [`execute`](#OpenFileToolexecute) method, which is expected to be called by an instance of `AgentBase`. The class also includes a class method [`system_prompt`](#system_prompt), which provides a prompt for using the tool, emphasizing its role in reading source code files. The code is part of a broader framework that involves database interactions and agent-based operations, and it is designed to integrate with other tools and components within this system.
+The code is structured as a library component intended to be used within a larger system, likely involving file management or content retrieval. It interfaces with an `AgentBase` object, which appears to manage the scope and context of the operation, and it integrates with a search functionality by creating a `SearchResult` object. The class also includes a class method [`system_prompt`](<#system_prompt>), which provides a prompt for using the tool, emphasizing its role in reading source code files. This code is part of a broader system that likely involves content management, search, and retrieval, and it defines a public API through its [`execute`](<#OpenFileToolexecute>) method, which can be invoked by other components or systems to perform its file-opening functionality.
 # Imports and Dependencies
 
 ---
@@ -30,36 +30,35 @@ The code is structured as a library component intended to be used within a large
 ### OpenFileTool<!-- {{#class:python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool}} -->
 - **Members**:
     - `file_path`: The path to the file to be opened, excluding PDFs.
-- **Description**: The OpenFileTool class is a specialized tool that inherits from ToolStrict, designed to open and read the content of a file specified by a file path, excluding PDFs. It processes the file content by retrieving chunks and embeddings from a database, reconstructs the full text while handling overlapping text segments, and returns the complete content. If the content exceeds a certain length, it raises an exception, suggesting the use of a SearchTool for context retrieval. The class also integrates with an agent to add search results based on the file content.
+- **Description**: The OpenFileTool class is a specialized tool that inherits from ToolStrict, designed to open and read the content of a file specified by a file path, excluding PDFs. It processes the file content by retrieving chunks and embeddings from a database, reconstructing the full text while handling overlaps between chunks, and then returns the complete text. The class also integrates with an agent to add search results based on the file content, and it includes error handling for cases where the file is too long or other exceptions occur.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool.execute`](#OpenFileToolexecute)
+    - [`python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool.execute`](<#OpenFileToolexecute>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](tool_strict.py.md#ToolStrict)
+    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](<tool_strict.py.md#ToolStrict>)
 
 **Methods**
 
 ---
 #### OpenFileTool\.execute<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool.execute}} -->
-The `execute` method retrieves and processes content chunks from a database for a specified file path, reconstructs them into a full document, and returns the document as a string.
+The `execute` method retrieves and processes content from a database based on a file path, reconstructs it into a full document, and returns the text or an error message if the content is too long or not found.
 - **Inputs**:
-    - `agent`: An instance of `AgentBase` that provides the scope and methods for adding search results.
+    - `agent`: An instance of AgentBase, which provides the scope and methods for adding search results.
 - **Control Flow**:
     - The method begins by attempting to create a child datascope from the agent's scope using the file path.
-    - A database session is opened to execute a SQL query that selects `ChunkAndEmbedding` records joined with `DerivedContent` where the node ID matches the first node ID in the datascope.
-    - The query results are loaded with content and ordered by chunk number, then retrieved as a list of `chunks_and_embeddings`.
-    - If no chunks are found, a message indicating no content is returned.
-    - The method iterates over the chunks to concatenate them into a full document, handling overlapping text between consecutive chunks to avoid duplication.
-    - If the reconstructed document exceeds 75,000 characters, an exception is raised to indicate the file is too long.
-    - A [`SearchResult`](../../interfaces/search.py.md#SearchResult) object is created with the full text and metadata, which is then added to the agent's search results.
-    - The full text of the document is returned as the output.
-- **Output**: A string representing the full text of the document reconstructed from the database chunks.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](../../interfaces/agents/data_scope.py.md#DataScopeto_child_datascope)
-    - [`python-backend/driver_db/database/db.get_session`](../../../../../driver_db/database/db.py.md#get_session)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](../../interfaces/search.py.md#SearchResult)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](../agent_base.py.md#AgentBaseadd_search_results)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](../../interfaces/search.py.md#SearchResults)
-- **See also**: [`python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool`](#OpenFileTool)  (Base Class)
+    - A database session is opened to execute a query that selects chunks and embeddings related to the file path, ordered by chunk number.
+    - If no chunks and embeddings are found, a message indicating no content is returned.
+    - The method iterates over the retrieved chunks, reconstructing the full document by handling overlapping text between chunks.
+    - If the reconstructed document exceeds 75,000 characters, an exception is raised indicating the file is too long.
+    - A SearchResult object is created with the full text and metadata, which is then added to the agent's search results.
+    - The full text of the document is returned unless an exception occurs, in which case the exception is logged and re-raised.
+- **Output**: The method returns the full text of the reconstructed document as a string, or raises an exception if the document is too long or if an error occurs during execution.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<../../interfaces/agents/data_scope.py.md#DataScopeto_child_datascope>)
+    - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../../interfaces/search.py.md#SearchResult>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](<../agent_base.py.md#AgentBaseadd_search_results>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../../interfaces/search.py.md#SearchResults>)
+- **See also**: [`python-backend/packages/shared/shared/agent/tools/open_file_tool.OpenFileTool`](<#OpenFileTool>)  (Base Class)
 
 
 
@@ -67,13 +66,13 @@ The `execute` method retrieves and processes content chunks from a database for 
 
 ---
 ### system\_prompt<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/open_file_tool.system_prompt}} -->
-The `system_prompt` class method provides a prompt string instructing the use of the OpenFileTool to read a source code file completely, ensuring the file path has a known source code extension.
+The `system_prompt` method provides a static instruction string for using the OpenFileTool to read a source code file.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, typically used in class methods to access class variables or methods.
+    - `cls`: The class reference for which this class method is called.
 - **Control Flow**:
-    - The method directly returns a string without any conditional logic or iterations.
-- **Output**: A string containing instructions to use the OpenFileTool for reading a source code file.
+    - The method directly returns a multi-line string without any conditional logic or iterations.
+- **Output**: A string containing instructions for using the OpenFileTool to read a source code file.
 
 
 

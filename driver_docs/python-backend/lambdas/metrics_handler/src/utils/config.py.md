@@ -6,7 +6,7 @@
 The `config.py` file defines a `Settings` class using Pydantic to manage environment configurations, including environment type and database URL settings.
 
 # Purpose
-This code defines a configuration class using Pydantic's `BaseSettings`, which is designed to manage application settings by loading them from environment variables or a `.env` file. The `Settings` class specifies several configuration options, including `ENVIRONMENT`, which is a literal type restricted to specific environment names, and `DATABASE_URL`, which can be a string or `None`. The `DATABASE_URL_SECRET_NAME` is also defined but must be provided as it lacks a default value. The `model_config` dictionary within the class specifies that settings should be loaded from a `.env` file, ignore empty environment variables, and disregard any extra fields not explicitly defined. This code provides narrow functionality, focusing specifically on application configuration management, and is typically used in applications that require environment-specific settings.
+This code defines a configuration class using Pydantic's `BaseSettings` to manage application settings, typically loaded from environment variables. It provides narrow functionality focused on configuration management, specifically for setting up environment-specific variables such as `ENVIRONMENT`, `DATABASE_URL`, and `DATABASE_URL_SECRET_NAME`. The `Settings` class is configured to read from a `.env` file, ignore empty environment variables, and disregard any extra variables not explicitly defined. The use of `Literal` for the `ENVIRONMENT` variable ensures that only predefined environment names are allowed, enhancing type safety. The instantiation of the `Settings` class at the end of the file suggests that this code is intended to be imported and used in other parts of an application to access these configuration settings.
 # Imports and Dependencies
 
 ---
@@ -21,7 +21,7 @@ This code defines a configuration class using Pydantic's `BaseSettings`, which i
 ### settings
 - **Type**: `Settings`
 - **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is configured to load environment variables from a `.env` file and includes fields for environment type, database URL, and a secret name for the database URL.
-- **Use**: This variable is used to manage and access application configuration settings, such as environment and database connection details, throughout the application.
+- **Use**: The `settings` variable is used to access configuration settings for the application, such as environment type and database connection details.
 
 
 # Classes
@@ -29,11 +29,11 @@ This code defines a configuration class using Pydantic's `BaseSettings`, which i
 ---
 ### Settings<!-- {{#class:python-backend/lambdas/metrics_handler/src/utils/config.Settings}} -->
 - **Members**:
-    - `model_config`: Holds configuration settings for the environment file and other settings.
-    - `ENVIRONMENT`: Specifies the current environment setting, defaulting to 'local'.
-    - `DATABASE_URL`: Stores the database URL, which can be None if not set.
-    - `DATABASE_URL_SECRET_NAME`: Holds the name of the secret for the database URL.
-- **Description**: The `Settings` class extends `BaseSettings` to manage application configuration, particularly focusing on environment settings and database connection details. It uses a configuration dictionary to specify the environment file and handling of extra settings, and it defines environment-specific variables such as `ENVIRONMENT`, `DATABASE_URL`, and `DATABASE_URL_SECRET_NAME` to facilitate flexible and secure configuration management.
+    - `model_config`: A configuration dictionary for environment settings.
+    - `ENVIRONMENT`: Specifies the environment type, defaulting to 'local'.
+    - `DATABASE_URL`: Optional database URL for connecting to the database.
+    - `DATABASE_URL_SECRET_NAME`: Name of the secret containing the database URL.
+- **Description**: The `Settings` class extends `BaseSettings` to manage application configuration, particularly focusing on environment and database settings. It uses a configuration dictionary to specify environment file handling and allows for different environment types through the `ENVIRONMENT` variable. Additionally, it provides options for specifying a database URL directly or through a secret name.
 - **Inherits From**:
     - `BaseSettings`
 

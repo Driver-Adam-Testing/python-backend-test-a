@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project's metadata, dependencies, development dependencies, build system requirements, and configuration for tools like mypy and pytest.
+Configuration for a Python project using Poetry, specifying dependencies, build system, and testing tools.
 
 # Purpose
-The provided file is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. The `[tool.poetry]` section specifies the project's metadata, including its name, version, and author information. The `[tool.poetry.dependencies]` section lists the project's runtime dependencies, specifying the required versions for each package, and includes a comment questioning the necessity of the `gunicorn` package. The `[tool.poetry.group.dev.dependencies]` section outlines the development dependencies, which are tools and libraries used during the development process, such as `pytest` for testing and `mypy` for type checking. The `[build-system]` section indicates the build requirements and backend, specifying that Poetry itself is needed for building the project. Additional configurations for `mypy`, `pytest`, and code coverage are provided in their respective sections, setting options for type checking, test execution, and coverage reporting.
+The file is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. It specifies the project's metadata, including the name `app`, version `0.1.0`, and author information. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, such as `uvicorn`, `fastapi`, and `pydantic`, along with their version constraints. The `[tool.poetry.group.dev.dependencies]` section defines additional dependencies needed for development, like `pytest` and `mypy`. The `[build-system]` section indicates the build requirements and backend, specifying that Poetry version `0.12` or higher is needed. Additional configurations for tools like `mypy` and `pytest` are included, setting options for type checking and test coverage reporting.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

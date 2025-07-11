@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_16_1104-e07bf18dd991_move_top_level_content_to_new_enum_.py` file is an Alembic migration script that upgrades the database by executing a migration to move top-level content to new enum values.
+The `2025_01_16_1104-e07bf18dd991_move_top_level_content_to_new_enum_.py` file is an Alembic migration script that upgrades the database by executing a migration to move top-level content to new enum values, with no operation defined for downgrading.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for usage with SQLAlchemy. The script is designed to perform a specific database schema change, indicated by the [`upgrade`](#upgrade) function, which executes a migration operation defined in `MIGRATE_TOP_LEVEL` from an external module. The purpose of this migration is to move top-level content to new enum values, as suggested by the script's docstring. The [`downgrade`](#downgrade) function is defined but does not perform any operations, indicating that this migration is either irreversible or that a downgrade path has not been implemented. This script provides narrow functionality, focusing solely on a single database schema change.
+This Python file is a database migration script designed to be used with Alembic, a database migration tool for SQLAlchemy. The script provides narrow functionality, specifically focusing on migrating top-level content to new enum values within a database schema. It defines a single upgrade operation that executes a migration function, `MIGRATE_TOP_LEVEL`, imported from another module. The [`downgrade`](<#downgrade>) function is defined but intentionally left empty, indicating that the migration is not reversible through this script. The file includes metadata such as revision identifiers to track the migration's place in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -19,29 +19,29 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the current migration script and ensure that database migrations are applied in the correct order.
+- **Description**: The `revision` variable is a string that represents the unique identifier for a specific database schema migration in Alembic. It is used to track the current version of the database schema in the migration history.
+- **Use**: This variable is used by Alembic to identify and apply the correct migration scripts when upgrading or downgrading the database schema.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
-- **Use**: This variable is used by Alembic to track the migration history and ensure that migrations are applied in the correct order.
+- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to specify labels for branching in Alembic migrations, but in this script, it is not utilized and remains set to `None`.
+- **Description**: The variable `branch_labels` is a global variable initialized to `None`. It is part of the Alembic migration script, which is used for database schema migrations.
+- **Use**: This variable is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script, which is used for database schema migrations.
-- **Use**: This variable is used to specify dependencies on other migrations, but in this case, it indicates that there are no dependencies.
+- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
+- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
 
 
 # Functions
@@ -52,7 +52,7 @@ The `upgrade` function executes a database migration command to move top-level c
 - **Inputs**: None
 - **Control Flow**:
     - The function calls `op.execute` with `MIGRATE_TOP_LEVEL` as the argument.
-- **Output**: The function does not return any value.
+- **Output**: The function does not return any value; it performs a side effect by executing a database operation.
 
 
 ---

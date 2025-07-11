@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `associate_codebases_gh_repo_ids.py` file in the `python-backend` codebase provides a script to associate existing codebases with GitHub app installation IDs, with an option to perform a dry run without making database changes.
+The `associate_codebases_gh_repo_ids.py` file provides functionality to associate existing codebases with GitHub installation IDs, with an option to perform a dry run without making database changes.
 
 # Purpose
-This Python script is designed to associate existing codebases in a database with corresponding GitHub repository IDs based on GitHub app installation IDs. It primarily functions as a command-line tool, utilizing the `argparse` module to handle command-line arguments, specifically a `--dry-run` option that allows users to simulate the process without making any actual changes to the database. The script interacts with a database using SQLModel, leveraging a session to execute queries and commit changes. It retrieves GitHub app installation IDs from a repository class, `GithubAppInstallationsRepository`, and uses these IDs to fetch associated repositories and codebases. The script then matches repository names with codebase paths and updates the codebase metadata with the GitHub repository ID if a match is found.
+This Python script is designed to associate existing codebases in a database with corresponding GitHub repository IDs based on GitHub app installation IDs. It primarily functions as a command-line tool, utilizing the `argparse` module to handle command-line arguments, specifically a `--dry-run` option that allows users to simulate the process without making any actual changes to the database. The script interacts with a database using SQLModel, leveraging a session to query and update records. It retrieves GitHub app installation IDs from a repository class, `GithubAppInstallationsRepository`, and uses these IDs to fetch associated repositories and codebases. The script then matches repository names with codebase paths and updates the codebase metadata with the corresponding GitHub repository ID, committing these changes unless the dry-run mode is active.
 
-The script is structured around a main function that sets up the command-line interface and a core function, [`associate_codebase_with_gh_repo_ids`](#associate_codebase_with_gh_repo_ids), which performs the association logic. The script imports several modules and classes, including database models and utility functions, indicating its integration within a larger application. The use of logging for exception handling suggests that the script is intended for robust operation, providing feedback in case of errors. Overall, this script provides a specific functionality within a broader system, focusing on synchronizing database records with external GitHub data.
+The script is structured around a main function that sets up the command-line interface and a core function, [`associate_codebase_with_gh_repo_ids`](<#associate_codebase_with_gh_repo_ids>), which performs the database operations. The script imports several modules and classes, including database models and utility functions, indicating its integration within a larger application. The primary technical components include database session management, data retrieval and manipulation using SQLModel, and logging for error handling. This script is intended to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, and does not define any public APIs or external interfaces beyond its command-line interface.
 # Imports and Dependencies
 
 ---
@@ -36,31 +36,31 @@ The function associates codebases with GitHub repository IDs based on matching i
     - Initialize a GithubAppInstallationsRepository with the provided session.
     - Retrieve all GitHub installation IDs with a limit of 1000 records.
     - Iterate over each installation ID record to process associated organization IDs.
-    - For each organization ID, fetch repositories and codebases if not already cached.
+    - For each organization ID, fetch repositories and codebases if not already fetched.
     - For each repository, check if its name matches any codebase's relative path.
     - If a match is found and dry_run is False, update the codebase's metadata with the GitHub repository ID and commit the change to the database.
     - Print a success message indicating whether the operation was a dry run or an actual migration.
     - Log an exception if any error occurs during the process.
 - **Output**: The function does not return any value but updates the database with GitHub repository IDs in the codebase metadata if dry_run is False.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](../backend/app/repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](../backend/app/repositories/base_repository.py.md#BaseRepositoryget_all)
-    - [`python-backend/backend/app/utils/gh_ops.fetch_repos`](../backend/app/utils/gh_ops.py.md#fetch_repos)
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../backend/app/repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](<../backend/app/repositories/base_repository.py.md#BaseRepositoryget_all>)
+    - [`python-backend/backend/app/utils/gh_ops.fetch_repos`](<../backend/app/utils/gh_ops.py.md#fetch_repos>)
 
 
 ---
 ### main<!-- {{#callable:python-backend/driver_data/associate_codebases_gh_repo_ids.main}} -->
-The `main` function sets up an argument parser to handle command-line arguments and initiates the process of associating codebases with GitHub repository IDs.
+The `main` function sets up an argument parser to handle command-line arguments and initiates the process of associating codebases with GitHub repository IDs, optionally in a dry-run mode.
 - **Inputs**: None
 - **Control Flow**:
-    - An argument parser is created with a description of the script's purpose.
-    - A command-line argument `--dry-run` is added to the parser to allow simulation of the migration without database changes.
-    - The parsed arguments are stored in the `args` variable.
-    - A new database session is initiated using the `Session` context manager with the `engine`.
-    - The [`associate_codebase_with_gh_repo_ids`](#associate_codebase_with_gh_repo_ids) function is called with the session and the `dry_run` argument from the parsed arguments.
+    - Create an argument parser with a description of the script's purpose.
+    - Add a command-line argument '--dry-run' to the parser to allow simulation without database changes.
+    - Parse the command-line arguments to retrieve user inputs.
+    - Open a database session using the provided engine.
+    - Call the function [`associate_codebase_with_gh_repo_ids`](<#associate_codebase_with_gh_repo_ids>) with the session and the parsed 'dry_run' argument.
 - **Output**: The function does not return any value; it performs operations based on command-line arguments and may print output to the console.
-- **Functions called**:
-    - [`python-backend/driver_data/associate_codebases_gh_repo_ids.associate_codebase_with_gh_repo_ids`](#associate_codebase_with_gh_repo_ids)
+- **Functions Called**:
+    - [`python-backend/driver_data/associate_codebases_gh_repo_ids.associate_codebase_with_gh_repo_ids`](<#associate_codebase_with_gh_repo_ids>)
 
 
 

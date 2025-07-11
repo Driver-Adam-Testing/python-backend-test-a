@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `metadata_multi_context_default.py` file defines a template for handling metadata in multiple contexts, focusing on purpose and content summary prompts.
+The `metadata_multi_context_default.py` file defines a template for generating metadata prompts with multiple contexts, including purpose and content summary, using various components and instructions.
 
 # Purpose
-This code is a configuration file that defines a template for handling metadata in a multi-context environment. It imports specific constants and templates from utility modules, which are likely used to generate or process metadata related to language specialization. The `METADATA_MULTI_CONTEXT_TEMPLATE` is a list of tuples, each representing a different aspect of metadata processing, such as "Purpose" and "Content Summary." Each tuple contains a series of prompts and functions that are presumably used to generate or summarize content based on chunks of data. The code provides narrow functionality, focusing specifically on setting up templates for metadata processing in a structured and reusable manner.
+This Python code file defines a configuration for metadata generation using structured prompting. It imports various components and prompts from shared and utility modules, indicating that it is part of a larger system. The file sets up a template, `METADATA_MULTI_CONTEXT_TEMPLATE`, which consists of tuples that define different contexts for generating metadata, such as "Purpose" and "Content Summary." Each context is associated with specific prompts and instructions, which are constructed using the `Prompt` and `Component` classes. The code provides narrow functionality focused on configuring and organizing metadata prompts, likely for use in a system that processes or generates structured data.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.metadata.CONTENT_SUMMARY_FROM_CHUNKS`
 - `utils.lang_specialization.metadata.CONTENT_SUMMARY_PROMPT`
 - `utils.lang_specialization.metadata.METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT`
@@ -23,8 +28,8 @@ This code is a configuration file that defines a template for handling metadata 
 ---
 ### METADATA\_MULTI\_CONTEXT\_TEMPLATE
 - **Type**: `list`
-- **Description**: `METADATA_MULTI_CONTEXT_TEMPLATE` is a list of tuples, where each tuple contains elements related to metadata prompts for different contexts. Each tuple includes a prompt text, a section header (e.g., '# Purpose', '# Content Summary'), and several other elements that are likely functions or constants imported from other modules, which are used to generate or process metadata for medium and large systems.
-- **Use**: This variable is used to store and organize metadata prompt configurations for different contexts, facilitating the generation of metadata in a structured manner.
+- **Description**: `METADATA_MULTI_CONTEXT_TEMPLATE` is a list of tuples, each containing structured prompt data for different contexts such as 'Purpose' and 'Content Summary'. Each tuple includes a prompt type identifier, a context description, and several prompt strings constructed using the `Prompt` and `Component` classes, which incorporate various style instructions and metadata components.
+- **Use**: This variable is used to define and organize structured prompts for different metadata contexts, facilitating consistent and reusable prompt generation across the application.
 
 
 

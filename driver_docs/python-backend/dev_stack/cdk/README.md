@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cdk` folder in the `python-backend` codebase contains AWS CDK construct definitions and infrastructure deployment configurations for development environments, focusing on asset onboarding and metrics processing.
+AWS CDK constructs and infrastructure definitions for deploying Lambda functions and other resources.
 
 ## Folders
-- **[constructs](constructs/README.md)**: The `constructs` folder in the `python-backend` codebase contains CDK construct definitions for deploying AWS Lambda functions related to asset onboarding and metrics processing, including their configurations and associated resources.
+- **[constructs](constructs/README.md)**: CDK constructs for deploying AWS Lambda functions for asset onboarding and metrics processing.
 
 ## Files
 - **[dev_stack.py](dev_stack.py.md)**: The `dev_stack.py` file defines a `DevStack` class for deploying additional infrastructure in a development environment, including an S3 bucket and Lambda functions for asset onboarding and metrics.

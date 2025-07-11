@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_func_defs.c` file contains various function definitions and a `main` function that demonstrates their usage, including functions with different return types, parameter types, and attributes, as well as struct and union handling.
+The `test_func_defs.c` file contains various function definitions and a `main` function that demonstrates their usage, including handling of pointers, structures, and unions.
 
 # Purpose
-This C source code file is a comprehensive demonstration of various C programming concepts, including function definitions, pointer manipulations, structure and union usage, and the use of typedefs and enums. The file includes a [`main`](#main) function, indicating that it is an executable program rather than a library or header file. The code defines several functions with different return types and parameter configurations, showcasing static functions, functions with attributes, and functions returning pointers, including double and triple pointers. The use of `static` within functions and variables suggests an emphasis on understanding scope and lifetime in C.
+This C source code file is an executable program that demonstrates various C programming concepts and functionalities. It includes a series of function definitions, each showcasing different aspects of C, such as static functions, pointer manipulation, and function attributes. The file also defines a [`main`](<#main>) function, which serves as the entry point of the program, where it calls these functions and prints their results to the console. The functions include [`foo`](<#foo>), [`bar`](<#bar>), [`baz`](<#baz>), [`qux`](<#qux>), [`wibble`](<#wibble>), `myFunc`, [`arrayParam`](<#arrayParam>), [`roPointerFunc`](<#roPointerFunc>), [`triplePtrFunc`](<#triplePtrFunc>), and [`returnStruct`](<#returnStruct>), each illustrating different return types and parameter usages, such as static pointers, constant pointers, and structures.
 
-The file also demonstrates the use of structures and unions, with examples of how to define and return structures, as well as how to manipulate union members. The [`main`](#main) function serves as a test harness, calling each function and printing the results, which helps in understanding the behavior and output of each component. Additionally, the code references external types and constants, such as `MyOtherStruct`, `MyTypedefStruct`, and `MYENUM_VAL1`, which are presumably defined in the included "test.h" header file. This inclusion suggests that the file is part of a larger project where these types and constants are defined elsewhere, and the file serves to test or demonstrate their usage in conjunction with the functions defined within.
+Additionally, the code demonstrates the use of structures, unions, and typedefs, as well as the manipulation of arrays and pointers. The [`main`](<#main>) function initializes instances of these data types and prints their values, providing a comprehensive example of how these elements can be used in C programming. The inclusion of a header file, "test.h", suggests that some types or constants, such as `MyOtherStruct`, `MyUnion`, `MyTypedefStruct`, `MYENUM_VAL1`, and `g_anonEnumVar`, are defined externally, indicating that this file is part of a larger codebase. Overall, the file serves as a practical illustration of C language features, focusing on function definitions, data structures, and basic input/output operations.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ The file also demonstrates the use of structures and unions, with examples of ho
 - **Members**:
     - `x`: An integer field representing the x-coordinate or value.
     - `y`: An integer field representing the y-coordinate or value.
-- **Description**: `MyStruct` is a simple C structure that contains two integer fields, `x` and `y`, which can be used to represent a point in a 2D space or any other pair of related integer values. This structure is useful for grouping two related integers together, allowing for more organized and readable code when dealing with such pairs.
+- **Description**: `MyStruct` is a simple C structure that contains two integer fields, `x` and `y`, which can be used to represent a point in a 2D space or any other pair of related integer values. This structure is useful for grouping these two integers together, allowing for more organized and readable code when dealing with pairs of values.
 
 
 # Functions
@@ -42,21 +42,21 @@ The function `foo` is a static function that returns the integer value 0.
 
 ---
 ### bar<!-- {{#callable:bar}} -->
-The function 'bar' takes an integer as input and returns a NULL pointer.
+The function `bar` takes an integer as input and returns a null pointer of type `char *`.
 - **Inputs**:
     - `x`: An integer input parameter, which is not used in the function body.
 - **Control Flow**:
-    - The function takes an integer parameter 'x'.
-    - The function immediately returns a NULL pointer without using the input parameter.
-- **Output**: The function returns a NULL pointer of type 'char *'.
+    - The function receives an integer parameter `x`.
+    - The function immediately returns `NULL`, without using the input parameter `x`.
+- **Output**: The function returns a `NULL` pointer of type `char *`.
 
 
 ---
 ### baz<!-- {{#callable:baz}} -->
-The function `baz` returns a pointer to a static integer pointer initialized to NULL.
+The `baz` function returns a pointer to a static integer pointer initialized to NULL.
 - **Inputs**: None
 - **Control Flow**:
-    - Declare a static integer pointer `dummy_ptr` initialized to NULL.
+    - Declare a static integer pointer `dummy_ptr` and initialize it to NULL.
     - Return the address of `dummy_ptr`.
 - **Output**: A pointer to a static integer pointer, which is initialized to NULL.
 
@@ -66,10 +66,10 @@ The function `baz` returns a pointer to a static integer pointer initialized to 
 The function `qux` is a static function that returns a null pointer of type `int *`.
 - **Inputs**: None
 - **Control Flow**:
-    - The function `qux` is defined as a static function, meaning it is only accessible within the file it is defined in.
+    - The function `qux` is defined as a static function, meaning it is limited to the file scope.
     - The function does not take any parameters.
-    - The function immediately returns a null pointer of type `int *`.
-- **Output**: The function returns a null pointer of type `int *`.
+    - The function immediately returns a `NULL` pointer of type `int *`.
+- **Output**: The function returns a `NULL` pointer of type `int *`.
 
 
 ---
@@ -84,38 +84,38 @@ The `wibble` function is a simple C function that returns the integer value 42.
 
 ---
 ### arrayParam<!-- {{#callable:arrayParam}} -->
-The `arrayParam` function modifies the first element of a character array to be 'A'.
+The `arrayParam` function modifies the first element of a character array to 'A'.
 - **Inputs**:
-    - `arr`: A character array of size 10, passed by reference, which allows the function to modify its contents.
+    - `arr`: A character array of size 10, passed by reference, which will be modified by the function.
 - **Control Flow**:
-    - The function takes a character array `arr` as an argument.
-    - It directly assigns the character 'A' to the first element of the array `arr[0]`.
+    - The function takes a character array `arr` as input.
+    - It assigns the character 'A' to the first element of the array `arr[0]`.
 - **Output**: The function does not return any value; it modifies the input array in place.
 
 
 ---
 ### roPointerFunc<!-- {{#callable:roPointerFunc}} -->
-The function `roPointerFunc` returns a pointer to a static character initialized to 'Z'.
+The function `roPointerFunc` returns a pointer to a static character initialized to 'Z', ensuring the character persists across function calls.
 - **Inputs**: None
 - **Control Flow**:
     - Declare a static character variable `c` initialized to 'Z'.
     - Return the address of the static character `c`.
-- **Output**: A pointer to a static character 'Z'.
+- **Output**: A constant pointer to a static character 'Z'.
 
 
 ---
 ### triplePtrFunc<!-- {{#callable:triplePtrFunc}} -->
-The `triplePtrFunc` function returns a pointer to a static double pointer to an integer.
+The function `triplePtrFunc` returns a pointer to a static double pointer to an integer.
 - **Inputs**: None
 - **Control Flow**:
     - Declare a static double pointer to an integer named `dummy_double_ptr` and initialize it to `NULL`.
     - Return the address of `dummy_double_ptr`, effectively returning a triple pointer to an integer.
-- **Output**: A triple pointer to an integer, specifically the address of a static double pointer initialized to `NULL`.
+- **Output**: A pointer to a static double pointer to an integer, effectively a triple pointer to an integer.
 
 
 ---
 ### returnStruct<!-- {{#callable:returnStruct}} -->
-The function `returnStruct` initializes and returns a `MyStruct` structure with predefined values.
+The function `returnStruct` initializes and returns a `MyStruct` structure with predefined values for its members.
 - **Inputs**: None
 - **Control Flow**:
     - Declare a variable `s` of type `struct MyStruct`.
@@ -133,30 +133,30 @@ The `main` function initializes various data structures, calls several functions
     - Initialize a `MyOtherStruct` instance `mos` with values 42 and 3.14f for its members `a` and `b`.
     - Initialize a `MyUnion` instance `u` with the integer value 100 for its member `i`.
     - Initialize a `MyTypedefStruct` instance `tds` with values 10 and 20 for its members `w` and `z`.
-    - Call the function [`foo`](#foo) and print its return value.
-    - Call the function [`bar`](#bar) with argument 10 and print its return value as a pointer.
-    - Call the function [`baz`](#baz) and print its return value as a pointer.
-    - Call the function [`qux`](#qux) and print its return value as a pointer.
-    - Call the function [`wibble`](#wibble) and print its return value.
+    - Call the function [`foo`](<#foo>) and print its return value.
+    - Call the function [`bar`](<#bar>) with argument 10 and print its return value as a pointer.
+    - Call the function [`baz`](<#baz>) and print its return value as a pointer.
+    - Call the function [`qux`](<#qux>) and print its return value as a pointer.
+    - Call the function [`wibble`](<#wibble>) and print its return value.
     - Call the function `myFunc` with arguments 2 and 3, and print its return value.
-    - Declare a character array `arr` of size 10, pass it to [`arrayParam`](#arrayParam), and print the first character of the modified array.
-    - Call [`roPointerFunc`](#roPointerFunc), store the result in `roPtr`, and print the character pointed to by `roPtr`.
-    - Call [`triplePtrFunc`](#triplePtrFunc), store the result in `triplePtr`, and print the pointer value.
-    - Call [`returnStruct`](#returnStruct), store the result in `s2`, and print the values of its members `x` and `y`.
+    - Declare a character array `arr` of size 10, pass it to [`arrayParam`](<#arrayParam>), and print the first character of the modified array.
+    - Call [`roPointerFunc`](<#roPointerFunc>), store the result in `roPtr`, and print the character it points to.
+    - Call [`triplePtrFunc`](<#triplePtrFunc>), store the result in `triplePtr`, and print it as a pointer.
+    - Call [`returnStruct`](<#returnStruct>), store the result in `s2`, and print its members `x` and `y`.
     - Print the value of `MYENUM_VAL1` from `MyEnum`.
-    - Print the value of the global anonymous enum variable `g_anonEnumVar`.
+    - Print the value of `g_anonEnumVar` from an anonymous enum.
     - Print the values of the members of `mos`, `u`, and `tds`.
 - **Output**: The function returns an integer value of 0, indicating successful execution.
-- **Functions called**:
-    - [`foo`](#foo)
-    - [`bar`](#bar)
-    - [`baz`](#baz)
-    - [`qux`](#qux)
-    - [`wibble`](#wibble)
-    - [`arrayParam`](#arrayParam)
-    - [`roPointerFunc`](#roPointerFunc)
-    - [`triplePtrFunc`](#triplePtrFunc)
-    - [`returnStruct`](#returnStruct)
+- **Functions Called**:
+    - [`foo`](<#foo>)
+    - [`bar`](<#bar>)
+    - [`baz`](<#baz>)
+    - [`qux`](<#qux>)
+    - [`wibble`](<#wibble>)
+    - [`arrayParam`](<#arrayParam>)
+    - [`roPointerFunc`](<#roPointerFunc>)
+    - [`triplePtrFunc`](<#triplePtrFunc>)
+    - [`returnStruct`](<#returnStruct>)
 
 
 

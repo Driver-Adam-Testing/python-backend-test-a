@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `c_cpp_driver.py` file implements a driver for parsing C and C++ code using Tree-sitter, providing functions to extract various code elements such as imports, callable definitions, data structures, variables, function calls, and function declarations.
+The `c_cpp_driver.py` file implements a driver for parsing C and C++ code using Tree-sitter, providing functionality to extract various code elements such as imports, callable definitions, data structures, variables, function calls, and function declarations.
 
 # Purpose
-This Python source code file is designed to facilitate the parsing and analysis of C and C++ source code using the Tree-sitter parsing library. It defines a class, `CppCDriverTree`, which extends the `DriverTree` class, and provides methods to extract various elements from C/C++ code, such as imports, callable definitions, data structure definitions, variables, function calls, and function declarations. The file includes several helper functions to handle specific parsing tasks, such as extracting names and scope parts from nodes, and determining the fully qualified path of a node within the code's structure. The code is structured to handle complex C/C++ constructs, including templates, qualified identifiers, and various types of declarators, ensuring comprehensive analysis of the source code.
+This Python code file is designed to parse and analyze C and C++ source code using the Tree-sitter library. It provides a comprehensive set of functions to extract various elements from C/C++ code, such as class and function names, base class information, function calls, and data structure definitions. The file defines a class `CppCDriverTree`, which extends a base class `DriverTree`, and is responsible for handling both C and C++ code by leveraging the same Tree-sitter grammar. The class includes methods to extract imports, callable definitions, data structure definitions, variables, function calls, and function declarations. These methods utilize Tree-sitter queries to traverse and analyze the abstract syntax tree (AST) of the source code, extracting relevant information and returning it in a structured format.
 
-The file is intended to be part of a larger system that processes C/C++ code, likely for purposes such as code analysis, refactoring, or documentation generation. It does not define a standalone script but rather a library component that can be imported and used within a broader application. The `CppCDriverTree` class provides a public API for extracting structured data about the code, which can be used to understand the code's structure and dependencies. The use of Tree-sitter allows for precise and efficient parsing, making this code suitable for applications that require detailed analysis of C/C++ source code.
+The file also includes several helper functions and data structures to facilitate the extraction process. For instance, functions like [`node_to_text`](<#node_to_text>), [`get_class_name_and_scope_parts`](<#get_class_name_and_scope_parts>), and [`_extract_name_and_scope_from_qualified_identifier`](<#_extract_name_and_scope_from_qualified_identifier>) are used to decode and process nodes within the AST. The `BaseClassInfo` data class is used to store information about base classes, including their names, access specifiers, and whether they use virtual inheritance. The code is structured to handle various complexities of C/C++ syntax, such as template declarations, qualified identifiers, and different types of declarators. Overall, this file serves as a specialized library for parsing and extracting semantic information from C/C++ code, making it a valuable tool for code analysis and refactoring tasks.
 # Imports and Dependencies
 
 ---
@@ -30,15 +30,15 @@ The file is intended to be part of a larger system that processes C/C++ code, li
     - `name`: The name of the base class.
     - `access_specifier`: The access specifier for the base class, which can be 'public', 'private', 'protected', or None.
     - `is_virtual`: Indicates whether the base class is virtual.
-- **Description**: The BaseClassInfo class is a data structure used to represent information about a base class in a class hierarchy. It includes the name of the base class, an optional access specifier (such as 'public', 'private', or 'protected'), and a boolean flag indicating whether the base class is virtual. This class is useful for managing and displaying base class information in a structured format, particularly in the context of parsing or analyzing C++ code.
+- **Description**: The `BaseClassInfo` class is a data structure that encapsulates information about a base class in a class hierarchy. It includes the name of the base class, an optional access specifier indicating the level of access (public, private, or protected), and a boolean flag to denote if the inheritance is virtual. This class is useful for representing and managing base class details in object-oriented programming contexts, particularly when dealing with class inheritance hierarchies.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo.__str__`](#BaseClassInfo__str__)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo.__str__`](<#BaseClassInfo__str__>)
 
 **Methods**
 
 ---
 #### BaseClassInfo\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo.__str__}} -->
-The `__str__` method generates a string representation of a `BaseClassInfo` object, including its virtual status, access specifier, and name.
+The `__str__` method constructs a string representation of a `BaseClassInfo` object, including its virtual status, access specifier, and name.
 - **Inputs**: None
 - **Control Flow**:
     - Initialize an empty list `parts` to hold components of the string representation.
@@ -47,7 +47,7 @@ The `__str__` method generates a string representation of a `BaseClassInfo` obje
     - Append the `name` attribute to `parts`.
     - Join the elements of `parts` with a space and return the resulting string.
 - **Output**: A string that represents the `BaseClassInfo` object, including its virtual status, access specifier, and name, separated by spaces.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo`](#BaseClassInfo)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo`](<#BaseClassInfo>)  (Base Class)
 
 
 
@@ -56,94 +56,96 @@ The `__str__` method generates a string representation of a `BaseClassInfo` obje
 - **Decorators**: `@dataclass`
 - **Members**:
     - `language`: Uses cpp grammar for both C and C++.
-    - `extensions`: Set of file extensions associated with C and C++.
-- **Description**: The `CppCDriverTree` class is a specialized driver for parsing both C and C++ code using the TreeSitter grammar. It extends the `DriverTree` class and is designed to handle the extraction of various code elements such as imports, callable definitions, data structure definitions, variables, function calls, and function declarations from C and C++ source files. The class is equipped with methods that utilize TreeSitter queries to identify and process these elements, providing a structured way to analyze and manipulate C/C++ code. The class also defines a set of file extensions that it recognizes as C/C++ files, ensuring that it processes the correct types of files.
+    - `extensions`: A set of file extensions associated with C and C++ source files.
+- **Description**: The `CppCDriverTree` class is a specialized driver for parsing and analyzing C and C++ code using the TreeSitter grammar. It extends the `DriverTree` class and is designed to handle both C and C++ languages by utilizing a shared grammar. The class provides methods to extract various code elements such as imports, callable definitions, data structure definitions, variables, function calls, and function declarations from the source code. It is equipped with functionality to navigate and interpret the syntax tree, allowing for detailed analysis and extraction of code symbols and their attributes.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_imports`](#CppCDriverTreeextract_imports)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_callable_definitions`](#CppCDriverTreeextract_callable_definitions)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](#CppCDriverTreeextract_data_structure_definitions)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables`](#CppCDriverTreeextract_variables)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](#CppCDriverTreeextract_function_calls)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_declarations`](#CppCDriverTreeextract_function_declarations)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_imports`](<#CppCDriverTreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_callable_definitions`](<#CppCDriverTreeextract_callable_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<#CppCDriverTreeextract_data_structure_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables`](<#CppCDriverTreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](<#CppCDriverTreeextract_function_calls>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_declarations`](<#CppCDriverTreeextract_function_declarations>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](base.py.md#DriverTree)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<base.py.md#DriverTree>)
 
 **Methods**
 
 ---
 #### CppCDriverTree\.extract\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_imports}} -->
-The `extract_imports` method extracts and returns all `#include` directives from C code as a list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects.
+The `extract_imports` method extracts and returns all `#include` directives from C code, capturing their paths and metadata.
 - **Inputs**: None
 - **Control Flow**:
     - A query is created to match `#include` directives with either `string_literal` or `system_lib_string` paths.
-    - The query is executed against the root node of the syntax tree to find all matches.
+    - The query is executed against the root node of the syntax tree to find matches.
     - For each match, the include directive and path nodes are extracted.
-    - The include path text is decoded and cleaned of delimiters (angle brackets or quotes) based on its type.
-    - The line range and fully qualified path for the include directive node are determined.
-    - A [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object is created for each include directive and added to a list.
-    - The list of includes is sorted by the start byte of each include path.
-    - The sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects is returned.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects representing the `#include` directives found in the C code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](base.py.md#DriverTreeget_node_line_range)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](#node_to_text)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+    - The path text is decoded and cleaned of delimiters (angle brackets or quotes) based on its type.
+    - The line range and fully qualified path of the directive node are determined.
+    - A [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object is created for each include, capturing its metadata.
+    - The list of includes is sorted by their starting byte position.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects representing the extracted `#include` directives.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](<#node_to_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 ---
 #### CppCDriverTree\.extract\_callable\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_callable_definitions}} -->
-The `extract_callable_definitions` method extracts and returns a sorted list of function definitions from a syntax tree using TreeSitter.
+The `extract_callable_definitions` method extracts and returns a sorted list of function definitions from a C or C++ source file using TreeSitter.
 - **Inputs**: None
 - **Control Flow**:
-    - A query is created to find function definitions in the syntax tree.
-    - The query is executed to get matches of function definitions.
-    - For each match, the function name, parameters, and scope parts are extracted using a helper function.
-    - If the function name is not found, the loop continues to the next match.
-    - The function definition node is checked for a template declaration parent and updated if necessary.
-    - The start and end lines of the function definition are determined.
-    - The fully qualified path to the function's parent is constructed.
-    - A [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object is created for each function definition with relevant details and added to a list.
-    - The list of function definitions is sorted by their start byte position.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects representing function definitions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.get_function_name_and_params_and_scope_parts`](#get_function_name_and_params_and_scope_parts)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent`](#maybe_use_template_declaration_parent)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](base.py.md#DriverTreeget_node_line_range)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](#node_to_text)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+    - A TreeSitter query is created to find all function definitions in the syntax tree.
+    - The query is executed against the root node of the syntax tree to get matches.
+    - For each match, the function definition node is extracted and its declarator node is used to get the function name, parameters, and scope parts.
+    - If the function name cannot be parsed, the loop continues to the next match.
+    - The function definition node is checked for a template declaration parent, and if present, the parent node is used.
+    - The start and end line numbers of the function definition are determined.
+    - The fully qualified path to the function's parent is constructed using the scope parts and parent path.
+    - A [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object is created for each function, containing metadata such as name, line range, byte range, file path, and fully qualified path.
+    - The function data is appended to a list of functions.
+    - The list of functions is sorted by their start byte position.
+    - The sorted list of function definitions is returned.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects representing function definitions, each containing metadata such as name, line range, byte range, file path, and fully qualified path.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.get_function_name_and_params_and_scope_parts`](<#get_function_name_and_params_and_scope_parts>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent`](<#maybe_use_template_declaration_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](<#node_to_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 ---
 #### CppCDriverTree\.extract\_data\_structure\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions}} -->
-The `extract_data_structure_definitions` method extracts and returns a list of data structure definitions (structs, unions, enums, and classes) from a C/C++ source code tree, excluding forward declarations.
+The `extract_data_structure_definitions` method extracts and returns a list of data structure definitions such as structs, unions, enums, and classes from a parsed C/C++ source code tree, excluding forward declarations.
 - **Inputs**: None
 - **Control Flow**:
-    - Define a query string to match various data structure definitions and typedefs using Tree-sitter syntax.
-    - Execute the query on the root node of the syntax tree to find matches.
-    - Iterate over each match and use pattern matching to handle different types of data structure definitions.
-    - For each match, check if the data structure is a bare definition inside a type_definition or declaration and skip it if so.
-    - Extract the name and scope of the data structure from the matched nodes, handling qualified identifiers if necessary.
-    - Determine the start and end lines of the data structure in the source code.
-    - Construct a [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object for each valid data structure, including its name, location, and fully qualified path.
-    - Append each constructed [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object to the results list.
-    - Sort the results list by the start byte of each data structure.
-    - Return the sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects representing the extracted data structure definitions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTreeError`](base.py.md#DriverTreeError)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent`](#maybe_use_template_declaration_parent)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_name_and_scope_from_qualified_identifier`](#_extract_name_and_scope_from_qualified_identifier)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](base.py.md#DriverTreeget_node_line_range)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.extract_base_class_info`](#extract_base_class_info)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](#node_to_text)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+    - A query string is defined to match various data structure definitions and typedefs in the source code.
+    - The query is executed against the root node of the parsed tree to find matches.
+    - A helper function `has_ancestor` is defined to check if a node has any ancestor of specified types.
+    - For each match, a pattern matching block is used to handle different types of data structure definitions and typedefs.
+    - Bare struct, union, and enum definitions inside type definitions or declarations are skipped.
+    - Classes without a body (forward declarations) are skipped.
+    - The name of the data structure is extracted from the matched nodes, handling qualified identifiers if necessary.
+    - The start and end lines, fully qualified path, and other metadata are extracted for each data structure.
+    - Base class information is extracted if present.
+    - A [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object is created for each data structure and added to the results list.
+    - The results list is sorted by the start byte of each data structure and returned.
+- **Output**: A list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects representing the extracted data structure definitions.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTreeError`](<base.py.md#DriverTreeError>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent`](<#maybe_use_template_declaration_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_name_and_scope_from_qualified_identifier`](<#_extract_name_and_scope_from_qualified_identifier>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.extract_base_class_info`](<#extract_base_class_info>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](<#node_to_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 ---
@@ -158,57 +160,58 @@ The method `_get_fully_qualified_path_to_parent` extracts the fully qualified pa
     - Check the type of `current` to determine if it is a namespace, class, struct, union, enum, or function definition.
     - For a `namespace_definition`, append the namespace name to `path_parts`, or append '(anonymous)' if it is an anonymous namespace.
     - For class, struct, union, or enum specifiers, append the name to `path_parts` if it exists.
-    - For a `function_definition`, append the function name to `path_parts` if it exists.
+    - For a `function_definition`, extract the function name and append it to `path_parts`.
     - Move `current` to its parent to continue traversing up the hierarchy.
     - After the loop, reverse `path_parts` to get the correct order from outermost to innermost scope.
     - Join the elements of `path_parts` with '::' and return the resulting string, or return an empty string if `path_parts` is empty.
 - **Output**: A string representing the fully qualified path to the parent of the node, with '::' as a separator, or an empty string if no path is found.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 ---
 #### CppCDriverTree\.extract\_variables<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables}} -->
-The `extract_variables` method identifies and extracts global variable declarations from a C/C++ source code tree using Tree-sitter, returning them as a sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects.
+The `extract_variables` method identifies and extracts global variable declarations from a C/C++ source code tree using Tree-sitter, returning them as a sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects.
 - **Inputs**: None
 - **Control Flow**:
-    - A Tree-sitter query is executed to find all nodes matching the pattern for global variable declarations.
-    - The method iterates over each match, extracting the declaration node for each global variable.
-    - A helper function `is_top_level_or_preprocessor_wrapped` checks if the node is at the top level or wrapped by preprocessor directives, continuing only if true.
-    - The line range of the declaration node is determined using [`get_node_line_range`](base.py.md#DriverTreeget_node_line_range).
-    - The method skips nodes that contain function declarators or type definitions using [`contains_node_types`](#contains_node_types).
-    - For each child node of the declaration, it checks if the node type is one of several declarator types, and attempts to find an identifier node using [`find_identifier_node`](#find_identifier_node).
-    - If an identifier node is found, it extracts the variable name, constructs a [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object with relevant metadata, and appends it to the list of variables.
-    - Finally, the list of variables is sorted by their start byte position and returned.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects representing global variables, each containing metadata such as name, line range, byte range, file path, and fully qualified parent path.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](base.py.md#DriverTreeget_node_line_range)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.contains_node_types`](#contains_node_types)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.find_identifier_node`](#find_identifier_node)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](#node_to_text)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+    - A Tree-sitter query is executed to find all nodes matching the `(declaration) @global_var` pattern in the syntax tree.
+    - The method iterates over each match, checking if the declaration node is at the top level or wrapped by preprocessor nodes using the `is_top_level_or_preprocessor_wrapped` function.
+    - If the node is not top-level or is wrapped by non-preprocessor nodes, it is skipped.
+    - The method retrieves the line range of the declaration node using [`get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>).
+    - It checks if the node contains types like `function_declarator` or `type_definition` using [`contains_node_types`](<#contains_node_types>), skipping such nodes.
+    - For each child of the declaration node, it checks if the child is a valid declarator type (e.g., `identifier`, `init_declarator`).
+    - The method finds the identifier node using [`find_identifier_node`](<#find_identifier_node>) and extracts the variable name.
+    - It constructs a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object for each valid variable, including metadata like name, line range, byte range, file path, and fully qualified path.
+    - The variables are collected in a list and sorted by their start byte before being returned.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects representing global variables, each containing metadata such as name, line range, byte range, file path, and fully qualified path.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.contains_node_types`](<#contains_node_types>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.find_identifier_node`](<#find_identifier_node>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](<#node_to_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 ---
 #### CppCDriverTree\.extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls}} -->
-The `extract_function_calls` method identifies and extracts function call expressions from a syntax tree, returning them as a sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects.
+The `extract_function_calls` method identifies and extracts function call expressions from a syntax tree, returning them as a sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects.
 - **Inputs**: None
 - **Control Flow**:
     - A query is created to match function call expressions in the syntax tree.
     - The query is executed against the root node of the tree to find matches.
     - For each match, the function name is extracted from the identifier node within the call expression.
-    - If a valid function name is found, additional metadata such as line range, byte range, and fully qualified path is gathered.
-    - A [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object is created for each function call and added to a list.
+    - If a valid function name is found, additional details such as line range, byte range, and fully qualified path are gathered.
+    - A [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object is created for each function call and added to a list.
     - The list of function calls is sorted by their start byte position.
-    - The sorted list is returned.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects representing function calls in the syntax tree.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](base.py.md#DriverTreeget_node_line_range)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](#node_to_text)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+    - The sorted list of function calls is returned.
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects representing function calls in the syntax tree.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](<#node_to_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 ---
@@ -225,20 +228,20 @@ The `extract_function_declarations` method extracts all function declarations (e
     - If the function name is not found, skip to the next match.
     - Check if the declaration node has a body (compound statement); if it does, skip to the next match.
     - Check if the declaration node is wrapped in a template declaration and adjust the node if necessary.
-    - Determine the start and end line numbers of the declaration node.
-    - Get the fully qualified path to the parent of the declaration node.
-    - Create a [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) object with the extracted information and add it to the declarations list.
+    - Extract the start and end line numbers of the declaration node.
+    - Determine the fully qualified path to the parent of the declaration node.
+    - Create a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object with the extracted information and add it to the declarations list.
     - Sort the declarations list by the start byte of each declaration.
     - Return the sorted list of function declarations.
-- **Output**: A sorted list of [`RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData) objects representing function declarations in the C code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.get_function_name_and_params_and_scope_parts`](#get_function_name_and_params_and_scope_parts)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent`](#maybe_use_template_declaration_parent)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](base.py.md#DriverTreeget_node_line_range)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](#CppCDriverTree_get_fully_qualified_path_to_parent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](#node_to_text)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](#CppCDriverTree)  (Base Class)
+- **Output**: A sorted list of [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) objects representing function declarations in the C code.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.get_function_name_and_params_and_scope_parts`](<#get_function_name_and_params_and_scope_parts>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent`](<#maybe_use_template_declaration_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree._get_fully_qualified_path_to_parent`](<#CppCDriverTree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.node_to_text`](<#node_to_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree`](<#CppCDriverTree>)  (Base Class)
 
 
 
@@ -251,8 +254,8 @@ The `node_to_text` function extracts and decodes the text content from a tree-si
     - `node`: A tree-sitter Node object from which text is to be extracted.
 - **Control Flow**:
     - The function accesses the `text` attribute of the provided `node` object.
-    - It decodes the byte string using UTF-8 encoding.
-- **Output**: A string representing the decoded text content of the node.
+    - It decodes the byte string using UTF-8 encoding to convert it into a Python string.
+- **Output**: A string representing the decoded text content of the tree-sitter node.
 
 
 ---
@@ -261,35 +264,34 @@ The function `get_class_name_and_scope_parts` extracts the class name and scope 
 - **Inputs**:
     - `class_specifier_node`: A `tree_sitter.Node` representing a class specifier in a syntax tree.
 - **Control Flow**:
-    - Check if the `class_specifier_node` is of type 'class_specifier'.
-    - Retrieve the child node by field name 'name'.
+    - Check if the `class_specifier_node` type is 'class_specifier'.
+    - Retrieve the child node with the field name 'name'.
     - If the name node is of type 'type_identifier', decode its text to get the class name and return it with an empty scope parts list.
-    - If the name node is of type 'qualified_identifier', call [`_extract_name_and_scope_from_qualified_identifier`](#_extract_name_and_scope_from_qualified_identifier) to get the name and scope parts, then return them.
-    - If the name node type is unhandled, print an error message and return `None` and an empty list.
-    - If the `class_specifier_node` type is unhandled, print an error message and return `None` and an empty list.
+    - If the name node is of type 'qualified_identifier', call [`_extract_name_and_scope_from_qualified_identifier`](<#_extract_name_and_scope_from_qualified_identifier>) to get the class name and scope parts, then return them.
+    - If the name node type is unhandled, print a message and return `None` and an empty list.
+    - If the `class_specifier_node` type is unhandled, print a message and return `None` and an empty list.
 - **Output**: A tuple containing the class name as a string (or `None` if not found) and a list of scope parts as strings.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_name_and_scope_from_qualified_identifier`](#_extract_name_and_scope_from_qualified_identifier)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_name_and_scope_from_qualified_identifier`](<#_extract_name_and_scope_from_qualified_identifier>)
 
 
 ---
 ### get\_function\_name\_and\_params\_and\_scope\_parts<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.get_function_name_and_params_and_scope_parts}} -->
-Extracts the function name, parameter node, and scope parts from a given function declarator node.
+The function `get_function_name_and_params_and_scope_parts` extracts the function name, parameter node, and scope parts from a given function declarator node.
 - **Inputs**:
-    - `declarator_node`: A tree_sitter.Node representing the function declarator from which to extract the function name, parameters, and scope parts.
+    - `declarator_node`: A `tree_sitter.Node` representing the function declarator from which to extract the function name, parameters, and scope parts.
 - **Control Flow**:
-    - Check if the declarator_node is of type 'function_declarator'.
-    - If it is, retrieve the 'declarator' and 'parameters' child nodes.
-    - Determine the type of the 'declarator' node and handle various cases such as 'identifier', 'qualified_identifier', 'destructor_name', 'operator_name', and 'template_function'.
-    - For 'qualified_identifier', call a helper function to extract the function name and scope parts.
-    - For other types, decode the text of the 'declarator' node and return it along with the parameters node and an empty scope list.
-    - If the 'declarator' node is of a nested type, recursively call the function on the nested node.
-    - Handle other declarator types like 'pointer_declarator', 'parenthesized_declarator', and 'attributed_declarator' by recursively calling the function on their inner declarator nodes.
-    - For 'reference_declarator', check the last child node and recurse if it's a 'function_declarator'.
-    - Return None, None, and an empty list if the declarator type is unsupported or unhandled.
-- **Output**: A tuple containing the function name as a string (or None if not found), the parameters node (or None if not found), and a list of scope parts as strings.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_name_and_scope_from_qualified_identifier`](#_extract_name_and_scope_from_qualified_identifier)
+    - Check if the `declarator_node` is of type `function_declarator` and extract the `name_node` and `params_node` using `child_by_field_name`.
+    - If `name_node` is of type `identifier` or `field_identifier`, return its text as the function name, the `params_node`, and an empty list for scope parts.
+    - If `name_node` is of type `qualified_identifier`, call [`_extract_name_and_scope_from_qualified_identifier`](<#_extract_name_and_scope_from_qualified_identifier>) to get the function name and scope parts, then return them with the `params_node`.
+    - Handle other specific `name_node` types like `destructor_name`, `operator_name`, and `template_function` by returning their text as the function name, the `params_node`, and an empty list for scope parts.
+    - If `name_node` is not one of the above types, recursively call `get_function_name_and_params_and_scope_parts` on `name_node`.
+    - For `declarator_node` types like `pointer_declarator`, `parenthesized_declarator`, and `attributed_declarator`, recursively call the function on their inner declarator.
+    - For `reference_declarator`, check the last child node; if it's a `function_declarator`, recursively call the function on it.
+    - Return `None, None, []` if the `declarator_node` type is unsupported or unhandled.
+- **Output**: A tuple containing the function name as a string (or `None` if not found), the parameters node as a `tree_sitter.Node` (or `None` if not found), and a list of strings representing scope parts.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_name_and_scope_from_qualified_identifier`](<#_extract_name_and_scope_from_qualified_identifier>)
 
 
 ---
@@ -301,9 +303,9 @@ The function extracts the final identifier name and its scope from a qualified i
     - Retrieve the 'scope' child node from the qualified_node and decode its text to form the initial scope_parts list.
     - Retrieve the 'name' child node from the qualified_node.
     - If the name_node is None, return None and an empty list.
-    - Check the type of the name_node: if it is an identifier, field_identifier, or type_identifier, decode its text and return it with the scope_parts.
-    - If the name_node is a qualified_identifier, recursively call the function to extract the name and additional scope parts, then return the combined results.
-    - If the name_node is a destructor_name or operator_name, decode its text and return it with the scope_parts.
+    - If the name_node is of type 'identifier', 'field_identifier', or 'type_identifier', decode its text and return it along with the scope_parts.
+    - If the name_node is of type 'qualified_identifier', recursively call _extract_name_and_scope_from_qualified_identifier to extract the name and additional scope parts, then return the combined results.
+    - If the name_node is of type 'destructor_name' or 'operator_name', decode its text and return it along with the scope_parts.
     - If the name_node type is unhandled, print a message and return None and an empty list.
 - **Output**: A tuple containing the final identifier name as a string (or None if not found) and a list of strings representing the scope parts.
 
@@ -318,72 +320,72 @@ The function `find_identifier_node` recursively searches for and returns the fir
     - Iterate over each child of the current node.
     - For each child, check if its type is 'identifier'; if so, return the child node.
     - Recursively call `find_identifier_node` on each child node.
-    - If a recursive call returns a non-None result, return that result.
+    - If a recursive call returns a non-None result, return that result immediately.
     - If no identifier node is found, return None.
 - **Output**: Returns a `tree_sitter.Node` object representing the first identifier node found, or `None` if no identifier node is present in the subtree.
 
 
 ---
 ### contains\_node\_types<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.contains_node_types}} -->
-The function `contains_node_types` checks if a given node or any of its descendants in a tree-sitter syntax tree belong to a specified set of node types.
+The function `contains_node_types` checks if a given tree-sitter node or any of its descendants belong to a specified set of node types.
 - **Inputs**:
     - `node`: A `tree_sitter.Node` object representing the root node of the subtree to be checked.
     - `node_types`: A set of strings representing the node types to check for within the subtree.
 - **Control Flow**:
     - The function first checks if the type of the current node is in the `node_types` set.
-    - If the current node's type is not in the set, it recursively checks each child node of the current node using a generator expression.
-    - The `any` function is used to determine if any child node or its descendants match the specified node types.
+    - If the current node's type is not in the set, the function recursively checks each child node of the current node.
+    - The function uses a generator expression with `any()` to determine if any child node or its descendants match the specified node types.
 - **Output**: Returns a boolean value: `True` if the node or any of its descendants have a type in `node_types`, otherwise `False`.
 
 
 ---
 ### extract\_base\_class\_info<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.extract_base_class_info}} -->
-The `extract_base_class_info` function extracts information about base classes from a given `base_class_clause` node in a syntax tree.
+The `extract_base_class_info` function extracts information about base classes from a given `base_class_clause` node, returning a list of [`BaseClassInfo`](<#BaseClassInfo>) objects.
 - **Inputs**:
-    - `base_class_clause`: A `tree_sitter.Node` representing a base class clause in a syntax tree.
+    - `base_class_clause`: A `tree_sitter.Node` representing the base class clause from which to extract information.
 - **Control Flow**:
     - Check if the `base_class_clause` node type is 'base_class_clause'; if not, return an empty list.
-    - Initialize an empty list `base_classes` to store base class information.
+    - Initialize an empty list `base_classes` to store extracted base class information.
     - Iterate over the children of the `base_class_clause` node.
-    - If a child node is of type 'base_class_specifier', extract base class information using [`_extract_single_base_class`](#_extract_single_base_class) and append it to `base_classes`.
-    - For child nodes of types 'type_identifier', 'qualified_identifier', 'scoped_type_identifier', or 'dependent_type_identifier', decode the text and append a [`BaseClassInfo`](#BaseClassInfo) object with the name to `base_classes`.
-    - For child nodes of type 'template_type', extract the name from the 'name' field, decode it, and append a [`BaseClassInfo`](#BaseClassInfo) object with the name to `base_classes`.
-    - Return the `base_classes` list containing [`BaseClassInfo`](#BaseClassInfo) objects.
-- **Output**: A list of [`BaseClassInfo`](#BaseClassInfo) objects, each containing the name, access specifier, and virtual inheritance status of a base class.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_single_base_class`](#_extract_single_base_class)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo`](#BaseClassInfo)
+    - For each child node of type 'base_class_specifier', call [`_extract_single_base_class`](<#_extract_single_base_class>) to extract base class information and append it to `base_classes` if valid.
+    - For child nodes of types 'type_identifier', 'qualified_identifier', 'scoped_type_identifier', or 'dependent_type_identifier', decode the text and append a [`BaseClassInfo`](<#BaseClassInfo>) object with the name to `base_classes`.
+    - For child nodes of type 'template_type', extract the name from the 'name' field, decode it, and append a [`BaseClassInfo`](<#BaseClassInfo>) object with the name to `base_classes`.
+    - Return the `base_classes` list containing all extracted base class information.
+- **Output**: A list of [`BaseClassInfo`](<#BaseClassInfo>) objects, each containing the name, access specifier, and virtual inheritance status of a base class.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_single_base_class`](<#_extract_single_base_class>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo`](<#BaseClassInfo>)
 
 
 ---
 ### \_extract\_single\_base\_class<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver._extract_single_base_class}} -->
-The function `_extract_single_base_class` extracts information about a base class from a given `base_class_specifier` node.
+The function `_extract_single_base_class` extracts information about a base class from a `base_class_specifier` node in a syntax tree.
 - **Inputs**:
-    - `base_class_specifier`: A `tree_sitter.Node` representing a base class specifier from which information is to be extracted.
+    - `base_class_specifier`: A `tree_sitter.Node` representing a base class specifier in a syntax tree.
 - **Control Flow**:
     - Initialize `name`, `access_specifier`, and `is_virtual` variables to `None`, `None`, and `False`, respectively.
     - Iterate over the children of the `base_class_specifier` node.
     - If a child node is of type `virtual`, set `is_virtual` to `True`.
     - If a child node is of type `public`, `private`, or `protected`, set `access_specifier` to the child's type.
-    - If a child node is of type `type_identifier`, `qualified_identifier`, `template_type`, `template_argument_list`, `scoped_type_identifier`, or `dependent_type_identifier`, decode its text to UTF-8 and assign it to `name`.
-    - If `name` is still `None`, check if the child's text content is not empty and not one of the specified keywords (`virtual`, `public`, `private`, `protected`, `:`, `,`), and if so, assign it to `name`.
-    - If `name` is not `None`, return a [`BaseClassInfo`](#BaseClassInfo) object with the extracted `name`, `access_specifier`, and `is_virtual` values.
-    - If `name` is `None`, return `None`.
-- **Output**: Returns a [`BaseClassInfo`](#BaseClassInfo) object containing the base class name, access specifier, and virtual inheritance status, or `None` if no valid name is found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo`](#BaseClassInfo)
+    - If a child node is of a type that can represent a class name (e.g., `type_identifier`, `qualified_identifier`), decode its text and assign it to `name`.
+    - If `name` is still `None`, check if the child's text content can be a base class name and assign it to `name` if valid.
+    - If `name` is not `None` after the loop, return a [`BaseClassInfo`](<#BaseClassInfo>) object with the extracted `name`, `access_specifier`, and `is_virtual` values.
+    - Return `None` if no valid base class name is found.
+- **Output**: Returns a [`BaseClassInfo`](<#BaseClassInfo>) object containing the base class name, access specifier, and virtual inheritance status, or `None` if no valid base class name is found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.BaseClassInfo`](<#BaseClassInfo>)
 
 
 ---
 ### maybe\_use\_template\_declaration\_parent<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.maybe_use_template_declaration_parent}} -->
-The function `maybe_use_template_declaration_parent` checks if a given node's parent is a `template_declaration` and returns the parent if true, otherwise it returns the original node.
+The function checks if a given node's parent is a 'template_declaration' and returns the parent if true, otherwise it returns the node itself.
 - **Inputs**:
-    - `node`: A `tree_sitter.Node` object representing a node in the syntax tree.
+    - `node`: A tree_sitter.Node object representing a node in the syntax tree.
 - **Control Flow**:
-    - Check if the node has a parent and if the parent's type is `template_declaration`.
+    - Check if the node has a parent and if the parent's type is 'template_declaration'.
     - If both conditions are true, return the parent node.
     - If either condition is false, return the original node.
-- **Output**: The function returns a `tree_sitter.Node` which is either the parent node if it is a `template_declaration`, or the original node if not.
+- **Output**: Returns a tree_sitter.Node object, which is either the parent node if it is a 'template_declaration', or the original node.
 
 
 

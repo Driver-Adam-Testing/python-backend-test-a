@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llms` folder in the `python-backend` codebase contains subfolders for implementing clients to interact with various language model APIs and for managing configuration files related to large language models.
+Subfolders for implementing clients to interact with language model APIs and managing configuration files.
 
 ## Folders
-- **[clients](clients/README.md)**: The `clients` folder in the `python-backend` codebase contains various Python files that define and implement clients for interacting with different language model APIs, including those from Anthropic and OpenAI, with support for message generation, streaming, and tool integration.
-- **[config](config/README.md)**: The `config` folder in the `python-backend` codebase contains configuration files for large language models, including a Python script (`llm_config.py`) for defining and loading configurations and a TOML file (`llm_config.toml`) specifying settings for different models.
+- **[clients](clients/README.md)**: Defines and implements clients for interacting with Anthropic and OpenAI language model APIs.
+- **[config](config/README.md)**: Configuration files for large language models, including `llm_config.py` and `llm_config.toml`.
 
 
 ---

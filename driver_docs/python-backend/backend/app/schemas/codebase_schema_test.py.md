@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `codebase_schema_test.py` file contains pytest unit tests for the `CodebaseAnalysisMetrics` class, verifying its data integrity and immutability.
+The `codebase_schema_test.py` file contains pytest unit tests for the `CodebaseAnalysisMetrics` schema, verifying its data integrity and immutability.
 
 # Purpose
-This Python code is a test suite using the `pytest` framework to validate the functionality and immutability of a `CodebaseAnalysisMetrics` data model, which is presumably defined in the `app.schemas.codebase_schema` module. The code provides narrow functionality, focusing specifically on testing the integrity and behavior of the `CodebaseAnalysisMetrics` class. It includes a fixture, [`modal_function_call_response`](#modal_function_call_response), which supplies a mock dictionary of codebase metrics data, and two test functions. The first test function, [`test_codebase_analysis_metrics`](#test_codebase_analysis_metrics), verifies that the `CodebaseAnalysisMetrics` instance correctly initializes and holds expected values for various codebase metrics, such as file counts and byte sizes by extension and type. The second test function, [`test_codebase_analysis_metrics_immutability`](#test_codebase_analysis_metrics_immutability), ensures that the attributes of the `CodebaseAnalysisMetrics` instance are immutable by attempting to modify them and expecting a `ValidationError` to be raised.
+This Python file is a test script utilizing the `pytest` framework to validate the functionality and immutability of the `CodebaseAnalysisMetrics` data model, which is presumably defined in the `app.schemas.codebase_schema` module. The script includes a fixture, [`modal_function_call_response`](<#modal_function_call_response>), which provides a mock dictionary of codebase metrics data, such as file counts and byte sizes categorized by file extension and type. The [`test_codebase_analysis_metrics`](<#test_codebase_analysis_metrics>) function checks that the `CodebaseAnalysisMetrics` object correctly initializes with the provided data and that its attributes match expected values. Additionally, the [`test_codebase_analysis_metrics_immutability`](<#test_codebase_analysis_metrics_immutability>) function ensures that certain attributes of the `CodebaseAnalysisMetrics` object are immutable by attempting to modify them and expecting a `ValidationError`. This code provides narrow functionality focused on testing the integrity and immutability of a specific data model.
 # Imports and Dependencies
 
 ---
@@ -19,22 +19,22 @@ This Python code is a test suite using the `pytest` framework to validate the fu
 
 ---
 ### modal\_function\_call\_response<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema_test.modal_function_call_response}} -->
-The `modal_function_call_response` function is a pytest fixture that returns a dictionary containing metrics about analyzable and total files and bytes, categorized by file extension and type.
+The `modal_function_call_response` function is a pytest fixture that returns a dictionary containing metrics about a codebase's analyzable and total files and bytes, categorized by file extension and type.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as a pytest fixture, which means it is used to provide a fixed baseline of data for testing purposes.
+    - The function is defined as a pytest fixture, which means it is used to provide a fixed baseline of data for tests.
     - It returns a dictionary with predefined metrics related to codebase analysis, including total and analyzable bytes and files, as well as breakdowns by file extension and type.
 - **Output**: A dictionary containing codebase analysis metrics, including total and analyzable bytes and files, and their breakdowns by file extension and type.
 
 
 ---
 ### test\_codebase\_analysis\_metrics<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema_test.test_codebase_analysis_metrics}} -->
-The function `test_codebase_analysis_metrics` verifies that the [`CodebaseAnalysisMetrics`](codebase_schema.py.md#CodebaseAnalysisMetrics) object is correctly initialized with expected values from a given dictionary.
+The function `test_codebase_analysis_metrics` verifies that the [`CodebaseAnalysisMetrics`](<codebase_schema.py.md#CodebaseAnalysisMetrics>) object is correctly initialized with expected values from a given dictionary.
 - **Inputs**:
-    - `modal_function_call_response`: A dictionary containing expected values for initializing a [`CodebaseAnalysisMetrics`](codebase_schema.py.md#CodebaseAnalysisMetrics) object.
+    - `modal_function_call_response`: A dictionary containing expected values for initializing a [`CodebaseAnalysisMetrics`](<codebase_schema.py.md#CodebaseAnalysisMetrics>) object.
 - **Control Flow**:
-    - Initialize a [`CodebaseAnalysisMetrics`](codebase_schema.py.md#CodebaseAnalysisMetrics) object using the provided dictionary `modal_function_call_response`.
+    - Initialize a [`CodebaseAnalysisMetrics`](<codebase_schema.py.md#CodebaseAnalysisMetrics>) object using the provided dictionary `modal_function_call_response`.
     - Assert that the `analyzable_bytes` attribute of the object is equal to 750.
     - Assert that the `analyzable_files` attribute of the object is equal to 75.
     - Assert that the `total_bytes` attribute of the object is equal to 1000.
@@ -48,24 +48,24 @@ The function `test_codebase_analysis_metrics` verifies that the [`CodebaseAnalys
     - Assert that the `analyzable_sloc_by_extension` attribute matches the expected dictionary of file extensions and SLOC counts.
     - Assert that the `analyzable_sloc_by_type` attribute matches the expected dictionary of file types and SLOC counts.
 - **Output**: The function does not return any value; it raises an assertion error if any of the checks fail.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](codebase_schema.py.md#CodebaseAnalysisMetrics)
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<codebase_schema.py.md#CodebaseAnalysisMetrics>)
 
 
 ---
 ### test\_codebase\_analysis\_metrics\_immutability<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema_test.test_codebase_analysis_metrics_immutability}} -->
-The function tests the immutability of certain fields in the CodebaseAnalysisMetrics object by attempting to modify them and expecting a ValidationError.
+The function tests the immutability of certain fields in the CodebaseAnalysisMetrics object by attempting to modify them and expecting ValidationError exceptions.
 - **Inputs**:
-    - `modal_function_call_response`: A dictionary containing initial values for the CodebaseAnalysisMetrics object, such as analyzable bytes and SLOC.
+    - `modal_function_call_response`: A dictionary containing initial values for the CodebaseAnalysisMetrics object, such as analyzable_bytes and analyzable_sloc.
 - **Control Flow**:
-    - Create a CodebaseAnalysisMetrics object using the provided dictionary.
-    - Attempt to set the 'analyzable_bytes' field to 0 and expect a ValidationError to be raised.
-    - Attempt to set the 'analyzable_sloc' field to 0 and expect a ValidationError to be raised.
-    - Assert that the 'analyzable_bytes' field remains unchanged at 750.
-    - Assert that the 'analyzable_sloc' field remains unchanged at 15.
-- **Output**: The function does not return any value, but it asserts the immutability of certain fields in the CodebaseAnalysisMetrics object.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](codebase_schema.py.md#CodebaseAnalysisMetrics)
+    - Create a CodebaseAnalysisMetrics object using the provided modal_function_call_response dictionary.
+    - Attempt to set the analyzable_bytes attribute to 0 and expect a ValidationError to be raised.
+    - Attempt to set the analyzable_sloc attribute to 0 and expect a ValidationError to be raised.
+    - Assert that the analyzable_bytes attribute remains 750.
+    - Assert that the analyzable_sloc attribute remains 15.
+- **Output**: The function does not return any value; it raises exceptions if the immutability is violated and asserts the expected values.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<codebase_schema.py.md#CodebaseAnalysisMetrics>)
 
 
 

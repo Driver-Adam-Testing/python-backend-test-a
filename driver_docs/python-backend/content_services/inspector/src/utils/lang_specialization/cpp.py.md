@@ -3,18 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cpp.py` file in the `python-backend` codebase provides utilities for analyzing and documenting C++ code, including classes for handling C++ variables, functions, data structures, and imports, using static analysis and tree-sitter parsing.
+The `cpp.py` file in the `python-backend` codebase provides utilities for extracting and documenting C++ code elements such as variables, functions, data structures, and includes, using static analysis and structured prompting.
 
 # Purpose
-This Python source code file is designed to facilitate the extraction and documentation of C++ code components, specifically focusing on data structures, functions, and variables. It leverages the Pydantic library for data validation and management, and it uses a tree-sitter-based approach for parsing C++ code. The file defines several classes that represent collections of C++ symbols, such as `CppVariableCollection`, `CppFnCollection`, and `CppDataStructureCollection`, each responsible for handling different types of C++ code elements. These classes provide methods for generating prompts for large language models (LLMs) to document the extracted symbols, ensuring that the documentation is detailed and adheres to a specific JSON schema.
+This Python source code file is designed to facilitate the extraction and documentation of C++ code components, specifically focusing on data structures, functions, and variables. It leverages the Pydantic library for data validation and management, and integrates with a language model (LLM) to generate detailed documentation. The file defines several classes that represent collections of C++ symbols, such as `CppVariableData`, `CppFnData`, and `CppDataStructureData`, each responsible for handling specific types of C++ code elements. These classes provide methods to generate system and user prompts for the LLM, enabling the generation of structured documentation in JSON format. The file also includes classes for static analysis of C++ code, using a tree-sitter-based approach to extract symbols and their metadata, which are then used to populate the collections.
 
-The file also includes classes for raw symbol extraction, such as `CppDataStructureRawSymbolCollection`, `CppFreeFnRawSymbolCollection`, and `CppVariableRawSymbolCollection`, which perform static analysis on C++ code to identify and categorize symbols. These classes utilize the `CppCDriverTree` to parse the code and extract relevant symbols, which are then converted into `RawSymbolData` objects. The extracted data is used to generate structured documentation prompts for LLMs, enabling automated and consistent documentation of C++ codebases. Overall, this file provides a comprehensive framework for analyzing and documenting C++ code, focusing on data structures, functions, and variables.
+The code is structured to support a modular and extensible approach to C++ code analysis and documentation. It defines a series of classes that encapsulate the logic for handling different C++ constructs, such as variables, functions, and data structures, and provides a framework for integrating with a language model to produce human-readable documentation. The file is intended to be part of a larger system, likely a library or tool, that automates the process of documenting C++ code by extracting relevant symbols and generating detailed descriptions. The use of structured prompts and JSON schemas ensures that the documentation is consistent and can be easily parsed or integrated into other systems.
 # Imports and Dependencies
 
 ---
 - `pathlib.Path`
 - `typing.Self`
 - `pydantic.PrivateAttr`
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.models.ChatOpenAI`
 - `utils.treesitter_drivers.c_cpp_driver.CppCDriverTree`
 - `..symbol_table.utils.get_fully_qualified_name`
@@ -39,15 +44,15 @@ The file also includes classes for raw symbol extraction, such as `CppDataStruct
 ---
 ### CPP\_DATA\_STRUCTURES
 - **Type**: `set`
-- **Description**: `CPP_DATA_STRUCTURES` is a set containing strings that represent different C++ data structure keywords. These keywords include 'class', 'struct', 'enum', 'union', and 'typedef', which are fundamental constructs in C++ programming for defining data types and structures.
-- **Use**: This variable is used to identify and categorize C++ data structure keywords.
+- **Description**: `CPP_DATA_STRUCTURES` is a set containing strings that represent different C++ data structure keywords. These keywords include 'class', 'struct', 'enum', 'union', and 'typedef', which are fundamental constructs in C++ for defining data types and structures.
+- **Use**: This variable is used to identify and categorize C++ data structures in the context of the code.
 
 
 ---
 ### CPP\_FUNCTIONS
 - **Type**: `set`
-- **Description**: `CPP_FUNCTIONS` is a global variable defined as a set containing the strings 'function' and 'prototype'. This set is likely used to categorize or identify C++ elements related to functions and their prototypes.
-- **Use**: This variable is used to store and identify C++ function-related elements.
+- **Description**: `CPP_FUNCTIONS` is a set containing two string elements: 'function' and 'prototype'. This set is likely used to categorize or identify C++ functions and their prototypes within a larger codebase or system.
+- **Use**: This variable is used to represent and identify C++ functions and prototypes.
 
 
 ---
@@ -60,150 +65,175 @@ The file also includes classes for raw symbol extraction, such as `CppDataStruct
 ---
 ### CPP\_VARIABLES
 - **Type**: `set`
-- **Description**: `CPP_VARIABLES` is a set containing two string elements: 'variable' and 'externvar'. This set is likely used to categorize or identify C++ variables, distinguishing between regular variables and external variables.
-- **Use**: This variable is used to store and categorize types of C++ variables.
+- **Description**: `CPP_VARIABLES` is a set containing two string elements: 'variable' and 'externvar'. This set is likely used to categorize or identify C++ variables within a larger context, such as a code analysis or documentation generation tool.
+- **Use**: This variable is used to represent a collection of C++ variable types for categorization or processing purposes.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_CPP
 - **Type**: `str`
 - **Description**: The variable `SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP` is a string that contains a detailed prompt for a C++ programmer and software engineering documentation expert. It instructs the expert to write comprehensive documentation for C++ code, focusing on explaining technical details and the key conceptual components and purpose of the software.
-- **Use**: This variable is used as a prompt for generating detailed documentation for large C++ systems.
+- **Use**: This variable is used as a prompt to guide the generation of detailed documentation for large C++ systems.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_CPP
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP` is a string that contains a prompt intended for a C++ programmer and documentation expert. It provides guidance on how to write detailed documentation for small and simple C++ source code files, emphasizing clarity and conciseness.
-- **Use**: This variable is used as a prompt to guide the generation of documentation for small C++ source code files.
+- **Description**: This variable is a string that contains a prompt for a system designed to document small and short C++ source code files. It emphasizes the need for clarity and brevity in the documentation process, targeting small and simple code files.
+- **Use**: This variable is used as a system prompt to guide the documentation process for small C++ source code files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
-- **Type**: `str`
+- **Type**: `string`
 - **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt intended for users who need to explain the purpose of a large source code file. It provides guidance on how to write a comprehensive explanation by considering various aspects of the code, such as its functionality, technical components, and whether it defines public APIs or interfaces.
-- **Use**: This variable is used to instruct users on how to document the purpose of large source code files effectively.
+- **Use**: This variable is used to instruct users on how to articulate the purpose of a large source code file in a structured and detailed manner.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string that contains a template for a user prompt. This prompt is designed to guide users in explaining the purpose of a given piece of code in a concise manner. It includes questions to help users focus on the functionality and type of the code.
-- **Use**: This variable is used to provide a structured prompt for users to describe the purpose of small source code files.
+- **Description**: `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string variable that contains a template for generating a prompt. This prompt is intended to guide users in explaining the purpose of a given piece of code in a concise manner. The template includes questions to consider, such as the scope of functionality and the type of code being analyzed.
+- **Use**: This variable is used to generate a user prompt for explaining the purpose of small source code files.
 
 
 ---
 ### TECHNICAL\_CONCEPTS
 - **Type**: `str`
-- **Description**: TECHNICAL_CONCEPTS is a string variable that contains a template for describing the important technical features and their interactions in a source code file. The template guides the user to focus on conceptual use cases, applications, logic, and component interactions rather than specific functions or variables. This variable is intended to be used as a prompt or guideline for writing technical documentation.
-- **Use**: This variable is used as a template for writing technical descriptions of source code files.
+- **Description**: TECHNICAL_CONCEPTS is a multi-line string variable that provides instructions for describing the important technical features and their interactions in a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific functions or variables.
+- **Use**: This variable is used as a template or guideline for generating descriptions of technical concepts in source code files.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for a language model. It instructs the model to generate detailed documentation for C++ data structures, such as structs, enums, and classes, using a specific JSON schema. The prompt emphasizes the importance of focusing on attributes, fields, or properties of the data structure, excluding methods or functions.
-- **Use**: This variable is used to provide a structured prompt to a language model for generating documentation on C++ data structures.
+- **Type**: `string`
+- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed prompt for generating documentation for C++ data structures. It instructs the user to describe data structures such as structs, enums, and classes using a specific JSON schema, focusing on technical details and the purpose of the software.
+- **Use**: This variable is used as a system prompt to guide the generation of structured documentation for C++ data structures.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in provided code. It outlines the criteria for identifying and describing data structures, emphasizing the need for detail proportional to the complexity of the data structure.
+- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in provided code. It includes instructions on how to describe data structures, emphasizing the need for detail proportional to the complexity of the data structure.
 - **Use**: This variable is used as a prompt template to guide users in documenting data structures in code.
 
 
 ---
 ### DATA\_STRUCTURES\_NONE\_CONTENT
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_NONE_CONTENT` is a string that contains a message indicating that no custom data structures are defined in the file. It is a simple string with a newline character followed by a separator and a descriptive message.
+- **Description**: The variable `DATA_STRUCTURES_NONE_CONTENT` is a string that contains a message indicating that no custom data structures are defined in the file. It is formatted with a markdown-like separator (`---`) to visually separate the message from other content.
 - **Use**: This variable is used to provide a default message when no custom data structures are found in a file.
 
 
 ---
 ### FUNCTIONS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `string`
-- **Description**: The `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a detailed system prompt for documenting C++ functions and class methods. It provides a JSON schema that outlines how to describe a function, including its inputs, control flow, and output.
-- **Use**: This variable is used to guide the documentation process for C++ functions by providing a structured format for describing them.
+- **Description**: The variable `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting C++ functions and class methods. It provides instructions for generating JSON documentation, specifying the format and content required for describing functions, including inputs, control flow, and output.
+- **Use**: This variable is used as a template for generating documentation prompts for C++ functions and methods.
 
 
 ---
 ### FUNCTIONS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing functions or methods in a given code. It instructs the user to describe the inputs, control flow, logic, and output of the function, with the level of detail matching the complexity of the function.
-- **Use**: This variable is used as a template prompt for users to document functions or methods in code, guiding them on what aspects to describe.
+- **Description**: `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for prompting users to summarize a function or method in a given code. It provides instructions on how to describe the inputs, control flow, logic, and output of the function, emphasizing the need for detail proportional to the complexity of the function.
+- **Use**: This variable is used as a template for generating user prompts to document functions or methods in code.
 
 
 ---
 ### FUNCTIONS\_NONE\_CONTENT
 - **Type**: `str`
-- **Description**: The variable `FUNCTIONS_NONE_CONTENT` is a string that contains a message indicating that no functions or function prototypes are defined in a given file. It is a simple, static message used to convey the absence of function definitions.
+- **Description**: `FUNCTIONS_NONE_CONTENT` is a string variable that contains a message indicating that no functions or function prototypes are defined in a given file. The message is formatted with a newline and dashes for separation.
 - **Use**: This variable is used to provide a default message when no functions are found in a file.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a string that contains a detailed system prompt for documenting variables in C++ code. It provides instructions for generating JSON documentation for variables, focusing on explaining technical details and recognizing key components of the software.
-- **Use**: This variable is used to provide a template for generating JSON documentation for C++ variables.
+- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a detailed system prompt for documenting variables in C++ code. The prompt instructs the user to describe a variable using a specific JSON schema, focusing on the type, description, and use of the variable.
+- **Use**: This variable is used to provide a template for generating documentation for C++ variables.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for generating prompts to summarize global variables in a given codebase. It provides instructions on how to describe a global variable, emphasizing the need for detail proportional to the complexity of the variable.
-- **Use**: This variable is used to generate user prompts for summarizing global variables in code documentation.
+- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing a global variable in a given code. It outlines the scope of the task, emphasizing the focus on global variables and the level of detail required based on the complexity of the variable.
+- **Use**: This variable is used as a prompt or template for generating documentation or summaries of global variables in code.
 
 
 ---
 ### VARIABLES\_NONE\_CONTENT
 - **Type**: `str`
-- **Description**: VARIABLES_NONE_CONTENT is a string variable that contains a message indicating that no global variables are defined in the file. It is a simple string with a newline character followed by a separator and the message itself.
-- **Use**: This variable is used to convey that there are no global variables present in the file.
+- **Description**: This variable is a string that contains a message indicating that no global variables are defined in the file. It is formatted with a newline and a separator line for clarity.
+- **Use**: It is used to signal or document the absence of global variables in the file.
 
 
 # Classes
 
 ---
 ### CppVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData}} -->
-- **Description**: The `CppVariableData` class is a specialized subclass of `VariableData` designed to handle C++ variable data within a documentation or analysis context. It provides class methods to generate system and user prompts for variables, ensuring that the relevant information about C++ variables is formatted and presented correctly. The class also includes methods to handle child elements, although it explicitly raises exceptions for these, indicating that variables should not have children in this context. This class is part of a larger framework for analyzing and documenting C++ code, focusing on the representation and processing of variable-related data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L184>)
+
+- **Description**: The `CppVariableData` class is a specialized subclass of `VariableData` designed to handle C++ variable data within a documentation or analysis context. It provides class methods to generate system and user prompts for C++ variables, utilizing structured prompting components to format these prompts. The class also includes methods to handle child elements, although it explicitly raises `NotImplementedError` for these, indicating that variables should not have children in this context. This class is part of a larger framework for processing and documenting C++ code, focusing on the representation and manipulation of variable-related data.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.system_prompt`](#CppVariableDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.user_prompt`](#CppVariableDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.child_to_ir`](#CppVariableDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.child_to_field_name`](#CppVariableDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.system_prompt`](<#CppVariableDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.user_prompt`](<#CppVariableDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.child_to_ir`](<#CppVariableDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.child_to_field_name`](<#CppVariableDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](ir_common.py.md#VariableData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
 
 **Methods**
 
 ---
 #### CppVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting C++ variables.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L185>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting variables in C++.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON schema for documenting C++ variables.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](#CppVariableData)  (Base Class)
+    - The method starts by creating an empty `Prompt` object.
+    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` string to the `Prompt`.
+    - It appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - It appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Finally, it converts the `Prompt` into a string using `into_str()` and returns it.
+- **Output**: A string representing the formatted system prompt for documenting variables in C++.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](<#CppVariableData>)  (Base Class)
 
 
 ---
 #### CppVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.user_prompt}} -->
-The `user_prompt` method generates a formatted string containing information about a C++ variable, including its name, code, and optionally the full file code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L195>)
+
+The `user_prompt` method generates a user-facing prompt string based on the provided `RawSymbolData` object, including the symbol's name, code, and optionally the full file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a C++ variable, containing its name, symbol code, and optionally the full file code.
+    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally file code.
 - **Control Flow**:
-    - Initialize a string `user_prompt` with a formatted message containing the variable's name and symbol code.
-    - Check if the `symbol` has `file_code` and, if so, append the full file code to the `user_prompt`.
-    - Return the constructed `user_prompt` string.
-- **Output**: A formatted string containing the variable's name, symbol code, and optionally the full file code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](#CppVariableData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a component with the user prompt and symbol name.
+    - Append a component with a no-restatement style instruction for symbols.
+    - Append a component with the symbol's code.
+    - Check if the symbol has associated file code; if so, append a component with the full file code.
+    - Convert the constructed `Prompt` object into a string and return it.
+- **Output**: A string representing the constructed user prompt, which includes the symbol's name, code, and optionally the full file code.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](<#CppVariableData>)  (Base Class)
 
 
 ---
 #### CppVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L209>)
+
 The `child_to_ir` method raises a `NotImplementedError` indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -211,11 +241,13 @@ The `child_to_ir` method raises a `NotImplementedError` indicating that variable
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with the message 'Variables should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](#CppVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](<#CppVariableData>)  (Base Class)
 
 
 ---
 #### CppVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L213>)
+
 The `child_to_field_name` method raises a `NotImplementedError` indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -223,92 +255,121 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with the message 'Variables should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](#CppVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableData`](<#CppVariableData>)  (Base Class)
 
 
 
 ---
 ### CppVariableCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L218>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to CppVariableData or lists of CppVariableData.
-- **Description**: The CppVariableCollection class is a specialized collection class that inherits from IrCollection, designed to manage and store C++ variable data. It holds a dictionary where each key is a string and the value is either a CppVariableData instance or a list of such instances. This class provides a class method, from_llm, which facilitates the creation of a CppVariableCollection instance from a language model and a raw symbol collection, leveraging the CppVariableData class for data representation.
+- **Description**: The CppVariableCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize C++ variable data. It holds a dictionary where each key is a string and the value is either a CppVariableData instance or a list of such instances. This class provides a class method, from_llm, which facilitates the creation of a CppVariableCollection instance from a language model and a raw symbol collection, leveraging the CppVariableData class for data representation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableCollection.from_llm`](#CppVariableCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableCollection.from_llm`](<#CppVariableCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CppVariableCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L221>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of raw symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A RawSymbolCollection object containing a collection of raw symbols to be processed.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used.
+    - `symbols_list`: A `RawSymbolCollection` object containing a collection of raw symbols to be processed.
 - **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `CppVariableData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) call, which is an instance of the class.
-- **Output**: An instance of the class, created using the provided language model and raw symbol collection.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableCollection`](#CppVariableCollection)  (Base Class)
+    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CppVariableData`, `llm`, and `symbols_list` as arguments.
+    - The result of [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) is returned as the output of the method.
+- **Output**: An instance of the class, initialized with data processed from the language model and raw symbols.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableCollection`](<#CppVariableCollection>)  (Base Class)
 
 
 
 ---
 ### CppFnData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData}} -->
-- **Description**: The `CppFnData` class is a specialized subclass of `FnData` designed to handle C++ function data within a documentation or analysis context. It provides class methods to generate system and user prompts for documenting C++ functions, utilizing the `RawSymbolData` to construct detailed prompts that include function code, parent data structure code, and full file code if available. The class also includes methods to handle child-to-intermediate representation (IR) conversions, although these raise `NotImplementedError` as functions are not expected to have children in this context.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L226>)
+
+- **Description**: The `CppFnData` class is a specialized subclass of `FnData` designed to handle C++ function data within a larger system. It provides class methods to generate system and user prompts for documenting C++ functions, ensuring that the documentation is structured and informative. The class also includes methods to handle child elements, although it explicitly raises `NotImplementedError` for functions having children, indicating that functions should not have nested elements in this context. This class is part of a framework for analyzing and documenting C++ code, focusing on functions and their integration into the overall codebase.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.system_prompt`](#CppFnDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.user_prompt`](#CppFnDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.child_to_ir`](#CppFnDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.child_to_field_name`](#CppFnDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.system_prompt`](<#CppFnDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.user_prompt`](<#CppFnDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.child_to_ir`](<#CppFnDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.child_to_field_name`](<#CppFnDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](ir_common.py.md#FnData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#FnData>)
 
 **Methods**
 
 ---
 #### CppFnData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string that serves as a system prompt for documenting C++ functions and class methods.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L227>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting C++ functions.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON system prompt for documenting C++ functions and class methods.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](#CppFnData)  (Base Class)
+    - The method starts by creating an empty `Prompt` object.
+    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing a predefined JSON string for function documentation to the `Prompt`.
+    - It appends general style instructions and specific style instructions for using backticks to the `Prompt`.
+    - Finally, it converts the `Prompt` into a string and returns it.
+- **Output**: A string representing the formatted system prompt for documenting C++ functions.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](<#CppFnData>)  (Base Class)
 
 
 ---
 #### CppFnData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.user_prompt}} -->
-The `user_prompt` method generates a formatted string containing information about a C++ function, including its name, code, and optionally its parent data structure and full file code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L237>)
+
+The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including function code, parent data structure code, and full file code if available.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing details about a C++ function, such as its name, code, and potentially its parent data structure and full file code.
+    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, reified symbol, and file code.
 - **Control Flow**:
-    - Initialize `user_prompt` with a formatted string containing the function's name and code.
-    - Check if the function has a parent data structure with available code, and if so, append this code to `user_prompt`.
-    - Check if the full file code is available, and if so, append it to `user_prompt`.
-    - Return the complete `user_prompt` string.
-- **Output**: A string containing the formatted user prompt with details about the function, its parent data structure, and full file code if available.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](#CppFnData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) to the prompt with the function's name and code from the `symbol` object.
+    - Check if the `symbol` has a reified symbol with a parent that has a non-null raw symbol code, and if so, append the parent's data structure code to the prompt.
+    - If the `symbol` has associated file code, append the full file code to the prompt.
+    - Convert the constructed `Prompt` object into a string and return it.
+- **Output**: A string representing the constructed user prompt, which includes the function's name, code, and optionally its parent data structure code and full file code.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](<#CppFnData>)  (Base Class)
 
 
 ---
 #### CppFnData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L264>)
+
 The `child_to_ir` method raises a `NotImplementedError` indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol data for which the method is invoked.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the method is invoked.
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with the message 'Functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](#CppFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](<#CppFnData>)  (Base Class)
 
 
 ---
 #### CppFnData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L268>)
+
 The `child_to_field_name` method raises a `NotImplementedError` indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -316,60 +377,68 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with the message 'Functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](#CppFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnData`](<#CppFnData>)  (Base Class)
 
 
 
 ---
 ### CppFnCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L273>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to CppFnData or lists of CppFnData.
-- **Description**: The CppFnCollection class is a specialized collection that extends the IrCollection class, designed to manage and organize C++ function data. It holds a dictionary where keys are strings and values are either CppFnData instances or lists of CppFnData, representing C++ functions. The class provides a class method, from_llm, which facilitates the creation of a CppFnCollection instance from a language model and a list of raw symbols, leveraging the CppFnData structure to handle intermediate representation data.
+- **Description**: The `CppFnCollection` class is a specialized collection class that inherits from `IrCollection` and is designed to manage a collection of C++ function data. It stores function data in a dictionary where the keys are strings and the values are either `CppFnData` instances or lists of `CppFnData`. This class provides a class method `from_llm` to create an instance of `CppFnCollection` using a language model and a list of raw symbols, facilitating the integration of language model outputs with intermediate representation data for C++ functions.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnCollection.from_llm`](#CppFnCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnCollection.from_llm`](<#CppFnCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CppFnCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L276>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used.
     - `symbols_list`: A `RawSymbolCollection` object containing a list of symbols to be processed.
 - **Control Flow**:
-    - The method calls `cls.from_llm_with_ir_data` with `CppFnData`, `llm`, and `symbols_list` as arguments.
-    - It returns the result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method call.
-- **Output**: An instance of the class that is created using the provided language model and symbols list.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnCollection`](#CppFnCollection)  (Base Class)
+    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CppFnData`, `llm`, and `symbols_list` as arguments.
+    - The result of [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) is returned as the output of the method.
+- **Output**: An instance of the class, initialized with data processed from the language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFnCollection`](<#CppFnCollection>)  (Base Class)
 
 
 
 ---
 ### CppDataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L281>)
+
 - **Members**:
-    - `type`: Represents the type of the C++ data structure.
+    - `type`: Specifies the type of the C++ data structure.
     - `members`: Holds the members of the C++ data structure.
     - `description`: Provides a description of the C++ data structure.
-    - `_supported_child_ordering`: Defines the order of supported child elements, such as methods and nested classes.
-- **Description**: The `CppDataStructureData` class is a specialized data structure representation that extends `IrData` to encapsulate information about C++ data structures, such as classes, structs, and enums. It includes attributes to store the type, members, and description of the data structure, and supports child ordering for methods and nested classes. The class provides class methods to generate default instances, system prompts, and user prompts for documentation purposes, and it maps child symbols to their respective intermediate representations or field names.
+    - `_supported_child_ordering`: Defines the order of supported child elements like methods and nested classes.
+- **Description**: The `CppDataStructureData` class is a specialized data structure representation that extends `IrData` to encapsulate information about C++ data structures such as classes, structs, and enums. It includes attributes to define the type, members, and description of the data structure, and supports child ordering for methods and nested classes. The class provides class methods to generate default instances and prompts for system and user interactions, facilitating the documentation and analysis of C++ code structures.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.default_instance`](#CppDataStructureDatadefault_instance)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.system_prompt`](#CppDataStructureDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.user_prompt`](#CppDataStructureDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.child_to_ir`](#CppDataStructureDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.child_to_field_name`](#CppDataStructureDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.default_instance`](<#CppDataStructureDatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.system_prompt`](<#CppDataStructureDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.user_prompt`](<#CppDataStructureDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.child_to_ir`](<#CppDataStructureDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.child_to_field_name`](<#CppDataStructureDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](ir_common.py.md#IrData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
 
 **Methods**
 
 ---
 #### CppDataStructureData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.default_instance}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L289>)
+
 The `default_instance` method creates a default instance of the `CppDataStructureData` class, optionally using a `ReifiedSymbol` to generate a descriptive link.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -379,116 +448,147 @@ The `default_instance` method creates a default instance of the `CppDataStructur
     - If `reified_symbol` is provided, extract the fully qualified name, symbol kind, and file path from `reified_symbol.raw`.
     - Construct a link using the extracted information and create an instance of `CppDataStructureData` with this link as the description.
     - If `reified_symbol` is `None`, create an instance of `CppDataStructureData` with an empty description.
-- **Output**: Returns an instance of `CppDataStructureData` with a description based on the provided `ReifiedSymbol`, or an empty description if none is provided.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](../symbol_table/utils.py.md#get_fully_qualified_name)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](ir_common.py.md#FieldNameWithRawContent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](ir_common.py.md#FieldNameWithBackTickContent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](ir_common.py.md#ListedBacktickNameRawContentNoNone)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](#CppDataStructureData)  (Base Class)
+- **Output**: Returns an instance of `CppDataStructureData` with a description, type, and members initialized based on the presence of a `ReifiedSymbol`.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<../symbol_table/utils.py.md#get_fully_qualified_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<ir_common.py.md#FieldNameWithBackTickContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](<#CppDataStructureData>)  (Base Class)
 
 
 ---
 #### CppDataStructureData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string that serves as a system prompt for documenting C++ data structures.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L307>)
+
+The `system_prompt` method generates a structured prompt string for documenting C++ data structures.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing a JSON-formatted system prompt for documenting C++ data structures.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](#CppDataStructureData)  (Base Class)
+    - The method starts by creating an empty `Prompt` object.
+    - It appends a component containing a JSON string for data structure documentation to the prompt.
+    - It appends a general style instruction component to the prompt.
+    - It appends a component instructing the use of backticks in the style to the prompt.
+    - Finally, it converts the constructed prompt into a string and returns it.
+- **Output**: A string representing the structured prompt for documenting C++ data structures.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](<#CppDataStructureData>)  (Base Class)
 
 
 ---
 #### CppDataStructureData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.user_prompt}} -->
-The `user_prompt` method generates a user-facing prompt string that includes information about a C++ data structure and its related code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L317>)
+
+The `user_prompt` method generates a user-facing prompt string that includes information about a given C++ data structure and its related code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` representing a C++ data structure, containing its name, code, and potentially related child symbols and file code.
 - **Control Flow**:
-    - Initialize the `user_prompt` string with a predefined prompt and the name and code of the data structure from the `symbol` argument.
-    - Check if the `symbol` has any children; if so, append additional code snippets for functions defined outside the file to the `user_prompt`.
-    - Iterate over each child of the `symbol` and append its code to the `user_prompt` if it is defined in a different file.
-    - If the `symbol` has associated file code, append the full file code to the `user_prompt`.
-- **Output**: A string containing a detailed prompt about the data structure, including its code and any related external function code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](#CppDataStructureData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a component to the prompt with the data structure's name and code.
+    - Check if the data structure has children; if so, append a component indicating external function definitions and iterate over the children.
+    - For each child, if its file path differs from the main symbol's file path, append its code to the prompt.
+    - If the symbol has associated file code, append it to the prompt as well.
+- **Output**: A string representation of the constructed user prompt, detailing the data structure and its related code.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](<#CppDataStructureData>)  (Base Class)
 
 
 ---
 #### CppDataStructureData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.child_to_ir}} -->
-The `child_to_ir` method maps a given `RawSymbolData` symbol to its corresponding intermediate representation (IR) type or returns `None` if not applicable.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L343>)
+
+The `child_to_ir` method maps a given symbol's kind to a corresponding intermediate representation (IR) data type or returns None if no mapping is applicable.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a symbol whose IR type needs to be determined.
+    - `symbol`: An instance of RawSymbolData representing a symbol whose kind needs to be mapped to an IR data type.
 - **Control Flow**:
-    - A dictionary `mapping` is defined to associate `SymbolKind` values with their corresponding IR types or `None`.
-    - The method retrieves the IR type from the `mapping` dictionary using the `symbol.symbol_kind` as the key.
-    - If the `symbol.symbol_kind` is not found in the `mapping`, the method returns `None`.
-- **Output**: The method returns a type of `IrData` corresponding to the symbol's kind or `None` if the symbol kind is not mapped.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](#CppDataStructureData)  (Base Class)
+    - A dictionary named `mapping` is defined to associate `SymbolKind` values with corresponding IR data types or None.
+    - The method attempts to retrieve the IR data type from the `mapping` dictionary using the `symbol.symbol_kind` as the key.
+    - If the `symbol.symbol_kind` is found in the dictionary, the corresponding IR data type is returned; otherwise, None is returned.
+- **Output**: The method returns a type of `IrData` corresponding to the symbol's kind, or None if the symbol kind is not mapped.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](<#CppDataStructureData>)  (Base Class)
 
 
 ---
 #### CppDataStructureData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData.child_to_field_name}} -->
-The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` to a corresponding `ScopeRelation` field name.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L351>)
+
+The `child_to_field_name` method maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a symbol whose field name is to be determined based on its kind.
+    - `child`: An instance of `RawSymbolData` representing a child symbol whose `symbol_kind` needs to be mapped to a field name.
 - **Control Flow**:
-    - A dictionary `mapping` is defined to associate `SymbolKind` values with `ScopeRelation` values.
-    - The method retrieves the `symbol_kind` of the `child` input and uses it to look up the corresponding `ScopeRelation` in the `mapping` dictionary.
-    - The method returns the result of the dictionary lookup, which is the field name associated with the `child`'s `symbol_kind`.
-- **Output**: The method returns a string representing the field name associated with the `child`'s `symbol_kind`, or `None` if the `symbol_kind` is not in the mapping.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](#CppDataStructureData)  (Base Class)
+    - A dictionary `mapping` is defined to map `SymbolKind.CALLABLE` to `ScopeRelation.METHOD` and `SymbolKind.DATA_STRUCTURE` to `ScopeRelation.NESTED_CLASS`.
+    - The method returns the value from the `mapping` dictionary corresponding to the `symbol_kind` of the `child` argument.
+- **Output**: A string representing the field name corresponding to the `symbol_kind` of the `child`, or `None` if the `symbol_kind` is not in the mapping.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureData`](<#CppDataStructureData>)  (Base Class)
 
 
 
 ---
 ### CppDataStructureCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L360>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to CppDataStructureData or lists of CppDataStructureData.
-- **Description**: The `CppDataStructureCollection` class is a specialized collection class that extends `IrCollection` to manage and organize C++ data structures. It holds a dictionary where keys are strings representing data structure names, and values are either `CppDataStructureData` instances or lists of such instances. This class provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols, facilitating the integration of C++ data structure information into a larger system.
+- **Description**: The `CppDataStructureCollection` class is a specialized collection class that extends `IrCollection` to manage and organize C++ data structures represented by `CppDataStructureData` objects. It provides a class method `from_llm` to create an instance of the collection from a language model and a list of raw symbols, facilitating the integration of language model outputs with internal representation data. This class is part of a system designed to handle and document C++ data structures, enabling structured analysis and documentation generation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureCollection.from_llm`](#CppDataStructureCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureCollection.from_llm`](<#CppDataStructureCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CppDataStructureCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L363>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
     - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
 - **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `CppDataStructureData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) call, which is an instance of the class.
-- **Output**: An instance of the class, created using the provided language model and symbols list.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureCollection`](#CppDataStructureCollection)  (Base Class)
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CppDataStructureData`, `llm`, and `symbols_list` as arguments.
+    - The result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method call is returned as the output of the `from_llm` method.
+- **Output**: An instance of the class, initialized with data processed from the language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureCollection`](<#CppDataStructureCollection>)  (Base Class)
 
 
 
 ---
 ### CppDataStructureRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L369>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to RawSymbolData instances.
 - **Description**: The `CppDataStructureRawSymbolCollection` class is a specialized collection for handling raw symbol data related to C++ data structures. It extends the `RawSymbolCollection` class and is designed to facilitate the extraction and organization of data structure symbols from C++ code through static analysis. The class provides methods to construct instances from static analysis results, specifically targeting data structures and their associated symbols, and organizes them into a dictionary for easy access and manipulation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.from_static_analysis`](#CppDataStructureRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.from_llm`](#CppDataStructureRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.to_dict`](#CppDataStructureRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.from_static_analysis`](<#CppDataStructureRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.from_llm`](<#CppDataStructureRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.to_dict`](<#CppDataStructureRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CppDataStructureRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method constructs a `CppDataStructureRawSymbolCollection` from static analysis of C++ code, focusing on data structures and their associated callable symbols.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L372>)
+
+The `from_static_analysis` method constructs a `CppDataStructureRawSymbolCollection` instance from static analysis of C++ code, focusing on data structures and their associated callable symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the C++ source code to be analyzed.
@@ -496,82 +596,95 @@ The `from_static_analysis` method constructs a `CppDataStructureRawSymbolCollect
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
 - **Control Flow**:
     - Filter `reified_symbols` to identify data structure symbols that are definitions.
-    - Determine if the code is large enough to require multi-prompt processing.
-    - For each data structure symbol, create a [`RawSymbolData`](symbol_common.py.md#RawSymbolData) object and populate its children with callable symbols from the same file.
-    - Collect callable symbols with a parent data structure and ensure they are added to the corresponding [`RawSymbolData`](symbol_common.py.md#RawSymbolData) children list.
-    - Construct a dictionary mapping data structure names to their [`RawSymbolData`](symbol_common.py.md#RawSymbolData) objects.
-    - Return a `CppDataStructureRawSymbolCollection` instance if any data structures are found, otherwise return `None`.
-- **Output**: Returns a `CppDataStructureRawSymbolCollection` instance containing the data structure symbols and their associated callables, or `None` if no data structures are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](symbol_common.py.md#RawSymbolData)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection`](#CppDataStructureRawSymbolCollection)  (Base Class)
+    - Initialize an empty dictionary to store raw symbol data for data structures.
+    - Determine if the code requires multi-prompt processing based on its size.
+    - Iterate over each data structure symbol, creating [`RawSymbolData`](<symbol_common.py.md#RawSymbolData>) for each and its children if they are callable symbols in the same file.
+    - Filter `reified_symbols` to identify callable symbols with a parent data structure.
+    - For each callable symbol with a parent, ensure the parent is in the dictionary and append the callable symbol as a child if not already present.
+    - Return `None` if no data structures are found, otherwise return a new instance of `CppDataStructureRawSymbolCollection` with the collected data.
+- **Output**: Returns a `CppDataStructureRawSymbolCollection` instance containing the raw symbol data for data structures and their associated callables, or `None` if no data structures are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#RawSymbolData>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection`](<#CppDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppDataStructureRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L482>)
+
 The `from_llm` method is a class method that raises a NotImplementedError, indicating that static analysis should be used for C data structures instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code.
+    - `root_rel_path`: A string representing the root relative path for the code.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C data structures.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection`](#CppDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection`](<#CppDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppDataStructureRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L488>)
+
 The `to_dict` method returns the `data` attribute of the `CppDataStructureRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance without any additional processing.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection`](#CppDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppDataStructureRawSymbolCollection`](<#CppDataStructureRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CppFreeFnRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L492>)
+
 - **Members**:
     - `data`: A dictionary mapping function names to lists of RawSymbolData objects.
-- **Description**: The `CppFreeFnRawSymbolCollection` class is a specialized collection for managing raw symbol data related to C++ free functions, which are functions not associated with any class or data structure. It extends the `RawSymbolCollection` class and provides functionality to populate its data from static analysis of C++ code. The class includes a class method `from_static_analysis` that processes a list of reified symbols to extract and organize function symbols, distinguishing overloaded functions and handling large files appropriately. The `to_dict` method allows for easy conversion of the collection's data into a dictionary format.
+- **Description**: The `CppFreeFnRawSymbolCollection` class is a specialized collection for managing raw symbol data related to C++ free functions, which are functions not associated with any class or data structure. It extends the `RawSymbolCollection` class and provides functionality to populate its data from static analysis of C++ code. The class includes a class method `from_static_analysis` that processes a given code string and a list of reified symbols to extract and organize function symbols into a dictionary, where each function name maps to a list of `RawSymbolData` objects. This class is particularly useful for handling overloaded functions and determining if a file is large enough to require multi-prompt processing.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.from_static_analysis`](#CppFreeFnRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.from_llm`](#CppFreeFnRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.to_dict`](#CppFreeFnRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.from_static_analysis`](<#CppFreeFnRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.from_llm`](<#CppFreeFnRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.to_dict`](<#CppFreeFnRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CppFreeFnRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of the class by analyzing static code to extract and organize function symbols into raw symbol data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L495>)
+
+The `from_static_analysis` method creates a `CppFreeFnRawSymbolCollection` instance from static analysis of C++ code, focusing on callable symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the source code to be analyzed.
+    - `code`: A string representing the C++ source code to be analyzed.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols extracted from the code.
 - **Control Flow**:
-    - Filter the `reified_symbols` to include only those with a `CALLABLE` symbol kind.
-    - Determine if the code requires a multi-prompt based on its size.
-    - Iterate over each function symbol to check if it has a unique name and is not part of a data structure.
-    - For each function symbol, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` and store it in `function_raw_symbol_data`.
-    - If a function name appears more than once, mark it as overloaded and store multiple `RawSymbolData` objects for that name.
-    - Return `None` if no function symbols are found, otherwise return an instance of the class with the collected `function_raw_symbol_data`.
-- **Output**: Returns an instance of the class containing a dictionary of function names mapped to lists of `RawSymbolData` objects, or `None` if no function symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection`](#CppFreeFnRawSymbolCollection)  (Base Class)
+    - Filter `reified_symbols` to include only those with `SymbolKind.CALLABLE`.
+    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Iterate over each callable symbol to check if it is not part of a data structure and has a unique or overloaded name.
+    - For each symbol, create a `RawSymbolData` instance using `RawSymbolData.from_tree_sitter_raw_symbol`, setting `is_overloaded` based on the symbol's name occurrence.
+    - Store the `RawSymbolData` instances in a dictionary, keyed by the symbol's name.
+    - Return `None` if no symbols are processed, otherwise return a `CppFreeFnRawSymbolCollection` instance with the collected data.
+- **Output**: Returns a `CppFreeFnRawSymbolCollection` instance containing the processed function symbols, or `None` if no symbols are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection`](<#CppFreeFnRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppFreeFnRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.from_llm}} -->
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C functions instead of this method.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L560>)
+
+The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the code to be analyzed.
@@ -579,98 +692,112 @@ The `from_llm` method raises a NotImplementedError indicating that static analys
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C functions.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection`](#CppFreeFnRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection`](<#CppFreeFnRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppFreeFnRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L564>)
+
 The `to_dict` method returns the `data` attribute of the `CppFreeFnRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance without any additional processing.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection`](#CppFreeFnRawSymbolCollection)  (Base Class)
+- **Output**: A dictionary where keys are strings and values are lists of `RawSymbolData` objects.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppFreeFnRawSymbolCollection`](<#CppFreeFnRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CppVariableRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L568>)
+
 - **Members**:
     - `data`: A dictionary mapping variable names to their corresponding RawSymbolData.
-- **Description**: The CppVariableRawSymbolCollection class is a specialized collection for handling raw symbol data related to C++ variables. It extends the RawSymbolCollection class and is designed to facilitate the extraction and storage of variable symbols from C++ code using static analysis. The class provides methods to create instances from static analysis, ensuring that variable symbols are accurately captured and stored in a dictionary format, where each variable name is associated with its RawSymbolData. This class is particularly useful for analyzing and documenting C++ code by extracting variable information efficiently.
+- **Description**: The CppVariableRawSymbolCollection class is a specialized collection for handling raw symbol data related to C++ variables. It extends the RawSymbolCollection class and provides functionality to populate its data through static analysis of C++ code. The class includes a method to extract variable symbols from a given codebase using a C++ driver tree, storing the results in a dictionary where keys are variable names and values are RawSymbolData instances. This class is designed to facilitate the organization and retrieval of variable-related symbol data in C++ projects.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.from_static_analysis`](#CppVariableRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.from_llm`](#CppVariableRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.to_dict`](#CppVariableRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.from_static_analysis`](<#CppVariableRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.from_llm`](<#CppVariableRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.to_dict`](<#CppVariableRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CppVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of `CppVariableRawSymbolCollection` by analyzing C++ code to extract variable symbols and their associated data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L571>)
+
+The `from_static_analysis` method creates an instance of `CppVariableRawSymbolCollection` from C++ code by extracting variable symbols using static analysis.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the C++ source code to be analyzed.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
 - **Control Flow**:
-    - Initialize a `CppCDriverTree` object using the provided code and path.
-    - Determine if the code is considered a large file using [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
+    - Initialize a `CppCDriverTree` object using the provided code and root relative path.
+    - Create an empty dictionary `variable_raw_symbol_data` to store raw symbol data for variables.
+    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
     - Iterate over each variable symbol extracted from the driver tree.
-    - For each symbol with a non-null name, create a `RawSymbolData` object with various attributes including the symbol, path, and code.
-    - Store each `RawSymbolData` object in a dictionary using the symbol's name as the key.
-    - Return `None` if no symbols were found, otherwise return an instance of `CppVariableRawSymbolCollection` with the collected data.
-- **Output**: Returns an instance of `CppVariableRawSymbolCollection` containing the extracted variable data, or `None` if no variables are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](../treesitter_drivers/base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables`](../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_variables)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection`](#CppVariableRawSymbolCollection)  (Base Class)
+    - For each symbol with a non-None name, create a `RawSymbolData` object using the symbol and other parameters, and store it in the dictionary with the symbol's name as the key.
+    - Check if the dictionary `variable_raw_symbol_data` is empty; if so, set `output` to `None`, otherwise create an instance of `CppVariableRawSymbolCollection` with the dictionary as data.
+    - Return the `output`, which is either `None` or the created instance.
+- **Output**: Returns an instance of `CppVariableRawSymbolCollection` containing the extracted variable symbols, or `None` if no variables are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables`](<../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection`](<#CppVariableRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.from_llm}} -->
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C variables instead of this method.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L601>)
+
+The `from_llm` method is a class method that raises a NotImplementedError, indicating that static analysis should be used for C variables instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path for the code.
+    - `root_rel_path`: A string representing the root relative path of the code.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C variables.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection`](#CppVariableRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection`](<#CppVariableRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L605>)
+
 The `to_dict` method returns the `data` attribute of the `CppVariableRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance without any additional processing.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection`](#CppVariableRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppVariableRawSymbolCollection`](<#CppVariableRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CppIncludeRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection}} -->
-- **Decorators**: `@classmethod`, `@classmethod`, `@classmethod`
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L610>)
+
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The CppIncludeRawSymbolCollection class is a specialized collection for handling raw symbol data related to C++ include directives. It extends the RawSymbolCollection class and is designed to facilitate the extraction and storage of import symbols from C++ code using static analysis. The class provides methods to create instances from static analysis, specifically focusing on extracting import symbols from a given codebase and storing them in a structured dictionary format. This class is particularly useful for analyzing and documenting the dependencies and include relationships within C++ projects.
+    - `data`: A dictionary mapping string keys to RawSymbolData instances, representing the collection of raw symbols.
+- **Description**: The `CppIncludeRawSymbolCollection` class is a specialized subclass of `RawSymbolCollection` designed to handle the collection of raw symbols specifically related to C++ include directives. It provides functionality to create an instance from static analysis of C++ code, extracting import symbols using a driver tree and storing them in a dictionary. This class is intended to facilitate the organization and retrieval of raw symbol data associated with C++ includes, leveraging static analysis for accurate symbol extraction.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.from_static_analysis`](#CppIncludeRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.from_llm`](#CppIncludeRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.to_dict`](#CppIncludeRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.from_static_analysis`](<#CppIncludeRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.from_llm`](<#CppIncludeRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.to_dict`](<#CppIncludeRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CppIncludeRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.from_static_analysis}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L613>)
+
 The `from_static_analysis` method creates an instance of `CppIncludeRawSymbolCollection` from C++ code by analyzing its imports using static analysis.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -678,23 +805,24 @@ The `from_static_analysis` method creates an instance of `CppIncludeRawSymbolCol
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
 - **Control Flow**:
     - The method begins by creating a `CppCDriverTree` object from the provided code and path.
-    - It checks if the code requires multiple prompts by calling [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
+    - It checks if the code requires multiple prompts by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
     - An empty dictionary `import_dict` is initialized to store import symbols and their corresponding `RawSymbolData`.
     - The method iterates over each import symbol extracted from the driver tree.
-    - For each import symbol, it creates a `RawSymbolData` object with various attributes, including the symbol name, path, and whether the file is large.
-    - Each `RawSymbolData` object is added to the `import_dict` with the symbol name as the key.
-    - The method returns `None` if `import_dict` is empty; otherwise, it returns an instance of `CppIncludeRawSymbolCollection` initialized with `import_dict`.
-- **Output**: Returns an instance of `CppIncludeRawSymbolCollection` containing import symbols and their data, or `None` if no imports are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](../treesitter_drivers/base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_imports`](../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_imports)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection`](#CppIncludeRawSymbolCollection)  (Base Class)
+    - For each import symbol, it creates a `RawSymbolData` object with various attributes, including the symbol name, path, and code, and adds it to `import_dict`.
+    - Finally, the method returns `None` if `import_dict` is empty; otherwise, it returns an instance of `CppIncludeRawSymbolCollection` initialized with `import_dict`.
+- **Output**: The method returns an instance of `CppIncludeRawSymbolCollection` containing import symbols and their data, or `None` if no imports are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_imports`](<../treesitter_drivers/base.py.md#DriverTreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection`](<#CppIncludeRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppIncludeRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L637>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C++ imports instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -703,17 +831,19 @@ The `from_llm` method raises a NotImplementedError indicating that static analys
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C++ imports.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection`](#CppIncludeRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection`](<#CppIncludeRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CppIncludeRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/cpp.py#L641>)
+
 The `to_dict` method returns the `data` attribute of the `CppIncludeRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the `data` attribute of the instance without any additional processing.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects, representing the raw symbol data stored in the instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection`](#CppIncludeRawSymbolCollection)  (Base Class)
+    - The method directly returns the `data` attribute of the instance.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/cpp.CppIncludeRawSymbolCollection`](<#CppIncludeRawSymbolCollection>)  (Base Class)
 
 
 

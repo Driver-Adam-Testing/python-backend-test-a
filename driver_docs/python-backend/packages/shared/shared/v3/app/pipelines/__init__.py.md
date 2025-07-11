@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase initializes the `pipelines` package by importing and exposing various pipeline request and response classes, such as `InlineEditPipelineRequest`, `PipelineRequest`, and `ReformatPipelineResponse`.
+The `__init__.py` file in the `python-backend` codebase initializes the `pipelines` package by importing and exposing various pipeline request and response classes, such as `InlineEditPipelineRequest` and `ReformatPipelineResponse`.
 
 # Purpose
-This code is a module-level script that organizes and exposes specific classes from various submodules within a package. It imports several classes related to pipeline requests and responses from different modules such as `inline_edit`, `pipeline_request`, `pipeline_response`, `reformat`, and `smart_instruction`. The `__all__` list is defined to explicitly specify which classes are public and should be accessible when the module is imported using a wildcard (`from module import *`). This script provides narrow functionality focused on managing and structuring the import and export of pipeline-related classes, ensuring a clean and controlled interface for users of the package.
+This code is a module-level script that organizes and exposes specific classes for use in other parts of a software package. It imports various classes related to pipeline processing, such as requests and responses for inline editing, reformatting, and smart instructions, from different modules within the same package. The `__all__` list is defined to explicitly specify which classes are public and should be accessible when the module is imported using a wildcard (`from module import *`). This script provides narrow functionality by acting as an interface for managing and exposing specific components of a pipeline processing system, ensuring that only the intended classes are available for external use.
 # Imports and Dependencies
 
 ---
@@ -25,8 +25,8 @@ This code is a module-level script that organizes and exposes specific classes f
 ---
 ### \_\_all\_\_
 - **Type**: `list`
-- **Description**: The `__all__` variable is a list that defines the public interface of the module by specifying which classes and functions are available for import when the module is imported using a wildcard import statement (e.g., `from module import *`). It includes a list of strings, each representing the name of a class or function that is part of the module's public API.
-- **Use**: This variable is used to control the export of module components, ensuring that only the specified classes and functions are accessible when the module is imported with a wildcard.
+- **Description**: The `__all__` variable is a list that defines the public interface of the module by specifying which classes and functions are available for import when the module is imported using a wildcard (e.g., `from module import *`). It includes a list of strings, each representing the name of a class that is part of the module's public API.
+- **Use**: This variable is used to control the symbols that are exported when the module is imported with a wildcard import.
 
 
 

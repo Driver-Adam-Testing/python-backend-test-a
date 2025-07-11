@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `search.py` file defines classes and enums for handling search operations, including search algorithms, input parameters, and results within the `python-backend` codebase.
+The `search.py` file defines classes and enumerations for handling search operations, including input parameters and results, within the `python-backend` codebase.
 
 # Purpose
-This code defines a set of classes and enumerations that facilitate the implementation of a search functionality, likely within a larger application. It provides narrow functionality by focusing specifically on the structure and types of data involved in search operations. The `SearchAlgorithm` enumeration defines the types of search algorithms available, such as "KEYWORD," "SEMANTIC," and "HYBRID." The `SearchInput` class, inheriting from `DriverRequest`, specifies the parameters for a search request, including query details and optional filters like content kinds and node IDs. The `SearchResult` and `SearchResults` classes, both extending `DriverResponse`, define the structure of individual search results and collections of results, respectively, including attributes like content, score, and metadata. This code is part of a larger system, as indicated by its imports from shared interfaces and database models, and it is designed to standardize the input and output of search-related operations.
+This Python code defines a set of classes that model the input and output structures for a search functionality, providing a narrow and specific purpose within a larger application. It includes an enumeration `SearchAlgorithm` to specify different search strategies, such as "KEYWORD", "SEMANTIC", and "HYBRID". The `SearchInput` class, inheriting from `DriverRequest`, outlines the parameters required for a search operation, including query details, algorithm choice, and optional filters like content kinds and node IDs. The `SearchResult` class, extending `DriverResponse`, represents individual search results with attributes like content, score, and metadata, while `SearchResults` aggregates multiple `SearchResult` instances. This code is likely part of a larger system, interfacing with a database and other components to perform and return search operations.
 # Imports and Dependencies
 
 ---
@@ -21,7 +21,7 @@ This code defines a set of classes and enumerations that facilitate the implemen
 
 ---
 ### SearchAlgorithm<!-- {{#class:python-backend/packages/shared/shared/interfaces/search.SearchAlgorithm}} -->
-- **Description**: The `SearchAlgorithm` class is an enumeration that defines three types of search algorithms: 'KEYWORD', 'SEMANTIC', and 'HYBRID'. It inherits from both `str` and `Enum`, allowing each member to be treated as a string while also providing enumeration capabilities. This class is used to specify the type of search algorithm to be employed in search operations.
+- **Description**: The `SearchAlgorithm` class is an enumeration that defines three types of search algorithms: `KEYWORD`, `SEMANTIC`, and `HYBRID`. It inherits from both `str` and `Enum`, allowing each member to be treated as a string while also providing enumeration capabilities. This class is used to specify the type of search algorithm to be employed in search operations.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -35,11 +35,11 @@ This code defines a set of classes and enumerations that facilitate the implemen
     - `algorithm`: Defines the search algorithm to use, defaulting to a hybrid approach.
     - `token_limit`: Optional limit on the number of tokens to process in the search.
     - `content_kinds`: Optional list of content kinds to filter the search results.
-    - `node_ids`: Optional list of node IDs to filter the search results.
-    - `organization_id`: Optional organization ID to filter the search results.
-- **Description**: The SearchInput class extends DriverRequest and is used to encapsulate the parameters for a search operation. It includes attributes to specify the search query, the algorithm to use, and various optional filters such as content kinds, node IDs, and organization ID. The class also allows setting limits on the number of results and tokens processed, providing flexibility in tailoring search operations.
+    - `node_ids`: Optional list of node IDs to restrict the search to specific nodes.
+    - `organization_id`: Optional organization ID to limit the search within a specific organization.
+- **Description**: The SearchInput class extends DriverRequest and is used to encapsulate the parameters for a search operation, including the query, algorithm choice, and various optional filters such as content kinds, node IDs, and organization ID.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](request.py.md#DriverRequest)
+    - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](<request.py.md#DriverRequest>)
 
 
 ---
@@ -52,18 +52,18 @@ This code defines a set of classes and enumerations that facilitate the implemen
     - `version_id`: A UUID representing the version identifier.
     - `node_id`: A UUID representing the node identifier.
     - `metadata`: A dictionary containing additional metadata about the search result.
-- **Description**: The SearchResult class extends DriverResponse and encapsulates the details of a single search result, including its content, relevance score, version information, and associated metadata.
+- **Description**: The SearchResult class extends DriverResponse and represents a single search result, encapsulating details such as the content, relevance score, version information, and associated metadata. It is designed to provide a structured response for search operations, including identifiers and paths relevant to the search context.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](response.py.md#DriverResponse)
+    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<response.py.md#DriverResponse>)
 
 
 ---
 ### SearchResults<!-- {{#class:python-backend/packages/shared/shared/interfaces/search.SearchResults}} -->
 - **Members**:
     - `results`: A list of SearchResult objects representing the search results.
-- **Description**: The SearchResults class extends the DriverResponse class and encapsulates a collection of search results, each represented by a SearchResult object. It is designed to hold the results of a search operation, providing a structured way to access the individual search results.
+- **Description**: The SearchResults class extends the DriverResponse class and encapsulates a collection of search results, each represented by a SearchResult object. It is designed to hold the results of a search operation, providing a structured way to access the individual search results returned by a search query.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](response.py.md#DriverResponse)
+    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<response.py.md#DriverResponse>)
 
 
 

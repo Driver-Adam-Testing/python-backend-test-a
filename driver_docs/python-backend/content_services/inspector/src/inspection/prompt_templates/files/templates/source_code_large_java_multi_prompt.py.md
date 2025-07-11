@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_java_multi_prompt.py` file defines a template for generating multi-prompt text related to Java source code, including sections for purpose, imports, interfaces, and classes.
+The `source_code_large_java_multi_prompt.py` file defines a template for generating structured prompts related to large Java source code, including sections for purpose, imports, interfaces, and classes.
 
 # Purpose
-This Python code defines a configuration for generating multi-prompt templates specifically tailored for analyzing Java source code. It imports various utilities and classes from different modules, indicating a narrow functionality focused on Java code analysis. The code is structured as a list of tuples, each representing a different aspect of Java code, such as purpose, imports, interfaces, and classes. Each tuple contains a template type, a description, and functions or data collections that facilitate the extraction and processing of relevant information from Java code. This setup is likely part of a larger system designed to automate the analysis or documentation of Java codebases by leveraging language models and static analysis tools.
+This Python code defines a configuration for generating structured prompts specifically tailored for analyzing Java source code. It imports various components and utilities from different modules to construct a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA`, which is a list of tuples. Each tuple represents a different aspect of the Java code analysis, such as determining the purpose of the code, identifying imports and dependencies, and extracting information about interfaces and classes. The code provides narrow functionality focused on creating a structured framework for processing and understanding Java code through prompts, making it a specialized tool for language-specific code analysis.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_PURPOSE_FROM_CHUNKS`
 - `utils.lang_specialization.ir_common.ListData`
@@ -27,8 +32,8 @@ This Python code defines a configuration for generating multi-prompt templates s
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_JAVA
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA` is a list of tuples, each containing a set of parameters used to define different aspects of Java source code analysis and generation prompts. Each tuple includes a prompt type, a description, and a series of functions or data sources that are used to generate or analyze specific components of Java code, such as imports, interfaces, and classes.
-- **Use**: This variable is used to configure and manage the generation of multi-prompt templates for analyzing and generating Java source code.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA` is a list of tuples, each containing structured data for generating prompts related to Java source code analysis. Each tuple includes a prompt type, a description, and various components or functions that are used to construct or process the prompt content. The list is designed to handle different aspects of Java code, such as purpose, imports, interfaces, and classes, by utilizing specific instructions and components for each aspect.
+- **Use**: This variable is used to define a template for generating structured prompts for analyzing and understanding Java source code.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dev_db_public_key.cert` file contains a public key certificate used for secure communication with the development database in the `python-backend` codebase.
+The `dev_db_public_key.cert` file contains a public key certificate used in the `python-backend` codebase for database driver authentication.
 
 # Purpose
-The provided content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. This certificate is used to establish a secure connection between a client and a server by verifying the server's identity. It contains information such as the issuer's details, the subject's details (in this case, "scalegrid.io"), and the public key, which is used in the encryption process. The certificate is part of a Public Key Infrastructure (PKI) system, which ensures that data transmitted over the internet is encrypted and secure from unauthorized access. This particular certificate is likely used in a web application or service to enable HTTPS, ensuring that data exchanged with the server is encrypted and secure.
+The provided content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. This certificate is used to establish a secure connection between a client and a server by verifying the server's identity. It contains information such as the issuer's details, the subject's details (in this case, "scalegrid.io"), and the public key, which is used in the encryption process. The certificate is part of a Public Key Infrastructure (PKI) system, which ensures secure data transmission over networks by enabling encryption and decryption processes. This particular certificate is likely used in a software system to facilitate secure communications, such as HTTPS, by authenticating the server to the client.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

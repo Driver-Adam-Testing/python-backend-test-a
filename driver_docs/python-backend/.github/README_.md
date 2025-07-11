@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `.github` folder in the `python-backend` codebase contains configurations for GitHub Actions, including deployment actions and workflow automation for various environments, as well as a Dependabot configuration for managing updates.
+Configurations for GitHub Actions, workflows for automation, and Dependabot for update management.
 
 ## Folders
-- **[actions](actions/README.md)**: The `actions` folder in the `python-backend` codebase contains configurations for GitHub Actions, specifically focusing on the deployment of modal packages as detailed in the `modal-deploy` subfolder.
-- **[workflows](workflows/README.md)**: The `workflows` folder in the `python-backend` codebase contains GitHub Actions workflow configuration files for automating tasks such as dependency updates, environment deployments (development, staging, production), backend operations, and running unit tests.
+- **[actions](actions/README.md)**: The `actions` folder in the `python-backend` codebase contains configurations for GitHub Actions, specifically including a setup for deploying a modal package.
+- **[workflows](workflows/README.md)**: GitHub Actions workflow configuration files for automating dependency updates, deployments, and unit testing.
 
 ## Files
-- **[dependabot.yml](dependabot.yml.md)**: The `dependabot.yml` file in the `python-backend` codebase configures Dependabot to automatically check for updates to GitHub Actions and Python packages on a weekly basis every Wednesday at 09:00 AM in the America/Los_Angeles timezone.
+- **[dependabot.yml](dependabot.yml.md)**: The `dependabot.yml` file in the `python-backend` codebase configures Dependabot to automatically check for updates to GitHub Actions and Python packages on a weekly schedule every Wednesday at 09:00 AM in the America/Los_Angeles timezone.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

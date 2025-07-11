@@ -3,14 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `treesitter_testcases` folder in the `python-backend` codebase contains a diverse set of test files for different programming languages, including C, C++, Java, Python, and TypeScript, each demonstrating and testing various language-specific programming concepts.
+A collection of language-specific subfolders with test files for C, C++, C#, Java, Python, and TypeScript.
 
 ## Folders
-- **[c](c/README.md)**: The `c` folder in the `python-backend` codebase contains a collection of C test files that demonstrate and test various C programming concepts such as enumerations, function calls, function declarations, function definitions, global variables, structs, and unions.
-- **[cpp](c/README.mdpp)**: The `cpp` folder in the `python-backend` codebase contains a comprehensive set of C++ test files that demonstrate a wide range of C++ programming concepts, including classes, enums, function calls and declarations, inheritance, structs, unions, variables, and include directives.
-- **[java](java/README.md)**: The `java` folder in the `python-backend` codebase contains Java test files that demonstrate various Java programming concepts such as classes, enums, imports, interfaces, methods, and variables.
-- **[python](python/README.md)**: The `python` folder in the `python-backend` codebase contains a collection of test case files that cover various aspects of Python programming, including function and method calls, class definitions, function features, import statements, method definitions, and variable definitions.
-- **[typescript](typescript/README.md)**: The `typescript` folder in the `python-backend` codebase contains a series of comprehensive TypeScript test suites covering various aspects of the language, including function calls, classes, enums, functions, imports, interfaces, methods, modules, object types, and variables.
+- **[c](c/README.md)**: A collection of C test files demonstrating and testing C programming concepts like enumerations, function calls, declarations, definitions, global variables, structs, and unions.
+- **[cpp](c/README.mdpp)**: A collection of C++ test files demonstrating programming concepts like classes, enums, functions, inheritance, structs, unions, variables, and include directives.
+- **[csharp](c/README.mdsharp)**: A collection of C# test case files covering classes, enums, interfaces, method invocations, methods, namespaces, structs, and using directives.
+- **[java](java/README.md)**: Java test files demonstrating classes, enums, imports, interfaces, methods, and variables.
+- **[python](python/README.md)**: A collection of test case files covering Python function and method calls, class definitions, function features, import statements, method definitions, and variable definitions.
+- **[typescript](typescript/README.md)**: Comprehensive TypeScript test suites covering function calls, classes, enums, functions, imports, interfaces, methods, modules, object types, and variables.
 
 
 ---

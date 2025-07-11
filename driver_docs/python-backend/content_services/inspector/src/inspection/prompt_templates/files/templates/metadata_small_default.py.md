@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `metadata_small_default.py` file defines a small metadata template using system and purpose prompts for content inspection.
+The `metadata_small_default.py` file defines a template for small metadata prompts using various components and style instructions.
 
 # Purpose
-This code is a configuration setup for a templating system, specifically designed to handle metadata prompts in a small-scale context. It imports specific metadata prompts from a utility module and a templating constant from another module, indicating a narrow functionality focused on metadata management. The `METADATA_SMALL_TEMPLATE` is defined as a list containing a tuple, which associates a single prompt text with its corresponding metadata and purpose prompts. This setup suggests that the code is part of a larger system that dynamically generates or processes text based on predefined templates, likely for documentation or automated content generation purposes.
+This Python code defines a configuration template for generating metadata prompts, specifically tailored for small systems. It imports various components and instructions from shared and utility modules, indicating that it leverages existing structures to build its functionality. The code constructs a list, `METADATA_SMALL_TEMPLATE`, which contains tuples that define the structure and content of prompts, using a combination of predefined components and style instructions. This setup suggests that the code provides narrow functionality, focusing on creating structured prompts for metadata purposes, likely within a larger system that requires consistent and formatted metadata generation.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.metadata.METADATA_SMALL_SYSTEM_PROMPT`
 - `utils.lang_specialization.metadata.PURPOSE_PROMPT_SMALL`
 - `utils.templates.S`
@@ -20,8 +25,8 @@ This code is a configuration setup for a templating system, specifically designe
 ---
 ### METADATA\_SMALL\_TEMPLATE
 - **Type**: `list`
-- **Description**: `METADATA_SMALL_TEMPLATE` is a list containing a single tuple. This tuple consists of four elements: a constant from the `S` module, a string literal, and two imported constants, `METADATA_SMALL_SYSTEM_PROMPT` and `PURPOSE_PROMPT_SMALL`. The list is likely used to define a template for metadata with a specific structure.
-- **Use**: This variable is used to store a structured template for metadata, which can be utilized in generating or processing metadata-related information.
+- **Description**: `METADATA_SMALL_TEMPLATE` is a list containing a single tuple that defines a structured prompt template for metadata purposes. The tuple includes a prompt type identifier, a section header, and two formatted prompt strings created using the `Prompt` class and various components and instructions. This template is used to generate consistent and structured metadata prompts by appending specific components and style instructions to the prompt strings.
+- **Use**: This variable is used to define a structured template for generating metadata prompts with specific formatting and style instructions.
 
 
 

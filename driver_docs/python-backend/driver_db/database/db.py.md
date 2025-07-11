@@ -6,9 +6,9 @@
 The `db.py` file in the `python-backend` codebase sets up synchronous and asynchronous database engines, manages database sessions, and includes functionality to parse database URLs and handle SSL configurations for asynchronous connections.
 
 # Purpose
-This Python code file is designed to manage database connections, both synchronous and asynchronous, using SQLAlchemy and SQLModel. It provides a mechanism to create and manage database sessions through the [`get_session`](#get_session) context manager, which ensures that sessions are properly opened and closed. The file also includes functionality to parse database URLs, extracting connection strings and arguments, which is particularly useful for configuring connections with specific parameters such as SSL settings. The code handles both synchronous and asynchronous database connections, with the latter being configured to work around limitations in the asyncpg library regarding SSL parameters.
+This Python code is designed to manage database connections, providing both synchronous and asynchronous capabilities. It is structured as a library file intended to be imported and used in other parts of an application. The code primarily focuses on setting up SQLAlchemy engines for database interaction, with a synchronous engine created using `create_engine` and an asynchronous engine using `create_async_engine`. The synchronous engine is configured with a connection pool, while the asynchronous engine includes additional configurations to handle SSL connections manually due to limitations in the `asyncpg` library. The [`get_session`](<#get_session>) function is a context manager that provides a session for database operations, ensuring that the session is properly closed after use.
 
-The file is structured to be part of a larger application, likely serving as a utility module for database operations. It imports configuration settings from an external module, indicating that it is designed to be flexible and adaptable to different environments. The presence of the [`init_db`](#init_db) function, although not implemented in the provided code, suggests that this file is intended to initialize or set up the database schema or perform initial data seeding. The code is not a standalone script but rather a library component meant to be imported and used by other parts of an application, providing essential database connectivity and session management functionality.
+The code also includes a utility function, `parse_db_url`, which extracts the base connection string and connection arguments from a database URL. This function is particularly useful for handling asynchronous database URLs, allowing the code to manually configure SSL settings when necessary. The presence of the [`init_db`](<#init_db>) function, although not implemented, suggests a placeholder for initializing the database schema or performing setup tasks. Overall, this file provides a cohesive set of tools for managing database connections, with a focus on flexibility and compatibility with different database configurations.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The file is structured to be part of a larger application, likely serving as a u
 ---
 ### engine
 - **Type**: `sqlalchemy.engine.base.Engine`
-- **Description**: The `engine` variable is an instance of SQLAlchemy's synchronous `Engine` class, created using the `create_engine` function. It is configured to connect to a database using the connection string specified in `settings.SQLALCHEMY_DATABASE_URI` and has a connection pool size of 10.
+- **Description**: The `engine` variable is an instance of SQLAlchemy's `Engine` class, created using the `create_engine` function. It is configured to connect to a database using the connection string specified in `settings.SQLALCHEMY_DATABASE_URI` and is set with a connection pool size of 10.
 - **Use**: This variable is used to manage database connections and execute SQL statements in a synchronous manner.
 
 
@@ -36,24 +36,24 @@ The file is structured to be part of a larger application, likely serving as a u
 
 ---
 ### get\_session<!-- {{#callable:python-backend/driver_db/database/db.get_session}} -->
-The `get_session` function is a context manager that provides a SQLAlchemy session for database operations and ensures it is properly closed after use.
+The `get_session` function provides a context manager for creating and managing a SQLAlchemy session, ensuring it is properly closed after use.
 - **Decorators**: `@contextmanager`
 - **Inputs**: None
 - **Control Flow**:
     - A new SQLAlchemy `Session` object is created using the global `engine`.
-    - The `session` object is yielded to the context block where `get_session` is used, allowing database operations to be performed.
-    - After the context block is exited, the `finally` block ensures that the `session` is closed, releasing any resources.
-- **Output**: The function yields a `Session` object for use within a context block, allowing for database operations to be performed safely.
+    - The `session` object is yielded to the context block where `get_session` is used.
+    - After the context block execution, the `finally` block ensures that the `session` is closed, releasing any resources.
+- **Output**: The function yields a `Session` object for use within a context manager block.
 
 
 ---
 ### init\_db<!-- {{#callable:python-backend/driver_db/database/db.init_db}} -->
-The `init_db` function is intended to initialize the database using a given SQLAlchemy session.
+The `init_db` function initializes the database using the provided SQLAlchemy session.
 - **Inputs**:
-    - `session`: An instance of `Session` from SQLAlchemy, representing a database session to be used for initialization.
+    - `session`: An instance of `Session` from SQLAlchemy, representing the database session to be initialized.
 - **Control Flow**:
-    - The function is defined but not yet implemented, indicated by the ellipsis (`...`).
-    - It is expected to perform some initialization tasks on the database using the provided session.
+    - The function is defined to take a `Session` object as an argument, which is intended to be used for database operations.
+    - The function body is currently not implemented, indicated by the ellipsis (`...`).
 - **Output**: The function does not return any value, as indicated by the return type `None`.
 
 

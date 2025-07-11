@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_pipelines` folder in the `python-backend` codebase contains Python scripts that define functions for executing various block agents, including code, diagram, list, and table, each utilizing prompt augmentation and agent tools to generate and verify their respective outputs.
+Python scripts for executing block agents, including code, diagram, list, and table, with prompt tools.
 
 
 ## Files
-- **[code.py](code.py.md)**: The `code.py` file in the `python-backend` codebase defines a function to execute a code block agent that generates and verifies code snippets using various tools and prompts.
+- **[code.py](code.py.md)**: The `code.py` file implements a function to execute a code block agent that generates and verifies code snippets using various tools and prompts within a pipeline framework.
 - **[diagram.py](diagram.py.md)**: The `diagram.py` file in the `python-backend` codebase implements a function to execute a diagram block agent that generates and verifies mermaid diagrams using prompt augmentation and agent tools.
-- **[list.py](list.py.md)**: The `list.py` file defines a function `execute_list_block_agent` that orchestrates a pipeline for generating a comprehensive list by utilizing prompt augmentation and default agent execution within a large language model usage session.
-- **[table.py](table.py.md)**: The `table.py` file defines a function to execute a table block agent that utilizes prompt augmentation and smart instruction steps to generate an exhaustive table as the final output.
+- **[list.py](list.py.md)**: The `list.py` file in the `python-backend` codebase defines a function to execute a list block agent that utilizes prompt augmentation and smart instruction steps to generate a comprehensive list as output.
+- **[table.py](table.py.md)**: The `table.py` file defines a function `execute_table_block_agent` that orchestrates the execution of a table block agent using prompt augmentation and default agent steps to generate an exhaustive table output.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

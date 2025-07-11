@@ -6,7 +6,7 @@
 The `tag_service_test.py` file contains a suite of pytest tests for the `TagService` in the `python-backend` codebase, verifying functionalities such as creating, updating, listing, associating, and deleting tags, while ensuring proper exception handling for invalid operations.
 
 # Purpose
-This Python source code file is a collection of unit tests for a tagging service within a web application, utilizing the `pytest` framework. The tests are designed to verify the functionality of creating, updating, listing, associating, and deleting tags, as well as handling tags across different user organizations. The code includes several `pytest` fixtures to set up the necessary test environment, such as creating a `TagService` instance and generating test tags. The tests ensure that the tagging operations behave correctly, including raising appropriate exceptions like `HTTPException` and `ValidationError` when invalid operations are attempted. This file provides narrow functionality focused on validating the behavior of tag-related operations in a FastAPI application, ensuring robust and secure tag management.
+This Python file is a test suite for a tagging service within a web application, utilizing the `pytest` framework. It provides narrow functionality focused on testing the creation, updating, listing, associating, and deletion of tags, as well as handling tags across different organizations. The code includes several test functions that verify the behavior of the `TagService` class, ensuring that operations such as creating a new tag, updating an existing tag, and associating tags with content are performed correctly and handle exceptions as expected. The use of fixtures like [`tag_service`](<#tag_service>), [`tag`](<#tag>), and [`delete_tag`](<#delete_tag>) helps set up the necessary preconditions for the tests, such as creating and cleaning up test data. The file also emphasizes the importance of not using try-except blocks in tests to avoid masking potential bugs, as noted in the initial comment.
 # Imports and Dependencies
 
 ---
@@ -30,17 +30,16 @@ This Python source code file is a collection of unit tests for a tagging service
 
 ---
 ### tag\_service<!-- {{#callable:python-backend/backend/app/services/tag_service_test.tag_service}} -->
-The `tag_service` function is a pytest fixture that provides a [`TagService`](tag_service.py.md#TagService) instance using a given database session for testing purposes.
+The `tag_service` function is a pytest fixture that provides a [`TagService`](<tag_service.py.md#TagService>) instance using a given database session for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `db`: A SQLAlchemy `Session` object representing the database session to be used by the [`TagService`](tag_service.py.md#TagService).
+    - `db`: A SQLAlchemy `Session` object representing the database session to be used by the [`TagService`](<tag_service.py.md#TagService>).
 - **Control Flow**:
-    - The function is decorated with `@pytest.fixture` with a scope of 'function', indicating it is a fixture that is set up and torn down for each test function.
-    - The function takes a single argument `db`, which is a database session.
-    - It returns an instance of [`TagService`](tag_service.py.md#TagService) initialized with the provided `db` session.
-- **Output**: An instance of [`TagService`](tag_service.py.md#TagService) initialized with the provided database session.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService`](tag_service.py.md#TagService)
+    - The function is decorated with `@pytest.fixture` to indicate it is a fixture for pytest, with a scope of 'function', meaning it is set up and torn down for each test function.
+    - The function returns a new instance of [`TagService`](<tag_service.py.md#TagService>), initialized with the provided `db` session.
+- **Output**: An instance of [`TagService`](<tag_service.py.md#TagService>) initialized with the provided database session.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService`](<tag_service.py.md#TagService>)
 
 
 ---
@@ -52,36 +51,36 @@ The `tag` function is a pytest fixture that creates a new tag for testing purpos
     - `current_user_with_org`: A UserToken representing the current user with organizational context.
 - **Control Flow**:
     - A new tag input is created with a unique name, a white hex color, and a type of 'tag'.
-    - The tag is created using the tag_service's create_tag method with the current user and the new tag input.
+    - The tag is created using the `tag_service.create_tag` method with the current user and the new tag input.
     - The created tag is yielded for use in tests.
-    - After the test completes, the tag is deleted using the tag_service's delete_tag method to ensure cleanup.
-- **Output**: Yields a NewTagInput object representing the created tag for use in tests.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](../schemas/tag_schema.py.md#NewTagInput)
-    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](tag_service.py.md#TagServicecreate_tag)
-    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](tag_service.py.md#TagServicedelete_tag)
+    - After the test completes, the tag is deleted using `tag_service.delete_tag` to ensure cleanup.
+- **Output**: Yields a newly created tag for use in tests, ensuring it is deleted afterwards.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>)
+    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<tag_service.py.md#TagServicecreate_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<tag_service.py.md#TagServicedelete_tag>)
 
 
 ---
 ### delete\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service_test.delete_tag}} -->
-The `delete_tag` function is a pytest fixture that creates a new tag using the `TagService` and returns it for testing purposes.
+The `delete_tag` function is a pytest fixture that creates a new tag using the `TagService` and returns it for use in tests.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
     - `tag_service`: An instance of `TagService` used to interact with tag-related operations.
-    - `current_user_with_org`: A `UserToken` object representing the current user with an associated organization.
+    - `current_user_with_org`: A `UserToken` representing the current user with organizational context.
 - **Control Flow**:
-    - A [`NewTagInput`](../schemas/tag_schema.py.md#NewTagInput) object is created with a unique name, a white hex color, and a type of 'tag'.
-    - The [`create_tag`](tag_service.py.md#TagServicecreate_tag) method of `tag_service` is called with `current_user_with_org` and the `new_tag_input` to create a new tag.
+    - A [`NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>) object is created with a unique name, a white hex color, and a type of 'tag'.
+    - The [`create_tag`](<tag_service.py.md#TagServicecreate_tag>) method of `tag_service` is called with `current_user_with_org` and the `new_tag_input` to create a new tag.
     - The newly created tag is returned.
 - **Output**: Returns a `Tag` object that represents the newly created tag.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](../schemas/tag_schema.py.md#NewTagInput)
-    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](tag_service.py.md#TagServicecreate_tag)
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>)
+    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<tag_service.py.md#TagServicecreate_tag>)
 
 
 ---
 ### test\_create\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_create_tag}} -->
-The `test_create_tag` function tests the creation of a new tag in the database and verifies its attributes against the expected values.
+The function `test_create_tag` tests the creation of a new tag in the database and verifies its attributes against the expected values.
 - **Inputs**:
     - `db`: A SQLAlchemy Session object used to interact with the database.
     - `current_user_with_org`: A UserToken object representing the current user, including their organization and user ID.
@@ -89,65 +88,68 @@ The `test_create_tag` function tests the creation of a new tag in the database a
     - Instantiate a TagService object using the provided database session.
     - Create a NewTagInput object with a unique name, a hex color, and a type of 'tag'.
     - Call the create_tag method of the TagService with the current user and the new tag input to create a new tag.
-    - Assert that the new tag is not None, indicating successful creation.
-    - Verify that the new tag's name, hex color, and type match the input values.
-    - Check that the new tag's organization ID and created by fields match the current user's organization ID and user ID.
+    - Assert that the new tag is not None, indicating it was successfully created.
+    - Assert that the new tag's name, hex color, and type match those of the NewTagInput object.
+    - Assert that the new tag's organization_id matches the organization_id of the current user.
+    - Assert that the new tag's created_by field matches the user_id of the current user.
 - **Output**: The function does not return any value; it raises an assertion error if any of the checks fail.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService`](tag_service.py.md#TagService)
-    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](../schemas/tag_schema.py.md#NewTagInput)
-    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](tag_service.py.md#TagServicecreate_tag)
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService`](<tag_service.py.md#TagService>)
+    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>)
+    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<tag_service.py.md#TagServicecreate_tag>)
 
 
 ---
 ### test\_create\_existing\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_create_existing_tag}} -->
-The function `test_create_existing_tag` tests the behavior of the [`create_tag`](tag_service.py.md#TagServicecreate_tag) method when attempting to create a tag that already exists, expecting an `HTTPException` to be raised.
+The function `test_create_existing_tag` tests that attempting to create a tag that already exists raises an `HTTPException`.
 - **Inputs**:
     - `tag_service`: An instance of `TagService` used to interact with tag-related operations.
-    - `tag`: An instance of [`NewTagInput`](../schemas/tag_schema.py.md#NewTagInput) representing the tag that already exists.
-    - `current_user_with_org`: A `UserToken` representing the current user with organization context.
+    - `tag`: An instance of [`NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>) representing the tag to be tested for creation.
+    - `current_user_with_org`: An instance of `UserToken` representing the current user with organizational context.
 - **Control Flow**:
     - The function uses `pytest.raises` to assert that an `HTTPException` is raised when attempting to create a tag that already exists.
-    - The [`create_tag`](tag_service.py.md#TagServicecreate_tag) method of `tag_service` is called with `current_user_with_org` and a new [`NewTagInput`](../schemas/tag_schema.py.md#NewTagInput) constructed from the existing tag's data, excluding unset fields.
-- **Output**: The function does not return any value; it asserts that an `HTTPException` is raised during the execution of the test.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](tag_service.py.md#TagServicecreate_tag)
-    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](../schemas/tag_schema.py.md#NewTagInput)
+    - The [`create_tag`](<tag_service.py.md#TagServicecreate_tag>) method of `tag_service` is called with `current_user_with_org` and a new [`NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>) object created from the existing `tag` data, excluding unset fields.
+- **Output**: The function does not return any value; it asserts that an `HTTPException` is raised when a duplicate tag creation is attempted.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<tag_service.py.md#TagServicecreate_tag>)
+    - [`python-backend/backend/app/schemas/tag_schema.NewTagInput`](<../schemas/tag_schema.py.md#NewTagInput>)
 
 
 ---
 ### test\_invalid\_tag\_update<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_invalid_tag_update}} -->
-The function `test_invalid_tag_update` tests the behavior of the [`EditTagInput`](../schemas/tag_schema.py.md#EditTagInput) class when provided with invalid input data, expecting a `ValidationError` to be raised.
+The function `test_invalid_tag_update` tests the validation of tag updates by ensuring that an invalid tag update raises a `ValidationError`.
 - **Inputs**:
     - `tag_service`: An instance of `TagService` used to interact with tag-related operations.
     - `tag`: An instance of `NewTagInput` representing the tag to be updated.
-    - `current_user_with_org`: An instance of `UserToken` representing the current user with organizational context.
+    - `current_user_with_org`: An instance of `UserToken` representing the current user with organization context.
 - **Control Flow**:
-    - Sets new tag attributes: `new_name`, `new_hex_color`, and `new_type` with invalid values.
-    - Uses `pytest.raises` to assert that a `ValidationError` is raised when attempting to create an [`EditTagInput`](../schemas/tag_schema.py.md#EditTagInput) with the invalid attributes.
-- **Output**: The function does not return any value; it asserts that a `ValidationError` is raised when invalid data is used to create an [`EditTagInput`](../schemas/tag_schema.py.md#EditTagInput).
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/tag_schema.EditTagInput`](../schemas/tag_schema.py.md#EditTagInput)
+    - Set `new_name` to 'UPDATED_TAG'.
+    - Set `new_hex_color` to '#000000.'.
+    - Set `new_type` to 'category'.
+    - Use `pytest.raises` to assert that creating an [`EditTagInput`](<../schemas/tag_schema.py.md#EditTagInput>) with the above values raises a `ValidationError`.
+- **Output**: The function does not return any value; it asserts that a `ValidationError` is raised when invalid tag update data is provided.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/tag_schema.EditTagInput`](<../schemas/tag_schema.py.md#EditTagInput>)
 
 
 ---
 ### test\_update\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_update_tag}} -->
-The `test_update_tag` function tests the functionality of updating a tag's name and hex color using the `TagService`.
+The function `test_update_tag` tests the functionality of updating a tag's name and color using the `TagService`.
 - **Inputs**:
     - `tag_service`: An instance of `TagService` used to perform operations on tags.
     - `tag`: An instance of `NewTagInput` representing the tag to be updated.
     - `current_user_with_org`: An instance of `UserToken` representing the current user with organization context.
 - **Control Flow**:
     - Generate a new tag name using the current datetime and set a new hex color.
-    - Create an [`EditTagInput`](../schemas/tag_schema.py.md#EditTagInput) object with the new name and hex color.
-    - Call the [`edit_tag`](tag_service.py.md#TagServiceedit_tag) method of `tag_service` with the current user, tag ID, and [`EditTagInput`](../schemas/tag_schema.py.md#EditTagInput) to update the tag.
-    - Assert that the updated tag is not `None`.
-    - Assert that the updated tag's name matches the new name.
-    - Assert that the updated tag's hex color matches the new hex color.
+    - Create an [`EditTagInput`](<../schemas/tag_schema.py.md#EditTagInput>) object with the new name and hex color.
+    - Call the [`edit_tag`](<tag_service.py.md#TagServiceedit_tag>) method of `tag_service` with the current user, tag ID, and [`EditTagInput`](<../schemas/tag_schema.py.md#EditTagInput>) to update the tag.
+    - Assert that the returned `updated_tag` is not `None`.
+    - Assert that the `updated_tag`'s name matches the new name.
+    - Assert that the `updated_tag`'s hex color matches the new hex color.
 - **Output**: The function does not return any value; it asserts the correctness of the tag update operation.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/tag_schema.EditTagInput`](../schemas/tag_schema.py.md#EditTagInput)
-    - [`python-backend/backend/app/services/tag_service.TagService.edit_tag`](tag_service.py.md#TagServiceedit_tag)
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/tag_schema.EditTagInput`](<../schemas/tag_schema.py.md#EditTagInput>)
+    - [`python-backend/backend/app/services/tag_service.TagService.edit_tag`](<tag_service.py.md#TagServiceedit_tag>)
 
 
 ---
@@ -161,30 +163,30 @@ The function tests that listing tags from a different organization returns no re
     - Create a ListTagsInput object with a limit of 10, offset of 0, and the name and type from the provided tag.
     - Call the list_tags method of tag_service with current_user_with_other_org and the ListTagsInput object.
     - Assert that the result of list_tags is not None.
-    - Assert that the length of the results list in tag_results is 0.
+    - Assert that the length of the results in tag_results is 0.
     - Assert that the count of tag_results is 0.
-- **Output**: The function does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/tag_schema.ListTagsInput`](../schemas/tag_schema.py.md#ListTagsInput)
-    - [`python-backend/backend/app/services/tag_service.TagService.list_tags`](tag_service.py.md#TagServicelist_tags)
+- **Output**: The function does not return any value; it asserts conditions to validate the test.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/tag_schema.ListTagsInput`](<../schemas/tag_schema.py.md#ListTagsInput>)
+    - [`python-backend/backend/app/services/tag_service.TagService.list_tags`](<tag_service.py.md#TagServicelist_tags>)
 
 
 ---
 ### test\_associate\_tag\_from\_other\_org<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_associate_tag_from_other_org}} -->
 The function tests that associating a tag from a different organization raises an HTTPException.
 - **Inputs**:
-    - `tag_service`: An instance of TagService used to perform tag operations.
+    - `tag_service`: An instance of TagService used to manage tag operations.
     - `current_user_with_other_org`: A UserToken representing the current user who belongs to a different organization.
     - `tag`: A NewTagInput object representing the tag to be associated.
     - `content`: A DerivedContent object representing the content to which the tag is to be associated.
 - **Control Flow**:
     - Retrieve the content ID from the content object.
     - Retrieve the tag ID from the tag object.
-    - Set the include flag to True.
+    - Set the include flag to True, indicating the tag should be associated with the content.
     - Use pytest.raises to assert that an HTTPException is raised when attempting to associate the tag with the content using the tag_service.
-- **Output**: The function does not return any value; it asserts that an HTTPException is raised.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService.associate_tag`](tag_service.py.md#TagServiceassociate_tag)
+- **Output**: The function does not return any value; it asserts that an HTTPException is raised during the tag association attempt.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService.associate_tag`](<tag_service.py.md#TagServiceassociate_tag>)
 
 
 ---
@@ -196,32 +198,33 @@ The function tests that associating a tag with content from a different organiza
     - `tag`: A NewTagInput object representing the tag to be associated.
     - `org_b_content`: A DerivedContent object representing the content from another organization.
 - **Control Flow**:
-    - Extracts the content ID from org_b_content and the tag ID from tag.
-    - Sets the include flag to True, indicating the tag should be associated with the content.
-    - Uses pytest.raises to assert that an HTTPException is raised when attempting to associate the tag with the content using tag_service.associate_tag.
-- **Output**: The function does not return any value; it asserts that an HTTPException is raised during the test.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService.associate_tag`](tag_service.py.md#TagServiceassociate_tag)
+    - Retrieve the content ID from the org_b_content object.
+    - Retrieve the tag ID from the tag object.
+    - Set the include flag to True.
+    - Use pytest.raises to assert that an HTTPException is raised when attempting to associate the tag with the content using the tag_service.
+- **Output**: The function does not return any value; it asserts that an HTTPException is raised.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService.associate_tag`](<tag_service.py.md#TagServiceassociate_tag>)
 
 
 ---
 ### test\_list\_tag\_contents<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_list_tag_contents}} -->
-The function `test_list_tag_contents` tests the [`list_tag_contents`](tag_service.py.md#TagServicelist_tag_contents) method of the `TagService` to ensure it returns the correct content list for a given tag and user.
+The function `test_list_tag_contents` tests the [`list_tag_contents`](<tag_service.py.md#TagServicelist_tag_contents>) method of the `TagService` to ensure it returns the correct content list for a given tag and user.
 - **Inputs**:
     - `tag_service`: An instance of `TagService` used to interact with tag-related operations.
     - `current_user_with_org`: A `UserToken` representing the current user with an organization context.
     - `tag`: A `NewTagInput` object representing the tag whose contents are to be listed.
     - `content`: A `DerivedContent` object representing the content associated with the tag.
 - **Control Flow**:
-    - Create a [`ListContentInput`](../schemas/content_schema.py.md#ListContentInput) object `lt_input` with a limit of 10, offset of 0, and `latest_version_only` set to False.
-    - Call the [`list_tag_contents`](tag_service.py.md#TagServicelist_tag_contents) method of `tag_service` with `current_user_with_org`, the string representation of `tag.id`, and `lt_input`.
-    - Assert that the `results` returned from [`list_tag_contents`](tag_service.py.md#TagServicelist_tag_contents) is not None.
-    - Assert that `results.limit` is equal to `lt_input.limit`.
-    - Assert that `results.offset` is equal to `lt_input.offset`.
-- **Output**: The function does not return any value; it uses assertions to validate the behavior of the [`list_tag_contents`](tag_service.py.md#TagServicelist_tag_contents) method.
-- **Functions called**:
-    - [`python-backend/backend/app/schemas/content_schema.ListContentInput`](../schemas/content_schema.py.md#ListContentInput)
-    - [`python-backend/backend/app/services/tag_service.TagService.list_tag_contents`](tag_service.py.md#TagServicelist_tag_contents)
+    - Create a [`ListContentInput`](<../schemas/content_schema.py.md#ListContentInput>) object `lt_input` with a limit of 10, offset of 0, and `latest_version_only` set to False.
+    - Call the [`list_tag_contents`](<tag_service.py.md#TagServicelist_tag_contents>) method of `tag_service` with `current_user_with_org`, the string representation of `tag.id`, and `lt_input`.
+    - Assert that the `results` returned from [`list_tag_contents`](<tag_service.py.md#TagServicelist_tag_contents>) is not None.
+    - Assert that `results.limit` matches `lt_input.limit`.
+    - Assert that `results.offset` matches `lt_input.offset`.
+- **Output**: The function does not return any value; it uses assertions to validate the behavior of the [`list_tag_contents`](<tag_service.py.md#TagServicelist_tag_contents>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/content_schema.ListContentInput`](<../schemas/content_schema.py.md#ListContentInput>)
+    - [`python-backend/backend/app/services/tag_service.TagService.list_tag_contents`](<tag_service.py.md#TagServicelist_tag_contents>)
 
 
 ---
@@ -230,29 +233,27 @@ The `test_delete_tag` function tests the deletion of a tag using the `TagService
 - **Inputs**:
     - `tag_service`: An instance of `TagService` used to perform tag operations.
     - `current_user_with_org`: A `UserToken` representing the current user with organization context.
-    - [`delete_tag`](tag_service.py.md#TagServicedelete_tag): A `Tag` object representing the tag to be deleted.
+    - [`delete_tag`](<tag_service.py.md#TagServicedelete_tag>): A `Tag` object that is intended to be deleted.
 - **Control Flow**:
-    - The function calls [`delete_tag`](tag_service.py.md#TagServicedelete_tag) method of `tag_service` with `current_user_with_org` and `delete_tag.id` as arguments.
+    - The function calls [`delete_tag`](<tag_service.py.md#TagServicedelete_tag>) method of `tag_service` with `current_user_with_org` and `delete_tag.id` as arguments.
     - The test passes if no exception is raised during the deletion process.
-- **Output**: The function does not return any value; it passes if no exceptions are raised during the tag deletion.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](tag_service.py.md#TagServicedelete_tag)
+- **Output**: The function does not return any value; it is a test function that passes if no exceptions are raised during the tag deletion process.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<tag_service.py.md#TagServicedelete_tag>)
 
 
 ---
 ### test\_delete\_tag\_from\_other\_org<!-- {{#callable:python-backend/backend/app/services/tag_service_test.test_delete_tag_from_other_org}} -->
 The function tests that attempting to delete a tag from a different organization raises an HTTPException.
-- **Decorators**: `@pytest.mark`
 - **Inputs**:
     - `tag_service`: An instance of TagService used to perform tag operations.
     - `current_user_with_other_org`: A UserToken representing the current user who belongs to a different organization than the tag.
-    - [`delete_tag`](tag_service.py.md#TagServicedelete_tag): A Tag object representing the tag to be deleted.
+    - [`delete_tag`](<tag_service.py.md#TagServicedelete_tag>): A Tag object representing the tag to be deleted.
 - **Control Flow**:
-    - The function uses a pytest context manager to assert that an HTTPException is raised.
-    - It calls the delete_tag method of the tag_service with the current_user_with_other_org and delete_tag.id as arguments.
-- **Output**: The function does not return any value; it passes if an HTTPException is raised, indicating the tag cannot be deleted by a user from a different organization.
-- **Functions called**:
-    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](tag_service.py.md#TagServicedelete_tag)
+    - The function uses a pytest context manager to assert that an HTTPException is raised when attempting to delete a tag using the tag_service with a user from a different organization.
+- **Output**: The function does not return any value; it passes if an HTTPException is raised, otherwise it fails.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<tag_service.py.md#TagServicedelete_tag>)
 
 
 

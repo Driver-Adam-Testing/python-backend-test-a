@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `default_multi_context.py` file defines a utility function `default_imports_checker_multi_prompt` that utilizes a language model to check code imports, and includes prompts for generating documentation and explaining the purpose of code.
+The `default_multi_context.py` file defines a utility function `default_imports_checker_multi_prompt` that utilizes a language model to check code imports, and includes prompts for generating software documentation and explaining code purposes.
 
 # Purpose
-This Python code file provides a narrow functionality focused on checking default imports within a given context. It imports specific utilities and models, such as `IMPORTS_SYSTEM_PROMPT_JSON` and `_default_checker`, from a utility module and a model class `ChatOpenAI`. The file defines a function [`default_imports_checker_multi_prompt`](#default_imports_checker_multi_prompt) that utilizes these imports to perform a check on code chunks, specifically the first chunk in a list, using a language model. The function is designed to return a list of strings or `None`, indicating the results of the import check. Additionally, the file contains several string constants that appear to be prompts or templates for generating documentation or explanations, suggesting that the code is part of a larger system for documentation or code analysis.
+This Python code file provides a narrow functionality focused on checking default imports within a given context. It imports specific utilities and models, such as `IMPORTS_SYSTEM_PROMPT_JSON` and `_default_checker`, from a utility module and a model class `ChatOpenAI`. The file defines a function [`default_imports_checker_multi_prompt`](<#default_imports_checker_multi_prompt>) that utilizes these imports to perform a check on code chunks, specifically the first chunk in a list, using a predefined system prompt. Additionally, the file contains several string constants that appear to be templates or prompts for generating documentation or explanations, indicating that the code is part of a larger system designed for documentation or code analysis purposes. Overall, this file is a small script that serves as a utility for checking code imports and possibly generating related documentation prompts.
 # Imports and Dependencies
 
 ---
@@ -27,15 +27,15 @@ This Python code file provides a narrow functionality focused on checking defaul
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT\_MULTI\_CONTEXT
 - **Type**: `str`
-- **Description**: `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT` is a string variable that contains a multi-paragraph prompt designed to guide users in explaining the purpose of a given piece of code. The prompt encourages users to consider various aspects of the code, such as its functionality, components, and whether it defines public APIs or interfaces.
-- **Use**: This variable is used to provide a structured prompt for users to generate detailed explanations about the purpose and functionality of a code snippet.
+- **Description**: `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT` is a string variable that contains a multi-paragraph prompt designed to guide users in explaining the purpose of a given piece of code. The prompt encourages users to consider various aspects of the code, such as its functionality, components, and type, to provide a comprehensive explanation.
+- **Use**: This variable is used to prompt users to generate detailed explanations about the purpose and functionality of a code snippet, focusing on its broader context and components.
 
 
 ---
 ### SOURCE\_CODE\_PURPOSE\_FROM\_CHUNKS
 - **Type**: `str`
-- **Description**: `SOURCE_CODE_PURPOSE_FROM_CHUNKS` is a string variable that contains a template for generating a cohesive paragraph summarizing the purpose of overlapping chunks of source code. The template instructs the user to combine multiple purpose paragraphs into a single paragraph of 3 to 5 sentences. This variable is likely used in a context where multiple descriptions of code segments need to be synthesized into a single, coherent explanation.
-- **Use**: This variable is used as a template for generating a concise summary of the purpose of overlapping code chunks.
+- **Description**: The variable `SOURCE_CODE_PURPOSE_FROM_CHUNKS` is a string that contains a template for generating a cohesive paragraph summarizing the purpose of overlapping chunks of source code. It instructs the user to combine multiple purpose paragraphs into a single, concise paragraph that describes the overall purpose of the code.
+- **Use**: This variable is used as a template or guideline for summarizing the purpose of source code chunks into a single cohesive paragraph.
 
 
 # Functions
@@ -44,15 +44,14 @@ This Python code file provides a narrow functionality focused on checking defaul
 ### default\_imports\_checker\_multi\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default_multi_context.default_imports_checker_multi_prompt}} -->
 The function `default_imports_checker_multi_prompt` checks the default imports in a given code chunk using a language model and a predefined system prompt.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for processing.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for checking imports.
     - `code_chunks`: A list of strings, where each string is a chunk of code to be checked for default imports.
     - `root_rel_path`: A string representing the root relative path, though it is not used in the function body.
 - **Control Flow**:
-    - The function calls the [`_default_checker`](default.py.md#_default_checker) function with the provided language model (`llm`), an empty user prompt, a predefined system prompt (`IMPORTS_SYSTEM_PROMPT_JSON`), the first code chunk from `code_chunks`, and a flag `as_list_data_ds` set to `True`.
-    - The function directly returns the result of the [`_default_checker`](default.py.md#_default_checker) function call.
-- **Output**: The function returns a list of strings representing the default imports found in the code chunk, or `None` if no imports are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](default.py.md#_default_checker)
+    - The function calls the [`_default_checker`](<default.py.md#_default_checker>) function, passing the language model (`llm`), an empty user prompt, a predefined system prompt (`IMPORTS_SYSTEM_PROMPT_JSON`), the first code chunk from `code_chunks`, and a flag `as_list_data_ds` set to `True`.
+- **Output**: The function returns a list of strings representing the results of the import check, or `None` if no results are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](<default.py.md#_default_checker>)
 
 
 

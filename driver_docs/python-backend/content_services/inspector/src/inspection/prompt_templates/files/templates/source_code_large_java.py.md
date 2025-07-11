@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_java.py` file defines a template for processing large Java source code files, including prompts for purpose, imports, interfaces, and classes.
+The `source_code_large_java.py` file defines a template for processing large Java source code files, including handling prompts for purpose, imports, interfaces, and classes.
 
 # Purpose
-This code is a configuration file that defines a template for processing and analyzing Java source code. It provides a narrow functionality focused on structuring the output of Java code analysis into specific sections such as purpose, imports and dependencies, interfaces, and classes. The file imports various utilities and collections from a module named `utils.lang_specialization` and `utils.templates`, indicating that it leverages existing components for language-specific processing. The `SOURCE_CODE_LARGE_TEMPLATE_JAVA` variable is a list of tuples, each representing a section of the analysis with associated prompts and functions for extracting and formatting data. This setup suggests that the code is part of a larger system designed to automate the analysis and documentation of Java codebases, likely for educational or documentation purposes.
+This Python code file is a configuration script that defines a template for processing and analyzing Java source code, specifically focusing on extracting and organizing information about the purpose, imports, interfaces, and classes within large Java codebases. It imports various components and utilities from shared and specialized modules to construct structured prompts and data collections. The template, `SOURCE_CODE_LARGE_TEMPLATE_JAVA`, is a list of tuples, each representing a different aspect of the Java code analysis, such as purpose, imports, interfaces, and classes, using specific instructions and data extraction methods. This code provides narrow functionality, as it is tailored for a specific task of analyzing and structuring information from Java source code, leveraging both static analysis and language model outputs.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.ir_common.ListData`
 - `utils.lang_specialization.java.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.java.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA`
@@ -26,8 +31,8 @@ This code is a configuration file that defines a template for processing and ana
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_JAVA
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_JAVA` is a list of tuples, each representing a section of a Java source code template. Each tuple contains a prompt type, a section header, and functions or data related to that section, such as static analysis functions or user prompts. The list is structured to facilitate the generation or analysis of Java code by providing organized sections for purpose, imports, interfaces, and classes.
-- **Use**: This variable is used to define a structured template for handling large Java source code, organizing it into sections for easier processing and analysis.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_JAVA` is a list of tuples, each representing a structured prompt or analysis task related to Java source code. Each tuple contains a prompt type, a description, and a series of components or functions that define how to generate or process the prompt or data. The list is used to facilitate structured prompting and analysis of Java code, including extracting purposes, imports, interfaces, and classes.
+- **Use**: This variable is used to define a series of structured prompts and analysis tasks for processing Java source code.
 
 
 

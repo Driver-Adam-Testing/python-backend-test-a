@@ -6,9 +6,9 @@
 The `test_unions.c` file demonstrates various usages and definitions of unions in C, including forward declarations, named and unnamed unions, typedefs, and nested structures, along with examples of how to manipulate and print their values.
 
 # Purpose
-This C source code file demonstrates the use of unions in various forms, showcasing their flexibility and different ways they can be defined and utilized. The code includes examples of forward declarations, named and unnamed unions, typedefs for unions, and unions with nested structures. It also illustrates how unions can be declared at both global and local scopes, and how they can be initialized and accessed. The main function serves as a practical demonstration of these concepts, where different union types are instantiated, assigned values, and their contents are printed to the console. This file is primarily educational, providing a comprehensive overview of union usage in C, rather than serving as a library or module for broader functionality.
+This C source code file demonstrates the use of unions in various forms, showcasing their flexibility and different ways they can be defined and utilized. The code includes examples of forward declarations, named and unnamed unions, typedefs for unions, and unions with nested structures. It also illustrates how unions can be declared at both global and local scopes, and how they can be initialized and accessed. The main function serves as a practical demonstration of these concepts, where different union types are instantiated, assigned values, and their contents are printed to the console. This file is primarily educational, providing a comprehensive overview of union usage in C, and is not intended to be a reusable library or module.
 
-The code is structured to highlight the memory-sharing characteristic of unions, where multiple data types can occupy the same memory space, but only one can be accessed at a time. This is demonstrated through various print statements that show how writing to one member of a union affects the others. The file also includes a commented-out section that hints at testing union nesting in C++, indicating a potential cross-language exploration of union behavior. Overall, this file is a focused exploration of unions, providing clear examples and explanations of their syntax and behavior in C programming.
+The code is structured to highlight the key technical components of unions, such as memory sharing among union members, the impact of overwriting values, and the syntax for defining and using unions. It includes a variety of union definitions, such as a named union with a tag, a typedef of a named union, a typedef of an unnamed union, and a union with an anonymous nested struct. The file also demonstrates the concept of forward declaration and its subsequent definition. The use of printf statements in the main function provides a clear output of the union values, illustrating how unions store and overwrite data. This file is a standalone executable, as indicated by the presence of the [`main`](<#main>) function, and does not define public APIs or external interfaces.
 # Imports and Dependencies
 
 ---
@@ -20,14 +20,14 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 ---
 ### global\_data
 - **Type**: `union`
-- **Description**: The `global_data` variable is an unnamed union that can store either an integer (`int u`) or a floating-point number (`float v`). This union allows for the storage of one of these two types at any given time, sharing the same memory location.
-- **Use**: `global_data` is used to store either an integer or a float globally, allowing access and modification from any function within the file.
+- **Description**: The `global_data` variable is an unnamed union defined at the global scope, which can store either an integer (`int u`) or a floating-point number (`float v`). This union allows for the storage of one of these two types at any given time, sharing the same memory location.
+- **Use**: This variable is used to store either an integer or a float globally, allowing access and modification from any function within the file.
 
 
 ---
 ### combo1
 - **Type**: `union Combined`
-- **Description**: The variable `combo1` is a global variable of type `union Combined`, which can store either an integer (`ci`) or a float (`cf`). It is part of a union definition that allows for the storage of different data types in the same memory location, but only one at a time.
+- **Description**: The variable `combo1` is a global variable of type `union Combined`, which can store either an integer (`ci`) or a float (`cf`). This union allows for the storage of different data types in the same memory location, but only one type can be stored at a time.
 - **Use**: `combo1` is used to store an integer value, as demonstrated by the assignment `combo1.ci = 777;` in the `main` function.
 
 
@@ -35,7 +35,7 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 ### combo2
 - **Type**: `union Combined`
 - **Description**: The variable `combo2` is a global variable of type `union Combined`, which can store either an integer (`ci`) or a float (`cf`). It is initialized with the float value 3.14f, meaning the `cf` member is currently active.
-- **Use**: `combo2` is used to store a floating-point number, specifically initialized to 3.14f, and can be accessed globally within the program.
+- **Use**: `combo2` is used to store a floating-point number, specifically initialized to 3.14f, and can be accessed globally within the file.
 
 
 # Data Structures
@@ -46,7 +46,7 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 - **Members**:
     - `a`: An integer member of the union.
     - `b`: A float member of the union.
-- **Description**: The `Named` union is a simple data structure that allows storage of either an integer or a float, but not both simultaneously. This is because a union in C shares the same memory location for all its members, meaning that only one member can hold a value at any given time. The `Named` union is useful when you need to store a value that could be of different types, but only one type is needed at a time.
+- **Description**: The `Named` union is a simple data structure that allows storage of either an integer (`a`) or a float (`b`) in the same memory location. This means that at any given time, the union can hold a value of one type, and writing to one member will overwrite the previous value. This is useful for memory-efficient storage when only one of the types is needed at a time.
 
 
 ---
@@ -55,7 +55,7 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 - **Members**:
     - `c`: An array of 4 characters.
     - `l`: A long integer.
-- **Description**: The `ForwardDecl` union is a data structure that allows storage of either a character array of size 4 or a long integer, but not both simultaneously. This union is initially forward-declared and later defined, demonstrating the ability to declare a union before its full definition is provided. The union is used to manage memory efficiently by allowing different data types to occupy the same memory space, with the constraint that only one member can be used at a time.
+- **Description**: The `ForwardDecl` union is a data structure that allows storage of either a character array of size 4 or a long integer, but not both simultaneously. This union is initially forward-declared and later defined, demonstrating the ability to declare a union before its full definition is provided. The union is used to manage memory efficiently by allowing different data types to occupy the same memory space, with the size of the union being determined by its largest member.
 
 
 ---
@@ -64,7 +64,7 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 - **Members**:
     - `x`: An integer member of the union.
     - `y`: A float member of the union.
-- **Description**: `MyUnion` is a typedef for a union that can store either an integer (`x`) or a float (`y`), but not both simultaneously. This union allows for flexible data storage where the type of data can vary, but only one type can be stored at any given time, sharing the same memory location.
+- **Description**: `MyUnion` is a typedef for a union that can store either an integer or a float, but not both simultaneously. This union allows for the storage of different data types in the same memory location, with the active member being determined by the last assignment. It is useful in scenarios where a variable may need to store different types of data at different times, optimizing memory usage by sharing the same space for different types.
 
 
 ---
@@ -82,16 +82,16 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 - **Members**:
     - `ci`: An integer member of the union.
     - `cf`: A float member of the union.
-- **Description**: The `Combined` union is a simple data structure that allows for the storage of either an integer (`ci`) or a float (`cf`) in the same memory location. This union is defined along with two variables, `combo1` and `combo2`, where `combo2` is initialized with the float value 3.14. The union provides a way to store different data types in the same memory space, but only one of the members can hold a value at any given time.
+- **Description**: The `Combined` union is a data structure that allows for the storage of either an integer (`ci`) or a float (`cf`) in the same memory location. This union is defined with two variables, `combo1` and `combo2`, where `combo2` is initialized with the float value 3.14. The union provides a way to store different data types in the same memory space, but only one of the types can be used at a time, as they share the same memory location.
 
 
 ---
 ### Point2
 - **Type**: `union`
 - **Members**:
-    - `x`: An integer member of the union representing the x-coordinate.
-    - `y`: An integer member of the union representing the y-coordinate.
-- **Description**: The `Point2` data structure is a union that allows for the storage of either an x or y integer coordinate, but not both simultaneously, as unions share the same memory space for all their members. This structure is useful for scenarios where a point in a 2D space is represented, but only one coordinate is needed at a time. The `Point2Ptr` is a pointer type to this union, allowing for dynamic memory management and manipulation of `Point2` instances.
+    - `x`: An integer member of the union.
+    - `y`: Another integer member of the union.
+- **Description**: The `Point2` data structure is a union that allows for the storage of either an integer `x` or an integer `y`, but not both simultaneously, as unions share the same memory space for all their members. This union is typedef'd to `Point2` for ease of use and can also be referenced through a pointer type `Point2Ptr`.
 
 
 # Functions
@@ -101,16 +101,16 @@ The code is structured to highlight the memory-sharing characteristic of unions,
 The `main` function demonstrates the usage of various union types and prints their values, highlighting how unions share memory.
 - **Inputs**: None
 - **Control Flow**:
-    - Declare and initialize a `Named` union variable `namedVar` and set its `a` member to 42.
-    - Declare and initialize a `ForwardDecl` union variable `fdVar` and set its `l` member to 123456789L.
-    - Declare and initialize a `MyUnion` typedef union variable `myVar` and set its `y` member to 1.2345f.
-    - Declare and initialize a `MyAnonUnion` typedef union variable `anonVar` and set its `dd` member to 2.71828.
+    - Declare and initialize a `union Named` variable `namedVar` and set its `a` member to 42.
+    - Declare and initialize a `union ForwardDecl` variable `fdVar` and set its `l` member to 123456789L.
+    - Declare and initialize a `MyUnion` variable `myVar` and set its `y` member to 1.2345f.
+    - Declare and initialize a `MyAnonUnion` variable `anonVar` and set its `dd` member to 2.71828.
     - Set the `u` member of the global unnamed union `global_data` to 100.
-    - Declare and initialize an `Outer` union variable `outVar`, sequentially setting its `i`, `x`, and `y` members, demonstrating overwriting in unions.
-    - Set the `ci` member of the `combo1` union to 777.
-    - Print the values of all union members, noting the effects of overwriting in unions.
+    - Declare a `union Outer` variable `outVar`, set its `i` member to 10, then overwrite it by setting `x` to 11.11, and finally overwrite `x` by setting `y` to 12.22.
+    - Declare and initialize a `union Combined` variable `combo1` and set its `ci` member to 777.
+    - Print the values of all initialized union members, noting that only the last written member in a union is valid due to shared storage.
     - Return 0 to indicate successful execution.
-- **Output**: The function outputs the values of various union members to the console, demonstrating how unions share memory and the effects of overwriting.
+- **Output**: The function returns an integer value of 0, indicating successful execution.
 
 
 

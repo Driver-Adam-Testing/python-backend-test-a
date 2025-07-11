@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cdk_dev_stack_app.py` file sets up and deploys a development stack using AWS CDK, requiring specific environment variables and configuration from a JSON file.
+The `cdk_dev_stack_app.py` file sets up and deploys a temporary development stack using AWS CDK, requiring specific environment variables and configuration from a JSON file.
 
 # Purpose
-This Python script is designed to deploy a development stack using the AWS Cloud Development Kit (CDK). It is a script that sets up an AWS CDK application, specifically targeting a development environment. The script begins by ensuring that certain environment variables (`DEV_NAME`, `DEPLOYMENT_ENVIRONMENT`, and `DATABASE_URL`) are set, as these are crucial for configuring the deployment. It then constructs a stack name based on the `DEV_NAME` environment variable, ensuring that it is formatted correctly by removing any hyphens, spaces, or leading/trailing whitespace.
-
-The script reads a configuration file (`cdk-stack-config.json`) to load additional environment settings, which are then applied to the current environment. It uses these settings to instantiate a `DevStack` object, which is a custom stack defined in the `cdk.dev_stack` module. This stack is configured with parameters such as a CDK prefix, deployment environment, and database URL, and is set to deploy in a specific AWS account and region. The script concludes by synthesizing the CDK application, which prepares the stack for deployment. This script is a focused utility for deploying a specific development stack, leveraging AWS CDK to manage infrastructure as code.
+This Python script is a configuration and deployment script for an AWS Cloud Development Kit (CDK) application, specifically designed to set up a development stack. It provides narrow functionality focused on deploying a temporary development stack using the AWS CDK framework. The script checks for the presence of specific environment variables (`DEV_NAME`, `DEPLOYMENT_ENVIRONMENT`, and `DATABASE_URL`) and raises an error if they are not set, ensuring that necessary configuration details are provided. It reads additional configuration from a JSON file and uses this data to configure the environment variables required for the deployment. The script then initializes a `DevStack` object with these parameters and synthesizes the CDK application, effectively preparing the infrastructure for deployment in a specified AWS account and region.
 # Imports and Dependencies
 
 ---
@@ -24,21 +22,21 @@ The script reads a configuration file (`cdk-stack-config.json`) to load addition
 ---
 ### app
 - **Type**: `cdk.App`
-- **Description**: The `app` variable is an instance of the `cdk.App` class from the AWS Cloud Development Kit (CDK). It serves as the root of the CDK application, which is responsible for synthesizing the cloud infrastructure defined in the code. The `cdk.App` object is essential for managing the lifecycle of the CDK application, including the creation and deployment of stacks.
-- **Use**: This variable is used to initialize the CDK application, allowing for the definition and deployment of AWS infrastructure stacks.
+- **Description**: The `app` variable is an instance of the `cdk.App` class from the AWS Cloud Development Kit (CDK). It serves as the root of the CDK application, which is responsible for synthesizing the entire stack of resources defined in the application.
+- **Use**: The `app` variable is used to initialize and manage the lifecycle of the CDK application, including the creation and deployment of AWS resources defined in the `DevStack`.
 
 
 ---
 ### dev\_name
 - **Type**: `str`
-- **Description**: The `dev_name` variable is a string derived from the environment variable `DEV_NAME`. It is processed by removing hyphens, spaces, and leading or trailing whitespace. This ensures that the `dev_name` is a clean, contiguous string suitable for use in naming conventions.
-- **Use**: This variable is used as a prefix for naming the development stack and other related resources in the AWS CDK application.
+- **Description**: The `dev_name` variable is a string derived from the environment variable `DEV_NAME`. It is processed by removing hyphens, spaces, and leading or trailing whitespace.
+- **Use**: This variable is used to construct the `dev_stack_name` and as a prefix for the CDK stack deployment.
 
 
 ---
 ### dev\_stack\_name
 - **Type**: `str`
-- **Description**: The `dev_stack_name` variable is a string that concatenates the `dev_name` with the suffix 'TempTestInDevStack'. It is constructed using the `dev_name` derived from the environment variable `DEV_NAME`, which is sanitized by removing hyphens, spaces, and leading/trailing whitespace.
+- **Description**: The `dev_stack_name` variable is a string that concatenates the `dev_name` with the suffix 'TempTestInDevStack'. It is constructed using the `dev_name` derived from the environment variable `DEV_NAME`, which is sanitized by removing hyphens, spaces, and trimming whitespace.
 - **Use**: This variable is used to define the name of the AWS CDK stack being deployed, ensuring it is unique and environment-specific.
 
 

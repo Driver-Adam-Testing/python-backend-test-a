@@ -3,19 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_cs.py` file defines a template for inspecting and processing C# source code, including prompts for purpose, imports, classes, structs, interfaces, and enums.
+The `source_code_small_cs.py` file defines a template for generating structured prompts and analyzing C# source code, focusing on purposes, imports, classes, structs, and interfaces.
 
 # Purpose
-This Python code file is a configuration script that sets up templates for analyzing and documenting C# source code. It imports various utilities and collections from specialized modules to handle different C# constructs such as classes, structs, interfaces, and enums. The script defines a template, `SOURCE_CODE_SMALL_TEMPLATE_CS`, which outlines how to process and document these constructs using a combination of static analysis and language model (LLM) insights. The functionality provided is relatively narrow, focusing specifically on the documentation and analysis of C# code structures, making it a specialized tool for developers working with C# codebases.
+This Python code file is a configuration script that defines a template for generating structured prompts and analyzing C# source code. It imports various components and utilities from shared and specialized modules, indicating a narrow functionality focused on handling C# code analysis and prompt structuring. The script sets up a template, `SOURCE_CODE_SMALL_TEMPLATE_CS`, which outlines different sections such as purpose, imports, classes, structs, and interfaces, using specific instructions and components to format and process these sections. The use of collections and prompts suggests that this code is part of a larger system designed to automate or assist in the analysis and documentation of C# code, leveraging language specialization utilities for precise handling of C# constructs.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.c_sharp.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.c_sharp.SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CS`
 - `utils.lang_specialization.c_sharp.CsClassCollection`
 - `utils.lang_specialization.c_sharp.CsClassRawSymbolCollection`
-- `utils.lang_specialization.c_sharp.CsEnumCollection`
-- `utils.lang_specialization.c_sharp.CsEnumRawSymbolCollection`
 - `utils.lang_specialization.c_sharp.CsInterfaceCollection`
 - `utils.lang_specialization.c_sharp.CsInterfaceRawSymbolCollection`
 - `utils.lang_specialization.c_sharp.CsStructCollection`
@@ -29,8 +32,8 @@ This Python code file is a configuration script that sets up templates for analy
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_CS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CS` is a list of tuples, each containing elements that define a specific section of a C# source code template. Each tuple includes a type identifier, a section header, and functions or prompts related to that section, such as static analysis functions or language model (LLM) functions.
-- **Use**: This variable is used to structure and organize the generation of C# source code by defining different sections and their corresponding processing functions.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CS` is a list of tuples, each representing a different section of a C# code analysis template. Each tuple contains a section identifier, a section title, and various functions or prompts related to that section, such as static analysis functions or prompt generation instructions.
+- **Use**: This variable is used to define a structured template for analyzing and generating prompts for different components of C# source code, such as purpose, imports, classes, structs, and interfaces.
 
 
 

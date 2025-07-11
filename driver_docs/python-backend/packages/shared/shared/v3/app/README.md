@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `app` folder in the `python-backend` codebase contains the `pipelines` folder for implementing and managing various pipelines with language model clients, and the `static` folder for handling content categorization, system interactions, and utility functions.
+Subfolders for implementing and testing pipeline functionalities and managing static resources.
 
 ## Folders
-- **[pipelines](pipelines/README.md)**: The `pipelines` folder in the `python-backend` codebase contains various Python scripts and a subfolder for performance testing, all focused on implementing and managing different types of pipelines, such as chat, inline editing, and content reformatting, using language model clients.
-- **[static](static/README.md)**: The `static` folder in the `python-backend` codebase contains subfolders for enumerations, message definitions, response type handling, and utility tools, each contributing to content categorization, system interactions, response generation, and utility functions.
+- **[pipelines](pipelines/README.md)**: Various Python files and a subfolder for implementing and testing pipeline functionalities like chat, inline editing, and performance testing using language model clients.
+- **[static](static/README.md)**: Subfolders for enumerations, system messages, response type handling, and utility tools with specific Python files.
 
 
 ---

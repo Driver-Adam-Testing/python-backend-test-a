@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_main.py` file contains a unit test for the `handler` function from the `src.main` module, using a mock SNS event to verify that the function returns "OK".
+The `test_main.py` file contains unit tests for the onboarding event handler, specifically testing the lambda handler function using a mock SNS event.
 
 # Purpose
-This Python file is a test script designed to validate the functionality of an AWS Lambda handler function, specifically focusing on its response to an SNS (Simple Notification Service) event. It uses the `pytest` framework to define a fixture, [`sns_event`](#sns_event), which simulates an SNS event containing an S3 bucket notification. The script imports necessary modules and functions, including `exec_onboarding_service` and `handler` from the main application code, and `settings` from a configuration utility. The primary test function, [`test_lambda_handler`](#test_lambda_handler), checks that the `handler` function correctly processes the mock SNS event and returns the expected response, "OK". This script provides narrow functionality, focusing solely on testing the integration and response of the Lambda handler in a controlled environment.
+This Python file is a test script designed to validate the functionality of an AWS Lambda handler function, specifically focusing on its response to an SNS (Simple Notification Service) event. It uses the `pytest` framework to define a fixture, [`sns_event`](<#sns_event>), which simulates an SNS event containing an S3 bucket notification. The script imports necessary modules and functions, including `exec_onboarding_service` and `handler` from the `src.main` module, and `settings` from `src.utils.config`, indicating a dependency on a larger codebase. The primary test, [`test_lambda_handler`](<#test_lambda_handler>), checks that the `handler` function returns "OK" when invoked with the mock SNS event, suggesting that the handler is expected to process such events successfully. This script provides narrow functionality, focusing solely on testing the Lambda handler's response to a specific type of event.
 # Imports and Dependencies
 
 ---
@@ -31,21 +31,19 @@ The `sns_event` function generates a mock SNS event for testing purposes.
     - The dictionary contains a 'Records' key with a list of records, each having an 'Sns' key.
     - The 'Sns' key contains a 'Message' key with a JSON string representing an S3 event notification.
     - The S3 event notification includes details such as event version, source, region, time, name, user identity, request parameters, response elements, schema version, configuration ID, bucket details, and object details.
-- **Output**: A dictionary representing a mock SNS event with nested structure and JSON-encoded S3 event details.
+- **Output**: A dictionary representing a mock SNS event with nested details about an S3 event.
 
 
 ---
 ### test\_lambda\_handler<!-- {{#callable:python-backend/content_services/onboarding_event_handler/tests/test_main.test_lambda_handler}} -->
-The function `test_lambda_handler` tests the [`handler`](../src/main.py.md#handler) function by asserting that it returns 'OK' when given a mock SNS event.
+The `test_lambda_handler` function tests the `handler` function by asserting that it returns 'OK' when given a mock SNS event.
 - **Inputs**:
     - `sns_event`: A mock SNS event fixture that simulates an AWS SNS event with S3 object creation details.
 - **Control Flow**:
-    - The function calls the [`handler`](../src/main.py.md#handler) function with the `sns_event` and an empty dictionary as arguments.
-    - It captures the response from the [`handler`](../src/main.py.md#handler) function.
+    - The function calls the `handler` function with the `sns_event` and an empty dictionary as arguments.
+    - It captures the response from the `handler` function.
     - An assertion checks if the response is equal to 'OK', raising an error if it is not.
-- **Output**: The function does not return any value; it raises an assertion error if the [`handler`](../src/main.py.md#handler) response is not 'OK'.
-- **Functions called**:
-    - [`python-backend/content_services/onboarding_event_handler/src/main.handler`](../src/main.py.md#handler)
+- **Output**: The function does not return any value; it raises an assertion error if the `handler` response is not 'OK'.
 
 
 

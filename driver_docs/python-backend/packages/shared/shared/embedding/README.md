@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `embedding` folder in the `python-backend` codebase contains utilities for downloading content from S3 and generating text embeddings using OpenAI's models, with support for both synchronous and asynchronous operations.
+Utilities for generating text embeddings, including functions for downloading content and embedding text.
 
 
 ## Files
 - **[embed_helpers.py](embed_helpers.py.md)**: The `embed_helpers.py` file contains functions for downloading source content files from an S3 bucket and generating embeddings for text strings by splitting the text and asynchronously embedding the chunks.
-- **[text_embedder.py](text_embedder.py.md)**: The `text_embedder.py` file provides synchronous and asynchronous functions for embedding text chunks using OpenAI's text embedding models, with support for error handling and batching.
+- **[text_embedder.py](text_embedder.py.md)**: The `text_embedder.py` file provides synchronous and asynchronous functions for embedding text using OpenAI's text embedding models, with support for batching and error handling.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

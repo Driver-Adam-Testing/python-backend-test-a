@@ -3,18 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `default.py` file in the `python-backend` codebase provides utilities for analyzing and documenting code by leveraging language models to extract and describe functions, variables, and data structures from source code, using a series of prompts and classes to facilitate this process.
+The `default.py` file in the `python-backend` codebase provides utilities for analyzing and documenting code by extracting and describing functions, variables, and data structures using language models, with a focus on generating detailed technical documentation.
 
 # Purpose
-This Python source code file is designed to facilitate the extraction and documentation of various code symbols such as functions, variables, and data structures using a language model (LLM) like ChatOpenAI. The file defines a series of classes and functions that work together to analyze source code, identify key components, and generate structured documentation. The primary functionality is encapsulated in classes like `DefaultFnRawSymbolCollection`, `DefaultVariableRawSymbolCollection`, and `DefaultDataStructureRawSymbolCollection`, which are responsible for collecting raw symbol data from the code. These classes utilize the [`default_llm_analysis`](#default_llm_analysis) function to perform the analysis and documentation tasks, leveraging predefined system and user prompts to guide the LLM in generating the necessary information.
+This Python code file is designed to facilitate the extraction and documentation of various components within a source code file, such as functions, variables, and data structures, using a language model (LLM) like ChatOpenAI. The file defines a series of classes and functions that work together to analyze code, identify key elements, and generate structured documentation. The primary functionality revolves around the use of prompts and responses to interact with the LLM, enabling the extraction of information about imports, functions, variables, and data structures. The code is structured to handle both single and multi-prompt scenarios, allowing for the processing of large codebases by splitting them into manageable chunks.
 
-The file also includes several utility functions, such as [`_default_checker`](#_default_checker) and [`_default_checker_multi_prompt`](#_default_checker_multi_prompt), which handle the logic for processing code chunks and managing responses from the LLM. Additionally, the file defines intermediate representation (IR) classes like `DefaultFnData`, `DefaultVariableData`, and `DefaultDataStructureData`, which are used to structure the extracted information into a more organized format. These IR classes are then collected into collections like `DefaultFnCollection`, `DefaultVariableCollection`, and `DefaultDataStructureCollection`, which provide a comprehensive view of the documented symbols. Overall, this file serves as a library intended to be imported and used in other parts of a software system that requires automated code documentation and analysis.
+The file includes several classes that represent collections of symbols, such as `DefaultFnRawSymbolCollection`, `DefaultVariableRawSymbolCollection`, and `DefaultDataStructureRawSymbolCollection`, each tailored to handle specific types of code elements. These classes provide methods for extracting information from the code using the LLM and converting it into structured data. Additionally, the file defines intermediate representation (IR) classes like `DefaultFnData`, `DefaultVariableData`, and `DefaultDataStructureData`, which are responsible for generating detailed documentation for each identified symbol. The code is intended to be used as a library, providing a framework for automated code analysis and documentation generation, rather than being executed as a standalone script.
 # Imports and Dependencies
 
 ---
 - `pathlib.Path`
 - `typing.Self`
 - `openai.LengthFinishReasonError`
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.models.ChatOpenAI`
 - `.ir_common.DataStructureData`
 - `.ir_common.FnData`
@@ -37,119 +42,123 @@ The file also includes several utility functions, such as [`_default_checker`](#
 ---
 ### SOURCE\_CODE\_SYSTEM\_PROMPT\_GENERAL\_DEFAULT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT` is a string that contains a prompt intended for a software engineering documentation expert. It provides guidance on writing detailed documentation to explain software, focusing on technical details and key conceptual components.
-- **Use**: This variable is used as a default system prompt for generating documentation related to software engineering.
+- **Description**: The variable `SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT` is a multi-line string that serves as a template or prompt for generating software engineering documentation. It emphasizes the role of the user as a documentation expert, focusing on explaining technical details and the conceptual components of software.
+- **Use**: This variable is used as a default prompt for systems that require detailed software documentation generation.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt intended for use in generating explanations about the purpose of a source code file. It guides the user to provide a comprehensive analysis of the file's purpose, focusing on its functionality, technical components, and overall theme without using speculative language.
-- **Use**: This variable is used to instruct a user or system to generate a detailed explanation of a source code file's purpose.
+- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt intended for users who need to explain the purpose of a source code file. It provides guidance on how to write a comprehensive explanation, including questions to consider about the code's functionality, components, and type.
+- **Use**: This variable is used to instruct users on how to document the purpose of a source code file in a detailed manner.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string that contains a template prompt for explaining the purpose of a source code file. It instructs the user to provide a single paragraph explanation, focusing on the scope and type of the code.
-- **Use**: This variable is used to guide users in summarizing the purpose of a source code file in a concise manner.
+- **Description**: The variable `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string that contains a template for a user prompt. This prompt is designed to guide users in explaining the purpose of a source code file in a concise manner. It provides specific questions to consider, such as the scope of functionality and the type of code, to help structure the explanation.
+- **Use**: This variable is used to provide a standardized prompt for users to describe the purpose of a source code file succinctly.
 
 
 ---
 ### TECHNICAL\_CONCEPTS
 - **Type**: `str`
-- **Description**: TECHNICAL_CONCEPTS is a string variable that contains a template for describing the important technical features and their interactions in a source code file. The template guides the user to focus on conceptual use cases, applications, logic, and component interactions rather than specific functions or variables.
-- **Use**: This variable is used as a prompt template for generating descriptions of technical concepts in source code files.
+- **Description**: The variable `TECHNICAL_CONCEPTS` is a string that contains instructions for describing the important technical features and their interactions in a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific functions or variables.
+- **Use**: This variable is used to guide the documentation process by providing a template for describing technical concepts in source code files.
 
 
 ---
 ### IMPORTS\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: `IMPORTS_SYSTEM_PROMPT_JSON` is a string variable that contains a JSON schema template. This template is used to identify and list the imports and dependencies in a given piece of code. The schema specifies that the response should be a JSON object with a single key `data`, which is an array of import names.
-- **Use**: This variable is used as a system prompt to guide the extraction of import statements from code.
+- **Description**: The variable `IMPORTS_SYSTEM_PROMPT_JSON` is a string that contains a JSON schema template. This template is used to identify and list the imports and dependencies in a given piece of code. The schema specifies that the response should be a JSON object with a single key, `data`, which is an array of import names.
+- **Use**: This variable is used to guide the extraction of import statements from code by providing a structured format for the expected output.
 
 
 ---
 ### DATA\_STRUCTURES\_CHECKER\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON` is a string containing a JSON schema and instructions for identifying important data structures in a given code snippet. It specifies that only custom or compound data structures that are fully defined in the provided code should be listed, excluding primitive types and imported structures.
-- **Use**: This variable is used to guide a system in extracting and listing important data structures from a codebase.
+- **Description**: The variable `DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON` is a string that contains a JSON schema template for listing important data structures defined in a given code snippet. It specifies the criteria for identifying data structures, such as being custom or compound types, and excludes primitive types and those not fully defined in the provided code.
+- **Use**: This variable is used to guide the extraction and listing of important data structures from a code snippet by providing a structured JSON schema.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a system prompt for documenting data structures. It provides instructions for generating detailed documentation of data structures using a specific JSON schema format. The prompt emphasizes the importance of explaining technical details and the purpose of software components.
-- **Use**: This variable is used as a system prompt to guide the documentation process for data structures, ensuring consistency and thoroughness in the generated documentation.
+- **Type**: `string`
+- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a string that contains a detailed prompt for generating documentation for data structures. It instructs the user to describe a data structure using a specific JSON schema, focusing on the type, members, and a descriptive paragraph.
+- **Use**: This variable is used as a system prompt to guide the generation of structured documentation for data structures.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in a given code. It provides guidelines on how to describe data structures, emphasizing the need for detail proportional to the complexity of the data structure.
-- **Use**: This variable is used as a prompt template for guiding users in documenting data structures in code.
+- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that contains a template prompt for summarizing data structures in a given code. It provides instructions on how to describe data structures, emphasizing the need for detail proportional to the complexity of the data structure.
+- **Use**: This variable is used as a prompt template for generating documentation or summaries of data structures in code.
 
 
 ---
 ### FUNCTIONS\_CHECKER\_SYSTEM\_PROMPT\_JSON
-- **Type**: `string`
+- **Type**: `str`
 - **Description**: The variable `FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON` is a string that contains a JSON schema template for listing functions defined in a given code snippet. It specifies the format in which the response should be structured, focusing on identifying fully defined and implemented functions within the provided code.
-- **Use**: This variable is used to guide the extraction and listing of functions from a code snippet by providing a structured JSON schema for the output.
+- **Use**: This variable is used to guide the extraction and listing of functions from a code snippet, ensuring the response adheres to a specific JSON format.
 
 
 ---
 ### FUNCTIONS\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `string`
-- **Description**: The `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` variable is a multi-line string that serves as a system prompt for a language model. It instructs the model to generate detailed documentation for functions, focusing on technical details and the purpose of the software.
-- **Use**: This variable is used to provide a structured prompt to a language model for generating function documentation.
+- **Type**: `str`
+- **Description**: The `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a JSON schema template for documenting functions. It provides a structured format for describing functions, including their inputs, control flow, and output. This template is intended to guide the documentation process for functions, ensuring consistency and completeness.
+- **Use**: This variable is used to provide a standardized JSON schema for documenting functions in a structured manner.
 
 
 ---
 ### FUNCTIONS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for summarizing functions in a given code. It provides guidelines on how to describe the inputs, control flow, logic, and output of a function, with an emphasis on matching the level of detail to the complexity of the function.
+- **Description**: The `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for summarizing functions in a given code. It provides instructions on how to describe the inputs, control flow, logic, and output of a function, with an emphasis on matching the level of detail to the complexity of the function.
 - **Use**: This variable is used as a prompt template for generating detailed documentation of functions in code.
 
 
 ---
 ### VARIABLES\_CHECKER\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: `VARIABLES_CHECKER_SYSTEM_PROMPT_JSON` is a string variable that contains a JSON schema and instructions for identifying global variables in a given code snippet. The instructions specify that only global variables defined at the top level scope should be included, and the response should be formatted according to a specific JSON schema.
-- **Use**: This variable is used to provide a system prompt for a language model to identify and list global variables in a code snippet.
+- **Description**: `VARIABLES_CHECKER_SYSTEM_PROMPT_JSON` is a string variable that contains a JSON schema template. This template is used to instruct a system to identify and list global variables defined in a given code snippet. The JSON schema specifies that the response should be a list of global variable names, or an empty array if no global variables are found.
+- **Use**: This variable is used to provide a structured prompt for systems to extract and list global variables from code.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `string`
-- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a detailed system prompt for documenting global variables in Python code. The prompt instructs the user to describe a variable using a specific JSON schema, focusing on the type, description, and use of the variable.
-- **Use**: This variable is used to provide a standardized prompt for generating documentation of global variables in Python code.
+- **Type**: `str`
+- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a detailed system prompt for documenting variables in Python code. The prompt instructs the user to describe a variable using a specific JSON schema, focusing on the type, description, and use of the variable.
+- **Use**: This variable is used to provide a template for generating documentation for variables in Python code.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
 - **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing a global variable in a given code. It outlines the criteria for identifying global variables and the level of detail required for documentation based on the complexity of the variable.
-- **Use**: This variable is used as a prompt or guideline for users to document global variables in a codebase.
+- **Use**: This variable is used as a prompt or guideline for documenting global variables in code.
 
 
 # Classes
 
 ---
 ### DefaultFnRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L350>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The `DefaultFnRawSymbolCollection` class is a specialized subclass of `RawSymbolCollection` designed to handle collections of raw symbol data specifically related to functions. It provides methods to create instances from either static analysis or a language model (LLM) analysis, although the static analysis method is not implemented and raises an error. The class is primarily used to facilitate the extraction and organization of function-related symbol data from code, leveraging LLMs for analysis, and it can convert its data into a dictionary format for further processing or storage.
+- **Description**: The `DefaultFnRawSymbolCollection` class is a specialized subclass of `RawSymbolCollection` designed to handle collections of raw symbol data specifically related to functions. It provides methods to create instances from language model (LLM) analysis, particularly focusing on extracting callable symbols from code. The class includes a `data` attribute that stores the symbol data in a dictionary format, and it overrides methods to facilitate the conversion of this data into a dictionary representation. This class is part of a system that uses LLMs to analyze and document code, focusing on function symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.from_static_analysis`](#DefaultFnRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.from_llm`](#DefaultFnRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.to_dict`](#DefaultFnRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.from_static_analysis`](<#DefaultFnRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.from_llm`](<#DefaultFnRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.to_dict`](<#DefaultFnRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### DefaultFnRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.from_static_analysis}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L353>)
+
 The `from_static_analysis` method is a class method placeholder that raises a NotImplementedError, indicating that static analysis should be performed using the `from_llm` method instead.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -158,68 +167,13 @@ The `from_static_analysis` method is a class method placeholder that raises a No
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that the default case should use the `from_llm` method.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection`](#DefaultFnRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection`](<#DefaultFnRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### DefaultFnRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.from_llm}} -->
-The `from_llm` method creates a `DefaultFnRawSymbolCollection` instance by analyzing code using a language model (LLM) to identify callable symbols.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to perform language model analysis on the code.
-    - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file being analyzed.
-- **Control Flow**:
-    - The method calls [`default_llm_analysis`](#default_llm_analysis) with the class itself (`cls`) as the collection class to be instantiated.
-    - It passes the `llm`, `code`, and `root_rel_path` arguments to [`default_llm_analysis`](#default_llm_analysis).
-    - The method specifies `FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON` as the system prompt and an empty string as the user prompt.
-    - It sets `SymbolKind.CALLABLE` as the symbol kind to identify callable symbols in the code.
-- **Output**: The method returns an instance of `DefaultFnRawSymbolCollection` containing the identified callable symbols, or `None` if no symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](#default_llm_analysis)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection`](#DefaultFnRawSymbolCollection)  (Base Class)
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L357>)
 
-
----
-#### DefaultFnRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.to_dict}} -->
-The `to_dict` method returns the `data` attribute of the `DefaultFnRawSymbolCollection` class as a dictionary.
-- **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the class instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection`](#DefaultFnRawSymbolCollection)  (Base Class)
-
-
-
----
-### DefaultVariableRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection}} -->
-- **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The `DefaultVariableRawSymbolCollection` class is a specialized subclass of `RawSymbolCollection` designed to handle collections of variable symbols extracted from code. It provides methods to create instances from static analysis or through a language model (LLM) analysis, although the static analysis method is not implemented and raises an error. The class primarily focuses on variable symbols, utilizing a specific system prompt for variable checking when using LLM analysis. It stores the extracted symbols in a dictionary format, allowing easy conversion to a dictionary representation through the `to_dict` method.
-- **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_static_analysis`](#DefaultVariableRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_llm`](#DefaultVariableRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.to_dict`](#DefaultVariableRawSymbolCollectionto_dict)
-- **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
-
-**Methods**
-
----
-#### DefaultVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method is a class method intended to create an instance of the class from static analysis of code, but it is not implemented and raises a NotImplementedError.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A Path object representing the root relative path of the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that the default case should use the `from_llm` method instead.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection`](#DefaultVariableRawSymbolCollection)  (Base Class)
-
-
----
-#### DefaultVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_llm}} -->
 The `from_llm` method creates an instance of the class by performing a default LLM analysis on the provided code and root relative path.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -227,309 +181,477 @@ The `from_llm` method creates an instance of the class by performing a default L
     - `code`: A string representing the source code to be analyzed.
     - `root_rel_path`: A string representing the root relative path of the code.
 - **Control Flow**:
-    - The method calls [`default_llm_analysis`](#default_llm_analysis) with the class itself, the provided LLM instance, code, root relative path, a system prompt specific to variable checking, an empty user prompt, and a symbol kind of `SymbolKind.VARIABLE`.
+    - The method calls [`default_llm_analysis`](<#default_llm_analysis>) with the class itself, the provided LLM instance, code, root relative path, a system prompt for function checking, an empty user prompt, and a symbol kind of `SymbolKind.CALLABLE`.
 - **Output**: Returns an instance of the class or `None` if no symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](#default_llm_analysis)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection`](#DefaultVariableRawSymbolCollection)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<#default_llm_analysis>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection`](<#DefaultFnRawSymbolCollection>)  (Base Class)
+
+
+---
+#### DefaultFnRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L369>)
+
+The `to_dict` method returns the `data` attribute of the `DefaultFnRawSymbolCollection` class as a dictionary.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the `data` attribute of the class instance.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnRawSymbolCollection`](<#DefaultFnRawSymbolCollection>)  (Base Class)
+
+
+
+---
+### DefaultVariableRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L373>)
+
+- **Members**:
+    - `data`: A dictionary mapping string keys to RawSymbolData objects.
+- **Description**: The DefaultVariableRawSymbolCollection class is a specialized collection for handling raw symbol data specifically related to variables. It extends the RawSymbolCollection class and provides methods to create instances from static analysis or through a language model (LLM) analysis. The class is designed to facilitate the extraction and organization of variable-related symbol data from code, leveraging LLMs for analysis when static methods are not applicable. The data attribute stores the collection of raw symbol data, allowing for easy conversion to a dictionary format.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_static_analysis`](<#DefaultVariableRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_llm`](<#DefaultVariableRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.to_dict`](<#DefaultVariableRawSymbolCollectionto_dict>)
+- **Inherits From**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+
+**Methods**
+
+---
+#### DefaultVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_static_analysis}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L376>)
+
+The `from_static_analysis` method is a class method that raises a NotImplementedError, indicating that the default case should use the `from_llm` method instead.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `code`: A string representing the source code to be analyzed.
+    - `root_rel_path`: A Path object representing the root relative path of the source code.
+- **Control Flow**:
+    - The method immediately raises a NotImplementedError with a message indicating that the default case should use the `from_llm` method.
+- **Output**: The method does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection`](<#DefaultVariableRawSymbolCollection>)  (Base Class)
+
+
+---
+#### DefaultVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L380>)
+
+The `from_llm` method creates an instance of the class by performing a default LLM analysis on the provided code and root relative path.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `llm`: An instance of `ChatOpenAI` used for language model analysis.
+    - `code`: A string representing the source code to be analyzed.
+    - `root_rel_path`: A string representing the root relative path of the code.
+- **Control Flow**:
+    - The method calls [`default_llm_analysis`](<#default_llm_analysis>) with the class itself, the LLM instance, the code, the root relative path, a predefined system prompt, an empty user prompt, and a symbol kind of `SymbolKind.VARIABLE`.
+- **Output**: Returns an instance of the class or `None` if no symbols are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<#default_llm_analysis>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection`](<#DefaultVariableRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### DefaultVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L392>)
+
 The `to_dict` method returns the `data` attribute of the `DefaultVariableRawSymbolCollection` class as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the class instance.
-- **Output**: A dictionary with string keys and `RawSymbolData` values, representing the `data` attribute of the class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection`](#DefaultVariableRawSymbolCollection)  (Base Class)
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableRawSymbolCollection`](<#DefaultVariableRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### DefaultDataStructureRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L396>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The DefaultDataStructureRawSymbolCollection class is a specialized collection for handling raw symbol data related to data structures. It extends the RawSymbolCollection class and provides methods to create instances from static analysis or through a language model (LLM) analysis. The class primarily stores its data in a dictionary format, mapping string identifiers to RawSymbolData objects, and offers a method to convert this data into a dictionary form. This class is designed to facilitate the extraction and management of data structure symbols from code, leveraging LLMs for analysis.
+- **Description**: The DefaultDataStructureRawSymbolCollection class is a specialized collection for handling raw symbol data related to data structures. It extends the RawSymbolCollection class and provides methods to create instances from static analysis or through a language model (LLM) analysis. The class primarily stores its data in a dictionary format, mapping string identifiers to RawSymbolData objects, and offers a method to convert this data into a dictionary format. This class is designed to facilitate the extraction and management of data structure symbols from code, leveraging LLMs for analysis.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.from_static_analysis`](#DefaultDataStructureRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.from_llm`](#DefaultDataStructureRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.to_dict`](#DefaultDataStructureRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.from_static_analysis`](<#DefaultDataStructureRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.from_llm`](<#DefaultDataStructureRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.to_dict`](<#DefaultDataStructureRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### DefaultDataStructureRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method is a class method that raises a `NotImplementedError`, indicating that the default behavior should use the `from_llm` method instead.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L399>)
+
+The `from_static_analysis` method is a class method placeholder that raises a NotImplementedError, indicating that the default case should use the `from_llm` method instead.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code.
+    - `root_rel_path`: A Path object representing the root relative path of the source code.
 - **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with a message indicating that the default case should use the `from_llm` method.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection`](#DefaultDataStructureRawSymbolCollection)  (Base Class)
+    - The method immediately raises a NotImplementedError with a message indicating that the default case should use the `from_llm` method.
+- **Output**: The method does not return any output as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection`](<#DefaultDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### DefaultDataStructureRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L403>)
+
 The `from_llm` method creates an instance of the class by performing a default LLM analysis on the provided code to extract data structures.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used for language model analysis.
+    - `llm`: An instance of the `ChatOpenAI` class used for language model operations.
     - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file.
+    - `root_rel_path`: A string representing the root relative path of the source code file.
 - **Control Flow**:
-    - The method calls [`default_llm_analysis`](#default_llm_analysis) with the class itself, the provided LLM instance, code, root relative path, a system prompt for data structure checking, an empty user prompt, and a symbol kind of `SymbolKind.DATA_STRUCTURE`.
-    - The [`default_llm_analysis`](#default_llm_analysis) function processes the code to extract data structures using the LLM and returns an instance of the class with the extracted data.
-- **Output**: Returns an instance of the class containing the extracted data structures or `None` if no data structures are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](#default_llm_analysis)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection`](#DefaultDataStructureRawSymbolCollection)  (Base Class)
+    - The method calls [`default_llm_analysis`](<#default_llm_analysis>) with the class itself, the provided LLM instance, code, root relative path, a predefined system prompt, an empty user prompt, and the symbol kind set to `SymbolKind.DATA_STRUCTURE`.
+- **Output**: Returns an instance of the class populated with raw symbol data extracted from the code, or `None` if no data structures are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis`](<#default_llm_analysis>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection`](<#DefaultDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### DefaultDataStructureRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L415>)
+
 The `to_dict` method returns the `data` attribute of the `DefaultDataStructureRawSymbolCollection` class as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the class instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection`](#DefaultDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureRawSymbolCollection`](<#DefaultDataStructureRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### DefaultFnData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData}} -->
-- **Description**: The `DefaultFnData` class is a specialized subclass of `FnData` that provides default implementations for handling function-related data in a software documentation context. It includes class methods for generating system and user prompts related to functions, and it explicitly raises `NotImplementedError` for methods that would handle child elements, indicating that default functions should not have children. This class is part of a larger framework for analyzing and documenting code, particularly focusing on functions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L420>)
+
+- **Description**: The `DefaultFnData` class is a specialized subclass of `FnData` that provides default implementations for handling function-related data in a structured prompting system. It includes class methods for generating system and user prompts based on a given `RawSymbolData` object, which encapsulates information about a symbol such as its name and code. The class also defines methods for converting child symbols to intermediate representations (IR) and field names, but these are not implemented, indicating that default functions should not have children. This class is part of a larger framework for analyzing and documenting code using language models.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.system_prompt`](#DefaultFnDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.user_prompt`](#DefaultFnDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.child_to_ir`](#DefaultFnDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.child_to_field_name`](#DefaultFnDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.system_prompt`](<#DefaultFnDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.user_prompt`](<#DefaultFnDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.child_to_ir`](<#DefaultFnDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.child_to_field_name`](<#DefaultFnDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](ir_common.py.md#FnData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#FnData>)
 
 **Methods**
 
 ---
 #### DefaultFnData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string used for documenting functions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L421>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting functions using predefined components and instructions.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: The output is a string containing the JSON schema for documenting functions.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](#DefaultFnData)  (Base Class)
+    - The method starts by creating an empty `Prompt` object.
+    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` string to the `Prompt`.
+    - It appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - It appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Finally, it converts the `Prompt` into a string using the `into_str()` method and returns it.
+- **Output**: A string representing the constructed system prompt for function documentation.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](<#DefaultFnData>)  (Base Class)
 
 
 ---
 #### DefaultFnData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.user_prompt}} -->
-The `user_prompt` method generates a formatted string containing a user prompt and the code associated with a given symbol.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L431>)
+
+The `user_prompt` method constructs and returns a formatted string prompt for a given symbol's name and code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData containing the name and file code of the symbol to be documented.
+    - `symbol`: An instance of `RawSymbolData` containing the name and file code of the symbol to be included in the prompt.
 - **Control Flow**:
-    - The method constructs a string by concatenating a predefined user prompt with the symbol's name and its associated file code.
-- **Output**: A string formatted with the user prompt, symbol name, and its file code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](#DefaultFnData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a component with the user prompt message and the symbol's name to the `Prompt`.
+    - Append a no-restatement style instruction to the `Prompt`.
+    - Append a component with the symbol's code to the `Prompt`.
+    - Convert the `Prompt` into a string and return it.
+- **Output**: A string representing the constructed user prompt for the given symbol.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](<#DefaultFnData>)  (Base Class)
 
 
 ---
 #### DefaultFnData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.child_to_ir}} -->
-The `child_to_ir` method raises a `NotImplementedError` indicating that default functions should not have children.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L441>)
+
+The `child_to_ir` method raises a NotImplementedError indicating that default functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the IR data is being requested.
+    - `cls`: The class on which this method is called, typically the class itself.
+    - `symbol`: An instance of RawSymbolData representing a symbol.
 - **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with the message 'Default functions should not have children'.
+    - The method immediately raises a NotImplementedError with the message 'Default functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](#DefaultFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](<#DefaultFnData>)  (Base Class)
 
 
 ---
 #### DefaultFnData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData.child_to_field_name}} -->
-The `child_to_field_name` method raises a `NotImplementedError` indicating that default functions should not have children.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with a specific message.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](#DefaultFnData)  (Base Class)
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L445>)
 
-
-
----
-### DefaultFnCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection}} -->
-- **Decorators**: `@classmethod`
-- **Members**:
-    - `data`: A dictionary mapping strings to either DefaultFnData or a list of DefaultFnData.
-- **Description**: The DefaultFnCollection class is a specialized collection that extends the IrCollection class, designed to manage and store function-related data in the form of DefaultFnData objects. It provides a class method, from_llm, which facilitates the creation of a DefaultFnCollection instance by leveraging a language model (llm) and a list of symbols (symbols_list) to populate the collection with relevant function data. This class is part of a larger framework for handling intermediate representations (IR) of code elements, focusing specifically on functions.
-- **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection.from_llm`](#DefaultFnCollectionfrom_llm)
-- **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
-
-**Methods**
-
----
-#### DefaultFnCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection.from_llm}} -->
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A collection of raw symbols, represented by the RawSymbolCollection class, to be used in the instance creation.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `DefaultFnData`, `llm`, and `symbols_list` as arguments.
-    - The [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method is expected to handle the creation of the class instance using the provided data.
-- **Output**: The method returns an instance of the class, created using the language model and symbol collection data.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection`](#DefaultFnCollection)  (Base Class)
-
-
-
----
-### DefaultVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData}} -->
-- **Description**: The `DefaultVariableData` class is a specialized subclass of `VariableData` that provides default implementations for handling variable-related data in a software system. It includes class methods for generating system and user prompts related to variables, utilizing predefined JSON templates. The class also defines methods for converting child symbols to intermediate representations (IR) and field names, but these methods raise `NotImplementedError`, indicating that default variables should not have children. This class is part of a larger framework for managing and documenting code structures, particularly focusing on variables.
-- **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.system_prompt`](#DefaultVariableDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.user_prompt`](#DefaultVariableDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_ir`](#DefaultVariableDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_field_name`](#DefaultVariableDatachild_to_field_name)
-- **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](ir_common.py.md#VariableData)
-
-**Methods**
-
----
-#### DefaultVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string used for documenting variables.
-- **Decorators**: `@classmethod`
-- **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON schema for documenting variables.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](#DefaultVariableData)  (Base Class)
-
-
----
-#### DefaultVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.user_prompt}} -->
-The `user_prompt` method generates a formatted string containing a user prompt message and the code associated with a given symbol.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `symbol`: An instance of RawSymbolData containing the name and file code of the symbol to be included in the prompt.
-- **Control Flow**:
-    - The method constructs a string by concatenating a predefined user prompt message with the symbol's name and its associated code.
-- **Output**: A string formatted with the user prompt message, the symbol's name, and its code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](#DefaultVariableData)  (Base Class)
-
-
----
-#### DefaultVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_ir}} -->
-The `child_to_ir` method raises a `NotImplementedError` indicating that default variables should not have children.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the IR data is being queried.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with a message stating that default variables should not have children.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](#DefaultVariableData)  (Base Class)
-
-
----
-#### DefaultVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_field_name}} -->
-The `child_to_field_name` method raises a NotImplementedError indicating that default variables should not have children.
+The `child_to_field_name` method raises a NotImplementedError indicating that default functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `child`: An instance of RawSymbolData representing a child symbol.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a specific message.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](#DefaultVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnData`](<#DefaultFnData>)  (Base Class)
+
+
+
+---
+### DefaultFnCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L450>)
+
+- **Members**:
+    - `data`: A dictionary mapping strings to either DefaultFnData or a list of DefaultFnData.
+- **Description**: The DefaultFnCollection class is a specialized collection that extends the IrCollection class, designed to manage and store function-related data in the form of DefaultFnData objects. It provides a class method, from_llm, which facilitates the creation of an instance from a language model (llm) and a collection of raw symbols, converting them into intermediate representation data using the DefaultFnData class. This class is part of a system that processes and organizes function data, likely for further analysis or documentation purposes.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection.from_llm`](<#DefaultFnCollectionfrom_llm>)
+- **Inherits From**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+
+**Methods**
+
+---
+#### DefaultFnCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L453>)
+
+The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
+    - `symbols_list`: A collection of raw symbols, represented by the RawSymbolCollection class, to be used in the instance creation.
+- **Control Flow**:
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `DefaultFnData`, `llm`, and `symbols_list` as arguments.
+    - The [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method is expected to handle the creation of the class instance using the provided data.
+- **Output**: Returns an instance of the class, initialized with data from the language model and the symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultFnCollection`](<#DefaultFnCollection>)  (Base Class)
+
+
+
+---
+### DefaultVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L458>)
+
+- **Description**: The `DefaultVariableData` class is a specialized subclass of `VariableData` designed to handle default variable-related operations within a software documentation context. It provides class methods to generate system and user prompts based on a given `RawSymbolData` object, which likely represents a variable symbol in the code. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that default variables are not expected to have children in this context. This class is part of a larger framework for generating structured prompts and handling variable data in a documentation or code analysis system.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.system_prompt`](<#DefaultVariableDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.user_prompt`](<#DefaultVariableDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_ir`](<#DefaultVariableDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_field_name`](<#DefaultVariableDatachild_to_field_name>)
+- **Inherits From**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
+
+**Methods**
+
+---
+#### DefaultVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.system_prompt}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L459>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for system-level documentation of a symbol.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
+- **Control Flow**:
+    - The method starts by creating an empty Prompt object.
+    - It appends a Component with a string containing the VARIABLES_FOUND_SYSTEM_PROMPT_JSON to the Prompt.
+    - It appends the GENERAL_STE_STYLE_INSTRUCTION to the Prompt.
+    - It appends the USE_BACKTICKS_STYLE_INSTRUCTION to the Prompt.
+    - Finally, it converts the Prompt into a string and returns it.
+- **Output**: A string that represents the constructed system prompt for the given symbol.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](<#DefaultVariableData>)  (Base Class)
+
+
+---
+#### DefaultVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.user_prompt}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L469>)
+
+The `user_prompt` method constructs a user prompt string by appending various components related to a given symbol's name and code.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `cls`: The class `DefaultVariableData` to which this method belongs.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name and file code to be included in the prompt.
+- **Control Flow**:
+    - Create an empty `Prompt` object.
+    - Append a component with a string that includes a user prompt message and the symbol's name.
+    - Append a predefined instruction component for symbols.
+    - Append a component with a string that includes the symbol's file code.
+    - Convert the constructed `Prompt` object into a string.
+- **Output**: A string representing the constructed user prompt.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](<#DefaultVariableData>)  (Base Class)
+
+
+---
+#### DefaultVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L479>)
+
+The `child_to_ir` method raises a NotImplementedError indicating that default variables should not have children.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the IR data is being queried.
+- **Control Flow**:
+    - The method immediately raises a NotImplementedError with a message stating that default variables should not have children.
+- **Output**: The method does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](<#DefaultVariableData>)  (Base Class)
+
+
+---
+#### DefaultVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L483>)
+
+The `child_to_field_name` method raises a `NotImplementedError` indicating that default variables should not have children.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `child`: An instance of `RawSymbolData` representing a child symbol.
+- **Control Flow**:
+    - The method immediately raises a `NotImplementedError` with a message stating that default variables should not have children.
+- **Output**: The method does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableData`](<#DefaultVariableData>)  (Base Class)
 
 
 
 ---
 ### DefaultVariableCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L488>)
+
 - **Members**:
-    - `data`: A dictionary mapping strings to DefaultVariableData or lists of DefaultVariableData.
-- **Description**: The DefaultVariableCollection class is a specialized collection that extends the IrCollection class, designed to manage and store variable data in the form of DefaultVariableData objects. It provides a structured way to handle collections of variables, allowing for the integration of language model (LLM) data through its class method from_llm. This method facilitates the creation of a DefaultVariableCollection instance by processing raw symbol collections and converting them into a structured format using DefaultVariableData.
+    - `data`: A dictionary mapping strings to either DefaultVariableData or a list of DefaultVariableData.
+- **Description**: The DefaultVariableCollection class is a specialized collection that extends the IrCollection class, designed to manage a collection of DefaultVariableData objects. It stores data in a dictionary where each key is a string and the value is either a single DefaultVariableData instance or a list of such instances. This class provides a class method, from_llm, which facilitates the creation of a DefaultVariableCollection instance from a language model (llm) and a list of symbols, leveraging the DefaultVariableData class for data representation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableCollection.from_llm`](#DefaultVariableCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableCollection.from_llm`](<#DefaultVariableCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### DefaultVariableCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L491>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used.
-    - `symbols_list`: A `RawSymbolCollection` object containing a collection of symbols to be used in the instance creation.
+    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
+    - `symbols_list`: A collection of raw symbols, represented by the RawSymbolCollection class, to be used in the instance creation.
 - **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) on the class, passing `DefaultVariableData`, `llm`, and `symbols_list` as arguments.
-- **Output**: Returns an instance of the class created using the provided language model and symbols list.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableCollection`](#DefaultVariableCollection)  (Base Class)
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `DefaultVariableData`, `llm`, and `symbols_list` as arguments.
+    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call, which is an instance of the class.
+- **Output**: An instance of the class, created using the provided language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultVariableCollection`](<#DefaultVariableCollection>)  (Base Class)
 
 
 
 ---
 ### DefaultDataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData}} -->
-- **Description**: The `DefaultDataStructureData` class is a specialized subclass of `DataStructureData` designed to handle default data structures within a software documentation context. It provides class methods for generating system and user prompts related to data structures, utilizing predefined JSON templates. The class also includes methods for handling child data structures, although these methods are not implemented, as default data structures are not expected to have children. This class is part of a larger framework for analyzing and documenting code, particularly focusing on data structures.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L496>)
+
+- **Description**: The `DefaultDataStructureData` class is a specialized subclass of `DataStructureData` that provides methods for generating system and user prompts related to data structures. It includes class methods to create structured prompts for documenting data structures, ensuring that the prompts adhere to specific styles and instructions. The class also explicitly raises `NotImplementedError` for methods related to child data structures, indicating that default data structures should not have children. This class is part of a larger framework for handling and documenting data structures using language models.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.system_prompt`](#DefaultDataStructureDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.user_prompt`](#DefaultDataStructureDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.child_to_ir`](#DefaultDataStructureDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.child_to_field_name`](#DefaultDataStructureDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.system_prompt`](<#DefaultDataStructureDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.user_prompt`](<#DefaultDataStructureDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.child_to_ir`](<#DefaultDataStructureDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.child_to_field_name`](<#DefaultDataStructureDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData`](ir_common.py.md#DataStructureData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData`](<ir_common.py.md#DataStructureData>)
 
 **Methods**
 
 ---
 #### DefaultDataStructureData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string used for documenting data structures.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L497>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting data structures.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: The method outputs a string containing a JSON schema for documenting data structures.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](#DefaultDataStructureData)  (Base Class)
+    - The method starts by creating an empty Prompt object.
+    - It appends a Component containing a predefined JSON string for data structure documentation.
+    - It appends a general style instruction for structured technical explanations.
+    - It appends an instruction to use backticks for style consistency.
+    - Finally, it converts the constructed Prompt into a string and returns it.
+- **Output**: A string representing the formatted prompt for documenting data structures.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](<#DefaultDataStructureData>)  (Base Class)
 
 
 ---
 #### DefaultDataStructureData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.user_prompt}} -->
-The `user_prompt` method generates a formatted string containing a user prompt and the code associated with a given symbol.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L507>)
+
+The `user_prompt` method constructs and returns a formatted string prompt for a given symbol, incorporating specific instructions and the symbol's code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` containing the name and file code of the symbol to be documented.
 - **Control Flow**:
-    - The method constructs a string by concatenating a predefined user prompt with the symbol's name and its associated code.
-- **Output**: A formatted string that includes the user prompt, the symbol's name, and its code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](#DefaultDataStructureData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with a string combining `DATA_STRUCTURES_FOUND_USER_PROMPT` and the symbol's name to the `Prompt`.
+    - Append `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS` to the `Prompt`.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with a string containing the symbol's file code prefixed by 'Code:\n\n' to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the constructed user prompt for the given symbol.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](<#DefaultDataStructureData>)  (Base Class)
 
 
 ---
 #### DefaultDataStructureData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.child_to_ir}} -->
-The `child_to_ir` method raises a `NotImplementedError` to indicate that default data structures should not have children.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L519>)
+
+The `child_to_ir` method raises a NotImplementedError indicating that default data structures should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the IR data is being queried.
+    - `symbol`: An instance of RawSymbolData representing a symbol for which the method is invoked.
 - **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with a message indicating that default data structures should not have children.
+    - The method immediately raises a NotImplementedError with a specific message.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](#DefaultDataStructureData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](<#DefaultDataStructureData>)  (Base Class)
 
 
 ---
 #### DefaultDataStructureData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L523>)
+
 The `child_to_field_name` method raises a `NotImplementedError` indicating that default data structures should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -537,36 +659,40 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with a message stating that default data structures should not have children.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](#DefaultDataStructureData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureData`](<#DefaultDataStructureData>)  (Base Class)
 
 
 
 ---
 ### DefaultDataStructureCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L528>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to either DefaultDataStructureData or a list of DefaultDataStructureData.
-- **Description**: The DefaultDataStructureCollection class is a specialized collection class that extends the IrCollection class. It is designed to manage a collection of data structures, specifically DefaultDataStructureData instances or lists of such instances, which are stored in a dictionary with string keys. The class provides a class method, from_llm, to create an instance of the collection from a language model (llm) and a list of symbols, facilitating the integration of language model outputs into the collection.
+- **Description**: The DefaultDataStructureCollection class is a specialized collection that extends the IrCollection class, designed to manage a collection of data structures represented by DefaultDataStructureData objects. It includes a class method, from_llm, which facilitates the creation of an instance from a language model and a list of symbols, leveraging the DefaultDataStructureData class for data representation. This class is part of a larger framework for handling and processing data structures in a structured and organized manner.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureCollection.from_llm`](#DefaultDataStructureCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureCollection.from_llm`](<#DefaultDataStructureCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### DefaultDataStructureCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L531>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A collection of raw symbols, represented by the RawSymbolCollection class, to be used in the instance creation.
+    - `symbols_list`: A collection of symbols of type RawSymbolCollection, which will be used in conjunction with the language model to create the class instance.
 - **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `DefaultDataStructureData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) call, which is an instance of the class.
-- **Output**: An instance of the class, created using the provided language model and symbols list.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureCollection`](#DefaultDataStructureCollection)  (Base Class)
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `DefaultDataStructureData`, `llm`, and `symbols_list` as arguments.
+    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call, which is an instance of the class.
+- **Output**: An instance of the class that is created using the language model and the symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/default.DefaultDataStructureCollection`](<#DefaultDataStructureCollection>)  (Base Class)
 
 
 
@@ -574,27 +700,32 @@ The `from_llm` method creates an instance of the class using data from a languag
 
 ---
 ### \_default\_checker<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker}} -->
-The `_default_checker` function generates a list of data from a language model based on provided prompts and code, handling potential errors and returning the data in different formats.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L230>)
+
+The `_default_checker` function attempts to generate a list of data from a language model using given prompts and code, handling potential errors and returning the data in different formats based on a flag.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for generating data.
-    - `user_prompt`: A string containing the user prompt to be used in the language model query.
-    - `system_prompt`: A string containing the system prompt to be used in the language model query.
-    - `code`: A string containing the code to be analyzed by the language model.
-    - `as_list_data_ds`: A boolean flag indicating whether to return the result as a [`ListData`](ir_common.py.md#ListData) object or a list of strings.
+    - `llm`: An instance of `ChatOpenAI` used to generate data from the language model.
+    - `user_prompt`: A string containing the user prompt to be used by the language model.
+    - `system_prompt`: A string containing the system prompt to be used by the language model.
+    - `code`: A string of code that is used as input for the language model.
+    - `as_list_data_ds`: A boolean flag indicating whether to return the result as a [`ListData`](<ir_common.py.md#ListData>) object or a list of strings.
 - **Control Flow**:
-    - Attempt to create a [`ListData`](ir_common.py.md#ListData) object using the [`from_llm`](symbol_common.py.md#RawSymbolCollectionfrom_llm) method with the provided language model, prompts, and code.
-    - Catch a `LengthFinishReasonError` exception, print an error message, and initialize `list_data` with an empty [`ListData`](ir_common.py.md#ListData) object if the exception occurs.
-    - Check if the `list_data` contains any data.
-    - Return the [`ListData`](ir_common.py.md#ListData) object if `as_list_data_ds` is `True`, otherwise return the list of data strings.
-    - Return `None` if `list_data` contains no data.
-- **Output**: The function returns either a list of strings, a [`ListData`](ir_common.py.md#ListData) object, or `None` depending on the presence of data and the `as_list_data_ds` flag.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.from_llm`](symbol_common.py.md#RawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData`](ir_common.py.md#ListData)
+    - Attempt to create a [`ListData`](<ir_common.py.md#ListData>) object using the [`from_llm`](<symbol_common.py.md#RawSymbolCollectionfrom_llm>) method with the provided `llm`, `system_prompt`, `user_prompt`, and `code`.
+    - Catch `LengthFinishReasonError` exceptions, print an error message, and initialize `list_data` with an empty [`ListData`](<ir_common.py.md#ListData>) object.
+    - Check if `list_data` contains any data.
+    - If `list_data` has data and `as_list_data_ds` is `True`, return the [`ListData`](<ir_common.py.md#ListData>) object.
+    - If `list_data` has data and `as_list_data_ds` is `False`, return the data as a list of strings.
+    - If `list_data` is empty, return `None`.
+- **Output**: The function returns a list of strings, a [`ListData`](<ir_common.py.md#ListData>) object, or `None` depending on the presence of data and the `as_list_data_ds` flag.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.from_llm`](<symbol_common.py.md#RawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListData`](<ir_common.py.md#ListData>)
 
 
 ---
 ### \_default\_checker\_multi\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker_multi_prompt}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L254>)
+
 The function `_default_checker_multi_prompt` processes multiple code chunks using a language model to identify and deduplicate entities across overlapping code segments.
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to process the code chunks.
@@ -604,55 +735,60 @@ The function `_default_checker_multi_prompt` processes multiple code chunks usin
 - **Control Flow**:
     - Initialize an empty list `checker_responses` to store results.
     - Iterate over each `code_chunk` in `code_chunks` with its index `idx`.
-    - For each `code_chunk`, call [`_default_checker`](#_default_checker) with the provided prompts and code chunk.
-    - If [`_default_checker`](#_default_checker) returns a non-None response, append a list containing the index and response data to `checker_responses`.
-    - If `checker_responses` is not empty, iterate over the list to remove duplicate entities between overlapping chunks.
+    - For each `code_chunk`, call [`_default_checker`](<#_default_checker>) with the provided prompts and code chunk.
+    - If [`_default_checker`](<#_default_checker>) returns non-None data, append a list containing the index and response data to `checker_responses`.
+    - If `checker_responses` is not empty, iterate over the responses to remove duplicate entities assuming chunk overlap.
     - Return `checker_responses` if it contains any data, otherwise return `None`.
 - **Output**: A list of lists, each containing an index and a list of strings representing deduplicated entities, or `None` if no entities are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](#_default_checker)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](<#_default_checker>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
 
 
 ---
 ### default\_imports\_checker<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.default_imports_checker}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L281>)
+
 The `default_imports_checker` function checks for imports in a given code string using a language model and returns the results as a ListData object.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, which is used to perform language model operations.
-    - `code`: A string containing the source code to be analyzed for imports.
+    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used for checking imports.
+    - `code`: A string containing the source code in which to check for imports.
     - `root_rel_path`: A string representing the root relative path of the code file, though it is not used in this function.
 - **Control Flow**:
-    - Calls the [`_default_checker`](#_default_checker) function with the provided language model, an empty user prompt, a predefined system prompt for imports, the code to be analyzed, and a flag to return results as ListData.
-    - Returns the result of the [`_default_checker`](#_default_checker) function call.
+    - Calls the [`_default_checker`](<#_default_checker>) function with the provided language model, an empty user prompt, a predefined system prompt for imports, the code string, and a flag to return results as ListData.
+    - Returns the result of the [`_default_checker`](<#_default_checker>) function call.
 - **Output**: The function returns a ListData object containing the imports found in the code, or None if no imports are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](#_default_checker)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](<#_default_checker>)
 
 
 ---
 ### default\_llm\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default.default_llm_analysis}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default.py#L293>)
+
 The `default_llm_analysis` function analyzes code to extract symbols using a language model and returns a collection of these symbols.
 - **Inputs**:
-    - `collection_cls`: A class type that inherits from `RawSymbolCollection`, used to instantiate the output collection.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model used for analysis.
+    - `collection_cls`: A class type that inherits from RawSymbolCollection, used to instantiate the output collection.
+    - `llm`: An instance of ChatOpenAI, representing the language model used for analysis.
     - `code`: A string containing the source code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code being analyzed.
-    - `system_prompt`: A string containing the system prompt to guide the language model's analysis.
-    - `user_prompt`: A string containing the user prompt to guide the language model's analysis.
-    - `symbol_kind`: An instance of `SymbolKind` indicating the type of symbols to extract (e.g., callable, variable, data structure).
+    - `root_rel_path`: A string representing the root relative path where the code resides.
+    - `system_prompt`: A string containing the system prompt for the language model.
+    - `user_prompt`: A string containing the user prompt for the language model.
+    - `symbol_kind`: An instance of SymbolKind, indicating the type of symbols to extract (e.g., callable, variable, data structure).
 - **Control Flow**:
-    - Import the [`split_text`](../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text) function from `shared.chunking.text_splitter`.
-    - Determine if the code requires multi-prompt analysis using [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
-    - If multi-prompt is required, split the code into chunks using [`split_text`](../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text) and analyze each chunk with [`_default_checker_multi_prompt`](#_default_checker_multi_prompt).
-    - If multi-prompt is not required, analyze the entire code with [`_default_checker`](#_default_checker).
-    - For each symbol identified, create a raw symbol using [`create_raw_symbol_via_llm`](symbol_common.py.md#create_raw_symbol_via_llm) and store it in `raw_symbol_data`.
-    - Return an instance of `collection_cls` initialized with `raw_symbol_data` if any symbols were found, otherwise return `None`.
-- **Output**: Returns an instance of `RawSymbolCollection` containing the extracted symbols, or `None` if no symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker_multi_prompt`](#_default_checker_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_llm`](symbol_common.py.md#create_raw_symbol_via_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](#_default_checker)
+    - Check if the code requires multi-prompt analysis using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function.
+    - If multi-prompt is required, split the code into chunks using [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) and analyze each chunk with [`_default_checker_multi_prompt`](<#_default_checker_multi_prompt>).
+    - For each symbol found in the chunks, create a raw symbol using [`create_raw_symbol_via_llm`](<symbol_common.py.md#create_raw_symbol_via_llm>) and store it in `raw_symbol_data`.
+    - If multi-prompt is not required, analyze the entire code with [`_default_checker`](<#_default_checker>).
+    - For each symbol found, create a raw symbol using [`create_raw_symbol_via_llm`](<symbol_common.py.md#create_raw_symbol_via_llm>) and store it in `raw_symbol_data`.
+    - Return an instance of `collection_cls` initialized with `raw_symbol_data` if any symbols are found, otherwise return None.
+- **Output**: Returns an instance of RawSymbolCollection containing the extracted symbols, or None if no symbols are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker_multi_prompt`](<#_default_checker_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_llm`](<symbol_common.py.md#create_raw_symbol_via_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](<#_default_checker>)
 
 
 

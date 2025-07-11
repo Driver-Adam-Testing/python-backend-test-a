@@ -6,27 +6,17 @@
 The `main.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to production upon pushes to the main branch, including setting up Node.js and Python environments, configuring AWS credentials, and deploying various content services using Poetry and Modal.
 
 # Purpose
-The provided content is a GitHub Actions workflow configuration file, written in YAML, which automates the deployment process for a backend production environment. This file is triggered by a push event to the "main" branch and ensures that only one deployment process runs at a time by using concurrency controls. It sets up the necessary permissions and defines a series of jobs that run on the latest Ubuntu environment, including setting up Node.js and Python, installing dependencies with Poetry, and configuring AWS credentials for deployment. The workflow includes multiple deployment steps for different components of the application, such as Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation, each within their respective directories. This file is crucial for continuous integration and deployment (CI/CD) in the codebase, ensuring that updates to the main branch are automatically deployed to the production environment efficiently and consistently.
+The provided file is a GitHub Actions workflow configuration file, written in YAML, which automates the deployment process for a backend production environment. This file is triggered by a push event to the "main" branch, ensuring that the deployment process is initiated only when changes are committed to the main codebase. It defines a series of jobs that run on the latest Ubuntu environment, setting up necessary programming environments such as Node.js and Python, and installing dependencies using Poetry. The workflow configures AWS credentials for deployment and uses the AWS CDK to deploy infrastructure without requiring manual approval. Additionally, it deploys several components of the application, such as Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation, using the Modal platform. This file is crucial for maintaining a consistent and automated deployment pipeline, reducing manual intervention and potential errors in the production deployment process.
 # Content Summary
-This file is a GitHub Actions workflow configuration designed for deploying a backend application to a production environment. The workflow is triggered by a push event to the "main" branch, ensuring that deployments occur only when changes are merged into the main codebase.
+The provided file is a GitHub Actions workflow configuration designed for deploying a backend application to a production environment. The workflow is triggered by a push event to the "main" branch, ensuring that deployments occur only when changes are merged into the main codebase. 
 
-Key technical details include:
+Key technical details include the use of concurrency controls to manage workflow execution, with a unique group identifier based on the workflow and reference, and the ability to cancel in-progress runs to prevent overlapping deployments. The workflow grants specific permissions, allowing write access to the id-token and read access to the repository contents, which are necessary for secure operations and accessing the codebase.
 
-1. **Concurrency Management**: The workflow uses a concurrency group to prevent overlapping runs, identified by the workflow name and reference. The `cancel-in-progress` option is set to true, which cancels any currently running instances of the workflow if a new one is triggered.
+The deployment process is executed on an `ubuntu-latest` runner and involves several steps. Initially, the code is checked out using the `actions/checkout@v4` action. Node.js version 20.x is set up with caching for npm dependencies, followed by the installation of project dependencies using npm and Poetry, a Python dependency manager. The workflow also configures AWS credentials using the `aws-actions/configure-aws-credentials@v4` action, assuming a specified role for deployment in the `us-east-1` region.
 
-2. **Permissions**: The workflow grants specific permissions, allowing write access to the `id-token` and read access to the `contents`, which are necessary for secure operations and accessing repository content.
+The deployment is divided into multiple jobs, each targeting different components of the application. These components include the Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation services. Each service is deployed using Poetry and the Modal platform, with environment variables and secrets managed through GitHub's secrets and variables. The deployment commands utilize the `modal deploy` command, tagging each deployment with a shortened GitHub SHA for version tracking.
 
-3. **Job Configuration**: The main job runs on the latest Ubuntu environment and is set to operate in the production environment. It includes several steps:
-   - **Checkout Code**: Uses the `actions/checkout@v4` to pull the latest code from the repository.
-   - **Node.js Setup**: Configures Node.js version 20.x with npm caching to optimize dependency management.
-   - **Python Setup**: Installs Python 3.12 using `actions/setup-python@v5`.
-   - **Poetry Installation**: Installs Poetry, a dependency management tool for Python projects.
-   - **AWS Credentials Configuration**: Sets up AWS credentials using a role specified by the `AWS_CICD_ROLE` variable for deploying resources with AWS CDK.
-   - **CDK Deployment**: Deploys infrastructure using AWS CDK without requiring manual approval.
-
-4. **Service Deployments**: The workflow includes multiple deployment steps for different services within the `content_services` directory. Each service (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) is deployed using Poetry and Modal, a deployment tool. The deployments are tagged with the first eight characters of the current GitHub SHA for version tracking. Environment variables for Modal are securely managed using GitHub secrets and variables.
-
-This configuration ensures a streamlined and automated deployment process for the backend application, leveraging modern CI/CD practices and tools.
+Overall, this configuration automates the deployment of a complex backend system, ensuring that all necessary dependencies are installed and that each service is deployed in a consistent and secure manner.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

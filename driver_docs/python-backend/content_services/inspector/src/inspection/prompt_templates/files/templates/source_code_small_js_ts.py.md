@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_js_ts.py` file defines a template for inspecting JavaScript and TypeScript source code, focusing on elements such as imports, global variables, classes, interfaces, types, and functions.
+The `source_code_small_js_ts.py` file defines a template for inspecting and structuring JavaScript and TypeScript source code, focusing on elements like imports, global variables, classes, interfaces, types, and functions.
 
 # Purpose
-This Python code is a configuration file that defines a template for analyzing and documenting JavaScript and TypeScript source code. It provides narrow functionality by specifying how to extract and organize information about various code elements such as imports, global variables, classes, interfaces, types, and functions. The file imports several utility modules and collections that facilitate the static analysis and processing of JavaScript and TypeScript code. The `SOURCE_CODE_SMALL_TEMPLATE_JS_TS` list contains tuples that define sections of a documentation template, each associated with a specific type of code element and the methods used to extract and format the relevant data. This setup is likely part of a larger system designed to automate the generation of documentation for JavaScript and TypeScript projects.
+This Python code file is a configuration script that defines a template for generating structured prompts and analyses for JavaScript and TypeScript source code. It imports various components and utilities from shared and specialized modules to facilitate the creation of prompts and the extraction of code elements such as imports, global variables, classes, interfaces, types, and functions. The template, `SOURCE_CODE_SMALL_TEMPLATE_JS_TS`, is a list of tuples, each specifying a section of the analysis (e.g., "# Purpose", "# Imports and Dependencies") and the corresponding logic for extracting and formatting information from the source code. This code provides narrow functionality focused on the structured analysis and documentation of small JavaScript and TypeScript code snippets.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.ir_common.ListData`
 - `utils.lang_specialization.js_ts.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.js_ts.SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_JS_TS`
@@ -32,8 +37,8 @@ This Python code is a configuration file that defines a template for analyzing a
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_JS_TS` is a list of tuples, where each tuple represents a section of a JavaScript/TypeScript source code template. Each tuple contains a section identifier, a section title, and functions or prompts related to static analysis and language model processing for that section.
-- **Use**: This variable is used to define the structure and processing logic for different sections of a JavaScript/TypeScript source code template.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_JS_TS` is a list of tuples, each representing a section of a JavaScript/TypeScript code analysis template. Each tuple contains a section identifier, a section title, and functions or instructions for processing or generating content for that section.
+- **Use**: This variable is used to define a structured template for analyzing and documenting various components of JavaScript/TypeScript code, such as imports, global variables, classes, interfaces, types, and functions.
 
 
 

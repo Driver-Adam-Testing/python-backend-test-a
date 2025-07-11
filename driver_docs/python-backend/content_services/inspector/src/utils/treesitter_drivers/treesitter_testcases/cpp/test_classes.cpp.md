@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_classes.cpp` file in the `python-backend` codebase demonstrates various C++ class concepts, including basic class definitions, inheritance, templates, RAII, singleton pattern, and more, through a series of example classes and implementations.
+The `test_classes.cpp` file demonstrates various C++ programming concepts including class definitions, inheritance, templates, RAII, singleton pattern, and more, through a series of example classes and implementations.
 
 # Purpose
-This C++ source code file is a comprehensive demonstration of various object-oriented programming concepts and design patterns. It includes a wide range of class definitions and templates that illustrate fundamental and advanced C++ features. The file covers basic class structures, access control, inheritance (including single, multiple, and diamond inheritance), abstract classes, and polymorphism. It also demonstrates the use of templates, including template specialization and classes with multiple template parameters. Additionally, the code showcases design patterns such as RAII (Resource Acquisition Is Initialization), Singleton, and policy-based design, as well as concepts like static members, const and mutable members, friend classes, and nested classes.
+This C++ source code file is a comprehensive demonstration of various object-oriented programming concepts and design patterns. It includes a wide range of class definitions and templates that illustrate fundamental and advanced C++ features. The file covers basic class structures, access control, inheritance (including single, multiple, and diamond inheritance), abstract classes, and polymorphism. It also demonstrates the use of templates, including template specialization and classes with multiple template parameters. Additionally, the code showcases design patterns such as RAII (Resource Acquisition Is Initialization), Singleton, and policy-based design. 
 
-The file serves as an educational resource, providing examples of how to implement and utilize these C++ features effectively. It includes practical implementations such as a [`Circle`](#CircleCircle) class inheriting from an abstract `AbstractShape` class, a [`FileWrapper`](#FileWrapperFileWrapper) class demonstrating RAII principles, and a [`Singleton`](#SingletonSingleton) class ensuring a single instance of an object. The code also includes a `Logger` class using policy-based design with a `ConsolePrinter` policy. The main function at the end of the file creates instances of these classes and demonstrates their usage, making the file a self-contained example of C++ programming techniques.
+The file serves as an educational resource, providing examples of static members, const and mutable members, friend classes, nested classes, and the use of anonymous namespaces. It also includes forward declarations and the use of macros. The main function at the end of the file creates instances of several classes and demonstrates their functionality, such as calculating areas and perimeters, logging messages, and managing resources. This file is not intended to be a library or a public API but rather a collection of examples to illustrate C++ programming techniques and best practices.
 # Imports and Dependencies
 
 ---
@@ -22,8 +22,8 @@ The file serves as an educational resource, providing examples of how to impleme
 ---
 ### instance\_count
 - **Type**: `int`
-- **Description**: The `instance_count` is a static integer variable that belongs to the `Counter` class. It is initialized to zero and is used to keep track of the number of `Counter` instances that have been created.
-- **Use**: This variable is incremented each time a new `Counter` object is instantiated, allowing the class to provide a count of its instances.
+- **Description**: The `instance_count` is a static integer variable that belongs to the `Counter` class. It is initialized to zero and is used to keep track of the number of `Counter` instances created.
+- **Use**: This variable is incremented each time a new `Counter` object is instantiated, allowing the class to provide a count of how many instances have been created.
 
 
 ---
@@ -39,35 +39,36 @@ The file serves as an educational resource, providing examples of how to impleme
 ### BasicClass<!-- {{#data_structure:BasicClass}} -->
 - **Type**: `class`
 - **Members**:
-    - `value`: An integer member variable that stores the value for the BasicClass instance.
-- **Description**: The BasicClass is a simple C++ class that encapsulates a single private integer member variable named 'value'. It provides a constructor to initialize this value and a public method 'getValue' to retrieve the stored integer. This class demonstrates basic encapsulation and access control in C++.
+    - `value`: An integer attribute that stores the value for the BasicClass instance.
+- **Description**: The BasicClass is a simple C++ class that encapsulates a single private integer attribute named 'value'. It provides a constructor to initialize this value and a public method 'getValue' to retrieve it. This class demonstrates basic encapsulation and access control in C++.
 - **Member Functions**:
-    - [`BasicClass::BasicClass`](#BasicClassBasicClass)
-    - [`BasicClass::getValue`](#BasicClassgetValue)
+    - [`BasicClass::BasicClass`](<#BasicClassBasicClass>)
+    - [`BasicClass::getValue`](<#BasicClassgetValue>)
 
 **Methods**
 
 ---
 #### BasicClass::BasicClass<!-- {{#callable:BasicClass::BasicClass}} -->
-The `BasicClass` constructor initializes an instance with a specified integer value.
+The `BasicClass` constructor initializes an instance with a specified integer value, and the `getValue` method returns this stored integer value.
 - **Inputs**:
-    - `v`: An integer value used to initialize the private member `value` of the class.
+    - `v`: An integer value used to initialize the private member `value` of the `BasicClass`.
 - **Control Flow**:
     - The constructor `BasicClass(int v)` is called with an integer argument `v`.
-    - The private member `value` is initialized with the value of `v`.
-- **Output**: An instance of `BasicClass` with its `value` member set to the provided integer `v`.
-- **See also**: [`BasicClass`](#BasicClass)  (Data Structure)
+    - The constructor initializes the private member `value` with the provided integer `v`.
+    - The method `getValue` is called to retrieve the stored integer value.
+- **Output**: The `getValue` method returns the integer value stored in the private member `value` of the `BasicClass` instance.
+- **See also**: [`BasicClass`](<#BasicClass>)  (Data Structure)
 
 
 ---
 #### BasicClass::getValue<!-- {{#callable:BasicClass::getValue}} -->
-The `getValue` function returns the private member `value` of the `BasicClass` instance.
+The `getValue` function returns the private member `value` of the `BasicClass` object.
 - **Inputs**: None
 - **Control Flow**:
     - The function is a simple getter that accesses the private member `value` of the `BasicClass`.
     - It is marked as `const`, indicating it does not modify the state of the object.
 - **Output**: The function returns an integer, which is the value of the private member `value`.
-- **See also**: [`BasicClass`](#BasicClass)  (Data Structure)
+- **See also**: [`BasicClass`](<#BasicClass>)  (Data Structure)
 
 
 
@@ -78,9 +79,9 @@ The `getValue` function returns the private member `value` of the `BasicClass` i
     - `private_data`: An integer member with private access, initialized to 1.
     - `protected_data`: An integer member with protected access, initialized to 2.
     - `public_data`: An integer member with public access, initialized to 3.
-- **Description**: The `AccessLevels` class demonstrates the use of different access specifiers in C++. It contains three integer members: `private_data`, `protected_data`, and `public_data`, each with different access levels (private, protected, and public, respectively). The constructor initializes these members to specific values, showcasing how access control can be used to encapsulate data within a class.
+- **Description**: The `AccessLevels` class demonstrates the use of different access specifiers in C++. It contains three integer members: `private_data`, `protected_data`, and `public_data`, each with different access levels (private, protected, and public, respectively). The constructor initializes these members to specific values, showcasing how access control can be implemented in a class to encapsulate data and control its visibility and accessibility from outside the class.
 - **Member Functions**:
-    - [`AccessLevels::AccessLevels`](#AccessLevelsAccessLevels)
+    - [`AccessLevels::AccessLevels`](<#AccessLevelsAccessLevels>)
 
 **Methods**
 
@@ -89,20 +90,20 @@ The `getValue` function returns the private member `value` of the `BasicClass` i
 The `AccessLevels` constructor initializes the private, protected, and public data members of the `AccessLevels` class with specific integer values.
 - **Inputs**: None
 - **Control Flow**:
-    - The constructor initializes the private member `private_data` to 1.
-    - The constructor initializes the protected member `protected_data` to 2.
-    - The constructor initializes the public member `public_data` to 3.
-- **Output**: The constructor does not return any value as it is used to initialize an object of the `AccessLevels` class.
-- **See also**: [`AccessLevels`](#AccessLevels)  (Data Structure)
+    - The constructor initializes `private_data` to 1.
+    - The constructor initializes `protected_data` to 2.
+    - The constructor initializes `public_data` to 3.
+- **Output**: The constructor does not return any value as it is used to initialize an instance of the `AccessLevels` class.
+- **See also**: [`AccessLevels`](<#AccessLevels>)  (Data Structure)
 
 
 
 ---
 ### AbstractShape<!-- {{#data_structure:AbstractShape}} -->
 - **Type**: `class`
-- **Description**: The `AbstractShape` class is an abstract base class that defines a common interface for shape objects. It includes pure virtual functions for calculating the area and perimeter of a shape, as well as a function to print the shape's details. Being an abstract class, it cannot be instantiated directly and is intended to be subclassed by concrete shape classes that provide specific implementations for these functions.
+- **Description**: The `AbstractShape` class is an abstract base class that defines a common interface for shape objects. It includes pure virtual functions for calculating the area and perimeter of a shape, as well as a function for printing shape details. Being an abstract class, it cannot be instantiated directly and is intended to be subclassed by concrete shape classes that provide specific implementations for these functions.
 - **Member Functions**:
-    - [`AbstractShape::~AbstractShape`](#AbstractShapeAbstractShape)
+    - [`AbstractShape::~AbstractShape`](<#AbstractShapeAbstractShape>)
 
 **Methods**
 
@@ -111,11 +112,10 @@ The `AccessLevels` constructor initializes the private, protected, and public da
 The `~AbstractShape` function is a virtual destructor for the `AbstractShape` class, ensuring proper cleanup of derived class objects.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is declared as a virtual destructor, which means it is intended to be overridden by derived classes if necessary.
-    - The use of `= default` indicates that the compiler should generate the default implementation of the destructor.
-    - Being a virtual destructor, it ensures that the destructor of the derived class is called when an object is deleted through a pointer to `AbstractShape`.
+    - The destructor is declared as virtual to ensure that the destructor of the derived class is called when an object is deleted through a pointer to the base class.
+    - The destructor is defined as `default`, indicating that the compiler should generate the default implementation.
 - **Output**: The function does not return any value as it is a destructor.
-- **See also**: [`AbstractShape`](#AbstractShape)  (Data Structure)
+- **See also**: [`AbstractShape`](<#AbstractShape>)  (Data Structure)
 
 
 
@@ -124,9 +124,17 @@ The `~AbstractShape` function is a virtual destructor for the `AbstractShape` cl
 - **Type**: `class`
 - **Members**:
     - `radius`: A private member variable that stores the radius of the circle.
-- **Description**: The `Circle` class is a concrete implementation of the `AbstractShape` interface, representing a geometric circle. It encapsulates a single private member, `radius`, which defines the size of the circle. The class provides methods to calculate the area and perimeter of the circle, adhering to the interface contract by overriding the `getArea`, `getPerimeter`, and `print` methods. The `print` method outputs a description of the circle, including its radius, to the standard output.
+- **Description**: The `Circle` class is a concrete implementation of the `AbstractShape` interface, representing a geometric circle with a specific radius. It provides methods to calculate the area and perimeter of the circle, and to print its details. The class encapsulates the radius as a private member and offers a constructor to initialize it. The `Circle` class overrides the pure virtual functions from `AbstractShape` to provide specific implementations for calculating the area and perimeter, and for printing the circle's details.
+- **Member Functions**:
+    - [`Circle::Circle`](<test_func_defs.cpp.md#CircleCircle>)
+    - [`Circle::calculateArea`](<test_func_defs.cpp.md#CirclecalculateArea>)
+    - [`Circle::draw`](<test_func_defs.cpp.md#Circledraw>)
+    - [`Circle::Circle`](<#CircleCircle>)
+    - [`Circle::getArea`](<#CirclegetArea>)
+    - [`Circle::getPerimeter`](<#CirclegetPerimeter>)
+    - [`Circle::print`](<#Circleprint>)
 - **Inherits From**:
-    - [`AbstractShape`](#AbstractShape)
+    - [`AbstractShape`](<#AbstractShape>)
 
 **Methods**
 
@@ -138,7 +146,7 @@ The `Circle` constructor initializes a `Circle` object with a specified radius.
 - **Control Flow**:
     - The constructor takes a single argument `r` and assigns it to the private member variable `radius`.
 - **Output**: A `Circle` object with its `radius` member variable set to the provided value `r`.
-- **See also**: [`Circle`](test_func_defs.cpp.md#Circle)  (Data Structure)
+- **See also**: [`Circle`](<#Circle>)  (Data Structure)
 
 
 ---
@@ -149,7 +157,7 @@ The `getArea` function calculates and returns the area of a circle using its rad
     - The function multiplies the constant 3.14159 (an approximation of π) by the square of the `radius` member variable.
     - The result of this multiplication is returned as the area of the circle.
 - **Output**: A `double` representing the area of the circle.
-- **See also**: [`Circle`](test_func_defs.cpp.md#Circle)  (Data Structure)
+- **See also**: [`Circle`](<#Circle>)  (Data Structure)
 
 
 ---
@@ -159,19 +167,19 @@ The `getPerimeter` function calculates and returns the perimeter of a circle usi
 - **Control Flow**:
     - The function multiplies the constant 2 by the constant 3.14159 (an approximation of π) and the circle's radius.
     - The result of this multiplication is returned as the perimeter of the circle.
-- **Output**: A `double` representing the perimeter of the circle.
-- **See also**: [`Circle`](test_func_defs.cpp.md#Circle)  (Data Structure)
+- **Output**: The function returns a `double` representing the perimeter of the circle.
+- **See also**: [`Circle`](<#Circle>)  (Data Structure)
 
 
 ---
 #### Circle::print<!-- {{#callable:Circle::print}} -->
-The `print` function outputs the radius of a `Circle` object to the standard output stream.
+The `print` function in the `Circle` class outputs the radius of the circle to the standard output stream.
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses `std::cout` to print a formatted string that includes the text 'Circle with radius' followed by the value of the `radius` member variable.
+    - The function uses `std::cout` to print a string that includes the text 'Circle with radius' followed by the value of the `radius` member variable.
     - The function ends with `std::endl` to ensure the output is followed by a newline character.
-- **Output**: The function does not return any value; it performs an output operation to the console.
-- **See also**: [`Circle`](test_func_defs.cpp.md#Circle)  (Data Structure)
+- **Output**: The function does not return any value; it outputs a string to the console.
+- **See also**: [`Circle`](<#Circle>)  (Data Structure)
 
 
 
@@ -184,7 +192,7 @@ The `print` function outputs the radius of a `Circle` object to the standard out
 ---
 ### Serializable<!-- {{#data_structure:Serializable}} -->
 - **Type**: `class`
-- **Description**: The `Serializable` class is an abstract base class that defines a contract for serializing objects into a string format. It contains a pure virtual function `serialize()` that must be implemented by any derived class, ensuring that objects of those classes can be converted into a string representation. This class is typically used as a base class for objects that need to be serialized, allowing for polymorphic behavior when handling different types of serializable objects.
+- **Description**: The `Serializable` class is an abstract base class that defines a pure virtual function `serialize()`, which must be implemented by any derived class. This function is intended to return a string representation of the object, allowing objects of derived classes to be serialized into a string format. The class itself does not contain any data members, serving solely as an interface for serialization functionality.
 
 
 ---
@@ -194,12 +202,12 @@ The `print` function outputs the radius of a `Circle` object to the standard out
     - `name`: A protected string member that stores the name of the shape.
 - **Description**: The `DrawableShape` class is a C++ class that inherits from three interfaces: `AbstractShape`, `Drawable`, and `Serializable`. It represents a shape that can be drawn and serialized, and it must implement the pure virtual functions defined in these interfaces. The class contains a protected member `name` which holds the name of the shape. The constructor initializes this name, and the class provides a virtual destructor, allowing for proper cleanup in derived classes.
 - **Member Functions**:
-    - [`DrawableShape::DrawableShape`](#DrawableShapeDrawableShape)
-    - [`DrawableShape::~DrawableShape`](#DrawableShapeDrawableShape)
+    - [`DrawableShape::DrawableShape`](<#DrawableShapeDrawableShape>)
+    - [`DrawableShape::~DrawableShape`](<#DrawableShapeDrawableShape>)
 - **Inherits From**:
-    - [`AbstractShape`](#AbstractShape)
-    - [`Drawable`](#Drawable)
-    - [`Serializable`](#Serializable)
+    - [`AbstractShape`](<#AbstractShape>)
+    - [`Drawable`](<#Drawable>)
+    - [`Serializable`](<#Serializable>)
 
 **Methods**
 
@@ -209,20 +217,20 @@ The `DrawableShape` constructor initializes a `DrawableShape` object with a give
 - **Inputs**:
     - `shape_name`: A constant reference to a `std::string` representing the name of the shape.
 - **Control Flow**:
-    - The constructor takes a single argument `shape_name` and initializes the `name` member variable with it.
-- **Output**: A `DrawableShape` object is created with its `name` member initialized to the provided `shape_name`.
-- **See also**: [`DrawableShape`](#DrawableShape)  (Data Structure)
+    - The constructor initializes the `name` member variable with the provided `shape_name` argument.
+- **Output**: A `DrawableShape` object is created with its `name` member initialized to the provided shape name.
+- **See also**: [`DrawableShape`](<#DrawableShape>)  (Data Structure)
 
 
 ---
 #### DrawableShape::\~DrawableShape<!-- {{#callable:DrawableShape::~DrawableShape}} -->
-The `~DrawableShape` function is a virtual destructor for the `DrawableShape` class, ensuring proper cleanup of derived class objects.
+The `~DrawableShape` function is a virtual destructor for the `DrawableShape` class, ensuring proper cleanup of resources when an object of this class or its derived classes is destroyed.
 - **Inputs**: None
 - **Control Flow**:
-    - The destructor is declared as virtual to allow derived class destructors to be called when an object is deleted through a base class pointer.
-    - The destructor is defined as `default`, indicating that the compiler should generate the default implementation for the destructor.
-- **Output**: The function does not return any value as it is a destructor.
-- **See also**: [`DrawableShape`](#DrawableShape)  (Data Structure)
+    - The destructor is declared as virtual to allow derived class destructors to be called correctly when an object is deleted through a base class pointer.
+    - The destructor is defined as `default`, indicating that the compiler should generate the default implementation, which is typically sufficient for classes without dynamic memory or other resources needing explicit cleanup.
+- **Output**: The function does not produce any output as it is a destructor meant for resource cleanup.
+- **See also**: [`DrawableShape`](<#DrawableShape>)  (Data Structure)
 
 
 
@@ -231,48 +239,48 @@ The `~DrawableShape` function is a virtual destructor for the `DrawableShape` cl
 - **Type**: `class`
 - **Members**:
     - `species`: A protected string member that stores the species of the animal.
-- **Description**: The `Animal` class is an abstract base class that represents a generic animal with a protected member `species` to store the species name. It includes a constructor to initialize the species and a pure virtual function `makeSound`, making it an abstract class that cannot be instantiated directly. This class serves as a base for other classes to inherit from, allowing them to define specific behaviors for different types of animals.
+- **Description**: The `Animal` class is an abstract base class that represents a generic animal with a protected member `species` to store the species name. It includes a constructor to initialize the species and a pure virtual function `makeSound` that must be implemented by derived classes, making `Animal` an abstract class that cannot be instantiated directly. This class serves as a base for other classes to inherit from, allowing them to define specific behaviors for different types of animals.
 - **Member Functions**:
-    - [`Animal::Animal`](#AnimalAnimal)
+    - [`Animal::Animal`](<#AnimalAnimal>)
 
 **Methods**
 
 ---
 #### Animal::Animal<!-- {{#callable:Animal::Animal}} -->
-The `Animal` class is an abstract base class that represents an animal with a species and requires derived classes to implement the `makeSound` method.
+The `Animal` class is an abstract base class representing an animal with a species name and a pure virtual function for making a sound.
 - **Inputs**:
     - `s`: A constant reference to a `std::string` representing the species of the animal.
 - **Control Flow**:
     - The constructor initializes the `species` member variable with the provided string `s`.
-    - The `makeSound` method is declared as a pure virtual function, making `Animal` an abstract class that cannot be instantiated directly.
-- **Output**: The function does not produce any direct output, but it initializes the `species` member and enforces derived classes to implement the `makeSound` method.
-- **See also**: [`Animal`](#Animal)  (Data Structure)
+    - The class declares a pure virtual function `makeSound()` which must be implemented by derived classes.
+- **Output**: The function does not produce any output as it is a constructor and the `makeSound` function is pure virtual, requiring implementation in derived classes.
+- **See also**: [`Animal`](<#Animal>)  (Data Structure)
 
 
 
 ---
 ### Mammal<!-- {{#data_structure:Mammal}} -->
 - **Type**: `class`
-- **Description**: The `Mammal` class is a derived class that inherits from the `Animal` class using virtual inheritance, which is part of a diamond inheritance pattern. It represents a mammal species and includes a constructor that initializes the species name by calling the base class constructor. The class also provides a `nurse` method, which outputs a message indicating that the mammal is nursing its babies. This class is part of a larger hierarchy that includes other classes like `Bird` and `Bat`, demonstrating multiple inheritance and polymorphism.
+- **Description**: The `Mammal` class is a derived class that inherits from the `Animal` class using virtual inheritance, which is part of a diamond inheritance pattern. It represents a mammal species and includes a constructor that initializes the species name by calling the base class constructor. The class also provides a `nurse` method, which outputs a message indicating that the mammal is nursing its babies. This class is part of a hierarchy that allows for multiple inheritance, as seen in the `Bat` class, which inherits from both `Mammal` and `Bird`.
 - **Member Functions**:
-    - [`Mammal::Mammal`](#MammalMammal)
-    - [`Mammal::nurse`](#Mammalnurse)
+    - [`Mammal::Mammal`](<#MammalMammal>)
+    - [`Mammal::nurse`](<#Mammalnurse>)
 - **Inherits From**:
-    - [`Animal::Animal`](#AnimalAnimal)
+    - [`Animal`](<#Animal>)
 
 **Methods**
 
 ---
 #### Mammal::Mammal<!-- {{#callable:Mammal::Mammal}} -->
-The `Mammal` constructor initializes a `Mammal` object by calling the `Animal` constructor with a species name, and the `nurse` method outputs a message indicating the mammal is nursing its babies.
+The `Mammal` constructor initializes a `Mammal` object by calling the `Animal` constructor with a species name, and the `nurse` method outputs a message indicating that the mammal is nursing its babies.
 - **Inputs**:
-    - `s`: A `std::string` representing the species name of the mammal.
+    - `s`: A string representing the species name of the mammal.
 - **Control Flow**:
-    - The `Mammal` constructor is called with a species name as an argument.
-    - The constructor initializes the `Mammal` object by calling the `Animal` constructor with the provided species name.
+    - The `Mammal` constructor is called with a string argument `s`.
+    - The constructor initializes the `Mammal` object by calling the `Animal` constructor with the species name `s`.
     - The `nurse` method, when called, outputs the message 'Nursing babies' to the standard output.
-- **Output**: The `Mammal` constructor does not return a value, as it is a constructor, and the `nurse` method does not return a value, as it is a `void` function.
-- **See also**: [`Mammal`](#Mammal)  (Data Structure)
+- **Output**: The constructor does not return a value, as it is a constructor, and the `nurse` method does not return any value, but it outputs a message to the console.
+- **See also**: [`Mammal`](<#Mammal>)  (Data Structure)
 
 
 ---
@@ -284,44 +292,45 @@ The `nurse` function in the `Mammal` class outputs a message indicating that the
     - It is a constant member function, meaning it does not modify any member variables of the class.
     - The function uses `std::cout` to print the message 'Nursing babies' to the standard output, followed by a newline.
 - **Output**: The function does not return any value; it performs an output operation to the console.
-- **See also**: [`Mammal`](#Mammal)  (Data Structure)
+- **See also**: [`Mammal`](<#Mammal>)  (Data Structure)
 
 
 
 ---
 ### Bird<!-- {{#data_structure:Bird}} -->
 - **Type**: `class`
-- **Description**: The `Bird` class is a derived class that inherits from the `Animal` class using virtual inheritance, which is part of a diamond inheritance pattern. It represents a bird species and provides a constructor to initialize the species name through the base `Animal` class. The class includes a `fly` method that outputs a message indicating the bird is flying. This class is part of a larger inheritance hierarchy that includes other classes like `Mammal` and `Bat`, demonstrating multiple inheritance and virtual base classes.
+- **Description**: The `Bird` class is a derived class that inherits from the `Animal` class using virtual inheritance, which is part of a diamond inheritance pattern. It represents a bird species and provides a constructor to initialize the species name through the base `Animal` class. The class includes a method `fly` that outputs a message indicating the bird is flying. This class is part of a larger hierarchy that includes other classes like `Mammal` and `Bat`, demonstrating multiple inheritance and polymorphism.
 - **Member Functions**:
-    - [`Bird::Bird`](#BirdBird)
-    - [`Bird::fly`](#Birdfly)
+    - [`Bird::Bird`](<#BirdBird>)
+    - [`Bird::fly`](<#Birdfly>)
 - **Inherits From**:
-    - [`Animal::Animal`](#AnimalAnimal)
+    - [`Animal`](<#Animal>)
 
 **Methods**
 
 ---
 #### Bird::Bird<!-- {{#callable:Bird::Bird}} -->
-The `Bird` class constructor initializes a `Bird` object with a species name, and the `fly` method outputs a flying message.
+The `Bird` class constructor initializes a `Bird` object by calling the `Animal` constructor with a species name, and the `fly` method outputs a flying message.
 - **Inputs**:
     - `s`: A constant reference to a `std::string` representing the species name of the bird.
 - **Control Flow**:
-    - The `Bird` constructor is called with a species name string, which is passed to the base class `Animal` constructor to initialize the `species` attribute.
+    - The `Bird` constructor is called with a species name as an argument.
+    - The constructor initializes the `Bird` object by calling the `Animal` constructor with the provided species name.
     - The `fly` method, when called, outputs the string "Flying" to the standard output.
-- **Output**: The constructor does not return a value, and the `fly` method outputs a message to the console.
-- **See also**: [`Bird`](#Bird)  (Data Structure)
+- **Output**: The `Bird` constructor does not return a value, as it is a constructor, and the `fly` method does not return a value, as it is a `void` method.
+- **See also**: [`Bird`](<#Bird>)  (Data Structure)
 
 
 ---
 #### Bird::fly<!-- {{#callable:Bird::fly}} -->
-The `fly` function in the `Bird` class outputs the string "Flying" to the standard output.
+The `fly` method in the `Bird` class outputs the string "Flying" to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is a member of the `Bird` class, which inherits from the `Animal` class.
-    - It is a constant member function, meaning it does not modify any member variables of the class.
-    - The function uses `std::cout` to print the string "Flying" followed by a newline to the standard output.
-- **Output**: The function does not return any value; it performs an output operation to the console.
-- **See also**: [`Bird`](#Bird)  (Data Structure)
+    - The method is a member of the `Bird` class, which inherits from the `Animal` class.
+    - It is a constant method, meaning it does not modify any member variables of the class.
+    - The method uses `std::cout` to print the string "Flying" followed by a newline to the standard output.
+- **Output**: The method does not return any value; it performs a side effect by printing to the console.
+- **See also**: [`Bird`](<#Bird>)  (Data Structure)
 
 
 
@@ -330,11 +339,11 @@ The `fly` function in the `Bird` class outputs the string "Flying" to the standa
 - **Type**: `class`
 - **Description**: The `Bat` class is a C++ class that demonstrates multiple inheritance by deriving from both the `Mammal` and `Bird` classes, which themselves are derived from the `Animal` class using virtual inheritance. This class represents a bat, which is a mammal capable of flight, and it overrides the `makeSound` method to output "Squeaking". The constructor of the `Bat` class initializes the `Animal`, `Mammal`, and `Bird` base classes with the species name "Bat".
 - **Member Functions**:
-    - [`Bat::Bat`](#BatBat)
-    - [`Bat::makeSound`](#BatmakeSound)
+    - [`Bat::Bat`](<#BatBat>)
+    - [`Bat::makeSound`](<#BatmakeSound>)
 - **Inherits From**:
-    - [`Mammal::Mammal`](#MammalMammal)
-    - [`Bird::Bird`](#BirdBird)
+    - [`Mammal`](<#Mammal>)
+    - [`Bird`](<#Bird>)
 
 **Methods**
 
@@ -347,19 +356,19 @@ The `Bat` constructor initializes a `Bat` object by calling the constructors of 
     - It initializes the `Animal` part of the `Bat` object by calling the `Animal` constructor with the string "Bat".
     - It initializes the `Mammal` part of the `Bat` object by calling the `Mammal` constructor with the string "Bat".
     - It initializes the `Bird` part of the `Bat` object by calling the `Bird` constructor with the string "Bat".
-- **Output**: A `Bat` object is created with its base class components initialized to represent a bat.
-- **See also**: [`Bat`](#Bat)  (Data Structure)
+- **Output**: A `Bat` object is created with its base class components properly initialized.
+- **See also**: [`Bat`](<#Bat>)  (Data Structure)
 
 
 ---
 #### Bat::makeSound<!-- {{#callable:Bat::makeSound}} -->
-The `makeSound` function in the `Bat` class outputs the sound 'Squeaking' to the console.
+The `makeSound` function in the `Bat` class outputs the sound "Squeaking" to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is an override of a virtual function from the `Animal` class, indicating polymorphic behavior.
-    - When called, it uses `std::cout` to print the string 'Squeaking' followed by a newline to the standard output.
+    - The function overrides the `makeSound` method from the `Animal` class.
+    - It uses `std::cout` to print the string "Squeaking" followed by a newline to the standard output.
 - **Output**: The function does not return any value; it performs a side effect by printing to the console.
-- **See also**: [`Bat`](#Bat)  (Data Structure)
+- **See also**: [`Bat`](<#Bat>)  (Data Structure)
 
 
 
@@ -368,7 +377,7 @@ The `makeSound` function in the `Bat` class outputs the sound 'Squeaking' to the
 - **Type**: `class`
 - **Members**:
     - `data`: A private member variable of type T that stores the data for the container.
-- **Description**: The `Container` class is a template class designed to hold a single piece of data of any type specified by the template parameter `T`. It provides a constructor to initialize the data, a `get` method to retrieve the data, and a `set` method to update the data. This class encapsulates the data and provides controlled access to it, making it a simple yet flexible container for various data types.
+- **Description**: The `Container` class is a template class designed to encapsulate a single data element of any type specified by the template parameter `T`. It provides basic functionality to store and retrieve the data through its `get` and `set` methods. The class is simple and focuses on managing a single instance of data, making it a versatile utility for various types of data storage in C++.
 
 **Methods**
 
@@ -381,17 +390,18 @@ The `Container` constructor initializes a `Container` object with a given initia
     - The constructor takes a constant reference to an object of type `T` as its parameter.
     - It initializes the private member `data` with the provided `initial_data`.
 - **Output**: A `Container` object initialized with the specified `initial_data`.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 ---
 #### Container::get<!-- {{#callable:Container::get}} -->
-The `get` function returns the current value of the `data` member variable in the `Container` class template.
+The `get` function returns the current value of the `data` member variable in the `Container` class.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is a simple getter that directly returns the value of the private member variable `data`.
+    - The function is a simple getter that directly returns the value of the `data` member variable.
+    - It is marked as `const`, indicating that it does not modify any member variables of the class.
 - **Output**: The function returns a value of type `T`, which is the template parameter of the `Container` class.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 ---
@@ -403,7 +413,7 @@ The `set` function updates the `data` member of a `Container` object with a new 
     - The function takes a single argument `new_data` of type `T`.
     - It assigns the value of `new_data` to the `data` member of the `Container` class.
 - **Output**: The function does not return any value; it modifies the `data` member in place.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 
@@ -411,14 +421,14 @@ The `set` function updates the `data` member of a `Container` object with a new 
 ### FixedMap<!-- {{#data_structure:FixedMap}} -->
 - **Type**: `class`
 - **Members**:
-    - `keys`: An array of KeyType used to store keys in the map.
-    - `values`: An array of ValueType used to store values corresponding to the keys.
-    - `count`: An integer tracking the number of key-value pairs currently stored in the map.
-- **Description**: The FixedMap class is a template-based data structure that implements a fixed-size map, associating keys of type KeyType with values of type ValueType. It uses arrays to store keys and values, with a default maximum size of 10, which can be adjusted via a template parameter. The class provides basic functionality to insert key-value pairs and find values by their keys, maintaining a count of the current number of entries.
+    - `keys`: An array of KeyType to store the keys of the map.
+    - `values`: An array of ValueType to store the values associated with the keys.
+    - `count`: An integer to keep track of the number of key-value pairs currently stored in the map.
+- **Description**: The FixedMap class is a template-based data structure that implements a fixed-size map, allowing storage of key-value pairs up to a specified limit (default is 10). It uses arrays to store keys and their corresponding values, and provides basic functionality to insert new pairs and find values by their keys. The map maintains a count of the current number of stored pairs, ensuring that no more than the specified size of pairs can be inserted.
 - **Member Functions**:
-    - [`FixedMap::FixedMap`](#FixedMapFixedMap)
-    - [`FixedMap::insert`](#FixedMapinsert)
-    - [`FixedMap::find`](#FixedMapfind)
+    - [`FixedMap::FixedMap`](<#FixedMapFixedMap>)
+    - [`FixedMap::insert`](<#FixedMapinsert>)
+    - [`FixedMap::find`](<#FixedMapfind>)
 
 **Methods**
 
@@ -429,22 +439,22 @@ The `FixedMap` constructor initializes a `FixedMap` object with a count of zero,
 - **Control Flow**:
     - The constructor initializes the `count` member variable to zero, indicating that the map is initially empty.
 - **Output**: A `FixedMap` object with its `count` member variable set to zero.
-- **See also**: [`FixedMap`](#FixedMap)  (Data Structure)
+- **See also**: [`FixedMap`](<#FixedMap>)  (Data Structure)
 
 
 ---
 #### FixedMap::insert<!-- {{#callable:FixedMap::insert}} -->
 The `insert` function adds a key-value pair to the `FixedMap` if there is available space.
 - **Inputs**:
-    - `key`: The key of the key-value pair to be inserted, of type `KeyType`.
-    - `value`: The value of the key-value pair to be inserted, of type `ValueType`.
+    - `key`: A constant reference to a key of type `KeyType` to be inserted into the map.
+    - `value`: A constant reference to a value of type `ValueType` to be associated with the key in the map.
 - **Control Flow**:
     - Check if the current count of elements is less than the maximum size of the map (`Size`).
-    - If there is space, assign the `key` to the `keys` array at the current `count` index.
-    - Assign the `value` to the `values` array at the current `count` index.
+    - If there is space, assign the provided key to the `keys` array at the current `count` index.
+    - Assign the provided value to the `values` array at the current `count` index.
     - Increment the `count` to reflect the addition of a new key-value pair.
 - **Output**: The function does not return any value; it modifies the internal state of the `FixedMap` by adding a new key-value pair if possible.
-- **See also**: [`FixedMap`](#FixedMap)  (Data Structure)
+- **See also**: [`FixedMap`](<#FixedMap>)  (Data Structure)
 
 
 ---
@@ -453,12 +463,12 @@ The `find` function searches for a given key in the `FixedMap` and returns a poi
 - **Inputs**:
     - `key`: A constant reference to a `KeyType` object representing the key to search for in the map.
 - **Control Flow**:
-    - The function iterates over the `keys` array from index 0 to `count - 1`.
-    - For each key, it checks if the current key matches the input `key`.
-    - If a match is found, it returns a pointer to the corresponding value in the `values` array.
-    - If no match is found after checking all keys, it returns `nullptr`.
+    - Iterates over the `keys` array from index 0 to `count - 1`.
+    - Checks if the current key matches the input `key`.
+    - If a match is found, returns a pointer to the corresponding value in the `values` array.
+    - If no match is found after the loop, returns `nullptr`.
 - **Output**: A pointer to the `ValueType` associated with the given key if found, otherwise `nullptr`.
-- **See also**: [`FixedMap`](#FixedMap)  (Data Structure)
+- **See also**: [`FixedMap`](<#FixedMap>)  (Data Structure)
 
 
 
@@ -469,8 +479,8 @@ The `find` function searches for a given key in the `FixedMap` and returns a poi
     - `outer_value`: An integer value representing the state of the Outer class.
 - **Description**: The `Outer` class is a container class that encapsulates an integer value and provides functionality to create instances of its nested `Inner` class. The `Inner` class is a private nested class within `Outer`, which holds its own integer value and provides a method to retrieve it. Additionally, `Outer` contains a public nested struct `InnerStruct` that holds two double values, `x` and `y`, and provides a constructor for initialization. The `Outer` class demonstrates the use of nested classes and structs to organize related data and functionality within a single class.
 - **Member Functions**:
-    - [`Outer::Outer`](#OuterOuter)
-    - [`Outer::createInner`](#OutercreateInner)
+    - [`Outer::Outer`](<#OuterOuter>)
+    - [`Outer::createInner`](<#OutercreateInner>)
 
 **Methods**
 
@@ -482,23 +492,23 @@ The `Outer` constructor initializes an `Outer` object with a specified integer v
 - **Control Flow**:
     - The constructor takes an integer parameter `val`.
     - It initializes the private member `outer_value` with the provided `val`.
-- **Output**: An `Outer` object with its `outer_value` member initialized to the specified integer value.
-- **See also**: [`Outer`](#Outer)  (Data Structure)
+- **Output**: An instance of the `Outer` class with its `outer_value` member initialized to the specified integer value.
+- **See also**: [`Outer`](<#Outer>)  (Data Structure)
 
 
 ---
 #### Outer::createInner<!-- {{#callable:Outer::createInner}} -->
-The `createInner` function constructs and returns an [`Inner`](#InnerInner) object initialized with a given integer value.
+The `createInner` function constructs and returns an [`Inner`](<#InnerInner>) object initialized with a given integer value.
 - **Inputs**:
-    - `val`: An integer value used to initialize the `inner_value` of the [`Inner`](#InnerInner) object.
+    - `val`: An integer value used to initialize the `inner_value` of the [`Inner`](<#InnerInner>) object.
 - **Control Flow**:
     - The function takes an integer parameter `val`.
-    - It constructs an [`Inner`](#InnerInner) object using the [`Inner`](#InnerInner) class constructor, passing `val` as an argument.
-    - The constructed [`Inner`](#InnerInner) object is returned.
-- **Output**: An [`Inner`](#InnerInner) object initialized with the provided integer value.
-- **Functions called**:
-    - [`Outer::Inner::Inner`](#InnerInner)
-- **See also**: [`Outer`](#Outer)  (Data Structure)
+    - It constructs an [`Inner`](<#InnerInner>) object using the [`Inner`](<#InnerInner>) class constructor, passing `val` as an argument.
+    - The constructed [`Inner`](<#InnerInner>) object is returned.
+- **Output**: An [`Inner`](<#InnerInner>) object initialized with the provided integer value.
+- **Functions Called**:
+    - [`Outer::Inner::Inner`](<#InnerInner>)
+- **See also**: [`Outer`](<#Outer>)  (Data Structure)
 
 
 
@@ -506,25 +516,24 @@ The `createInner` function constructs and returns an [`Inner`](#InnerInner) obje
 ### Inner<!-- {{#data_structure:Outer::Inner}} -->
 - **Type**: `class`
 - **Members**:
-    - `inner_value`: An integer that stores the value for the Inner class.
-- **Description**: The `Inner` class is a nested class within the `Outer` class, designed to encapsulate an integer value. It provides a constructor to initialize this value and a method to retrieve it, demonstrating a simple example of encapsulation and access control in C++.
+    - `inner_value`: An integer that stores the value for an Inner object.
+- **Description**: The `Inner` class is a nested class within the `Outer` class, designed to encapsulate an integer value. It provides a constructor to initialize this value and a method to retrieve it. This class demonstrates encapsulation and the use of nested classes to logically group related functionality within a parent class.
 - **Member Functions**:
-    - [`Outer::Inner::Inner`](#InnerInner)
-    - [`Outer::Inner::getValue`](#InnergetValue)
+    - [`Outer::Inner::Inner`](<#InnerInner>)
+    - [`Outer::Inner::getValue`](<#InnergetValue>)
 
 **Methods**
 
 ---
 #### Inner::Inner<!-- {{#callable:Outer::Inner::Inner}} -->
-The `Inner` class constructor initializes an `Inner` object with a specified integer value, and the `getValue` method returns this stored integer value.
+The `Inner` constructor initializes an `Inner` object with a specified integer value.
 - **Inputs**:
     - `val`: An integer value used to initialize the `inner_value` member of the `Inner` class.
 - **Control Flow**:
-    - The constructor `Inner(int val)` is called with an integer argument `val`.
-    - The constructor initializes the private member `inner_value` with the provided `val`.
-    - The method `getValue()` is called to retrieve the value of `inner_value`.
-- **Output**: The `getValue` method returns the integer value stored in the `inner_value` member variable.
-- **See also**: [`Outer::Inner`](#Outer::Inner)  (Data Structure)
+    - The constructor takes an integer parameter `val`.
+    - It initializes the private member `inner_value` with the value of `val`.
+- **Output**: An `Inner` object is created with its `inner_value` member set to the provided integer value.
+- **See also**: [`Outer::Inner`](<#Outer::Inner>)  (Data Structure)
 
 
 ---
@@ -534,7 +543,7 @@ The `getValue` function returns the value of the private member `inner_value` fr
 - **Control Flow**:
     - The function is a simple getter that directly returns the value of the private member `inner_value`.
 - **Output**: The function returns an integer, which is the value of the private member `inner_value`.
-- **See also**: [`Outer::Inner`](#Outer::Inner)  (Data Structure)
+- **See also**: [`Outer::Inner`](<#Outer::Inner>)  (Data Structure)
 
 
 
@@ -546,7 +555,7 @@ The `getValue` function returns the value of the private member `inner_value` fr
     - `y`: A double representing the y-coordinate.
 - **Description**: The `InnerStruct` is a simple structure that holds two double precision floating-point numbers, `x` and `y`, which can be used to represent a point in a 2D space. It includes a constructor that initializes these coordinates with given values, making it useful for geometric calculations or graphical applications.
 - **Member Functions**:
-    - [`Outer::InnerStruct::InnerStruct`](#InnerStructInnerStruct)
+    - [`Outer::InnerStruct::InnerStruct`](<#InnerStructInnerStruct>)
 
 **Methods**
 
@@ -557,10 +566,11 @@ The `InnerStruct` constructor initializes an instance of the `InnerStruct` with 
     - `x_val`: A double representing the x-coordinate value to initialize the `x` member of the `InnerStruct`.
     - `y_val`: A double representing the y-coordinate value to initialize the `y` member of the `InnerStruct`.
 - **Control Flow**:
-    - The constructor is called with two double arguments, `x_val` and `y_val`.
-    - The member variables `x` and `y` of the `InnerStruct` are initialized with the values of `x_val` and `y_val`, respectively.
+    - The constructor takes two double arguments, `x_val` and `y_val`.
+    - It initializes the `x` member of the `InnerStruct` with `x_val`.
+    - It initializes the `y` member of the `InnerStruct` with `y_val`.
 - **Output**: An instance of `InnerStruct` with its `x` and `y` members initialized to the provided values.
-- **See also**: [`Outer::InnerStruct`](#Outer::InnerStruct)  (Data Structure)
+- **See also**: [`Outer::InnerStruct`](<#Outer::InnerStruct>)  (Data Structure)
 
 
 
@@ -568,16 +578,16 @@ The `InnerStruct` constructor initializes an instance of the `InnerStruct` with 
 ### FriendClass<!-- {{#data_structure:FriendClass}} -->
 - **Type**: `class`
 - **Members**:
-    - `secret_data`: An integer that holds private data within the FriendClass.
-- **Description**: The FriendClass is a simple C++ class that encapsulates a private integer member, secret_data, which is initialized through its constructor. The class is designed to demonstrate the concept of friend classes in C++, as it declares another class, FriendlyClass, as its friend. This allows FriendlyClass to access the private members of FriendClass, specifically the secret_data, which is otherwise inaccessible from outside the class.
+    - `secret_data`: An integer that holds private data accessible only to friend classes.
+- **Description**: The `FriendClass` is a simple class that encapsulates an integer member `secret_data`, which is private and can only be accessed by classes declared as friends. In this case, `FriendlyClass` is declared as a friend, allowing it to access the private `secret_data` member. This class demonstrates the use of friend classes in C++ to allow specific external classes to access private members, which is useful for controlled access and encapsulation.
 - **Member Functions**:
-    - [`FriendClass::FriendClass`](#FriendClassFriendClass)
+    - [`FriendClass::FriendClass`](<#FriendClassFriendClass>)
 
 **Methods**
 
 ---
 #### FriendClass::FriendClass<!-- {{#callable:FriendClass::FriendClass}} -->
-The `FriendClass` constructor initializes an instance with a private integer `secret_data` and declares `FriendlyClass` as a friend class, allowing it access to its private members.
+The `FriendClass` constructor initializes an instance with a private integer `secret_data` and declares `FriendlyClass` as a friend class, allowing it access to private members.
 - **Inputs**:
     - `data`: An integer value used to initialize the private member `secret_data` of the `FriendClass`.
 - **Control Flow**:
@@ -585,7 +595,7 @@ The `FriendClass` constructor initializes an instance with a private integer `se
     - The private member `secret_data` is initialized with the value of `data`.
     - The `FriendlyClass` is declared as a friend class, granting it access to `FriendClass`'s private members.
 - **Output**: An instance of `FriendClass` with its private member `secret_data` initialized to the provided integer value.
-- **See also**: [`FriendClass`](#FriendClass)  (Data Structure)
+- **See also**: [`FriendClass`](<#FriendClass>)  (Data Structure)
 
 
 
@@ -594,7 +604,7 @@ The `FriendClass` constructor initializes an instance with a private integer `se
 - **Type**: `class`
 - **Description**: The `FriendlyClass` is a class that acts as a friend to the `FriendClass`, allowing it to access and reveal the private member `secret_data` of `FriendClass` through its static method `revealSecret`. This class demonstrates the concept of friend classes in C++, where one class is allowed to access the private and protected members of another class.
 - **Member Functions**:
-    - [`FriendlyClass::revealSecret`](#FriendlyClassrevealSecret)
+    - [`FriendlyClass::revealSecret`](<#FriendlyClassrevealSecret>)
 
 **Methods**
 
@@ -602,13 +612,13 @@ The `FriendClass` constructor initializes an instance with a private integer `se
 #### FriendlyClass::revealSecret<!-- {{#callable:FriendlyClass::revealSecret}} -->
 The `revealSecret` function outputs the `secret_data` of a `FriendClass` object to the console.
 - **Inputs**:
-    - `obj`: A constant reference to a `FriendClass` object whose `secret_data` is to be revealed.
+    - `obj`: A constant reference to a `FriendClass` object whose `secret_data` will be revealed.
 - **Control Flow**:
     - The function takes a constant reference to a `FriendClass` object as its parameter.
     - It accesses the `secret_data` member of the `FriendClass` object, which is allowed due to the friendship relationship between `FriendClass` and `FriendlyClass`.
-    - It outputs the `secret_data` to the standard output stream using `std::cout`.
+    - The function then outputs the `secret_data` to the standard output stream using `std::cout`.
 - **Output**: The function does not return any value; it outputs the `secret_data` to the console.
-- **See also**: [`FriendlyClass`](#FriendlyClass)  (Data Structure)
+- **See also**: [`FriendlyClass`](<#FriendlyClass>)  (Data Structure)
 
 
 
@@ -618,26 +628,26 @@ The `revealSecret` function outputs the `secret_data` of a `FriendClass` object 
 - **Members**:
     - `instance_count`: A static integer that keeps track of the number of Counter instances created.
     - `id`: An integer that uniquely identifies each Counter instance.
-- **Description**: The Counter class is designed to keep track of the number of instances created from it. It contains a static member, instance_count, which is incremented each time a new Counter object is instantiated, ensuring each instance has a unique id. The class provides a static method, getInstanceCount, to retrieve the total number of Counter instances created, and an instance method, getId, to access the unique id of a particular instance.
+- **Description**: The Counter class is designed to keep track of the number of instances created from it. It contains a static member, instance_count, which is incremented each time a new Counter object is instantiated, ensuring each instance has a unique id. The class provides a static method, getInstanceCount, to retrieve the total number of Counter instances created, and an instance method, getId, to get the unique id of a particular Counter object.
 - **Member Functions**:
-    - [`Counter::increment`](test_variables.cpp.md#Counterincrement)
-    - [`Counter::getCount`](test_variables.cpp.md#CountergetCount)
-    - [`Counter::Counter`](#CounterCounter)
-    - [`Counter::getInstanceCount`](#CountergetInstanceCount)
-    - [`Counter::getId`](#CountergetId)
+    - [`Counter::increment`](<test_variables.cpp.md#Counterincrement>)
+    - [`Counter::getCount`](<test_variables.cpp.md#CountergetCount>)
+    - [`Counter::Counter`](<#CounterCounter>)
+    - [`Counter::getInstanceCount`](<#CountergetInstanceCount>)
+    - [`Counter::getId`](<#CountergetId>)
 
 **Methods**
 
 ---
 #### Counter::Counter<!-- {{#callable:Counter::Counter}} -->
-The `Counter` constructor initializes a new `Counter` object by assigning it a unique ID and incrementing the static instance count.
+The `Counter` constructor initializes a new `Counter` object and assigns it a unique ID by incrementing a static instance count.
 - **Inputs**: None
 - **Control Flow**:
     - The constructor is called when a new `Counter` object is created.
     - The static member `instance_count` is incremented by one.
     - The incremented value of `instance_count` is assigned to the `id` member of the `Counter` object.
-- **Output**: A new `Counter` object is created with a unique `id` and the static `instance_count` is updated.
-- **See also**: [`Counter`](#Counter)  (Data Structure)
+- **Output**: A new `Counter` object with a unique `id` based on the incremented `instance_count`.
+- **See also**: [`Counter`](<#Counter>)  (Data Structure)
 
 
 ---
@@ -646,8 +656,8 @@ The `getInstanceCount` function returns the current count of `Counter` class ins
 - **Inputs**: None
 - **Control Flow**:
     - The function directly returns the value of the static member variable `instance_count`.
-- **Output**: The function returns an integer representing the number of `Counter` instances created.
-- **See also**: [`Counter`](#Counter)  (Data Structure)
+- **Output**: The function outputs an integer representing the number of `Counter` instances created.
+- **See also**: [`Counter`](<#Counter>)  (Data Structure)
 
 
 ---
@@ -655,9 +665,9 @@ The `getInstanceCount` function returns the current count of `Counter` class ins
 The `getId` function returns the unique identifier of a `Counter` instance.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is a simple getter that directly returns the value of the private member variable `id`.
+    - The function is a simple getter that returns the value of the private member variable `id`.
 - **Output**: The function returns an integer representing the unique identifier of the `Counter` instance.
-- **See also**: [`Counter`](#Counter)  (Data Structure)
+- **See also**: [`Counter`](<#Counter>)  (Data Structure)
 
 
 
@@ -668,24 +678,24 @@ The `getId` function returns the unique identifier of a `Counter` instance.
     - `immutable_data`: An integer that holds data which cannot be modified after initialization.
     - `cache_value`: A mutable integer used to store the result of an expensive calculation.
     - `cache_valid`: A mutable boolean flag indicating whether the cached value is valid.
-- **Description**: The `ConstExample` class demonstrates the use of const and mutable members in C++. It contains an immutable integer `immutable_data` that is initialized through the constructor and cannot be changed afterwards. The class also includes two mutable members, `cache_value` and `cache_valid`, which are used to cache the result of an expensive calculation and to track the validity of the cache, respectively. The `getExpensiveValue` method performs the calculation only if the cache is invalid, showcasing how mutable members can be modified even in const member functions.
+- **Description**: The `ConstExample` class demonstrates the use of const and mutable members in C++. It contains an immutable integer `immutable_data` that is initialized through the constructor and cannot be changed thereafter. The class also includes two mutable members, `cache_value` and `cache_valid`, which are used to store and validate the result of an expensive calculation, respectively. The `getExpensiveValue` method performs this calculation only if the cache is invalid, thus optimizing performance by avoiding redundant computations.
 - **Member Functions**:
-    - [`ConstExample::ConstExample`](#ConstExampleConstExample)
-    - [`ConstExample::getExpensiveValue`](#ConstExamplegetExpensiveValue)
+    - [`ConstExample::ConstExample`](<#ConstExampleConstExample>)
+    - [`ConstExample::getExpensiveValue`](<#ConstExamplegetExpensiveValue>)
 
 **Methods**
 
 ---
 #### ConstExample::ConstExample<!-- {{#callable:ConstExample::ConstExample}} -->
-The `ConstExample` constructor initializes an object with a given integer, setting up an immutable data member and mutable cache-related members.
+The `ConstExample` constructor initializes an instance with a given immutable data value and sets up a cache for expensive calculations.
 - **Inputs**:
-    - `data`: An integer value used to initialize the `immutable_data` member of the `ConstExample` class.
+    - `data`: An integer value used to initialize the `immutable_data` member of the class.
 - **Control Flow**:
     - The constructor initializes the `immutable_data` member with the provided `data` argument.
-    - It sets the `cache_value` member to 0, indicating no cached value is stored initially.
-    - It sets the `cache_valid` member to `false`, indicating that the cache is not valid at the time of construction.
-- **Output**: The constructor does not return any value as it is used to initialize an instance of the `ConstExample` class.
-- **See also**: [`ConstExample`](#ConstExample)  (Data Structure)
+    - It sets the `cache_value` to 0, indicating no cached value is present initially.
+    - The `cache_valid` flag is set to false, indicating that the cache is not valid at the time of construction.
+- **Output**: The constructor does not return any value as it is used to initialize an object of the `ConstExample` class.
+- **See also**: [`ConstExample`](<#ConstExample>)  (Data Structure)
 
 
 ---
@@ -694,11 +704,11 @@ The `getExpensiveValue` function calculates and caches the square of `immutable_
 - **Inputs**: None
 - **Control Flow**:
     - Check if `cache_valid` is false, indicating the cached value is not valid.
-    - If the cache is not valid, calculate `immutable_data * immutable_data` and store it in `cache_value`.
+    - If the cache is not valid, calculate `cache_value` as the square of `immutable_data`.
     - Set `cache_valid` to true to indicate the cache is now valid.
-    - Return the value of `cache_value`.
-- **Output**: The function returns an integer, which is the cached result of the expensive calculation.
-- **See also**: [`ConstExample`](#ConstExample)  (Data Structure)
+    - Return the `cache_value`.
+- **Output**: The function returns an integer representing the cached square of `immutable_data`.
+- **See also**: [`ConstExample`](<#ConstExample>)  (Data Structure)
 
 
 
@@ -706,30 +716,30 @@ The `getExpensiveValue` function calculates and caches the square of `immutable_
 ### FileWrapper<!-- {{#data_structure:FileWrapper}} -->
 - **Type**: `class`
 - **Members**:
-    - `file_handle`: A pointer to a FILE object used to manage file operations.
-- **Description**: The `FileWrapper` class is a RAII (Resource Acquisition Is Initialization) class designed to manage file operations in C++. It encapsulates a `FILE*` pointer, ensuring that the file is properly opened and closed, thus preventing resource leaks. The class prohibits copy operations to maintain unique ownership of the file handle, but allows move semantics to transfer ownership. This design pattern ensures that the file is automatically closed when the `FileWrapper` object goes out of scope, providing a safe and efficient way to handle file resources.
+    - `file_handle`: A pointer to a FILE object representing the file being managed.
+- **Description**: The `FileWrapper` class is a RAII (Resource Acquisition Is Initialization) class designed to manage file resources in C++. It encapsulates a file handle (`FILE*`) and ensures that the file is properly opened and closed, preventing resource leaks. The class prohibits copying by deleting the copy constructor and copy assignment operator, but allows move semantics to transfer ownership of the file handle. This design ensures that file resources are managed safely and efficiently, with automatic cleanup when the `FileWrapper` object goes out of scope.
 - **Member Functions**:
-    - [`FileWrapper::FileWrapper`](#FileWrapperFileWrapper)
-    - [`FileWrapper::~FileWrapper`](#FileWrapperFileWrapper)
-    - [`FileWrapper::FileWrapper`](#FileWrapperFileWrapper)
-    - [`FileWrapper::operator=`](#FileWrapperoperator)
-    - [`FileWrapper::FileWrapper`](#FileWrapperFileWrapper)
-    - [`FileWrapper::operator=`](#FileWrapperoperator)
-    - [`FileWrapper::get`](#FileWrapperget)
+    - [`FileWrapper::FileWrapper`](<#FileWrapperFileWrapper>)
+    - [`FileWrapper::~FileWrapper`](<#FileWrapperFileWrapper>)
+    - [`FileWrapper::FileWrapper`](<#FileWrapperFileWrapper>)
+    - [`FileWrapper::operator=`](<#FileWrapperoperator>)
+    - [`FileWrapper::FileWrapper`](<#FileWrapperFileWrapper>)
+    - [`FileWrapper::operator=`](<#FileWrapperoperator>)
+    - [`FileWrapper::get`](<#FileWrapperget>)
 
 **Methods**
 
 ---
 #### FileWrapper::FileWrapper<!-- {{#callable:FileWrapper::FileWrapper}} -->
-The `FileWrapper` constructor attempts to open a file with the specified filename and mode, throwing a runtime error if the file cannot be opened.
+The `FileWrapper` constructor initializes a file handle by opening a file with the specified filename and mode, throwing an exception if the file cannot be opened.
 - **Inputs**:
-    - `filename`: A constant character pointer representing the name of the file to be opened.
-    - `mode`: A constant character pointer representing the mode in which the file should be opened (e.g., "r" for read, "w" for write).
+    - `filename`: A C-style string representing the name of the file to be opened.
+    - `mode`: A C-style string representing the mode in which the file should be opened (e.g., "r" for read, "w" for write).
 - **Control Flow**:
-    - The constructor attempts to open the file using `fopen` with the provided `filename` and `mode`.
+    - The constructor attempts to open the file using `fopen` with the provided filename and mode.
     - If `fopen` returns a null pointer, indicating the file could not be opened, a `std::runtime_error` is thrown with the message "Failed to open file".
-- **Output**: The constructor does not return a value, but it initializes the `file_handle` member variable with the file pointer obtained from `fopen` if successful.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+- **Output**: The constructor does not return a value, but it initializes the `file_handle` member variable with the file pointer returned by `fopen` if successful.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 ---
@@ -739,13 +749,13 @@ The destructor `~FileWrapper` ensures that the file handle is properly closed wh
 - **Control Flow**:
     - Check if `file_handle` is not null.
     - If `file_handle` is valid, call `fclose` on `file_handle` to close the file.
-- **Output**: The function does not return any value; it performs cleanup by closing the file handle if it is open.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+- **Output**: The function does not return any value; it ensures the file resource is released by closing the file handle.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 ---
 #### FileWrapper::FileWrapper<!-- {{#callable:FileWrapper::FileWrapper}} -->
-The `FileWrapper` class manages a file resource using RAII principles, ensuring the file is properly opened and closed, and supports move semantics while disallowing copy operations.
+The `FileWrapper` class manages a file handle using RAII principles, ensuring the file is opened and closed properly, and supports move semantics while disallowing copy operations.
 - **Inputs**:
     - `filename`: A C-style string representing the name of the file to be opened.
     - `mode`: A C-style string representing the mode in which the file should be opened (e.g., "r" for read, "w" for write).
@@ -755,19 +765,20 @@ The `FileWrapper` class manages a file resource using RAII principles, ensuring 
     - The destructor checks if `file_handle` is not `nullptr` and closes the file using `fclose` if it is open.
     - The copy constructor and copy assignment operator are deleted to prevent copying of `FileWrapper` instances.
     - The move constructor transfers ownership of the file handle from the source object to the new object, setting the source's file handle to `nullptr`.
-    - The move assignment operator checks for self-assignment, closes the current file if open, transfers the file handle from the source object, and sets the source's file handle to `nullptr`.
-- **Output**: The `get` method returns the `FILE*` handle to the opened file, allowing access to the file operations.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+    - The move assignment operator first checks for self-assignment, then closes the current file handle if it is open, transfers the file handle from the source object, and sets the source's file handle to `nullptr`.
+- **Output**: The `get` method returns the `FILE*` handle managed by the `FileWrapper` instance.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 ---
 #### FileWrapper::operator=<!-- {{#callable:FileWrapper::operator=}} -->
-The `operator=` for `FileWrapper` is deleted to prevent copy assignment of the class.
-- **Inputs**: None
+The `operator=` function for the `FileWrapper` class is deleted to prevent copy assignment of `FileWrapper` objects.
+- **Inputs**:
+    - `const FileWrapper&`: A reference to a constant `FileWrapper` object that would be the right-hand side of the assignment.
 - **Control Flow**:
-    - The `operator=` is explicitly deleted, meaning any attempt to copy-assign a `FileWrapper` object will result in a compile-time error.
-- **Output**: There is no output as the function is deleted and cannot be used.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+    - The function is explicitly deleted, meaning it cannot be used, and any attempt to copy-assign a `FileWrapper` object will result in a compile-time error.
+- **Output**: There is no output as the function is deleted and cannot be invoked.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 ---
@@ -778,23 +789,23 @@ The `FileWrapper` move constructor transfers ownership of a file handle from one
 - **Control Flow**:
     - The constructor initializes the `file_handle` of the current object with the `file_handle` from the `other` object.
     - The `file_handle` of the `other` object is then set to `nullptr`, indicating that it no longer owns the file resource.
-- **Output**: A new `FileWrapper` object with ownership of the file handle previously owned by `other`.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+- **Output**: A new `FileWrapper` object with ownership of the file handle previously managed by `other`.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 ---
 #### FileWrapper::operator=<!-- {{#callable:FileWrapper::operator=}} -->
 The `operator=` function is a move assignment operator for the `FileWrapper` class that transfers ownership of a file handle from one `FileWrapper` instance to another, ensuring proper resource management.
 - **Inputs**:
-    - `other`: A rvalue reference to another `FileWrapper` object from which the file handle will be moved.
+    - `other`: A rvalue reference to another `FileWrapper` instance from which the file handle will be moved.
 - **Control Flow**:
-    - Check if the current object is not the same as the `other` object to avoid self-assignment.
-    - If the current object has an open file handle, close it using `fclose`.
-    - Transfer the file handle from the `other` object to the current object.
-    - Set the `file_handle` of the `other` object to `nullptr` to indicate that it no longer owns the file handle.
-    - Return a reference to the current object.
-- **Output**: A reference to the current `FileWrapper` object, allowing for chaining of assignment operations.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+    - Check if the current instance is not the same as the `other` instance to avoid self-assignment.
+    - If the current instance has an open file handle, close it using `fclose`.
+    - Transfer the file handle from `other` to the current instance.
+    - Set the file handle of `other` to `nullptr` to indicate that it no longer owns the resource.
+    - Return the current instance by reference.
+- **Output**: A reference to the current `FileWrapper` instance after the move assignment is complete.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 ---
@@ -803,8 +814,8 @@ The `get` function returns the file handle associated with the `FileWrapper` obj
 - **Inputs**: None
 - **Control Flow**:
     - The function simply returns the private member `file_handle` of the `FileWrapper` class.
-- **Output**: A `FILE*` pointer representing the file handle.
-- **See also**: [`FileWrapper`](#FileWrapper)  (Data Structure)
+- **Output**: A pointer to a `FILE` object, representing the file handle.
+- **See also**: [`FileWrapper`](<#FileWrapper>)  (Data Structure)
 
 
 
@@ -812,10 +823,10 @@ The `get` function returns the file handle associated with the `FileWrapper` obj
 ### Logger<!-- {{#data_structure:Logger}} -->
 - **Type**: `class`
 - **Members**:
-    - `printer`: An instance of the PrintPolicy type used to perform the actual printing of log messages.
-- **Description**: The Logger class is a template class designed to provide logging functionality using a policy-based design. It takes a PrintPolicy as a template parameter, which defines how the log messages are printed. The class contains a private member, 'printer', which is an instance of the PrintPolicy. The public method 'log' accepts a variable number of arguments and uses the 'printer' to print these arguments, allowing for flexible and customizable logging behavior depending on the PrintPolicy provided.
+    - `printer`: An instance of the PrintPolicy type used to handle the printing of log messages.
+- **Description**: The Logger class is a template class designed to provide logging functionality using a policy-based design. It utilizes a PrintPolicy template parameter to determine how log messages are printed, allowing for flexible and customizable logging behavior. The class contains a private member, 'printer', which is an instance of the PrintPolicy type, and a public method 'log' that accepts a variable number of arguments and delegates the printing task to the 'printer'.
 - **Member Functions**:
-    - [`Logger::log`](#Loggerlog)
+    - [`Logger::log`](<#Loggerlog>)
 
 **Methods**
 
@@ -823,12 +834,12 @@ The `get` function returns the file handle associated with the `FileWrapper` obj
 #### Logger::log<!-- {{#callable:Logger::log}} -->
 The `log` function in the `Logger` class template forwards its variadic arguments to the `print` method of the `PrintPolicy` instance.
 - **Inputs**:
-    - `Args`: A variadic template parameter pack representing any number of arguments of any type that will be forwarded to the `print` method of the `PrintPolicy`.
+    - `Args`: A variadic template parameter pack representing any number of arguments of any type to be logged.
 - **Control Flow**:
-    - The function is a template function that accepts a variadic number of arguments.
-    - It directly calls the `print` method on the `printer` object, passing all received arguments to it using perfect forwarding.
+    - The function takes a variadic number of arguments using template parameter pack `Args`.
+    - It calls the `print` method on the `printer` object, passing all the arguments `args...` to it.
 - **Output**: The function does not return any value; it is a `void` function.
-- **See also**: [`Logger`](#Logger)  (Data Structure)
+- **See also**: [`Logger`](<#Logger>)  (Data Structure)
 
 
 
@@ -837,7 +848,7 @@ The `log` function in the `Logger` class template forwards its variadic argument
 - **Type**: `class`
 - **Description**: The `ConsolePrinter` class is a utility class designed to facilitate printing a variable number of arguments to the console. It uses a variadic template function `print` to accept any number of arguments of any type, and outputs them to the standard output stream (`std::cout`) with a space between each argument, followed by a newline. This class is particularly useful for logging or debugging purposes where flexible and formatted console output is required.
 - **Member Functions**:
-    - [`ConsolePrinter::print`](#ConsolePrinterprint)
+    - [`ConsolePrinter::print`](<#ConsolePrinterprint>)
 
 **Methods**
 
@@ -849,8 +860,8 @@ The `print` function in the `ConsolePrinter` class is a variadic template functi
 - **Control Flow**:
     - The function uses a fold expression to iterate over each argument in the parameter pack `args`, outputting each one to `std::cout` followed by a space.
     - After all arguments have been output, the function outputs a newline character to `std::cout`.
-- **Output**: The function does not return a value; it outputs the arguments to the standard output stream.
-- **See also**: [`ConsolePrinter`](#ConsolePrinter)  (Data Structure)
+- **Output**: The function does not return any value; it outputs the arguments to the standard output stream.
+- **See also**: [`ConsolePrinter`](<#ConsolePrinter>)  (Data Structure)
 
 
 
@@ -860,13 +871,13 @@ The `print` function in the `ConsolePrinter` class is a variadic template functi
 - **Members**:
     - `instance`: A static unique pointer to hold the single instance of the Singleton class.
     - `initialized`: A static once_flag used to ensure the Singleton instance is initialized only once.
-- **Description**: The Singleton class is a design pattern implementation that ensures only one instance of the class is created throughout the program's lifecycle. It uses a static unique pointer to manage the single instance and a std::once_flag to ensure thread-safe initialization. The constructor is private to prevent direct instantiation, and the copy constructor and assignment operator are deleted to prevent copying. The getInstance() method provides access to the single instance, initializing it if it hasn't been already.
+- **Description**: The Singleton class is a design pattern implementation that ensures only one instance of the class is created throughout the program's lifecycle. It uses a static unique pointer to store the instance and a once_flag to guarantee thread-safe initialization. The constructor is private to prevent direct instantiation, and the copy constructor and assignment operator are deleted to prevent copying. The getInstance method provides access to the single instance, creating it if it does not already exist.
 - **Member Functions**:
-    - [`Singleton::Singleton`](#SingletonSingleton)
-    - [`Singleton::getInstance`](#SingletongetInstance)
-    - [`Singleton::Singleton`](#SingletonSingleton)
-    - [`Singleton::operator=`](#Singletonoperator)
-    - [`Singleton::doSomething`](#SingletondoSomething)
+    - [`Singleton::Singleton`](<#SingletonSingleton>)
+    - [`Singleton::getInstance`](<#SingletongetInstance>)
+    - [`Singleton::Singleton`](<#SingletonSingleton>)
+    - [`Singleton::operator=`](<#Singletonoperator>)
+    - [`Singleton::doSomething`](<#SingletondoSomething>)
 
 **Methods**
 
@@ -875,35 +886,33 @@ The `print` function in the `ConsolePrinter` class is a variadic template functi
 The `Singleton` constructor is a default constructor for the `Singleton` class, which is part of the Singleton design pattern implementation.
 - **Inputs**: None
 - **Control Flow**:
-    - The `Singleton` constructor is defined as `default`, meaning it does not perform any specific initialization beyond what is automatically done by the compiler.
-    - The constructor is private, ensuring that instances of `Singleton` cannot be created directly from outside the class.
-- **Output**: The constructor does not produce any output as it is a default constructor for internal use within the Singleton pattern.
-- **See also**: [`Singleton`](#Singleton)  (Data Structure)
+    - The constructor is defined as `default`, meaning it uses the compiler-generated default implementation.
+    - It is private, ensuring that instances of `Singleton` cannot be created directly from outside the class.
+- **Output**: The constructor does not return any value, as it is a constructor for the `Singleton` class.
+- **See also**: [`Singleton`](<#Singleton>)  (Data Structure)
 
 
 ---
 #### Singleton::getInstance<!-- {{#callable:Singleton::getInstance}} -->
-The `getInstance` function ensures that only one instance of the `Singleton` class is created and provides a global point of access to it.
+The `getInstance` function provides a thread-safe mechanism to access the single instance of the `Singleton` class, ensuring it is initialized only once.
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses `std::call_once` to ensure that the initialization code is executed only once, even in the presence of multiple threads.
-    - A lambda function is passed to `std::call_once`, which creates a new `Singleton` instance and assigns it to the static `instance` pointer.
+    - The function uses `std::call_once` with a `std::once_flag` to ensure the initialization block is executed only once, even in a multithreaded environment.
+    - Inside the `std::call_once` lambda, a new `Singleton` object is created and assigned to the static `instance` pointer using `std::unique_ptr`.
     - The function returns a reference to the `Singleton` instance.
 - **Output**: A reference to the single instance of the `Singleton` class.
-- **See also**: [`Singleton`](#Singleton)  (Data Structure)
+- **See also**: [`Singleton`](<#Singleton>)  (Data Structure)
 
 
 ---
 #### Singleton::Singleton<!-- {{#callable:Singleton::Singleton}} -->
-The `Singleton` constructor is deleted to prevent copying or assigning instances of the Singleton class, ensuring only one instance exists.
-- **Inputs**:
-    - `const Singleton&`: A reference to a Singleton object, which is deleted to prevent copying.
-    - `Singleton& operator=`: An assignment operator for a Singleton object, which is deleted to prevent assignment.
+The `Singleton` constructor is deleted to prevent copying or assigning instances of the `Singleton` class, ensuring only one instance exists.
+- **Inputs**: None
 - **Control Flow**:
-    - The copy constructor `Singleton(const Singleton&)` is deleted, preventing the creation of a new Singleton instance by copying an existing one.
-    - The assignment operator `Singleton& operator=(const Singleton&)` is deleted, preventing the assignment of one Singleton instance to another.
-- **Output**: There is no output from these deleted functions as they are not meant to be called.
-- **See also**: [`Singleton`](#Singleton)  (Data Structure)
+    - The copy constructor `Singleton(const Singleton&)` is deleted, preventing the creation of a new `Singleton` instance by copying an existing one.
+    - The assignment operator `Singleton& operator=(const Singleton&)` is deleted, preventing the assignment of one `Singleton` instance to another.
+- **Output**: There is no output from this constructor as it is deleted and cannot be used.
+- **See also**: [`Singleton`](<#Singleton>)  (Data Structure)
 
 
 ---
@@ -913,7 +922,7 @@ The `operator=` function for the `Singleton` class is deleted to prevent assignm
 - **Control Flow**:
     - The `operator=` function is explicitly deleted, which means any attempt to use the assignment operator on `Singleton` instances will result in a compile-time error.
 - **Output**: There is no output as the function is deleted and cannot be used.
-- **See also**: [`Singleton`](#Singleton)  (Data Structure)
+- **See also**: [`Singleton`](<#Singleton>)  (Data Structure)
 
 
 ---
@@ -921,10 +930,9 @@ The `operator=` function for the `Singleton` class is deleted to prevent assignm
 The `doSomething` method in the `Singleton` class outputs a message indicating that the singleton instance is performing an action.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called on an instance of the `Singleton` class.
-    - It outputs the string "Singleton doing something" to the standard output stream.
-- **Output**: The function does not return any value; it performs a side effect by printing to the console.
-- **See also**: [`Singleton`](#Singleton)  (Data Structure)
+    - The method outputs the string 'Singleton doing something' to the standard output stream.
+- **Output**: The method does not return any value.
+- **See also**: [`Singleton`](<#Singleton>)  (Data Structure)
 
 
 
@@ -933,33 +941,33 @@ The `doSomething` method in the `Singleton` class outputs a message indicating t
 - **Type**: `class`
 - **Members**:
     - `ptr`: A pointer to an instance of the ForwardDeclared class.
-- **Description**: The UsesForwardDeclaration class demonstrates the use of forward declarations in C++. It contains a private member, ptr, which is a pointer to a ForwardDeclared object. This class is designed to manage the lifecycle of the ForwardDeclared object, as seen in its constructor and destructor, which allocate and deallocate the object, respectively. The class also provides a method, useForwardDeclared, to interact with the ForwardDeclared object, showcasing how forward declarations can be used to reduce dependencies and improve compilation times.
+- **Description**: The UsesForwardDeclaration class is designed to demonstrate the use of forward declarations in C++. It contains a private member, ptr, which is a pointer to a ForwardDeclared object. This class manages the lifecycle of the ForwardDeclared instance by allocating it in the constructor and deallocating it in the destructor. The useForwardDeclared method allows interaction with the ForwardDeclared object, showcasing how forward declarations can be used to reduce dependencies and improve compilation times.
 - **Member Functions**:
-    - [`UsesForwardDeclaration::UsesForwardDeclaration`](#UsesForwardDeclarationUsesForwardDeclaration)
-    - [`UsesForwardDeclaration::~UsesForwardDeclaration`](#UsesForwardDeclarationUsesForwardDeclaration)
-    - [`UsesForwardDeclaration::useForwardDeclared`](#UsesForwardDeclarationuseForwardDeclared)
+    - [`UsesForwardDeclaration::UsesForwardDeclaration`](<#UsesForwardDeclarationUsesForwardDeclaration>)
+    - [`UsesForwardDeclaration::~UsesForwardDeclaration`](<#UsesForwardDeclarationUsesForwardDeclaration>)
+    - [`UsesForwardDeclaration::useForwardDeclared`](<#UsesForwardDeclarationuseForwardDeclared>)
 
 **Methods**
 
 ---
 #### UsesForwardDeclaration::UsesForwardDeclaration<!-- {{#callable:UsesForwardDeclaration::UsesForwardDeclaration}} -->
-The `UsesForwardDeclaration` constructor initializes a pointer to a new instance of the `ForwardDeclared` class.
+The `UsesForwardDeclaration` constructor initializes a pointer to a `ForwardDeclared` object using dynamic memory allocation.
 - **Inputs**: None
 - **Control Flow**:
     - The constructor initializes the `ptr` member variable by allocating a new `ForwardDeclared` object using the `new` operator.
 - **Output**: A `UsesForwardDeclaration` object is created with its `ptr` member pointing to a newly allocated `ForwardDeclared` object.
-- **See also**: [`UsesForwardDeclaration`](#UsesForwardDeclaration)  (Data Structure)
+- **See also**: [`UsesForwardDeclaration`](<#UsesForwardDeclaration>)  (Data Structure)
 
 
 ---
 #### UsesForwardDeclaration::\~UsesForwardDeclaration<!-- {{#callable:UsesForwardDeclaration::~UsesForwardDeclaration}} -->
-The destructor for the `UsesForwardDeclaration` class deallocates memory by deleting the pointer `ptr` that points to a `ForwardDeclared` object.
+The destructor for the `UsesForwardDeclaration` class deallocates memory by deleting the pointer to a `ForwardDeclared` object.
 - **Inputs**: None
 - **Control Flow**:
     - The destructor `~UsesForwardDeclaration()` is called when an object of `UsesForwardDeclaration` is destroyed.
     - Inside the destructor, the `delete` operator is used to deallocate the memory pointed to by `ptr`, which is a pointer to a `ForwardDeclared` object.
 - **Output**: The function does not return any value as it is a destructor.
-- **See also**: [`UsesForwardDeclaration`](#UsesForwardDeclaration)  (Data Structure)
+- **See also**: [`UsesForwardDeclaration`](<#UsesForwardDeclaration>)  (Data Structure)
 
 
 ---
@@ -970,17 +978,19 @@ The `useForwardDeclared` method calls the `doSomething` method on a `ForwardDecl
     - The method accesses the `ptr` member variable, which is a pointer to a `ForwardDeclared` object.
     - It calls the `doSomething` method on the `ForwardDeclared` object pointed to by `ptr`.
 - **Output**: The method does not return any value; it performs an action by invoking a method on a member object.
-- **See also**: [`UsesForwardDeclaration`](#UsesForwardDeclaration)  (Data Structure)
+- **See also**: [`UsesForwardDeclaration`](<#UsesForwardDeclaration>)  (Data Structure)
 
 
 
 ---
 ### ForwardDeclared<!-- {{#data_structure:ForwardDeclared}} -->
 - **Type**: `class`
-- **Description**: The `ForwardDeclared` class is a simple class that is forward-declared and later defined in the code. It contains a public method `doSomething` that outputs a message to the console. The class is used in conjunction with another class, `UsesForwardDeclaration`, which demonstrates the use of forward declarations by holding a pointer to a `ForwardDeclared` object and invoking its method.
+- **Members**:
+    - `data`: An integer member variable used to store data.
+- **Description**: The `ForwardDeclared` class is a simple class that is forward-declared and later defined with a constructor that initializes an integer member variable `data`. It includes a method `doSomething` that outputs a message to the console. This class is used to demonstrate forward declaration and its usage in another class, `UsesForwardDeclaration`, which manages a pointer to `ForwardDeclared`.
 - **Member Functions**:
-    - [`ForwardDeclared::ForwardDeclared`](test_structs.cpp.md#ForwardDeclaredForwardDeclared)
-    - [`ForwardDeclared::doSomething`](#ForwardDeclareddoSomething)
+    - [`ForwardDeclared::ForwardDeclared`](<test_structs.cpp.md#ForwardDeclaredForwardDeclared>)
+    - [`ForwardDeclared::doSomething`](<#ForwardDeclareddoSomething>)
 
 **Methods**
 
@@ -989,19 +999,18 @@ The `useForwardDeclared` method calls the `doSomething` method on a `ForwardDecl
 The `doSomething` method in the `ForwardDeclared` class outputs a specific message to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called without any parameters.
-    - It uses `std::cout` to print the message 'Forward declared class method' followed by a newline to the standard output.
+    - The method uses `std::cout` to print the message 'Forward declared class method' followed by a newline to the standard output.
 - **Output**: The function does not return any value; it performs a side effect by printing to the console.
-- **See also**: [`ForwardDeclared`](#ForwardDeclared)  (Data Structure)
+- **See also**: [`ForwardDeclared`](<#ForwardDeclared>)  (Data Structure)
 
 
 
 ---
 ### AnonymousNamespaceClass<!-- {{#data_structure:(anonymous)::AnonymousNamespaceClass}} -->
 - **Type**: `class`
-- **Description**: The `AnonymousNamespaceClass` is a class defined within an anonymous namespace, which means it has internal linkage and is only accessible within the translation unit where it is defined. This class contains a single public method `doSomething()` that outputs a message to the console. The use of an anonymous namespace is typically to limit the scope of the class to the file, preventing name conflicts and ensuring encapsulation within the file.
+- **Description**: The `AnonymousNamespaceClass` is a class defined within an anonymous namespace, which means it has internal linkage and is only accessible within the translation unit where it is defined. This class contains a single public method `doSomething()` that outputs a message to the standard output, indicating its purpose as a demonstration of an anonymous namespace class.
 - **Member Functions**:
-    - [`(anonymous)::AnonymousNamespaceClass::doSomething`](#anonymous)::AnonymousNamespaceClass::doSomething)
+    - [`(anonymous)::AnonymousNamespaceClass::doSomething`](<#anonymous)::AnonymousNamespaceClass::doSomething>)
 
 **Methods**
 
@@ -1010,19 +1019,18 @@ The `doSomething` method in the `ForwardDeclared` class outputs a specific messa
 The `doSomething` function in the `AnonymousNamespaceClass` prints a message to the standard output.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined within an anonymous namespace, which limits its linkage to the current translation unit.
-    - When called, it executes a single statement that outputs the string 'Anonymous namespace class' followed by a newline to the standard output stream using `std::cout`.
-- **Output**: The function does not return any value; it performs a side effect by printing to the console.
-- **See also**: [`(anonymous)::AnonymousNamespaceClass`](#anonymous)::AnonymousNamespaceClass)  (Data Structure)
+    - The function uses `std::cout` to print the string "Anonymous namespace class" followed by a newline to the standard output.
+- **Output**: The function does not return any value.
+- **See also**: [`(anonymous)::AnonymousNamespaceClass`](<#anonymous)::AnonymousNamespaceClass>)  (Data Structure)
 
 
 
 ---
 ### Parent<!-- {{#data_structure:Parent}} -->
 - **Type**: `class`
-- **Description**: The `Parent` class is a base class that contains a nested class named `Nested`. It includes a virtual method `doSomething` which outputs a message to the console. The `Nested` class, defined within `Parent`, has its own method `nestedMethod` that also outputs a message to the console. This structure demonstrates the use of nested classes and virtual functions in C++.
+- **Description**: The `Parent` class is a simple class that contains a nested class named `Nested`. It includes a virtual method `doSomething` which outputs a message to the console. The `Nested` class, defined within `Parent`, has its own method `nestedMethod` that also outputs a message to the console. This structure demonstrates the use of nested classes and virtual functions in C++.
 - **Member Functions**:
-    - [`Parent::doSomething`](#ParentdoSomething)
+    - [`Parent::doSomething`](<#ParentdoSomething>)
 
 **Methods**
 
@@ -1031,19 +1039,19 @@ The `doSomething` function in the `AnonymousNamespaceClass` prints a message to 
 The `doSomething` function in the `Parent` class outputs a message indicating that the parent is performing an action.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is a virtual method, allowing it to be overridden in derived classes.
+    - The function is a virtual method, allowing derived classes to override it.
     - It uses `std::cout` to print the message 'Parent doing something' to the standard output.
 - **Output**: The function does not return any value; it performs a side effect by printing to the console.
-- **See also**: [`Parent`](#Parent)  (Data Structure)
+- **See also**: [`Parent`](<#Parent>)  (Data Structure)
 
 
 
 ---
 ### Nested<!-- {{#data_structure:Parent::Nested}} -->
 - **Type**: `class`
-- **Description**: The `Parent::Nested` class is a nested class within the `Parent` class. It contains a public method `nestedMethod` that outputs a message to the console indicating that it is a method within the `Parent` class. This class does not have any data members, and its primary purpose is to demonstrate the concept of nested classes in C++.
+- **Description**: The `Nested` class is a nested class within the `Parent` class, which means it is defined inside the scope of the `Parent` class. It contains a public method `nestedMethod` that outputs a message to the console, indicating its functionality within the `Parent` class. This class does not have any data members, focusing solely on its method functionality.
 - **Member Functions**:
-    - [`Parent::Nested::nestedMethod`](#NestednestedMethod)
+    - [`Parent::Nested::nestedMethod`](<#NestednestedMethod>)
 
 **Methods**
 
@@ -1052,10 +1060,9 @@ The `doSomething` function in the `Parent` class outputs a message indicating th
 The `nestedMethod` function is a member of the `Nested` class within the `Parent` class, and it outputs a message indicating it is a nested method in the Parent class.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined within the `Nested` class, which is a nested class inside the `Parent` class.
-    - When called, it outputs the string 'Nested method in Parent class' to the standard output using `std::cout`.
-- **Output**: The function does not return any value; it performs an output operation to the console.
-- **See also**: [`Parent::Nested`](#Parent::Nested)  (Data Structure)
+    - The function outputs a message to the standard output stream using `std::cout`.
+- **Output**: The function does not return any value; it performs a side effect by printing a message to the console.
+- **See also**: [`Parent::Nested`](<#Parent::Nested>)  (Data Structure)
 
 
 
@@ -1064,27 +1071,27 @@ The `nestedMethod` function is a member of the `Nested` class within the `Parent
 - **Type**: `class`
 - **Description**: The `ClassName` class is a simple class that is defined with a macro `THIS_IS_A_MACRO` applied to it. It contains a single public method `method()` that outputs a message to the console. The class does not have any data members or additional functionality beyond this method.
 - **Member Functions**:
-    - [`ClassName::main`](#ClassNamemain)
+    - [`ClassName::main`](<#ClassNamemain>)
 
 **Methods**
 
 ---
 #### ClassName::main<!-- {{#callable:ClassName::main}} -->
-The `main` function demonstrates the instantiation and usage of various classes and templates, including basic classes, inheritance, templates, singletons, and logging.
+The `main` function demonstrates the instantiation and usage of various classes and templates, showcasing object creation, method invocation, and design patterns.
 - **Inputs**: None
 - **Control Flow**:
     - Instantiate `BasicClass` with an integer value of 42.
-    - Instantiate `Circle` with a radius of 5.0.
-    - Instantiate `Bat`, which involves diamond inheritance from `Animal`.
-    - Create a `Container` for `int` with an initial value of 100 and a specialized `Container` for `bool` with an initial value of `true`.
-    - Instantiate `Outer` and its nested class `Inner` with values 10 and 20, respectively.
-    - Create three `Counter` objects and print the total number of `Counter` instances created using a static method.
+    - Create a `Circle` object with a radius of 5.0.
+    - Instantiate a `Bat` object, demonstrating multiple inheritance.
+    - Create a `Container` for integers initialized with 100 and a specialized `Container` for booleans initialized with true.
+    - Instantiate an `Outer` object and an `Outer::Inner` object with respective values 10 and 20.
+    - Create three `Counter` objects and print the total number of `Counter` instances using a static method.
     - Retrieve the singleton instance of `Singleton` and call its `doSomething` method.
-    - Instantiate a `Logger` with `ConsolePrinter` as the print policy and log a message with multiple arguments.
-    - Instantiate `AnonymousNamespaceClass` and call its `doSomething` method.
+    - Instantiate a `Logger` with `ConsolePrinter` policy and log a message with multiple arguments.
+    - Create an `AnonymousNamespaceClass` object and call its `doSomething` method.
     - Return 0 to indicate successful execution.
 - **Output**: The function returns an integer value of 0, indicating successful execution.
-- **See also**: [`ClassName`](#ClassName)  (Data Structure)
+- **See also**: [`ClassName`](<#ClassName>)  (Data Structure)
 
 
 
@@ -1116,66 +1123,19 @@ The `set` function assigns a new boolean value to the `data` member variable.
 - **Inputs**:
     - `new_data`: A boolean value that will be assigned to the `data` member variable.
 - **Control Flow**:
-    - The function takes a boolean argument `new_data`.
+    - The function takes a boolean parameter `new_data`.
     - It assigns the value of `new_data` to the member variable `data`.
-- **Output**: The function does not return any value.
+- **Output**: This function does not return any value.
 
 
 ---
 ### flip<!-- {{#callable:flip}} -->
-The `flip` function toggles the boolean value of the `data` member in a specialized `Container` class for `bool` type.
+The `flip` function toggles the boolean value stored in the `data` member of a specialized `Container` class for `bool` type.
 - **Inputs**: None
 - **Control Flow**:
-    - The function accesses the `data` member of the `Container<bool>` class instance.
-    - It applies the logical NOT operator (`!`) to the `data` member, effectively flipping its boolean value from `true` to `false` or vice versa.
+    - The function accesses the `data` member variable of the `Container<bool>` class.
+    - It applies the logical NOT operator (`!`) to the `data` member, effectively toggling its boolean value from `true` to `false` or vice versa.
 - **Output**: The function does not return any value; it modifies the `data` member in place.
-
-
----
-### Animal<!-- {{#callable:Animal::Animal}} -->
-The `Animal` constructor initializes an `Animal` object with a specified species, and the class includes a pure virtual function `makeSound` that must be implemented by derived classes.
-- **Inputs**:
-    - `s`: A constant reference to a `std::string` representing the species of the animal.
-- **Control Flow**:
-    - The constructor `Animal(const std::string& s)` is called with a string argument `s` to initialize the `species` member variable.
-    - The class contains a pure virtual function `makeSound()`, which means `Animal` is an abstract class and cannot be instantiated directly.
-    - Derived classes must implement the `makeSound()` function to provide specific behavior for different animal sounds.
-- **Output**: The constructor does not return a value, and the class itself does not produce output directly; it serves as a base class for other classes to derive from and implement the `makeSound` function.
-
-
----
-### Animal<!-- {{#callable:Animal::Animal}} -->
-The `Animal` constructor initializes an `Animal` object with a specified species, and the `makeSound` method is a pure virtual function meant to be overridden by derived classes to define specific animal sounds.
-- **Inputs**:
-    - `s`: A constant reference to a `std::string` representing the species of the animal.
-- **Control Flow**:
-    - The constructor `Animal(const std::string& s)` is called with a string argument representing the species.
-    - The member variable `species` is initialized with the value of the input string `s`.
-    - The `makeSound` method is declared as a pure virtual function, indicating that `Animal` is an abstract class and cannot be instantiated directly.
-- **Output**: The constructor does not return a value, and the `makeSound` method is a pure virtual function with no implementation in the `Animal` class.
-
-
----
-### Mammal<!-- {{#callable:Mammal::Mammal}} -->
-The `Mammal` constructor initializes a `Mammal` object by calling the `Animal` constructor with a string parameter, and the `nurse` method outputs a message indicating nursing behavior.
-- **Inputs**:
-    - `s`: A constant reference to a `std::string` that is passed to the `Animal` constructor to initialize the `Mammal` object.
-- **Control Flow**:
-    - The `Mammal` constructor is called with a string argument, which is passed to the base class `Animal` constructor for initialization.
-    - The `nurse` method, when called, outputs the string 'Nursing babies' to the standard output.
-- **Output**: The `Mammal` constructor does not return a value, as it is a constructor, and the `nurse` method does not return a value, but it outputs a message to the console.
-
-
----
-### Bird<!-- {{#callable:Bird::Bird}} -->
-The `Bird` constructor initializes a `Bird` object by calling the `Animal` constructor with a given string, and the `fly` method outputs 'Flying' to the console.
-- **Inputs**:
-    - `s`: A constant reference to a `std::string` that is passed to the `Animal` constructor.
-- **Control Flow**:
-    - The `Bird` constructor is called with a string argument `s`.
-    - The constructor initializes the `Bird` object by invoking the `Animal` constructor with the string `s`.
-    - The `fly` method, when called, outputs the string 'Flying' to the standard output.
-- **Output**: The `Bird` constructor does not return a value, as it is a constructor, and the `fly` method does not return a value, as it is a `void` method.
 
 
 

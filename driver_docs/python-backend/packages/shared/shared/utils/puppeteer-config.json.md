@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `puppeteer-config.json` file specifies configuration arguments for Puppeteer, including disabling the sandbox and setuid sandbox features.
+The `puppeteer-config.json` file contains configuration settings for Puppeteer, specifying arguments to run without a sandbox and disable the setuid sandbox.
 
 # Purpose
-The JSON file specifies command-line arguments for a software application, likely a browser or a browser-based tool. The "args" array contains flags to disable the sandbox and setuid sandbox features, which are typically used to enhance security by isolating processes.
+The JSON file specifies command-line arguments for a software application, likely a browser or a browser-based tool. The "args" array contains flags to disable the sandbox and setuid sandbox features, which are typically used for security isolation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing a codebase into a single sentence using slightly overlapping descriptions of its subcomponents.
+The `single_sentence_from_chunk_descriptions.txt` file provides instructions for creating a single sentence summary of a codebase by synthesizing slightly overlapping descriptions of its subcomponents.
 
 # Purpose
-The provided content outlines a structured approach for summarizing a software codebase using detailed descriptions of its subcomponents. The file serves as a guideline for creating a concise, single-sentence summary of a codebase by synthesizing slightly overlapping descriptions of its various modules. It emphasizes the importance of using only the information provided in the descriptions to construct the summary, ensuring accuracy and relevance. The instructions also specify that the name of the file should be included in the summary sentence, highlighting the need for clarity and context in documentation. This approach is designed to facilitate a clear understanding of the overall purpose and functionality of the codebase.
+The provided content outlines a structured approach for generating a concise, single-sentence description of a software codebase by synthesizing multiple detailed descriptions of its subcomponents. This file serves as a guideline for a software engineering expert tasked with distilling overlapping and detailed descriptions of various subsets of a codebase into a coherent and comprehensive summary. The expert is instructed to rely solely on the provided information without introducing any external assumptions or information, ensuring that the final description accurately reflects the documented functionalities and purposes of the codebase's components.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

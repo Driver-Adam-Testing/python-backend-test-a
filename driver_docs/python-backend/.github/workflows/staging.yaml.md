@@ -3,26 +3,26 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `staging.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to a staging environment upon pushes to branches prefixed with 'release/', including steps for setting up Node.js and Python, installing dependencies, configuring AWS credentials, and deploying various services.
+The `staging.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to a staging environment, triggered by pushes to branches prefixed with 'release/' or manually from the Actions tab.
 
 # Purpose
-The provided content is a GitHub Actions workflow configuration file, written in YAML, designed to automate the deployment of a backend application to a staging environment. This file is triggered by a push to any branch prefixed with 'release/' and can also be manually initiated from the GitHub Actions tab. It defines a single job named "Deploy to Staging Environment" that runs on the latest Ubuntu environment and involves several steps, including checking out the code, setting up Node.js and Python environments, installing dependencies, configuring AWS credentials, and deploying various components of the application using Poetry and AWS CDK. The file's content is crucial for continuous integration and deployment (CI/CD) processes, ensuring that the application is consistently and reliably deployed to the staging environment for testing and validation before production release.
+The provided file is a GitHub Actions workflow configuration file, written in YAML, which automates the deployment process for a backend staging environment. This file is designed to trigger deployments when code is pushed to branches prefixed with "release/" or manually from the GitHub Actions tab. It defines a single job that runs on the latest Ubuntu environment and includes multiple steps to set up the necessary programming environments, install dependencies, configure AWS credentials, and deploy various components of the application using Poetry and AWS CDK. The file's content is crucial for ensuring a consistent and automated deployment process, reducing manual intervention and potential errors in the staging environment. The workflow is organized into several steps, each focusing on deploying different services within the application, highlighting its role in managing complex deployment tasks efficiently.
 # Content Summary
 This file is a GitHub Actions workflow configuration designed for deploying a backend application to a staging environment. The workflow is triggered by a push to any branch prefixed with "release/" and can also be manually initiated from the GitHub Actions tab. The configuration ensures that only one deployment is active at a time by using a concurrency group based on the workflow and reference, with the option to cancel any in-progress deployments.
 
-The workflow grants specific permissions, allowing write access to the id-token and read access to the contents. It defines a single job named "Deploy to Staging Environment" that runs on the latest Ubuntu environment. The deployment process involves several steps:
+The workflow requires specific permissions, allowing write access to the id-token and read access to the contents. It defines a single job named "Deploy to Staging Environment" that runs on the latest Ubuntu environment. The deployment process involves several key steps:
 
 1. **Checkout Code**: The repository code is checked out using the `actions/checkout@v4` action.
-2. **Setup Node.js**: Node.js version 20.x is set up with npm caching enabled.
+2. **Node.js Setup**: Node.js version 20.x is set up with npm caching enabled.
 3. **Install Node.js Dependencies**: Node.js dependencies are installed using `npm ci`.
-4. **Setup Python**: Python version 3.12 is configured.
-5. **Install Poetry**: Poetry, a Python dependency manager, is installed.
-6. **Install Python Dependencies**: Dependencies are installed using Poetry without creating a virtual environment.
-7. **Configure AWS Credentials**: AWS credentials are configured using a role specified by the `AWS_CICD_ROLE` variable, targeting the `us-east-1` region.
+4. **Python Setup**: Python 3.12 is configured using `actions/setup-python@v5`.
+5. **Poetry Installation**: Poetry, a Python dependency manager, is installed.
+6. **Dependency Installation**: Dependencies are installed without creating a virtual environment using Poetry.
+7. **AWS Credentials Configuration**: AWS credentials are configured for deployment, with the region set to `us-east-1` and a role assumed from environment variables.
 8. **CDK Deployment**: The AWS Cloud Development Kit (CDK) is used to deploy infrastructure without requiring approval.
-9. **Deploy Services**: Several services are deployed using Poetry and Modal, a deployment tool. Each service (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) is deployed from its respective directory. The deployments use environment variables for authentication and environment configuration, and each deployment is tagged with the first eight characters of the current GitHub SHA.
+9. **Service Deployments**: Several services within the `content_services` directory are deployed using Poetry and Modal, a deployment tool. Each service (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) is deployed with environment variables for authentication and environment configuration.
 
-This configuration is crucial for automating the deployment process to a staging environment, ensuring consistency and reliability in the deployment pipeline.
+The deployment steps for each service involve installing dependencies and running a deployment command with a specific environment and tag derived from the GitHub SHA. This setup ensures that the staging environment is consistently updated with the latest code and configurations from the release branches.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

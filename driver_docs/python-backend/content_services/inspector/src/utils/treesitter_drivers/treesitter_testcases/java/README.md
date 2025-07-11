@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `java` folder in the `python-backend` codebase contains Java test files that demonstrate various Java programming concepts such as classes, enums, imports, interfaces, methods, and variables.
+Java test files demonstrating classes, enums, imports, interfaces, methods, and variables.
 
 
 ## Files
 - **[test_classes.java](test_classes.java.md)**: The `test_classes.java` file contains Java classes demonstrating features such as encapsulation, inheritance, and interfaces, including a `TestClass` with an inner class, an abstract class, and a concrete class implementing `Comparable`.
-- **[test_enums.java](test_enums.java.md)**: The `test_enums.java` file defines several enums, including a simple `Color` enum, a `Status` enum with a constructor and fields, and a `Priority` enum with multiple methods.
-- **[test_imports.java](test_imports.java.md)**: The `test_imports.java` file demonstrates the usage of various Java imports, including collections, file handling, and static imports for mathematical operations.
-- **[test_interfaces.java](test_interfaces.java.md)**: The `test_interfaces.java` file demonstrates various features of Java interfaces, including constants, abstract methods, default and static methods, nested interfaces, and functional interfaces.
-- **[test_methods.java](test_methods.java.md)**: The `test_methods.java` file defines a Java class `MethodExamples` with various method types, including static, instance, private, generic, and an overridden method.
-- **[test_variables.java](test_variables.java.md)**: The `test_variables.java` file demonstrates the use of class, instance, and local variables in a Java class.
+- **[test_enums.java](test_enums.java.md)**: The `test_enums.java` file defines several enums, including `Color`, `Status`, and `Priority`, each with varying levels of complexity and functionality.
+- **[test_imports.java](test_imports.java.md)**: The `test_imports.java` file demonstrates the usage of various Java imports, including utility classes, file handling, and static imports for mathematical operations.
+- **[test_interfaces.java](test_interfaces.java.md)**: The `test_interfaces.java` file defines several Java interfaces, including `Drawable` with default and static methods, `Resizable` with a nested interface, and a functional interface `Calculator`.
+- **[test_methods.java](test_methods.java.md)**: The `test_methods.java` file defines a Java class `MethodExamples` with various method types, including static, instance, private, generic, and an overridden `toString` method.
+- **[test_variables.java](test_variables.java.md)**: The `test_variables.java` file demonstrates the use of class, instance, and local variables in Java, including static and final modifiers.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

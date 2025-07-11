@@ -6,7 +6,7 @@
 The `2024_07_24_1144-edd6e7d6d98a_add_status_to_sc.py` file is an Alembic migration script that adds a new `status` column with an enumeration type to the `source_contents` table in the database.
 
 # Purpose
-This source code file is an Alembic migration script used to modify a database schema by adding a new column to an existing table. Specifically, it introduces a `status` column to the `source_contents` table, which is of type `Enum` with possible values: "generating", "generation-complete", and "generation-error". This script provides narrow functionality, focusing solely on this schema change, and includes both an [`upgrade`](#upgrade) function to apply the change and a [`downgrade`](#downgrade) function to revert it. The script is part of a version-controlled database migration system, as indicated by the use of Alembic, a popular database migration tool for SQLAlchemy.
+This Python file is an Alembic migration script designed to modify a database schema by adding a new column to an existing table. Specifically, it adds a "status" column to the "source_contents" table, which is an enumeration type with possible values "generating", "generation-complete", and "generation-error". The script provides narrow functionality, focusing solely on this schema change, and includes both an [`upgrade`](<#upgrade>) function to apply the change and a [`downgrade`](<#downgrade>) function to revert it. The script is part of a version-controlled database migration system, as indicated by the use of Alembic's revision identifiers and the structured format of the migration operations.
 # Imports and Dependencies
 
 ---
@@ -25,16 +25,16 @@ This source code file is an Alembic migration script used to modify a database s
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
+- **Type**: `string`
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
+- **Use**: This variable is used by Alembic to track the migration history and ensure that migrations are applied in the correct order.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as `revision`, `down_revision`, and optionally `branch_labels` and `depends_on`. In this context, `branch_labels` is not being used to label any branches in the migration history.
-- **Use**: `branch_labels` is used to potentially label branches in Alembic migration scripts, but in this script, it is set to `None`, indicating no branch labeling is applied.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
+- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
@@ -51,11 +51,10 @@ This source code file is an Alembic migration script used to modify a database s
 The `upgrade` function adds a new nullable column named 'status' with an enumerated type to the 'source_contents' table in the database schema.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by adding a new column to the 'source_contents' table using the `op.add_column` method from Alembic.
-    - The new column is named 'status' and is defined using SQLAlchemy's `sa.Column` method.
-    - The column type is an enumeration (`sa.Enum`) with three possible values: 'generating', 'generation-complete', and 'generation-error'.
-    - The enumeration is named 'enum_derived_content_status' and the column is set to be nullable.
-- **Output**: The function does not return any value; it performs a schema migration operation to modify the database structure.
+    - The function begins by executing a command to add a new column to the 'source_contents' table.
+    - The new column is named 'status' and is of type `Enum`, which includes the values 'generating', 'generation-complete', and 'generation-error'.
+    - The column is nullable, meaning it can contain NULL values.
+- **Output**: The function does not return any value; it performs a schema modification on the database.
 
 
 ---
@@ -63,9 +62,9 @@ The `upgrade` function adds a new nullable column named 'status' with an enumera
 The `downgrade` function removes the 'status' column from the 'source_contents' table in the database schema.
 - **Inputs**: None
 - **Control Flow**:
-    - The function calls `op.drop_column` to remove the 'status' column from the 'source_contents' table.
-    - Commented-out lines suggest that there were additional constraints that could be dropped, but they are not executed.
-- **Output**: The function does not return any value; it performs a schema modification operation.
+    - The function begins by executing a command to drop the 'status' column from the 'source_contents' table using Alembic's `op.drop_column` method.
+    - There are commented-out lines that suggest potential removal of foreign key constraints from the 'derived_contents' table, but these are not executed.
+- **Output**: The function does not return any value; it performs a schema modification operation on the database.
 
 
 

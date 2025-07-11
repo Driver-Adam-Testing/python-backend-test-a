@@ -3,21 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_cs.py` file defines a template for inspecting and processing large C# source code files, including handling prompts, imports, classes, structs, interfaces, and enums.
+The `source_code_large_cs.py` file defines a template for processing large C# source code, including handling prompts, imports, classes, structs, and interfaces.
 
 # Purpose
-This Python code defines a template for analyzing and processing C# source code, focusing on extracting and organizing information about various C# constructs such as classes, structs, interfaces, and enums. The file imports several specialized components from a `utils.lang_specialization.c_sharp` module, which are likely responsible for handling C# specific syntax and semantics. These components include collections and raw symbol collections for classes, enums, interfaces, and structs, which are used to gather and process information from C# code. Additionally, the code imports a `default_imports_checker` from a `utils.lang_specialization.default` module, which is used to verify imports and dependencies within the C# code.
+This Python code file is designed to facilitate structured prompting and analysis of C# source code. It imports various components and utilities from shared and specialized modules to create a template, `SOURCE_CODE_LARGE_TEMPLATE_CS`, which is used to generate structured prompts for analyzing C# code. The template is composed of several tuples, each representing a different aspect of the C# code, such as its purpose, imports and dependencies, classes, structs, and interfaces. These tuples utilize components like `Prompt` and `Component` to build strings that guide the analysis process, and they employ functions from the `utils.lang_specialization.c_sharp` module to handle specific C# constructs.
 
-The main structure of the file is a list named `SOURCE_CODE_LARGE_TEMPLATE_CS`, which contains tuples that define different stages of processing C# source code. Each tuple specifies a type of analysis or transformation, such as identifying the purpose of the code, checking imports, and extracting information about classes, structs, interfaces, and enums. The tuples use a combination of static analysis and machine learning model (LLM) outputs to perform these tasks, indicating that the code is designed to integrate both traditional static analysis techniques and modern AI-driven approaches. This file is likely part of a larger system that automates the analysis and documentation of C# codebases, providing structured insights into the code's structure and dependencies.
+The file serves as a library module that can be imported and used in other parts of a larger system, particularly those that require detailed analysis and documentation of C# code. It does not define public APIs or external interfaces directly but rather provides a structured approach to generating prompts and analyzing code. The use of specialized collections and static analysis functions indicates that the file is part of a broader system aimed at automating or assisting in the understanding and documentation of C# source code, leveraging language-specific utilities to achieve this goal.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.c_sharp.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.c_sharp.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CS`
 - `utils.lang_specialization.c_sharp.CsClassCollection`
 - `utils.lang_specialization.c_sharp.CsClassRawSymbolCollection`
-- `utils.lang_specialization.c_sharp.CsEnumCollection`
-- `utils.lang_specialization.c_sharp.CsEnumRawSymbolCollection`
 - `utils.lang_specialization.c_sharp.CsInterfaceCollection`
 - `utils.lang_specialization.c_sharp.CsInterfaceRawSymbolCollection`
 - `utils.lang_specialization.c_sharp.CsStructCollection`
@@ -31,8 +34,8 @@ The main structure of the file is a list named `SOURCE_CODE_LARGE_TEMPLATE_CS`, 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_CS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_CS` is a list of tuples, each containing a set of parameters used for processing and analyzing C# source code. Each tuple includes a type identifier, a section header, and functions or lambdas for processing specific aspects of the code such as purpose, imports, classes, structs, interfaces, and enums.
-- **Use**: This variable is used to define a template for analyzing and processing different components of C# source code, facilitating tasks like static analysis and LLM-based processing.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_CS` is a list of tuples, each representing a different section of a C# source code template. Each tuple contains a section identifier, a section title, and various components or functions that define the content and behavior of that section. The sections include purpose, imports and dependencies, classes, structs, and interfaces, with each section utilizing specific prompts and collections to structure the information.
+- **Use**: This variable is used to define a structured template for generating or analyzing C# source code, with each tuple providing the necessary components and instructions for a specific section of the code.
 
 
 

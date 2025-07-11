@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `js_ts_driver_test.py` file contains tests for the TypeScript tree-sitter driver, verifying the extraction of various TypeScript constructs such as imports, functions, classes, interfaces, object types, variables, enums, methods, and function calls.
+The `js_ts_driver_test.py` file contains a comprehensive suite of tests for the TypeScript tree-sitter driver, verifying its ability to accurately extract and count various TypeScript constructs such as imports, functions, classes, interfaces, object types, variables, enums, methods, and function calls.
 
 # Purpose
-This Python file is a comprehensive test suite for a TypeScript tree-sitter driver, specifically designed to validate the functionality of the `JsTsDriverTree` class from the `js_ts_driver` module. The test suite is structured using the `pytest` framework and includes a variety of test cases that cover different aspects of TypeScript code parsing, such as imports, functions, classes, interfaces, object types, variables, enums, methods, and function calls. Each test case is designed to ensure that the `JsTsDriverTree` can accurately parse and extract relevant information from TypeScript source files, which are stored in a designated test directory.
+This Python file is a comprehensive test suite for a TypeScript tree-sitter driver, specifically designed to validate the functionality of the `JsTsDriverTree` class from the `js_ts_driver` module. The test suite is structured using the `pytest` framework and includes a series of test cases that cover various aspects of TypeScript code parsing, such as imports, functions, classes, interfaces, object types, variables, enums, methods, and function calls. Each test case is designed to ensure that the `JsTsDriverTree` can accurately parse and extract relevant information from TypeScript source files, which are stored in a designated test directory.
 
-The file defines a series of `pytest` fixtures to load TypeScript test cases from files, and it uses parameterized tests to verify the correct extraction of code elements like imports, functions, and classes. The tests check for the presence and correctness of these elements by comparing the extracted data against expected values, such as the number of elements and their line positions in the source code. This test suite is crucial for maintaining the reliability and accuracy of the TypeScript tree-sitter driver, ensuring it can handle a wide range of TypeScript syntax and features.
+The file defines a series of `pytest` fixtures to load TypeScript test cases from files, and each test function uses these fixtures to perform specific assertions. The tests are organized into sections, each focusing on a different TypeScript construct, and they utilize parameterized tests to check multiple scenarios within each construct. The primary goal of this test suite is to ensure that the `JsTsDriverTree` can correctly identify and extract various TypeScript elements, such as import statements, function definitions, class structures, and more, thereby validating the robustness and accuracy of the tree-sitter driver implementation.
 # Imports and Dependencies
 
 ---
@@ -23,35 +23,35 @@ The file defines a series of `pytest` fixtures to load TypeScript test cases fro
 ### TestTypeScriptDriver<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver}} -->
 - **Description**: The `TestTypeScriptDriver` class is designed to test the functionality of a TypeScript tree-sitter driver. It utilizes pytest fixtures to set up various test cases for different TypeScript constructs such as imports, functions, classes, interfaces, object types, variables, enums, methods, modules, and function calls. The class includes methods to verify the extraction and correctness of these constructs from TypeScript code files, ensuring that the tree-sitter driver can accurately parse and interpret TypeScript syntax.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_dir`](#TestTypeScriptDrivertest_dir)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.imports_code`](#TestTypeScriptDriverimports_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.functions_code`](#TestTypeScriptDriverfunctions_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.classes_code`](#TestTypeScriptDriverclasses_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.interfaces_code`](#TestTypeScriptDriverinterfaces_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.object_types_code`](#TestTypeScriptDriverobject_types_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.variables_code`](#TestTypeScriptDrivervariables_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.enums_code`](#TestTypeScriptDriverenums_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.methods_code`](#TestTypeScriptDrivermethods_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.modules_code`](#TestTypeScriptDrivermodules_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.calls_code`](#TestTypeScriptDrivercalls_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_imports_count`](#TestTypeScriptDrivertest_extract_imports_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_imports`](#TestTypeScriptDrivertest_extract_specific_imports)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_functions_count`](#TestTypeScriptDrivertest_extract_functions_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_functions`](#TestTypeScriptDrivertest_extract_specific_functions)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_classes_count`](#TestTypeScriptDrivertest_extract_classes_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_classes`](#TestTypeScriptDrivertest_extract_specific_classes)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_interfaces_count`](#TestTypeScriptDrivertest_extract_interfaces_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_interfaces`](#TestTypeScriptDrivertest_extract_specific_interfaces)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_object_type_count`](#TestTypeScriptDrivertest_extract_object_type_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_object_types`](#TestTypeScriptDrivertest_extract_specific_object_types)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_variables_count`](#TestTypeScriptDrivertest_extract_variables_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_variables`](#TestTypeScriptDrivertest_extract_specific_variables)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_enums_count`](#TestTypeScriptDrivertest_extract_enums_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_enums`](#TestTypeScriptDrivertest_extract_specific_enums)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_methods_count`](#TestTypeScriptDrivertest_extract_methods_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_methods`](#TestTypeScriptDrivertest_extract_specific_methods)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_calls_count`](#TestTypeScriptDrivertest_extract_calls_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_calls`](#TestTypeScriptDrivertest_extract_specific_calls)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_dir`](<#TestTypeScriptDrivertest_dir>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.imports_code`](<#TestTypeScriptDriverimports_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.functions_code`](<#TestTypeScriptDriverfunctions_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.classes_code`](<#TestTypeScriptDriverclasses_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.interfaces_code`](<#TestTypeScriptDriverinterfaces_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.object_types_code`](<#TestTypeScriptDriverobject_types_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.variables_code`](<#TestTypeScriptDrivervariables_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.enums_code`](<#TestTypeScriptDriverenums_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.methods_code`](<#TestTypeScriptDrivermethods_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.modules_code`](<#TestTypeScriptDrivermodules_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.calls_code`](<#TestTypeScriptDrivercalls_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_imports_count`](<#TestTypeScriptDrivertest_extract_imports_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_imports`](<#TestTypeScriptDrivertest_extract_specific_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_functions_count`](<#TestTypeScriptDrivertest_extract_functions_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_functions`](<#TestTypeScriptDrivertest_extract_specific_functions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_classes_count`](<#TestTypeScriptDrivertest_extract_classes_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_classes`](<#TestTypeScriptDrivertest_extract_specific_classes>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_interfaces_count`](<#TestTypeScriptDrivertest_extract_interfaces_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_interfaces`](<#TestTypeScriptDrivertest_extract_specific_interfaces>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_object_type_count`](<#TestTypeScriptDrivertest_extract_object_type_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_object_types`](<#TestTypeScriptDrivertest_extract_specific_object_types>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_variables_count`](<#TestTypeScriptDrivertest_extract_variables_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_variables`](<#TestTypeScriptDrivertest_extract_specific_variables>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_enums_count`](<#TestTypeScriptDrivertest_extract_enums_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_enums`](<#TestTypeScriptDrivertest_extract_specific_enums>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_methods_count`](<#TestTypeScriptDrivertest_extract_methods_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_methods`](<#TestTypeScriptDrivertest_extract_specific_methods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_calls_count`](<#TestTypeScriptDrivertest_extract_calls_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_calls`](<#TestTypeScriptDrivertest_extract_specific_calls>)
 
 **Methods**
 
@@ -61,9 +61,10 @@ The `test_dir` method is a pytest fixture that returns the path to the TypeScrip
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Control Flow**:
-    - The method constructs a Path object pointing to the 'typescript' directory within the 'treesitter_testcases' directory, which is located in the same directory as the current file.
-- **Output**: A `Path` object representing the directory path to the TypeScript test cases.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - The method constructs a Path object by combining the directory of the current file with the relative path to the 'typescript' test cases directory.
+    - It returns this Path object.
+- **Output**: A Path object representing the directory path to the TypeScript test cases.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -71,14 +72,13 @@ The `test_dir` method is a pytest fixture that returns the path to the TypeScrip
 The `imports_code` method is a pytest fixture that reads and returns the content of the 'test_imports.ts' file from a specified test directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestTypeScriptDriver` to which this method belongs.
-    - `test_dir`: A `Path` object representing the directory path where the test TypeScript files are located.
+    - `test_dir`: A Path object representing the directory where the 'test_imports.ts' file is located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_imports.ts' file by appending the filename to the `test_dir` path.
-    - It reads the content of the 'test_imports.ts' file using the `read_text()` method of the `Path` object.
+    - The method constructs the path to the 'test_imports.ts' file by appending the filename to the provided 'test_dir' path.
+    - It reads the content of the 'test_imports.ts' file using the `read_text()` method of the Path object.
     - The content of the file is returned as a string.
 - **Output**: A string containing the text content of the 'test_imports.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -88,10 +88,10 @@ The `functions_code` method is a pytest fixture that reads and returns the conte
 - **Inputs**:
     - `test_dir`: A Path object representing the directory where the 'test_functions.ts' file is located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_functions.ts' file by appending the filename to the provided `test_dir` path.
+    - The method constructs the path to the 'test_functions.ts' file by appending the filename to the provided 'test_dir' path.
     - It reads the content of the 'test_functions.ts' file using the `read_text()` method.
 - **Output**: A string containing the text content of the 'test_functions.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -99,14 +99,12 @@ The `functions_code` method is a pytest fixture that reads and returns the conte
 The `classes_code` method is a pytest fixture that reads and returns the content of the 'test_classes.ts' file from a specified directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestTypeScriptDriver` to which this method belongs.
-    - `test_dir`: A `Path` object representing the directory path where the TypeScript test files are located.
+    - `test_dir`: A Path object representing the directory where the 'test_classes.ts' file is located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_classes.ts' file by appending the filename to the `test_dir` path.
-    - It reads the content of the 'test_classes.ts' file using the `read_text()` method of the `Path` object.
-    - The content of the file is returned as a string.
+    - The method constructs the path to the 'test_classes.ts' file by appending the filename to the provided 'test_dir' path.
+    - It reads the content of the 'test_classes.ts' file using the `read_text()` method.
 - **Output**: A string containing the text content of the 'test_classes.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -117,25 +115,22 @@ The `interfaces_code` method is a pytest fixture that reads and returns the cont
     - `test_dir`: A Path object representing the directory where the test files are located.
 - **Control Flow**:
     - The method constructs the path to the 'test_interfaces.ts' file by appending the filename to the provided test directory path.
-    - It reads the content of the 'test_interfaces.ts' file using the `read_text()` method of the Path object.
-    - The content of the file is returned as a string.
+    - It reads the content of the 'test_interfaces.ts' file using the `read_text()` method.
 - **Output**: A string containing the text content of the 'test_interfaces.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.object\_types\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.object_types_code}} -->
-The `object_types_code` fixture reads and returns the content of the 'test_object_types.ts' file from the specified test directory.
+The `object_types_code` fixture method reads and returns the content of the 'test_object_types.ts' file from a specified directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestTypeScriptDriver` to which this method belongs.
-    - `test_dir`: A `Path` object representing the directory path where the TypeScript test files are located.
+    - `test_dir`: A Path object representing the directory where the 'test_object_types.ts' file is located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_object_types.ts' file by appending the filename to the `test_dir` path.
-    - It reads the content of the 'test_object_types.ts' file using the `read_text()` method of the `Path` object.
-    - The content of the file is returned as a string.
+    - The method constructs the path to the 'test_object_types.ts' file by appending the filename to the provided `test_dir` path.
+    - It reads the text content of the file using the `read_text()` method.
 - **Output**: A string containing the text content of the 'test_object_types.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -148,81 +143,77 @@ The `variables_code` fixture reads and returns the content of the 'test_variable
     - The method constructs the path to the 'test_variables.ts' file by appending the filename to the provided `test_dir` path.
     - It reads the content of the 'test_variables.ts' file using the `read_text()` method.
 - **Output**: A string containing the text content of the 'test_variables.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.enums\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.enums_code}} -->
-The `enums_code` method is a pytest fixture that reads and returns the content of the 'test_enums.ts' file from a specified directory.
+The `enums_code` fixture reads and returns the content of the 'test_enums.ts' file from the specified test directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `test_dir`: A Path object representing the directory where the 'test_enums.ts' file is located.
+    - `test_dir`: A Path object representing the directory where the test files are located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_enums.ts' file by appending the filename to the provided 'test_dir' path.
+    - The method constructs the path to the 'test_enums.ts' file by appending the filename to the provided `test_dir` path.
     - It reads the content of the 'test_enums.ts' file using the `read_text()` method.
-- **Output**: A string containing the text content of the 'test_enums.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Output**: Returns the content of the 'test_enums.ts' file as a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.methods\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.methods_code}} -->
-The `methods_code` fixture reads and returns the content of the 'test_methods.ts' file from a specified test directory.
+The `methods_code` fixture method reads and returns the content of the 'test_methods.ts' file from a specified directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestTypeScriptDriver`.
-    - `test_dir`: A `Path` object representing the directory path where the test TypeScript files are located.
+    - `test_dir`: A Path object representing the directory where the 'test_methods.ts' file is located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_methods.ts' file by appending the filename to the `test_dir` path.
-    - It reads the content of the 'test_methods.ts' file using the `read_text()` method of the `Path` object.
-    - The content of the file is returned as a string.
-- **Output**: A string containing the text content of the 'test_methods.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - The method constructs the path to the 'test_methods.ts' file by appending the filename to the provided `test_dir` path.
+    - It reads the content of the 'test_methods.ts' file using the `read_text()` method.
+- **Output**: Returns the content of the 'test_methods.ts' file as a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.modules\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.modules_code}} -->
-The `modules_code` method is a pytest fixture that reads and returns the content of the 'test_modules.ts' file from a specified test directory.
+The `modules_code` fixture reads and returns the content of the 'test_modules.ts' file from a specified test directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Refers to the instance of the class `TestTypeScriptDriver`.
+    - `self`: Represents the instance of the class `TestTypeScriptDriver`.
     - `test_dir`: A `Path` object representing the directory path where the test files are located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_modules.ts' file by appending the filename to the `test_dir` path.
+    - The method constructs the path to the 'test_modules.ts' file by appending the file name to the `test_dir` path.
     - It reads the content of the 'test_modules.ts' file using the `read_text()` method of the `Path` object.
     - The content of the file is returned as a string.
-- **Output**: A string containing the text content of the 'test_modules.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Output**: A string containing the content of the 'test_modules.ts' file.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.calls\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.calls_code}} -->
-The `calls_code` method is a pytest fixture that reads and returns the content of the 'test_calls.ts' file from a specified directory.
+The `calls_code` method reads and returns the content of the 'test_calls.ts' file from a specified directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestTypeScriptDriver` to which this method belongs.
-    - `test_dir`: A `Path` object representing the directory path where the TypeScript test files are located.
+    - `test_dir`: A Path object representing the directory where the 'test_calls.ts' file is located.
 - **Control Flow**:
-    - The method constructs the path to the 'test_calls.ts' file by appending the filename to the `test_dir` path.
-    - It reads the content of the 'test_calls.ts' file using the `read_text()` method of the `Path` object.
-    - The method returns the content of the file as a string.
+    - The method constructs the path to the 'test_calls.ts' file by appending 'test_calls.ts' to the provided 'test_dir' path.
+    - It reads the text content of the 'test_calls.ts' file using the `read_text()` method.
 - **Output**: A string containing the text content of the 'test_calls.ts' file.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_imports\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_imports_count}} -->
-The `test_extract_imports_count` method verifies that the number of import statements extracted from a TypeScript file matches the expected count of 36.
+The `test_extract_imports_count` method verifies that the number of import statements extracted from a TypeScript file is exactly 36.
 - **Inputs**:
     - `imports_code`: A string containing the TypeScript code from which import statements are to be extracted.
 - **Control Flow**:
     - The method begins by creating a `JsTsDriverTree` object from the provided `imports_code` and a path to 'test_imports.ts'.
-    - It then calls the [`extract_imports`](base.py.md#DriverTreeextract_imports) method on the `tree` object to retrieve all import statements from the code.
-    - Finally, it asserts that the length of the extracted imports list is equal to 36, ensuring the expected number of import statements are present.
-- **Output**: The method does not return any value; it raises an assertion error if the number of imports does not match the expected count.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_imports`](base.py.md#DriverTreeextract_imports)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - It then calls the [`extract_imports`](<js_ts_driver.py.md#JsTsDriverTreeextract_imports>) method on the `tree` object to retrieve all import statements.
+    - Finally, it asserts that the length of the `imports` list is 36, ensuring that all expected import statements are present.
+- **Output**: The method does not return any value; it raises an assertion error if the number of imports is not 36.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports`](<js_ts_driver.py.md#JsTsDriverTreeextract_imports>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -230,36 +221,37 @@ The `test_extract_imports_count` method verifies that the number of import state
 The `test_extract_specific_imports` function tests if specific import statements in TypeScript code are correctly identified and located at expected line numbers.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `imports_code`: A string containing the TypeScript code to be tested for import statements.
+    - `imports_code`: A string containing the TypeScript code to be analyzed for import statements.
     - `import_source`: A string representing the source of the import to be checked.
     - `expected_line`: An integer representing the expected line number where the import should be found.
 - **Control Flow**:
-    - The function uses `JsTsDriverTree.from_code` to parse the provided `imports_code` and create a tree representation of the code.
-    - It calls `tree.extract_imports()` to extract all import statements from the code.
-    - It filters the extracted imports to find those matching the `import_source`.
+    - The function begins by creating a `JsTsDriverTree` object from the provided `imports_code` and a path to a TypeScript file.
+    - It extracts all import statements from the code using the [`extract_imports`](<js_ts_driver.py.md#JsTsDriverTreeextract_imports>) method of the `JsTsDriverTree` object.
+    - The function filters the extracted imports to find those matching the `import_source`.
     - It asserts that at least one matching import is found, raising an error if not.
-    - It asserts that at least one of the matching imports starts at the `expected_line`, raising an error if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected import is not found or not at the expected line.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_imports`](base.py.md#DriverTreeextract_imports)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - It further asserts that at least one of the matching imports starts at the `expected_line`, raising an error if none do.
+- **Output**: The function does not return any value; it uses assertions to validate the presence and line number of specific import statements.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports`](<js_ts_driver.py.md#JsTsDriverTreeextract_imports>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_functions\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_functions_count}} -->
 The `test_extract_functions_count` method verifies that the number of callable definitions extracted from a TypeScript file matches the expected count.
+- **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `functions_code`: A string containing the TypeScript code from which functions are to be extracted.
 - **Control Flow**:
-    - The method begins by creating a `JsTsDriverTree` object from the provided `functions_code` and a path to a TypeScript file named 'test_functions.ts'.
-    - It then calls the [`extract_callable_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions) method on the `tree` object to retrieve all callable definitions from the code.
-    - Finally, it asserts that the length of the extracted functions list is equal to 28, ensuring that all expected function types (e.g., function declarations, arrow functions, generators) are found.
+    - The method begins by creating a `JsTsDriverTree` object from the provided `functions_code` and a path to 'test_functions.ts'.
+    - It then calls [`extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>) on the tree to retrieve all callable definitions from the code.
+    - Finally, it asserts that the length of the extracted functions list is equal to 28, ensuring the expected number of functions are found.
 - **Output**: The method does not return any value; it raises an assertion error if the number of extracted functions does not match the expected count.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -267,23 +259,21 @@ The `test_extract_functions_count` method verifies that the number of callable d
 The `test_extract_specific_functions` method tests the extraction of specific function definitions from TypeScript code, verifying their start and end lines.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `self`: The instance of the class `TestTypeScriptDriver` to which this method belongs.
     - `functions_code`: A string containing the TypeScript code from which functions are to be extracted.
-    - `function_name`: The name of the function to be tested, or `None` for anonymous functions.
+    - `function_name`: The name of the function to be tested, or None for anonymous functions.
     - `expected_start_line`: The expected starting line number of the function in the code.
     - `expected_end_line`: The expected ending line number of the function in the code.
 - **Control Flow**:
-    - The method uses `JsTsDriverTree.from_code` to parse the `functions_code` and create a tree structure.
-    - It calls `tree.extract_callable_definitions()` to extract all callable definitions from the code.
-    - If `function_name` is `None`, it searches for anonymous functions by matching the `start_line` with `expected_start_line`.
-    - If `function_name` is not `None`, it searches for functions by name.
+    - The method uses the `JsTsDriverTree.from_code` to parse the provided TypeScript code and extract function definitions.
+    - If `function_name` is None, it searches for anonymous functions by matching the start line number with `expected_start_line`.
+    - If `function_name` is provided, it searches for functions by name.
     - It asserts that at least one matching function is found.
-    - It retrieves the first matching function and asserts that its `start_line` and `end_line` match the expected values.
+    - It retrieves the first matching function and asserts that its start and end lines match the expected values.
 - **Output**: The method does not return any value; it uses assertions to validate the correctness of function extraction.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_callable_definitions`](base.py.md#DriverTreeextract_callable_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -292,14 +282,14 @@ The `test_extract_classes_count` method verifies that the `JsTsDriverTree` can c
 - **Inputs**:
     - `classes_code`: A string containing TypeScript code that is expected to include class definitions.
 - **Control Flow**:
-    - The method initializes a `JsTsDriverTree` object using the provided `classes_code` and a path to a test file.
-    - It calls [`extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions) on the tree to retrieve class definitions.
-    - An assertion checks that the number of extracted classes is at least 40, ensuring that all expected class definitions, including anonymous ones, are found.
+    - Create a `JsTsDriverTree` object by parsing the `classes_code` string with a specified file path.
+    - Extract class definitions from the parsed tree using the [`extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>) method.
+    - Assert that the number of extracted class definitions is at least 40, ensuring that all expected classes, including anonymous ones, are found.
 - **Output**: The method does not return any value; it raises an assertion error if the number of classes found is less than 40.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -307,22 +297,21 @@ The `test_extract_classes_count` method verifies that the `JsTsDriverTree` can c
 The `test_extract_specific_classes` method verifies that specific classes in a TypeScript file are correctly identified and their start and end lines match expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `self`: The instance of the class `TestTypeScriptDriver` to which this method belongs.
-    - `classes_code`: A string containing the TypeScript code of the classes to be tested.
+    - `classes_code`: A string containing the TypeScript code to be analyzed for class definitions.
     - `class_name`: The name of the class to be tested, or None for anonymous classes.
-    - `expected_start_line`: The expected starting line number of the class in the TypeScript code.
-    - `expected_end_line`: The expected ending line number of the class in the TypeScript code.
+    - `expected_start_line`: The expected starting line number of the class in the code.
+    - `expected_end_line`: The expected ending line number of the class in the code.
 - **Control Flow**:
-    - The method uses `JsTsDriverTree.from_code` to parse the `classes_code` and extract class definitions.
-    - If `class_name` is None, it searches for anonymous classes by matching the `expected_start_line`.
+    - The method uses `JsTsDriverTree.from_code` to parse the provided TypeScript code and extract class definitions.
+    - If `class_name` is None, it searches for anonymous classes by matching the expected start line number.
     - If `class_name` is provided, it searches for classes by name.
     - It asserts that at least one matching class is found.
-    - It checks that the start and end lines of the found class match the expected values, raising an assertion error if they do not.
+    - It verifies that the start and end lines of the found class match the expected values, raising an assertion error if they do not.
 - **Output**: The method does not return any value; it raises assertion errors if the class is not found or if the start and end lines do not match the expected values.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_data_structure_definitions`](base.py.md#DriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -332,13 +321,13 @@ The `test_extract_interfaces_count` method verifies that the number of interface
     - `interfaces_code`: A string containing the TypeScript code from which interfaces and type aliases are to be extracted.
 - **Control Flow**:
     - The method begins by creating a `JsTsDriverTree` object from the provided `interfaces_code` and a path to 'test_interfaces.ts'.
-    - It then calls [`extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions) on the tree to retrieve all interface and type alias definitions.
-    - Finally, it asserts that the length of the extracted interfaces is equal to 20.
-- **Output**: The method does not return any value; it raises an assertion error if the number of extracted interfaces does not match the expected count.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - It then calls [`extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>) on the tree to retrieve all interface and type alias definitions.
+    - Finally, it asserts that the length of the extracted interfaces is exactly 20.
+- **Output**: The method does not return any value; it raises an assertion error if the number of extracted interfaces does not equal 20.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -352,96 +341,95 @@ The `test_extract_specific_interfaces` method tests the extraction of specific T
     - `expected_start_line`: The expected starting line number of the interface in the code.
     - `expected_end_line`: The expected ending line number of the interface in the code.
 - **Control Flow**:
-    - The method uses `JsTsDriverTree.from_code` to parse the `interfaces_code` and create a tree structure.
-    - It extracts all interface definitions using `tree.extract_data_structure_definitions()`.
+    - The method uses `JsTsDriverTree.from_code` to parse the provided `interfaces_code` and create a tree structure.
+    - It extracts all interface definitions from the tree using [`extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>).
     - The method filters the extracted interfaces to find those matching the `interface_name`.
     - It asserts that at least one matching interface is found, raising an error if not.
     - The method iterates over the matching interfaces to find one with the `expected_start_line`.
     - It asserts that such an interface is found, raising an error if not.
     - Finally, it asserts that the `end_line` of the found interface matches `expected_end_line`, raising an error if there is a mismatch.
 - **Output**: The method does not return any value; it raises assertions if the expected conditions are not met.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_object\_type\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_object_type_count}} -->
-The `test_extract_object_type_count` method verifies that the number of object type definitions extracted from a TypeScript code string matches the expected count.
+The `test_extract_object_type_count` method tests the extraction of object type definitions from TypeScript code using a tree-sitter driver.
 - **Inputs**:
     - `object_types_code`: A string containing TypeScript code that defines various object types.
 - **Control Flow**:
     - The method begins by creating a `JsTsDriverTree` object from the provided `object_types_code` and a path to a test file named `test_object_types.ts`.
-    - It then calls [`extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions) on the tree to retrieve all object type definitions from the code.
+    - It then calls [`extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>) on the tree to extract object type definitions from the code.
     - An assertion checks that the number of extracted object types is exactly 17, ensuring the method's correctness.
-- **Output**: The method does not return any value; it raises an assertion error if the number of object types does not match the expected count.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Output**: The method does not return any value; it raises an assertion error if the number of extracted object types does not match the expected count.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_specific\_object\_types<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_object_types}} -->
-The `test_extract_specific_object_types` method tests the extraction of specific TypeScript object types from a codebase, verifying their presence and line boundaries.
+The `test_extract_specific_object_types` method verifies that specific TypeScript object types are correctly extracted from a given code string and match expected line numbers.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `object_types_code`: A string containing the TypeScript code from which object types are to be extracted.
-    - `type_name`: The name of the object type to be tested for extraction.
+    - `object_types_code`: A string containing TypeScript code from which object types are to be extracted.
+    - `type_name`: The name of the TypeScript object type to be tested for extraction.
     - `expected_start_line`: The expected starting line number of the object type in the code.
     - `expected_end_line`: The expected ending line number of the object type in the code.
 - **Control Flow**:
-    - The method begins by creating a `JsTsDriverTree` object from the provided `object_types_code` and a path to the TypeScript file.
-    - It extracts data structure definitions from the tree using `extract_data_structure_definitions()`.
-    - The method filters the extracted types to find those matching the `type_name`.
-    - An assertion checks that at least one matching type is found, raising an error if not.
+    - The method uses `JsTsDriverTree.from_code` to parse the `object_types_code` and create a tree structure.
+    - It extracts data structure definitions from the tree using `tree.extract_data_structure_definitions()`.
+    - It filters the extracted types to find those matching the `type_name`.
+    - An assertion checks that at least one matching type is found.
     - The method iterates over the matching types to find one with the `expected_start_line`.
-    - An assertion checks that a matching object type with the correct start line is found, raising an error if not.
-    - A final assertion checks that the `end_line` of the found object type matches the `expected_end_line`, raising an error if there is a mismatch.
-- **Output**: The method does not return a value; it uses assertions to validate the presence and line boundaries of specific object types in the TypeScript code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_data_structure_definitions`](base.py.md#DriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - An assertion checks that a matching object type with the expected start line is found.
+    - Another assertion verifies that the `end_line` of the found object type matches the `expected_end_line`.
+- **Output**: The method does not return any value; it uses assertions to validate the correctness of the extracted object types.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_variables\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_variables_count}} -->
-The `test_extract_variables_count` method verifies that the [`extract_variables`](js_ts_driver.py.md#JsTsDriverTreeextract_variables) function correctly identifies and counts variable declarations in a TypeScript code snippet.
+The `test_extract_variables_count` method tests the extraction of variable declarations from TypeScript code using the JsTsDriverTree and asserts that the number of extracted variables matches the expected count.
 - **Inputs**:
-    - `variables_code`: A string containing TypeScript code that is expected to have variable declarations.
+    - `variables_code`: A string containing TypeScript code from which variables are to be extracted.
 - **Control Flow**:
-    - The method begins by creating a `JsTsDriverTree` object from the provided `variables_code` and a path to a test file named `test_variables.ts`.
-    - It then calls the [`extract_variables`](js_ts_driver.py.md#JsTsDriverTreeextract_variables) method on the `tree` object to retrieve a list of variable declarations.
-    - An assertion checks that the length of the `variables` list is exactly 29, ensuring that all expected variable declarations are found.
-- **Output**: The method does not return any value; it raises an assertion error if the expected number of variables is not found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](js_ts_driver.py.md#JsTsDriverTreeextract_variables)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - The method begins by creating a JsTsDriverTree object from the provided TypeScript code string and a path to a test file.
+    - It then calls the [`extract_variables`](<js_ts_driver.py.md#JsTsDriverTreeextract_variables>) method on the tree object to retrieve a list of variable declarations.
+    - Finally, it asserts that the length of the extracted variables list is equal to 29, indicating the expected number of variable declarations in the test code.
+- **Output**: The method does not return any value; it raises an assertion error if the number of extracted variables does not match the expected count.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](<js_ts_driver.py.md#JsTsDriverTreeextract_variables>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_specific\_variables<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_specific_variables}} -->
-The `test_extract_specific_variables` function tests if specific variables in TypeScript code are correctly extracted and located at expected lines using the JsTsDriverTree.
+The `test_extract_specific_variables` function tests if specific variables in TypeScript code are correctly extracted and located at expected lines.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `self`: The instance of the class `TestTypeScriptDriver` to which this method belongs.
-    - `variables_code`: A string containing the TypeScript code to be tested, provided by a pytest fixture.
-    - `variable_name`: The name of the variable to be checked for extraction.
+    - `variables_code`: A string containing the TypeScript code to be analyzed for variable extraction.
+    - `variable_name`: The name of the variable to be checked for extraction and line location.
     - `expected_line`: The expected line number where the variable should be found in the code.
 - **Control Flow**:
-    - The function begins by creating a `JsTsDriverTree` object from the provided `variables_code` and a path to the test file.
-    - It then extracts all variables from the code using the [`extract_variables`](base.py.md#DriverTreeextract_variables) method of the `JsTsDriverTree` object.
-    - The function filters the extracted variables to find those matching the `variable_name`.
-    - An assertion checks that at least one matching variable is found, raising an error if not.
-    - Another assertion checks that the first matching variable's start line matches the `expected_line`, raising an error if there is a mismatch.
-- **Output**: The function does not return any value; it uses assertions to validate the test conditions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_variables`](base.py.md#DriverTreeextract_variables)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - The function uses `JsTsDriverTree.from_code` to parse the provided TypeScript code into a tree structure.
+    - It calls `tree.extract_variables()` to extract all variables from the parsed code.
+    - It filters the extracted variables to find those matching the `variable_name`.
+    - It asserts that at least one matching variable is found, raising an error if not.
+    - It checks that the first matching variable's start line matches the `expected_line`, raising an error if there is a mismatch.
+- **Output**: The function does not return any value; it raises an assertion error if the variable is not found or if its start line does not match the expected line.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](<js_ts_driver.py.md#JsTsDriverTreeextract_variables>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -451,13 +439,13 @@ The `test_extract_enums_count` method verifies that the number of enum declarati
     - `enums_code`: A string containing TypeScript code that is expected to include enum declarations.
 - **Control Flow**:
     - The method begins by creating a `JsTsDriverTree` object from the provided `enums_code` and a path to a test file named `test_enums.ts`.
-    - It then calls [`extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions) on the tree object to retrieve all data structure definitions, which include enums.
-    - Finally, it asserts that the length of the extracted enums list is equal to 8, ensuring that exactly eight enum declarations are found in the provided code.
+    - It then calls [`extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>) on the tree object to extract enum declarations from the code.
+    - Finally, it asserts that the length of the extracted enums list is equal to 8, ensuring that exactly eight enum declarations are found.
 - **Output**: The method does not return any value; it raises an assertion error if the number of enums found is not eight.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -470,33 +458,33 @@ The `test_extract_specific_enums` function tests if specific enums are correctly
     - `expected_line`: The expected starting line number of the enum in the TypeScript code.
 - **Control Flow**:
     - The function begins by creating a `JsTsDriverTree` object from the provided `enums_code` and a path to the TypeScript file.
-    - It then extracts all data structure definitions (enums) from the tree.
-    - The function filters the extracted enums to find those matching the provided `enum_name`.
-    - It asserts that at least one matching enum is found, raising an error if not.
-    - Finally, it asserts that at least one of the matching enums starts at the `expected_line`, raising an error if none do.
-- **Output**: The function does not return any value; it raises an assertion error if the expected conditions are not met.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - It extracts all data structure definitions (enums) from the tree.
+    - It filters the extracted enums to find those matching the provided `enum_name`.
+    - An assertion checks that at least one matching enum is found, raising an error if not.
+    - Another assertion checks that at least one of the matching enums starts at the `expected_line`, raising an error if none do.
+- **Output**: The function does not return any value; it uses assertions to validate the test conditions.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_methods\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_methods_count}} -->
 The `test_extract_methods_count` method verifies that the number of method definitions extracted from a TypeScript file is at least 74.
-- **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
+    - `self`: Represents the instance of the class `TestTypeScriptDriver` to which this method belongs.
     - `methods_code`: A string containing the TypeScript code from which method definitions are to be extracted.
 - **Control Flow**:
     - The method begins by creating a `JsTsDriverTree` object from the provided `methods_code` and a path to 'test_methods.ts'.
-    - It then extracts callable definitions from the tree, which includes method definitions.
-    - A list comprehension filters these methods to include only those with a non-empty fully qualified parent path, indicating they are methods within classes or objects.
-    - An assertion checks that the length of this filtered list is at least 74, ensuring that a sufficient number of method definitions have been found.
-- **Output**: The method does not return any value; it raises an assertion error if the number of extracted methods is less than 74.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - It then calls [`extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>) on the tree to retrieve all callable definitions, which include methods.
+    - A list comprehension filters these methods to include only those with a non-empty `fully_qualified_parent_path`, indicating they are methods within classes or objects.
+    - An assertion checks that the length of this filtered list is at least 74, ensuring a minimum number of method definitions are present.
+- **Output**: The method does not return any value; it raises an assertion error if the condition is not met.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -504,42 +492,41 @@ The `test_extract_methods_count` method verifies that the number of method defin
 The `test_extract_specific_methods` function tests the extraction of specific method definitions from TypeScript code using the JsTsDriverTree.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `self`: The instance of the class `TestTypeScriptDriver` to which this method belongs.
     - `methods_code`: A string containing the TypeScript code from which methods are to be extracted.
     - `method_name`: The name of the method to be extracted and tested.
-    - `class_name`: The name of the class containing the method to be extracted and tested.
+    - `class_name`: The name of the class containing the method to be extracted.
     - `expected_start_line`: The expected starting line number of the method in the code.
     - `expected_end_line`: The expected ending line number of the method in the code.
 - **Control Flow**:
-    - The function begins by creating a `JsTsDriverTree` object from the provided `methods_code` and a path to 'test_methods.ts'.
-    - It extracts all callable definitions (methods) from the tree.
-    - It filters the extracted methods to find those matching the provided `method_name` and `class_name`.
+    - The function begins by creating a JsTsDriverTree object from the provided TypeScript code.
+    - It extracts all callable definitions (methods) from the code using the [`extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>) method.
+    - It filters the extracted methods to find those matching the provided method name and class name.
     - An assertion checks that at least one matching method is found.
-    - The function iterates over the matching methods to find one with the expected start line, assigning it to `method`.
+    - The function iterates over the matching methods to find one with the expected start line, assigning it to the `method` variable.
     - An assertion checks that a method with the expected start line is found.
     - Another assertion checks that the method's end line matches the expected end line.
 - **Output**: The function does not return any value; it uses assertions to validate the correctness of method extraction.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_callable_definitions`](base.py.md#DriverTreeextract_callable_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](<js_ts_driver.py.md#JsTsDriverTreeextract_callable_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
 #### TestTypeScriptDriver\.test\_extract\_calls\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver.test_extract_calls_count}} -->
-The `test_extract_calls_count` method verifies that the number of function calls extracted from a TypeScript code string matches an expected count.
+The `test_extract_calls_count` method verifies that the `JsTsDriverTree` can correctly extract and count function calls from a given TypeScript code string.
 - **Inputs**:
     - `calls_code`: A string containing TypeScript code from which function calls are to be extracted.
 - **Control Flow**:
-    - The method begins by creating a `JsTsDriverTree` object from the provided `calls_code` string and a path to a TypeScript file.
-    - It then extracts function calls from the tree using the [`extract_function_calls`](js_ts_driver.py.md#JsTsDriverTreeextract_function_calls) method.
+    - The method begins by creating a `JsTsDriverTree` object from the provided `calls_code` and a path to 'test_calls.ts'.
+    - It then extracts function calls from the tree using the [`extract_function_calls`](<js_ts_driver.py.md#JsTsDriverTreeextract_function_calls>) method.
     - For each extracted call, it prints the call's name and the line number where it starts.
-    - Finally, it asserts that the number of extracted calls is equal to 41.
-- **Output**: The method does not return any value; it raises an assertion error if the number of extracted calls does not match the expected count.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_calls`](js_ts_driver.py.md#JsTsDriverTreeextract_function_calls)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+    - Finally, it asserts that the number of extracted calls is exactly 41.
+- **Output**: The method does not return any value; it raises an assertion error if the number of extracted calls is not 41.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_calls`](<js_ts_driver.py.md#JsTsDriverTreeextract_function_calls>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 ---
@@ -556,11 +543,11 @@ The `test_extract_specific_calls` method verifies that specific function calls i
     - If `call_name` is an empty string, it searches for anonymous function calls by matching the `expected_line`.
     - If `call_name` is provided, it searches for function calls by matching both the `call_name` and `expected_line`.
     - An assertion checks that at least one matching function call is found, otherwise an error message is raised indicating the missing function call.
-- **Output**: The method does not return any value; it uses assertions to validate the presence of specific function calls in the code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_function_calls`](base.py.md#DriverTreeextract_function_calls)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](#TestTypeScriptDriver)  (Base Class)
+- **Output**: The method does not return any value; it raises an assertion error if the expected function call is not found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_calls`](<js_ts_driver.py.md#JsTsDriverTreeextract_function_calls>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver_test.TestTypeScriptDriver`](<#TestTypeScriptDriver>)  (Base Class)
 
 
 

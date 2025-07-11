@@ -6,7 +6,7 @@
 The `dependencies.dot` file represents a directed graph of dependencies for the `uctags` component, showing its reliance on libraries such as `libjansson`, `libyaml`, `libxml2`, and `libiconv`, with `libxml2` further depending on `libiconv` and `libz`.
 
 # Purpose
-The file contains a Graphviz DOT language representation of a directed graph. It specifies dependencies between software components, where "uctags" depends on "libjansson," "libyaml," "libxml2," and "libiconv," and "libxml2" further depends on "libiconv" and "libz." This structure is used to visualize or analyze the dependency relationships between these components.
+The file contains a Graphviz DOT language representation of a directed graph. It specifies dependencies between software components, where "uctags" depends on "libjansson," "libyaml," "libxml2," and "libiconv," and "libxml2" further depends on "libiconv" and "libz." This structure is used to visualize and manage the relationships and dependencies between these components.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

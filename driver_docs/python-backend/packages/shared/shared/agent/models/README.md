@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models` folder in the `python-backend` codebase contains configurations and utility functions for handling language models, including specific implementations for Claude and OpenAI, as well as configuration files for model settings.
+Configurations and helper functions for language models, including Claude and OpenAI implementations.
 
 ## Folders
-- **[claude](claude/README.md)**: The `claude` folder in the `python-backend` codebase contains a `helpers.py` file that provides utility functions and classes for handling tool prompts, parsing XML responses, and formatting tool results.
-- **[openai](openai/README.md)**: The `openai` folder in the `python-backend` codebase contains a file, `file_search.py`, which implements a function to query and summarize documents using OpenAI's API with tools like file search and code interpreter.
+- **[claude](claude/README.md)**: The `claude` folder in the `python-backend` codebase contains a `helpers.py` file that provides functions for handling tool prompts, parsing XML responses, and formatting tool results.
+- **[openai](openai/README.md)**: The `openai` folder in the `python-backend` codebase contains a file, `file_search.py`, which defines a function for querying and summarizing documents using OpenAI's API with tools such as a document summarizer assistant, file search, and code interpreter.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

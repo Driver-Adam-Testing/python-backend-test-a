@@ -3,90 +3,92 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_enums.ts` file contains various TypeScript enum definitions, including basic, explicit value, string, mixed, const, const assertions, ambient, and module-scoped enums.
+The `test_enums.ts` file is a test file for TypeScript enum definitions, showcasing various types of enums including basic, explicit values, string, mixed, const, const assertions, ambient, and module-scoped enums.
 
 # Purpose
-This TypeScript file serves as a comprehensive test suite for various enum definitions, showcasing the versatility and different use cases of enums in TypeScript. It includes examples of basic enums, enums with explicit numeric values, string enums, mixed enums combining numeric and string values, and const enums for compile-time optimizations. Additionally, it demonstrates the use of bitwise operations in enums, ambient enums for external declarations, and module-scoped enums to illustrate encapsulation within a module. The file is not intended to be an executable or a library for import but rather a reference or educational resource to demonstrate the syntax and capabilities of enums in TypeScript.
-# Data Structures
+This TypeScript file serves as a comprehensive demonstration of various enum types and their configurations, showcasing the versatility and use cases of enums in TypeScript. It includes basic enums, enums with explicit numeric values, string enums, mixed enums combining numeric and string values, and const enums for optimized performance. Additionally, it illustrates the use of bitwise operations in enums, ambient enums for external declarations, and module-scoped enums to encapsulate enum definitions within a module. The file provides a broad overview of enum capabilities, making it a useful reference for understanding how to define and utilize enums in different contexts within TypeScript applications.
+# Types
 
 ---
-### Direction
-- **Type**: `enum`
+### Direction<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.Direction}} -->
 - **Members**:
     - `Up`: Represents the upward direction.
     - `Down`: Represents the downward direction.
     - `Left`: Represents the leftward direction.
     - `Right`: Represents the rightward direction.
-- **Description**: The `Direction` enum is a basic enumeration in TypeScript that defines four possible directions: Up, Down, Left, and Right. Each member of the enum is implicitly assigned a numeric value starting from 0, which is the default behavior for TypeScript enums. This enum can be used to represent directional movement or orientation in a program.
+- **Description**: The `Direction` enum defines a set of named constants representing four cardinal directions: Up, Down, Left, and Right. This enum is used to provide a clear and descriptive way to handle direction-related logic in TypeScript applications, ensuring that only valid direction values are used.
 
 
 ---
-### StatusCode
-- **Type**: `enum`
+### StatusCode<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.StatusCode}} -->
 - **Members**:
-    - `OK`: Represents a successful HTTP request with a status code of 200.
-    - `Created`: Indicates that a request has been fulfilled and resulted in a new resource being created, with a status code of 201.
-    - `Accepted`: Denotes that a request has been accepted for processing, but the processing has not been completed, with a status code of 202.
-    - `BadRequest`: Signifies a client error with a status code of 400, indicating that the server could not understand the request due to invalid syntax.
-    - `Unauthorized`: Indicates that the request requires user authentication, with a status code of 401.
-    - `NotFound`: Represents a status code of 404, indicating that the server cannot find the requested resource.
-    - `InternalError`: Denotes a server error with a status code of 500, indicating that the server encountered an unexpected condition.
-- **Description**: The `StatusCode` enum is a TypeScript enumeration that defines a set of named constants representing common HTTP status codes. Each member of the enum is associated with a specific numeric value that corresponds to a standard HTTP response status, facilitating the handling of HTTP responses in a type-safe manner.
+    - `OK`: Represents a successful HTTP request with status code 200.
+    - `Created`: Indicates that a resource has been successfully created with status code 201.
+    - `Accepted`: Denotes that a request has been accepted for processing with status code 202.
+    - `BadRequest`: Signifies a client error due to a bad request with status code 400.
+    - `Unauthorized`: Indicates that authentication is required and has failed or not been provided with status code 401.
+    - `NotFound`: Represents a situation where the requested resource could not be found with status code 404.
+    - `InternalError`: Denotes a server error with status code 500.
+- **Description**: The `StatusCode` enum defines a set of named constants representing common HTTP status codes, providing a clear and descriptive way to handle HTTP responses in a TypeScript application. Each member of the enum corresponds to a specific HTTP status code, facilitating the management of HTTP response statuses in a type-safe manner.
 
 
 ---
-### Color
-- **Type**: `enum`
+### Color<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.Color}} -->
 - **Members**:
     - `Red`: Represents the color red with the string value 'RED'.
     - `Green`: Represents the color green with the string value 'GREEN'.
     - `Blue`: Represents the color blue with the string value 'BLUE'.
     - `Yellow`: Represents the color yellow with the string value 'YELLOW'.
-- **Description**: The `Color` enum is a TypeScript string-based enumeration that defines a set of named constants representing colors, each associated with a specific string value. This allows for the use of meaningful names instead of raw string values, improving code readability and maintainability.
+- **Description**: The `Color` enum defines a set of named constants representing colors, each associated with a string value. This enum is used to ensure type safety and clarity when working with color values in a TypeScript application, allowing developers to use descriptive names instead of raw string values.
 
 
 ---
-### Mixed
-- **Type**: `enum`
+### Mixed<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.Mixed}} -->
 - **Members**:
-    - `No`: Represents the numeric value 0.
-    - `Yes`: Represents the string value 'YES'.
-    - `Maybe`: Represents the numeric value 1.
-    - `Never`: Represents the string value 'NEVER'.
-- **Description**: The `Mixed` enum is a TypeScript enumeration that combines both numeric and string values, allowing for a flexible representation of different states or options. It includes four members: `No` and `Maybe` with numeric values, and `Yes` and `Never` with string values, demonstrating the ability to mix types within a single enum.
+    - `No`: Represents a numeric value of 0.
+    - `Yes`: Represents a string value 'YES'.
+    - `Maybe`: Represents a numeric value of 1.
+    - `Never`: Represents a string value 'NEVER'.
+- **Description**: The `Mixed` enum is a TypeScript enumeration that defines a set of named constants with both numeric and string values. It provides a way to represent a collection of related values that can be either numbers or strings, allowing for more flexible and expressive code. This enum can be used in scenarios where a combination of numeric and string identifiers is needed to represent different states or options.
 
 
 ---
-### ConstDirection
-- **Type**: `const enum`
+### ConstDirection<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ConstDirection}} -->
 - **Members**:
     - `North`: Represents the north direction.
     - `South`: Represents the south direction.
     - `East`: Represents the east direction.
     - `West`: Represents the west direction.
-- **Description**: The `ConstDirection` is a TypeScript const enum that defines four cardinal directions: North, South, East, and West. As a const enum, it is inlined at compile time, which can lead to performance optimizations by reducing the overhead of enum object creation at runtime.
+- **Description**: The `ConstDirection` is a constant enum that defines four cardinal directions: North, South, East, and West. As a constant enum, it is inlined at compile time, meaning that the enum values are replaced with their corresponding numeric values in the generated JavaScript code, which can lead to more efficient code by reducing runtime overhead.
 
 
 ---
-### FileAccess
-- **Type**: `enum`
+### FileAccess<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.FileAccess}} -->
 - **Members**:
     - `None`: Represents no file access with a value of 0.
-    - `Read`: Represents read access with a value of 2, using bitwise shift.
-    - `Write`: Represents write access with a value of 4, using bitwise shift.
-    - `ReadWrite`: Represents both read and write access, combining Read and Write using bitwise OR.
-    - `All`: Represents all access types, combining Read, Write, and an additional bit using bitwise OR.
-- **Description**: The `FileAccess` enum is a TypeScript enumeration that defines various levels of file access permissions using bitwise operations. It includes options for no access, read access, write access, combined read and write access, and all access types. This enum is useful for managing and checking file permissions in a type-safe manner.
+    - `Read`: Represents read-only file access with a value of 2.
+    - `Write`: Represents write-only file access with a value of 4.
+    - `ReadWrite`: Represents both read and write file access with a value of 6.
+    - `All`: Represents all file access permissions with a value of 10.
+- **Description**: The `FileAccess` enum defines a set of named constants representing different levels of file access permissions. It uses bitwise operations to allow combinations of permissions, such as read, write, and both read and write access. This enum provides a structured way to manage file access rights in a TypeScript application, ensuring that permissions are clearly defined and easily manipulated using bitwise operations.
 
 
 ---
-### ModuleScope\.ModuleEnum
-- **Type**: `enum`
+### AmbientEnum<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.AmbientEnum}} -->
+- **Members**:
+    - `A`: Represents the numeric value 1 in the enum.
+    - `B`: Represents the numeric value 2 in the enum, as it follows A which is 1.
+    - `C`: Represents the numeric value 4 in the enum.
+- **Description**: The `AmbientEnum` is a TypeScript ambient enum declaration, which means it is a declaration without an implementation, typically used to describe the shape of an enum that is defined elsewhere, such as in a different module or a library. It defines a set of named constants, `A`, `B`, and `C`, with `A` explicitly set to 1, `B` implicitly set to 2 (as it follows `A`), and `C` explicitly set to 4. This enum can be used to ensure type safety and clarity when dealing with these specific numeric values in TypeScript code.
+
+
+---
+### ModuleEnum<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ModuleScope.ModuleEnum}} -->
 - **Members**:
     - `A`: Represents the string value 'A'.
     - `B`: Represents the string value 'B'.
     - `C`: Represents the string value 'C'.
-- **Description**: The `ModuleScope.ModuleEnum` is a TypeScript enum that is scoped within a module named `ModuleScope`. It defines three members, `A`, `B`, and `C`, each associated with a string value that matches their respective names. This enum is used to encapsulate a set of related constants within a module, providing a clear and organized way to manage these values.
+- **Description**: The `ModuleEnum` is a string-based enumeration defined within a module scope, providing a set of named constants 'A', 'B', and 'C'. This enum is used to represent a fixed set of string values, allowing for more readable and maintainable code by replacing string literals with meaningful names.
 
 
 

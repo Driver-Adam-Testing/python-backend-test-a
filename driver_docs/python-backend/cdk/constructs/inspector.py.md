@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `inspector.py` file defines the `Inspector` class, which is a construct for managing inspector-related infrastructure, and includes a plan to eventually migrate existing inspector buckets into this construct.
+The `inspector.py` file defines the `Inspector` class, which is a construct for managing inspector-related infrastructure, and includes comments on future plans for migrating CDK ownership of existing inspector buckets.
 
 # Purpose
-This Python code defines a class `Inspector` that extends the `Construct` class, which is typically used in AWS Cloud Development Kit (CDK) applications to define reusable cloud components. The code provides narrow functionality, focusing on the creation and management of an "Inspector" construct, which is intended to be part of a larger infrastructure setup. The `InspectorParams` class is a simple data structure used to pass configuration parameters, specifically the environment, to the `Inspector` class. The commented-out section suggests that the code is part of a migration or refactoring effort to consolidate infrastructure management within a single repository, specifically concerning AWS S3 bucket management. This file is a component of a larger infrastructure-as-code project, with a focus on organizing and managing cloud resources efficiently.
+This Python code defines a class `Inspector` that extends the `Construct` class, which is likely part of a framework for building cloud infrastructure, such as AWS CDK (Cloud Development Kit). The code provides narrow functionality, focusing on the creation of an `Inspector` construct that is initialized with a scope, an identifier, and parameters encapsulated in the `InspectorParams` class. The `InspectorParams` class is a simple data structure holding an `environment` attribute. The commented-out section in the `Inspector` class suggests a future plan to manage AWS S3 bucket resources within this construct, indicating an intention to consolidate infrastructure code. This file is part of a larger infrastructure-as-code setup, and the comments provide context for ongoing refactoring efforts to centralize resource management.
 # Imports and Dependencies
 
 ---
@@ -19,9 +19,9 @@ This Python code defines a class `Inspector` that extends the `Construct` class,
 ### InspectorParams<!-- {{#class:python-backend/cdk/constructs/inspector.InspectorParams}} -->
 - **Members**:
     - `environment`: Specifies the environment for the inspector.
-- **Description**: The `InspectorParams` class is a simple data structure that holds configuration parameters for an inspector, specifically the environment in which the inspector operates. It is initialized with an environment string, which is stored as an instance variable.
+- **Description**: The `InspectorParams` class is a simple data structure that holds configuration parameters for an inspector, specifically the environment in which the inspector operates. It is initialized with an `environment` string, which is stored as an instance variable.
 - **Methods**:
-    - [`python-backend/cdk/constructs/inspector.InspectorParams.__init__`](#InspectorParams__init__)
+    - [`python-backend/cdk/constructs/inspector.InspectorParams.__init__`](<#InspectorParams__init__>)
 
 **Methods**
 
@@ -33,15 +33,15 @@ The `__init__` method initializes an instance of the `InspectorParams` class by 
 - **Control Flow**:
     - The method assigns the input parameter `environment` to the instance attribute `self.environment`.
 - **Output**: The method does not return any value; it initializes the `environment` attribute of the `InspectorParams` instance.
-- **See also**: [`python-backend/cdk/constructs/inspector.InspectorParams`](#InspectorParams)  (Base Class)
+- **See also**: [`python-backend/cdk/constructs/inspector.InspectorParams`](<#InspectorParams>)  (Base Class)
 
 
 
 ---
 ### Inspector<!-- {{#class:python-backend/cdk/constructs/inspector.Inspector}} -->
-- **Description**: The `Inspector` class is a specialized construct that extends the `Construct` class, designed to integrate with AWS infrastructure. It is intended to manage resources related to inspection, such as S3 buckets, although the actual creation of these resources is currently commented out. The class is part of a larger infrastructure setup and is meant to eventually consolidate code and infrastructure management within a single repository, facilitating easier migration and management of AWS resources across different CDK stacks and repositories.
+- **Description**: The `Inspector` class is a specialized construct that extends the `Construct` class, designed to integrate with AWS infrastructure. It is intended to manage resources related to inspection, such as S3 buckets, although the actual creation of these resources is currently commented out. The class is part of a larger infrastructure setup, with plans to consolidate resource management within this class for better organization and control across different CDK stacks and repositories.
 - **Methods**:
-    - [`python-backend/cdk/constructs/inspector.Inspector.__init__`](#Inspector__init__)
+    - [`python-backend/cdk/constructs/inspector.Inspector.__init__`](<#Inspector__init__>)
 - **Inherits From**:
     - `Construct`
 
@@ -49,18 +49,18 @@ The `__init__` method initializes an instance of the `InspectorParams` class by 
 
 ---
 #### Inspector\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/constructs/inspector.Inspector.__init__}} -->
-The [`__init__`](#InspectorParams__init__) method initializes an instance of the `Inspector` class, setting up its base properties and preparing for potential future integration of AWS S3 bucket resources.
+The [`__init__`](<#InspectorParams__init__>) method initializes an instance of the `Inspector` class, inheriting from `Construct`, and sets up the initial configuration for the inspector component.
 - **Inputs**:
     - `scope`: A `Construct` object that represents the scope in which this construct is defined.
     - `id`: A string that serves as the unique identifier for this construct within its scope.
     - `params`: An `InspectorParams` object containing configuration parameters, such as the environment.
 - **Control Flow**:
-    - Calls the parent class `Construct`'s [`__init__`](#InspectorParams__init__) method with `scope` and `id` to initialize the base properties of the construct.
-    - Contains commented-out code and notes regarding the future integration of an AWS S3 bucket, indicating plans to migrate existing infrastructure resources into this construct.
+    - Calls the superclass [`__init__`](<#InspectorParams__init__>) method with `scope` and `id` to initialize the base `Construct` class.
+    - Contains commented-out code and notes regarding the creation and management of an S3 bucket for inspector purposes, indicating future plans for resource management.
 - **Output**: The method does not return any value; it initializes the object state.
-- **Functions called**:
-    - [`python-backend/cdk/constructs/inspector.InspectorParams.__init__`](#InspectorParams__init__)
-- **See also**: [`python-backend/cdk/constructs/inspector.Inspector`](#Inspector)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/cdk/constructs/inspector.InspectorParams.__init__`](<#InspectorParams__init__>)
+- **See also**: [`python-backend/cdk/constructs/inspector.Inspector`](<#Inspector>)  (Base Class)
 
 
 

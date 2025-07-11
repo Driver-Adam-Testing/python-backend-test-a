@@ -6,7 +6,7 @@
 The `test_onboard_utils.py` file contains unit tests for the `unpack_archive_to_finalized_path` function, verifying its behavior when unpacking zip archives with various directory structures and optional override names.
 
 # Purpose
-This Python file is a collection of unit tests designed to verify the functionality of the `unpack_archive_to_finalized_path` function, which is presumably responsible for extracting ZIP archives to a specified directory. The tests cover various scenarios, including archives with a single file, multiple root directories, mixed files and directories, and cases where the ZIP filename matches or differs from the root directory name. Additionally, some tests explore the use of an `override_codebase_name` parameter to rename the extracted directory. The file uses the `pytest` framework, leveraging the `tmp_path` fixture to create temporary directories for testing, and the `zipfile` module to create test ZIP archives. Overall, this code provides narrow functionality focused on ensuring the robustness and correctness of the archive unpacking process.
+This Python file is a collection of unit tests designed to verify the functionality of the `unpack_archive_to_finalized_path` function, which is presumably responsible for extracting ZIP archives to a specified directory. The tests cover various scenarios, including archives with a single file, multiple root directories, mixed files and directories, and cases where the root directory matches or differs from the ZIP filename. Additionally, some tests check the behavior when an override name is provided for the extracted directory. The use of the `pytest` framework is implied by the `tmp_path` fixture, which provides a temporary directory for each test to ensure isolation and prevent side effects. Overall, the file provides narrow functionality focused on ensuring the robustness and correctness of the archive unpacking process.
 # Imports and Dependencies
 
 ---
@@ -21,18 +21,19 @@ This Python file is a collection of unit tests designed to verify the functional
 ### test\_unpack\_archive\_single\_file\_no\_root<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/test_onboard_utils.test_unpack_archive_single_file_no_root}} -->
 The function tests the unpacking of a zip archive containing a single file without a root directory.
 - **Inputs**:
-    - `tmp_path`: A temporary directory path provided by the test framework to store the zip file and extraction results.
+    - `tmp_path`: A temporary directory path provided by the test framework to store test files.
 - **Control Flow**:
-    - Create a Path object for the zip file named 'single_file.zip' within the temporary directory.
-    - Create a Path object for the extraction directory named 'extracted' within the temporary directory and create the directory.
+    - Create a path for the zip file named 'single_file.zip' within the temporary directory.
+    - Create a path for the extraction directory named 'extracted' within the temporary directory and ensure it exists by creating it.
     - Open a new zip file at the specified zip path in write mode.
-    - Write a single file named 'lonely_file.txt' with content 'hello' into the zip archive.
+    - Write a single file named 'lonely_file.txt' with the content 'hello' into the zip archive.
+    - Close the zip file after writing.
     - Call the function 'unpack_archive_to_finalized_path' with the zip path and extraction path to unpack the archive.
-    - Assert that the result path returned by the unpack function exists.
+    - Verify that the result path returned by the unpack function exists.
     - Assert that the stem of the result path matches the stem of the zip path, indicating the default naming behavior when no root directory is present.
     - Assert that the name of the result path is 'single_file'.
     - Assert that the file 'lonely_file.txt' exists within the result path.
-- **Output**: The function does not return any value; it uses assertions to validate the unpacking process.
+- **Output**: The function does not return any value; it uses assertions to validate the expected outcomes of the test.
 
 
 ---
@@ -41,17 +42,17 @@ The function tests the unpacking of a zip archive containing multiple top-level 
 - **Inputs**:
     - `tmp_path`: A temporary directory path provided by the test framework to store the zip file and extraction results.
 - **Control Flow**:
-    - Create a Path object for the zip file named 'multi_root_dirs.zip' within the temporary directory.
-    - Create a Path object for the extraction directory named 'extracted' within the temporary directory and create the directory.
+    - Create a path for the zip file named 'multi_root_dirs.zip' within the temporary directory.
+    - Create an extraction path named 'extracted' within the temporary directory and ensure it exists by creating the directory.
     - Open a new zip file at the specified zip path in write mode.
     - Within the zip file, create two directories named 'dir1/' and 'dir2/'.
-    - Write a file named 'file1.txt' with content 'data1' inside 'dir1/' and a file named 'file2.txt' with content 'data2' inside 'dir2/'.
+    - Write a file named 'file1.txt' with content 'data1' inside 'dir1/'.
+    - Write a file named 'file2.txt' with content 'data2' inside 'dir2/'.
     - Close the zip file after writing the directories and files.
     - Call the function 'unpack_archive_to_finalized_path' with the zip path and extraction path to perform the extraction.
-    - Assert that the result path exists and its name matches the expected 'multi_root_dirs'.
-    - Assert that the result path's stem matches the zip path's stem.
-    - Assert that the files 'dir1/file1.txt' and 'dir2/file2.txt' exist in the extracted path.
-- **Output**: The function does not return any value but asserts the existence and correctness of the extracted files and directories.
+    - Verify that the result path exists and matches the expected name and stem derived from the zip file name.
+    - Check that the files 'dir1/file1.txt' and 'dir2/file2.txt' exist in the extracted path.
+- **Output**: The function does not return any value; it asserts the correctness of the extraction process.
 
 
 ---
@@ -73,18 +74,18 @@ This function tests the unpacking of a zip archive containing a mix of files and
 
 ---
 ### test\_unpack\_archive\_single\_root\_dir\_with\_subdirs<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/test_onboard_utils.test_unpack_archive_single_root_dir_with_subdirs}} -->
-This function tests the unpacking of a zip archive containing a single root directory with multiple files and subdirectories.
+The function tests the unpacking of a zip archive containing a single root directory with subdirectories and files, ensuring the correct extraction structure.
 - **Inputs**:
-    - `tmp_path`: A temporary directory path provided by the pytest fixture, used to create and extract the zip archive.
+    - `tmp_path`: A temporary directory path provided by the test framework, used to create and extract the zip archive.
 - **Control Flow**:
     - Create a Path object for the zip file and the extraction directory within the temporary path.
     - Create the extraction directory using mkdir().
     - Open a new zip file at the specified zip path in write mode.
     - Within the zip file, create a root directory and a subdirectory, and add two files with specified content.
-    - Close the zip file after writing the contents.
-    - Call the function unpack_archive_to_finalized_path with the zip path and extraction path to extract the contents.
+    - Close the zip file after writing the directories and files.
+    - Call the function unpack_archive_to_finalized_path with the zip path and extraction path to perform the extraction.
     - Assert that the result path exists and is named 'real_root'.
-    - Assert that the files 'file1.txt' and 'subdir/file2.txt' exist in the extracted directory.
+    - Assert that the extracted files 'file1.txt' and 'subdir/file2.txt' exist in the expected locations.
 - **Output**: The function does not return any value; it uses assertions to verify the correct extraction of the zip archive.
 
 
@@ -92,47 +93,44 @@ This function tests the unpacking of a zip archive containing a single root dire
 ### test\_unpack\_archive\_single\_root\_dir\_same\_as\_zip<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/test_onboard_utils.test_unpack_archive_single_root_dir_same_as_zip}} -->
 This function tests the unpacking of a zip archive where the top-level directory matches the zip filename.
 - **Inputs**:
-    - `tmp_path`: A temporary directory path provided by the pytest fixture, used to create and extract the zip archive.
+    - `tmp_path`: A temporary directory path provided by the test framework to store the zip file and extraction results.
 - **Control Flow**:
     - Define the zip file name stem as 'project_folder'.
-    - Create the full path for the zip file and the extraction directory using the temporary path.
-    - Create the extraction directory.
-    - Open a new zip file at the specified path and add a directory structure with files inside it, where the top-level directory matches the zip file name.
-    - Call the function 'unpack_archive_to_finalized_path' to extract the zip file to the extraction directory.
-    - Assert that the result path exists and its name matches the zip stem.
-    - Assert that the files 'file1.txt' and 'subdir/file2.txt' exist in the extracted directory.
-- **Output**: The function does not return any value; it uses assertions to verify the correct behavior of the archive unpacking process.
+    - Create a zip file at the path derived from the temporary path and the zip stem.
+    - Create an extraction directory at the path derived from the temporary path.
+    - Open the zip file in write mode and create directories and files within it that match the zip stem structure.
+    - Call the function 'unpack_archive_to_finalized_path' to unpack the zip file into the extraction directory.
+    - Assert that the result path exists and matches the expected directory structure and file contents.
+- **Output**: The function does not return any value; it uses assertions to validate the unpacking process.
 
 
 ---
 ### test\_unpack\_archive\_with\_override\_matching\_root<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/test_onboard_utils.test_unpack_archive_with_override_matching_root}} -->
-This function tests the unpacking of a zip archive where the zip name matches the root directory, using an override for the codebase name.
+The function tests the unpacking of a zip archive where the zip name matches the root directory, using an override for the codebase name.
 - **Inputs**:
-    - `tmp_path`: A temporary directory path provided by the test framework to use for creating and extracting the zip archive.
+    - `tmp_path`: A temporary directory path provided by the pytest fixture, used to create and extract the zip archive.
 - **Control Flow**:
-    - Define the zip file name stem as 'project_folder' and the override name as 'overridden_folder'.
-    - Create the zip file path and extraction path using the temporary directory path.
-    - Create the extraction directory.
-    - Open a new zip file at the specified path and add a directory and a file within it.
-    - Call the function 'unpack_archive_to_finalized_path' with the zip path, extraction path, and override name to extract the archive.
-    - Assert that the result path exists, its name matches the override name, and the file within the archive exists at the expected location.
-- **Output**: The function does not return any value; it uses assertions to verify the expected outcomes of the test.
+    - Define the zip file name as 'project_folder' and the override name as 'overridden_folder'.
+    - Create the zip file path and extraction path within the temporary directory.
+    - Create a zip file with a directory named 'project_folder' and a file 'file1.txt' inside it.
+    - Call 'unpack_archive_to_finalized_path' with the zip path, extraction path, and override name.
+    - Assert that the result path exists and its name matches the override name.
+    - Assert that the file 'file1.txt' exists in the result path.
+- **Output**: The function does not return any value; it uses assertions to verify the expected behavior of the unpacking process.
 
 
 ---
 ### test\_unpack\_archive\_with\_override\_nonmatching\_root<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/test_onboard_utils.test_unpack_archive_with_override_nonmatching_root}} -->
-This function tests the unpacking of a zip archive where the zip name differs from the root directory, using an override for the codebase name.
+This function tests the unpacking of a zip archive with a non-matching root directory name using an override for the codebase name.
 - **Inputs**:
-    - `tmp_path`: A temporary directory path provided by the test framework to be used for creating and extracting the zip archive.
+    - `tmp_path`: A temporary directory path provided by the test framework to use for creating and extracting the zip archive.
 - **Control Flow**:
-    - Create a Path object for the zip file with a random name within the temporary directory.
-    - Define an override name for the root directory to be used during extraction.
-    - Create an extraction directory within the temporary directory.
-    - Open a new zip file at the specified path and add a directory and a file inside it.
-    - Call the function `unpack_archive_to_finalized_path` with the zip path, extraction path, and override name to extract the archive.
-    - Assert that the result path exists and its name matches the override name.
-    - Assert that the file inside the extracted directory exists.
-- **Output**: The function does not return any value; it uses assertions to verify the correct behavior of the archive unpacking process.
+    - Create a Path object for the zip file with a random name and a Path object for the extraction directory.
+    - Create the extraction directory using mkdir().
+    - Open a new zip file at the specified zip path and add a directory and a file inside it with specific content.
+    - Call the function unpack_archive_to_finalized_path with the zip path, extraction path, and an override name for the codebase.
+    - Assert that the result path exists, its name matches the override name, and the file inside the zip is correctly extracted.
+- **Output**: The function does not return any value; it uses assertions to verify the correct behavior of the unpacking process.
 
 
 

@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests` folder in the `python-backend` codebase contains test files, including a script for testing the rendering of Mermaid diagrams using the Mermaid CLI.
+Test files, including a script for testing Mermaid diagram rendering with the Mermaid CLI.
 
 
 ## Files

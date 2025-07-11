@@ -3,22 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `shared` folder in the `python-backend` codebase contains a variety of modules and utilities for managing language model interactions, billing, file storage, embeddings, pipelines, and more, with specific implementations for handling AWS services, OpenAI models, and database operations.
+Subfolders and files for managing language model agents, billing, text chunking, embeddings, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and application logic, with an empty `__init__.py` file.
 
 ## Folders
-- **[agent](agent/README.md)**: The `agent` folder in the `python-backend` codebase contains classes and utilities for managing language model interactions and tool integrations, including specific implementations for Anthropic and OpenAI, as well as configurations and tools for handling model settings and operations.
-- **[billing](billing/README.md)**: The `billing` folder in the `python-backend` codebase contains files that implement a `BillingService` class for managing subscription operations and define pricing tiers for consumption and seat pricing plans.
-- **[chunking](chunking/README.md)**: The `chunking` folder in the `python-backend` codebase contains the `text_splitter.py` file, which is responsible for splitting text into chunks using tokenization and calculating token counts for a specified model.
-- **[embedding](embedding/README.md)**: The `embedding` folder in the `python-backend` codebase contains utilities for downloading content from S3 and generating text embeddings using OpenAI's models, with support for both synchronous and asynchronous operations.
-- **[file_storage](file_storage/README.md)**: The `file_storage` folder in the `python-backend` codebase contains files for interacting with AWS S3, including classes and functions for creating buckets, generating presigned URLs, and handling file uploads and downloads.
-- **[interfaces](interfaces/README.md)**: The `interfaces` folder in the `python-backend` codebase contains various subfolders and files that define data models, configurations, and utilities for managing agents, billing, file content, usage metrics, AWS client configurations, driver requests and responses, and search operations.
-- **[pipelines](pipelines/README.md)**: The `pipelines` folder in the `python-backend` codebase contains modules and scripts for defining and executing multi-step processes involving agents, block kind pipelines, file processing, and search functionalities.
-- **[prompts](prompts/README.md)**: The `prompts` folder in the `python-backend` codebase contains various subfolders and files that provide prompts, templates, and models for different audiences, content types, and tasks, as well as initialization scripts for managing these components.
-- **[repositories](repositories/README.md)**: The `repositories` folder in the `python-backend` codebase contains Python files that define repository classes for performing CRUD operations and managing usage events in a database using SQLAlchemy and SQLModel.
-- **[secret_management](secret_management/README.md)**: The `secret_management` folder in the `python-backend` codebase contains the `aws_secret_management.py` file, which provides functionality for managing secrets using AWS Secrets Manager.
-- **[usage](usage/README.md)**: The `usage` folder in the `python-backend` codebase contains files that manage language model usage sessions, handle usage events and credits, and provide utility functions for converting data metrics.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains utility scripts and configurations, including text styling with ANSI codes, function decorators, Mermaid diagram rendering, OpenAI file uploads, and Puppeteer configuration.
-- **[v3](v3/README.md)**: The `v3` folder in the `python-backend` codebase is a comprehensive package that includes components for managing language model operations, such as pipelines, interfaces, utilities, and tests, along with initialization for shared functionalities.
+- **[agent](agent/README.md)**: Classes and configurations for managing language model agents, including Anthropic and OpenAI implementations.
+- **[billing](billing/README.md)**: Implements a billing service for managing subscription operations and defines pricing tiers for consumption and seat pricing.
+- **[chunking](chunking/README.md)**: The `chunking` folder in the `python-backend` codebase contains a file, `text_splitter.py`, which is responsible for splitting text into chunks using tokenization and counting tokens for a specified model.
+- **[embedding](embedding/README.md)**: Utilities for generating text embeddings, including functions for downloading content and embedding text.
+- **[file_storage](file_storage/README.md)**: Python files for interacting with AWS S3, including bucket creation and presigned URL generation.
+- **[interfaces](interfaces/README.md)**: Various subfolders and files that define models, configurations, and utilities for managing agent operations, billing, file content, usage metrics, AWS client configuration, driver requests and responses, and search operations.
+- **[pipelines](pipelines/README.md)**: Python scripts and modules for agent-based pipelines, block kind pipelines, file processing, and search.
+- **[prompts](prompts/README.md)**: Python scripts and modules for generating and managing content prompts for diverse audiences and tasks.
+- **[repositories](repositories/README.md)**: Defines repository classes for CRUD operations and managing data types in a SQLModel-based database.
+- **[secret_management](secret_management/README.md)**: The `secret_management` folder in the `python-backend` codebase contains the `aws_secret_management.py` file, which provides functionality for managing secrets in AWS Secrets Manager, including operations like creating, updating, reading, and deleting secrets.
+- **[usage](usage/README.md)**: Manages language model usage sessions, handles usage credits and balances, and provides code conversion utilities.
+- **[utils](utils/README.md)**: Utility scripts and configurations, including text styling, function decorators, Mermaid rendering, OpenAI file upload, and Puppeteer settings.
+- **[v3](v3/README.md)**: Subfolders for application logic, global constants, interfaces, language model clients, testing, and utilities, with an `__init__.py` file to initialize and expose these components for LLM operations.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

@@ -6,7 +6,7 @@
 The `search.py` file defines a FastAPI route for searching content, utilizing user and session information to return search results.
 
 # Purpose
-This code defines a FastAPI router for handling a search operation, providing a narrow and specific functionality within a larger application. It is a short script that sets up an API endpoint for searching content, utilizing FastAPI's `APIRouter` to define a POST route. The endpoint requires certain dependencies, such as `ContentReadonlyPermission`, to ensure that only authorized users can perform the search. The function [`search`](#search) takes in a `CurrentSession`, a `UserToken`, and a `SearchInput`, and returns `SearchResults` by calling the `search_content` function. The code also includes a placeholder comment indicating a need to refine the input transformation process, suggesting ongoing development or optimization.
+This code defines a FastAPI router for handling a search operation within a web application, providing narrow functionality focused on content search. It is a short script that sets up an API endpoint for searching content, utilizing FastAPI's `APIRouter` to define a POST route. The endpoint requires certain dependencies, such as `ContentReadonlyPermission`, to ensure that only authorized users can perform the search. The function [`search`](<#search>) takes in a `CurrentSession`, a `UserToken`, and a `SearchInput`, and returns `SearchResults` by calling the `search_content` function. The code also includes a placeholder comment indicating a need to refine the input transformation process, suggesting ongoing development or optimization.
 # Imports and Dependencies
 
 ---
@@ -24,8 +24,8 @@ This code defines a FastAPI router for handling a search operation, providing a 
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a group of related API endpoints and their associated request handling logic. This allows for modular and organized routing in a FastAPI application.
-- **Use**: The `router` is used to register API routes and their handlers, such as the `search` endpoint, within the FastAPI application.
+- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a set of API routes and their associated operations, such as HTTP methods and endpoint paths.
+- **Use**: This variable is used to register and manage API endpoints within the application.
 
 
 # Functions
@@ -39,12 +39,12 @@ The `search` function handles a POST request to search for content based on user
     - `user`: An instance of `UserToken` representing the authenticated user making the request.
     - `input`: An instance of `SearchInput` containing the search parameters.
 - **Control Flow**:
-    - The function begins by setting the `organization_id` of the `input` object to the `organization_id` of the `user` object.
-    - It then calls the [`search_content`](../../../../../packages/shared/shared/pipelines/search.py.md#search_content) function, passing the `session` and modified `input` as arguments.
-    - The result of [`search_content`](../../../../../packages/shared/shared/pipelines/search.py.md#search_content) is returned as the output of the function.
+    - The function begins by setting the `organization_id` attribute of the `input` object to the `organization_id` of the `user` object.
+    - It then calls the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function, passing the `session` and modified `input` as arguments.
+    - The result of the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function is returned as the output of the `search` function.
 - **Output**: The function returns an instance of `SearchResults`, which contains the results of the search operation.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/pipelines/search.search_content`](../../../../../packages/shared/shared/pipelines/search.py.md#search_content)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/pipelines/search.search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>)
 
 
 

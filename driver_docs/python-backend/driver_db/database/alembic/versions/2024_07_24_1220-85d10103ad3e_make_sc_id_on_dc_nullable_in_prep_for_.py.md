@@ -6,7 +6,7 @@
 The `2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.py` file contains an Alembic migration script that alters the `derived_contents` table to make the `source_content_id` column nullable and modifies foreign key constraints and indexes on the `source_contents` table.
 
 # Purpose
-This source code file is an Alembic migration script used to modify a database schema. It provides narrow functionality, specifically altering the "derived_contents" table by making the "source_content_id" column nullable, and removing certain foreign key constraints and indexes from the "source_contents" table. The script includes both an [`upgrade`](#upgrade) function to apply these changes and a [`downgrade`](#downgrade) function to revert them, ensuring that the database schema can be transitioned back and forth between states. The script is part of a version-controlled database migration process, as indicated by the revision identifiers, and is auto-generated with some manual adjustments suggested for further customization.
+This Python file is an Alembic migration script used to modify a database schema. It provides narrow functionality, specifically altering the "derived_contents" table by making the "source_content_id" column nullable, and removing certain foreign key constraints and indexes from the "source_contents" table. The script includes both an [`upgrade`](<#upgrade>) function to apply these changes and a [`downgrade`](<#downgrade>) function to revert them, ensuring that the database schema can be transitioned back and forth between states. The script is part of a version-controlled database migration process, identified by unique revision identifiers, which helps in managing schema changes over time.
 # Imports and Dependencies
 
 ---
@@ -20,7 +20,7 @@ This source code file is an Alembic migration script used to modify a database s
 ### revision
 - **Type**: `string`
 - **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script in the version control system for database schema changes.
+- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
 
 
 ---
@@ -34,14 +34,14 @@ This source code file is an Alembic migration script used to modify a database s
 ### branch\_labels
 - **Type**: `NoneType`
 - **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision ID and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Use**: This variable is used to define branch labels for the migration script, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
+- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -59,12 +59,12 @@ The `upgrade` function modifies the database schema by altering a column to be n
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.downgrade}} -->
-The `downgrade` function reverses database schema changes by recreating a foreign key and index, and altering a column to be non-nullable.
+The `downgrade` function reverts database schema changes by recreating a foreign key and index, and altering a column to be non-nullable.
 - **Inputs**: None
 - **Control Flow**:
-    - The function starts by creating a foreign key constraint named 'source_contents_source_content_type_id_fkey' between the 'source_contents' table and the 'source_content_types' table, linking 'content_type_id' to 'id'.
-    - It then creates an index named 'ix_source_contents_content_type_id' on the 'content_type_id' column of the 'source_contents' table, ensuring it is not unique.
-    - Finally, it alters the 'source_content_id' column in the 'derived_contents' table to be non-nullable, using the existing type of UUID.
+    - The function begins by creating a foreign key constraint named 'source_contents_source_content_type_id_fkey' between the 'source_contents' table and the 'source_content_types' table, linking 'content_type_id' to 'id'.
+    - It then creates an index named 'ix_source_contents_content_type_id' on the 'content_type_id' column of the 'source_contents' table, which is not unique.
+    - The function alters the 'source_content_id' column in the 'derived_contents' table to be non-nullable, ensuring that this column must have a value for each row.
 - **Output**: The function does not return any value; it performs schema modifications on the database.
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata, dependencies, and build system configuration for the `inspector` package, using Poetry for dependency management and environment setup.
+Configuration for the Poetry package manager, specifying project metadata and dependencies.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. This file specifies metadata and dependencies for a Python project named "inspector" with version "0.1.0". It includes author information, a reference to the project's README file, and a list of packages to be included in the project. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, specifying compatible versions for each package, while the `[tool.poetry.group.dev.dependencies]` section lists additional dependencies needed for development and testing purposes. The `[build-system]` section indicates that the project requires `poetry-core` for building, using `poetry.core.masonry.api` as the build backend. This file is essential for managing the project's environment and ensuring that all necessary packages are installed correctly.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project named `inspector`. It specifies the project's metadata, including its name, version, and author information. The file also defines the packages to include, such as `src.inspection`, `src.utils`, and `src.onboarding`. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, specifying compatible versions for each package, such as `openai`, `tiktoken`, and `boto3`. Additionally, the `[tool.poetry.group.dev.dependencies]` section outlines development dependencies like `pytest` and `moto`. The `[build-system]` section indicates that the project requires `poetry-core` and uses `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

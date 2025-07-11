@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `aws_waf.py` file in the `python-backend` codebase defines a construct for setting up an AWS Web Application Firewall (WAF) with specific rule configurations and associations to an Application Load Balanced Fargate Service.
+The `aws_waf.py` file in the `python-backend` codebase defines a construct for setting up an AWS WAF (Web Application Firewall) with specific rule configurations and associations to an Application Load Balanced Fargate Service.
 
 # Purpose
-This Python code defines a module that integrates AWS Web Application Firewall (WAF) with an Application Load Balanced Fargate Service using the AWS Cloud Development Kit (CDK). The primary purpose of this code is to create and configure a WAF to protect a web application deployed on AWS Fargate, which is a serverless compute engine for containers. The code is structured around two main classes: `AwsWAFParams` and `AwsWAF`. The `AwsWAFParams` class is a simple data structure that holds a reference to the Fargate service, while the `AwsWAF` class extends the `Construct` class from the AWS CDK, encapsulating the logic for setting up the WAF.
+This Python code defines a module that integrates AWS Web Application Firewall (WAF) with an Application Load Balanced Fargate Service using the AWS Cloud Development Kit (CDK). The primary purpose of this code is to create and configure a WAF to protect a web application deployed on AWS Fargate. The `AwsWAF` class, which inherits from the `Construct` class, is the main component of this module. It sets up a WAF with specific visibility configurations and rule overrides, including managed rule groups and IP set references for whitelisting IPs. The code also includes a mechanism to associate the WAF with an application load balancer, ensuring that incoming traffic is filtered according to the defined rules.
 
-The `AwsWAF` class constructs a WAF with specific visibility configurations and rule overrides, including managed rule groups from AWS and custom IP whitelisting. The code includes configurations for metrics and sampling, allowing for detailed monitoring of the WAF's performance via CloudWatch. The WAF is associated with the Fargate service's load balancer, ensuring that incoming traffic is filtered according to the defined rules. This module is intended to be part of a larger infrastructure-as-code setup, providing a reusable and configurable component for securing web applications on AWS.
+The module is structured to be part of a larger infrastructure-as-code setup, likely intended to be imported and used within a broader AWS CDK application. It does not define a standalone script but rather a reusable construct that can be integrated into AWS infrastructure projects. The `AwsWAFParams` class is used to pass parameters, such as the Fargate service to be protected and a list of allowed IPs, to the `AwsWAF` construct. This design allows for flexibility and customization of the WAF configuration based on specific application requirements.
 # Imports and Dependencies
 
 ---
@@ -23,9 +23,9 @@ The `AwsWAF` class constructs a WAF with specific visibility configurations and 
 ### AwsWAFParams<!-- {{#class:python-backend/cdk/constructs/aws_waf.AwsWAFParams}} -->
 - **Members**:
     - `service`: An instance of ApplicationLoadBalancedFargateService from aws_ecs_patterns.
-- **Description**: The AwsWAFParams class is a simple data structure that holds a reference to an ApplicationLoadBalancedFargateService instance. It is used to pass this service instance to other components, such as the AwsWAF class, which utilizes it to configure AWS WAF (Web Application Firewall) settings for the service.
+- **Description**: The AwsWAFParams class is a simple data structure that holds a reference to an AWS ECS ApplicationLoadBalancedFargateService. It is used to pass this service instance to other components, such as the AwsWAF class, which configures AWS WAF (Web Application Firewall) settings for the service.
 - **Methods**:
-    - [`python-backend/cdk/constructs/aws_waf.AwsWAFParams.__init__`](#AwsWAFParams__init__)
+    - [`python-backend/cdk/constructs/aws_waf.AwsWAFParams.__init__`](<#AwsWAFParams__init__>)
 
 **Methods**
 
@@ -37,15 +37,15 @@ The `__init__` method initializes an instance of the `AwsWAFParams` class by set
 - **Control Flow**:
     - The method assigns the provided `service` argument to the `service` attribute of the `AwsWAFParams` instance.
 - **Output**: This method does not return any value; it initializes the `service` attribute of the class instance.
-- **See also**: [`python-backend/cdk/constructs/aws_waf.AwsWAFParams`](#AwsWAFParams)  (Base Class)
+- **See also**: [`python-backend/cdk/constructs/aws_waf.AwsWAFParams`](<#AwsWAFParams>)  (Base Class)
 
 
 
 ---
 ### AwsWAF<!-- {{#class:python-backend/cdk/constructs/aws_waf.AwsWAF}} -->
-- **Description**: The `AwsWAF` class is a construct that sets up an AWS Web Application Firewall (WAF) for a given service, using AWS CDK. It configures visibility settings for monitoring, defines rule action overrides for specific conditions, and creates a rule set that includes a managed rule group statement. The class also handles the association of the WAF with an application load balancer, allowing for the protection of web applications by filtering and monitoring HTTP requests based on specified rules.
+- **Description**: The `AwsWAF` class is a construct that sets up an AWS Web Application Firewall (WAF) for a given service, using AWS CDK. It configures visibility settings for monitoring, defines rule action overrides for specific WAF rules, and associates the WAF with an application load balancer. The class allows for the inclusion of IP whitelisting if specified in the parameters, and it primarily focuses on managing and applying AWS-managed rule sets to protect the application from common web exploits.
 - **Methods**:
-    - [`python-backend/cdk/constructs/aws_waf.AwsWAF.__init__`](#AwsWAF__init__)
+    - [`python-backend/cdk/constructs/aws_waf.AwsWAF.__init__`](<#AwsWAF__init__>)
 - **Inherits From**:
     - `Construct`
 
@@ -53,24 +53,25 @@ The `__init__` method initializes an instance of the `AwsWAFParams` class by set
 
 ---
 #### AwsWAF\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/constructs/aws_waf.AwsWAF.__init__}} -->
-The [`__init__`](#AwsWAFParams__init__) method initializes an AWS WAF (Web Application Firewall) configuration for a given service, setting up visibility configurations, rule overrides, and associating the WAF with a load balancer.
+The [`__init__`](<#AwsWAFParams__init__>) method initializes an AWS WAF (Web Application Firewall) configuration for a given service, setting up visibility configurations, rule overrides, and associating the WAF with a load balancer.
 - **Inputs**:
     - `scope`: A `Construct` object that defines the scope in which this construct is created.
     - `id`: A string that serves as the unique identifier for this construct.
-    - `params`: An `AwsWAFParams` object containing parameters for the WAF, including allowed IPs and the associated service.
+    - `params`: An `AwsWAFParams` object containing parameters for the WAF, including the service to be protected and allowed IPs.
 - **Control Flow**:
     - The method begins by calling the superclass constructor with `scope` and `id`.
-    - Three visibility configurations are created for different metrics: `MetricForWebACLCDK-IPs`, `MetricForWebACLCDK`, and `MetricForWebACLCDK-CRS`.
-    - A list of rule action overrides is defined for various size restrictions and generic local/remote file inclusion rules.
-    - A managed rule group statement is created using the rule action overrides, and a CRS rule is defined with this statement and a visibility configuration.
-    - The CRS rule is added to the list of WAF rules.
-    - If there are any allowed IPs in `params`, an IP set is created and a rule is defined to block requests not from these IPs, although this rule is commented out and not appended to the WAF rules.
-    - A `CfnWebACL` object is created with the defined rules and visibility configuration, allowing all requests by default.
-    - The WAF is associated with the service's load balancer using a `CfnWebACLAssociation` object.
+    - Three visibility configurations are created for different metrics related to the WAF.
+    - A list of rule action overrides is defined to allow certain actions for specific rule names.
+    - A managed rule group statement is created using the rule action overrides.
+    - A rule property `crs_rule` is defined with a priority and the managed rule group statement.
+    - The `waf_rules` list is initialized with the `crs_rule`.
+    - If there are allowed IPs in `params`, an IP set is created and a rule is defined to block requests not from these IPs, but this rule is commented out and not appended to `waf_rules`.
+    - A `CfnWebACL` object is created with the defined rules and visibility configuration.
+    - The WAF is associated with a load balancer using a `CfnWebACLAssociation` object.
 - **Output**: The method does not return any value; it sets up the WAF configuration and association as a side effect.
-- **Functions called**:
-    - [`python-backend/cdk/constructs/aws_waf.AwsWAFParams.__init__`](#AwsWAFParams__init__)
-- **See also**: [`python-backend/cdk/constructs/aws_waf.AwsWAF`](#AwsWAF)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/cdk/constructs/aws_waf.AwsWAFParams.__init__`](<#AwsWAFParams__init__>)
+- **See also**: [`python-backend/cdk/constructs/aws_waf.AwsWAF`](<#AwsWAF>)  (Base Class)
 
 
 

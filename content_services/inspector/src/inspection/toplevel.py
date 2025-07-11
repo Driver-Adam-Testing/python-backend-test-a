@@ -1,7 +1,9 @@
 import concurrent.futures
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
+from pydantic import BaseModel
+from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
@@ -15,10 +17,110 @@ from utils.io import (
     get_prompt_template,
 )
 from utils.llm import chunk_str
-from utils.models import ChatOpenAI
+from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
+
+
+class CodebaseKindScore(BaseModel):
+    sdk: float
+    lib: float
+    web_frontend: float
+    web_backend: float
+    desktop: float
+    mobile: float
+    embedded: float
+    data_pipeline: float
+    devops: float
+    game: float
+    enterprise: float
+    academic: float
+    algorithm: float
+    utility: float
+    educational: float
+
+    @staticmethod
+    def system_prompt() -> str:
+        return """
+You are an expert engineer well-versed in the many kinds of different software and codebases that exist.
+
+Your job is to generate a relevance score between 0 and 1 for each tag from the finite set of tags applicable to a software codebase. A higher score means a tag is more relevant or applicable to the software codebase under review. The tags are not mutually exclusive. There may be multiple tags highly relevant for a given codebase or relatively few or even only a single one. It all depends on the context and complexity of the codebase. If a tag is not relevant at all to a codebase, give it a score of zero.
+
+Others will review your scores for various signaling and documentation goals such as identifying the single most important/relevant tag and/or documenting the top 3 tags that pertain to a codebase for at-a-glance context. Therefore, your scoring should provide information about how relevant each tag is to the codebase under review in isolation but also in a relative sense with respect to the other tags.
+
+For example, both the "devops" and "enterprise" tags may be correct for a codebase containing core CI/CD code or scripts, but in this context, the codebase overwhelmingly exists as core DevOps functionality and thus the "devops" category should receive a higher score than the "enterprise" tag. When multiple tags are highly relevant for the same codebase, they should all be scored highly (e.g., "lib" and "sdk" will likely often both be relevant), but with not exactly the same score.
+
+Information for the codebase will be provided to you as a list of folder contents. For each folder in the codebase, the path of the folder will be given to you followed by an exhaustive list of every child fild/folder for the given folder, along with a short single sentence description of the content associated with that child (file or folder). Because all children for each folder are listed and information for all folders is provided, you will be given information exhaustively about every file/folder in the codebase. Use this information to make your quantiative scoring decisions.
+
+Here is the list of tags that you will provide relevance scores for. I have given a brief description for each one as a guide for you when determining your relevance scores:
+
+{
+   "sdk": Implements a software development kit (SDK) -- a collection of tools for developers to use to build applications for a specific platform or framework.
+   "lib": A library designed to be used by/integrated with by other developers in building applications.
+   "web_frontend": A frontend web application.
+   "web_backend": A backend web application or service with HTTP endpoints to support an application programming interface (API).
+   "desktop": Standalone application, with some form of GUI, deployed as a native desktop application.
+   "mobile": An application deployed on a mobile device, such as iOS or Android.
+   "embedded": Lower level embedded software or mixed HW/SW code.
+   "data_pipeline": ETL, analytics, or other data processing system.
+   "devops": DevOps or infrastructure code for deployment, CI/CD, monitoring, cloud, or other infrastructure management.
+   "game": Interactive game or entertainment software.
+   "enterprise": Business applications for the enterprise such as an ERP system.
+   "academic": Experimental, research, or academic code.
+   "algorithm": Heavy computational, numeric, or algorithm implementation code.
+   "utility": Provides utility functionality such as a command line program.
+   "educational": Primary purpose is educational or to provide examples.
+}
+""".strip()
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        docs: dict[LiteNode, dict[str, Any]],
+    ) -> Self:
+        user_prompt_structured = Prompt.empty()
+        for node, ir_data in docs.items():
+            match node.kind:
+                case NodeKind.ROOT_FOLDER:
+                    prefix = "Codebase root folder"
+                    content = ir_data["long"]
+                case NodeKind.SUB_FOLDER:
+                    prefix = "Subfolder"
+                    content = ir_data["long"]
+                case NodeKind.FILE:
+                    continue
+                case _:
+                    raise ValueError("Unreachable")
+            user_prompt_structured.append(
+                Component(
+                    string=f"{prefix} (`{node.root_rel_path}`) decription:\n{content}"
+                )
+            )
+        user_prompt = user_prompt_structured.into_str()
+        user_prompt_chunks = split_text(user_prompt, chunk_size=96_000, chunk_overlap=0)
+        if len(user_prompt_chunks) > 1:
+            user_prompt = user_prompt_chunks[0].text
+        content_raw = llm.generate_response(
+            system_prompt=cls.system_prompt(),
+            user_prompt=user_prompt,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+        return cls.parse_raw(content_raw)
+
+    def sorted_list(self) -> list[tuple[str, float]]:
+        return sorted(
+            self.model_dump().items(),
+            key=lambda tup: tup[1],
+            reverse=True,
+        )
+
+    def take(self, n: int) -> list[tuple[str, float]]:
+        return self.sorted_list()[:n]
+
+    def top(self) -> tuple[str, float]:
+        return self.take(1)[0]
 
 
 def toplevel_chunk_description(
@@ -452,6 +554,16 @@ def comprehend_codebase_top_down(
     single_sentence = single_sentence.replace("\x00", "")
     single_paragraph = single_paragraph.replace("\x00", "")
     long = long.replace("\x00", "")
+
+    codebase_scores = CodebaseKindScore.from_llm(llm=llm, docs=docs)
+    print(f"Codebase kind scores:\n\n{codebase_scores.sorted_list()}")
+    # top4 = [kind for kind, _ in codebase_scores.take(4)]
+    # terse_sentence = f"[{top4[0]}] {terse_sentence}"
+    terse_sentence = ""
+    sorted_scores = codebase_scores.sorted_list()
+    for kind, score in sorted_scores[:-1]:
+        terse_sentence += f"{kind}[{score}], "
+    terse_sentence += f"{sorted_scores[-1][0]}[{sorted_scores[-1][1]}]"
 
     short_descriptions = {
         "terse_sentence": terse_sentence,

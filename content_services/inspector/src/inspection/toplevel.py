@@ -1,5 +1,5 @@
 import concurrent.futures
-from abc import ABC, abstractclassmethod, abstractstaticmethod
+from abc import ABC, abstractclassmethod, abstractmethod, abstractstaticmethod
 from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
@@ -35,15 +35,21 @@ class CodebaseScorable(BaseModel, ABC):
     def from_llm(cls) -> Self:
         pass
 
+    @abstractmethod
+    def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:
+        pass
+
     @cached_property
     def sorted_list(self) -> list[tuple[str, float]]:
         return sorted(
-            self.model_dump().items(),
+            self.to_tag_and_score_pairs(),
             key=lambda tup: tup[1],
             reverse=True,
         )
 
-    def take(self, n: int, pred: Callable | None = None) -> list[tuple[str, float]]:
+    def take(
+        self, n: int, pred: Callable[[tuple[str, float]], bool] | None = None
+    ) -> list[tuple[str, float]]:
         if pred is None:
             return self.sorted_list[:n]
         else:
@@ -139,6 +145,9 @@ In the case that multiple tags are relevant, it is important to score them all w
             .into_str()
         )
 
+    def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:
+        return self.model_dump().items()
+
     @classmethod
     def from_llm(
         cls,
@@ -208,6 +217,9 @@ In the case that multiple tags are relevant, it is important to score them all w
             .into_str()
         )
 
+    def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:
+        return self.model_dump().items()
+
     @classmethod
     def from_llm(
         cls,
@@ -258,6 +270,9 @@ You are scoring tags for the intended or relevant audiences for the codebase. Th
             )
             .into_str()
         )
+
+    def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:
+        return self.model_dump().items()
 
     @classmethod
     def from_llm(

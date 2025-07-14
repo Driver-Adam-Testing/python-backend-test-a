@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `business_development.py` file contains a prompt designed for business development professionals, focusing on analyzing technical products with an emphasis on scalability, integration, and technological robustness.
+The `business_development.py` file contains a prompt designed to guide content curation for business development professionals interested in analyzing technical products with a focus on scalability, integration, and technological robustness.
 
 # Purpose
-This code is a configuration variable containing a multi-line string that outlines a content curation guideline for a specific reader persona. The string is intended for use in a context where content needs to be tailored for business development professionals. It provides narrow functionality by specifying the key interests of this audience, such as product scalability, integration capabilities, and technological robustness, and how these factors contribute to business growth and user experience. This type of code is typically used in applications or systems that generate or manage content, ensuring that the output aligns with the expectations and needs of the target audience.
+This code is a configuration variable containing a multi-line string that outlines a specific content curation guideline for a business development professional. It provides narrow functionality by defining the target audience and the key aspects of technical products that should be highlighted, such as scalability, integration capabilities, and technological robustness. The purpose of this string is likely to guide content creators or analysts in tailoring their analysis or reports to meet the informational needs of business development professionals, focusing on how a product's technical attributes can contribute to business growth and sustainability. This code is not executable but serves as a reference or template for content creation.
 # Global Variables
 
 ---
 ### BUSINESS\_DEVELOPMENT
 - **Type**: `str`
-- **Description**: The `BUSINESS_DEVELOPMENT` variable is a multi-line string that describes the content curation needs for a business development professional. It outlines the key areas of interest for this persona, including product scalability, integration capabilities, and technological robustness, as well as the impact of the codebase on business growth and user experience.
-- **Use**: This variable is used to guide content creation tailored to business development professionals, focusing on technical product analysis.
+- **Description**: The `BUSINESS_DEVELOPMENT` variable is a multi-line string that describes the profile and interests of a business development professional. It outlines the key aspects they are interested in, such as product scalability, integration capabilities, and technological robustness, as well as their focus on business growth and user experience.
+- **Use**: This variable is used to define the target audience and content focus for business development professionals in the context of technical product analysis.
 
 
 

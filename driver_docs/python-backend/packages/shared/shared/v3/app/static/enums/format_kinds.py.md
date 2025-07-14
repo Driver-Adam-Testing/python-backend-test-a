@@ -6,7 +6,7 @@
 The `format_kinds.py` file defines an enumeration `FormatKind` that categorizes different types of content formats such as code examples, diagrams, text, tables, lists, and any format.
 
 # Purpose
-This code defines an enumeration class `FormatKind` using Python's `enum` module, which is a way to create a set of named constants. The `FormatKind` class inherits from both `str` and `Enum`, allowing its members to be used as strings while also benefiting from the features of an enumeration. The class provides a narrow functionality by categorizing different types of content formats, such as `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`. This enumeration can be used in applications where content needs to be classified or processed based on its format type, offering a clear and structured way to handle different content categories.
+This code defines an enumeration class `FormatKind` using Python's `enum` module, which provides a way to define a set of named constants. The `FormatKind` class inherits from both `str` and `Enum`, allowing its members to be used as strings while also benefiting from the features of an enumeration. The class includes six members: `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`, each representing a different kind of format. This code provides narrow functionality, specifically for categorizing or identifying different types of content formats in a structured and type-safe manner. It is likely part of a larger system where content needs to be processed or displayed differently based on its format type.
 # Imports and Dependencies
 
 ---
@@ -20,7 +20,7 @@ This code defines an enumeration class `FormatKind` using Python's `enum` module
 - **Members**:
     - `CODE_EXAMPLE`: Represents a format kind for code examples.
     - `DIAGRAM`: Represents a format kind for diagrams.
-    - `TEXT`: Represents a format kind for text.
+    - `TEXT`: Represents a format kind for text content.
     - `TABLE`: Represents a format kind for tables.
     - `LIST`: Represents a format kind for lists.
     - `ANY`: Represents a format kind that can be any type.

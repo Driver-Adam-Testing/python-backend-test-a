@@ -6,7 +6,7 @@
 The `file_b.py` file contains a recursive implementation of the Fibonacci sequence and a main function that prints the first five Fibonacci numbers.
 
 # Purpose
-This Python script provides a narrow functionality focused on calculating and printing the first five numbers of the Fibonacci sequence. It defines a recursive function [`fib`](#fib) that computes the Fibonacci number for a given integer `n`. The [`main`](#main) function iterates over the first five integers, calling [`fib`](#fib) for each and printing the result. The script is designed to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which ensures that [`main`](#main) is called only when the script is run directly. The file is marked with a comment indicating it should not be modified, suggesting it may be part of a larger system where this functionality is fixed.
+This Python script provides a narrow functionality focused on calculating and printing the first five numbers of the Fibonacci sequence. It defines a recursive function `fib(n)` that computes the nth Fibonacci number, where `n` is a non-negative integer. The `main()` function iterates over the first five integers, calling `fib(i)` for each and printing the result. The script is designed to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which ensures that `main()` is called only when the script is run directly. The file is marked with a comment indicating it should not be modified, suggesting it may be part of a larger system where this specific functionality is required as-is.
 # Functions
 
 ---
@@ -18,7 +18,7 @@ The `fib` function calculates the nth Fibonacci number using a recursive approac
     - Check if the input integer n is less than or equal to 1.
     - If n is less than or equal to 1, return n as the Fibonacci number.
     - If n is greater than 1, recursively call fib(n - 1) and fib(n - 2) and return their sum.
-- **Output**: The nth Fibonacci number as an integer.
+- **Output**: The function returns an integer which is the nth Fibonacci number.
 
 
 ---
@@ -26,12 +26,12 @@ The `fib` function calculates the nth Fibonacci number using a recursive approac
 The `main` function calculates and prints the first five Fibonacci numbers.
 - **Inputs**: None
 - **Control Flow**:
-    - Iterates over a range of numbers from 0 to 4.
-    - For each number in the range, it calls the [`fib`](#fib) function to calculate the Fibonacci number.
-    - Prints the result of the [`fib`](#fib) function for each iteration.
-- **Output**: The function does not return any value; it prints the first five Fibonacci numbers to the console.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/git_diff_testcases/file_b.fib`](#fib)
+    - The function iterates over a range of numbers from 0 to 4 using a for loop.
+    - For each iteration, it calls the [`fib`](<#fib>) function with the current loop index `i` as the argument.
+    - The result of the [`fib`](<#fib>) function call is printed to the console.
+- **Output**: The function does not return any value; it outputs the first five Fibonacci numbers to the console.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/git_diff_testcases/file_b.fib`](<#fib>)
 
 
 

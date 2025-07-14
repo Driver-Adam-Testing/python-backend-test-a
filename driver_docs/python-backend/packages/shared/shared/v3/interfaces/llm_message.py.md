@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_message.py` file defines the `LlmMessage` class, which models a message in a language model interface, including methods for creating instances from various message types and handling tool requests and responses.
+The `llm_message.py` file defines the `LlmMessage` class, which models messages with various kinds, including tool call requests and responses, and provides methods to create instances from different message formats and to print message details to the console.
 
 # Purpose
-This Python code defines a class `LlmMessage` using the Pydantic library, which is designed to handle and process messages in the context of a language model interface. The class is structured to manage different types of messages, particularly those involving tool call requests and responses. It includes nested classes `ToolCallRequest` and `ToolCallResponse` to encapsulate the details of tool interactions, such as the tool's name, ID, and arguments. The `LlmMessage` class provides several class methods to create instances from various message formats, including OpenAI chat completion messages and Anthropic messages, allowing for the parsing and conversion of message content into structured data.
+This Python code defines a class `LlmMessage` using the Pydantic library, which is designed to handle and process messages in the context of a language model interface. The class is structured to manage different types of messages, particularly those involving tool call requests and responses, which are common in systems that integrate with language models like OpenAI's GPT or Anthropic's Claude. The `LlmMessage` class includes nested classes `ToolCallRequest` and `ToolCallResponse` to encapsulate the details of tool interactions, such as the tool's name, ID, and arguments. The class provides several class methods to create `LlmMessage` instances from various message formats, including OpenAI chat completion messages, strings, and Anthropic messages. These methods parse the message content, identify tool calls, and construct the appropriate message kind, which can be either a tool call request or an assistant message.
 
-The code is intended to be part of a larger system, likely a library or module, that processes and interprets messages from language models. It includes functionality to parse message content, identify tool requests, and determine the kind of message being processed. The class also provides a method to print message details to the console with color-coded output based on the message kind, enhancing readability. The use of Pydantic ensures data validation and serialization, while the integration with external types and constants suggests that this code is part of a broader framework for handling language model interactions.
+The code is intended to be part of a larger system that processes and interprets messages from language models, likely as a library module to be imported and used elsewhere. It provides a structured way to handle message content, parse it into JSON, and manage tool interactions, which are essential for applications that require dynamic tool usage based on language model outputs. The `LlmMessage` class also includes utility methods like [`print_to_console`](<#LlmMessageprint_to_console>) for debugging and visualization, and a custom [`__hash__`](<#LlmMessage__hash__>) method to ensure that message instances can be used in hash-based collections. The code is modular and extensible, allowing for integration with different tool types and response formats, making it a versatile component in a language model processing pipeline.
 # Imports and Dependencies
 
 ---
@@ -32,20 +32,20 @@ The code is intended to be part of a larger system, likely a library or module, 
 ---
 ### LlmMessage<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage}} -->
 - **Members**:
-    - `message_kind`: Specifies the type of message, such as TOOL_CALL_REQUEST or ASSISTANT.
+    - `message_kind`: Specifies the type of message, such as user, assistant, or tool call request.
     - `content`: Holds the main content of the message, which can be None.
-    - `parsed_content`: Stores the parsed content of the message as a BaseModel, which can be None.
-    - `tool_response`: Contains the response from a tool call, represented as a ToolCallResponse, which can be None.
+    - `parsed_content`: Contains the parsed content of the message, represented as a BaseModel or None.
+    - `tool_response`: Stores the response from a tool call, if any, as a ToolCallResponse or None.
     - `tool_requests`: A list of ToolCallRequest objects representing requests made to tools.
-- **Description**: The LlmMessage class is a data model for handling messages in a large language model (LLM) context, extending the BaseModel from Pydantic. It encapsulates various attributes related to message content, type, and associated tool requests and responses. The class provides several class methods to create instances from different message formats, such as OpenAI chat completions and Anthropic messages, and includes a property to determine if a message should be persisted. Additionally, it offers a method to print the message details to the console with color-coded output based on the message kind, and implements a custom hash function for use in hash-based collections.
+- **Description**: The LlmMessage class is a comprehensive data structure designed to encapsulate messages within a large language model (LLM) framework, supporting various message kinds and interactions with external tools. It includes nested classes for handling tool call requests and responses, and provides methods for creating instances from different message formats, such as those from OpenAI or Anthropic. The class also features properties and methods for determining message persistence, printing message details to the console, and computing hash values for message instances.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.persist`](#LlmMessagepersist)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_parsed_chat_completion_message`](#LlmMessagefrom_openai_parsed_chat_completion_message)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](#LlmMessagefrom_openai_chat_completion_message)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_string`](#LlmMessagefrom_string)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_anthropic_message`](#LlmMessagefrom_anthropic_message)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.print_to_console`](#LlmMessageprint_to_console)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.__hash__`](#LlmMessage__hash__)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.persist`](<#LlmMessagepersist>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_parsed_chat_completion_message`](<#LlmMessagefrom_openai_parsed_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<#LlmMessagefrom_openai_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_string`](<#LlmMessagefrom_string>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_anthropic_message`](<#LlmMessagefrom_anthropic_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.print_to_console`](<#LlmMessageprint_to_console>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.__hash__`](<#LlmMessage__hash__>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -59,7 +59,7 @@ The `persist` property method determines if a message should be persisted based 
 - **Control Flow**:
     - Checks if `self.message_kind` is not in the list `[MessageKind.ITERATION, MessageKind.PARSING_DESCRIPTION]`.
 - **Output**: Returns `True` if `self.message_kind` is not `MessageKind.ITERATION` or `MessageKind.PARSING_DESCRIPTION`, otherwise returns `False`.
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 ---
@@ -67,39 +67,41 @@ The `persist` property method determines if a message should be persisted based 
 The `from_openai_parsed_chat_completion_message` method creates an `LlmMessage` instance from a `ParsedChatCompletionMessage` by extracting tool call requests and determining the message kind.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `parsed_message`: An instance of `ParsedChatCompletionMessage` containing the parsed message data from OpenAI.
+    - `cls`: The class `LlmMessage` itself, used to create a new instance.
+    - `parsed_message`: An instance of `ParsedChatCompletionMessage` containing the parsed message data from OpenAI, including tool calls and content.
 - **Control Flow**:
-    - Check if `parsed_message` contains tool calls; if so, iterate over each tool call to create a list of [`ToolCallRequest`](#LlmMessage.ToolCallRequest) instances.
-    - Determine the `message_kind` based on the presence of tool requests; if tool requests exist, set it to `MessageKind.TOOL_CALL_REQUEST`, otherwise set it to `MessageKind.ASSISTANT`.
+    - Check if `parsed_message` contains any tool calls.
+    - If tool calls exist, iterate over them to create a list of [`ToolCallRequest`](<#LlmMessage.ToolCallRequest>) instances, extracting the id, name, arguments, and parsed tool from each tool call.
+    - Determine the `message_kind` based on the presence of tool requests: if tool requests exist, set it to `MessageKind.TOOL_CALL_REQUEST`; otherwise, set it to `MessageKind.ASSISTANT`.
     - Return a new `LlmMessage` instance with the determined `message_kind`, the content from `parsed_message`, the list of tool requests, and the parsed content from `parsed_message`.
-- **Output**: An `LlmMessage` instance initialized with the message kind, content, tool requests, and parsed content derived from the `ParsedChatCompletionMessage`.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](#LlmMessage.ToolCallRequest)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+- **Output**: Returns an `LlmMessage` instance initialized with the message kind, content, tool requests, and parsed content derived from the `ParsedChatCompletionMessage`.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<#LlmMessage.ToolCallRequest>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 ---
 #### LlmMessage\.from\_openai\_chat\_completion\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message}} -->
-The `from_openai_chat_completion_message` method creates an `LlmMessage` instance from an OpenAI chat completion message, parsing its content and tool calls to determine the message kind and any associated tool requests or parsed content.
+The `from_openai_chat_completion_message` method creates an `LlmMessage` instance from an OpenAI chat completion message, parsing its content and tool calls to determine the message kind and any tool requests.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `LlmMessage` itself, used to create a new instance.
+    - `cls`: The class `LlmMessage` itself, used to create an instance of the class.
     - `chat_message`: An instance of `ChatCompletionMessage` containing the content and tool calls to be processed.
-    - `tool_types`: An optional list of `LlmTool` types that can be used to parse tool requests from the message content.
-    - `response_type`: An optional `LlmResponseType` used to parse the response content if no tool requests are present.
+    - `tool_types`: An optional list of `LlmTool` types that can be used to parse tool responses.
+    - `response_type`: An optional `LlmResponseType` to parse the response content into.
 - **Control Flow**:
-    - Attempts to parse the `chat_message.content` into JSON using [`parse_response_string`](../utils/parse_response_string.py.md#parse_response_string) and handles exceptions by setting `content_as_json` to `None`.
-    - Initializes an empty list `tool_requests` to store any tool call requests extracted from the message.
-    - If `chat_message.tool_calls` is present, iterates over each tool call to create [`ToolCallRequest`](#LlmMessage.ToolCallRequest) instances, attempting to match and instantiate tools from `tool_types` based on the tool call's function name.
-    - If no tool calls are present but `chat_message.content` is available and parsed successfully, checks if the content contains a parseable class name and attempts to match and instantiate tools from `tool_types`.
-    - If `response_type` is provided and no tool requests are found, attempts to parse the first item in `content_as_json` into `parsed_content` using `response_type`.
-    - Determines the `message_kind` as `MessageKind.TOOL_CALL_REQUEST` if tool requests exist, otherwise sets it to `MessageKind.ASSISTANT`.
-    - Returns a new `LlmMessage` instance with the determined `message_kind`, original content, tool requests, and parsed content.
+    - Attempt to parse `chat_message.content` into JSON using [`parse_response_string`](<../utils/parse_response_string.py.md#parse_response_string>); if it fails, set `content_as_json` to `None`.
+    - Initialize an empty list `tool_requests` to store tool call requests.
+    - If `chat_message` contains tool calls, iterate over them to create [`ToolCallRequest`](<#LlmMessage.ToolCallRequest>) instances, attempting to match and parse each tool call with the provided `tool_types`.
+    - If no tool calls are present but `chat_message.content` is available and parsed successfully, check if the content contains a parseable class name and create [`ToolCallRequest`](<#LlmMessage.ToolCallRequest>) instances accordingly.
+    - If a `response_type` is provided and no tool requests are created, attempt to parse the first item in `content_as_json` into `parsed_content`.
+    - Determine the `message_kind` based on whether tool requests were created, defaulting to `MessageKind.ASSISTANT` if none were found.
+    - Return a new `LlmMessage` instance with the determined `message_kind`, original content, tool requests, and parsed content.
 - **Output**: Returns an `LlmMessage` instance with the message kind, content, tool requests, and parsed content based on the input `chat_message` and optional parameters.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string`](../utils/parse_response_string.py.md#parse_response_string)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](#LlmMessage.ToolCallRequest)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string`](<../utils/parse_response_string.py.md#parse_response_string>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<#LlmMessage.ToolCallRequest>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 ---
@@ -107,31 +109,27 @@ The `from_openai_chat_completion_message` method creates an `LlmMessage` instanc
 The `from_string` method creates an `LlmMessage` instance from a string by parsing it into JSON, identifying tool requests, and determining the message kind.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `LlmMessage` itself, used to create an instance of the class.
+    - `cls`: The class `LlmMessage` itself, used to create an instance.
     - `string`: A string input that is expected to be parsed into JSON format.
-    - `tool_types`: An optional list of tool classes (`LlmTool`) that can be used to parse tool requests from the JSON content.
-    - `response_type`: An optional type (`LlmResponseType`) to parse the response content into, if applicable.
+    - `tool_types`: An optional list of `LlmTool` types that can be used to parse tool requests from the JSON content.
+    - `response_type`: An optional `LlmResponseType` used to parse the response content into a specific type.
 - **Control Flow**:
-    - Attempt to parse the input string into JSON using [`parse_response_string`](../utils/parse_response_string.py.md#parse_response_string) function.
-    - If parsing is successful and the result is a dictionary, convert it into a list containing that dictionary.
-    - Initialize an empty list `tool_requests` to store tool call requests.
-    - Iterate over each JSON object in the parsed content list.
-    - For each JSON object, check if it contains a `PARSEABLE_CLASS_NAME` key.
-    - If `tool_types` is provided, iterate over each tool type to find a match with the class name from the JSON object.
-    - If a matching tool is found, create a [`ToolCallRequest`](#LlmMessage.ToolCallRequest) instance and append it to `tool_requests`.
-    - If `tool_requests` is not empty, return an `LlmMessage` instance with `message_kind` set to `MessageKind.TOOL_CALL_REQUEST` and the `tool_requests` list.
-    - If `tool_requests` is empty and `response_type` is provided, attempt to parse the first JSON object into `parsed_content` using `response_type`.
-    - Return an `LlmMessage` instance with `message_kind` set to `MessageKind.ASSISTANT`, the original string as `content`, and `parsed_content` if available.
-- **Output**: An instance of `LlmMessage` with the message kind, content, tool requests, and parsed content determined based on the input string and optional parameters.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string`](../utils/parse_response_string.py.md#parse_response_string)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](#LlmMessage.ToolCallRequest)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+    - Attempt to parse the input string into JSON using [`parse_response_string`](<../utils/parse_response_string.py.md#parse_response_string>) and handle exceptions by setting `content_as_json` to None if parsing fails.
+    - Check if `content_as_json` is not None and convert it to a list if it is a dictionary.
+    - Iterate over each JSON object in `content_as_json` to identify tool requests by checking for the `PARSEABLE_CLASS_NAME` key.
+    - For each identified tool request, match the class name with the provided `tool_types` to instantiate a [`ToolCallRequest`](<#LlmMessage.ToolCallRequest>) and append it to `tool_requests`.
+    - If any tool requests are identified, return an `LlmMessage` instance with `message_kind` set to `MessageKind.TOOL_CALL_REQUEST`.
+    - If no tool requests are identified, attempt to parse the first JSON object using `response_type` if provided, and return an `LlmMessage` instance with `message_kind` set to `MessageKind.ASSISTANT`.
+- **Output**: Returns an `LlmMessage` instance with the message kind determined by the presence of tool requests and the parsed content.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string`](<../utils/parse_response_string.py.md#parse_response_string>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<#LlmMessage.ToolCallRequest>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 ---
 #### LlmMessage\.from\_anthropic\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_anthropic_message}} -->
-The `from_anthropic_message` method creates an `LlmMessage` instance from an Anthropic message response, parsing the content and optionally generating tool requests or parsing the content into a specified response type.
+The `from_anthropic_message` method creates an `LlmMessage` instance from an Anthropic message response, parsing its content and determining the message kind based on tool requests.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `message`: The Anthropic message response, which can be of type `Message` or `MessageParam`.
@@ -139,19 +137,19 @@ The `from_anthropic_message` method creates an `LlmMessage` instance from an Ant
     - `response_type`: An optional type (`LlmResponseType`) to parse the response content into.
 - **Control Flow**:
     - Initialize `content` as an empty string.
-    - Check if `message` is an instance of `Message` and extract the first text from `message.content` if available.
-    - If `message` is an instance of `MessageParam`, set `content` to `message.content`.
-    - Attempt to parse `content` into JSON using [`parse_response_string`](../utils/parse_response_string.py.md#parse_response_string); handle exceptions by setting `content_as_json` to `None`.
+    - Check if `message` is an instance of `Message` and extract the first text content if available.
+    - If `message` is an instance of `MessageParam`, directly assign its content to `content`.
+    - Attempt to parse `content` into JSON using [`parse_response_string`](<../utils/parse_response_string.py.md#parse_response_string>), handling exceptions by setting `content_as_json` to `None`.
     - Initialize an empty list `tool_requests`.
-    - If `tool_types` and `content_as_json` are available, iterate over `content_as_json` to find and instantiate tools matching the class name in `content_json`, appending them to `tool_requests`.
-    - If `response_type` is provided and no `tool_requests` exist, attempt to parse `content_as_json` into `parsed_content` using `response_type`; handle exceptions by setting `parsed_content` to `None`.
-    - Determine `message_kind` as `MessageKind.TOOL_CALL_REQUEST` if `tool_requests` exist, otherwise `MessageKind.ASSISTANT`.
+    - If `tool_types` and `content_as_json` are available, iterate over `content_as_json` to find matching tool types and create [`ToolCallRequest`](<#LlmMessage.ToolCallRequest>) instances.
+    - If `response_type` is provided and no tool requests are made, attempt to parse `content_as_json` into `parsed_content` using `response_type`.
+    - Determine `message_kind` as `TOOL_CALL_REQUEST` if there are tool requests, otherwise set it to `ASSISTANT`.
     - Return a new `LlmMessage` instance with the determined `message_kind`, `content`, `tool_requests`, and `parsed_content`.
-- **Output**: An `LlmMessage` instance containing the message content, any tool requests, and optionally parsed content.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string`](../utils/parse_response_string.py.md#parse_response_string)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](#LlmMessage.ToolCallRequest)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+- **Output**: An `LlmMessage` instance containing the message content, tool requests, and any parsed content.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/utils/parse_response_string.parse_response_string`](<../utils/parse_response_string.py.md#parse_response_string>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<#LlmMessage.ToolCallRequest>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 ---
@@ -160,15 +158,15 @@ The `print_to_console` method prints the message details to the console with col
 - **Inputs**: None
 - **Control Flow**:
     - A color map is defined to associate each `MessageKind` with a specific color code for console output.
-    - The `message_color` is determined by looking up the `self.message_kind` in the `color_map`, defaulting to a specific color if not found.
-    - The method prints the `message_kind` with the determined color.
-    - If `self.tool_response` is present, it prints the tool response details.
-    - If `self.content` is present, it prints the content of the message.
+    - The `message_color` is determined by looking up the `message_kind` in the `color_map`, defaulting to a specific color if not found.
+    - The method prints the `message_kind` to the console with the determined color.
+    - If `tool_response` is present, it prints the tool response details.
+    - If `content` is present, it prints the content of the message.
     - If there are any `tool_requests`, it iterates over them and prints each request's ID, name, and arguments.
-    - If `self.parsed_content` is present, it prints the parsed content using the `model_dump` method.
+    - If `parsed_content` is present, it prints the parsed content using the `model_dump` method.
     - Finally, it resets the console color to default.
 - **Output**: The method does not return any value; it outputs formatted text to the console.
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 ---
@@ -180,7 +178,7 @@ The `__hash__` method generates a hash value for an `LlmMessage` instance based 
     - This list is converted to a string representation.
     - The `hash` function is called on this string to produce a hash value.
 - **Output**: An integer representing the hash value of the `LlmMessage` instance.
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](#LlmMessage)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<#LlmMessage>)  (Base Class)
 
 
 
@@ -191,17 +189,18 @@ The `__hash__` method generates a hash value for an `LlmMessage` instance based 
     - `name`: A string representing the name of the tool being called.
     - `arguments`: A string containing the arguments for the tool call.
     - `parsed_tool`: An optional BaseModel instance representing the parsed tool, if available.
-- **Description**: The `ToolCallRequest` class is a data structure used to encapsulate the details of a tool call request within the `LlmMessage` class. It includes attributes for the request's unique identifier, the name of the tool being called, the arguments for the tool call, and an optional parsed representation of the tool. This class is part of a larger system for handling and processing messages that involve tool calls, allowing for structured representation and manipulation of tool call data.
+- **Description**: The `ToolCallRequest` class is a data model that encapsulates the details of a tool call request, including its identifier, name, arguments, and an optional parsed tool representation. It is used within the `LlmMessage` class to manage and process tool call requests in the context of language model message handling.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ToolCallResponse<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse}} -->
+- **Decorators**: `@dataclass`
 - **Members**:
     - `name`: The name of the tool call response.
     - `id`: The identifier of the tool call response, which can be None.
-- **Description**: The `ToolCallResponse` class is a simple data structure that inherits from `BaseModel` and is used to represent the response of a tool call within the `LlmMessage` class. It contains two attributes: `name`, which is a string representing the name of the tool call response, and `id`, which is an optional string identifier for the response. The class is designed to be extended or modified, as indicated by the TODO comment suggesting the addition of an executed tool reference for message history parsing.
+- **Description**: The `ToolCallResponse` class is a data model that represents the response from a tool call, encapsulating the name and an optional identifier of the response. It is designed to be used within the context of handling tool call requests and responses, potentially allowing for future extensions such as tracking executed tools or parsing message histories.
 - **Inherits From**:
     - `BaseModel`
 

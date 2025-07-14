@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_header.py` file defines a template for generating small headers in source code, including sections for purpose, imports, global variables, data structures, and functions, using various utilities and collections.
+The `source_code_small_header.py` file defines a template for generating headers in C or C++ source code files, including sections for purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code defines a configuration or template for generating structured documentation for source code files, particularly focusing on C or C++ headers. It imports various utilities and templates from a `utils` module, which are used to check imports, and analyze and categorize different components of the code such as global variables, data structures, and functions. The `SOURCE_CODE_SMALL_TEMPLATE_HEADER` is a list of tuples, each representing a section of the documentation with a specific purpose, such as detailing the purpose of the code, its imports and dependencies, and its global variables, data structures, and functions. This setup provides a narrow functionality aimed at automating the generation of detailed and organized documentation for small source code files, ensuring that each aspect of the code is systematically covered.
+This Python code defines a configuration for a templating system that appears to be used for generating structured documentation or analysis reports for source code, particularly C or C++ headers. It imports various utilities and templates from a `utils` module, indicating a reliance on external functions and classes for specialized tasks such as checking imports and analyzing code structures. The `SOURCE_CODE_SMALL_TEMPLATE_HEADER` is a list of tuples, each representing a section of the template, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section is associated with specific functions or lambdas that likely perform analysis or formatting tasks, suggesting that this code provides a narrow, specialized functionality focused on code documentation or analysis.
 # Imports and Dependencies
 
 ---
@@ -27,8 +27,8 @@ This Python code defines a configuration or template for generating structured d
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_HEADER
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_HEADER` is a list of tuples, where each tuple represents a section of a code template header. Each tuple contains a condition type, a section title, and one or more functions or prompts related to that section. The sections include 'Purpose', 'Imports and Dependencies', 'Global Variables', 'Data Structures', and 'Functions', each with associated processing logic or prompts.
-- **Use**: This variable is used to define the structure and processing logic for generating a small template header for source code, guiding how different sections of the code are handled and documented.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_HEADER` is a list of tuples, each containing elements that define different sections of a code template header. Each tuple includes a type identifier, a section title, and various functions or prompts related to that section, such as static analysis functions or language model prompts.
+- **Use**: This variable is used to structure and define the components of a small template header for source code, facilitating the generation of documentation or analysis outputs.
 
 
 

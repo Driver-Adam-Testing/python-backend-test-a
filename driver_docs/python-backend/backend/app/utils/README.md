@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains utility modules for interacting with AWS S3, AWS Secrets Manager, and GitHub's API.
+Utility modules for AWS S3, AWS Secrets Manager, and GitHub API interactions, including presigned URLs and secret management.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[aws_s3.py](aws_s3.py.md)**: The `aws_s3.py` file in the `python-backend` codebase provides utility functions for interacting with AWS S3, including generating presigned URLs, managing objects, and handling bucket operations.
-- **[aws_secrets_manager.py](aws_secrets_manager.py.md)**: The `aws_secrets_manager.py` file provides utility functions for interacting with AWS Secrets Manager, including writing and reading secrets, as well as formatting secret keys.
+- **[aws_s3.py](aws_s3.py.md)**: The `aws_s3.py` file provides utility functions for interacting with AWS S3, including generating presigned URLs, hashing organization IDs, and performing operations like copying, deleting, and checking the existence of objects.
+- **[aws_secrets_manager.py](aws_secrets_manager.py.md)**: The `aws_secrets_manager.py` file provides utility functions for writing, reading, and formatting secrets in AWS Secrets Manager, handling potential errors related to credentials and client operations.
 - **[gh_ops.py](gh_ops.py.md)**: The `gh_ops.py` file in the `python-backend` codebase provides utility functions for interacting with GitHub's API, including exchanging authorization codes for tokens, validating tokens, fetching repositories, downloading repository zips, and uploading them to AWS S3.
 
 ---

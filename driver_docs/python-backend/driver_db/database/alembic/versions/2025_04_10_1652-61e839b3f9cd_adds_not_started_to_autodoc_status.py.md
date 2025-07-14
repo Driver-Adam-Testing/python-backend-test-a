@@ -6,7 +6,7 @@
 The `2025_04_10_1652-61e839b3f9cd_adds_not_started_to_autodoc_status.py` file is an Alembic migration script that adds and removes the 'NOT_STARTED' value to the `autodocstatusmessagekind` type in the database.
 
 # Purpose
-This Python script is an Alembic migration file, which is used to manage changes to a database schema over time. It provides narrow functionality, specifically adding and removing a new value, 'NOT_STARTED', to an existing PostgreSQL enum type named `autodocstatusmessagekind`. The [`upgrade`](#upgrade) function executes a SQL command to add this new enum value, while the [`downgrade`](#downgrade) function removes it, allowing for reversible schema changes. The script includes metadata such as revision identifiers to track the migration's place in the sequence of database changes. This file is part of a larger database version control system, ensuring that schema changes are applied consistently across different environments.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality, specifically altering a PostgreSQL enum type by adding and removing a value. The script defines two functions: `upgrade()` and `downgrade()`. The `upgrade()` function adds a new value, 'NOT_STARTED', to the `autodocstatusmessagekind` enum type, while the `downgrade()` function removes this value, allowing for reversible database schema changes. The script includes metadata such as revision identifiers to track the migration's place in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -18,29 +18,29 @@ This Python script is an Alembic migration file, which is used to manage changes
 ---
 ### revision
 - **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
+- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
+- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring that migrations are applied in the correct order.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to specify labels for a branch in Alembic migrations, but in this script, it is not utilized and remains set to `None`.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration such as branching information.
+- **Use**: This variable is used to indicate that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used as part of the Alembic migration script to indicate that this migration does not depend on any other migrations to be applied first.
+- **Use**: This variable is used to specify that the current migration can be applied independently of other migrations.
 
 
 # Functions
@@ -50,9 +50,9 @@ This Python script is an Alembic migration file, which is used to manage changes
 The `upgrade` function adds a new value 'NOT_STARTED' to the PostgreSQL enum type `autodocstatusmessagekind` using Alembic.
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses the Alembic `op.execute` method to run a raw SQL command.
+    - The function uses Alembic's `op.execute` to run a raw SQL command.
     - The SQL command alters the enum type `autodocstatusmessagekind` by adding a new value 'NOT_STARTED'.
-- **Output**: The function does not return any value; it performs a database schema modification.
+- **Output**: The function does not return any value.
 
 
 ---
@@ -62,7 +62,7 @@ The `downgrade` function removes the 'NOT_STARTED' value from the 'autodocstatus
 - **Control Flow**:
     - The function executes a SQL command using Alembic's `op.execute` method.
     - The SQL command alters the 'autodocstatusmessagekind' type by dropping the 'NOT_STARTED' value.
-- **Output**: The function does not return any value; it performs a schema modification operation.
+- **Output**: The function does not return any value; it performs a schema modification.
 
 
 

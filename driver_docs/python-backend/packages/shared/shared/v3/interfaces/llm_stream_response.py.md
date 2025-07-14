@@ -6,9 +6,9 @@
 The `llm_stream_response.py` file defines various classes for handling different types of LLM stream responses, including session management, response chunks, tool status updates, errors, full responses, and references, with functionality to convert these responses to SSE-formatted strings.
 
 # Purpose
-This Python code defines a set of classes that model different types of responses in a streaming context, specifically for interactions with a language model (LLM). The file is structured around the `LlmStreamResponse` base class, which is a Pydantic model that provides a framework for serializing response data into Server-Sent Events (SSE) format. The `LlmStreamResponseKind` enumeration defines the various types of responses that can be generated, such as starting or ending a session, sending a chunk of a response, updating tool status, reporting errors, and handling full responses or references. Each specific response type is represented by a subclass of `LlmStreamResponse`, which includes additional attributes relevant to that response type, such as `llm_session_id` for session management or `content` for response data.
+This Python code defines a set of classes that model different types of responses in a streaming context, specifically for a system that likely involves interactions with a language model (LLM). The code is structured as a library file intended to be imported and used elsewhere, providing a clear and organized way to handle various response types. The core functionality revolves around the `LlmStreamResponse` class, which serves as a base model for all response types, utilizing Pydantic's `BaseModel` for data validation and serialization. The `LlmStreamResponseKind` enum defines the different kinds of responses that can be handled, such as starting or ending a session, receiving a response chunk, updating tool status, handling errors, and managing full responses or references.
 
-The code is designed to be part of a larger system, likely a library or service that handles real-time communication with an LLM. It provides a structured way to encode and transmit different types of messages, ensuring that they are formatted correctly for SSE. The use of Pydantic models ensures data validation and serialization, while the custom `UUIDEncoder` and potential post-processing functions like `fix_mermaid_syntax_in_response` indicate a focus on handling specific data types and content formats. This file is not a standalone script but rather a component intended to be integrated into a broader application, providing a clear API for generating and handling LLM-related streaming responses.
+Each subclass of `LlmStreamResponse` represents a specific type of response, with attributes tailored to the kind of data they encapsulate. For instance, `StartSessionStreamResponse` and `EndSessionStreamResponse` manage session identifiers, while `ResponseChunkStreamResponse` and `ResponseFullStreamResponse` handle content data. The [`to_sse`](<#LlmStreamResponseto_sse>) method in the base class converts the response data into a Server-Sent Events (SSE) formatted string, facilitating real-time data streaming. The code also includes a mechanism to fix syntax issues in mermaid diagrams within the full response content, indicating a focus on ensuring data integrity and presentation. Overall, this file provides a structured approach to managing and encoding different streaming responses, making it a crucial component for systems that require real-time communication with an LLM.
 # Imports and Dependencies
 
 ---
@@ -33,7 +33,7 @@ The code is designed to be part of a larger system, likely a library or service 
     - `START_SESSION`: Marks the start of a session in the stream.
     - `RESPONSE_FULL`: Represents a full response in the stream.
     - `REFERENCES`: Indicates references in the stream.
-- **Description**: The `LlmStreamResponseKind` class is an enumeration that defines various types of responses that can be encountered in a language model stream. It inherits from both `str` and `enum.Enum`, allowing each member to be used as a string while also providing enumeration capabilities. The class includes several predefined response kinds such as `RESPONSE_CHUNK`, `TOOL_STATUS_UPDATE`, `ERROR`, `END_SESSION`, `START_SESSION`, `RESPONSE_FULL`, and `REFERENCES`, each representing a specific type of message or event that can occur in the stream.
+- **Description**: The `LlmStreamResponseKind` class is an enumeration that defines various types of responses that can be encountered in a language model stream. It inherits from both `str` and `enum.Enum`, allowing each member to be used as a string while also providing enumeration capabilities. The class includes several predefined response kinds such as `RESPONSE_CHUNK`, `TOOL_STATUS_UPDATE`, `ERROR`, `END_SESSION`, `START_SESSION`, `RESPONSE_FULL`, and `REFERENCES`, each representing a specific type of event or message that can occur in the stream.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -43,11 +43,11 @@ The code is designed to be part of a larger system, likely a library or service 
 ### LlmStreamResponse<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse}} -->
 - **Members**:
     - `kind`: Specifies the type of the stream response using the LlmStreamResponseKind enum.
-- **Description**: The `LlmStreamResponse` class is a base model for handling different types of stream responses in a system that utilizes server-sent events (SSE). It defines a single member, `kind`, which indicates the type of response using the `LlmStreamResponseKind` enumeration. The class provides methods to convert the response to an SSE-formatted string, represent it as a string, and encode it to bytes, facilitating the transmission of structured data over a network.
+- **Description**: The `LlmStreamResponse` class is a base model for handling different types of stream responses in a system, utilizing the Pydantic `BaseModel` for data validation and serialization. It includes a `kind` attribute to specify the type of response, which is an instance of the `LlmStreamResponseKind` enum. The class provides methods to convert the response to a Server-Sent Events (SSE) formatted string and to encode the response as bytes, facilitating the transmission of data in a streaming context.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.to_sse`](#LlmStreamResponseto_sse)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.__str__`](#LlmStreamResponse__str__)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](#LlmStreamResponseencode)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.to_sse`](<#LlmStreamResponseto_sse>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.__str__`](<#LlmStreamResponse__str__>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](<#LlmStreamResponseencode>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -58,26 +58,27 @@ The code is designed to be part of a larger system, likely a library or service 
 The `to_sse` method converts the response object into a Server-Sent Events (SSE) formatted string.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls `self.model_dump()` to serialize the model instance into a dictionary.
-    - It uses `json.dumps` to convert the dictionary into a JSON string, utilizing a custom encoder `UUIDEncoder` if necessary.
-    - The JSON string is then formatted into an SSE data string by prepending 'data: ' and appending two newline characters.
-    - The formatted SSE string is returned.
-- **Output**: A string formatted for Server-Sent Events (SSE), containing the JSON representation of the model instance.
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)  (Base Class)
+    - The method calls `self.model_dump()` to serialize the object into a dictionary format.
+    - It uses `json.dumps` to convert the serialized dictionary into a JSON string, utilizing a custom `UUIDEncoder` to handle UUIDs.
+    - The JSON string is then formatted into an SSE string by prepending 'data: ' and appending two newline characters.
+    - The formatted SSE string is returned as the output.
+- **Output**: A string formatted according to the Server-Sent Events (SSE) protocol, containing the JSON representation of the response object.
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)  (Base Class)
 
 
 ---
 #### LlmStreamResponse\.\_\_str\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.__str__}} -->
-The `__str__` method returns the string representation of the `LlmStreamResponse` object in SSE format.
+The `__str__` method returns the string representation of the object by converting it to an SSE-formatted string.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls the [`to_sse`](#LlmStreamResponseto_sse) method of the `LlmStreamResponse` class.
-    - The [`to_sse`](#LlmStreamResponseto_sse) method converts the response object to a Server-Sent Events (SSE) formatted string using JSON serialization.
-    - The [`to_sse`](#LlmStreamResponseto_sse) method returns the formatted string, which is then returned by the `__str__` method.
-- **Output**: A string representing the `LlmStreamResponse` object in SSE format.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.to_sse`](#LlmStreamResponseto_sse)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)  (Base Class)
+    - The method calls the [`to_sse`](<#LlmStreamResponseto_sse>) method of the same class.
+    - The [`to_sse`](<#LlmStreamResponseto_sse>) method converts the object's data to a JSON string using `json.dumps` with a custom encoder `UUIDEncoder`.
+    - The JSON string is then formatted as an SSE (Server-Sent Events) string by prefixing it with 'data:' and appending two newline characters.
+    - The formatted SSE string is returned as the output of the `__str__` method.
+- **Output**: A string that represents the object in an SSE-formatted string.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.to_sse`](<#LlmStreamResponseto_sse>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)  (Base Class)
 
 
 ---
@@ -90,9 +91,9 @@ The `encode` method converts the LlmStreamResponse object to a Server-Sent Event
     - The method calls `self.to_sse()` to convert the object to an SSE-formatted string.
     - The resulting string is then encoded into bytes using the `encode` method, with any provided `*args` and `**kwargs` passed through.
 - **Output**: The method returns a bytes object representing the SSE-formatted string.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.to_sse`](#LlmStreamResponseto_sse)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.to_sse`](<#LlmStreamResponseto_sse>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)  (Base Class)
 
 
 
@@ -104,17 +105,17 @@ The `encode` method converts the LlmStreamResponse object to a Server-Sent Event
     - `execution_call_id`: Optional identifier for the execution call.
 - **Description**: The `StartSessionStreamResponse` class is a specialized response type that inherits from `LlmStreamResponse`, designed to represent the initiation of a session in a streaming context. It includes a specific kind indicating the start of a session, a unique session identifier, and an optional execution call identifier. This class is part of a larger framework for handling different types of streaming responses, each with its own specific attributes and purposes.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 
 ---
 ### EndSessionStreamResponse<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.EndSessionStreamResponse}} -->
 - **Members**:
-    - `kind`: Specifies the type of stream response as 'END_SESSION'.
-    - `llm_session_id`: Holds the unique identifier for the LLM session.
-- **Description**: The EndSessionStreamResponse class is a specialized type of LlmStreamResponse that represents the termination of a session in a streaming response context. It is characterized by a 'kind' attribute set to 'END_SESSION', indicating the end of a session, and includes a 'llm_session_id' to uniquely identify the session being terminated. This class is part of a larger framework for handling different types of streaming responses, each with its own specific attributes and purposes.
+    - `kind`: Specifies the type of stream response, set to END_SESSION.
+    - `llm_session_id`: Stores the unique identifier for the LLM session.
+- **Description**: The `EndSessionStreamResponse` class is a specialized subclass of `LlmStreamResponse` that represents the end of a session in a streaming response. It is characterized by a `kind` attribute set to `END_SESSION`, indicating the type of response, and an `llm_session_id` attribute, which holds the unique identifier for the session being terminated. This class is part of a larger framework for handling different types of streaming responses in a structured manner.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 
 ---
@@ -122,9 +123,9 @@ The `encode` method converts the LlmStreamResponse object to a Server-Sent Event
 - **Members**:
     - `kind`: Specifies the type of stream response, set to RESPONSE_CHUNK.
     - `content`: Holds the content of the response chunk as a string.
-- **Description**: The `ResponseChunkStreamResponse` class is a specialized subclass of `LlmStreamResponse` designed to represent a chunk of a response in a streaming context. It is characterized by a `kind` attribute that is set to `LlmStreamResponseKind.RESPONSE_CHUNK`, indicating its specific role in the response stream. Additionally, it contains a `content` attribute, which stores the actual content of the response chunk as a string. This class is part of a larger framework for handling different types of streaming responses, each with its own specific attributes and behaviors.
+- **Description**: The `ResponseChunkStreamResponse` class is a specialized type of `LlmStreamResponse` that represents a chunk of a response in a streaming context. It is characterized by its `kind` attribute, which is set to `RESPONSE_CHUNK`, and a `content` attribute that stores the actual content of the response chunk. This class is part of a larger framework for handling different types of streaming responses, each with its own specific attributes and behaviors.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 
 ---
@@ -132,19 +133,19 @@ The `encode` method converts the LlmStreamResponse object to a Server-Sent Event
 - **Members**:
     - `kind`: Specifies the type of stream response, set to TOOL_STATUS_UPDATE.
     - `content`: Holds the content of the tool status update as a string.
-- **Description**: The `ToolStatusUpdateStreamResponse` class is a specialized form of `LlmStreamResponse` that represents a stream response specifically for tool status updates. It includes a `kind` attribute that is set to `TOOL_STATUS_UPDATE` to indicate the type of response, and a `content` attribute that contains the actual status update information as a string. This class is part of a larger framework for handling different types of stream responses in a structured manner.
+- **Description**: The `ToolStatusUpdateStreamResponse` class is a specialized form of `LlmStreamResponse` designed to handle tool status updates in a streaming response system. It includes a `kind` attribute that is set to `TOOL_STATUS_UPDATE` to indicate the type of response, and a `content` attribute that stores the actual status update information as a string. This class is part of a larger framework for managing different types of streaming responses, each represented by a subclass of `LlmStreamResponse`.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 
 ---
 ### ErrorStreamResponse<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ErrorStreamResponse}} -->
 - **Members**:
-    - `kind`: Specifies the type of response as an error.
+    - `kind`: Specifies the type of response, set to LlmStreamResponseKind.ERROR for this class.
     - `error_message`: Holds the error message associated with the response.
-- **Description**: The `ErrorStreamResponse` class is a specialized subclass of `LlmStreamResponse` designed to represent error responses in a streaming context. It includes a `kind` attribute set to `LlmStreamResponseKind.ERROR` to indicate the type of response, and an `error_message` attribute to store the specific error message. This class is part of a larger framework for handling different types of responses in a streaming environment, providing a structured way to manage and communicate errors.
+- **Description**: The ErrorStreamResponse class is a specialized subclass of LlmStreamResponse designed to handle error responses in a streaming context. It sets the kind attribute to LlmStreamResponseKind.ERROR to indicate the nature of the response and includes an error_message attribute to store the specific error message. This class is part of a larger framework for managing different types of responses in a streaming environment, providing a structured way to represent and transmit error information.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 
 ---
@@ -152,11 +153,11 @@ The `encode` method converts the LlmStreamResponse object to a Server-Sent Event
 - **Members**:
     - `kind`: Specifies the type of stream response as a full response.
     - `content`: Holds the content of the full response as a string.
-- **Description**: The `ResponseFullStreamResponse` class is a specialized type of `LlmStreamResponse` that represents a complete response in a streaming context. It includes a `kind` attribute to specify the response type and a `content` attribute to store the full response content. The constructor processes the content to fix any mermaid syntax issues if present, ensuring the response is correctly formatted before being passed to the superclass initializer.
+- **Description**: The `ResponseFullStreamResponse` class is a specialized type of `LlmStreamResponse` that represents a complete response in a streaming context. It includes a `kind` attribute to specify the response type and a `content` attribute to store the full response content. The class constructor also includes logic to correct mermaid syntax in the content if present, ensuring the response is properly formatted before being processed further.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse.__init__`](#ResponseFullStreamResponse__init__)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse.__init__`](<#ResponseFullStreamResponse__init__>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 **Methods**
 
@@ -166,14 +167,14 @@ The `__init__` method initializes a `ResponseFullStreamResponse` object, optiona
 - **Inputs**:
     - `data`: A dictionary of keyword arguments where keys are strings and values can be of any type, representing the data to initialize the object with.
 - **Control Flow**:
-    - Imports the [`fix_mermaid_syntax_in_response`](../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response) function from a module to handle Mermaid syntax correction.
+    - Imports the [`fix_mermaid_syntax_in_response`](<../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>) function from a specific module.
     - Checks if the string '```mermaid' is present in the 'content' key of the `data` dictionary.
-    - If the condition is true, it applies the [`fix_mermaid_syntax_in_response`](../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response) function to the 'content' value to correct any Mermaid syntax issues.
-    - Calls the parent class's `__init__` method with the processed `data` dictionary to complete the initialization.
+    - If the condition is true, it applies the [`fix_mermaid_syntax_in_response`](<../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>) function to the 'content' value to correct Mermaid syntax.
+    - Calls the parent class's `__init__` method with the processed `data` dictionary.
 - **Output**: The method does not return any value; it initializes the object with potentially modified content.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid.fix_mermaid_syntax_in_response`](../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse`](#ResponseFullStreamResponse)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid.fix_mermaid_syntax_in_response`](<../utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse`](<#ResponseFullStreamResponse>)  (Base Class)
 
 
 
@@ -184,7 +185,7 @@ The `__init__` method initializes a `ResponseFullStreamResponse` object, optiona
     - `references`: A list of Reference objects associated with the response.
 - **Description**: The ReferenceStreamResponse class is a specialized subclass of LlmStreamResponse designed to handle responses that include references. It sets the kind attribute to LlmStreamResponseKind.REFERENCES and includes a list of Reference objects, which are likely used to provide additional context or information related to the response.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](#LlmStreamResponse)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse`](<#LlmStreamResponse>)
 
 
 

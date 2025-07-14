@@ -6,7 +6,7 @@
 The `auth0_schema.py` file defines Pydantic models for handling user invitations and role modifications, including classes for invitees, invitations, and user role changes.
 
 # Purpose
-This code defines a set of data models using the Pydantic library, which is commonly used for data validation and settings management in Python. The file provides narrow functionality, focusing specifically on defining structured data models for handling user invitations and role modifications. It includes classes such as `Invitee`, `Invitation`, `CreateInvitationInput`, `ModifyUserRolesInput`, and `ModifyUserRolesResponse`, each extending from `BaseModel` to leverage Pydantic's validation features. These models are designed to ensure that data related to user invitations and role management is correctly structured and validated, with fields like email addresses and lists of role IDs being explicitly defined. This code is likely part of a larger system where user management and role assignments are critical, serving as a foundational component for data integrity and validation.
+This code defines a set of data models using the Pydantic library, which is commonly used for data validation and settings management in Python. The file provides narrow functionality, focusing specifically on defining structured data models for handling user invitations and role modifications. It includes classes such as `Invitee`, `Invitation`, `CreateInvitationInput`, `ModifyUserRolesInput`, and `ModifyUserRolesResponse`, each extending from `BaseModel` to leverage Pydantic's validation features. These models are designed to ensure that data related to user invitations and role management is correctly structured and validated, with fields like email addresses and lists of role IDs being explicitly defined. This code is likely part of a larger system that manages user access and permissions, ensuring that data integrity is maintained when creating invitations or modifying user roles.
 # Imports and Dependencies
 
 ---
@@ -20,8 +20,8 @@ This code defines a set of data models using the Pydantic library, which is comm
 ---
 ### Invitee<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.Invitee}} -->
 - **Members**:
-    - `email`: Stores the email address of the invitee as a validated email string.
-- **Description**: The Invitee class is a simple data model that extends Pydantic's BaseModel to represent an invitee with a single attribute, email, which is validated to ensure it is a properly formatted email address.
+    - `email`: An email address of the invitee, validated as an EmailStr.
+- **Description**: The Invitee class is a Pydantic model that represents an individual who is invited, identified by their email address, which is validated to ensure it is a proper email format.
 - **Inherits From**:
     - `BaseModel`
 
@@ -31,7 +31,7 @@ This code defines a set of data models using the Pydantic library, which is comm
 - **Members**:
     - `invitee`: An instance of the Invitee class representing the person being invited.
     - `roles`: A list of role IDs associated with the invitation.
-- **Description**: The Invitation class is a data model that represents an invitation, including the invitee's details and a list of role IDs that are part of the invitation. It extends the BaseModel from Pydantic, ensuring data validation and serialization.
+- **Description**: The Invitation class is a data model that represents an invitation, including the invitee's details and the roles associated with the invitation. It extends the BaseModel from Pydantic, ensuring data validation and serialization. The class includes an invitee, which is an instance of the Invitee class, and a list of roles, which are represented as strings and described using a Pydantic Field for additional metadata.
 - **Inherits From**:
     - `BaseModel`
 
@@ -40,7 +40,7 @@ This code defines a set of data models using the Pydantic library, which is comm
 ### CreateInvitationInput<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.CreateInvitationInput}} -->
 - **Members**:
     - `invitations`: A list of Invitation objects to be created.
-- **Description**: The CreateInvitationInput class is a data model used to encapsulate a list of Invitation objects, which are intended to be processed for creating invitations. It inherits from Pydantic's BaseModel, ensuring data validation and serialization capabilities for the list of invitations.
+- **Description**: The CreateInvitationInput class is a Pydantic model designed to encapsulate a list of Invitation objects, which are used to create new invitations. Each Invitation object within the list contains details about the invitee and their associated roles.
 - **Inherits From**:
     - `BaseModel`
 
@@ -57,9 +57,9 @@ This code defines a set of data models using the Pydantic library, which is comm
 ---
 ### ModifyUserRolesResponse<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesResponse}} -->
 - **Members**:
-    - `user_id`: The unique identifier of the user whose roles are being modified.
-    - `added_roles`: A list of role IDs that have been added to the user.
-    - `removed_roles`: A list of role IDs that have been removed from the user.
+    - `user_id`: A string representing the unique identifier of the user.
+    - `added_roles`: A list of strings representing the roles that have been added to the user.
+    - `removed_roles`: A list of strings representing the roles that have been removed from the user.
 - **Description**: The ModifyUserRolesResponse class is a data model that represents the response structure for modifying user roles, including the user's ID and lists of roles that were added or removed.
 - **Inherits From**:
     - `BaseModel`

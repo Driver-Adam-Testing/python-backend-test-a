@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_interfaces.java` file demonstrates various features of Java interfaces, including constants, abstract methods, default and static methods, nested interfaces, and functional interfaces.
+The `test_interfaces.java` file defines several Java interfaces, including `Drawable` with default and static methods, `Resizable` with a nested interface, and a functional interface `Calculator`.
 
 # Purpose
-The provided Java source code defines a set of interfaces that demonstrate various features of Java interfaces, particularly focusing on the capabilities introduced in Java 8 and beyond. The primary interface, `Drawable`, serves as a blueprint for objects that can be drawn, encapsulating both abstract and concrete behaviors. It includes a constant `DEFAULT_COLOR`, an abstract method `draw()`, a default method `setColor(String color)`, and a static method `info()`. These elements illustrate the flexibility of interfaces in Java, allowing for default implementations and static utility methods, which enhance the reusability and organization of code.
+The provided Java source code defines a set of interfaces that demonstrate various features of Java interfaces, including constants, abstract methods, default methods, static methods, and nested interfaces. The primary interface, `Drawable`, serves as a blueprint for objects that can be drawn, specifying a constant `DEFAULT_COLOR`, an abstract method `draw()`, a default method `setColor(String color)`, and a static method `info()`. These components illustrate the capabilities of interfaces in Java, particularly those introduced in Java 8, such as default and static methods, which allow interfaces to have method implementations.
 
-Additionally, the code defines a `Resizable` interface that extends `Drawable`, adding functionality for resizing objects with the `resize(int width, int height)` method. It also includes a nested interface, `ResizeListener`, which provides a mechanism for handling resize events, demonstrating how interfaces can be used to define event-driven programming patterns. Furthermore, the code includes a `Calculator` interface marked with the `@FunctionalInterface` annotation, indicating it is intended to be used as a target for lambda expressions or method references, with a single abstract method `calculate(int a, int b)`. This collection of interfaces showcases a broad range of interface capabilities, from defining simple contracts to supporting complex behaviors and functional programming paradigms.
+Additionally, the code includes the `Resizable` interface, which extends `Drawable` and adds the `resize(int width, int height)` method, along with a nested `ResizeListener` interface for handling resize events. This demonstrates the use of interface inheritance and the ability to define nested interfaces. The `Calculator` interface is marked with the `@FunctionalInterface` annotation, indicating it is intended to be used as a functional interface, suitable for lambda expressions or method references, with a single abstract method `calculate(int a, int b)`. Overall, the code provides a broad overview of interface features in Java, showcasing how interfaces can be used to define contracts for classes, support multiple inheritance, and facilitate functional programming.
 # Imports and Dependencies
 
 ---
@@ -29,9 +29,9 @@ Additionally, the code defines a `Resizable` interface that extends `Drawable`, 
 
 ---
 ### Resizable<!-- {{#interface:com.example.Resizable}} -->
-- **Description**: The `Resizable` interface extends the `Drawable` interface and provides a contract for objects that can be resized. It includes a method `resize(int width, int height)` that must be implemented by any class that implements this interface, allowing the object to change its dimensions. Additionally, it contains a nested interface `ResizeListener`, which defines a method `onResize(int oldWidth, int oldHeight, int newWidth, int newHeight)` to handle events related to resizing, providing a mechanism for objects to respond to changes in size.
+- **Description**: The `Resizable` interface extends the `Drawable` interface and adds functionality for resizing objects. It includes a method `resize(int width, int height)` that allows implementing classes to define how an object should be resized to the specified dimensions. Additionally, it contains a nested interface `ResizeListener`, which provides a callback method `onResize(int oldWidth, int oldHeight, int newWidth, int newHeight)` to notify listeners about changes in size, allowing for responsive design patterns or event-driven programming.
 - **Extends/Implements**:
-    - [`com.example.Drawable`](#Drawable)
+    - [`com.example.Drawable`](<#Drawable>)
 
 **Methods**
 - `resize`<!-- {{#callable:com.example.Resizable.resize}} -->
@@ -39,7 +39,7 @@ Additionally, the code defines a `Resizable` interface that extends `Drawable`, 
 
 ---
 ### ResizeListener<!-- {{#interface:com.example.Resizable.ResizeListener}} -->
-- **Description**: The `ResizeListener` interface is a nested interface within the `Resizable` interface, designed to provide a callback mechanism for handling resize events. It contains a single method, `onResize`, which is invoked when a resize operation occurs, providing the old and new dimensions (width and height) as parameters. This interface is typically implemented by classes that need to perform specific actions in response to changes in size, allowing for dynamic and responsive behavior in applications that involve resizable components.
+- **Description**: The `ResizeListener` interface is a nested interface within the `Resizable` interface, designed to provide a callback mechanism for handling resize events. It contains a single method, `onResize`, which is invoked when a resize operation occurs, providing the old and new dimensions (width and height) of the object being resized. This interface is typically implemented by classes that need to respond to changes in size, allowing them to perform specific actions when the dimensions of a resizable object are altered.
 
 **Methods**
 - `onResize`<!-- {{#callable:com.example.Resizable.ResizeListener.onResize}} -->
@@ -47,7 +47,7 @@ Additionally, the code defines a `Resizable` interface that extends `Drawable`, 
 
 ---
 ### Calculator<!-- {{#interface:com.example.Calculator}} -->
-- **Description**: The `Calculator` interface is a functional interface in Java, which means it is intended to be implemented by a single abstract method, making it suitable for use with lambda expressions and method references. This interface defines a single method, `calculate`, which takes two integer parameters and returns an integer result. The primary purpose of this interface is to provide a contract for implementing various calculation operations, such as addition, subtraction, multiplication, or division, in a flexible and concise manner.
+- **Description**: The `Calculator` interface is a functional interface in Java, which means it is intended to be implemented by a single abstract method, making it suitable for use with lambda expressions and method references. This interface defines a single method, `calculate`, which takes two integer parameters and returns an integer result. The purpose of this interface is to provide a contract for implementing various calculation operations, such as addition, subtraction, multiplication, or division, by defining the specific logic within the `calculate` method.
 
 **Methods**
 - `calculate`<!-- {{#callable:com.example.Calculator.calculate}} -->

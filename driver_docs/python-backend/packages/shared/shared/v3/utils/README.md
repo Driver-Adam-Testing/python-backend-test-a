@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains utility files and a subfolder for handling data sources, encoding, response parsing, references, semantic comparison, and post-processing of Mermaid diagrams.
+Utility files and a subfolder for post-processing Mermaid diagrams, including data source management, JSON encoding/decoding, response string parsing, graph node referencing, semantic comparison, and testing.
 
 ## Folders
-- **[post_processing](post_processing/README.md)**: The `post_processing` folder in the `python-backend` codebase contains a utility file, `mermaid.py`, which is responsible for handling Mermaid diagram code blocks by extracting, validating, and repairing them to ensure proper rendering.
+- **[post_processing](post_processing/README.md)**: The `post_processing` folder in the `python-backend` codebase contains utilities for handling Mermaid diagrams, specifically focusing on extraction, validation, and repair to ensure correct rendering.
 
 ## Files
 - **[datasource.py](datasource.py.md)**: The `datasource.py` file defines a `DataSource` class that manages a collection of node IDs associated with a specific organization, providing methods to initialize, validate, and describe the nodes, as well as caching mechanisms to optimize data retrieval.
 - **[encoder.py](encoder.py.md)**: The `encoder.py` file defines a custom JSON encoder for UUID objects and a decoder hook to convert string representations back to UUIDs.
-- **[parse_response_string.py](parse_response_string.py.md)**: The `parse_response_string.py` file provides a utility function to extract and return valid JSON objects or arrays from a given string, raising an exception if none are found.
-- **[references.py](references.py.md)**: The `references.py` file defines a `Reference` class for representing nodes in a graph and a `ReferenceSet` class for managing a collection of these references, with functionality for iteration and set operations.
+- **[parse_response_string.py](parse_response_string.py.md)**: The `parse_response_string.py` file defines a utility function to extract and return valid JSON objects or arrays from a given string, raising an exception if none are found.
+- **[references.py](references.py.md)**: The `references.py` file defines a `Reference` class for representing nodes in a graph and a `ReferenceSet` class for managing collections of these references, with functionality for iteration and sorting by score.
 - **[semantic_comparator.py](semantic_comparator.py.md)**: The `semantic_comparator.py` file implements a `SemanticComparator` class that allows for adding entries with text descriptions, generating their embeddings, and comparing these embeddings to find the closest match based on cosine similarity.
-- **[test_parse_response_string.py](test_parse_response_string.py.md)**: The `test_parse_response_string.py` file contains test cases for the `parse_response_string` function, which processes various JSON-formatted strings to ensure correct parsing and error handling.
+- **[test_parse_response_string.py](test_parse_response_string.py.md)**: The `test_parse_response_string.py` file contains test cases for the `parse_response_string` function, which processes various JSON-formatted strings to verify its parsing capabilities and error handling.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

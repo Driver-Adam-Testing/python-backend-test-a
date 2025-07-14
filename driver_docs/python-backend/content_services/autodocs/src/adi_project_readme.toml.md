@@ -6,25 +6,33 @@
 The `adi_project_readme.toml` file in the `python-backend` codebase defines the configuration and structure for generating a structured README for projects in the `no-OS` codebase by ADI, including sections for supported evaluation boards, power supply requirements, and platform-specific build commands.
 
 # Purpose
-The provided content is a configuration file written in a structured format, likely using a format similar to TOML, designed to guide the generation of a README document for a project within the `no-OS` codebase by Analog Devices, Inc. (ADI). This file serves a narrow purpose, focusing on the creation of a structured README by specifying models, goals, and detailed instructions for various sections of the document. It includes multiple conceptual components such as model configurations, document goals, scope definitions, and section instructions, all centered around the theme of documentation generation. The file is crucial to the codebase as it automates and standardizes the documentation process, ensuring consistency and completeness in the README files for different projects and platforms, which is essential for user guidance and project understanding.
+The provided content is a configuration file written in a structured format, likely using a format similar to TOML, which is used to define the structure and content of a README document for a project within the `no-OS` codebase by Analog Devices, Inc. (ADI). This file serves a narrow purpose, focusing on the generation of a structured README by specifying models, goals, and instructions for various sections of the document. It includes multiple conceptual components such as model configurations, document goals, scope definitions, and detailed section instructions, all aimed at ensuring the README is comprehensive and follows a specific format. The relevance of this file to the codebase is significant as it automates and standardizes the documentation process, ensuring consistency and completeness across different projects and platforms within the `no-OS` environment.
 # Content Summary
-This configuration file is structured to guide the creation of a structured README for projects within the `no-OS` codebase by Analog Devices, Inc. (ADI). It is organized into several sections, each with specific instructions and content structures to ensure consistency and completeness in documentation.
+This configuration file is structured to guide the creation of a structured README for a project within the `no-OS` codebase by Analog Devices, Inc. (ADI). The file is divided into several sections, each specifying different aspects of the README content and the models used for generating various sections.
 
 ### Key Sections and Their Functions:
 
-1. **LLM Configuration**: This section specifies different models used for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing. Models like "gpt-4o" and "o3-mini" are designated for these tasks, indicating the use of language models to automate or assist in documentation processes.
+1. **LLM Configuration**: 
+   - This section specifies the language models to be used for different parts of the document creation process. Models like "gpt-4o" and "o3-mini" are assigned to tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing.
 
-2. **Document Goals and Formatting**: The document aims to create a structured README with defined sections, tagging, and a specific configuration name and version. This ensures that the README adheres to a standardized format and includes all necessary information.
+2. **Document Goals and Formatting**:
+   - The document aims to create a structured README with defined sections, using tagging, and is versioned as "[V1]". The configuration name is "ADI-project-README".
 
-3. **Scope and Substitutions**: This section includes key-value pairs for device and evaluation board names, allowing for dynamic content generation based on the specific hardware being documented. It also lists associated PDF documents and code paths relevant to the project, ensuring that all necessary resources are linked and accessible.
+3. **Scope and Substitutions**:
+   - The scope section includes preamble settings and detailed substitutions for various evaluation boards, such as "DEVICE", "DEVICE_EVAL_BOARD", and others, mapping them to specific hardware like "adxrs290" and "EVAL-ADXRS290-PMDZ".
+   - PDF documents related to the project are listed with their names and version IDs, providing references for documentation.
 
-4. **Sections for README Content**: The file outlines various sections to be included in the README, such as "Supported Evaluation Boards," "Overview," "Applications," "Hardware Specifications," and more. Each section has detailed instructions on what content to include and how to format it, often using placeholders for dynamic content insertion. For example, the "Supported Evaluation Boards" section requires listing evaluation boards as hyperlinks if available.
+4. **Sections for README**:
+   - The file outlines multiple sections to be included in the README, such as "Supported Evaluation Boards", "Overview", "Applications", "Hardware Specifications", and more. Each section has specific instructions and content structures, often involving lists, tables, or direct text from user guides or data sheets.
+   - Some sections are marked as required, while others are optional, depending on the platform support determined by analyzing a 'builds.json' file.
 
-5. **Platform-Specific Instructions**: The file includes instructions for different platforms (e.g., ADuCM, MAXIM, XILINX, PICO, STM32, INTEL, MBED), detailing the hardware used, connections, and build commands. These sections ensure that the README provides platform-specific guidance for users.
+5. **Platform-Specific Instructions**:
+   - The file includes detailed instructions for various platforms like ADuCM, MAXIM, XILINX, PICO, STM32, INTEL, and MBED. Each platform has subsections for "Used Hardware", "Connections", and "Build Command", which provide specific details on hardware lists, connection tables, and build commands necessary for compiling the project on the respective platforms.
 
-6. **Content Creation Methods**: The file specifies methods like "scatter_gather" and "sequential_edit" for content creation, indicating how information should be compiled and presented. This ensures a systematic approach to assembling the README content.
+6. **Section Creation Methods**:
+   - The document specifies methods like "scatter_gather" and "sequential_edit" for creating sections, indicating how content should be compiled and organized.
 
-Overall, this configuration file serves as a comprehensive guide for generating a detailed and structured README, ensuring that all necessary information is included and formatted consistently across different projects and platforms within the `no-OS` codebase.
+This configuration file is essential for developers working on the `no-OS` codebase, as it provides a comprehensive framework for generating a consistent and detailed README, ensuring all necessary information is included and formatted correctly for various platforms and hardware configurations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

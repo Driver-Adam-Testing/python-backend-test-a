@@ -6,9 +6,9 @@
 The `versions.py` file in the `python-backend` codebase defines API endpoints for listing, creating, and updating version entities, ensuring they are associated with the user's organization.
 
 # Purpose
-This Python file is a FastAPI-based module that defines a set of RESTful API endpoints for managing "Version" entities within an application. The code provides a focused functionality, specifically handling the creation, retrieval, and updating of version records associated with primary assets. The endpoints are integrated into a router, which is part of a larger API structure, and they utilize SQLAlchemy and SQLModel for database interactions. The primary technical components include the use of SQL queries to interact with the database, the application of filters and sorting to queries, and the management of user authentication and authorization through a `UserToken`.
+This Python file is a FastAPI-based module that defines a set of RESTful API endpoints for managing "Version" entities within an application. The code provides specific functionality for listing, creating, and updating versions, which are associated with primary assets and are scoped to a user's organization. The endpoints are integrated into a FastAPI router, making them accessible as part of a larger web service. The file leverages SQLAlchemy and SQLModel for database interactions, using ORM techniques to query and manipulate data. Key components include the [`list_versions`](<#list_versions>) function for retrieving a paginated and filtered list of versions, the [`create_version`](<#create_version>) function for adding new versions, and the [`update_version`](<#update_version>) function for modifying existing versions. Each function ensures that operations are restricted to the user's organization, enhancing security and data integrity.
 
-The file defines three main API endpoints: a GET endpoint to list versions, a POST endpoint to create a new version, and a PUT endpoint to update an existing version. Each endpoint ensures that operations are restricted to the user's organization by checking the organization ID against the user's token. The code also includes mechanisms for pagination and query optimization through the use of `selectinload` for eager loading of related entities. The endpoints return structured responses, with models defined in the `schemas` module, ensuring that the API provides a consistent and predictable interface for clients.
+The code is structured to handle HTTP requests and responses, with input validation and error handling mechanisms in place. It uses dependency injection to manage database sessions and user authentication, ensuring that each request is processed in a secure and efficient manner. The use of schemas for request and response models ensures that data is consistently structured and validated. This file is part of a broader application, likely serving as a backend service for managing versioned assets, and is designed to be imported and used within a FastAPI application context.
 # Imports and Dependencies
 
 ---
@@ -48,16 +48,16 @@ The `list_versions` function retrieves a paginated list of version details assoc
 - **Control Flow**:
     - Constructs a SQL query to select `Version` records joined with `PrimaryAsset`, filtered by the user's organization ID.
     - Loads related data for `Version` using `selectinload` for `root_node`, `primary_asset`, and `creator`.
-    - Converts query parameters from the request into a dictionary and applies them as filters to the query using [`apply_filters_to_query`](query_utils.py.md#apply_filters_to_query).
-    - Creates a count query to determine the total number of filtered versions and executes it to get the total count.
-    - Applies sorting to the query based on pagination information using [`apply_sorting_to_query`](query_utils.py.md#apply_sorting_to_query).
-    - Executes the final query to retrieve the list of versions and stores the results.
-    - Returns a [`ListWithCount`](schemas.py.md#ListWithCount) object containing the list of versions and the total count.
-- **Output**: A [`ListWithCount`](schemas.py.md#ListWithCount) object containing the list of `VersionDetailRead` objects and the total count of versions matching the query.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](query_utils.py.md#apply_filters_to_query)
-    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](query_utils.py.md#apply_sorting_to_query)
-    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](schemas.py.md#ListWithCount)
+    - Converts query parameters from the request into a dictionary and applies them as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
+    - Creates a count query to determine the total number of records matching the filters and executes it to get `total_count`.
+    - Applies sorting to the query based on pagination information using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
+    - Executes the final query to retrieve the list of versions and stores the results in `versions`.
+    - Returns a [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of versions and the total count of matching records.
+- **Output**: A [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of `VersionDetailRead` objects and the total count of versions matching the query.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
+    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#ListWithCount>)
 
 
 ---
@@ -65,19 +65,19 @@ The `list_versions` function retrieves a paginated list of version details assoc
 The `create_version` function creates a new version entry in the database after verifying the primary asset's association with the user's organization.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `payload`: An instance of `VersionCreate` containing the data for the new version to be created, provided in the request body.
+    - `session`: An instance of CurrentSession used to interact with the database.
+    - `user`: A UserToken object representing the authenticated user making the request.
+    - `payload`: A VersionCreate object containing the data for the new version to be created.
 - **Control Flow**:
-    - The function first checks if the primary asset specified in the payload belongs to the user's organization by executing a database query.
-    - If the primary asset is not found, an `HTTPException` with a 404 status code is raised, indicating that the primary asset is not found.
-    - If the primary asset is found, a new [`Version`](../../../../../driver_db/database/models_v2.py.md#Version) object is created using the data from the payload.
-    - The new version is added to the session and committed to the database.
-    - The session is refreshed to ensure the new version object is up-to-date with the database state.
-    - The newly created version object is returned as the response.
-- **Output**: The function returns the newly created [`Version`](../../../../../driver_db/database/models_v2.py.md#Version) object, which is also the response model for the API endpoint.
-- **Functions called**:
-    - [`python-backend/driver_db/database/models_v2.Version`](../../../../../driver_db/database/models_v2.py.md#Version)
+    - Selects the primary asset from the database using the primary asset ID from the payload and checks if it belongs to the user's organization.
+    - Raises an HTTPException with a 404 status code if the primary asset is not found or does not belong to the user's organization.
+    - Creates a new Version object using the data from the payload.
+    - Adds the new Version object to the session and commits the transaction to save it to the database.
+    - Refreshes the session to ensure the new version object is up-to-date with the database.
+    - Returns the newly created Version object.
+- **Output**: The function returns the newly created Version object.
+- **Functions Called**:
+    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../../driver_db/database/models_v2.py.md#Version>)
 
 
 ---
@@ -85,17 +85,18 @@ The `create_version` function creates a new version entry in the database after 
 The `update_version` function updates an existing version's details in the database if it belongs to the user's organization.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
+    - `session`: A `CurrentSession` object representing the current database session.
     - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `version_id`: A `UUID` path parameter identifying the version to be updated.
-    - `payload`: A `VersionUpdate` object containing the new data for the version.
+    - `version_id`: A `UUID` representing the unique identifier of the version to be updated, extracted from the path.
+    - `payload`: A `VersionUpdate` object containing the new data for the version, extracted from the request body.
 - **Control Flow**:
     - The function begins by querying the database to find the version with the specified `version_id` that also belongs to the user's organization.
-    - If no such version is found, an `HTTPException` with a 404 status code is raised, indicating the version was not found.
-    - If the `payload` contains a new `display_name`, the version's `display_name` is updated.
-    - If the `payload` contains a new `status`, the version's `status` is updated.
-    - The updated version is added to the session, the session is committed to save changes, and the version is refreshed to reflect the latest state from the database.
-    - Finally, the updated version is returned.
+    - If no such version is found, an `HTTPException` with a 404 status code is raised, indicating that the version was not found.
+    - If the `payload` contains a `display_name`, the version's `display_name` is updated.
+    - If the `payload` contains a `status`, the version's `status` is updated.
+    - The updated version is added to the session, and the session is committed to save changes to the database.
+    - The session is refreshed to ensure the version object is up-to-date with the database.
+    - The updated version object is returned as the response.
 - **Output**: The function returns the updated `Version` object.
 
 

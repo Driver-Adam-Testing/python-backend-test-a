@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_ruby_multi_prompt.py` file defines a template for generating multi-prompt inspections of large Ruby source code, focusing on purposes, imports, modules, and classes.
+The `source_code_large_ruby_multi_prompt.py` file defines a template for generating multi-prompt structures specifically tailored for handling large Ruby source code, including instructions and components for processing purposes, imports, modules, and classes.
 
 # Purpose
-This Python code file is designed to facilitate the analysis and processing of Ruby source code by defining a structured template for multi-prompt interactions. It imports several components from utility modules that specialize in language-specific operations, particularly for Ruby. The file defines a list, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY`, which contains tuples that specify different aspects of Ruby code analysis, such as determining the purpose of the code, checking imports and dependencies, and identifying modules and classes. Each tuple in the list represents a specific task or analysis step, utilizing both static analysis and language model (LLM) insights to extract and process information from Ruby code.
+This Python code defines a structured template for generating multi-prompt instructions specifically tailored for analyzing Ruby source code. The file is part of a larger system that appears to facilitate the extraction and organization of information from Ruby codebases. It imports various components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization`, which are used to construct prompts and handle language-specific details. The primary focus of this code is to create a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY`, which is a list of tuples. Each tuple represents a different aspect of the analysis, such as determining the purpose of the code, checking imports and dependencies, and identifying modules and classes within the Ruby code.
 
-The code serves as a configuration or template file, likely intended to be used within a larger system that processes or analyzes Ruby code. It does not define public APIs or external interfaces directly but rather sets up a framework for how Ruby code should be analyzed using predefined prompts and methods. The use of lambda functions and method references suggests that this file is part of a dynamic system where different components can be plugged in or modified to suit specific analysis needs. The focus on Ruby-specific collections and prompts indicates that the primary purpose of this file is to support the extraction and interpretation of structural and semantic information from Ruby source code.
+The template is designed to be used in a multi-prompt system, likely involving a language model, to systematically analyze and document Ruby source code. It includes instructions for generating prompts that guide the analysis process, such as appending specific style instructions and handling different sections like purpose, imports, modules, and classes. The use of components like `Prompt` and `Component` suggests a modular approach to building these prompts, allowing for flexibility and reuse across different contexts. This code is not a standalone script but rather a part of a library intended to be imported and utilized by other parts of the system that require structured analysis of Ruby code.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_PURPOSE_FROM_CHUNKS`
 - `utils.lang_specialization.default_multi_context.default_imports_checker_multi_prompt`
@@ -28,8 +33,8 @@ The code serves as a configuration or template file, likely intended to be used 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_RUBY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY` is a list of tuples, each containing a set of parameters used for generating prompts related to Ruby source code analysis. Each tuple includes a type identifier, a description string, and a series of functions or data sources that are used to process or generate specific parts of the prompt. The list is designed to handle different aspects of Ruby code, such as purpose, imports, modules, and classes.
-- **Use**: This variable is used to define a structured template for generating multi-part prompts for analyzing and processing Ruby source code.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY` is a list of tuples, each containing structured data for generating prompts related to Ruby code analysis. Each tuple includes a type identifier, a description, and various components or functions that contribute to the construction of prompts or the processing of Ruby code elements such as purpose, imports, modules, and classes.
+- **Use**: This variable is used to define a template for generating and processing multi-prompt structures specifically tailored for Ruby code analysis.
 
 
 

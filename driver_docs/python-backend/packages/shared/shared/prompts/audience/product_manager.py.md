@@ -6,14 +6,14 @@
 The `product_manager.py` file contains a template for curating content aimed at product managers, focusing on technical analysis of product architecture, system integration, performance metrics, user experience, and market fit.
 
 # Purpose
-This code is a configuration variable containing a multi-line string that serves as a detailed description or guideline for content curation aimed at product managers. The string outlines the specific needs and interests of a product manager, emphasizing a deep technical analysis of a product's architecture, system integration, and performance metrics. It highlights the importance of user experience and market fit, suggesting that the analysis should offer insights into optimizing technology for user engagement, rapid feature deployment, and adaptability to market trends and customer feedback. This code provides narrow functionality, as it is specifically tailored to guide the creation of content for a particular audience.
+This code is a configuration variable containing a multi-line string that outlines a detailed content curation guideline for a specific reader persona, namely a product manager. The string provides a focused directive for creating content that addresses technical analysis related to product architecture, system integration, and performance metrics, emphasizing user experience and market fit. The purpose of this code is narrow, serving as a template or guideline for content creators to tailor their analysis to meet the needs of product managers who are interested in optimizing technology for user engagement and adapting to market trends. This is not executable code but rather a static definition meant to guide content development.
 # Global Variables
 
 ---
 ### PRODUCT\_MANAGER
 - **Type**: `str`
-- **Description**: The `PRODUCT_MANAGER` variable is a string that outlines the requirements for content curation aimed at product managers. It specifies the need for a technical analysis focusing on product architecture, system integration, performance metrics, user experience, and market fit. The analysis should also provide insights on optimizing technology for user engagement and adapting to market trends.
-- **Use**: This variable is used to guide the creation of content tailored for product managers, ensuring it addresses their specific needs and interests.
+- **Description**: The `PRODUCT_MANAGER` variable is a multi-line string that describes the persona of a product manager who is interested in a detailed technical analysis of a product. This analysis focuses on aspects such as architecture, system integration, performance metrics, user experience, and market fit, with an emphasis on optimization and adaptability to market trends.
+- **Use**: This variable is used to define the target audience and content focus for a technical analysis aimed at product managers.
 
 
 

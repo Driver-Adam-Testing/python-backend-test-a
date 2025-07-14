@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind.py` file defines an enumeration `BlockKind` that categorizes different types of blocks such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY.
+The `block_kind.py` file defines an enumeration `BlockKind` representing different types of blocks such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY.
 
 # Purpose
-This code defines an enumeration class `BlockKind` using Python's `enum` module, which is a specialized data type that allows for the creation of named constants. The `BlockKind` class inherits from both `str` and `enum.Enum`, indicating that each member of the enumeration is a string. The enumeration provides a narrow functionality by categorizing different types of content blocks, such as "LIST", "TABLE", "DIAGRAM", "CODE", "TEXT", and "ANY". This is useful in applications where content needs to be classified or processed based on its type, such as in document processing or content management systems. The code is concise and serves as a configuration or definition file, establishing a set of constants for use elsewhere in a larger codebase.
+This code defines an enumeration class `BlockKind` using Python's `enum` module, which is a specialized data type that allows for the creation of named constants. The `BlockKind` class inherits from both `str` and `enum.Enum`, indicating that each member of the enumeration is a string. The enumeration provides a narrow functionality by categorizing different types of content blocks, such as "LIST", "TABLE", "DIAGRAM", "CODE", "TEXT", and "ANY". This is useful in applications where content needs to be classified or processed based on its type, such as in document processing or content management systems. The use of an enumeration ensures that the block types are consistent and easily manageable throughout the codebase.
 # Imports and Dependencies
 
 ---
@@ -18,13 +18,13 @@ This code defines an enumeration class `BlockKind` using Python's `enum` module,
 ---
 ### BlockKind<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/block_kind.BlockKind}} -->
 - **Members**:
-    - `LIST`: Represents a block kind of type 'LIST'.
-    - `TABLE`: Represents a block kind of type 'TABLE'.
-    - `DIAGRAM`: Represents a block kind of type 'DIAGRAM'.
-    - `CODE`: Represents a block kind of type 'CODE'.
-    - `TEXT`: Represents a block kind of type 'TEXT'.
-    - `ANY`: Represents a block kind of any type.
-- **Description**: The BlockKind class is an enumeration that defines different types of block kinds, such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY, each represented as a string. It inherits from both str and enum.Enum, allowing for easy comparison and use of these block kinds as string values in code.
+    - `LIST`: Represents a block kind for lists.
+    - `TABLE`: Represents a block kind for tables.
+    - `DIAGRAM`: Represents a block kind for diagrams.
+    - `CODE`: Represents a block kind for code blocks.
+    - `TEXT`: Represents a block kind for text.
+    - `ANY`: Represents a block kind that can be any type.
+- **Description**: The BlockKind class is an enumeration that defines different types of block kinds, such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY, each represented as a string. It inherits from both str and enum.Enum, allowing for easy comparison and usage of these block kinds as string values in code.
 - **Inherits From**:
     - `str`
     - `enum.Enum`

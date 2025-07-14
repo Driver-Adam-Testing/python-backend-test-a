@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `chunk_description.txt` file provides instructions for summarizing the contents of a folder based on descriptions of its child files and folders.
+The `chunk_description.txt` file provides instructions for summarizing the contents of a folder based on descriptions of its child files and folders, specifically for use in the `python-backend` codebase.
 
 # Purpose
-The provided content appears to be a template or guideline for summarizing the contents of a folder within a software codebase. The purpose of this template is to instruct a software engineering expert on how to create a concise and informative summary of a folder's contents based on given descriptions of its child files and folders. The template outlines a structured approach, requiring the expert to write one or more paragraphs that encapsulate the information provided, describe the purpose of the files and subfolders, and include the name of the folder in the summary. It emphasizes the importance of accuracy by instructing the expert not to fabricate information and to rely solely on the descriptions given. This ensures that the summary is both precise and relevant to the actual contents of the folder.
+The provided content appears to be a set of instructions for a software engineering expert tasked with summarizing the contents of a folder within a codebase. The instructions specify that the expert will receive descriptions of some of the files and subfolders within a particular folder. The expert's role is to write one or more paragraphs that summarize the information contained in these descriptions. The summary should focus on explaining the purpose of the files and subfolders, ensuring that the content is derived solely from the provided descriptions without introducing any additional information. This process aids in creating a clear and concise overview of the folder's contents, which can be useful for documentation, onboarding new team members, or maintaining the codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

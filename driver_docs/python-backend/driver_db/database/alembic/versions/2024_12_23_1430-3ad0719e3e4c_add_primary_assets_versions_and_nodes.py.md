@@ -6,9 +6,9 @@
 The `2024_12_23_1430-3ad0719e3e4c_add_primary_assets_versions_and_nodes.py` file is an Alembic migration script that adds tables and indexes for primary assets, versions, and nodes to the database schema in the `python-backend` codebase.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding new tables and relationships. The script introduces three primary tables: `v2_primary_asset`, `v2_version`, and `v2_node`, each with specific columns and constraints to manage primary assets, their versions, and associated nodes. The `v2_primary_asset` table includes columns for unique identifiers, display names, and organizational information, with a unique index on organization ID and display name. The `v2_version` table tracks different versions of primary assets, linking them through foreign keys and supporting version history with a self-referential foreign key for previous versions. The `v2_node` table represents nodes associated with versions, categorized by type and linked to versions via foreign keys, with additional metadata stored in a JSONB column.
+This Python file is an Alembic migration script designed to modify a database schema by adding new tables and indexes related to primary assets, versions, and nodes. The script is part of a version-controlled database migration process, as indicated by the presence of revision identifiers and the use of Alembic's `op` module to define schema changes. The primary functionality of this script is to create new tables (`v2_primary_asset`, `v2_primary_asset_tag`, `v2_version`, and `v2_node`) and establish relationships between them using foreign key constraints. These tables are designed to store information about primary assets, their versions, and associated nodes, with fields for unique identifiers, display names, timestamps, and other relevant metadata.
 
-The script also modifies existing tables by adding new columns and indexes, such as the addition of a `node_id` column to the `derived_contents` table, establishing a foreign key relationship with the `v2_node` table. The [`upgrade`](#upgrade) function implements these schema changes, while the [`downgrade`](#downgrade) function provides the reverse operations to revert the database to its previous state. This migration script is part of a broader database versioning and management system, ensuring that the database schema evolves in a controlled and reversible manner.
+The script also includes the creation of indexes to optimize queries involving these tables, such as unique constraints on combinations of columns like `organization_id` and `display_name` in the `v2_primary_asset` table. Additionally, the script modifies an existing table, `derived_contents`, by adding a new column and associated index. The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function provides the reverse operations to revert the database to its previous state. This script is a crucial component of a database migration strategy, ensuring that the database schema evolves in a controlled and reversible manner.
 # Imports and Dependencies
 
 ---
@@ -23,15 +23,15 @@ The script also modifies existing tables by adding new columns and indexes, such
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script and ensure the correct order of migrations.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema that this migration script applies.
+- **Use**: This variable is used by Alembic to identify the current migration script and ensure that it is applied in the correct order relative to other migrations.
 
 
 ---
 ### down\_revision
 - **Type**: `string`
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
 
 
 ---
@@ -57,14 +57,14 @@ The `upgrade` function creates new database tables and indexes to support primar
 - **Control Flow**:
     - Create a new table `v2_primary_asset` with columns for ID, display name, repository ID, organization ID, kind, created and updated timestamps, and a primary key constraint on ID.
     - Create a unique index on the `v2_primary_asset` table for the combination of `organization_id` and `display_name`.
-    - Create a new table `v2_primary_asset_tag` with columns for tag ID and primary asset ID, and foreign key constraints linking to `v2_primary_asset` and `tags` tables, with a composite primary key on tag ID and primary asset ID.
+    - Create a new table `v2_primary_asset_tag` with columns for tag ID and primary asset ID, and foreign key constraints linking to `v2_primary_asset` and `tags` tables, with a primary key constraint on both columns.
     - Create a new table `v2_version` with columns for ID, primary asset ID, display name, created and updated timestamps, status, and previous version ID, with foreign key constraints linking to `v2_primary_asset` and `v2_version`, and a primary key constraint on ID.
     - Create a unique index on the `v2_version` table for the combination of `primary_asset_id` and `display_name`.
     - Create a new table `v2_node` with columns for ID, kind, version ID, relative path, created and updated timestamps, and miscellaneous metadata, with a foreign key constraint linking to `v2_version`, and a primary key constraint on ID.
     - Create a non-unique index on the `v2_node` table for the `relative_path` column and a unique index for the combination of `version_id` and `relative_path`.
     - Add a new column `node_id` to the `derived_contents` table and create a non-unique index on this column.
     - Create a foreign key constraint on the `derived_contents` table linking `node_id` to the `v2_node` table.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Output**: The function does not return any output as it is designed to perform database schema modifications.
 
 
 ---

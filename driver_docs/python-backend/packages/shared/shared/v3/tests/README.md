@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests` folder in the `python-backend` codebase contains unit tests for classes related to data sources and language model messages, ensuring their functionality and integration with external message formats.
+Unit tests for `DataSource`, `LlmMessage`, and `LlmMessageHistory` classes, focusing on creation, interaction, and conversion.
 
 
 ## Files
 - **[test_datasource.py](test_datasource.py.md)**: The `test_datasource.py` file contains unit tests for the `DataSource` class, specifically testing the creation of a `DataSource` from node IDs and page IDs, as well as checking the scope functionality.
-- **[test_llm_message.py](test_llm_message.py.md)**: The `test_llm_message.py` file contains unit tests for the `LlmMessage` class, verifying its functionality with various message types and conversions, including interactions with OpenAI and Anthropic message formats.
-- **[test_llm_message_history.py](test_llm_message_history.py.md)**: The `test_llm_message_history.py` file contains a suite of tests for the `LlmMessage` and `LlmMessageHistory` classes, verifying their functionality in terms of persistence, message addition, conversion to different formats, and handling of various message kinds.
+- **[test_llm_message.py](test_llm_message.py.md)**: The `test_llm_message.py` file contains unit tests for the `LlmMessage` class and its interactions with various message types and tools, including OpenAI and Anthropic message formats, within the `python-backend` codebase.
+- **[test_llm_message_history.py](test_llm_message_history.py.md)**: The `test_llm_message_history.py` file contains a suite of tests for the `LlmMessage` and `LlmMessageHistory` classes, verifying their functionality in converting to persistent formats, handling different message kinds, and ensuring correct behavior in saving, loading, and converting to Anthropic format.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

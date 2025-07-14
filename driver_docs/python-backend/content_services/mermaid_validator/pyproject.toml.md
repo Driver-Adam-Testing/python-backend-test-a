@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the configuration for the `mermaid-validator` project, including its dependencies, build system, and metadata such as the author and version.
+Configuration for the `mermaid-validator` project using Poetry, specifying dependencies and build system.
 
 # Purpose
-This file is a `pyproject.toml` configuration file for a Python project managed by Poetry. It specifies the project's metadata, including its name, version, author, and dependencies, as well as the build system requirements and backend used for packaging the project.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project named `mermaid-validator`. It specifies the project metadata, including the version `0.1.0`, author information, and the path to the `README.md` file. The file also defines the project's dependencies, requiring Python version `>=3.12,<3.13` and the `modal` package version `^1.0.4`. Additionally, it configures the build system to use `poetry-core` as a requirement and `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

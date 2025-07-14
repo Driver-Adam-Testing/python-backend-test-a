@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `custom_config.toml` file in the `python-backend` codebase specifies configuration settings for generating an architecture document, including model tags, document goals, and section details.
+The `custom_config.toml` file in the `python-backend` codebase specifies configuration settings for generating an architecture document, including model tags, document goals, formatting, and section details.
 
 # Purpose
-The provided file is a configuration file that appears to be used for setting up and managing a document generation process, likely for software documentation. The `[llm]` section specifies different language models to be used for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing, indicating a reliance on AI models like "gpt-4o" and "o3-mini" for these processes. The `[document]` section outlines the goal of the document, which is to create a comprehensive architecture document for the codebase, and specifies formatting preferences, tagging usage, and configuration details. The `[[sections]]` part defines a specific section of the document, titled "Overview," with instructions on its content and structure, emphasizing the need for an introductory explanation of the library's purpose, scope, and capabilities. This configuration file is crucial for automating and standardizing the creation of structured and detailed documentation within the software project.
+The provided file is a configuration file that defines settings for generating a detailed architecture document for a software codebase. It specifies different language models to be used for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing, indicating a sophisticated approach to document generation using AI models like "gpt-4o" and "o3-mini". The document section outlines the goal of creating an architecture document with a specific format and tagging enabled, under a custom configuration named "Architecture Custom" with version "[V1]". Additionally, it defines a section titled "Overview" with specific instructions and structure, emphasizing its importance by marking it as required and detailing the method for its creation. This configuration file is crucial for automating and standardizing the documentation process within the codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

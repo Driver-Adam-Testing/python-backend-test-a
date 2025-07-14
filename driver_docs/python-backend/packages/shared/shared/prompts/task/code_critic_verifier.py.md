@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `code_critic_verifier.py` file contains a prompt outlining a systematic approach for verifying, detecting errors, correcting, and documenting code snippets to ensure their correctness and alignment with the intended functionality.
+The `code_critic_verifier.py` file contains a prompt outlining a systematic approach for verifying, detecting errors, correcting, and documenting input code snippets to ensure their correctness and functionality.
 
 # Purpose
-This code defines a configuration for a system message, specifically for a process that involves analyzing and verifying the correctness of input code snippets. It provides a structured approach to source verification, error detection, correction, and documentation, ensuring that any code discrepancies are identified and rectified. The `PROMPT` variable contains a detailed multi-step guideline for reviewing code, which includes verifying source code, detecting errors, correcting inconsistencies, and documenting evidence for any changes made. The `MESSAGE` dictionary encapsulates this prompt, associating it with a "system" role, likely for use in a larger application or script that requires automated code review or validation. This code offers narrow functionality, focusing specifically on code verification and correction processes.
+This code defines a configuration for a system message, specifically for a process that involves analyzing and verifying the correctness of input code snippets. It provides a structured prompt that outlines a series of steps for source verification, error detection, correction, and documentation, ensuring that any code discrepancies are identified and addressed. The code is essentially a configuration variable (`MESSAGE`) that encapsulates a detailed multi-step procedure within a string (`PROMPT`). This setup is likely used in a larger application or system that requires automated code review or validation, offering narrow functionality focused on code analysis and correction. The `MESSAGE` dictionary is formatted to be used in a context where a system role is defined, suggesting integration with a conversational AI or automated code review tool.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The `PROMPT` variable is a multi-line string that provides detailed instructions for analyzing and verifying the correctness of an input code snippet. It outlines a step-by-step process for source verification, error detection, correction, and documentation, ensuring that the code is accurate and functions as intended.
-- **Use**: This variable is used to store a comprehensive set of instructions that can be referenced or displayed in a system message to guide users or systems in code analysis and verification tasks.
+- **Description**: The variable `PROMPT` is a multi-line string that provides detailed instructions for analyzing and verifying the correctness of an input code snippet. It outlines a step-by-step process for source verification, error detection, correction, and documentation, ensuring that the code is accurate and functions as intended.
+- **Use**: This variable is used to store a comprehensive set of guidelines for code analysis, which can be utilized by a system or user to ensure code correctness and provide necessary documentation.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string detailing steps for analyzing and correcting input code snippets.
-- **Use**: This variable is used to encapsulate a system message that includes detailed instructions for code analysis and correction, likely for use in a context where such a message needs to be passed or displayed.
+- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing detailed instructions for analyzing and correcting code snippets.
+- **Use**: This variable is used to encapsulate a system message with specific instructions, likely for use in a context where such structured messages are required, such as in a chatbot or automated code review system.
 
 
 

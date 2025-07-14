@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `git_provider_repository.py` file contains functions for performing database operations related to Git provider applications and their installations, such as retrieving and deleting records based on organization, app, and user identifiers.
+The `git_provider_repository.py` file contains functions for performing database operations related to Git provider applications and their installations, such as retrieving, deleting, and querying by organization, app, or user ID.
 
 # Purpose
 This Python code file is designed to perform database operations related to Git provider applications and their installations. It provides a set of functions that facilitate querying and manipulating data stored in a database, specifically focusing on `GitProviderApp` and `GitProviderAppInstallation` models. The functions are intended to be used within a broader application that manages Git provider apps, allowing users to retrieve and manage app data based on organization IDs, app IDs, and user IDs. The code leverages the `sqlmodel` library to execute SQL queries within a session, ensuring efficient interaction with the database.
 
-The file serves as a utility module that can be imported and used in other parts of an application to handle specific database operations. It includes functions to retrieve lists of Git provider apps by organization ID, fetch specific apps or installations by their IDs, and delete installations. The functions are designed to be used in a transactional context, as evidenced by the use of `Session` objects to manage database interactions. This code does not define a public API or external interface but rather provides backend functionality to support higher-level application logic.
+The file defines several functions that serve as a public API for accessing and modifying Git provider app data. These functions include retrieving apps by organization ID, app ID, and installation details by organization or user ID. Additionally, there is functionality to delete a specific app installation. The code is structured to be imported and used as part of a larger application, providing a focused set of operations that revolve around the management of Git provider applications and their installations. The use of type hints enhances the clarity and maintainability of the code, ensuring that the expected input and output types are clear to developers utilizing these functions.
 # Imports and Dependencies
 
 ---
@@ -22,19 +22,20 @@ The file serves as a utility module that can be imported and used in other parts
 
 ---
 ### git\_provider\_apps\_by\_org\_id<!-- {{#callable:python-backend/backend/app/repositories/git_provider_repository.git_provider_apps_by_org_id}} -->
-The function retrieves a list of GitProviderApp instances associated with a specific organization ID from the database.
+The function retrieves a list of GitProviderApp instances associated with a specific organization ID that are not shared providers.
 - **Inputs**:
     - `session`: A Session object used to interact with the database.
-    - `organization_id`: A string representing the unique identifier of the organization for which GitProviderApp instances are to be retrieved.
+    - `organization_id`: A string representing the ID of the organization for which GitProviderApp instances are to be retrieved.
 - **Control Flow**:
-    - A SQL query is constructed to select GitProviderApp instances where the owner_organization_id matches the provided organization_id and the shared_provider attribute is False.
-    - The query is executed using the provided session, and all matching results are retrieved as a list.
+    - Constructs a SQL query to select GitProviderApp instances where the owner_organization_id matches the provided organization_id and shared_provider is False.
+    - Executes the query using the provided session.
+    - Returns all results from the executed query as a list.
 - **Output**: A list of GitProviderApp instances that belong to the specified organization and are not shared providers.
 
 
 ---
 ### git\_provider\_app\_by\_id<!-- {{#callable:python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id}} -->
-The function retrieves a GitProviderApp instance by its app ID and organization ID from the database.
+The function retrieves a specific GitProviderApp from the database using the provided organization and app IDs.
 - **Inputs**:
     - `session`: A Session object used to interact with the database.
     - `organization_id`: A string representing the ID of the organization that owns the GitProviderApp.
@@ -42,8 +43,8 @@ The function retrieves a GitProviderApp instance by its app ID and organization 
 - **Control Flow**:
     - Constructs a SQL query to select a GitProviderApp where the app's ID matches the provided app_id and the owner organization ID matches the provided organization_id.
     - Executes the query using the provided session.
-    - Returns the first result of the query execution, which is a GitProviderApp instance.
-- **Output**: The function returns a GitProviderApp instance that matches the given app_id and organization_id, or None if no such instance exists.
+    - Returns the first result of the query execution, which is a GitProviderApp object.
+- **Output**: A GitProviderApp object that matches the specified app_id and organization_id, or None if no match is found.
 
 
 ---
@@ -56,7 +57,7 @@ The function retrieves all GitProviderAppInstallation records for a specific org
 - **Control Flow**:
     - Constructs a SQL query to select GitProviderAppInstallation records where the git_provider_app_id matches the provided app_id and the organization_id matches the provided organization_id.
     - Executes the query using the provided session.
-    - Returns all results from the executed query as a list.
+    - Returns all results of the query as a list.
 - **Output**: A list of GitProviderAppInstallation objects that match the specified organization_id and app_id.
 
 
@@ -69,15 +70,15 @@ The function retrieves a specific GitProviderAppInstallation record based on the
     - `app_id`: A string representing the ID of the Git provider app.
     - `user_id`: A string representing the ID of the user.
 - **Control Flow**:
-    - Constructs a query to select a GitProviderAppInstallation record where the git_provider_app_id matches the provided app_id, the user_id matches the provided user_id, and the organization_id matches the provided organization_id.
+    - Constructs a SQL query to select a GitProviderAppInstallation record where the git_provider_app_id matches the provided app_id, the user_id matches the provided user_id, and the organization_id matches the provided organization_id.
     - Executes the query using the provided session.
-    - Returns the first result of the query execution, which is a GitProviderAppInstallation object or None if no match is found.
+    - Returns the first result of the query execution, which is a GitProviderAppInstallation object or None if no matching record is found.
 - **Output**: A GitProviderAppInstallation object if a matching record is found, otherwise None.
 
 
 ---
 ### git\_provider\_app\_installation\_by\_id<!-- {{#callable:python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id}} -->
-The function retrieves a GitProviderAppInstallation object from the database using a given installation ID.
+The function retrieves a single GitProviderAppInstallation record from the database using its installation ID.
 - **Inputs**:
     - `session`: A Session object used to interact with the database.
     - `installation_id`: A string representing the unique identifier of the GitProviderAppInstallation to be retrieved.
@@ -85,7 +86,7 @@ The function retrieves a GitProviderAppInstallation object from the database usi
     - Constructs a SQL query to select a GitProviderAppInstallation where the id matches the provided installation_id.
     - Executes the query using the provided session.
     - Returns the single result of the query execution.
-- **Output**: A GitProviderAppInstallation object corresponding to the given installation ID.
+- **Output**: A GitProviderAppInstallation object corresponding to the given installation_id.
 
 
 ---
@@ -93,16 +94,16 @@ The function retrieves a GitProviderAppInstallation object from the database usi
 The function deletes a specific Git provider app installation from the database based on the provided organization, app, and installation IDs.
 - **Inputs**:
     - `session`: A SQLModel Session object used to interact with the database.
-    - `organization_id`: A string representing the ID of the organization associated with the app installation.
-    - `app_id`: A string representing the ID of the Git provider app associated with the installation.
-    - `installation_id`: A string representing the ID of the specific app installation to be deleted.
+    - `organization_id`: A string representing the ID of the organization to which the app installation belongs.
+    - `app_id`: A string representing the ID of the Git provider app.
+    - `installation_id`: A string representing the ID of the app installation to be deleted.
 - **Control Flow**:
     - A query is constructed to select a GitProviderAppInstallation record that matches the given installation_id, app_id, and organization_id.
-    - The query is executed using the session, and the first matching record is retrieved.
+    - The query is executed using the session object to retrieve the first matching record.
     - The retrieved app installation record is deleted from the session.
     - The session is committed to persist the changes to the database.
     - The function returns None, indicating the operation is complete.
-- **Output**: The function returns None after deleting the specified Git provider app installation from the database.
+- **Output**: The function does not return any value; it performs a deletion operation and commits the change to the database.
 
 
 

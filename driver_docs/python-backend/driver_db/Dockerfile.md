@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `Dockerfile` in the `python-backend` codebase sets up a Docker container for the `driver_db` service using a slim Python 3.12 image, installs necessary dependencies and Poetry, and runs database migrations with Alembic.
+The `Dockerfile` in the `python-backend` codebase sets up a Docker container for a Python 3.12 slim environment, installs necessary packages and Poetry, and configures the application to run database migrations using Alembic.
 
 # Purpose
-The provided content is a Dockerfile, which is used to automate the creation of a Docker image for a Python application. The image is based on the `python:3.12-slim` base image, specifically targeting the `linux/amd64` platform. The Dockerfile sets up a working directory at `/driver_db`, updates the package list, and installs necessary system packages like `curl` and `build-essential`. It then installs Poetry, a dependency management tool for Python, and configures it to not create virtual environments. The application code is copied into the image, and dependencies are installed using Poetry. After installation, unnecessary build tools are removed to reduce the image size. Finally, the Dockerfile sets the working directory to `/driver_db/database` and specifies a command to run database migrations using Alembic when the container starts.
+The provided content is a Dockerfile, which is used to automate the creation of a Docker container image for a Python application. It specifies the use of a slim version of Python 3.12 for the Linux/amd64 platform as the base image. The Dockerfile sets up a working directory at `/driver_db`, updates the package list, and installs necessary system packages like `curl` and `build-essential`, which are later removed to minimize the image size. It installs Poetry, a dependency management tool for Python, and configures it to avoid creating virtual environments. The application code is copied into the container, and dependencies are installed using Poetry. Finally, the Dockerfile sets the working directory to `/driver_db/database` and defines the default command to run Alembic, a database migration tool, to upgrade the database schema to the latest version.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

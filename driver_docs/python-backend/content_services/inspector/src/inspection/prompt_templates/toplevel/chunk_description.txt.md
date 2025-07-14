@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `chunk_description.txt` file provides guidelines for summarizing content descriptions of modules within a codebase, focusing on their purpose, main business logic, and critical APIs.
+The `chunk_description.txt` file provides guidelines for summarizing content descriptions of modules within a codebase, focusing on their purpose, business logic, and critical APIs.
 
 # Purpose
-The provided content appears to be a set of instructions for a software engineering expert tasked with summarizing and documenting a codebase. The instructions outline a structured approach to analyzing and summarizing the contents of a codebase by examining descriptions of its files and folders. The expert is required to write one or more paragraphs that encapsulate the information from these descriptions, focusing on the purpose of the files and subfolders, the main business logic they implement, and any critical APIs they expose. The emphasis is on deriving information directly from the given descriptions without making assumptions or adding extraneous details. This structured approach ensures that the documentation is accurate, concise, and directly reflective of the codebase's architecture and functionality.
+The provided content appears to be a template or guideline for summarizing the structure and purpose of a codebase based on descriptions of its files and folders. The document outlines a systematic approach to creating a summary that includes identifying the purpose of each file and folder, the main business logic they contain, and any critical APIs they expose. This structured format ensures that the summary is comprehensive and focused on the key components of the codebase, facilitating a clear understanding of its architecture and functionality. The emphasis on not making up information and only using the provided descriptions ensures accuracy and reliability in the documentation process.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

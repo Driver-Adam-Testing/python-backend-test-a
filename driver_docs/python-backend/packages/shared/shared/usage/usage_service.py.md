@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `usage_service.py` file in the `python-backend` codebase implements a service for managing usage events, issuing usage credits, retrieving usage balances and summaries, and fetching usage charges for organizations.
+The `usage_service.py` file in the `python-backend` codebase implements the `UsageService` class, which provides methods for managing usage credits, retrieving usage balances and summaries, and obtaining usage charges for an organization.
 
 # Purpose
-The provided Python code defines a `UsageService` class, which serves as a service layer for managing and analyzing usage events and credits within an application. This class is designed to interact with a database to track usage metrics, issue credits, and generate summaries and charges related to usage events. The `UsageService` class is initialized with a database session and optionally an AWS client, and it utilizes several repositories to manage different types of data, such as usage events, sessions, and primary assets. The class provides methods to issue usage credits, calculate usage balances, summarize usage events, and retrieve detailed charge information, making it a comprehensive tool for managing usage data.
+The provided Python code defines a `UsageService` class, which is part of a broader system for managing and tracking usage events, credits, and charges within an organization. This class is designed to interact with a database to record and retrieve usage data, leveraging SQLModel for database operations and integrating with AWS services through the `boto3` client. The `UsageService` class provides several methods: [`issue_usage_credits`](<#UsageServiceissue_usage_credits>) for issuing credits to an organization based on usage events, [`get_usage_balance`](<#UsageServiceget_usage_balance>) for calculating the balance of credits and debits, [`get_usage_summary`](<#UsageServiceget_usage_summary>) for summarizing usage events over a specified period, and [`get_charges`](<#UsageServiceget_charges>) for retrieving detailed charge information. These methods utilize repositories and models imported from other modules, indicating that this file is part of a larger codebase with a modular architecture.
 
-The code is structured to be part of a larger application, likely a backend service, where it acts as a central component for handling usage-related operations. It imports various models and interfaces, indicating that it is part of a modular system with clearly defined data structures and repositories. The methods within `UsageService` are designed to be called by other parts of the application, suggesting that this code is intended to be used as a library or service layer rather than a standalone script. The class interfaces with external systems, such as AWS, and uses SQLModel for database interactions, highlighting its role in managing complex data operations related to usage tracking and billing.
+The code is structured to serve as a backend service component, likely intended to be used within a larger application or system that manages organizational usage data. It does not define a standalone script but rather a service class that can be instantiated and used by other parts of the application. The class interfaces with various repositories to perform CRUD operations on usage-related data, and it defines public methods that act as APIs for interacting with usage data. The use of type hints and structured data models suggests a focus on maintainability and clarity, making it easier for other developers to understand and integrate this service into their systems.
 # Imports and Dependencies
 
 ---
@@ -38,137 +38,136 @@ The code is structured to be part of a larger application, likely a backend serv
 ---
 ### UsageService<!-- {{#class:python-backend/packages/shared/shared/usage/usage_service.UsageService}} -->
 - **Members**:
-    - `session`: The database session used for executing queries.
-    - `usage_event_repository`: Repository for managing usage events.
-    - `usage_session_repository`: Repository for managing usage sessions.
-    - `primary_asset_repository`: Repository for managing primary assets.
-    - `aws_client`: AWS client for interacting with AWS services, if provided.
-- **Description**: The UsageService class is responsible for managing and processing usage-related data for an organization. It provides methods to issue usage credits, retrieve usage balances, summarize usage events, and get charges associated with usage. The class interacts with various repositories to fetch and manipulate data related to usage events, sessions, and primary assets, and it can optionally use an AWS client for additional operations. The class is designed to handle different types of usage events and calculate balances and summaries based on these events.
+    - `session`: Holds the database session for executing queries.
+    - `usage_event_repository`: Manages access to usage event data.
+    - `usage_session_repository`: Handles operations related to usage sessions.
+    - `primary_asset_repository`: Manages access to primary asset data.
+    - `aws_client`: Optional AWS client for interacting with AWS services.
+- **Description**: The UsageService class is responsible for managing and processing usage-related data within an application. It interacts with various repositories to handle usage events, sessions, and primary assets, and provides methods to issue usage credits, retrieve usage balances, summarize usage events, and get charges for an organization. The class is designed to work with a database session and optionally an AWS client, facilitating operations such as querying usage data, calculating balances, and generating summaries and charges based on usage metrics.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.__init__`](#UsageService__init__)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.issue_usage_credits`](#UsageServiceissue_usage_credits)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](#UsageServiceget_usage_balance)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_summary`](#UsageServiceget_usage_summary)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_charges`](#UsageServiceget_charges)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.__init__`](<#UsageService__init__>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.issue_usage_credits`](<#UsageServiceissue_usage_credits>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](<#UsageServiceget_usage_balance>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_summary`](<#UsageServiceget_usage_summary>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_charges`](<#UsageServiceget_charges>)
 
 **Methods**
 
 ---
 #### UsageService\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/usage/usage_service.UsageService.__init__}} -->
-The `__init__` method initializes an instance of the `UsageService` class by setting up repositories and an optional AWS client for managing usage data.
+The `__init__` method initializes an instance of the `UsageService` class by setting up repositories for usage events, usage sessions, and primary assets, and optionally configuring an AWS client.
 - **Inputs**:
     - `session`: A `Session` object used to interact with the database.
     - `aws_client`: An optional `boto3.client` object for AWS interactions, defaulting to `None` if not provided.
 - **Control Flow**:
     - Assigns the provided `session` to the instance variable `self.session`.
-    - Initializes `self.usage_event_repository` with a [`UsageEventRepository`](../repositories/usage_event_repository.py.md#UsageEventRepository) using the provided `session`.
-    - Initializes `self.usage_session_repository` with a [`BaseRepository`](../repositories/base_repository.py.md#BaseRepository) for `UsageSession` using the provided `session`.
-    - Initializes `self.primary_asset_repository` with a [`BaseRepository`](../repositories/base_repository.py.md#BaseRepository) for `PrimaryAsset` using the provided `session`.
+    - Initializes `self.usage_event_repository` with a [`UsageEventRepository`](<../repositories/usage_event_repository.py.md#UsageEventRepository>) using the provided `session`.
+    - Initializes `self.usage_session_repository` with a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `UsageSession` using the provided `session`.
+    - Initializes `self.primary_asset_repository` with a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `PrimaryAsset` using the provided `session`.
     - Assigns the provided `aws_client` to the instance variable `self.aws_client`.
 - **Output**: This method does not return any value; it initializes the instance variables of the `UsageService` class.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](../repositories/usage_event_repository.py.md#UsageEventRepository)
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository`](../repositories/base_repository.py.md#BaseRepository)
-- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](#UsageService)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<../repositories/usage_event_repository.py.md#UsageEventRepository>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>)
+- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<#UsageService>)  (Base Class)
 
 
 ---
 #### UsageService\.issue\_usage\_credits<!-- {{#callable:python-backend/packages/shared/shared/usage/usage_service.UsageService.issue_usage_credits}} -->
-The `issue_usage_credits` method records a usage credit event for a specified organization and user, using a session to log the event details and commit them to the database.
+The `issue_usage_credits` method records a usage credit event for a specified organization and user, using a session to log the event details and commit them immediately.
 - **Inputs**:
     - `organization_id`: A string representing the hashed ID of the organization for which the usage credits are being issued.
     - `user_id`: A string representing the ID of the user associated with the usage credits.
     - `event_type`: An instance of `UsageEventType` indicating the type of usage event being recorded.
     - `credit_amount`: An integer representing the amount of usage credits to be issued.
 - **Control Flow**:
-    - Initialize a [`UsagePaymentSessionMetadata`](../interfaces/usage/event_metadata.py.md#UsagePaymentSessionMetadata) object with predefined metadata for the session.
-    - Create an [`LLMUsageSession`](llm_session.py.md#LLMUsageSession) context manager using the provided `organization_id`, `user_id`, and session metadata, along with an AWS client if available.
-    - Within the session, print a message indicating the session has started, including the session ID.
-    - Create a [`UsageMetric`](../interfaces/usage/event_metadata.py.md#UsageMetric) object with details about the usage event, including session ID, organization ID, user ID, event source, credit amount, and event type.
-    - Commit the usage metric event immediately using the [`commit_event_now`](llm_session.py.md#LLMUsageSessioncommit_event_now) method of the session.
-    - Print a message indicating the session has ended, including the session ID.
-- **Output**: The method does not return any value; it performs its operations as a side effect by recording the usage credit event in the database.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsagePaymentSessionMetadata`](../interfaces/usage/event_metadata.py.md#UsagePaymentSessionMetadata)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](llm_session.py.md#LLMUsageSession)
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](../interfaces/usage/event_metadata.py.md#UsageMetric)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.commit_event_now`](llm_session.py.md#LLMUsageSessioncommit_event_now)
-- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](#UsageService)  (Base Class)
+    - Initialize a [`UsagePaymentSessionMetadata`](<../interfaces/usage/event_metadata.py.md#UsagePaymentSessionMetadata>) object with predefined metadata for the session.
+    - Create an [`LLMUsageSession`](<llm_session.py.md#LLMUsageSession>) context manager using the provided `organization_id`, `user_id`, and session metadata, along with the AWS client.
+    - Within the session, print the session start message with the session ID.
+    - Create a [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>) object with details such as session ID, organization ID, user ID, event source, credit amount, and event type.
+    - Commit the usage metric event immediately using the [`commit_event_now`](<llm_session.py.md#LLMUsageSessioncommit_event_now>) method of the session.
+    - Print the session end message with the session ID.
+- **Output**: The method does not return any value (returns `None`).
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsagePaymentSessionMetadata`](<../interfaces/usage/event_metadata.py.md#UsagePaymentSessionMetadata>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<llm_session.py.md#LLMUsageSession>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.commit_event_now`](<llm_session.py.md#LLMUsageSessioncommit_event_now>)
+- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<#UsageService>)  (Base Class)
 
 
 ---
 #### UsageService\.get\_usage\_balance<!-- {{#callable:python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance}} -->
-The `get_usage_balance` method calculates and returns the usage balance for a given organization by summing credit and debit usage events and converting the result to a specified unit.
+The `get_usage_balance` method calculates the net usage balance for a given organization by summing credit and debit usage events and converting the result to a specified unit.
 - **Inputs**:
     - `organization_id`: A string representing the unique identifier of the organization for which the usage balance is being calculated.
 - **Control Flow**:
-    - Constructs a query to select credit usage events for the given organization ID using `UsageEventRepository.credit_usage_event_types()`.
-    - Executes the credit query and retrieves all matching usage events.
-    - Constructs a query to select debit usage events for the given organization ID using `UsageEventRepository.billable_usage_event_types()`.
-    - Executes the debit query and retrieves all matching usage events.
-    - Calculates the total credit balance by summing the `bytes_in` attribute of all credit usage events.
-    - Calculates the total debit balance by summing the `bytes_in` and `bytes_out` attributes of all debit usage events.
-    - Creates a [`UsageBalance`](../interfaces/usage/usage_schema.py.md#UsageBalance) object with the calculated credit and debit balances, using `UsageMetricUnitType.BYTES` as the unit.
-    - Converts the [`UsageBalance`](../interfaces/usage/usage_schema.py.md#UsageBalance) object to `UsageMetricUnitType.SLOC` and returns it.
-- **Output**: The method returns a [`UsageBalance`](../interfaces/usage/usage_schema.py.md#UsageBalance) object representing the organization's usage balance, converted to the `UsageMetricUnitType.SLOC` unit.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.credit_usage_event_types`](../repositories/usage_event_repository.py.md#UsageEventRepositorycredit_usage_event_types)
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.billable_usage_event_types`](../repositories/usage_event_repository.py.md#UsageEventRepositorybillable_usage_event_types)
-    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance`](../interfaces/usage/usage_schema.py.md#UsageBalance)
-    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.convert_to`](../interfaces/usage/usage_schema.py.md#UsageBalanceconvert_to)
-- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](#UsageService)  (Base Class)
+    - A query is constructed to select credit usage events for the given organization ID using the `UsageEventRepository.credit_usage_event_types()` method.
+    - The query is executed using the session object, and all matching credit usage events are retrieved.
+    - A similar query is constructed and executed to select debit usage events for the given organization ID using the `UsageEventRepository.billable_usage_event_types()` method.
+    - The credit balance is calculated by summing the `bytes_in` attribute of all credit usage events.
+    - The debit balance is calculated by summing the `bytes_in` and `bytes_out` attributes of all debit usage events.
+    - A [`UsageBalance`](<../interfaces/usage/usage_schema.py.md#UsageBalance>) object is created with the calculated credit and debit balances, using `UsageMetricUnitType.BYTES` as the unit.
+    - The [`UsageBalance`](<../interfaces/usage/usage_schema.py.md#UsageBalance>) object is converted to `UsageMetricUnitType.SLOC` and returned.
+- **Output**: The method returns a [`UsageBalance`](<../interfaces/usage/usage_schema.py.md#UsageBalance>) object representing the net usage balance for the organization, converted to the `UsageMetricUnitType.SLOC` unit.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.credit_usage_event_types`](<../repositories/usage_event_repository.py.md#UsageEventRepositorycredit_usage_event_types>)
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.billable_usage_event_types`](<../repositories/usage_event_repository.py.md#UsageEventRepositorybillable_usage_event_types>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance`](<../interfaces/usage/usage_schema.py.md#UsageBalance>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.convert_to`](<../interfaces/usage/usage_schema.py.md#UsageBalanceconvert_to>)
+- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<#UsageService>)  (Base Class)
 
 
 ---
 #### UsageService\.get\_usage\_summary<!-- {{#callable:python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_summary}} -->
 The `get_usage_summary` method calculates and returns a summary of usage events for a given organization within a specified date range, converting the summary to a specific unit type.
 - **Inputs**:
-    - `organization_id`: A string representing the unique identifier of the organization for which the usage summary is being requested.
+    - `organization_id`: A string representing the unique identifier of the organization for which the usage summary is being retrieved.
     - `start_date`: An optional datetime object specifying the start date for filtering usage events; defaults to None if not provided.
     - `end_date`: An optional datetime object specifying the end date for filtering usage events; defaults to None if not provided.
 - **Control Flow**:
     - Retrieve onboarding usage events for the specified organization and date range, and calculate the total bytes used.
-    - Retrieve inspector events, separating them into tech document and code diff usage, and calculate the total bytes for each type.
+    - Retrieve inspector events for technical documentation and code differences, and calculate the total bytes used for each type.
     - Retrieve agent pipeline usage events and calculate the total bytes used.
     - Retrieve PDF summarization usage events and calculate the total bytes used.
     - Retrieve platform credit events and calculate the total bytes credited.
     - Retrieve user seat usage events and count the number of events.
-    - Create a [`UsageEventSummary`](../interfaces/usage/usage_schema.py.md#UsageEventSummary) object with the calculated usage data and convert it to the `UsageMetricUnitType.SLOC` unit type.
-    - Return the converted [`UsageEventSummary`](../interfaces/usage/usage_schema.py.md#UsageEventSummary) object.
-- **Output**: The method returns a [`UsageEventSummary`](../interfaces/usage/usage_schema.py.md#UsageEventSummary) object that has been converted to the `UsageMetricUnitType.SLOC` unit type, summarizing various usage metrics for the organization.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types`](../repositories/usage_event_repository.py.md#UsageEventRepositoryget_usage_events_by_types)
-    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary`](../interfaces/usage/usage_schema.py.md#UsageEventSummary)
-    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary.convert_to`](../interfaces/usage/usage_schema.py.md#UsageEventSummaryconvert_to)
-- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](#UsageService)  (Base Class)
+    - Create a [`UsageEventSummary`](<../interfaces/usage/usage_schema.py.md#UsageEventSummary>) object with the calculated usage data and convert it to the `UsageMetricUnitType.SLOC` unit type.
+    - Return the converted [`UsageEventSummary`](<../interfaces/usage/usage_schema.py.md#UsageEventSummary>) object.
+- **Output**: The method returns a [`UsageEventSummary`](<../interfaces/usage/usage_schema.py.md#UsageEventSummary>) object that has been converted to the `UsageMetricUnitType.SLOC` unit type, containing summarized usage data for the specified organization and date range.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types`](<../repositories/usage_event_repository.py.md#UsageEventRepositoryget_usage_events_by_types>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary`](<../interfaces/usage/usage_schema.py.md#UsageEventSummary>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary.convert_to`](<../interfaces/usage/usage_schema.py.md#UsageEventSummaryconvert_to>)
+- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<#UsageService>)  (Base Class)
 
 
 ---
 #### UsageService\.get\_charges<!-- {{#callable:python-backend/packages/shared/shared/usage/usage_service.UsageService.get_charges}} -->
-The `get_charges` method retrieves and processes usage events for a specified organization, returning a list of [`UsageCharge`](../interfaces/usage/usage_schema.py.md#UsageCharge) objects sorted by timestamp.
+The `get_charges` method retrieves and processes usage events for a specified organization, returning a list of [`UsageCharge`](<../interfaces/usage/usage_schema.py.md#UsageCharge>) objects sorted by timestamp.
 - **Inputs**:
     - `organization_id`: A string representing the unique identifier of the organization for which usage charges are being retrieved.
     - `limit`: An integer specifying the maximum number of usage events to retrieve, defaulting to 50.
-    - `offset`: An integer indicating the starting point for retrieving usage events, defaulting to 0.
-    - `sort_direction`: A string literal ('ASC' or 'DESC') determining the order in which the usage charges are sorted by timestamp, defaulting to 'DESC'.
+    - `offset`: An integer specifying the number of usage events to skip before starting to collect the result set, defaulting to 0.
+    - `sort_direction`: A string literal indicating the sort order of the results, either 'ASC' for ascending or 'DESC' for descending, defaulting to 'DESC'.
 - **Control Flow**:
-    - Initialize an empty list `charges` to store the resulting [`UsageCharge`](../interfaces/usage/usage_schema.py.md#UsageCharge) objects.
+    - Initialize an empty list `charges` to store the resulting [`UsageCharge`](<../interfaces/usage/usage_schema.py.md#UsageCharge>) objects.
     - Check if the `limit` exceeds `max_limit` (100) and raise a `ValueError` if it does.
     - Retrieve usage events of specific types for the given `organization_id` using the `usage_event_repository`, applying the specified `limit`, `offset`, and `sort_direction`.
     - Extract session IDs from the retrieved usage events.
     - Fetch sessions corresponding to the extracted session IDs using the `usage_session_repository`.
-    - Iterate over each session, extracting metadata to determine the primary asset ID and content name.
+    - Iterate over each session, extract metadata, and determine the primary asset ID and content name.
     - For each session, find the corresponding usage event and retrieve the primary asset using the `primary_asset_repository`.
     - Determine the asset name based on the primary asset's existence and metadata.
-    - Create a [`UsageCharge`](../interfaces/usage/usage_schema.py.md#UsageCharge) object for each session and append it to the `charges` list.
-    - Sort the `charges` list by timestamp in the specified `sort_direction`.
-- **Output**: A list of [`UsageCharge`](../interfaces/usage/usage_schema.py.md#UsageCharge) objects, each representing a charge associated with a usage event for the specified organization.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types`](../repositories/usage_event_repository.py.md#UsageEventRepositoryget_usage_events_by_types)
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get_all`](../repositories/base_repository.py.md#BaseRepositoryget_all)
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge`](../interfaces/usage/usage_schema.py.md#UsageCharge)
-- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](#UsageService)  (Base Class)
+    - Create a [`UsageCharge`](<../interfaces/usage/usage_schema.py.md#UsageCharge>) object for each session and append it to the `charges` list.
+    - Sort the `charges` list by timestamp according to the specified `sort_direction`.
+- **Output**: A list of [`UsageCharge`](<../interfaces/usage/usage_schema.py.md#UsageCharge>) objects, each representing a charge associated with a usage event, sorted by timestamp.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types`](<../repositories/usage_event_repository.py.md#UsageEventRepositoryget_usage_events_by_types>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get_all`](<../repositories/base_repository.py.md#BaseRepositoryget_all>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge`](<../interfaces/usage/usage_schema.py.md#UsageCharge>)
+- **See also**: [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<#UsageService>)  (Base Class)
 
 
 

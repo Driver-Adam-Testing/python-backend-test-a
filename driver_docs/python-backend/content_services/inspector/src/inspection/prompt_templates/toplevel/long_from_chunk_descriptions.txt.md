@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `long_from_chunk_descriptions.txt` file provides instructions for combining multiple detailed descriptions of software modules into a comprehensive description of the entire codebase, specifically for the `python-backend` project.
+The `long_from_chunk_descriptions.txt` file provides instructions for combining multiple detailed descriptions of software modules into a comprehensive description of the entire codebase.
 
 # Purpose
-The provided content appears to be a template or guideline for generating comprehensive documentation for a software codebase. This document outlines a structured approach to synthesizing multiple detailed descriptions of different subsets of a large codebase into a cohesive and comprehensive overview. The purpose of this file is to guide the documentation writer in creating a unified description that includes the purpose and functionality of the entire codebase, the main business logic, critical APIs, and other relevant components. It emphasizes the importance of using only the information provided in the subset descriptions without introducing any speculative content. This ensures that the final documentation is accurate, reliable, and reflective of the actual codebase.
+The provided content appears to be a set of instructions or guidelines for a software engineering expert tasked with synthesizing detailed descriptions of a large software codebase. The instructions outline a structured approach to consolidating multiple descriptions of overlapping subsets of the codebase into a comprehensive overview. The purpose of this task is to create a unified description that explains the overall purpose and functionality of the codebase, identifies the main business logic and logical flow, and highlights critical APIs and components. This process is essential for understanding and documenting complex software systems, ensuring that the most relevant and critical aspects are clearly communicated without introducing speculative or extraneous information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

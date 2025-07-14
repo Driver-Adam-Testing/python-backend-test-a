@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `iterations.py` file defines prompts and messages for different stages of an iterative process, including first, middle, and final iterations, guiding the execution of tools and the formulation of responses based on retrieved context.
+The `iterations.py` file defines prompt messages for different stages of an iterative process, guiding the execution of tools and the formulation of responses based on retrieved context.
 
 # Purpose
-This code defines a set of string templates and corresponding message dictionaries intended for use in a multi-step process or iterative workflow, likely within a conversational AI or automated tool execution context. The code provides narrow functionality, focusing specifically on generating structured prompts for different stages of an iteration process: the first, middle, and final iterations. Each prompt is designed to guide the user or system on what actions to take, such as executing tools, reviewing source code, or returning a response, with specific conditions and instructions for each stage. The use of placeholders like `{remaining_iterations}` suggests that these prompts are dynamically updated based on the current state of the iteration process. Overall, this code serves as a configuration or setup for managing the flow of interactions in a controlled, step-by-step manner.
+This code is a collection of configuration variables, specifically designed as a set of predefined prompts for different stages of an iterative process. It provides narrow functionality by defining three distinct messages, each associated with a specific iteration phase: the first, middle, and final iterations. Each prompt is stored as a string and is paired with a dictionary that assigns a "role" and "content" to the message, indicating its intended use in a user interaction context. The prompts guide the execution of tools and the decision-making process at each stage, ensuring that the user follows a structured approach to retrieve and utilize context effectively. The use of placeholders like `{remaining_iterations}` suggests that these prompts are dynamically updated based on the current state of the iteration process.
 # Global Variables
 
 ---
 ### PROMPT\_FIRST\_ITERATION
 - **Type**: `string`
-- **Description**: PROMPT_FIRST_ITERATION is a string variable that contains a template message for the first iteration of a process where tools need to be executed to gather initial context. The message includes a placeholder for the number of remaining iterations, allowing for dynamic updates based on the current state of the process.
+- **Description**: PROMPT_FIRST_ITERATION is a string variable that contains a template message for the first iteration of a process where tools need to be executed to gather initial context. It includes a placeholder for the number of remaining iterations, allowing dynamic updates based on the current state of the process.
 - **Use**: This variable is used to provide a formatted message to the user during the first iteration of a tool execution process, indicating the necessity to execute tools and the number of remaining iterations.
 
 
@@ -26,29 +26,29 @@ This code defines a set of string templates and corresponding message dictionari
 ---
 ### PROMPT\_MIDDLE\_ITERATION
 - **Type**: `str`
-- **Description**: PROMPT_MIDDLE_ITERATION is a multi-line string variable that provides instructions for reviewing source code and determining when to execute additional tools based on the results obtained. It includes conditions for executing the SearchTool in hybrid mode and emphasizes the need for source code results before returning a response. The variable also dynamically incorporates the number of remaining iterations for tool execution.
-- **Use**: This variable is used to guide the process of reviewing source code and deciding when to execute additional tools during the middle iterations of a task.
+- **Description**: PROMPT_MIDDLE_ITERATION is a multi-line string variable that provides instructions for reviewing source code and executing tools during the middle iterations of a process. It includes conditions for when to execute the SearchTool in hybrid mode and emphasizes the need for source code results before returning a response.
+- **Use**: This variable is used to guide the execution flow and decision-making process during the middle iterations of a tool-based review or analysis.
 
 
 ---
 ### MESSAGE\_MIDDLE\_ITERATION
 - **Type**: `dict`
-- **Description**: The variable `MESSAGE_MIDDLE_ITERATION` is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string value 'user', and the 'content' key is assigned the value of the string `PROMPT_MIDDLE_ITERATION`. This string provides instructions for reviewing source code and executing tools during the middle iteration of a process.
+- **Description**: The variable `MESSAGE_MIDDLE_ITERATION` is a dictionary that contains two key-value pairs: 'role' with the value 'user', and 'content' with the value of the string `PROMPT_MIDDLE_ITERATION`. This string provides instructions for reviewing source code and executing tools during the middle iteration of a process.
 - **Use**: This variable is used to store and convey instructions to a user during the middle iteration of a tool execution process.
 
 
 ---
 ### PROMPT\_FINAL\_ITERATION
-- **Type**: `string`
-- **Description**: PROMPT_FINAL_ITERATION is a string variable that contains a template message for the final iteration of a process. It instructs the user to return a response, ensuring that any code or diagrams included are syntactically correct and based on source code results from tools.
-- **Use**: This variable is used to provide a predefined message template for the final iteration, guiding the user to return a response with specific conditions.
+- **Type**: `str`
+- **Description**: PROMPT_FINAL_ITERATION is a string variable that contains a multi-line message template. This template is used to instruct a system or user to return a response during the final iteration of a process, ensuring that any code or diagrams included are syntactically correct and based on source code results from tools.
+- **Use**: This variable is used to provide a predefined message for the final iteration of a process, guiding the user or system to produce a final response.
 
 
 ---
 ### MESSAGE\_FINAL\_ITERATION
 - **Type**: `dict`
 - **Description**: The variable `MESSAGE_FINAL_ITERATION` is a dictionary that contains two key-value pairs: 'role' with the value 'user', and 'content' with the value of the string `PROMPT_FINAL_ITERATION`. This string provides instructions for the final iteration of a process, emphasizing the need to return a response and ensure correctness in any code or diagrams included.
-- **Use**: This variable is used to store and convey the final set of instructions to a user in a structured format, indicating the completion of a process and the requirements for the final output.
+- **Use**: This variable is used to store and convey the final set of instructions to a user, indicating the completion of a process and the necessity to return a response.
 
 
 

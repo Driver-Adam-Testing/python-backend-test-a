@@ -6,9 +6,9 @@
 The `mermaid_render.py` file provides functionality to check if a given Mermaid diagram code can be rendered using the Mermaid CLI, utilizing temporary files and subprocess calls for validation.
 
 # Purpose
-This Python script is designed to verify the renderability of Mermaid diagram code using the Mermaid CLI. It primarily focuses on checking whether a given Mermaid code block can be successfully processed and rendered into an SVG format by the Mermaid command-line tool. The script achieves this by creating temporary files to store the Mermaid code and the output SVG, and then invoking the Mermaid CLI with these files. If the rendering process is successful, the function returns a tuple indicating success; otherwise, it captures and returns any error messages generated during the process.
+This Python script is designed to verify the renderability of Mermaid diagram code using the Mermaid CLI. It primarily focuses on checking whether a given Mermaid code block can be successfully processed into a visual diagram without errors. The script achieves this by creating temporary files to store the Mermaid code and the expected output, then invoking the Mermaid CLI (`mmdc`) with these files. If the CLI processes the code without errors, the function returns a tuple indicating success; otherwise, it captures and returns the error message for debugging purposes. The script also includes functionality to clean up temporary files after execution, ensuring no residual files are left on the system.
 
-The script includes key components such as the use of the `os`, `subprocess`, and `tempfile` modules to handle file paths, execute external commands, and manage temporary files, respectively. It also defines a function [`is_mermaid_renderable`](#is_mermaid_renderable) that serves as the main interface for checking the renderability of Mermaid code. This function is the primary public API of the script, making it suitable for integration into larger systems where Mermaid diagram validation is required. The script also prints various paths and debugging information to the console, which aids in troubleshooting and understanding the flow of execution.
+The script is structured as a utility function, [`is_mermaid_renderable`](<#is_mermaid_renderable>), which can be integrated into larger applications or used as a standalone check. It does not define a public API or external interface beyond this function, suggesting its primary use is as a helper within a broader codebase. The script also includes print statements for debugging, which output paths and error messages to the console, aiding in the identification of issues during the rendering process. The use of the `os`, `subprocess`, and `tempfile` modules highlights its focus on file handling and process management, essential for interacting with external command-line tools like the Mermaid CLI.
 # Imports and Dependencies
 
 ---
@@ -21,15 +21,15 @@ The script includes key components such as the use of the `os`, `subprocess`, an
 
 ---
 ### current\_file\_path
-- **Type**: `str`
-- **Description**: The `current_file_path` variable holds the absolute path of the current Python file being executed. It is determined using the `os.path.abspath` function applied to `__file__`, which is a special variable in Python that contains the path to the script being executed.
-- **Use**: This variable is used to construct the path to the Puppeteer configuration file by determining the directory of the current script.
+- **Type**: `string`
+- **Description**: The `current_file_path` variable holds the absolute path of the current Python file being executed. It is determined using the `os.path.abspath` function applied to `__file__`, which represents the path of the file in which the code is running.
+- **Use**: This variable is used to construct the path to the Puppeteer configuration file by determining the directory of the current file.
 
 
 ---
 ### puppeteer\_config\_path
 - **Type**: `str`
-- **Description**: The `puppeteer_config_path` variable is a string that holds the absolute path to the 'puppeteer-config.json' file located in the same directory as the current script file. It is constructed using the `os.path.join` and `os.path.dirname` functions to ensure the path is correctly formatted across different operating systems.
+- **Description**: The `puppeteer_config_path` variable is a string that holds the absolute path to the 'puppeteer-config.json' file located in the same directory as the current script file. It is constructed using the `os.path.join` and `os.path.dirname` functions to ensure the path is correctly formed across different operating systems.
 - **Use**: This variable is used to specify the configuration file path for Puppeteer when executing the Mermaid CLI command.
 
 
@@ -41,13 +41,13 @@ The function checks if a given Mermaid code block can be rendered using the Merm
 - **Inputs**:
     - `mermaid_code`: The Mermaid diagram source as a string.
 - **Control Flow**:
-    - A temporary file is created to store the Mermaid code, and its path is saved.
-    - Another temporary file is created to serve as the output path for the Mermaid CLI, although its content is not used.
+    - A temporary file is created to store the Mermaid code with a '.mmd' suffix.
+    - Another temporary file is created to serve as the output path for the rendering process, with a '.svg' suffix.
     - The function attempts to render the Mermaid code using the Mermaid CLI by calling the 'mmdc' command with the appropriate arguments.
     - If the rendering is successful, the function returns a tuple (True, None).
-    - If the rendering fails, a CalledProcessError is caught, and the function returns a tuple (False, error_message) with the error message decoded from the exception output.
-    - Finally, the function ensures that all temporary files are deleted, regardless of success or failure.
-- **Output**: A tuple (True, None) if the Mermaid code is renderable, or (False, error_message) if it is not.
+    - If the rendering fails, a subprocess.CalledProcessError is caught, and the error message is decoded and returned in a tuple (False, error_message).
+    - Finally, the temporary files created for the Mermaid code and output path are deleted to clean up.
+- **Output**: A tuple where the first element is a boolean indicating if the code is renderable, and the second element is either None or an error message string.
 
 
 

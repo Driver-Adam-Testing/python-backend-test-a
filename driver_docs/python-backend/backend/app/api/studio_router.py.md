@@ -6,9 +6,9 @@
 The `studio_router.py` file configures and includes various API routes for the application using FastAPI, organizing them under different prefixes and tags.
 
 # Purpose
-This Python file is a configuration script for setting up API routing using FastAPI's `APIRouter`. It organizes and includes various API endpoints from different modules into a single router, `studio_router`, which can be used to manage and direct HTTP requests to the appropriate handlers. The file imports several route modules from different versions and sections of the application, such as `v1` and `v2`, and includes them with specific URL prefixes and tags. This setup allows for a structured and modular approach to API development, facilitating the management of different API versions and functionalities.
+This Python file is a configuration script for setting up API routing using FastAPI's `APIRouter`. It serves as a central hub for including various API routes from different modules within the application, organizing them under a unified `studio_router`. The file imports route modules from different versions and sections of the application, such as legacy, v1, and v2 routes, and includes them with specific URL prefixes and tags. This setup allows for a structured and modular approach to managing API endpoints, facilitating easier maintenance and scalability of the API.
 
-The script defines a comprehensive collection of routes, each associated with a specific functionality, such as `graphql`, `api_key`, `git_provider`, `search`, and more. It also includes conditional routing for a `sandbox` environment, which is only included if the application is not in production. This indicates a development or testing feature that is not exposed in the production environment. The use of tags helps in categorizing and documenting the API endpoints, which is beneficial for both development and API documentation purposes. Overall, this file serves as a central point for API route management, ensuring that all endpoints are properly registered and accessible through the `studio_router`.
+The script defines a collection of routes that cover a wide range of functionalities, including handling user data, managing content, interacting with codebases, and more. It also includes conditional routing for non-production environments, such as the inclusion of a sandbox route. The use of tags helps categorize the routes, making it easier to understand the purpose of each endpoint. This file is not intended to be executed as a standalone script but rather serves as a configuration component within a larger FastAPI application, defining public APIs and external interfaces for the application.
 # Imports and Dependencies
 
 ---
@@ -46,8 +46,8 @@ The script defines a comprehensive collection of routes, each associated with a 
 ---
 ### studio\_router
 - **Type**: `APIRouter`
-- **Description**: The `studio_router` is an instance of FastAPI's `APIRouter` class, which is used to define and organize a collection of API routes. It serves as a central router that aggregates various sub-routers from different modules, each with its own prefix and tags, to create a cohesive API structure.
-- **Use**: This variable is used to include and manage multiple API route modules, each with specific prefixes and tags, to facilitate organized and modular API endpoint management.
+- **Description**: The `studio_router` is an instance of FastAPI's `APIRouter` class, which is used to define and organize a collection of API routes. It serves as a central router that aggregates various sub-routers, each associated with different API endpoints and functionalities, such as `graphql`, `api_key`, `git_provider`, and more.
+- **Use**: The `studio_router` is used to include and manage multiple API route handlers, each with specific prefixes and tags, facilitating modular and organized API endpoint management.
 
 
 

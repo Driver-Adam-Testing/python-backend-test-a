@@ -6,9 +6,9 @@
 The `search_tool.py` file defines the `SearchTool` class, which facilitates searching within a content repository of code and technical documentation using various algorithms and content type filters.
 
 # Purpose
-The provided Python code defines a class `SearchTool`, which is a specialized tool for searching within a content repository that includes code and technical documentation. This class extends `ToolStrict`, indicating it adheres to a strict interface or set of rules for tool implementation. The `SearchTool` class is designed to perform searches based on various content types and search algorithms, allowing users to filter searches by source code, technical documentation, and PDF content, among others. The class utilizes an enumeration `SearchToolInputContentType` to define these content types, and it supports different search algorithms such as hybrid, semantic, and keyword searches, which are encapsulated in the `SearchAlgorithm` enum.
+The provided Python code defines a class `SearchTool`, which is a specialized tool for searching within a content repository that includes code and technical documentation. This class extends `ToolStrict`, indicating it is part of a framework or library that enforces strict tool behavior. The `SearchTool` class is designed to perform searches based on various content types and search algorithms, such as keyword, semantic, and hybrid searches. It allows filtering by content types like source code, technical documentation, and PDF content, and it can search within specified subfolders or broadly across the repository. The class also includes a mechanism to derive content types from the specified search parameters, ensuring that the search is comprehensive and contextually relevant.
 
-The `SearchTool` class is equipped with several attributes and methods that facilitate its functionality. The [`execute`](#SearchToolexecute) method is central to its operation, as it constructs a `SearchInput` object with the specified query, algorithm, and content types, and then performs the search using the `search_content_without_session` function. The results are formatted and returned as a string. Additionally, the class provides a [`derived_content_types`](#SearchToolderived_content_types) property that maps the specified content types to a set of derived content types, which are used to refine the search scope. The class also includes a [`system_prompt`](#SearchToolsystem_prompt) class method, which provides guidance on using the `SearchTool` when insufficient information is available for generating a response. Overall, this code is part of a larger system, likely a library or module, intended to be integrated into applications that require advanced search capabilities within technical content repositories.
+The `SearchTool` class is intended to be used as part of a larger system, likely involving agents that manage search scopes and results. It provides a public API through its [`execute`](<#SearchToolexecute>) method, which performs the search operation and returns formatted search results. The class also includes a [`system_prompt`](<#SearchToolsystem_prompt>) method, which suggests that it is integrated into a system that requires search results to generate responses. This code is structured to be part of a library or module that can be imported and utilized by other components, emphasizing its role in facilitating complex search operations within a technical content repository.
 # Imports and Dependencies
 
 ---
@@ -30,66 +30,66 @@ The `SearchTool` class is equipped with several attributes and methods that faci
     - `content_types`: Content types to filter the search results.
     - `search_algorithm`: The search algorithm to be used, defaulting to HYBRID.
     - `search_subfolder_with_version_paths`: Optional source paths and directories to search within.
-- **Description**: The SearchTool class is designed to perform searches within a content repository that includes code and technical documentation. It allows users to specify a search query, filter results by content types, and choose a search algorithm. The class supports searching within specific subfolders and can handle different content types such as source code, technical documentation, and PDF content. It also provides a mechanism to derive content types based on the specified filters and execute searches using an agent, returning formatted search results.
+- **Description**: The SearchTool class extends ToolStrict and is designed to perform searches within a content repository that includes code and technical documentation. It allows users to specify a search query, filter results by content types, and choose a search algorithm from options like HYBRID, SEMANTIC, or KEYWORD. The class also supports searching within specific subfolders and provides a mechanism to derive content types based on the specified filters. If no results are found, it suggests retrying with broader search parameters.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.derived_content_types`](#SearchToolderived_content_types)
-    - [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.execute`](#SearchToolexecute)
-    - [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.system_prompt`](#SearchToolsystem_prompt)
+    - [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.derived_content_types`](<#SearchToolderived_content_types>)
+    - [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.execute`](<#SearchToolexecute>)
+    - [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.system_prompt`](<#SearchToolsystem_prompt>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](tool_strict.py.md#ToolStrict)
+    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](<tool_strict.py.md#ToolStrict>)
 
 **Methods**
 
 ---
 #### SearchTool\.derived\_content\_types<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.derived_content_types}} -->
-The `derived_content_types` method returns a list of derived content types based on the current content types set in the `SearchTool` instance.
+The `derived_content_types` method returns a list of derived content types based on the content types specified in the `SearchTool` instance.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
     - Initialize an empty set `derived_content_types` to store unique derived content types.
     - Iterate over each `content_type` in `self.content_types`.
     - For `source_code` content type, add `CODEBASE_FILE` to the set.
-    - For `technical_documentation` content type, add multiple derived content types including `LONG_DESCRIPTION`, `CHUNK_DESCRIPTIONS`, `SYMBOL`, and various `PDF` summaries to the set.
-    - For `pdf_content` content type, add derived content types related to `PDF` summaries, `SUPPLEMENTAL_DOCUMENT`, and extracted text and tables to the set.
+    - For `technical_documentation` content type, add multiple derived content types including `LONG_DESCRIPTION`, `CHUNK_DESCRIPTIONS`, `SYMBOL`, and various PDF summaries to the set.
+    - For `pdf_content` content type, add derived content types related to PDF summaries, supplemental documents, and extracted text and tables to the set.
     - For `all_types` content type, add all possible derived content types to the set.
     - For `user_generated_files` content type, add `APPLICATION_NOTE` to the set.
     - Convert the set `derived_content_types` to a list and return it.
 - **Output**: A list of strings representing the derived content types based on the input content types.
-- **See also**: [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool`](#SearchTool)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool`](<#SearchTool>)  (Base Class)
 
 
 ---
 #### SearchTool\.execute<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.execute}} -->
-The `execute` method performs a search within a content repository using specified parameters and returns formatted search results.
+The `execute` method performs a search within a specified scope and returns formatted search results or an error message if no results are found.
 - **Inputs**:
-    - `agent`: An instance of `AgentBase` that provides the scope and context for the search operation.
+    - `agent`: An instance of AgentBase that provides the scope and context for the search operation.
 - **Control Flow**:
-    - Check if `search_subfolder_with_version_paths` is provided; if so, derive `node_ids` from the agent's scope using these paths, otherwise use the agent's current node IDs.
-    - Raise a `ValueError` if the agent's scope has node IDs but `node_ids` is empty, indicating the search path is out of scope.
-    - Create a [`SearchInput`](../../interfaces/search.py.md#SearchInput) object with the search query, algorithm, derived content types, organization ID, and node IDs, limiting results to 15.
-    - Call [`search_content_without_session`](../../pipelines/search.py.md#search_content_without_session) with the [`SearchInput`](../../interfaces/search.py.md#SearchInput) to perform the search and store the results.
+    - Check if `search_subfolder_with_version_paths` is provided; if so, derive `node_ids` from the agent's scope using these paths, otherwise use the agent's current node_ids.
+    - Raise a ValueError if the agent's scope has node_ids but the derived node_ids are empty, indicating the search path is out of scope.
+    - Create a [`SearchInput`](<../../interfaces/search.py.md#SearchInput>) object with the search query, algorithm, derived content types, organization ID, node IDs, and a limit of 15 results.
+    - Call [`search_content_without_session`](<../../pipelines/search.py.md#search_content_without_session>) with the [`SearchInput`](<../../interfaces/search.py.md#SearchInput>) to perform the search and store the results.
     - If no results are found, return a message indicating no results were returned.
-    - Add the search results to the agent's search results.
-    - Iterate over the search results, format each result into a structured string with content and path, and append to a list of formatted results.
+    - Add the search results to the agent using `agent.add_search_results(results)`.
+    - Iterate over the search results, format each result into a structured string, and append it to a list of formatted results.
     - Join the formatted results into a single string separated by newlines and return it.
-- **Output**: A string containing formatted search results or a message indicating no results were found.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](../../interfaces/agents/data_scope.py.md#DataScopeto_child_datascope)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchInput`](../../interfaces/search.py.md#SearchInput)
-    - [`python-backend/packages/shared/shared/pipelines/search.search_content_without_session`](../../pipelines/search.py.md#search_content_without_session)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](../agent_base.py.md#AgentBaseadd_search_results)
-- **See also**: [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool`](#SearchTool)  (Base Class)
+- **Output**: A string containing formatted search results or an error message if no results are found.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<../../interfaces/agents/data_scope.py.md#DataScopeto_child_datascope>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchInput`](<../../interfaces/search.py.md#SearchInput>)
+    - [`python-backend/packages/shared/shared/pipelines/search.search_content_without_session`](<../../pipelines/search.py.md#search_content_without_session>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](<../agent_base.py.md#AgentBaseadd_search_results>)
+- **See also**: [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool`](<#SearchTool>)  (Base Class)
 
 
 ---
 #### SearchTool\.system\_prompt<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.system_prompt}} -->
-The `system_prompt` class method returns a predefined string instructing to use the SearchTool if insufficient project information is available.
+The `system_prompt` method returns a predefined string instructing to use the SearchTool if insufficient project information is available.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns a multi-line string without any conditional logic or iterations.
-- **Output**: A string containing a message about using the SearchTool when lacking project information.
-- **See also**: [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool`](#SearchTool)  (Base Class)
+    - The method directly returns a string without any conditional logic or iterations.
+- **Output**: A string containing a directive to use the SearchTool when lacking sufficient project information.
+- **See also**: [`python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool`](<#SearchTool>)  (Base Class)
 
 
 
@@ -97,10 +97,10 @@ The `system_prompt` class method returns a predefined string instructing to use 
 ### SearchToolInputContentType<!-- {{#class:python-backend/packages/shared/shared/agent/tools/search_tool.SearchTool.SearchToolInputContentType}} -->
 - **Members**:
     - `all_types`: Represents the content type for all types of content.
-    - `source_code`: Represents the content type for source code.
+    - `source_code`: Represents the content type for source code files.
     - `technical_documentation`: Represents the content type for technical documentation.
-    - `pdf_content`: Represents the content type for PDF content.
-- **Description**: The `SearchToolInputContentType` class is an enumeration that defines various content types that can be used to filter search results within the `SearchTool` class. It includes options for searching all types of content, specifically source code, technical documentation, and PDF content. This enumeration helps in categorizing and specifying the type of content to be searched, thereby aiding in more precise and relevant search operations.
+    - `pdf_content`: Represents the content type for PDF documents.
+- **Description**: The SearchToolInputContentType class is an enumeration that defines different types of content that can be searched using the SearchTool. It extends the str and Enum classes, providing string representations for each content type, including 'all-types', 'source-code', 'codebase-technical-documentation', and 'pdf-content'. This allows for easy filtering and categorization of search inputs based on the type of content being queried.
 - **Inherits From**:
     - `str`
     - `Enum`

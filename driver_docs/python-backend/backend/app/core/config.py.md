@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `config.py` file defines application settings and configurations using Pydantic's BaseSettings, including environment variables, API endpoints, authentication credentials, and validation for non-default secrets.
+The `config.py` file defines a `Settings` class using Pydantic to manage application configuration, including environment variables, API endpoints, authentication credentials, and other settings, with a mechanism to warn or raise errors if default secrets are not changed.
 
 # Purpose
-This Python code defines a configuration management system using the Pydantic library, specifically tailored for applications that require environment-based settings. The primary component is the `Settings` class, which inherits from `BaseSettings` provided by Pydantic. This class encapsulates various configuration parameters such as API endpoints, authentication credentials, AWS settings, and other environment-specific variables. The settings are designed to be loaded from an environment file (`.env`), with the ability to ignore empty environment variables and extra fields. The code also includes a custom validator to ensure that certain sensitive fields, initially set to a placeholder value (`DEFAULT_SECRET`), are changed before deployment, thus enforcing security best practices.
+This Python code defines a configuration management system using the Pydantic library, specifically tailored for applications that require environment-based settings. The primary component is the `Settings` class, which inherits from `BaseSettings` provided by Pydantic. This class encapsulates various configuration parameters such as API endpoints, authentication credentials, AWS settings, GitHub integration details, and other environment-specific variables. The `Settings` class is designed to load these configurations from environment variables, with the ability to specify defaults and validate the values. The [`parse_cors`](<#parse_cors>) function is used to process CORS origins, ensuring they are correctly formatted as a list of URLs or a single string.
 
-The [`parse_cors`](#parse_cors) function is a utility to parse CORS (Cross-Origin Resource Sharing) settings, allowing them to be specified as either a comma-separated string or a list. The `Settings` class uses Pydantic's `model_validator` to perform post-initialization checks, ensuring that no sensitive fields retain their default placeholder values in non-local environments. This file is intended to be used as a configuration module within a larger application, providing a centralized and structured way to manage application settings. It does not define a public API but rather serves as an internal component to facilitate configuration management.
+The code is structured to be used as a configuration module within a larger application, likely a web service or API, given the presence of API version strings and CORS settings. It includes a mechanism to warn or raise errors if sensitive fields retain their default placeholder values, which is crucial for maintaining security in different deployment environments. The use of Pydantic's `model_validator` ensures that the settings are validated after initialization, providing a robust way to enforce configuration integrity. This file is intended to be imported and utilized by other parts of the application to access and manage configuration settings consistently.
 # Imports and Dependencies
 
 ---
@@ -29,14 +29,14 @@ The [`parse_cors`](#parse_cors) function is a utility to parse CORS (Cross-Origi
 ### DEFAULT\_SECRET
 - **Type**: `str`
 - **Description**: `DEFAULT_SECRET` is a global string variable initialized with the value 'changethis'. It serves as a placeholder for sensitive information such as API keys, client secrets, and other credentials in the application settings.
-- **Use**: This variable is used as a default value for various sensitive configuration fields in the `Settings` class, prompting users to replace it with actual secret values before deployment.
+- **Use**: This variable is used as a default value for various sensitive configuration fields in the `Settings` class, prompting users to replace it with actual secret values before deploying the application.
 
 
 ---
 ### settings
 - **Type**: `Settings`
-- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is designed to manage application configuration, loading settings from environment variables or a `.env` file. It includes various configuration options such as API paths, token expiration times, domain settings, authentication credentials, AWS configuration, and more.
-- **Use**: The `settings` variable is used to access and manage application configuration settings throughout the application, ensuring that all necessary environment-specific configurations are available and correctly set.
+- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is designed to manage application configuration, loading settings from environment variables and providing default values for various configuration options such as API paths, authentication credentials, AWS settings, and more. The `Settings` class also includes validation logic to ensure that certain sensitive fields are not left with their default placeholder values.
+- **Use**: The `settings` variable is used to access and manage application configuration settings throughout the application.
 
 
 # Classes
@@ -47,40 +47,40 @@ The [`parse_cors`](#parse_cors) function is a utility to parse CORS (Cross-Origi
     - `model_config`: Configuration for environment variables and extra settings.
     - `API_V1_STR`: String representing the API version 1 endpoint.
     - `STUDIO_V1_STR`: String representing the Studio version 1 endpoint.
-    - `ACCESS_TOKEN_EXPIRE_MINUTES`: Duration in minutes for access token expiration.
+    - `ACCESS_TOKEN_EXPIRE_MINUTES`: Duration in minutes for which the access token is valid.
     - `DOMAIN`: Domain name for the application.
-    - `ENVIRONMENT`: Current environment setting, e.g., local or production.
-    - `AUTH0_DOMAIN`: Domain for Auth0 authentication.
-    - `AUTH0_CLIENT_ID`: Client ID for Auth0 authentication.
-    - `AUTH0_AUDIENCE`: Audience for Auth0 authentication.
-    - `AUTH0_MGMT_API_DOMAIN`: Domain for Auth0 Management API.
-    - `AUTH0_MGMT_API_CLIENT_ID`: Client ID for Auth0 Management API.
-    - `AUTH0_MGMT_API_CLIENT_SECRET`: Client secret for Auth0 Management API.
-    - `AUTH0_MGMT_API_AUDIENCE`: Audience for Auth0 Management API.
-    - `AWS_ACCESS_KEY_ID`: Access key ID for AWS services.
-    - `AWS_SECRET_ACCESS_KEY`: Secret access key for AWS services.
-    - `AWS_REGION`: AWS region for service deployment.
-    - `AWS_S3_ENDPOINT_URL`: Endpoint URL for AWS S3 service.
-    - `AWS_S3_CODE_BUCKET_SUFFIX`: Suffix for AWS S3 code bucket.
-    - `DROPZONE_BUCKET_NAME`: Name of the Dropzone bucket.
-    - `USE_LEGACY_DROPZONE`: Flag to use legacy Dropzone.
-    - `INSPECTOR_BUCKET_NAME`: Name of the Inspector bucket.
-    - `PORT`: Port number for the application server.
-    - `HOST`: Host address for the application server.
-    - `GH_CLIENT_ID`: Client ID for GitHub integration.
-    - `GH_CLIENT_SECRET`: Client secret for GitHub integration.
-    - `GH_REDIRECT_URI`: Redirect URI for GitHub integration.
-    - `GH_WEBHOOK_SECRET`: Webhook secret for GitHub integration.
-    - `GH_CLIENT_PEM_SECRET`: PEM secret for GitHub client.
-    - `MODAL_ENVIRONMENT`: Environment setting for Modal.
-    - `SENTRY_DSN`: Data Source Name for Sentry error tracking.
-    - `LOG_LEVEL`: Logging level for the application.
-    - `BACKEND_CORS_ORIGINS`: CORS origins allowed for the backend.
-    - `PROJECT_NAME`: Name of the project.
-- **Description**: The `Settings` class is a configuration holder for various application settings, including API endpoints, authentication credentials, AWS configurations, and environment-specific settings. It extends `BaseSettings` from Pydantic to leverage environment variable management and validation. The class includes numerous string and integer fields for storing configuration values, many of which default to a placeholder value `DEFAULT_SECRET` that should be changed before deployment. It also features a model validator to ensure that sensitive fields are not left with default values, raising warnings or errors based on the environment.
+    - `ENVIRONMENT`: Current environment setting, e.g., local, development, staging, or production.
+    - `AUTH0_DOMAIN`: Domain for Auth0 authentication, initially set to a default secret.
+    - `AUTH0_CLIENT_ID`: Client ID for Auth0, initially set to a default secret.
+    - `AUTH0_AUDIENCE`: Audience for Auth0, initially set to a default secret.
+    - `AUTH0_MGMT_API_DOMAIN`: Domain for Auth0 Management API, initially set to a default secret.
+    - `AUTH0_MGMT_API_CLIENT_ID`: Client ID for Auth0 Management API, initially set to a default secret.
+    - `AUTH0_MGMT_API_CLIENT_SECRET`: Client secret for Auth0 Management API, initially set to a default secret.
+    - `AUTH0_MGMT_API_AUDIENCE`: Audience for Auth0 Management API, initially set to a default secret.
+    - `AWS_ACCESS_KEY_ID`: Access key ID for AWS, initially set to a default secret.
+    - `AWS_SECRET_ACCESS_KEY`: Secret access key for AWS, initially set to a default secret.
+    - `AWS_REGION`: AWS region, initially set to a default secret.
+    - `AWS_S3_ENDPOINT_URL`: Endpoint URL for AWS S3, can be None.
+    - `AWS_S3_CODE_BUCKET_SUFFIX`: Suffix for AWS S3 code bucket, initially set to a default secret.
+    - `DROPZONE_BUCKET_NAME`: Name of the dropzone bucket, initially set to a default secret.
+    - `USE_LEGACY_DROPZONE`: Flag indicating whether to use the legacy dropzone, defaults to True.
+    - `INSPECTOR_BUCKET_NAME`: Name of the inspector bucket, initially set to a default secret.
+    - `PORT`: Port number for the application, defaults to 8000.
+    - `HOST`: Host address for the application, defaults to 127.0.0.1.
+    - `GH_CLIENT_ID`: GitHub client ID, initially set to a default secret.
+    - `GH_CLIENT_SECRET`: GitHub client secret, initially set to a default secret.
+    - `GH_REDIRECT_URI`: GitHub redirect URI, initially set to a default secret.
+    - `GH_WEBHOOK_SECRET`: GitHub webhook secret, initially set to a default secret.
+    - `GH_CLIENT_PEM_SECRET`: GitHub client PEM secret, initially set to a default secret.
+    - `MODAL_ENVIRONMENT`: Environment setting for Modal, initially set to a default secret.
+    - `SENTRY_DSN`: Data Source Name for Sentry, can be None.
+    - `LOG_LEVEL`: Logging level for the application, defaults to INFO.
+    - `BACKEND_CORS_ORIGINS`: List or string of allowed CORS origins for the backend.
+    - `PROJECT_NAME`: Name of the project, initially set to a default secret.
+- **Description**: The `Settings` class is a configuration holder for various application settings, including API endpoints, authentication credentials, AWS configurations, and environment-specific parameters. It extends `BaseSettings` from Pydantic, allowing for environment variable-based configuration. The class includes numerous fields for different settings, many of which are initialized with a default secret value that should be changed before deployment. It also includes a model validator to ensure that default secret values are not used in non-local environments, raising warnings or errors as appropriate.
 - **Methods**:
-    - [`python-backend/backend/app/core/config.Settings._check_non_default_secrets`](#Settings_check_non_default_secrets)
-    - [`python-backend/backend/app/core/config.Settings._handle_default_secret`](#Settings_handle_default_secret)
+    - [`python-backend/backend/app/core/config.Settings._check_non_default_secrets`](<#Settings_check_non_default_secrets>)
+    - [`python-backend/backend/app/core/config.Settings._handle_default_secret`](<#Settings_handle_default_secret>)
 - **Inherits From**:
     - `BaseSettings`
 
@@ -92,28 +92,29 @@ The `_check_non_default_secrets` method validates that all secret fields in the 
 - **Decorators**: `@model_validator`
 - **Inputs**: None
 - **Control Flow**:
-    - Iterates over each field in `self.model_fields`.
-    - Retrieves the default value and actual value for each field.
+    - Iterates over each field in `self.model_fields` to retrieve the field name and field information.
+    - For each field, it retrieves the default value and the actual value of the field from the instance.
     - Checks if the default value is a string and equals `DEFAULT_SECRET`, and if the actual value is also `DEFAULT_SECRET`.
-    - If both conditions are met, calls [`_handle_default_secret`](#Settings_handle_default_secret) with the field name.
-- **Output**: Returns the instance of the class (`self`) after validation.
-- **Functions called**:
-    - [`python-backend/backend/app/core/config.Settings._handle_default_secret`](#Settings_handle_default_secret)
-- **See also**: [`python-backend/backend/app/core/config.Settings`](#Settings)  (Base Class)
+    - If both conditions are met, it calls the [`_handle_default_secret`](<#Settings_handle_default_secret>) method with the field name as an argument.
+    - Returns the instance `self` after processing all fields.
+- **Output**: Returns the instance of the class (`self`) after checking all fields.
+- **Functions Called**:
+    - [`python-backend/backend/app/core/config.Settings._handle_default_secret`](<#Settings_handle_default_secret>)
+- **See also**: [`python-backend/backend/app/core/config.Settings`](<#Settings>)  (Base Class)
 
 
 ---
 #### Settings\.\_handle\_default\_secret<!-- {{#callable:python-backend/backend/app/core/config.Settings._handle_default_secret}} -->
-The `_handle_default_secret` method checks if a variable is set to a default secret value and issues a warning or raises an error based on the environment.
+The `_handle_default_secret` method checks if a configuration variable is set to a default secret value and issues a warning or raises an error based on the environment.
 - **Inputs**:
-    - `var_name`: The name of the variable being checked for a default secret value.
+    - `var_name`: The name of the configuration variable being checked for a default secret value.
 - **Control Flow**:
     - Constructs a message indicating that the variable is set to the default secret value.
     - Checks if the environment is set to 'local'.
     - If the environment is 'local', it issues a warning with the constructed message.
     - If the environment is not 'local', it raises a `ValueError` with the constructed message.
 - **Output**: The method does not return any value; it either issues a warning or raises an error.
-- **See also**: [`python-backend/backend/app/core/config.Settings`](#Settings)  (Base Class)
+- **See also**: [`python-backend/backend/app/core/config.Settings`](<#Settings>)  (Base Class)
 
 
 
@@ -121,14 +122,15 @@ The `_handle_default_secret` method checks if a variable is set to a default sec
 
 ---
 ### parse\_cors<!-- {{#callable:python-backend/backend/app/core/config.parse_cors}} -->
-The `parse_cors` function processes a given input to return a list of strings if the input is a comma-separated string, or returns the input as is if it's already a list or string, raising a ValueError otherwise.
+The `parse_cors` function processes a given input to return a list of strings if the input is a comma-separated string, or returns the input as is if it is already a list or string.
 - **Inputs**:
-    - `v`: The input value which can be of any type, expected to be a string or a list of strings.
+    - `v`: The input value which can be of any type, but is expected to be a string or a list of strings.
 - **Control Flow**:
-    - Check if the input `v` is a string and does not start with '[', indicating it's a comma-separated string, then split it by commas and strip whitespace from each element, returning a list of strings.
+    - Check if the input `v` is a string and does not start with a '[' character.
+    - If the above condition is true, split the string by commas, strip whitespace from each resulting element, and return the list of these elements.
     - If the input `v` is already a list or a string, return it as is.
-    - If the input `v` does not match any of the above conditions, raise a `ValueError` with the input value.
-- **Output**: The function returns a list of strings if the input is a comma-separated string, or the input itself if it's already a list or string.
+    - If none of the above conditions are met, raise a `ValueError` with the input `v`.
+- **Output**: The function returns a list of strings if the input is a comma-separated string, or the input itself if it is already a list or string. If the input does not meet these conditions, a `ValueError` is raised.
 
 
 

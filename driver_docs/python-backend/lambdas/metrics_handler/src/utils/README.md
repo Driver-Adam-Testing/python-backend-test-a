@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains configuration management functionality using Pydantic, as indicated by the `config.py` file, alongside an empty `__init__.py` file.
+Configuration management functionality using Pydantic, with an empty `__init__.py` file.
 
 
 ## Files

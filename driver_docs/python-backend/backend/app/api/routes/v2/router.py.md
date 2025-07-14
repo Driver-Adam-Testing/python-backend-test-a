@@ -6,7 +6,7 @@
 The `router.py` file initializes an API router using FastAPI's `APIRouter` for the application.
 
 # Purpose
-This code snippet is a foundational setup for creating a new API route using FastAPI, a modern web framework for building APIs with Python. It provides narrow functionality, specifically focusing on initializing an `APIRouter` instance, which is a key component in FastAPI for organizing and managing routes in a modular way. The `router` object created here will be used to define and register API endpoints, allowing for a clean separation of concerns and easier maintenance of the codebase. This snippet is typically part of a larger application where multiple routers are defined and included in the main application to handle different parts of the API.
+This code defines a basic setup for a FastAPI application by creating an instance of `APIRouter`, which is used to define a group of related endpoints or routes. The functionality provided is narrow, as it primarily serves as a foundational component for organizing and managing API routes within a FastAPI application. This snippet is part of a larger application structure, where additional routes and endpoints would be added to the `router` instance to handle specific HTTP requests. It acts as a modular and reusable component, allowing for clean separation and organization of API logic.
 # Imports and Dependencies
 
 ---
@@ -18,8 +18,8 @@ This code snippet is a foundational setup for creating a new API route using Fas
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a set of routes that can be included in a FastAPI application, allowing for modular and organized route management.
-- **Use**: This variable is used to register and manage API routes within a FastAPI application.
+- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a set of routes that can be included in a FastAPI application. This allows for modular and organized route management within the application.
+- **Use**: The `router` is used to register and manage API routes in a FastAPI application.
 
 
 

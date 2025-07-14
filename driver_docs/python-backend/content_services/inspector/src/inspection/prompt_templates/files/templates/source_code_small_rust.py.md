@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_rust.py` file defines a template for inspecting and analyzing small Rust source code files, focusing on elements like imports, global variables, macros, traits, data structures, and functions.
+The `source_code_small_rust.py` file defines a template for inspecting and structuring Rust source code, focusing on elements like imports, global variables, macros, traits, data structures, and functions.
 
 # Purpose
-This Python code is a configuration script that defines a template for analyzing and categorizing components of Rust source code. It imports various utilities and collections from a `utils.lang_specialization` module, specifically tailored for Rust language constructs such as functions, macros, traits, data structures, and variables. The `SOURCE_CODE_SMALL_TEMPLATE_RUST` list contains tuples that map specific analysis tasks to corresponding Rust code elements, using both static analysis and language model (LLM) predictions. This script provides narrow functionality focused on structuring and interpreting Rust code, likely as part of a larger system for code analysis or documentation generation.
+This Python source code file is a configuration script that defines a template for generating structured prompts and analyzing Rust source code. It imports various components and utilities from shared and utils modules, which are used to construct prompts and perform static analysis on Rust code elements such as variables, macros, traits, data structures, and functions. The file provides narrow functionality focused on creating a structured template (`SOURCE_CODE_SMALL_TEMPLATE_RUST`) that outlines how to document and analyze different aspects of Rust code, including imports, global variables, macros, traits, data structures, and functions. This template is likely used in a larger system for generating documentation or performing code analysis on Rust projects.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default.default_imports_checker`
 - `utils.lang_specialization.rust.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.rust.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUST`
@@ -31,8 +36,8 @@ This Python code is a configuration script that defines a template for analyzing
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_RUST
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_RUST` is a list of tuples, each containing elements that define different sections of a Rust code template. Each tuple includes a section identifier, a section title, and functions or methods for processing or analyzing Rust code related to that section, such as imports, global variables, macros, traits, data structures, and functions.
-- **Use**: This variable is used to organize and define the structure of a Rust code template, facilitating the analysis and processing of different code components.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_RUST` is a list of tuples, each containing a structured prompt or condition related to Rust code analysis and generation. Each tuple consists of a type identifier, a description string, and a series of components or functions that define how to process or generate specific parts of Rust code, such as imports, global variables, macros, traits, data structures, and functions.
+- **Use**: This variable is used to define a template for generating and analyzing Rust code by specifying different components and instructions for each aspect of the code.
 
 
 

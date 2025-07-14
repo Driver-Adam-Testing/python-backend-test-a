@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `v3` folder in the `python-backend` codebase is a comprehensive package that includes components for managing language model operations, such as pipelines, interfaces, utilities, and tests, along with initialization for shared functionalities.
+Subfolders for application logic, global constants, interfaces, language model clients, testing, and utilities, with an `__init__.py` file to initialize and expose these components for LLM operations.
 
 ## Folders
-- **[app](app/README.md)**: The `app` folder in the `python-backend` codebase contains the `pipelines` folder for implementing and managing various pipelines with language model clients, and the `static` folder for handling content categorization, system interactions, and utility functions.
-- **[globals](globals/README.md)**: The `globals` folder in the `python-backend` codebase contains Python files that define constants, message classes, and glossary terms to support JSON formatting, data source access, LLM framework behaviors, and iteration processes.
-- **[interfaces](interfaces/README.md)**: The `interfaces` folder in the `python-backend` codebase contains Python files that define classes and enumerations for managing and categorizing language model messages, handling message history, parsing, response types, stream responses, and tools within a language model interface.
-- **[llms](llms/README.md)**: The `llms` folder in the `python-backend` codebase contains subfolders for implementing clients to interact with various language model APIs and for managing configuration files related to large language models.
-- **[tests](tests/README.md)**: The `tests` folder in the `python-backend` codebase contains unit tests for classes related to data sources and language model messages, ensuring their functionality and integration with external message formats.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains utility files and a subfolder for handling data sources, encoding, response parsing, references, semantic comparison, and post-processing of Mermaid diagrams.
+- **[app](app/README.md)**: Subfolders for implementing and testing pipeline functionalities and managing static resources.
+- **[globals](globals/README.md)**: Defines constants, message classes, and glossary terms for JSON formatting, LLM behaviors, and communication.
+- **[interfaces](interfaces/README.md)**: Python files that define classes and enumerations for managing language model messages, history, parsing, response types, stream responses, and tools.
+- **[llms](llms/README.md)**: Subfolders for implementing clients to interact with language model APIs and managing configuration files.
+- **[tests](tests/README.md)**: Unit tests for `DataSource`, `LlmMessage`, and `LlmMessageHistory` classes, focusing on creation, interaction, and conversion.
+- **[utils](utils/README.md)**: Utility files and a subfolder for post-processing Mermaid diagrams, including data source management, JSON encoding/decoding, response string parsing, graph node referencing, semantic comparison, and testing.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the shared v3 package by importing and exposing various interfaces, clients, and utilities related to LLM (Language Model) operations.

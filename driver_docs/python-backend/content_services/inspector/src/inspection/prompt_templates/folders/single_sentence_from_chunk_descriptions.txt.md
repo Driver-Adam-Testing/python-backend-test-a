@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing a folder's content into a single sentence using detailed descriptions of its subcomponents.
+The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing the contents of a folder in a software codebase into a single sentence based on detailed descriptions of its subcomponents.
 
 # Purpose
-The provided content outlines a task for a software engineering expert to create a concise, single-sentence summary of a folder within a software codebase. This task involves synthesizing multiple detailed descriptions of various subcomponents within the folder, which may have overlapping information, to form a comprehensive overview. The expert must ensure that the summary sentence accurately reflects the contents and purpose of the folder, using only the information provided in the detailed descriptions. The name of the folder must be included in the summary sentence, and no additional information should be invented or assumed beyond what is explicitly given in the descriptions.
+The provided content outlines a task for a software engineering expert to create a concise, single-sentence summary of a folder's contents within a software codebase. This task involves analyzing a series of detailed descriptions that cover slightly overlapping subsets of the folder's contents. The expert's role is to distill these detailed descriptions into a coherent and comprehensive summary that accurately reflects the overall purpose and contents of the folder, without introducing any information not present in the given descriptions. This process ensures that the summary is both precise and informative, providing a clear understanding of the folder's role within the codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

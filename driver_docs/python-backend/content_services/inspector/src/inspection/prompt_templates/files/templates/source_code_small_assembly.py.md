@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_assembly.py` file defines a template for assembling small source code snippets, focusing on elements like purpose, imports, global variables, data structures, subroutines, and macros, using various assembly-related collections and prompts.
+The `source_code_small_assembly.py` file defines a template for assembling small source code snippets, focusing on elements like purpose, imports, global variables, data structures, subroutines, and macros.
 
 # Purpose
-This Python code defines a template for processing and documenting assembly language source code, focusing on extracting and organizing various components such as global variables, data structures, subroutines, and macros. It imports several specialized collections and utility functions from a module named `utils.lang_specialization.assembly`, which are used to handle raw and processed symbols related to assembly language constructs. The `SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY` list contains tuples that specify how to generate documentation sections for different aspects of the assembly code, using a combination of prompts and functions to transform raw data into structured information. This code provides narrow functionality, specifically tailored for generating documentation for small assembly language code snippets, and is structured as a configuration-like script that outlines the steps and tools needed for this task.
+This Python code defines a template for processing and documenting assembly language source code, focusing on extracting and organizing various components such as global variables, data structures, subroutines, and macros. It imports several specialized collections and utilities from a module named `utils.lang_specialization.assembly`, which are used to handle raw symbols and their processed counterparts for each component type. The template, `SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY`, is a list of tuples, each specifying a section of the documentation (e.g., purpose, imports, global variables) and the corresponding functions or prompts to be used for generating content. This code provides narrow functionality, specifically tailored for generating structured documentation for assembly code, and is part of a larger system that likely automates code analysis and documentation.
 # Imports and Dependencies
 
 ---
@@ -29,8 +29,8 @@ This Python code defines a template for processing and documenting assembly lang
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_ASSEMBLY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a section of an assembly language template. Each tuple contains a type identifier, a section title, and various functions or prompts related to that section, such as those for handling imports, global variables, data structures, subroutines, and macros.
-- **Use**: This variable is used to define the structure and components of a small assembly language template, facilitating the generation or processing of assembly code.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a section of an assembly language template. Each tuple contains a type identifier, a section title, and various functions or methods related to processing or generating that section of the template.
+- **Use**: This variable is used to define the structure and components of a small assembly language template, specifying how each section should be processed or generated.
 
 
 

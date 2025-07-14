@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `RECEIPT.yml` file in the `python-backend` codebase specifies the package details and build configuration for the `uctags` executable, including its dependencies, version, and installation instructions.
+The `RECEIPT.yml` file specifies the package details for the `uctags` executable, including its version, dependencies, and build environment for the `python-backend` codebase.
 
 # Purpose
-The provided content is a package metadata file for the software package "uctags," which is an executable type package. This file specifies various attributes of the package, including its name, type, version, and a brief summary indicating that it is a maintained implementation of ctags. It provides URLs for the project's website and GitHub repository, along with a specific Git commit SHA for version tracking. The file lists dependencies required for building and running the package, such as libraries and tools like `libjansson`, `libyaml`, and `git`. It also includes build system instructions, specifying the use of `autogen` and conditional configuration commands based on the target platform. Additionally, it details the build environment, including the operating system, architecture, and other system-specific information, ensuring that the package is built consistently across different environments.
+The provided content is a package metadata file for the software package "uctags," which is an executable type of package. This file specifies various attributes of the package, including its name, type, version, and a brief summary indicating that it is a maintained implementation of ctags. It provides URLs for the project's website and GitHub repository, along with a specific Git commit SHA for version tracking. The file lists dependencies required for building and running the package, such as libraries and tools, and specifies the build system and installation instructions, which vary based on the target platform. Additionally, it includes metadata about the build environment, such as the operating system, architecture, and build profile, ensuring that the package is correctly configured and built for the intended platform.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

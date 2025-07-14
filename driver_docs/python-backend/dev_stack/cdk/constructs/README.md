@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `constructs` folder in the `python-backend` codebase contains CDK construct definitions for deploying AWS Lambda functions related to asset onboarding and metrics processing, including their configurations and associated resources.
+CDK constructs for deploying AWS Lambda functions for asset onboarding and metrics processing.
 
 
 ## Files
-- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: The `asset_onboarding_lambda.py` file defines a CDK construct for deploying an AWS Lambda function that handles asset onboarding, including configuration of secrets, event sources, and necessary permissions.
-- **[metrics_lambda.py](metrics_lambda.py.md)**: The `metrics_lambda.py` file defines a CDK construct for deploying a Lambda function that processes metrics, along with associated resources such as an event bus, dead-letter queue, and CloudWatch alarms for monitoring in different environments.
+- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: The `asset_onboarding_lambda.py` file defines a CDK construct for deploying an AWS Lambda function that handles asset onboarding, including configuration for environment variables, secret management, and event sources.
+- **[metrics_lambda.py](metrics_lambda.py.md)**: The `metrics_lambda.py` file defines a CDK construct for deploying a Lambda function that processes metrics, including configuration for event buses, dead-letter queues, and CloudWatch alarms for monitoring in different environments.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

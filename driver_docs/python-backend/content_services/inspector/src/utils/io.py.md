@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `io.py` file in the `python-backend` codebase provides utility functions for reading prompt templates from files and downloading source files from an S3 bucket, including a method for parallel downloads.
+The `io.py` file in the `python-backend` codebase provides utility functions for reading prompt templates from files and downloading source files from an S3 bucket, including a method for parallel downloads using a thread pool.
 
 # Purpose
-This Python code file provides functionality for downloading files from an Amazon S3 bucket, with a focus on handling multiple downloads concurrently. The file includes three main functions: [`get_prompt_template`](#get_prompt_template), [`download_source_file`](#download_source_file), and [`download_all_source_files_in_parallel`](#download_all_source_files_in_parallel). The [`get_prompt_template`](#get_prompt_template) function reads and returns the content of a file specified by a path, which can be useful for loading configuration or template data. The [`download_source_file`](#download_source_file) function is responsible for downloading a single file from an S3 bucket to a local directory, constructing the S3 key from provided identifiers and ensuring the local directory structure is created as needed.
+This Python code file provides functionality for downloading files from an Amazon S3 bucket, with a focus on handling multiple downloads concurrently. The file includes three main functions: [`get_prompt_template`](<#get_prompt_template>), [`download_source_file`](<#download_source_file>), and [`download_all_source_files_in_parallel`](<#download_all_source_files_in_parallel>). The [`get_prompt_template`](<#get_prompt_template>) function reads and returns the content of a file specified by a path, which can be useful for loading configuration or template data. The [`download_source_file`](<#download_source_file>) function is responsible for downloading a single file from an S3 bucket to a local directory, constructing the S3 key from provided identifiers and ensuring the local directory structure is created as needed. The [`download_all_source_files_in_parallel`](<#download_all_source_files_in_parallel>) function leverages Python's `ThreadPoolExecutor` to download multiple files concurrently, improving efficiency when dealing with large numbers of files.
 
-The most significant component of this code is the [`download_all_source_files_in_parallel`](#download_all_source_files_in_parallel) function, which leverages Python's `concurrent.futures.ThreadPoolExecutor` to perform multiple file downloads in parallel. This function accepts a list of relative paths and manages the concurrent execution of the [`download_source_file`](#download_source_file) function for each path, optimizing the download process by utilizing multiple threads. This code is structured as a utility module, likely intended to be imported and used within a larger application or script that requires efficient downloading of multiple files from S3. It does not define a public API or external interfaces beyond the functions provided, focusing instead on internal utility for file handling and parallel processing.
+The code is structured as a utility module, likely intended to be imported and used within a larger application or script that requires S3 file management capabilities. It does not define a public API or external interfaces beyond the functions themselves, which are designed to be called with the necessary parameters for S3 operations. The use of concurrent futures for parallel downloads is a key technical component, allowing the code to handle potentially time-consuming I/O operations more effectively. This module provides a focused set of functionalities centered around file retrieval from S3, making it a specialized tool for applications that need to manage cloud-based assets.
 # Imports and Dependencies
 
 ---
@@ -27,8 +27,9 @@ The function `get_prompt_template` reads and returns the content of a file speci
 - **Control Flow**:
     - Convert the input `f` to a `Path` object `p`.
     - Open the file at path `p` in read mode.
-    - Read the entire content of the file and return it as a string.
-- **Output**: The function returns the content of the specified file as a string.
+    - Read the entire content of the file using `pt.read()`.
+    - Return the content read from the file.
+- **Output**: A string containing the content of the file specified by the input path.
 
 
 ---
@@ -44,9 +45,9 @@ The `download_source_file` function downloads a file from an S3 bucket to a loca
 - **Control Flow**:
     - Constructs the S3 key by concatenating `primary_asset_id`, `version_id`, and `node_rel_path` with slashes.
     - Determines the local download path by appending `node_rel_path` to `download_root`.
-    - Creates the parent directories for the local download path if they do not already exist.
+    - Creates the parent directories for the local download path if they do not exist, using `mkdir` with `parents=True` and `exist_ok=True`.
     - Uses the `s3_client` to download the file from the S3 bucket using the constructed S3 key to the local download path.
-- **Output**: Returns the local path where the file was downloaded as a Path object.
+- **Output**: Returns a Path object representing the local path where the file was downloaded.
 
 
 ---
@@ -58,15 +59,16 @@ The function downloads multiple source files from an S3 bucket in parallel using
     - `primary_asset_id`: The primary asset identifier used to construct the S3 key for each file.
     - `version_id`: The version identifier used to construct the S3 key for each file.
     - `node_rel_paths`: A list of relative paths for the files to be downloaded from the S3 bucket.
-    - `download_root`: The local root directory where the downloaded files will be stored.
+    - `download_root`: The root directory path where the downloaded files will be stored locally.
     - `max_workers`: The maximum number of threads to use for parallel downloading.
 - **Control Flow**:
     - Initialize an empty list `paths` to store the local paths of downloaded files.
     - Create a `ThreadPoolExecutor` with a specified number of `max_workers`.
-    - Iterate over each `node_path` in `node_rel_paths` and submit a download task to the executor for each path using `download_source_file`.
-    - Collect the future objects returned by `executor.submit` in a list called `futures`.
-    - Iterate over the completed futures using `as_completed(futures)`.
+    - Iterate over each `node_path` in `node_rel_paths`.
+    - For each `node_path`, submit a task to the executor to download the file using `download_source_file` and store the future object in `futures`.
+    - Iterate over the completed futures using `as_completed`.
     - For each completed future, append the result (local path of the downloaded file) to the `paths` list.
+    - Return the `paths` list containing the local paths of all downloaded files.
 - **Output**: A list of `Path` objects representing the local paths of the downloaded files.
 
 

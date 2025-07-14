@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests` folder in the `python-backend` codebase contains unit tests for repository CRUD operations and utility functions for authentication, with subfolders for `repositories` and `utils`.
+Unit tests for repository CRUD operations and utility functions for authentication token retrieval.
 
 ## Folders
-- **[repositories](repositories/README.md)**: The `repositories` folder in the `python-backend` codebase contains unit tests for the `BaseRepository` class, focusing on CRUD operations with a mock SQLModel and session.
+- **[repositories](repositories/README.md)**: Unit tests for the `BaseRepository` class, focusing on CRUD operations with a mock SQLModel and session.
 - **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains a utility file, `auth.py`, which provides a function to obtain an Auth0 token using client credentials for authentication.
 
 ## Files

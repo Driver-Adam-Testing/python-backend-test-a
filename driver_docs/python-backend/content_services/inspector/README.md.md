@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README.md` file provides instructions for setting up, running, and deploying the cloud-first version of the inspector service in the `python-backend` codebase.
+The `README.md` file in the `python-backend/content_services/inspector` directory provides instructions for setting up, running, and deploying the cloud-first version of the Inspector service using Poetry and Modal.
 
 # Purpose
-The provided content is a documentation snippet for setting up and running a cloud-based application called "Inspector" using the Poetry package manager and the Modal platform. It outlines the steps to install the necessary environment using Poetry, specifically with the `--no-root` option to avoid installing the root package. The document provides instructions for configuring the `main.py` file to point to the correct local and remote codebase paths, which are essential for running the application locally while executing it in the cloud. It also details how to execute the application using the `modal run` command, including options for resuming from a previous run ID or rerunning specific parts of the codebase. Finally, it includes a command for deploying the application service to the cloud environment using `modal deploy`.
+The provided content is a documentation snippet for setting up and running a cloud-based application called "Inspector" using the Poetry package manager and the Modal framework. It outlines the steps to install the necessary environment with Poetry, emphasizing the need to configure the `main.py` file to point to the correct local and remote codebase paths. The document provides instructions for executing the application from a local machine while targeting cloud resources, including commands for running the application, handling crashes or aborts by using run IDs, and rerunning specific parts of the application tree. Additionally, it includes a command for deploying the application service to the cloud environment, ensuring that users can manage both local and cloud-based operations effectively.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

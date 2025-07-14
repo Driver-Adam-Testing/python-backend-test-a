@@ -6,7 +6,7 @@
 The `source_code_large_header.py` file defines a template for generating large source code headers, including sections for purpose, imports, global variables, data structures, and functions, using various utilities and collections.
 
 # Purpose
-This Python code defines a configuration for generating structured documentation templates, specifically for large source code headers in C or C++ files. It imports various utilities and template components from a `utils` module, indicating a modular design aimed at handling language specialization and template generation. The `SOURCE_CODE_LARGE_TEMPLATE_HEADER` is a list of tuples, each representing a section of the documentation template, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section is associated with specific functions or methods that likely perform static analysis or leverage language models (LLMs) to extract relevant information from the source code. This code provides narrow functionality focused on automating the creation of detailed documentation for large codebases, enhancing readability and maintainability.
+This code is a configuration file that defines a template for generating structured documentation for large source code files, particularly those written in C or C++. It imports various utilities and templates from a `utils` module, which are used to check imports, and analyze and categorize different components of the source code such as global variables, data structures, and functions. The `SOURCE_CODE_LARGE_TEMPLATE_HEADER` is a list of tuples, each representing a section of the documentation, including its title, the method for extracting relevant information, and the prompts used to guide the documentation process. This file provides narrow functionality focused on automating the creation of detailed documentation for large codebases, ensuring consistency and thoroughness in the documentation process.
 # Imports and Dependencies
 
 ---
@@ -27,8 +27,8 @@ This Python code defines a configuration for generating structured documentation
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_HEADER
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_HEADER` is a list of tuples, where each tuple represents a section of a template for processing source code headers. Each tuple contains a type identifier, a section title, and a series of functions or prompts related to that section. The sections include 'Purpose', 'Imports and Dependencies', 'Global Variables', 'Data Structures', and 'Functions', each with associated processing logic.
-- **Use**: This variable is used to define the structure and processing logic for different sections of a source code header template.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_HEADER` is a list of tuples, each containing a set of elements that define different sections of a large template header for source code. Each tuple includes a type identifier, a section title, and various functions or prompts related to that section, such as static analysis functions or user prompts.
+- **Use**: This variable is used to organize and define the structure of a large template header, specifying how different sections like purpose, imports, global variables, data structures, and functions should be processed or presented.
 
 
 

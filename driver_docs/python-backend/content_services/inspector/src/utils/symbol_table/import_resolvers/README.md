@@ -3,16 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `import_resolvers` folder in the `python-backend` codebase contains various resolver implementations for handling import statements in different programming languages, including C/C++, Java, JavaScript/TypeScript, and Python, along with unit tests for the JavaScript/TypeScript resolver.
+Various resolver implementations for handling import statements in C/C++, C#, Java, JavaScript/TypeScript, and Python, plus unit tests for the JavaScript/TypeScript resolver.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[c_cpp_resolver.py](c_cpp_resolver.py.md)**: The `c_cpp_resolver.py` file implements a resolver for C/C++ `#include` directives, attempting to match them to project files by checking direct paths and possible filename matches.
+- **[c_cpp_resolver.py](c_cpp_resolver.py.md)**: The `c_cpp_resolver.py` file implements a resolver for C/C++ `#include` directives, attempting to map them to project files by checking direct paths and possible matches within the project.
+- **[csharp_resolver.py](csharp_resolver.py.md)**: The `csharp_resolver.py` file implements a C# import resolver that handles the resolution of import statements and namespace declarations to project files within a Python backend.
 - **[java_resolver.py](java_resolver.py.md)**: The `java_resolver.py` file implements a Java import resolver that resolves Java import statements to corresponding project files within a Python backend system.
 - **[js_ts_resolver.py](js_ts_resolver.py.md)**: The `js_ts_resolver.py` file implements a class for resolving TypeScript and JavaScript import statements to corresponding project files within a Python backend.
-- **[js_ts_resolver_test.py](js_ts_resolver_test.py.md)**: The `js_ts_resolver_test.py` file contains unit tests for the JavaScript/TypeScript import resolution functionality provided by the `JsTsResolver` class, ensuring correct handling of relative imports, explicit extensions, and non-existent files.
-- **[python_resolver.py](python_resolver.py.md)**: The `python_resolver.py` file defines a `PythonResolver` class that resolves Python import statements to corresponding project files within a given set of project files.
+- **[js_ts_resolver_test.py](js_ts_resolver_test.py.md)**: The `js_ts_resolver_test.py` file contains unit tests for the JavaScript/TypeScript import resolution functionality of the `JsTsResolver` class, ensuring correct handling of various import scenarios such as relative paths, explicit extensions, and non-existent files.
+- **[python_resolver.py](python_resolver.py.md)**: The `python_resolver.py` file implements a class for resolving Python import statements to corresponding project files within a given project structure.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

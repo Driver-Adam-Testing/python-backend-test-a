@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `conftest.py` file in the `python-backend` codebase provides pytest fixtures for database session management and mock user authentication for testing purposes.
+The `conftest.py` file in the `python-backend` codebase defines pytest fixtures for database session management and mock user tokens for testing purposes.
 
 # Purpose
-This Python file is a test configuration script using the `pytest` framework, providing narrowly focused functionality for setting up test fixtures. It defines three fixtures: [`db`](#db), [`current_user_with_org`](#current_user_with_org), and [`current_user_with_other_org`](#current_user_with_other_org). The [`db`](#db) fixture manages a database session using SQLModel and is automatically applied to each test function, though it avoids altering the database schema to prevent issues in deployed environments. The other two fixtures, [`current_user_with_org`](#current_user_with_org) and [`current_user_with_other_org`](#current_user_with_other_org), use the `unittest.mock` library to create mock `UserToken` objects with predefined attributes, simulating different user scenarios for testing purposes. This setup aids in isolating and testing components that depend on user authentication and database interactions.
+This Python file is a configuration script for setting up test fixtures using the pytest framework, which is commonly used for testing in Python. It provides narrow functionality specifically tailored for testing database interactions and user authentication within an application. The file defines three pytest fixtures: [`db`](<#db>), [`current_user_with_org`](<#current_user_with_org>), and [`current_user_with_other_org`](<#current_user_with_other_org>). The [`db`](<#db>) fixture manages a database session, ensuring that each test function has access to a fresh session without altering the actual database schema, as indicated by the commented-out `create_all` and `drop_all` calls. The other two fixtures, [`current_user_with_org`](<#current_user_with_org>) and [`current_user_with_other_org`](<#current_user_with_other_org>), use the `unittest.mock` library to create mock `UserToken` objects, simulating different user scenarios for testing purposes. This setup aids in isolating and testing specific components of the application in a controlled environment.
 # Imports and Dependencies
 
 ---
@@ -26,9 +26,9 @@ The `db` function is a pytest fixture that provides a database session for each 
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Control Flow**:
-    - The function is decorated with `@pytest.fixture` with `scope="function"` and `autouse=True`, meaning it is automatically used for each test function.
+    - The function is decorated with `@pytest.fixture` with `scope='function'` and `autouse=True`, meaning it is automatically used by each test function.
     - A `Session` object is created using the `engine` and is yielded to the test function, allowing database operations within the test.
-    - After the test function completes, the session is automatically closed, ensuring cleanup.
+    - After the test function completes, the session is automatically closed.
 - **Output**: The function yields a `Session` object for database operations within a test.
 
 
@@ -49,7 +49,7 @@ The `current_user_with_org` function is a pytest fixture that creates and return
 
 ---
 ### current\_user\_with\_other\_org<!-- {{#callable:python-backend/backend/app/conftest.current_user_with_other_org}} -->
-The `current_user_with_other_org` function is a pytest fixture that creates and returns a mock `UserToken` object representing a user associated with a different organization.
+The `current_user_with_other_org` function is a pytest fixture that creates and returns a mock `UserToken` object with predefined attributes for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Control Flow**:
@@ -59,7 +59,7 @@ The `current_user_with_other_org` function is a pytest fixture that creates and 
     - The `organization_name` attribute of `current_user` is set to 'other_test_org_name'.
     - The `is_service_account` attribute of `current_user` is set to `False`.
     - The `current_user` mock object is returned.
-- **Output**: The function returns a mock `UserToken` object with predefined attributes for a user associated with a different organization.
+- **Output**: The function returns a mock `UserToken` object with specific attributes set for testing.
 
 
 

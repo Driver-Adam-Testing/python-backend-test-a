@@ -3,14 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `c_cpp_resolver.py` file implements a resolver for C/C++ `#include` directives, attempting to match them to project files by checking direct paths and possible filename matches.
+The `c_cpp_resolver.py` file implements a resolver for C/C++ `#include` directives, attempting to map them to project files by checking direct paths and possible matches within the project.
 
 # Purpose
-This Python code defines a class `CCppResolver` that extends the `ImportResolver` class, providing a specialized mechanism for resolving C/C++ `#include` directives within a project. The functionality is relatively narrow, focusing specifically on determining the correct file path for a given include string within a set of project files. The [`resolve_import`](#CCppResolverresolve_import) method attempts to match the include string to a file path by first checking if the file exists directly in the current file's directory, and if not, it searches through the project files for any that end with the include string. In cases of multiple matches, it simply returns the first match found. This code is part of a larger system, likely a build tool or IDE plugin, that requires resolving file dependencies in C/C++ projects.
+This Python code defines a class `CCppResolver` that extends the `ImportResolver` class, providing a specialized mechanism for resolving C/C++ `#include` directives within a project. The functionality is narrow, focusing specifically on determining the file paths corresponding to `#include` statements in C/C++ source files. The [`resolve_import`](<#CCppResolverresolve_import>) method attempts to locate the file referenced by an `#include` directive by first checking if a direct path exists relative to the current file's directory, and if not, it searches for files in the project that match the end of the include path. This code is part of a larger system, likely a code analysis or refactoring tool, that uses abstract syntax tree data (via `RawTreeSitterSymbolData`) to map and resolve file dependencies in C/C++ projects.
 # Imports and Dependencies
 
 ---
 - `pathlib.Path`
+- `utils.lang_specialization.symbol_common.RawTreeSitterSymbolData`
 - `..base.ImportResolver`
 
 
@@ -20,9 +21,9 @@ This Python code defines a class `CCppResolver` that extends the `ImportResolver
 ### CCppResolver<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver}} -->
 - **Members**:
     - `language`: Specifies the programming language as C/C++.
-- **Description**: The `CCppResolver` class extends the `ImportResolver` class to specifically handle the resolution of C/C++ `#include` directives within a project. It attempts to resolve these directives by first checking if the included file exists directly in the parent directory of the current file. If not found, it searches through the project files for any that end with the specified include string, returning the first match found. This class is designed to facilitate the management of file dependencies in C/C++ projects by providing a mechanism to locate and resolve file paths for included headers.
+- **Description**: The `CCppResolver` class is a specialized import resolver for C/C++ projects, inheriting from the `ImportResolver` base class. It is designed to handle the resolution of `#include` directives by attempting to match the include paths with project files. The class provides a method to resolve these imports by first checking for direct local paths and then falling back to matching file endings within the project files. This approach helps in identifying the correct file to include, even in cases of potential collisions, by selecting the first match found.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver.resolve_import`](#CCppResolverresolve_import)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver.resolve_import`](<#CCppResolverresolve_import>)
 - **Inherits From**:
     - `ImportResolver`
 
@@ -33,17 +34,18 @@ This Python code defines a class `CCppResolver` that extends the `ImportResolver
 The `resolve_import` method resolves C/C++ #include directives to corresponding project files by checking direct paths and fallback matches.
 - **Inputs**:
     - `current_file`: A `Path` object representing the current file from which the import is being resolved.
-    - `import_str`: A string representing the import path or file name to be resolved.
-    - `project_files`: A set of `Path` objects representing all the files in the project that can be considered for resolving the import.
+    - `import_sym`: A `RawTreeSitterSymbolData` object representing the symbol data of the import directive.
+    - `project_files_to_symbols_map`: A dictionary mapping `Path` objects to lists of `RawTreeSitterSymbolData`, representing the project's files and their associated symbols.
 - **Control Flow**:
-    - The method first constructs a candidate path by appending `import_str` to the parent directory of `current_file` and checks if this path exists in `project_files`.
-    - If the candidate path is found in `project_files`, it is returned as the resolved path.
-    - If the candidate path is not found, the method searches for any paths in `project_files` that end with `import_str`.
-    - If no matches are found, the method returns `None`.
-    - If exactly one match is found, that path is returned.
-    - If multiple matches are found, the method returns the first match from the list of possible matches.
-- **Output**: The method returns a `Path` object representing the resolved file path if a match is found, or `None` if no suitable match is found.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver`](#CCppResolver)  (Base Class)
+    - Convert the keys of `project_files_to_symbols_map` to a set called `project_files`.
+    - Construct a candidate path by resolving `current_file.parent` with `import_sym.name`.
+    - Check if the candidate path exists in `project_files`; if so, return it.
+    - If the candidate path is not found, create a list of `possible_matches` by filtering `project_files` for paths that end with `import_sym.name`.
+    - If `possible_matches` is empty, return `None`.
+    - If `possible_matches` contains exactly one path, return that path.
+    - If `possible_matches` contains multiple paths, return the first path in the list.
+- **Output**: The method returns a `Path` object if a single match is found, a list of `Path` objects if multiple matches are found, or `None` if no matches are found.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver`](<#CCppResolver>)  (Base Class)
 
 
 

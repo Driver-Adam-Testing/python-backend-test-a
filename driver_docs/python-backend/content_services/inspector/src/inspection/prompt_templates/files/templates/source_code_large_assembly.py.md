@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_assembly.py` file defines a template for assembling large source code structures, including prompts and collections for global variables, data structures, subroutines, and macros.
+The `source_code_large_assembly.py` file defines a template for assembling large source code structures, including prompts and collections for variables, data structures, subroutines, and macros, within the `python-backend` codebase.
 
 # Purpose
-This Python code file is designed to facilitate the processing and analysis of assembly language source code by defining a structured template for extracting and organizing various components of the code. It imports several specialized collections and utilities from a module named `utils.lang_specialization.assembly`, which are used to handle different elements of assembly code, such as data structures, macros, subroutines, and variables. The file defines a template, `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY`, which is a list of tuples. Each tuple specifies a particular aspect of the assembly code to be processed, such as its purpose, imports and dependencies, global variables, data structures, subroutines, and macros. The template uses a combination of prompt texts and functions to extract and transform these components, indicating that the code is likely part of a larger system for code analysis or documentation generation.
+This Python code file is designed to facilitate the analysis and documentation of assembly source code by defining a structured template for extracting and organizing various components of the code. It imports several specialized collections and utilities from the `utils.lang_specialization.assembly` and `utils.lang_specialization.default` modules, which are used to handle different elements of assembly code, such as variables, data structures, subroutines, and macros. The file defines a template, `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY`, which is a list of tuples. Each tuple specifies a section of the documentation, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," "Subroutines," and "Macros." For each section, it provides a mechanism to extract relevant information from the assembly code using the imported collections and utilities.
 
-The file appears to be a library module intended for use within a larger application, rather than a standalone script. It does not define public APIs or external interfaces directly but rather provides a structured approach to parsing and organizing assembly code components. The use of collections like `AssemblyDataStructureCollection` and `AssemblyMacroCollection` suggests that the code is focused on categorizing and managing different elements of assembly language programs, potentially for purposes such as documentation, analysis, or transformation. The inclusion of a default imports checker and the use of lambda functions for processing outputs further indicate that the code is designed to be flexible and adaptable to different assembly codebases.
+The code is structured to be part of a larger system, likely a documentation or code analysis tool, that processes assembly source code. It does not define a standalone script but rather a component that can be integrated into a broader framework. The use of collections like `AssemblyVariableCollection` and `AssemblySubroutineCollection` suggests that the code is intended to parse and categorize different elements of assembly code, making it easier to generate comprehensive documentation. The template approach allows for a consistent format in the output, ensuring that all relevant aspects of the assembly code are covered systematically.
 # Imports and Dependencies
 
 ---
@@ -31,8 +31,8 @@ The file appears to be a library module intended for use within a larger applica
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_ASSEMBLY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a section of a large template for assembling source code. Each tuple contains a type identifier, a section title, and various functions or methods related to that section, such as those for handling prompts, imports, global variables, data structures, subroutines, and macros. The list is designed to facilitate the organization and processing of different components of source code in an assembly language context.
-- **Use**: This variable is used to define and organize the structure and components of a large source code template for assembly language, enabling systematic processing and generation of code sections.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a section of a large template for assembling source code. Each tuple contains a type identifier, a section header, and various functions or collections related to that section, such as prompts, import checkers, and symbol collections for variables, data structures, subroutines, and macros.
+- **Use**: This variable is used to define the structure and components of a large source code template, facilitating the assembly of code by organizing it into sections with specific processing functions.
 
 
 

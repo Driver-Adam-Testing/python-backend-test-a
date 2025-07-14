@@ -6,7 +6,7 @@
 The `common.py` file initializes a Modal application named "inspector-v2".
 
 # Purpose
-This code is a short script that initializes a Modal application named "inspector-v2" using the Modal library. The script provides narrow functionality, primarily focused on setting up an instance of a Modal application, which is likely intended for further development or deployment within the Modal framework. The `modal.App` function is used to create an application object, which can be configured and run as part of a larger system or service. This setup is typically a preliminary step in building a cloud-based or distributed application using Modal's infrastructure.
+This code is a short script that initializes a Modal application named "inspector-v2" using the Modal library. The script provides narrow functionality, specifically focusing on setting up an application instance within the Modal framework. The `modal.App` function is used to create and configure the application, which is likely intended for further development or deployment within the Modal ecosystem. This setup is typically a preliminary step in a larger application development process, where additional components and logic would be added to build out the application's full functionality.
 # Imports and Dependencies
 
 ---
@@ -18,8 +18,8 @@ This code is a short script that initializes a Modal application named "inspecto
 ---
 ### app
 - **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'inspector-v2'. This suggests that it is likely used to configure or manage an application within the Modal framework, which is a platform for building and deploying applications.
-- **Use**: This variable is used to represent and manage the application named 'inspector-v2' within the Modal framework.
+- **Description**: The variable `app` is an instance of the `App` class from the `modal` module, initialized with the name 'inspector-v2'. This suggests that `app` is likely used to represent an application or service within the Modal framework, which is a platform for building and deploying applications.
+- **Use**: This variable is used to configure and manage the lifecycle of an application named 'inspector-v2' within the Modal framework.
 
 
 

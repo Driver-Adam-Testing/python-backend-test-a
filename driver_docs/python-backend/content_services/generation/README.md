@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `generation` folder in the `python-backend` codebase contains the `src` directory for processing inline edits and smart instructions, along with configuration files like `poetry.lock` and `pyproject.toml` for managing dependencies and project settings.
+Source code for processing inline edits and smart instructions using Modal, with configuration files for managing dependencies and project settings with Poetry.
 
 ## Folders
-- **[src](src/README.md)**: The `src` folder in the `python-backend` codebase contains the `main.py` file, which defines asynchronous functions for processing inline edits and smart instructions using modal functions with specified images and secrets.
+- **[src](src/README.md)**: The `src` folder in the `python-backend` codebase contains the `main.py` file, which defines asynchronous functions for processing inline edits and smart instructions using Modal, with dependencies managed via a Debian Slim image and secrets for external services.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: The `poetry.lock` file in the `python-backend` codebase is an automatically generated file by Poetry that locks specific versions of dependencies to ensure consistent and reproducible Python project environments across different systems, containing comprehensive metadata about each package, including version information, file hashes for verification, dependencies, optional features, platform specifics, source information, and metadata for integrity and compatibility.
-- **[pyproject.toml](pyproject.toml.md)**: The `pyproject.toml` file in the `python-backend` codebase specifies the configuration for the `agent` project, including its dependencies, build system, and metadata such as version and author.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

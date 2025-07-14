@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `python_parser.py` file defines a `PythonParser` class for parsing Python code using a tree-sitter driver.
+The `python_parser.py` file defines a `PythonParser` class for parsing Python code using a tree-sitter driver and specifies the language and fully qualified name delimiter.
 
 # Purpose
-This code defines a class `PythonParser` that extends the `SymbolParser` class, providing specialized functionality for parsing Python code. It sets the language attribute to "python" and specifies the fully qualified name (FQN) delimiter as a period ("."). Additionally, it assigns `PyDriverTree` from the `treesitter_drivers.python_driver` module to the `tree` attribute, indicating that this parser will utilize a specific tree-sitter driver for Python syntax trees. The code offers narrow functionality, focusing specifically on parsing Python code within a larger framework or application that likely involves symbol parsing and syntax tree manipulation.
+This code defines a class `PythonParser` that extends the `SymbolParser` class, providing specialized functionality for parsing Python code. It is a narrow-focused piece of code, primarily serving as a configuration or setup for a Python-specific parser by setting the language to "python", using a period as the fully qualified name (FQN) delimiter, and utilizing the `PyDriverTree` for syntax tree operations. The code is part of a larger system, likely a code analysis or language processing tool, where it integrates with utility modules for symbol parsing and tree-sitter-based syntax tree management.
 # Imports and Dependencies
 
 ---
@@ -19,12 +19,12 @@ This code defines a class `PythonParser` that extends the `SymbolParser` class, 
 ---
 ### PythonParser<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/python_parser.PythonParser}} -->
 - **Members**:
-    - `language`: Specifies the programming language as Python.
-    - `fqn_delimiter`: Defines the delimiter for fully qualified names as a period.
+    - `language`: Specifies the programming language as 'python'.
+    - `fqn_delimiter`: Defines the delimiter for fully qualified names as '.'.
     - `tree`: References the PyDriverTree for parsing Python code.
-- **Description**: The PythonParser class is a specialized implementation of the SymbolParser designed to handle Python code. It sets the language to Python, uses a period as the delimiter for fully qualified names, and utilizes the PyDriverTree for parsing operations. This class is part of a system that likely involves parsing and analyzing Python code structures.
+- **Description**: The PythonParser class is a specialized parser for Python code, inheriting from the SymbolParser class. It sets specific attributes for handling Python syntax, including the language identifier, the delimiter for fully qualified names, and the tree structure used for parsing. This class is designed to facilitate the parsing and analysis of Python code by utilizing the PyDriverTree, which is tailored for Python's syntax and structure.
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](../base.py.md#SymbolParser)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#SymbolParser>)
 
 
 

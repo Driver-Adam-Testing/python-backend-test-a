@@ -6,9 +6,9 @@
 The `2025_01_08_0943-950be3322d45_content_kind_storage_str_validation_on_.py` file contains an Alembic migration script that alters the `content_kind` column in the `derived_contents` table from an ENUM type to a String type and provides a downgrade path to revert this change.
 
 # Purpose
-This Python file is an Alembic migration script used to manage changes to a database schema over time. Specifically, it alters the `content_kind` column in the `derived_contents` table. The script changes the column's data type from a PostgreSQL ENUM to a string type (`sa.String()`) during the upgrade process, which is typically used to increase flexibility in the types of values that can be stored in the column. The [`upgrade`](#upgrade) function implements this change, while the [`downgrade`](#downgrade) function reverses it, restoring the column to its original ENUM type. This script is part of a series of migrations, as indicated by the `revision` and `down_revision` identifiers, which help track the order of migrations and dependencies between them.
+This Python file is an Alembic migration script used to manage changes to a database schema. Specifically, it alters the `content_kind` column in the `derived_contents` table. The script changes the column's data type from a PostgreSQL ENUM type to a string type (`sa.String()`) during the upgrade process. This change is likely intended to provide more flexibility in storing a wider range of values in the `content_kind` column, as ENUM types are typically more restrictive. The script also includes a downgrade function that reverses this change, converting the column back to its original ENUM type, which includes a comprehensive list of predefined content kinds.
 
-The script is a narrowly focused component within a larger database migration framework, specifically designed to be executed by Alembic, a database migration tool for SQLAlchemy. It does not define public APIs or external interfaces but rather serves as an internal mechanism to ensure the database schema evolves in a controlled and reversible manner. The presence of auto-generated comments suggests that the script was initially created using Alembic's command-line tools, which automate the generation of migration scripts based on detected changes in the database schema.
+The script is part of a version-controlled database schema management system, as indicated by the use of Alembic, a database migration tool for SQLAlchemy. The presence of revision identifiers (`revision` and `down_revision`) suggests that this script is part of a sequence of migrations, allowing developers to apply or roll back changes in a controlled manner. This file does not define public APIs or external interfaces; instead, it serves as an internal tool for database schema evolution, ensuring that changes to the database structure are consistently applied across different environments.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The script is a narrowly focused component within a larger database migration fr
 
 ---
 ### down\_revision
-- **Type**: `str`
+- **Type**: `string`
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
 - **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
 
@@ -36,15 +36,15 @@ The script is a narrowly focused component within a larger database migration fr
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision ID and down revision.
-- **Use**: `branch_labels` is used to potentially label branches in a database migration context, but in this script, it is not actively utilized as it is set to `None`.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the revision and its dependencies.
+- **Use**: `branch_labels` is used to define labels for a branch in Alembic migrations, but in this script, it is not assigned any specific value or label.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration dependencies.
-- **Use**: This variable is used to indicate that the current migration does not depend on any other migrations.
+- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
+- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -55,21 +55,21 @@ The `upgrade` function alters the `content_kind` column in the `derived_contents
 - **Inputs**: None
 - **Control Flow**:
     - The function begins by calling `op.alter_column` to modify the `content_kind` column in the `derived_contents` table.
-    - The existing type of the column is specified as a PostgreSQL ENUM with various content kind values.
-    - The column type is changed to `sa.String()`, indicating a conversion from ENUM to String.
-    - The `existing_nullable` parameter is set to `True`, preserving the nullable property of the column.
-- **Output**: The function does not return any value; it performs a database schema migration operation.
+    - The existing type of the column is a PostgreSQL ENUM with a specified list of values.
+    - The column type is changed to a SQLAlchemy String type, allowing for more flexible data storage.
+    - The `existing_nullable` parameter is set to `True`, indicating that the column can contain null values.
+- **Output**: The function does not return any value; it performs a database schema alteration as part of a migration process.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_08_0943-950be3322d45_content_kind_storage_str_validation_on_.downgrade}} -->
-The `downgrade` function alters the `content_kind` column in the `derived_contents` table to change its type back to a PostgreSQL ENUM with specific values.
+The `downgrade` function alters the `content_kind` column in the `derived_contents` table to change its type from a string back to a PostgreSQL ENUM type.
 - **Inputs**: None
 - **Control Flow**:
     - The function uses Alembic's `op.alter_column` to modify the `content_kind` column in the `derived_contents` table.
-    - The column's existing type is changed from `sa.String()` back to a PostgreSQL ENUM with a predefined set of values.
-    - The ENUM includes various content types such as 'pdf-visual-summary', 'pdf-text-summary', and others, indicating different kinds of content descriptions.
-    - The `existing_nullable` parameter is set to `True`, indicating that the column can contain null values.
+    - The column's existing type is changed from `sa.String()` to a PostgreSQL ENUM type with a specified set of values.
+    - The ENUM type includes various content kind descriptors such as 'pdf-visual-summary', 'template', 'symbol', etc.
+    - The column's existing nullable property is preserved.
 - **Output**: The function does not return any value; it performs a database schema alteration.
 
 

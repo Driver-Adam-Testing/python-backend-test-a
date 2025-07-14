@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `chunking` folder in the `python-backend` codebase contains the `text_splitter.py` file, which is responsible for splitting text into chunks using tokenization and calculating token counts for a specified model.
+The `chunking` folder in the `python-backend` codebase contains a file, `text_splitter.py`, which is responsible for splitting text into chunks using tokenization and counting tokens for a specified model.
 
 
 ## Files
-- **[text_splitter.py](text_splitter.py.md)**: The `text_splitter.py` file provides functionality to split text into chunks based on tokenization for a specified model, and to calculate the number of tokens in a given text.
+- **[text_splitter.py](text_splitter.py.md)**: The `text_splitter.py` file provides functionality to split text into chunks based on tokenization for a specified model, and to count the number of tokens in a given text.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

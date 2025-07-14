@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `generate.py` file defines API routes for performing inline editing and content generation using various pipeline kinds and execution types, leveraging FastAPI and modal functions for both local and remote processing.
+The `generate.py` file in the `python-backend` codebase defines API routes for performing inline editing and content generation using various pipeline kinds, with support for both local and remote execution, and streaming responses.
 
 # Purpose
 This Python file is a FastAPI application module that defines several API endpoints for content generation and editing. The primary functionality revolves around handling HTTP requests to perform inline editing and content generation based on user input and context. The code leverages FastAPI's routing capabilities to define endpoints, such as `/inline_edit` and `/`, which are responsible for processing inline edit requests and general content generation requests, respectively. The endpoints utilize Pydantic models to validate and parse incoming request data, ensuring that the necessary information is provided for processing.
 
-The module integrates with a remote execution framework, `modal`, to handle both local and remote execution of content generation tasks. It defines several enumerations and request models to manage different types of pipeline operations, such as inline editing, smart instructions, and reformatting. The code also includes logic to determine whether to execute tasks locally or remotely, and whether to stream the results back to the client. This is achieved through the use of `StreamingResponse` for streaming data and by looking up remote functions using the `modal` library. The file is structured to support extensibility, allowing for additional pipeline kinds and execution types to be added as needed. Overall, this module serves as a backend component for a content editing and generation service, providing a structured API for client applications to interact with.
+The module integrates with a remote execution framework, `modal`, to handle both synchronous and asynchronous remote function calls, allowing for scalable and efficient processing of content generation tasks. It defines several enumerations to categorize different types of pipelines and execution methods, such as `PipelineKind` and `ExecutionType`, which help in routing requests to the appropriate processing logic. The code also includes a mechanism to map pipeline kinds and execution types to specific remote function names, facilitating dynamic invocation of remote functions based on the request parameters. Overall, this file serves as a backend service component that provides a structured API for content editing and generation, with a focus on modularity and extensibility through the use of remote function calls.
 # Imports and Dependencies
 
 ---
@@ -34,22 +34,22 @@ The module integrates with a remote execution framework, `modal`, to handle both
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define and manage a group of related API routes within the application. This allows for modular organization of the API endpoints, making it easier to maintain and extend the application.
-- **Use**: The `router` is used to register API endpoints for inline editing and content generation, associating them with specific HTTP methods and paths.
+- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define and manage a collection of API routes within the application. This allows for modular route definitions and helps in organizing the API endpoints.
+- **Use**: The `router` is used to register API endpoints for handling HTTP requests, such as POST and GET, within the FastAPI application.
 
 
 ---
 ### \_PIPELINE\_BUILDERS
 - **Type**: `dict[PipelineKind, Callable[[GenerateHttpRequest, UserToken], BaseModel]]`
-- **Description**: _PIPELINE_BUILDERS is a dictionary that maps different types of pipeline operations, represented by the PipelineKind enum, to their corresponding request-building functions. Each entry in the dictionary is a lambda function that takes a GenerateHttpRequest and a UserToken as input and returns an instance of a specific request model derived from BaseModel. This setup allows for dynamic construction of request objects based on the type of pipeline operation being executed.
-- **Use**: This variable is used to dynamically build request objects for different pipeline operations based on the specified PipelineKind.
+- **Description**: The `_PIPELINE_BUILDERS` variable is a dictionary that maps different `PipelineKind` enum values to corresponding lambda functions. Each lambda function takes a `GenerateHttpRequest` and a `UserToken` as input and returns an instance of a specific pipeline request model, such as `InlineEditPipelineRequest`, `SmartInstructionPipelineRequest`, or `ReformatPipelineRequest`. This setup allows for dynamic creation of request models based on the type of pipeline operation being performed.
+- **Use**: This variable is used to determine which request model to build for each `PipelineKind` when generating content based on user input and context.
 
 
 ---
 ### \_REMOTE\_FUNCTION\_NAMES
 - **Type**: `dict[tuple[PipelineKind, bool], str]`
-- **Description**: The `_REMOTE_FUNCTION_NAMES` variable is a dictionary that maps tuples of `PipelineKind` and a boolean value to corresponding remote function names as strings. The `PipelineKind` represents different types of processing pipelines, such as `CHAT`, `INLINE_EDIT`, `SMART_INSTRUCTION`, and `REFORMAT`, while the boolean indicates whether the function is a streaming function (`True`) or a non-streaming function (`False`).
-- **Use**: This variable is used to determine the appropriate remote function name to call based on the pipeline type and whether the operation should be streamed or not.
+- **Description**: The `_REMOTE_FUNCTION_NAMES` variable is a dictionary that maps a tuple consisting of a `PipelineKind` and a boolean value to a string representing the name of a remote function. The `PipelineKind` indicates the type of pipeline operation (e.g., CHAT, INLINE_EDIT), and the boolean value indicates whether the operation should be streamed or not.
+- **Use**: This variable is used to determine the appropriate remote function name based on the pipeline kind and whether the operation is streamed, facilitating the execution of remote functions in the application.
 
 
 # Classes
@@ -57,21 +57,21 @@ The module integrates with a remote execution framework, `modal`, to handle both
 ---
 ### InlineEditHttpRequest<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.InlineEditHttpRequest}} -->
 - **Members**:
-    - `prompt`: A string representing the user's input or query.
-    - `page_content_before_cursor`: A string containing the content before the cursor position.
-    - `page_content_after_cursor`: A string containing the content after the cursor position.
+    - `prompt`: A string representing the user's input or query for inline editing.
+    - `page_content_before_cursor`: A string containing the content of the page before the cursor position.
+    - `page_content_after_cursor`: A string containing the content of the page after the cursor position.
     - `cursor_selection`: A string representing the text selected by the cursor.
-    - `node_ids`: A list of UUIDs identifying specific nodes.
-    - `remote_execution`: A boolean indicating if the execution should be remote, defaulting to True.
+    - `node_ids`: A list of UUIDs identifying nodes related to the request.
+    - `remote_execution`: A boolean indicating if the execution should be performed remotely, defaulting to True.
     - `stream`: A boolean indicating if the response should be streamed, defaulting to True.
-- **Description**: The InlineEditHttpRequest class is a data model used to encapsulate the necessary information for performing inline editing operations. It includes details such as the user's prompt, the content surrounding the cursor, the selected text, and identifiers for specific nodes. Additionally, it provides options to specify whether the operation should be executed remotely and if the response should be streamed.
+- **Description**: The InlineEditHttpRequest class is a data model used to encapsulate the parameters required for performing inline editing operations. It includes details about the user's prompt, the content surrounding the cursor, the selected text, and node identifiers. Additionally, it provides options for remote execution and streaming of the response.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### PipelineKind<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.PipelineKind}} -->
-- **Description**: The `PipelineKind` class is an enumeration that defines different types of pipeline operations as string constants. These operations include `INLINE_EDIT`, `SMART_INSTRUCTION`, `REFORMAT`, and `CHAT`, which are used to categorize and manage different processing pipelines within the application.
+- **Description**: The `PipelineKind` class is an enumeration that defines different types of pipeline operations, such as INLINE_EDIT, SMART_INSTRUCTION, REFORMAT, and CHAT, each represented as a string constant. This class is used to categorize and manage different processing pipelines within the application.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -79,12 +79,7 @@ The module integrates with a remote execution framework, `modal`, to handle both
 
 ---
 ### ExecutionType<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.ExecutionType}} -->
-- **Decorators**: `@dataclass`
-- **Members**:
-    - `REMOTE_ASYNC`: Represents asynchronous remote execution.
-    - `REMOTE_SYNC`: Represents synchronous remote execution.
-    - `LOCAL`: Represents local execution.
-- **Description**: The ExecutionType class is an enumeration that defines different modes of execution for a process or task. It inherits from both str and Enum, allowing each execution type to be represented as a string. The class includes three members: REMOTE_ASYNC, REMOTE_SYNC, and LOCAL, which correspond to asynchronous remote execution, synchronous remote execution, and local execution, respectively. This class is useful for specifying how a particular task should be executed, whether locally or remotely, and whether the remote execution should be synchronous or asynchronous.
+- **Description**: The `ExecutionType` class is an enumeration that defines different modes of execution for a process, specifically distinguishing between remote asynchronous, remote synchronous, and local execution types.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -101,7 +96,7 @@ The module integrates with a remote execution framework, `modal`, to handle both
     - `REFORMAT_STREAM`: Represents the remote function name for reformat stream.
     - `CHAT_RUN`: Represents the remote function name for chat run.
     - `CHAT_STREAM`: Represents the remote function name for chat stream.
-- **Description**: The `RemoteFunctions` class is an enumeration that defines a set of string constants representing different remote function names used for various operations such as inline editing, smart instruction processing, reformatting, and chat functionalities. Each member of this enumeration corresponds to a specific remote function name that can be used to identify and execute the respective operation in a remote context.
+- **Description**: The RemoteFunctions class is an enumeration that defines a set of string constants representing different remote function names used for various operations such as inline editing, smart instructions, reformatting, and chat functionalities. Each member of the enumeration corresponds to a specific operation mode, either 'run' or 'stream', indicating whether the operation is executed in a single run or as a continuous stream.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -111,15 +106,15 @@ The module integrates with a remote execution framework, `modal`, to handle both
 ### GenerateHttpRequest<!-- {{#class:python-backend/backend/app/api/routes/v2/generate.GenerateHttpRequest}} -->
 - **Members**:
     - `prompt`: A string representing the user's input or query.
-    - `page_content_before_cursor`: A string representing the content before the cursor position.
-    - `page_content_after_cursor`: A string representing the content after the cursor position.
-    - `cursor_selection`: A string representing the selected text at the cursor.
+    - `page_content_before_cursor`: The content of the page before the cursor position.
+    - `page_content_after_cursor`: The content of the page after the cursor position.
+    - `cursor_selection`: The text selected by the cursor.
     - `node_ids`: A list of UUIDs representing node identifiers.
-    - `format_kind`: An instance of FormatKind indicating the format type, defaulting to FormatKind.ANY.
-    - `stream`: A boolean indicating whether the response should be streamed, defaulting to True.
-    - `pipeline_kind`: An instance of PipelineKind indicating the type of pipeline, defaulting to PipelineKind.CHAT.
-    - `execution_type`: An instance of ExecutionType indicating the execution type, defaulting to ExecutionType.REMOTE_ASYNC.
-- **Description**: The GenerateHttpRequest class is a data model used to encapsulate the parameters required for generating HTTP requests in a content generation pipeline. It extends the BaseModel from Pydantic, ensuring data validation and serialization. The class includes attributes for user prompts, page content around a cursor, cursor selection, node identifiers, and configuration options such as format kind, streaming preference, pipeline kind, and execution type. These attributes are used to configure and execute different types of content generation tasks, either locally or remotely, with options for synchronous or asynchronous execution.
+    - `format_kind`: Specifies the format kind, defaulting to FormatKind.ANY.
+    - `stream`: A boolean indicating if the response should be streamed, defaulting to True.
+    - `pipeline_kind`: Specifies the type of pipeline to use, defaulting to PipelineKind.CHAT.
+    - `execution_type`: Specifies the execution type, defaulting to ExecutionType.REMOTE_ASYNC.
+- **Description**: The GenerateHttpRequest class is a data model used to encapsulate the parameters required for generating HTTP requests in a content generation pipeline. It extends the BaseModel from Pydantic, ensuring data validation and serialization. The class includes attributes for user prompts, page content around a cursor, cursor selection, node identifiers, and configuration options such as format kind, streaming preference, pipeline kind, and execution type. These attributes allow the class to be used flexibly across different content generation scenarios, supporting both local and remote asynchronous execution.
 - **Inherits From**:
     - `BaseModel`
 
@@ -129,7 +124,7 @@ The module integrates with a remote execution framework, `modal`, to handle both
 - **Members**:
     - `llm_session_id`: A UUID representing the session ID for the language model.
     - `remote_execution_id`: A string representing the ID for the remote execution.
-- **Description**: The AsyncCallResponse class is a data model that encapsulates the response details of an asynchronous call, specifically including identifiers for the language model session and the remote execution.
+- **Description**: The AsyncCallResponse class is a data model that encapsulates the response details of an asynchronous call, specifically including identifiers for the language model session and the remote execution. It inherits from BaseModel, indicating it is part of a structured data model likely used for API responses or internal data handling.
 - **Inherits From**:
     - `BaseModel`
 
@@ -144,28 +139,28 @@ The `inline_edit` function performs inline editing on selected text, handling bo
     - `user`: A `UserToken` object representing the authenticated user making the request.
     - `input`: An `InlineEditHttpRequest` object containing the details of the inline edit request, including the prompt, page content, cursor selection, node IDs, and execution preferences.
 - **Control Flow**:
-    - The function begins by parsing the input into an `InlineEditPipelineRequest` object, extracting necessary details from the `input` and `user` arguments.
+    - The function begins by parsing the input into an `InlineEditPipelineRequest` object, which includes user and request details.
     - It checks if the `stream` attribute of the input is `True`. If so, it prints the stream status and further checks if `remote_execution` is `True`.
     - If both `stream` and `remote_execution` are `True`, it returns a `StreamingResponse` using a remote generation function from the `modal` library.
     - If `stream` is `True` but `remote_execution` is `False`, it returns a `StreamingResponse` using the local `stream` method of the parsed input.
-    - If `stream` is `False`, it checks the `remote_execution` attribute again. If `True`, it returns the result of a remote execution function from the `modal` library.
+    - If `stream` is `False`, it checks the `remote_execution` attribute again. If `True`, it returns the result of a remote function call using the `modal` library.
     - If both `stream` and `remote_execution` are `False`, it executes the `run` method of the parsed input locally and returns the result.
-- **Output**: The function returns an `InlineEditPipelineResponse` or `None`, depending on the execution path taken, with the response potentially being wrapped in a `StreamingResponse` for streaming scenarios.
+- **Output**: The function returns an `InlineEditPipelineResponse` object or `None`, depending on the execution path and whether the operation is performed locally or remotely.
 
 
 ---
 ### attach\_to\_modal<!-- {{#callable:python-backend/backend/app/api/routes/v2/generate.attach_to_modal}} -->
-The `attach_to_modal` function attaches to a modal function call using a given call ID and optionally streams the response.
+The `attach_to_modal` function attaches to a modal function call using a call ID and optionally streams the response.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user making the request.
     - `call_id`: A string representing the unique identifier of the modal function call to attach to.
-    - `stream`: A boolean indicating whether to stream the response (default is `True`).
+    - `stream`: A boolean indicating whether to stream the response (default is True).
 - **Control Flow**:
-    - Retrieve a `FunctionCall` object from the `modal` library using the provided `call_id` and the `stream` flag to determine if it is a generator.
-    - If `stream` is `True`, return a `StreamingResponse` with the generator obtained from `function_call.get_gen()` and set the media type to `text/event-stream`.
-    - If `stream` is `False`, return the result of `function_call.get()`.
-- **Output**: The function returns a `StreamingResponse` if `stream` is `True`, otherwise it returns the result of the function call directly. The function is designed to return `None` as its type hint suggests, but it actually returns a response object based on the `stream` flag.
+    - Retrieve a `FunctionCall` object from the `modal` library using the provided `call_id` and `stream` flag.
+    - Check if `stream` is True; if so, return a `StreamingResponse` with the generator from the `FunctionCall` object, setting the media type to 'text/event-stream'.
+    - If `stream` is False, return the result of the `FunctionCall` object's `get` method.
+- **Output**: The function returns a `StreamingResponse` if streaming is enabled, otherwise it returns the result of the function call's `get` method.
 
 
 ---

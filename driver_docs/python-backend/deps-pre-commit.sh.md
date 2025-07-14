@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `deps-pre-commit.sh` file is a shell script that installs dependencies using Poetry and runs a Python script to update interdependent packages.
+The `deps-pre-commit.sh` file is a shell script that installs dependencies and updates interdependent packages using Poetry in the `python-backend` codebase.
 
 # Purpose
-This Bash script is designed to automate the setup and execution of a Python environment using Poetry, a dependency management tool. It provides narrow functionality focused on installing project dependencies and running a specific Python script, `update_interdependent_packages.py`, which likely handles updates or modifications to package dependencies within a project. The script is not an executable in the traditional sense but rather a utility script intended to be run in a command-line environment to streamline development workflows. It assumes the presence of a Python project managed by Poetry and is likely part of a larger build or deployment process.
+This Bash script is designed to automate the setup and execution of a Python environment using Poetry, a dependency management tool. It provides narrow functionality focused on installing project dependencies and running a specific Python script, `update_interdependent_packages.py`, which likely handles the updating of package dependencies within a project. The script is not an executable in the traditional sense but rather a utility script intended to be run in a command-line environment to streamline development workflows. By using Poetry, it ensures that the Python environment is consistent and that all necessary packages are installed before executing the update script.
 # Imports and Dependencies
 
 ---

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_enums.c` file demonstrates various ways to define and use enumerations in C, including named and unnamed enums, typedefs, and combined definition and declaration.
+The `test_enums.c` file demonstrates various ways to define and use enumerations in C, including named and unnamed enums, typedefs, and combined definition and declaration of enums with variables.
 
 # Purpose
-This C source code file demonstrates various ways to define and use enumerations in C, showcasing different styles and techniques for declaring enums and their associated variables. It includes examples of named enumerations with and without typedefs, unnamed enumerations, and combined enumeration definitions with variable declarations. The code also illustrates how to declare global variables of enum types and how to use typedefs to create both instance types and pointer types for enums. The [`main`](#main) function initializes variables of these enum types and prints their integer values, highlighting the flexibility and utility of enums in organizing and managing related constants in C programming.
+This C source code file demonstrates various ways to define and use enumerations in C, showcasing both named and unnamed enums, as well as typedefs for creating more readable code. It includes examples of named enumerations with and without typedefs, unnamed enumerations with typedefs, and global scope enumerations, illustrating how to declare and initialize variables of these types. The [`main`](<#main>) function assigns values to these enumerated types and prints their integer representations, highlighting the flexibility and utility of enums in organizing and managing related constants. This file serves as an educational example for understanding different enumeration techniques and their practical applications in C programming.
 # Imports and Dependencies
 
 ---
@@ -18,7 +18,7 @@ This C source code file demonstrates various ways to define and use enumerations
 ---
 ### globalEnum
 - **Type**: `enum`
-- **Description**: The `globalEnum` is a global variable of an unnamed enumeration type with two possible values: `XX` and `YY`. This enumeration is defined at the global scope, making `globalEnum` accessible throughout the file.
+- **Description**: The `globalEnum` is a global variable of an unnamed enumeration type, which can take one of two values: `XX` or `YY`. This enumeration is defined at the file scope, making `globalEnum` accessible throughout the file.
 - **Use**: `globalEnum` is used to store and represent one of the two possible states, `XX` or `YY`, within the program.
 
 
@@ -32,8 +32,8 @@ This C source code file demonstrates various ways to define and use enumerations
 ---
 ### dir2
 - **Type**: `enum Direction`
-- **Description**: The variable `dir2` is a global variable of type `enum Direction`, which is an enumeration representing the four cardinal directions: NORTH, SOUTH, EAST, and WEST. It is initialized to the value EAST.
-- **Use**: `dir2` is used to store and represent a direction, specifically initialized to EAST, and can be used throughout the program to control logic based on direction.
+- **Description**: The variable `dir2` is a global variable of type `enum Direction`, which is an enumeration that defines four possible values: NORTH, SOUTH, EAST, and WEST. It is initialized to the value EAST.
+- **Use**: `dir2` is used to represent a direction, initialized to EAST, and can be accessed and modified throughout the program.
 
 
 # Data Structures
@@ -45,7 +45,7 @@ This C source code file demonstrates various ways to define and use enumerations
     - `RED`: Represents the color red in the enumeration.
     - `GREEN`: Represents the color green in the enumeration.
     - `BLUE`: Represents the color blue in the enumeration.
-- **Description**: The `Color` enumeration defines a set of named integer constants representing three basic colors: red, green, and blue. This enumeration is used to categorize or identify colors in a program, allowing for more readable and maintainable code by using descriptive names instead of arbitrary integer values.
+- **Description**: The `Color` enumeration defines a set of named integer constants representing three basic colors: red, green, and blue. This enumeration is useful for categorizing or identifying colors in a program where these three options are needed, providing a clear and readable way to handle color values.
 
 
 ---
@@ -57,7 +57,7 @@ This C source code file demonstrates various ways to define and use enumerations
     - `WED`: Represents Wednesday in the Weekday enumeration.
     - `THU`: Represents Thursday in the Weekday enumeration.
     - `FRI`: Represents Friday in the Weekday enumeration.
-- **Description**: The `Weekday` data structure is an enumeration type that defines constants for the weekdays from Monday to Friday. It is a typedef of an enum, allowing for the use of `Weekday` as a type name in the code, which enhances readability and type safety when working with variables that represent days of the week.
+- **Description**: The `Weekday` data structure is an enumeration type that defines constants for the weekdays from Monday to Friday. It is a typedef of an enum, allowing the use of `Weekday` as a type name in the code, which enhances readability and type safety when working with variables that represent days of the week.
 
 
 ---
@@ -67,7 +67,7 @@ This C source code file demonstrates various ways to define and use enumerations
     - `ALPHA`: Represents the first enumerator in the MyAnonEnum enumeration.
     - `BETA`: Represents the second enumerator in the MyAnonEnum enumeration.
     - `GAMMA`: Represents the third enumerator in the MyAnonEnum enumeration.
-- **Description**: MyAnonEnum is a typedef for an unnamed enumeration that includes three enumerators: ALPHA, BETA, and GAMMA. This enumeration is used to define a set of named integer constants, which can be used to represent discrete values in a program. By using a typedef, the enumeration can be referred to by the name MyAnonEnum, simplifying its usage in the code.
+- **Description**: MyAnonEnum is a typedef for an unnamed enumeration that consists of three enumerators: ALPHA, BETA, and GAMMA. This enumeration is used to define a set of named integer constants, which can be used to represent discrete values in a program. By using typedef, the enumeration can be referred to as MyAnonEnum, simplifying its usage in the code.
 
 
 ---
@@ -78,17 +78,17 @@ This C source code file demonstrates various ways to define and use enumerations
     - `SOUTH`: Represents the south direction.
     - `EAST`: Represents the east direction.
     - `WEST`: Represents the west direction.
-- **Description**: The `Direction` enum is a simple enumeration that defines four possible values representing the cardinal directions: NORTH, SOUTH, EAST, and WEST. It is used to declare variables `dir1` and `dir2`, with `dir2` being initialized to EAST. This enum is useful for applications that require directional logic, such as navigation or mapping software.
+- **Description**: The `Direction` enum is a simple enumeration that defines four possible values representing the cardinal directions: NORTH, SOUTH, EAST, and WEST. It is used to declare variables `dir1` and `dir2`, with `dir2` being initialized to EAST. This enum is useful for managing directional data in a program, providing a clear and readable way to handle direction-related logic.
 
 
 ---
 ### Kind
 - **Type**: `enum`
 - **Members**:
-    - `ALPHA`: Represents the first enumerated value in the Kind enum.
-    - `BETA`: Represents the second enumerated value in the Kind enum.
-    - `GAMMA`: Represents the third enumerated value in the Kind enum.
-- **Description**: The 'Kind' data structure is an enumeration type that defines a set of named integer constants: ALPHA, BETA, and GAMMA. It is a typedef of an unnamed enum, allowing for the creation of variables of type 'Kind' and pointers to 'Kind' using 'KindPtr'. This enum is useful for representing a fixed set of related constants, improving code readability and maintainability.
+    - `ALPHA`: Represents the first enumerated value in the Kind enumeration.
+    - `BETA`: Represents the second enumerated value in the Kind enumeration.
+    - `GAMMA`: Represents the third enumerated value in the Kind enumeration.
+- **Description**: The 'Kind' data structure is an enumeration type that defines a set of named integer constants: ALPHA, BETA, and GAMMA. It is used to represent a specific set of values, and the typedef also provides a pointer type 'KindPtr' for referencing these enumerated values. This allows for easy manipulation and comparison of these constants within the program.
 
 
 # Functions

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `terse_sentence_from_chunk_descriptions.txt` file provides guidelines for creating concise, high-level descriptions of a codebase from module descriptions.
+The `terse_sentence_from_chunk_descriptions.txt` file provides guidance on creating concise, high-level descriptions of a codebase from overlapping subcomponent descriptions.
 
 # Purpose
-The provided content outlines a task for a software engineering expert and technical writer to synthesize a concise, high-level description of a codebase. The task involves analyzing a series of slightly overlapping descriptions of subcomponents within the codebase. The expert's objective is to distill these descriptions into a single, succinct sentence of 140 characters or less, capturing the essence of the entire codebase. This process requires careful consideration of the provided subset descriptions to ensure the final sentence accurately reflects the codebase's overall functionality and purpose without introducing any additional information.
+The provided content outlines a task for a software engineering expert and technical writer to synthesize a concise, high-level description of a software codebase. This task involves analyzing a series of slightly overlapping descriptions of various subcomponents within the codebase. The expert's role is to distill these descriptions into a single, short sentence that accurately encapsulates the overall purpose and content of the codebase. The instructions emphasize the importance of deriving the final description solely from the given information, without introducing any external assumptions or details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

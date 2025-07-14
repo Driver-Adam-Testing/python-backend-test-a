@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cpp_fully_qualified_path_test.py` file contains a series of unit tests for verifying the extraction of fully qualified paths for classes and function calls within C++ code using the `CppCDriverTree` from the `c_cpp_driver` module.
+The `cpp_fully_qualified_path_test.py` file contains a series of unit tests for verifying the extraction of fully qualified paths for classes and function calls within C++ code using the `CppCDriverTree` utility.
 
 # Purpose
-This Python file is a collection of unit tests designed to verify the functionality of the `CppCDriverTree` class, specifically focusing on its ability to extract and correctly identify the fully qualified paths of C++ data structures and function calls. The tests cover a wide range of scenarios, including global classes, classes within namespaces, nested namespaces, nested classes, and combinations of named and anonymous namespaces. Additionally, the tests also check the extraction of function calls within both free functions and class member functions, ensuring that the fully qualified paths are accurately captured.
-
-The file is structured as a test suite using the `TestFQN` class, which contains multiple test methods. Each method is responsible for a specific test case, using assertions to validate the expected outcomes. The tests utilize the `CppCDriverTree.from_code` method to parse C++ code snippets and extract data structure definitions and function calls. This file serves as a critical component in ensuring the reliability and correctness of the `CppCDriverTree` class, which is likely part of a larger system for analyzing or processing C++ code. The presence of commented-out code suggests areas of functionality that are either not yet supported or are under development.
+This Python source code file is a collection of unit tests designed to verify the functionality of a C++ code parsing utility, specifically focusing on the extraction of fully qualified paths for classes and function calls. The tests utilize the `CppCDriverTree` class from the `utils.treesitter_drivers.c_cpp_driver` module to parse C++ code snippets and validate the correct identification of class and function call hierarchies, including global classes, nested namespaces, and anonymous namespaces. The file provides narrow functionality, primarily serving as a test suite to ensure that the parsing utility correctly interprets the structure and relationships within C++ code. Each test case is structured to assert the expected outcomes of parsing operations, ensuring the robustness and accuracy of the utility in handling various C++ constructs.
 # Imports and Dependencies
 
 ---
@@ -19,21 +17,21 @@ The file is structured as a test suite using the `TestFQN` class, which contains
 
 ---
 ### TestFQN<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN}} -->
-- **Description**: The `TestFQN` class is a collection of unit tests designed to verify the extraction of fully qualified paths for classes and function calls from C++ code using the `CppCDriverTree` utility. It includes tests for various scenarios such as global classes, classes within namespaces, nested classes, and classes within anonymous namespaces. Additionally, it tests the extraction of function calls within both free functions and class member functions, ensuring the correct identification of their fully qualified parent paths.
+- **Description**: The `TestFQN` class is a collection of unit tests designed to verify the extraction of fully qualified paths for classes and function calls from C++ code using the `CppCDriverTree` utility. It includes tests for various scenarios such as global classes, classes within namespaces, nested classes, and anonymous namespaces. The tests ensure that the correct fully qualified parent paths are identified for both class definitions and function calls, covering a wide range of C++ code structures.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_global_class`](#TestFQNtest_fully_qualified_path_global_class)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_namespace`](#TestFQNtest_fully_qualified_path_namespace)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_namespaces`](#TestFQNtest_fully_qualified_path_nested_namespaces)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_classes`](#TestFQNtest_fully_qualified_path_nested_classes)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_namespace_and_nested_class`](#TestFQNtest_fully_qualified_path_namespace_and_nested_class)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_mixed_structures`](#TestFQNtest_fully_qualified_path_mixed_structures)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_deeply_nested`](#TestFQNtest_fully_qualified_path_deeply_nested)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_anonymous_namespace`](#TestFQNtest_fully_qualified_path_anonymous_namespace)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_anonymous_namespaces`](#TestFQNtest_fully_qualified_path_nested_anonymous_namespaces)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_mixed_named_and_anonymous`](#TestFQNtest_fully_qualified_path_mixed_named_and_anonymous)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_anonymous_with_nested_classes`](#TestFQNtest_fully_qualified_path_anonymous_with_nested_classes)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_extract_function_calls_within_function_definition`](#TestFQNtest_extract_function_calls_within_function_definition)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_extract_function_calls_within_class_member_function`](#TestFQNtest_extract_function_calls_within_class_member_function)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_global_class`](<#TestFQNtest_fully_qualified_path_global_class>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_namespace`](<#TestFQNtest_fully_qualified_path_namespace>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_namespaces`](<#TestFQNtest_fully_qualified_path_nested_namespaces>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_classes`](<#TestFQNtest_fully_qualified_path_nested_classes>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_namespace_and_nested_class`](<#TestFQNtest_fully_qualified_path_namespace_and_nested_class>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_mixed_structures`](<#TestFQNtest_fully_qualified_path_mixed_structures>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_deeply_nested`](<#TestFQNtest_fully_qualified_path_deeply_nested>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_anonymous_namespace`](<#TestFQNtest_fully_qualified_path_anonymous_namespace>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_anonymous_namespaces`](<#TestFQNtest_fully_qualified_path_nested_anonymous_namespaces>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_mixed_named_and_anonymous`](<#TestFQNtest_fully_qualified_path_mixed_named_and_anonymous>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_anonymous_with_nested_classes`](<#TestFQNtest_fully_qualified_path_anonymous_with_nested_classes>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_extract_function_calls_within_function_definition`](<#TestFQNtest_extract_function_calls_within_function_definition>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_extract_function_calls_within_class_member_function`](<#TestFQNtest_extract_function_calls_within_class_member_function>)
 
 **Methods**
 
@@ -45,51 +43,50 @@ The method `test_fully_qualified_path_global_class` verifies that a global class
 - **Control Flow**:
     - A string containing C++ code defining a global class `GlobalClass` is created.
     - The `CppCDriverTree.from_code` method is called with the C++ code and a filename `test.cpp` to create a `driver_tree` object.
-    - The [`extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions) method is called on `driver_tree` to extract class definitions from the code.
+    - The [`extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>) method is called on `driver_tree` to extract class definitions from the code.
     - An assertion checks that exactly one class is extracted.
     - Assertions verify that the extracted class is named `GlobalClass` and its `fully_qualified_parent_path` is an empty string.
 - **Output**: The method does not return any value; it uses assertions to validate the expected conditions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_fully\_qualified\_path\_namespace<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_namespace}} -->
-The method `test_fully_qualified_path_namespace` verifies that a class defined within a namespace has the correct fully qualified parent path.
+The `test_fully_qualified_path_namespace` method verifies that a class defined within a namespace has the correct fully qualified parent path.
 - **Inputs**:
     - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
 - **Control Flow**:
-    - A string `code` is defined containing C++ code with a namespace `MyNamespace` and a class `InnerClass` inside it.
-    - A `CppCDriverTree` object `driver_tree` is created by parsing the `code` string with the filename `test.cpp`.
-    - The method [`extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions) is called on `driver_tree` to extract class definitions, storing the result in `classes`.
+    - A multi-line string `code` is defined containing C++ code with a namespace `MyNamespace` and a class `InnerClass` inside it.
+    - A `CppCDriverTree` object `driver_tree` is created by calling [`from_code`](<base.py.md#DriverTreefrom_code>) with the `code` string and a filename `test.cpp`.
+    - The method [`extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>) is called on `driver_tree` to extract class definitions, storing the result in `classes`.
     - An assertion checks that exactly one class is extracted.
     - Assertions verify that the extracted class is named `InnerClass` and its fully qualified parent path is `MyNamespace`.
 - **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_fully\_qualified\_path\_nested\_namespaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_namespaces}} -->
-The method tests the extraction of a class's fully qualified path when it is defined within nested namespaces.
+The method `test_fully_qualified_path_nested_namespaces` verifies that a class defined within nested namespaces has the correct fully qualified parent path.
 - **Inputs**:
-    - `self`: Represents the instance of the class TestFQN to which this method belongs.
+    - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
 - **Control Flow**:
-    - Define a C++ code snippet with a class NestedClass inside nested namespaces Outer and Inner.
-    - Create a CppCDriverTree object by parsing the code snippet with the filename 'test.cpp'.
-    - Extract class definitions from the parsed code using extract_data_structure_definitions().
-    - Assert that exactly one class is extracted from the code.
-    - Assert that the extracted class is named 'NestedClass'.
-    - Assert that the fully qualified parent path of the extracted class is 'Outer::Inner'.
+    - A multi-line string `code` is defined containing C++ code with a class `NestedClass` inside nested namespaces `Outer` and `Inner`.
+    - A `CppCDriverTree` object `driver_tree` is created by parsing the `code` string with the filename `test.cpp`.
+    - The method [`extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>) is called on `driver_tree` to extract class definitions, storing the result in `classes`.
+    - An assertion checks that exactly one class is extracted.
+    - Assertions verify that the extracted class is named `NestedClass` and its fully qualified parent path is `Outer::Inner`.
 - **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
@@ -100,34 +97,36 @@ The method tests the extraction of fully qualified parent paths for nested class
 - **Control Flow**:
     - A C++ code snippet defining an outer class with a nested inner class is assigned to the variable 'code'.
     - The 'CppCDriverTree.from_code' method is called with the code snippet and a filename to create a driver tree object.
-    - The 'extract_data_structure_definitions' method is called on the driver tree to extract class definitions, which are stored in the 'classes' variable.
-    - An assertion checks that two classes are found in the 'classes' list.
-    - The outer and inner classes are identified by their names using generator expressions and stored in 'outer_class' and 'inner_class' variables respectively.
-    - Assertions verify that the 'fully_qualified_parent_path' of the outer class is an empty string and that of the inner class is 'OuterClass'.
+    - The 'extract_data_structure_definitions' method is called on the driver tree to extract class definitions from the code.
+    - An assertion checks that two classes are found in the extracted definitions.
+    - The outer class is identified by its name 'OuterClass' using a generator expression.
+    - The inner class is identified by its name 'InnerClass' using a generator expression.
+    - Assertions verify that the outer class has an empty fully qualified parent path and the inner class has 'OuterClass' as its fully qualified parent path.
 - **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_fully\_qualified\_path\_namespace\_and\_nested\_class<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_namespace_and_nested_class}} -->
 The method tests the extraction of fully qualified parent paths for classes nested within both a namespace and another class.
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
+    - `self`: Instance of the TestFQN class, representing the test case context.
 - **Control Flow**:
-    - A C++ code snippet defining a namespace `MyNamespace` with a class `OuterClass` containing another class `InnerClass` is defined as a string.
-    - The `CppCDriverTree.from_code` method is called with the code snippet and a filename to create a `driver_tree` object.
-    - The [`extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions) method is called on `driver_tree` to extract class definitions, which are stored in `classes`.
-    - An assertion checks that two classes are extracted.
-    - The `OuterClass` and `InnerClass` are identified from `classes` using their names.
-    - Assertions verify that `OuterClass` has a fully qualified parent path of `MyNamespace` and `InnerClass` has a fully qualified parent path of `MyNamespace::OuterClass`.
+    - A multi-line string containing C++ code is defined, representing a namespace with a nested class structure.
+    - The CppCDriverTree.from_code method is called with the C++ code and a filename to create a driver tree object.
+    - The extract_data_structure_definitions method is called on the driver tree to extract class definitions from the code.
+    - An assertion checks that two classes are extracted from the code.
+    - The outer class is identified by iterating over the extracted classes and matching the name 'OuterClass'.
+    - The inner class is identified by iterating over the extracted classes and matching the name 'InnerClass'.
+    - Assertions verify that the fully qualified parent path of the outer class is 'MyNamespace' and the inner class is 'MyNamespace::OuterClass'.
 - **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
@@ -137,14 +136,14 @@ The method `test_fully_qualified_path_mixed_structures` tests the extraction of 
     - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
 - **Control Flow**:
     - A multi-line string `code` is defined containing C++ code with a namespace `TestNamespace`, a struct `OuterStruct`, an enum `OuterEnum`, and a nested class `NestedClass`.
-    - The `CppCDriverTree.from_code` method is called with the `code` string and a filename `test.cpp` to create a `driver_tree` object.
-    - The [`extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions) method is called on `driver_tree` to extract class definitions from the C++ code.
+    - A `CppCDriverTree` object `driver_tree` is created by calling `CppCDriverTree.from_code` with the `code` string and a filename `test.cpp`.
+    - The method [`extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>) is called on `driver_tree` to extract class definitions from the C++ code.
     - An assertion checks that the number of extracted classes is 3, which includes the struct, enum, and nested class.
 - **Output**: The method does not return any value; it uses assertions to validate the expected number of class definitions extracted from the C++ code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
@@ -155,73 +154,72 @@ The method `test_fully_qualified_path_deeply_nested` verifies the extraction of 
 - **Control Flow**:
     - A multi-line string `code` is defined containing C++ code with deeply nested namespaces, classes, and structures.
     - The `CppCDriverTree.from_code` method is called with `code` and a filename to create a `driver_tree` object.
-    - The [`extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions) method is called on `driver_tree` to extract class definitions into the `classes` list.
+    - The [`extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>) method is called on `driver_tree` to extract class definitions into the `classes` list.
     - An assertion checks that the length of `classes` is 3, ensuring three classes are extracted.
     - The `next` function is used to find `class1` and `class2` by their names 'Class1' and 'Class2' respectively from the `classes` list.
-    - Assertions verify that `class1` and `class2` have the expected fully qualified parent paths.
+    - Assertions verify that `class1` and `class2` have the correct fully qualified parent paths.
 - **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_fully\_qualified\_path\_anonymous\_namespace<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_anonymous_namespace}} -->
 The method tests the extraction of a class definition within an anonymous namespace and verifies its fully qualified parent path.
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
+    - `self`: Represents the instance of the class TestFQN to which this method belongs.
 - **Control Flow**:
-    - Defines a C++ code snippet containing a class `AnonClass` within an anonymous namespace.
-    - Creates a `CppCDriverTree` object from the code snippet and the filename `test.cpp`.
-    - Extracts class definitions from the `driver_tree` using `extract_data_structure_definitions()`.
-    - Asserts that exactly one class is extracted from the code.
-    - Asserts that the extracted class is named `AnonClass`.
-    - Asserts that the fully qualified parent path of `AnonClass` is `(anonymous)`.
-- **Output**: The method does not return any value; it uses assertions to validate the expected conditions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+    - Defines a C++ code snippet containing a class within an anonymous namespace.
+    - Creates a CppCDriverTree object from the code snippet and a filename 'test.cpp'.
+    - Extracts class definitions from the CppCDriverTree object.
+    - Asserts that exactly one class is extracted.
+    - Asserts that the extracted class is named 'AnonClass'.
+    - Asserts that the fully qualified parent path of the class is '(anonymous)'.
+- **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_fully\_qualified\_path\_nested\_anonymous\_namespaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_nested_anonymous_namespaces}} -->
-The method tests the extraction of a class definition within nested anonymous namespaces and verifies its fully qualified parent path.
+This method tests the extraction of a class definition within nested anonymous namespaces and verifies its fully qualified parent path.
 - **Inputs**:
     - `self`: Represents the instance of the class TestFQN to which this method belongs.
 - **Control Flow**:
-    - Defines a C++ code snippet with a class inside nested anonymous namespaces.
-    - Creates a CppCDriverTree object from the code snippet and a filename 'test.cpp'.
-    - Extracts class definitions from the driver tree using extract_data_structure_definitions().
-    - Asserts that exactly one class is extracted from the code.
-    - Asserts that the extracted class is named 'DeepAnonClass'.
-    - Asserts that the fully qualified parent path of the class is '(anonymous)::(anonymous)'.
+    - A multi-line string 'code' is defined containing C++ code with nested anonymous namespaces and a class 'DeepAnonClass'.
+    - A CppCDriverTree object 'driver_tree' is created by parsing the 'code' string with the filename 'test.cpp'.
+    - The method 'extract_data_structure_definitions' is called on 'driver_tree' to extract class definitions from the code.
+    - An assertion checks that exactly one class is extracted.
+    - Assertions verify that the extracted class is named 'DeepAnonClass' and its fully qualified parent path is '(anonymous)::(anonymous)'.
 - **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_fully\_qualified\_path\_mixed\_named\_and\_anonymous<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_fully_qualified_path_mixed_named_and_anonymous}} -->
 The method tests the extraction of fully qualified parent paths for classes defined within a mix of named and anonymous namespaces in C++ code.
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
+    - `self`: Represents the instance of the class TestFQN to which this method belongs.
 - **Control Flow**:
-    - A multi-line string `code` is defined containing C++ code with classes inside mixed named and anonymous namespaces.
-    - A `CppCDriverTree` object `driver_tree` is created by parsing the `code` string with the filename 'test.cpp'.
-    - The method [`extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions) is called on `driver_tree` to extract class definitions, storing the result in `classes`.
+    - A multi-line string containing C++ code is defined, which includes classes within both named and anonymous namespaces.
+    - A CppCDriverTree object is created using the from_code method, passing the C++ code and a filename 'test.cpp'.
+    - The extract_data_structure_definitions method is called on the driver_tree object to extract class definitions from the code.
     - An assertion checks that exactly two classes are extracted from the code.
-    - The method uses a generator expression to find the class named 'MixedClass' in `classes` and assigns it to `mixed_class`.
-    - Another generator expression is used to find the class named 'AnotherMixedClass' in `classes` and assigns it to `another_mixed_class`.
-    - Assertions verify that the `fully_qualified_parent_path` of `mixed_class` is 'Named::(anonymous)' and that of `another_mixed_class` is '(anonymous)::Named2'.
-- **Output**: The method does not return any value; it uses assertions to validate the expected fully qualified parent paths of the classes.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+    - The first class named 'MixedClass' is retrieved from the list of classes using a generator expression.
+    - The second class named 'AnotherMixedClass' is retrieved from the list of classes using a generator expression.
+    - Assertions verify that the fully qualified parent paths of 'MixedClass' and 'AnotherMixedClass' match the expected values 'Named::(anonymous)' and '(anonymous)::Named2', respectively.
+- **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
@@ -231,55 +229,56 @@ This method tests the extraction of fully qualified paths for nested classes wit
     - `self`: Represents the instance of the class TestFQN to which this method belongs.
 - **Control Flow**:
     - A C++ code snippet defining nested classes within an anonymous namespace is assigned to the variable 'code'.
-    - The 'CppCDriverTree.from_code' method is called with the code snippet and a filename 'test.cpp' to create a driver tree object.
-    - The 'extract_data_structure_definitions' method is called on the driver tree to extract class definitions, which are stored in the 'classes' variable.
+    - The CppCDriverTree.from_code method is called with the code snippet and a filename 'test.cpp' to create a driver tree object.
+    - The extract_data_structure_definitions method is called on the driver tree to extract class definitions from the code.
     - An assertion checks that two classes are extracted from the code.
-    - The 'OuterAnonClass' is identified from the extracted classes using a generator expression and stored in 'outer_class'.
-    - The 'InnerAnonClass' is identified from the extracted classes using a generator expression and stored in 'inner_class'.
-    - Assertions verify that the 'fully_qualified_parent_path' of 'outer_class' is '(anonymous)' and that of 'inner_class' is '(anonymous)::OuterAnonClass'.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of the code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+    - The outer class is identified by its name 'OuterAnonClass' using a generator expression.
+    - The inner class is identified by its name 'InnerAnonClass' using a generator expression.
+    - Assertions verify that the fully qualified parent paths of the outer and inner classes are '(anonymous)' and '(anonymous)::OuterAnonClass', respectively.
+- **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_extract\_function\_calls\_within\_function\_definition<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_extract_function_calls_within_function_definition}} -->
 This method tests the extraction of function calls within a specific function definition in C++ code.
 - **Inputs**:
-    - `self`: Represents the instance of the class TestFQN, allowing access to the class's attributes and methods.
+    - `self`: Represents the instance of the class TestFQN to which this method belongs.
 - **Control Flow**:
     - A multi-line string containing C++ code is defined, which includes a helper function, an add function, and a main function that calls these two functions.
     - A CppCDriverTree object is created from the C++ code string, which is used to parse and analyze the code.
-    - The extract_function_calls method is called on the driver_tree object to retrieve all function calls present in the code.
-    - A list comprehension is used to filter out function calls that occur within the main_function, storing them in the calls_in_main list.
+    - The method extract_function_calls() is called on the driver_tree object to retrieve all function calls present in the code.
+    - A list comprehension is used to filter out function calls that occur within the main_function, based on their fully qualified parent path.
     - An assertion checks that there are exactly two function calls within main_function.
-    - The helper_function call is identified and verified to have the correct fully qualified parent path using an assertion.
-    - The add function call is similarly identified and verified with an assertion.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of function call extraction.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](c_cpp_driver.py.md#CppCDriverTreeextract_function_calls)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+    - The function calls are further filtered to identify the specific calls to helper_function and add, and assertions verify their fully qualified parent paths.
+- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of function call extraction within a function definition.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](<c_cpp_driver.py.md#CppCDriverTreeextract_function_calls>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 ---
 #### TestFQN\.test\_extract\_function\_calls\_within\_class\_member\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN.test_extract_function_calls_within_class_member_function}} -->
 This method tests the extraction of function calls within a class member function definition in C++ code.
 - **Inputs**:
-    - `self`: Represents the instance of the class TestFQN to which this method belongs.
+    - `self`: Represents the instance of the class `TestFQN` to which this method belongs.
 - **Control Flow**:
-    - A C++ code snippet is defined as a string, which includes a global function and a class with member functions.
-    - The CppCDriverTree is used to parse the code and extract function calls.
-    - The method filters the extracted function calls to find those within the 'Calculator::processValue' function.
-    - It asserts that there are exactly two function calls within 'Calculator::processValue'.
-    - The method verifies that the fully qualified parent path for each function call ('global_helper' and 'setValue') is 'Calculator::processValue'.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](c_cpp_driver.py.md#CppCDriverTreeextract_function_calls)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](#TestFQN)  (Base Class)
+    - A C++ code snippet is defined as a string, containing a global function `global_helper` and a class `Calculator` with member functions `setValue` and `processValue`.
+    - A `CppCDriverTree` object is created from the code snippet, which is used to parse the code and extract function calls.
+    - The method [`extract_function_calls`](<c_cpp_driver.py.md#CppCDriverTreeextract_function_calls>) is called on the `driver_tree` object to retrieve all function calls in the code.
+    - A list comprehension filters the extracted function calls to find those within the `Calculator::processValue` function, storing them in `calls_in_process_value`.
+    - An assertion checks that there are exactly two function calls within `Calculator::processValue`.
+    - The method uses `next` to find the specific calls to `global_helper` and `setValue` within `calls_in_process_value`.
+    - Assertions verify that the fully qualified parent path for both `global_helper` and `setValue` calls is `Calculator::processValue`.
+- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of function call extraction within a class member function.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](<c_cpp_driver.py.md#CppCDriverTreeextract_function_calls>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/cpp_fully_qualified_path_test.TestFQN`](<#TestFQN>)  (Base Class)
 
 
 

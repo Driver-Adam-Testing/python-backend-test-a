@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mermaid_messages.py` file defines a system message class for reviewing and correcting mermaid code blocks to ensure proper rendering and adherence to syntax rules.
+The `mermaid_messages.py` file defines a system message class for reviewing and correcting mermaid code blocks to ensure proper rendering by avoiding syntax errors and forbidden characters.
 
 # Purpose
-This Python code defines a class `MermaidSyntaxSystemMessage` that extends the `LlmMessage` class from a shared interface module. The primary purpose of this class is to encapsulate a system message specifically tailored for reviewing and correcting Mermaid.js code blocks within a document. The `content` attribute of the class contains detailed instructions and guidelines for ensuring that Mermaid diagrams are syntactically correct and free from common rendering issues. These guidelines include avoiding forbidden characters, correcting list syntax, and ensuring proper formatting of subgraph names and element labels. The message emphasizes the importance of not using parentheses and provides examples of correct and incorrect Mermaid syntax.
-
-The `MermaidSyntaxSystemMessage` class is designed to be part of a larger system that processes or validates Mermaid.js diagrams, likely in the context of a document processing or diagram rendering application. The class is not a standalone script but rather a component intended to be integrated into a broader system, possibly as part of a library or service that deals with document content validation. The `message_kind` attribute is set to `MessageKind.SYSTEM`, indicating that this message is intended for system-level processing rather than user interaction. This class provides a focused functionality, serving as a template or guideline for ensuring the correctness of Mermaid.js code blocks.
+This Python code defines a class `MermaidSyntaxSystemMessage` that extends the `LlmMessage` class, providing a specialized system message for handling Mermaid.js syntax. The primary purpose of this class is to encapsulate a detailed instructional message aimed at ensuring the correct rendering of Mermaid.js diagrams by addressing common syntax errors and providing guidelines for proper formatting. The message content includes specific instructions to avoid forbidden characters, correct list syntax, and prevent rendering issues such as cycles or improper subgraph naming. This code offers narrow functionality, focusing specifically on the validation and correction of Mermaid.js code blocks, and is structured as a class definition with attributes for content and message kind.
 # Imports and Dependencies
 
 ---
@@ -21,11 +19,11 @@ The `MermaidSyntaxSystemMessage` class is designed to be part of a larger system
 ---
 ### MermaidSyntaxSystemMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/mermaid_messages.MermaidSyntaxSystemMessage}} -->
 - **Members**:
-    - `content`: A string containing instructions for reviewing and correcting mermaid code blocks.
-    - `message_kind`: An instance of MessageKind indicating the type of message, set to SYSTEM.
-- **Description**: The MermaidSyntaxSystemMessage class is a specialized message type that extends LlmMessage, designed to provide guidance and enforce rules for reviewing and correcting mermaid.js code blocks. It includes detailed instructions to ensure proper syntax and rendering of mermaid diagrams, such as avoiding forbidden characters, correcting list syntax, and removing spaces in subgraph names. The class is intended to be used in contexts where mermaid.js code needs to be validated and corrected to prevent rendering errors.
+    - `content`: A string containing detailed instructions for reviewing and correcting mermaid code blocks.
+    - `message_kind`: An instance of MessageKind set to SYSTEM, indicating the type of message.
+- **Description**: The MermaidSyntaxSystemMessage class extends LlmMessage and is designed to provide specific instructions for reviewing and correcting mermaid.js code blocks. It ensures that the code blocks are free from rendering errors by avoiding forbidden characters, correcting syntax for lists, and removing unnecessary spaces and parentheses. The class also emphasizes the importance of not creating cycles in diagrams and provides guidance on how to properly format and render mermaid diagrams.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 
 

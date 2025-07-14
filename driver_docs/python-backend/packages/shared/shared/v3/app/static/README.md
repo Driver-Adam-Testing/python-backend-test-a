@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `static` folder in the `python-backend` codebase contains subfolders for enumerations, message definitions, response type handling, and utility tools, each contributing to content categorization, system interactions, response generation, and utility functions.
+Subfolders for enumerations, system messages, response type handling, and utility tools with specific Python files.
 
 ## Folders
 - **[enums](enums/README.md)**: The `enums` folder in the `python-backend` codebase contains the `format_kinds.py` file, which defines the `FormatKind` enumeration for categorizing various content formats.
-- **[messages](messages/README.md)**: The `messages` folder in the `python-backend` codebase contains various Python files that define classes and messages for system and user interactions, focusing on document processing, technical editing, and leveraging language models for generating and refining technical content.
-- **[response_types](response_types/README.md)**: The `response_types` folder in the `python-backend` codebase contains Python files that define classes and enumerations for handling information set definitions and generating list responses in markdown format.
-- **[tools](tools/README.md)**: The `tools` folder in the `python-backend` codebase contains Python files that implement various utility classes for generating folder summaries, performing hybrid searches, and opening files with content retrieval and formatting capabilities.
+- **[messages](messages/README.md)**: Python files that define classes and system messages for document summarization, technical editing, driver application functionality, format-specific messaging, inline editing, mermaid code review, smart instruction input, and software expertise.
+- **[response_types](response_types/README.md)**: Defines classes for handling specific response types, including information set definitions and list formatting.
+- **[tools](tools/README.md)**: Python files that implement utility classes for generating folder summaries, performing hybrid searches, and opening files with content retrieval and formatting capabilities.
 
 
 ---

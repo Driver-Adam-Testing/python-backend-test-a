@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `interfaces` folder in the `python-backend` codebase contains various subfolders and files that define data models, configurations, and utilities for managing agents, billing, file content, usage metrics, AWS client configurations, driver requests and responses, and search operations.
+Various subfolders and files that define models, configurations, and utilities for managing agent operations, billing, file content, usage metrics, AWS client configuration, driver requests and responses, and search operations.
 
 ## Folders
-- **[agents](agents/README.md)**: The `agents` folder in the `python-backend` codebase contains various Python files that define classes and structures for managing agent configurations, block categorizations, data scopes, pipeline systems, and user prompts.
-- **[billing](billing/README.md)**: The `billing` folder in the `python-backend` codebase contains files related to defining data models for subscription records and requests, with a focus on billing frequency.
-- **[file_content](file_content/README.md)**: The `file_content` folder in the `python-backend` codebase contains Python files that define models and classes for handling and representing processed file content, including specific handling for PDF files.
-- **[usage](usage/README.md)**: The `usage` folder in the `python-backend` codebase contains files that define data models and utilities for handling and testing usage metrics and events, including conversions and metadata.
+- **[agents](agents/README.md)**: Python files that define classes and configurations for managing agent operations, including agent configuration, block types and responses, data scope management, pipeline configuration, and user prompts with context.
+- **[billing](billing/README.md)**: Files related to subscription data models, including an empty `__init__.py` and `subscription_schema.py`.
+- **[file_content](file_content/README.md)**: Defines models and classes for handling processed file content, with specific support for PDF files.
+- **[usage](usage/README.md)**: Defines data models and utilities for usage metrics and events, with tests for their functionality.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[aws_client_config.py](aws_client_config.py.md)**: The `aws_client_config.py` file defines a Pydantic model for AWS client configuration, including region name, access key ID, and secret access key.
 - **[request.py](request.py.md)**: The `request.py` file defines data models for driver requests using Pydantic, including `DriverRequest`, `DriverModalRequest` with a `call_id`, and `DriverModalBatchRequest` with a list of `call_ids`.
-- **[response.py](response.py.md)**: The `response.py` file defines a Pydantic model `DriverResponse` and a subclass `DriverModalResponse` with an additional `call_id` attribute.
-- **[search.py](search.py.md)**: The `search.py` file defines classes and enums for handling search operations, including search algorithms, input parameters, and results within the `python-backend` codebase.
+- **[response.py](response.py.md)**: The `response.py` file defines a Pydantic model `DriverResponse` and a subclass `DriverModalResponse` that includes a `call_id` attribute.
+- **[search.py](search.py.md)**: The `search.py` file defines classes and enumerations for handling search operations, including input parameters and results, within the `python-backend` codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

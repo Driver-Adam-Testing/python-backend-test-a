@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst.py` file contains test functions to verify the behavior of the `LlmConfig` class methods, specifically testing the `default` and `from_name` methods for both valid and invalid model names.
+The `tst.py` file contains test functions for verifying the behavior of the `LlmConfig` class methods, including `default` and `from_name`, within the `python-backend` codebase.
 
 # Purpose
-This Python script is a unit test for the `LlmConfig` class, which is imported from a module within a shared library. The script specifically tests the functionality of two methods: `default()` and `from_name()`. It verifies that the `default()` method returns an instance of `LlmConfig` and that the `from_name()` method correctly handles both valid and invalid model names, raising a `ValueError` when an invalid name is provided. The script is narrow in scope, focusing solely on ensuring the correct behavior of these methods within the `LlmConfig` class, and it provides immediate feedback through assertions and print statements to indicate the success or failure of each test case.
+This code is a short test script designed to verify the functionality of the `LlmConfig` class, which is imported from a module within a shared library. The script specifically tests two methods of the `LlmConfig` class: `default()` and `from_name()`. It checks whether the `default()` method returns an instance of `LlmConfig` and whether the `from_name()` method correctly handles both valid and invalid model names, raising a `ValueError` when an invalid name is provided. The script provides narrow functionality focused on ensuring that these methods behave as expected, and it outputs messages to indicate the success or failure of each test case.
 # Imports and Dependencies
 
 ---
@@ -20,13 +20,13 @@ This Python script is a unit test for the `LlmConfig` class, which is imported f
 The function `test_llm_config_methods` tests the `default` and `from_name` methods of the `LlmConfig` class to ensure they return instances of `LlmConfig` and handle invalid model names correctly.
 - **Inputs**: None
 - **Control Flow**:
-    - Call the `default` method of `LlmConfig` and assert the result is an instance of `LlmConfig`.
-    - Print a success message if the `default` method test passes.
-    - Call the `from_name` method of `LlmConfig` with a valid model name ('gpt_4o') and assert the result is an instance of `LlmConfig`.
-    - Print a success message if the `from_name` method test with a valid model name passes, otherwise catch a `ValueError` and print a failure message.
-    - Call the `from_name` method of `LlmConfig` with an invalid model name and expect a `ValueError` to be raised.
-    - Print a success message if the `from_name` method test with an invalid model name passes by raising an exception, otherwise print a failure message.
-- **Output**: The function does not return any value; it prints messages to the console indicating the success or failure of each test case.
+    - Call `LlmConfig.default()` and assert the result is an instance of `LlmConfig`.
+    - Print a success message if the default method test passes.
+    - Call `LlmConfig.from_name("gpt_4o")` within a try block and assert the result is an instance of `LlmConfig`.
+    - Print a success message if the from_name method test with a valid model name passes, otherwise catch and print the exception message.
+    - Call `LlmConfig.from_name("invalid_model_name")` within a try block and expect a `ValueError` exception.
+    - Print a failure message if no exception is raised, otherwise print a success message if the exception is caught as expected.
+- **Output**: The function outputs printed messages indicating whether each test case has passed or failed, including any exception messages for failed tests.
 
 
 

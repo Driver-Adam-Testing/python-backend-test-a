@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `inspection` folder in the `python-backend` codebase contains modules and templates for generating descriptions and summaries of software code, folders, and the overall codebase using language models, with support for various file types, symbols, and levels of detail.
+Modules and templates for generating structured descriptions and analyses of codebase components.
 
 ## Folders
-- **[prompt_templates](prompt_templates/README.md)**: The `prompt_templates` folder in the `python-backend` codebase contains subfolders with templates and instructions for generating descriptions and summaries of software code, folders, and the overall codebase at various levels of detail.
+- **[prompt_templates](prompt_templates/README.md)**: Subfolders with Python files and text templates for generating structured prompts and summarizing software.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[extensions.py](extensions.py.md)**: The `extensions.py` file in the `python-backend` codebase lists various code and metadata file extensions, with a note indicating that the logic is handled elsewhere and some extensions are marked for possible removal.
+- **[extensions.py](extensions.py.md)**: The `extensions.py` file lists various code and metadata file extensions, with notes indicating some entries may be removed as the logic is handled elsewhere.
 - **[files.py](files.py.md)**: The `files.py` file in the `python-backend` codebase provides functionality for determining file types and generating descriptions of files using language models, with support for various programming languages and metadata templates.
-- **[folders.py](folders.py.md)**: The `folders.py` file in the `python-backend` codebase provides functionality for generating and compressing descriptions of folder contents using a language model, with support for both synchronous and asynchronous processing.
-- **[symbols.py](symbols.py.md)**: The `symbols.py` file in the `python-backend` codebase provides functionality for extracting and documenting symbols from source code files, including handling context extraction, symbol description generation using language models, and managing context size constraints.
-- **[toplevel.py](toplevel.py.md)**: The `toplevel.py` file in the `python-backend` codebase provides functions for generating and compressing descriptions of codebase content using a language model, including methods for creating various levels of detail from chunked descriptions.
+- **[folders.py](folders.py.md)**: The `folders.py` file in the `python-backend` codebase provides functionality for generating descriptions of folder contents, including single sentence and paragraph summaries, using a language model to process and compress content from child nodes.
+- **[symbols.py](symbols.py.md)**: The `symbols.py` file in the `python-backend` codebase provides functionality for extracting and documenting symbols from source code files, including handling context size limitations and selecting appropriate models for generating symbol descriptions.
+- **[toplevel.py](toplevel.py.md)**: The `toplevel.py` file in the `python-backend` codebase provides functions for generating and compressing descriptions of codebase content using a language model, including methods for creating various levels of detail such as single sentences, paragraphs, and long descriptions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

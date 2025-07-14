@@ -6,9 +6,9 @@
 The `config.py` file in the `python-backend` codebase defines a `Settings` class for configuring PostgreSQL database connection parameters, including support for different environments and SSL mode settings.
 
 # Purpose
-This Python code defines a configuration management class using the Pydantic library, specifically tailored for applications that require PostgreSQL database connectivity. The `Settings` class inherits from `BaseSettings`, which facilitates the loading of environment variables, allowing for easy configuration management across different environments such as local, development, staging, and production. The class defines several attributes related to PostgreSQL connection parameters, including server, port, user, password, and database name. It also includes an `ENVIRONMENT` attribute to specify the current operational environment, which influences the SSL mode setting for database connections.
+This Python code defines a configuration management class using the Pydantic library, specifically designed to handle environment-based settings for a PostgreSQL database connection. The `Settings` class inherits from `BaseSettings`, which allows it to automatically read configuration values from environment variables or a specified `.env` file. The class includes several attributes that represent different components of a PostgreSQL connection, such as server, port, user, password, and database name. It also includes an `ENVIRONMENT` attribute to specify the deployment environment, which can be one of "local", "development", "staging", or "production". The class provides a computed property, [`SQLALCHEMY_DATABASE_URI`](<#SettingsSQLALCHEMY_DATABASE_URI>), which constructs a PostgreSQL connection string based on these attributes, with the option to override it using a `DATABASE_URL` if provided. Additionally, the [`SSL_MODE`](<#SettingsSSL_MODE>) property determines whether SSL is required based on the environment setting.
 
-The code provides a computed property, [`SQLALCHEMY_DATABASE_URI`](#SettingsSQLALCHEMY_DATABASE_URI), which constructs a PostgreSQL connection string using the provided parameters or directly from a `DATABASE_URL` if it is set, giving it precedence. This property is crucial for applications using SQLAlchemy for database interactions. Another computed property, [`SSL_MODE`](#SettingsSSL_MODE), determines whether SSL is required based on the environment, enhancing security in non-local environments. The use of Pydantic's `computed_field` decorator ensures that these properties are dynamically calculated based on the current settings. This file is intended to be a configuration module that can be imported and utilized by other parts of an application to ensure consistent and secure database connectivity.
+The code is structured as a configuration module, likely intended to be imported and used in other parts of an application that require database connectivity. It provides a clear and structured way to manage database connection settings, ensuring that sensitive information like passwords can be managed securely through environment variables. The use of Pydantic's `BaseSettings` and `computed_field` decorators facilitates the validation and dynamic computation of configuration values, making the code robust and adaptable to different deployment scenarios. This module does not define a public API but serves as an internal configuration utility for applications that need to connect to a PostgreSQL database.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ The code provides a computed property, [`SQLALCHEMY_DATABASE_URI`](#SettingsSQLA
 ---
 ### settings
 - **Type**: `Settings`
-- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is designed to manage application configuration, particularly for database connection settings, by loading values from environment variables or a specified `.env` file. It includes attributes for PostgreSQL connection details, such as server, port, user, password, and database name, as well as the environment type and computed properties for constructing database URIs.
-- **Use**: The `settings` variable is used to access and manage application configuration settings, particularly for database connections, throughout the application.
+- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is designed to manage application configuration, primarily focusing on database connection settings and environment configuration. It includes fields for PostgreSQL server details, environment type, and computed properties for constructing database URIs.
+- **Use**: The `settings` variable is used to access and manage application configuration settings, including database connection parameters and environment-specific configurations.
 
 
 # Classes
@@ -44,10 +44,10 @@ The code provides a computed property, [`SQLALCHEMY_DATABASE_URI`](#SettingsSQLA
     - `ENVIRONMENT`: Specifies the environment type, defaulting to 'local'.
     - `DATABASE_URL`: Optional URL for the database connection, which overrides other PostgreSQL parameters if set.
     - `ASYNC_DATABASE_URL`: Optional URL for asynchronous database connections.
-- **Description**: The Settings class extends BaseSettings to manage configuration for a PostgreSQL database connection, including server details, authentication, and environment settings. It provides flexibility by allowing the use of a DATABASE_URL to override individual PostgreSQL parameters and includes computed properties for constructing the SQLAlchemy database URI and determining SSL mode based on the environment.
+- **Description**: The Settings class extends BaseSettings to manage configuration for a PostgreSQL database connection, supporting both individual connection parameters and a full database URL. It includes environment-specific settings and computed properties for constructing the SQLAlchemy database URI and determining SSL mode based on the environment.
 - **Methods**:
-    - [`python-backend/driver_db/database/config.Settings.SQLALCHEMY_DATABASE_URI`](#SettingsSQLALCHEMY_DATABASE_URI)
-    - [`python-backend/driver_db/database/config.Settings.SSL_MODE`](#SettingsSSL_MODE)
+    - [`python-backend/driver_db/database/config.Settings.SQLALCHEMY_DATABASE_URI`](<#SettingsSQLALCHEMY_DATABASE_URI>)
+    - [`python-backend/driver_db/database/config.Settings.SSL_MODE`](<#SettingsSSL_MODE>)
 - **Inherits From**:
     - `BaseSettings`
 
@@ -55,16 +55,15 @@ The code provides a computed property, [`SQLALCHEMY_DATABASE_URI`](#SettingsSQLA
 
 ---
 #### Settings\.SQLALCHEMY\_DATABASE\_URI<!-- {{#callable:python-backend/driver_db/database/config.Settings.SQLALCHEMY_DATABASE_URI}} -->
-The `SQLALCHEMY_DATABASE_URI` method returns the database connection URI for SQLAlchemy, either from a predefined `DATABASE_URL` or by constructing it from individual PostgreSQL connection parameters.
+The `SQLALCHEMY_DATABASE_URI` method constructs and returns a PostgreSQL database URI based on environment settings, prioritizing a predefined `DATABASE_URL` if available.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - Check if `self.DATABASE_URL` is set.
-    - If `self.DATABASE_URL` is set, return it as the database URI.
-    - If `self.DATABASE_URL` is not set, construct a database URI using `MultiHostUrl.build` with PostgreSQL connection parameters such as `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SERVER`, `POSTGRES_PORT`, `POSTGRES_DB`, and `SSL_MODE`.
+    - Check if `self.DATABASE_URL` is set; if so, return it as the database URI.
+    - If `self.DATABASE_URL` is not set, construct a database URI using `MultiHostUrl.build` with parameters such as `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SERVER`, `POSTGRES_PORT`, `POSTGRES_DB`, and `SSL_MODE`.
     - Return the constructed URI.
-- **Output**: The method outputs a `PostgresDsn` object representing the database connection URI.
-- **See also**: [`python-backend/driver_db/database/config.Settings`](#Settings)  (Base Class)
+- **Output**: The method returns a `PostgresDsn` object representing the database URI.
+- **See also**: [`python-backend/driver_db/database/config.Settings`](<#Settings>)  (Base Class)
 
 
 ---
@@ -76,8 +75,8 @@ The `SSL_MODE` method returns a string indicating the SSL mode for database conn
     - Checks if the `ENVIRONMENT` attribute is not equal to 'local'.
     - Returns 'sslmode=require' if the environment is not 'local'.
     - Returns an empty string if the environment is 'local'.
-- **Output**: A string that is either 'sslmode=require' or an empty string, depending on the environment setting.
-- **See also**: [`python-backend/driver_db/database/config.Settings`](#Settings)  (Base Class)
+- **Output**: A string that is either 'sslmode=require' or an empty string, depending on the environment.
+- **See also**: [`python-backend/driver_db/database/config.Settings`](<#Settings>)  (Base Class)
 
 
 

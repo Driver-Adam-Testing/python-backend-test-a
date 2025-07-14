@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agent_edit_document.py` file defines the process for generating smart instructions to edit a selected portion of a document using a series of agents, including prompt augmentation, default processing, and copy editing.
+The `agent_edit_document.py` file defines the process for generating smart instructions to edit a selected portion of a document using various agents and tools, including prompt augmentation, default agent execution, and copy editing.
 
 # Purpose
-This Python code file is designed to facilitate a smart instruction generation process for editing documents. It defines a structured approach to modifying selected text within a document by leveraging a series of agent-based operations. The file primarily consists of data models and a function that orchestrates the execution of different agents to achieve the desired text modification. The `EditDocumentContext` and `AgentEditDocumentExecuteInput` classes, both derived from Pydantic's `BaseModel`, define the structure of the input data, including the text context and the initial prompt for the operation. The main function, [`run_agent_edit_document`](#run_agent_edit_document), coordinates the execution of three agents: `run_agent_prompt_augmentation`, `run_agent_default`, and `run_agent_copy_editor`, each contributing to the transformation of the selected text based on the provided prompt.
+This Python code file is designed to facilitate a smart instruction generation process for editing documents. It is structured as a library module that can be imported and utilized within a larger application, particularly in a pipeline that involves text processing and editing. The file defines data models and a function that orchestrates the execution of multiple agents to process and edit a selected portion of text within a document. The `EditDocumentContext` and `AgentEditDocumentExecuteInput` classes, both derived from Pydantic's `BaseModel`, are used to encapsulate the context and input data required for the editing process, ensuring type safety and validation.
 
-The code is part of a larger system, as indicated by its imports from shared modules, and is likely intended to be used as a component within a pipeline for document editing tasks. It does not define a public API but rather serves as an internal utility to be invoked with specific input data. The function [`run_agent_edit_document`](#run_agent_edit_document) is the core of this file, managing the flow of data through different processing stages, each represented by an agent, to produce a refined output. The use of tools like `SearchTool` and `OpenFileTool` suggests that the agents may perform operations such as searching for additional information or accessing files to enhance the editing process. Overall, the file provides a focused functionality within a broader document processing framework.
+The core functionality is encapsulated in the [`run_agent_edit_document`](<#run_agent_edit_document>) function, which coordinates the execution of several agents: `run_agent_prompt_augmentation`, `run_agent_default`, and `run_agent_copy_editor`. These agents work in sequence to augment the initial prompt, apply default processing, and finally refine the text through a copy-editing step. The function leverages configurations and tools such as `SearchTool` and `OpenFileTool` to enhance the editing process. The result is returned as a `PipelineStepResponse`, which includes the final edited text and any relevant search results. This file is part of a broader system that likely involves complex document processing and editing workflows, providing a focused and modular approach to text editing tasks.
 # Imports and Dependencies
 
 ---
@@ -29,9 +29,9 @@ The code is part of a larger system, as indicated by its imports from shared mod
 
 ---
 ### INSTRUCTION\_PROMPT
-- **Type**: `str`
-- **Description**: The `INSTRUCTION_PROMPT` is a string variable that contains a prompt message used to instruct the system on how to handle selected text in a document. It specifies that the selected text should be rewritten or appended with new content, which will be formatted as markdown, based on the user's prompt.
-- **Use**: This variable is used as part of the system prompts in the `run_agent_edit_document` function to guide the text editing process.
+- **Type**: `string`
+- **Description**: The `INSTRUCTION_PROMPT` is a string variable that contains a predefined instruction for rewriting a selected text portion of a document. It guides the system to respond with replacement or appended text, formatted as markdown, based on the user's prompt.
+- **Use**: This variable is used as a system prompt in the `run_agent_default` function to guide the text editing process.
 
 
 # Classes
@@ -42,7 +42,7 @@ The code is part of a larger system, as indicated by its imports from shared mod
     - `text_before_selection`: The text before the selected portion.
     - `selected_text`: The text that has been selected.
     - `text_after_selection`: The text after the selected portion.
-- **Description**: The `EditDocumentContext` class is a data model that provides a structured context for smart instruction generation, specifically focusing on text editing tasks. It inherits from `BaseModel` and encapsulates three string attributes: `text_before_selection`, `selected_text`, and `text_after_selection`, which represent the text surrounding a selected portion in a document. This context is crucial for generating instructions or modifications related to the selected text, facilitating tasks such as rewriting or augmenting the selected text based on user prompts.
+- **Description**: The `EditDocumentContext` class is a data model that provides a structured context for smart instruction generation, specifically focusing on a selected portion of text within a document. It extends the `BaseModel` from Pydantic, ensuring data validation and management. The class contains three string attributes: `text_before_selection`, `selected_text`, and `text_after_selection`, which represent the text surrounding a selected segment, allowing for precise manipulation and instruction generation based on the selected text.
 - **Inherits From**:
     - `BaseModel`
 
@@ -53,9 +53,9 @@ The code is part of a larger system, as indicated by its imports from shared mod
     - `prompt`: The initial prompt for generating instructions.
     - `context`: The context surrounding the selected text.
     - `scope`: The data scope within which the instructions are generated.
-- **Description**: The `AgentEditDocumentExecuteInput` class is a specialized input model for generating smart instructions, inheriting from `PipelineInput`. It is designed to facilitate the process of instruction generation by providing a structured input format that includes a prompt, context, and data scope. The class is used in the context of document editing, where it helps in defining the parameters for generating and executing instructions on selected text within a document.
+- **Description**: The `AgentEditDocumentExecuteInput` class is a model for input data used in smart instruction generation processes. It extends the `PipelineInput` class and includes attributes such as `prompt`, which is a string representing the initial prompt for generating instructions, `context`, which is an instance of `EditDocumentContext` providing the surrounding text context, and `scope`, which defines the data scope for the instruction generation.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](../../interfaces/agents/pipeline_configuration.py.md#PipelineInput)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineInput>)
 
 
 # Functions
@@ -66,19 +66,19 @@ The `run_agent_edit_document` function orchestrates a series of agent executions
 - **Inputs**:
     - `input`: An instance of `AgentEditDocumentExecuteInput` containing the prompt, context, and scope for the document editing process.
 - **Control Flow**:
-    - Initialize a [`AgentConfiguration`](../../interfaces/agents/agent_configuration.py.md#AgentConfiguration) object using the input's agent configuration and set its iterations to 1.
-    - Run the [`run_agent_prompt_augmentation`](agent_prompt_augmentation.py.md#run_agent_prompt_augmentation) function with a [`PipelineInput`](../../interfaces/agents/pipeline_configuration.py.md#PipelineInput) constructed from the input's prompt, context, and the modified agent configuration, storing the result in `prompt_augmentation_prompt`.
-    - Execute [`run_agent_default`](agent_default.py.md#run_agent_default) using the result from the prompt augmentation as the prompt, with a new [`AgentConfiguration`](../../interfaces/agents/agent_configuration.py.md#AgentConfiguration) specifying system prompts, iterations, and tool names, and store the result in `default_agent_result`.
-    - Invoke [`run_agent_copy_editor`](agent_copy_editor.py.md#run_agent_copy_editor) with the default agent result as the prompt and a new [`AgentConfiguration`](../../interfaces/agents/agent_configuration.py.md#AgentConfiguration) for the copy editor, storing the result in `copy_editor_result`.
-    - Return a [`PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse) containing the agent result from the copy editor, search results from the default agent, and the agent ID from the default agent.
-- **Output**: A [`PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse) object containing the final agent result, search results, and agent ID.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration`](../../interfaces/agents/agent_configuration.py.md#AgentConfiguration)
-    - [`python-backend/packages/shared/shared/pipelines/agents/agent_prompt_augmentation.run_agent_prompt_augmentation`](agent_prompt_augmentation.py.md#run_agent_prompt_augmentation)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](../../interfaces/agents/pipeline_configuration.py.md#PipelineInput)
-    - [`python-backend/packages/shared/shared/pipelines/agents/agent_default.run_agent_default`](agent_default.py.md#run_agent_default)
-    - [`python-backend/packages/shared/shared/pipelines/agents/agent_copy_editor.run_agent_copy_editor`](agent_copy_editor.py.md#run_agent_copy_editor)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse)
+    - Initialize a [`AgentConfiguration`](<../../interfaces/agents/agent_configuration.py.md#AgentConfiguration>) object using the input's agent configuration and set its iterations to 1.
+    - Invoke [`run_agent_prompt_augmentation`](<agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>) with a [`PipelineInput`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineInput>) constructed from the input's prompt, context, and the modified agent configuration to generate an augmented prompt.
+    - Execute [`run_agent_default`](<agent_default.py.md#run_agent_default>) using the augmented prompt's result and a new [`AgentConfiguration`](<../../interfaces/agents/agent_configuration.py.md#AgentConfiguration>) with specific system prompts, iterations, and tool names to obtain a default agent result.
+    - Run [`run_agent_copy_editor`](<agent_copy_editor.py.md#run_agent_copy_editor>) with the default agent result and a [`AgentConfiguration`](<../../interfaces/agents/agent_configuration.py.md#AgentConfiguration>) for the copy editor agent type to produce a copy editor result.
+    - Return a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) containing the copy editor's agent result, the search results from the default agent, and the agent ID from the default agent.
+- **Output**: A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) object containing the final agent result, search results, and agent ID.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration`](<../../interfaces/agents/agent_configuration.py.md#AgentConfiguration>)
+    - [`python-backend/packages/shared/shared/pipelines/agents/agent_prompt_augmentation.run_agent_prompt_augmentation`](<agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineInput>)
+    - [`python-backend/packages/shared/shared/pipelines/agents/agent_default.run_agent_default`](<agent_default.py.md#run_agent_default>)
+    - [`python-backend/packages/shared/shared/pipelines/agents/agent_copy_editor.run_agent_copy_editor`](<agent_copy_editor.py.md#run_agent_copy_editor>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>)
 
 
 

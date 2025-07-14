@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `billing_service.py` file implements a `BillingService` class that manages subscription operations, such as retrieving active subscriptions and creating new ones, for organizations.
+The `billing_service.py` file implements a `BillingService` class that manages subscription operations, such as retrieving active subscriptions and creating new ones, for organizations using a database session.
 
 # Purpose
-This Python code defines a service for managing subscription billing within an application. It is structured as a class, `BillingService`, which provides methods to interact with subscription data stored in a database. The class is initialized with a database session and uses a `BaseRepository` to perform operations on `Subscription` models. The primary functionalities include retrieving an active subscription for a given organization and creating a new subscription if none exists. The code ensures that an organization cannot have more than one active subscription at a time, raising a `SubscriptionServiceError` if an attempt is made to create a duplicate active subscription.
+This Python file defines a service class, `BillingService`, which provides functionality related to managing subscriptions within an application. The code is structured to be part of a larger system, likely a backend service, where it interacts with a database to perform operations on subscription data. The `BillingService` class uses a session object from SQLModel to interact with the database, and it leverages a `BaseRepository` to abstract common database operations. The primary functions of this service include retrieving an active subscription for a given organization and creating a new subscription if none exists. The code is designed to handle subscription data, including attributes like organization ID, plan type, and billing frequency, and it ensures that only one active subscription exists per organization.
 
-The code is designed to be part of a larger application, likely a backend service, given its reliance on database models and session management. It imports several components from other modules, indicating that it is part of a modular system. The `BillingService` class acts as an interface for subscription-related operations, encapsulating the logic for interacting with the database and ensuring data integrity. This file is not a standalone script but rather a component intended to be used within a broader application context, providing a clear API for managing subscription data.
+The file is intended to be part of a broader application, likely imported and used by other components that require subscription management capabilities. It defines a custom exception, `SubscriptionServiceError`, to handle specific error scenarios, such as attempting to create a subscription when an active one already exists. The use of structured logging via the `logger` module indicates that the service is designed to be robust and maintainable, providing clear insights into its operations. The code does not define a public API or external interface directly but rather serves as a backend component that other parts of the application can utilize to manage subscription-related data.
 # Imports and Dependencies
 
 ---
@@ -37,45 +37,46 @@ The code is designed to be part of a larger application, likely a backend servic
 ### BillingService<!-- {{#class:python-backend/packages/shared/shared/billing/billing_service.BillingService}} -->
 - **Members**:
     - `session`: Holds the database session for executing queries.
-    - `subscription_repository`: Manages subscription data access using the BaseRepository.
-- **Description**: The BillingService class is responsible for managing subscription-related operations within an organization. It utilizes a database session to interact with the subscription data, providing methods to retrieve active subscriptions and create new ones. The class ensures that an organization cannot have more than one active subscription at a time, raising an error if a new subscription is attempted while one is already active.
+    - `subscription_repository`: Manages access to subscription data using the BaseRepository.
+- **Description**: The BillingService class is responsible for managing subscription-related operations within an organization. It utilizes a database session to interact with the subscription data, providing methods to retrieve active subscriptions and create new ones. The class ensures that an organization cannot have more than one active subscription at a time, raising an error if an attempt is made to create a duplicate active subscription. It leverages the BaseRepository for data access and manipulation, ensuring that subscription records are accurately maintained in the database.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.__init__`](#BillingService__init__)
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org`](#BillingServiceget_active_subscription_by_org)
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.create_subscription`](#BillingServicecreate_subscription)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.__init__`](<#BillingService__init__>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org`](<#BillingServiceget_active_subscription_by_org>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.create_subscription`](<#BillingServicecreate_subscription>)
 
 **Methods**
 
 ---
 #### BillingService\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/billing/billing_service.BillingService.__init__}} -->
-The `__init__` method initializes a `BillingService` instance by setting up a database session and a subscription repository.
+The `__init__` method initializes a `BillingService` instance with a database session and sets up a subscription repository.
 - **Inputs**:
-    - `self`: Represents the instance of the `BillingService` class being initialized.
-    - `session`: A `Session` object used for database operations, which is passed to the [`BaseRepository`](../repositories/base_repository.py.md#BaseRepository) for managing `Subscription` entities.
+    - `self`: A reference to the current instance of the `BillingService` class.
+    - `session`: A `Session` object used for database operations.
 - **Control Flow**:
     - Assigns the provided `session` to the instance variable `self.session`.
-    - Initializes `self.subscription_repository` with a [`BaseRepository`](../repositories/base_repository.py.md#BaseRepository) instance, passing the `session` and `Subscription` model to manage subscription data.
-- **Output**: The method does not return any value as it is a constructor for initializing the class instance.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository`](../repositories/base_repository.py.md#BaseRepository)
-- **See also**: [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](#BillingService)  (Base Class)
+    - Initializes `self.subscription_repository` with a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) instance, passing the `session` and `Subscription` model.
+- **Output**: This method does not return any value; it initializes the instance variables.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>)
+- **See also**: [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<#BillingService>)  (Base Class)
 
 
 ---
 #### BillingService\.get\_active\_subscription\_by\_org<!-- {{#callable:python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org}} -->
 The `get_active_subscription_by_org` method retrieves the active subscription record for a given organization ID from the subscription repository.
 - **Inputs**:
-    - `self`: An instance of the BillingService class.
+    - `self`: Refers to the instance of the `BillingService` class.
     - `organization_id`: A string representing the unique identifier of the organization for which the active subscription is being queried.
 - **Control Flow**:
-    - The method calls [`get_by_conditions`](../repositories/base_repository.py.md#BaseRepositoryget_by_conditions) on `self.subscription_repository` with conditions to filter subscriptions by the given `organization_id` and an active status.
-    - If no subscription is found, the method returns `None`.
-    - If a subscription is found, it returns a [`SubscriptionRecord`](../interfaces/billing/subscription_schema.py.md#SubscriptionRecord) object created from the subscription data.
-- **Output**: The method returns a [`SubscriptionRecord`](../interfaces/billing/subscription_schema.py.md#SubscriptionRecord) object if an active subscription is found, otherwise it returns `None`.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get_by_conditions`](../repositories/base_repository.py.md#BaseRepositoryget_by_conditions)
-    - [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord`](../interfaces/billing/subscription_schema.py.md#SubscriptionRecord)
-- **See also**: [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](#BillingService)  (Base Class)
+    - The method calls [`get_by_conditions`](<../repositories/base_repository.py.md#BaseRepositoryget_by_conditions>) on `self.subscription_repository` with conditions to filter subscriptions by the given `organization_id` and an active status.
+    - It checks if the `subscription` retrieved is `None`.
+    - If `subscription` is `None`, the method returns `None`.
+    - If a subscription is found, it returns a [`SubscriptionRecord`](<../interfaces/billing/subscription_schema.py.md#SubscriptionRecord>) object created from the subscription data.
+- **Output**: Returns a [`SubscriptionRecord`](<../interfaces/billing/subscription_schema.py.md#SubscriptionRecord>) object if an active subscription is found, otherwise returns `None`.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#BaseRepositoryget_by_conditions>)
+    - [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord`](<../interfaces/billing/subscription_schema.py.md#SubscriptionRecord>)
+- **See also**: [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<#BillingService>)  (Base Class)
 
 
 ---
@@ -87,18 +88,18 @@ The `create_subscription` method creates a new subscription for an organization 
     - `billing_frequency`: An instance of `BillingFrequency` specifying how often the billing occurs.
     - `start_date`: An optional `datetime` object representing the start date of the subscription; defaults to the current date and time if not provided.
 - **Control Flow**:
-    - The method first checks if there is an active subscription for the given `organization_id` by calling [`get_active_subscription_by_org`](#BillingServiceget_active_subscription_by_org).
-    - If an active subscription is found, it logs an informational message and raises a [`SubscriptionServiceError`](#SubscriptionServiceError) to prevent creating a duplicate subscription.
-    - If no active subscription exists, it creates a new [`Subscription`](../../../../driver_db/database/models_v1.py.md#Subscription) object with the provided details, using the current date and time as the creation date if `start_date` is not specified.
+    - The method first checks if there is an active subscription for the given `organization_id` by calling [`get_active_subscription_by_org`](<#BillingServiceget_active_subscription_by_org>).
+    - If an active subscription exists, it logs an informational message and raises a [`SubscriptionServiceError`](<#SubscriptionServiceError>).
+    - If no active subscription exists, it creates a new [`Subscription`](<../../../../driver_db/database/models_v1.py.md#Subscription>) object with the provided details, using the current date and time as the creation date if `start_date` is not provided.
     - The new subscription is added to the session, committed to the database, and refreshed to ensure it is up-to-date.
-    - Finally, the method returns a [`SubscriptionRecord`](../interfaces/billing/subscription_schema.py.md#SubscriptionRecord) object created from the new subscription's data.
-- **Output**: A [`SubscriptionRecord`](../interfaces/billing/subscription_schema.py.md#SubscriptionRecord) object representing the newly created subscription.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org`](#BillingServiceget_active_subscription_by_org)
-    - [`python-backend/packages/shared/shared/billing/billing_service.SubscriptionServiceError`](#SubscriptionServiceError)
-    - [`python-backend/driver_db/database/models_v1.Subscription`](../../../../driver_db/database/models_v1.py.md#Subscription)
-    - [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord`](../interfaces/billing/subscription_schema.py.md#SubscriptionRecord)
-- **See also**: [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](#BillingService)  (Base Class)
+    - Finally, the method returns a [`SubscriptionRecord`](<../interfaces/billing/subscription_schema.py.md#SubscriptionRecord>) created from the new subscription's data.
+- **Output**: A [`SubscriptionRecord`](<../interfaces/billing/subscription_schema.py.md#SubscriptionRecord>) object representing the newly created subscription.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org`](<#BillingServiceget_active_subscription_by_org>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.SubscriptionServiceError`](<#SubscriptionServiceError>)
+    - [`python-backend/driver_db/database/models_v1.Subscription`](<../../../../driver_db/database/models_v1.py.md#Subscription>)
+    - [`python-backend/packages/shared/shared/interfaces/billing/subscription_schema.SubscriptionRecord`](<../interfaces/billing/subscription_schema.py.md#SubscriptionRecord>)
+- **See also**: [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<#BillingService>)  (Base Class)
 
 
 

@@ -6,7 +6,7 @@
 The `token_store.py` file provides functions to save, load, and clear authentication tokens stored in a JSON file located in the user's home directory.
 
 # Purpose
-This code provides narrow functionality focused on managing token data for a command-line interface (CLI) application. It is a short script that defines three functions: [`save_tokens`](#save_tokens), [`load_tokens`](#load_tokens), and [`clear_tokens`](#clear_tokens), which handle the storage, retrieval, and deletion of token information, respectively. The tokens are stored in a JSON file located in the user's home directory, specifically named ".driver_cli.json". The script uses the `json` module for serialization and deserialization of token data and the `pathlib` module to handle file path operations. This code is likely part of a larger application where token management is necessary for authentication or session management.
+This Python script provides narrow functionality for managing token data in a JSON file located in the user's home directory. It defines three functions: [`save_tokens`](<#save_tokens>), [`load_tokens`](<#load_tokens>), and [`clear_tokens`](<#clear_tokens>). The [`save_tokens`](<#save_tokens>) function writes a dictionary of tokens to a file named `.driver_cli.json`, the [`load_tokens`](<#load_tokens>) function reads and returns the tokens from this file if it exists, and the [`clear_tokens`](<#clear_tokens>) function deletes the file if it is present. This script is likely part of a larger application, serving as a utility for handling authentication or session tokens in a command-line interface (CLI) environment.
 # Imports and Dependencies
 
 ---
@@ -18,9 +18,9 @@ This code provides narrow functionality focused on managing token data for a com
 
 ---
 ### TOKEN\_FILE
-- **Type**: `Path object`
-- **Description**: `TOKEN_FILE` is a global variable that represents the file path to a JSON file named ".driver_cli.json" located in the user's home directory. This file is used to store and retrieve token data for the application.
-- **Use**: This variable is used to read from, write to, and delete the token file in the user's home directory.
+- **Type**: `Path`
+- **Description**: `TOKEN_FILE` is a global variable that represents the file path to a JSON file named ".driver_cli.json" located in the user's home directory. It is constructed using the `Path` object from the `pathlib` module, which provides a convenient way to handle file system paths.
+- **Use**: This variable is used to store, load, and clear token data in a JSON file for a command-line interface application.
 
 
 # Functions
@@ -31,9 +31,9 @@ The `save_tokens` function writes a given dictionary of tokens to a JSON file lo
 - **Inputs**:
     - `tokens`: A dictionary containing token data to be saved to a file.
 - **Control Flow**:
-    - Opens the file specified by TOKEN_FILE in write mode.
-    - Uses the json.dump function to write the tokens dictionary to the file.
-- **Output**: The function does not return any value; it performs a file write operation.
+    - Open the file specified by TOKEN_FILE in write mode.
+    - Use the json.dump function to write the tokens dictionary to the file.
+- **Output**: The function does not return any value; it writes the tokens to a file as a side effect.
 
 
 ---
@@ -53,9 +53,9 @@ The `load_tokens` function reads and returns JSON data from a predefined token f
 The `clear_tokens` function deletes the token file if it exists.
 - **Inputs**: None
 - **Control Flow**:
-    - Check if the TOKEN_FILE exists.
-    - If the TOKEN_FILE exists, delete it using the unlink method.
-- **Output**: The function does not return any value; it performs a file deletion operation if the file exists.
+    - Check if the token file exists at the specified path.
+    - If the file exists, delete it using the `unlink` method.
+- **Output**: The function does not return any value.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `logging_extension.py` file defines a `LoggingExtension` class that logs the first 128 characters of a GraphQL query execution using the `logging` module.
+The `logging_extension.py` file defines a `LoggingExtension` class that logs the first 128 characters of a GraphQL query execution context.
 
 # Purpose
-This code defines a custom extension for a GraphQL server using the Strawberry library, specifically for logging purposes. It is a narrow functionality script that extends the `SchemaExtension` class from Strawberry to log the execution of GraphQL queries. The `LoggingExtension` class overrides the [`on_execute`](#LoggingExtensionon_execute) method to log the first 128 characters of the GraphQL query being executed, removing any newline characters for cleaner logging. This extension is useful for monitoring and debugging GraphQL queries by providing insights into the queries being processed by the server.
+This code defines a custom extension for a GraphQL server using the Strawberry library, specifically for logging purposes. It is a narrow functionality script that extends the `SchemaExtension` class from Strawberry to log the execution of GraphQL queries. The `LoggingExtension` class overrides the [`on_execute`](<#LoggingExtensionon_execute>) method to log the first 128 characters of the GraphQL query being executed, removing any newline characters for cleaner logging. This is useful for monitoring and debugging GraphQL queries by providing insights into the queries being processed by the server.
 # Imports and Dependencies
 
 ---
@@ -28,9 +28,9 @@ This code defines a custom extension for a GraphQL server using the Strawberry l
 
 ---
 ### LoggingExtension<!-- {{#class:python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension}} -->
-- **Description**: The LoggingExtension class is a subclass of SchemaExtension that provides functionality to log GraphQL queries during their execution. It overrides the on_execute method to log the first 128 characters of the query, removing any newline characters, to the logger for monitoring or debugging purposes.
+- **Description**: The LoggingExtension class is a subclass of SchemaExtension that logs the first 128 characters of a GraphQL query execution context, excluding newline characters, to provide insight into the queries being executed.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension.on_execute`](#LoggingExtensionon_execute)
+    - [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension.on_execute`](<#LoggingExtensionon_execute>)
 - **Inherits From**:
     - `SchemaExtension`
 
@@ -38,13 +38,13 @@ This code defines a custom extension for a GraphQL server using the Strawberry l
 
 ---
 #### LoggingExtension\.on\_execute<!-- {{#callable:python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension.on_execute}} -->
-The `on_execute` method logs a truncated version of a GraphQL query and yields control.
+The `on_execute` method logs a truncated version of a GraphQL query from the execution context and yields control.
 - **Inputs**: None
 - **Control Flow**:
     - Logs the first 128 characters of the GraphQL query from the execution context, replacing newlines with empty strings.
-    - Yields control, allowing for further processing or iteration.
-- **Output**: An iterator that yields `None`, indicating the method is designed to be used in a context where iteration is expected.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension`](#LoggingExtension)  (Base Class)
+    - Yields control, allowing for further processing or continuation in a coroutine or generator context.
+- **Output**: An iterator that yields `None`, indicating the method is designed to be used in a generator context.
+- **See also**: [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension`](<#LoggingExtension>)  (Base Class)
 
 
 

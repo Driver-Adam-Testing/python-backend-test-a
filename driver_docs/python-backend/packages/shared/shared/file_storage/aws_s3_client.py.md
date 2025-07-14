@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `aws_s3_client.py` file in the `python-backend` codebase provides a class for interacting with AWS S3, including creating buckets, generating presigned URLs, and uploading and downloading files.
+The `aws_s3_client.py` file in the `python-backend` codebase provides a class for interacting with AWS S3, including creating buckets, generating presigned URLs, uploading files, and downloading files using presigned URLs.
 
 # Purpose
-This Python code defines a utility class, `AWSS3Client`, which provides a set of methods for interacting with Amazon S3, a cloud storage service. The class is designed to facilitate common S3 operations such as creating buckets, generating presigned URLs for secure access to S3 objects, uploading files, and downloading files using presigned URLs. The class constructor initializes an S3 client using credentials and configuration provided by an `AWSClientConfig` object, which encapsulates AWS access details. The code also includes a standalone function, [`org_id_to_hash`](#org_id_to_hash), which generates a SHA-256 hash of an organization ID, likely used for creating unique bucket names or keys.
+This Python code defines a utility class, `AWSS3Client`, which provides a set of methods for interacting with Amazon S3, a cloud storage service. The class is designed to facilitate common S3 operations such as creating buckets, generating presigned URLs for secure access to S3 objects, uploading files, and downloading files using presigned URLs. The class constructor initializes an S3 client using credentials and configuration provided by an `AWSClientConfig` object, which encapsulates AWS access details. The code also includes a standalone function, [`org_id_to_hash`](<#org_id_to_hash>), which generates a SHA-256 hash of an organization ID, likely used for creating unique bucket names or keys.
 
-The `AWSS3Client` class offers methods like [`create_bucket_if_dne`](#AWSS3Clientcreate_bucket_if_dne) to ensure a bucket exists before performing operations, [`generate_get_presigned_url`](#AWSS3Clientgenerate_get_presigned_url) and [`generate_put_presigned_url`](#AWSS3Clientgenerate_put_presigned_url) for creating URLs that allow temporary access to S3 objects, and [`upload_to_s3`](#AWSS3Clientupload_to_s3) and [`upload_file_to_s3`](#AWSS3Clientupload_file_to_s3) for uploading data and files to S3. Additionally, the class provides [`download_file_from_presigned_url`](#AWSS3Clientdownload_file_from_presigned_url) to download files using presigned URLs. The code leverages the `boto3` library for AWS interactions and `httpx` for HTTP requests, indicating a focus on both AWS-specific and general HTTP operations. This file is likely part of a larger application or library that requires seamless integration with AWS S3 for storage and retrieval of data.
+The `AWSS3Client` class offers methods like [`create_bucket_if_dne`](<#AWSS3Clientcreate_bucket_if_dne>) to ensure a bucket exists before performing operations, [`generate_get_presigned_url`](<#AWSS3Clientgenerate_get_presigned_url>) and [`generate_put_presigned_url`](<#AWSS3Clientgenerate_put_presigned_url>) for creating URLs that allow temporary access to S3 objects, and [`upload_to_s3`](<#AWSS3Clientupload_to_s3>) and [`upload_file_to_s3`](<#AWSS3Clientupload_file_to_s3>) for uploading data and files to S3. Additionally, the class provides [`download_file_from_presigned_url`](<#AWSS3Clientdownload_file_from_presigned_url>) to download files using presigned URLs. The code is structured as a library module intended to be imported and used in other parts of a software system, providing a high-level interface for S3 operations while abstracting the underlying complexity of AWS interactions.
 # Imports and Dependencies
 
 ---
@@ -28,29 +28,29 @@ The `AWSS3Client` class offers methods like [`create_bucket_if_dne`](#AWSS3Clien
 - **Members**:
     - `aws_config`: Stores the AWS client configuration details.
     - `s3_client`: Holds the boto3 S3 client instance for interacting with AWS S3.
-- **Description**: The AWSS3Client class provides a high-level interface for interacting with Amazon S3, allowing for operations such as creating buckets, generating pre-signed URLs for GET and PUT requests, uploading files, and downloading files using pre-signed URLs. It utilizes the boto3 library to manage S3 resources and operations, and it requires an AWSClientConfig object to initialize the necessary AWS credentials and region information.
+- **Description**: The AWSS3Client class provides a high-level interface for interacting with Amazon S3, utilizing the boto3 library. It allows for the creation of S3 buckets if they do not exist, and supports generating pre-signed URLs for both uploading and downloading objects. Additionally, it facilitates direct uploads of files and byte content to S3, as well as downloading files using pre-signed URLs. The class is initialized with an AWSClientConfig object that contains necessary AWS credentials and configuration.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.__init__`](#AWSS3Client__init__)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](#AWSS3Clientcreate_bucket_if_dne)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_get_presigned_url`](#AWSS3Clientgenerate_get_presigned_url)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_put_presigned_url`](#AWSS3Clientgenerate_put_presigned_url)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.get_presigned_url`](#AWSS3Clientget_presigned_url)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_to_s3`](#AWSS3Clientupload_to_s3)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_file_to_s3`](#AWSS3Clientupload_file_to_s3)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.download_file_from_presigned_url`](#AWSS3Clientdownload_file_from_presigned_url)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.__init__`](<#AWSS3Client__init__>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](<#AWSS3Clientcreate_bucket_if_dne>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_get_presigned_url`](<#AWSS3Clientgenerate_get_presigned_url>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_put_presigned_url`](<#AWSS3Clientgenerate_put_presigned_url>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.get_presigned_url`](<#AWSS3Clientget_presigned_url>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_to_s3`](<#AWSS3Clientupload_to_s3>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_file_to_s3`](<#AWSS3Clientupload_file_to_s3>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.download_file_from_presigned_url`](<#AWSS3Clientdownload_file_from_presigned_url>)
 
 **Methods**
 
 ---
 #### AWSS3Client\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.__init__}} -->
-The `__init__` method initializes an instance of the `AWSS3Client` class by setting up AWS configuration and creating an S3 client using the provided AWS credentials.
+The `__init__` method initializes an instance of the `AWSS3Client` class by setting up the AWS configuration and creating an S3 client using the provided AWS credentials.
 - **Inputs**:
     - `aws_config`: An instance of `AWSClientConfig` containing AWS configuration details such as region name, access key ID, and secret access key.
 - **Control Flow**:
     - Assigns the provided `aws_config` to the instance variable `self.aws_config`.
-    - Creates an S3 client using `boto3.client` with the region name, access key ID, and secret access key from `aws_config`, and assigns it to the instance variable `self.s3_client`.
-- **Output**: This method does not return any value; it initializes the instance variables for AWS configuration and S3 client.
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+    - Creates an S3 client using `boto3.client` with the region name, access key ID, and secret access key from `self.aws_config`, and assigns it to the instance variable `self.s3_client`.
+- **Output**: This method does not return any value; it initializes the instance variables for the class.
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -64,7 +64,7 @@ The `create_bucket_if_dne` method checks if an S3 bucket exists and creates it i
     - In the `except` block, the method creates the bucket using the `create_bucket` method of the S3 resource.
     - A message is printed to the console indicating that the bucket has been created.
 - **Output**: The method does not return any value (returns `None`).
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -78,8 +78,8 @@ The `generate_get_presigned_url` method generates a pre-signed URL for retrievin
     - The method calls `generate_presigned_url` on the `s3_client` object, specifying the client method as `get_object`.
     - It passes the bucket name and key as parameters to identify the object in the S3 bucket.
     - The expiration time for the URL is set using the `expires` parameter.
-- **Output**: A string representing the generated pre-signed URL for accessing the specified S3 object.
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+- **Output**: A string representing the pre-signed URL that can be used to access the specified object in the S3 bucket.
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -92,12 +92,12 @@ The `generate_put_presigned_url` method generates a pre-signed URL for uploading
     - `metadata`: Optional metadata to be associated with the object; defaults to None if not provided.
     - `expires`: The time in seconds for which the pre-signed URL is valid; defaults to 3600 seconds (1 hour).
 - **Control Flow**:
-    - The method calls `generate_presigned_url` on the `s3_client` object, specifying 'put_object' as the client method.
-    - It passes a dictionary of parameters including the bucket name, object key, content type, and metadata.
-    - The expiration time for the URL is set using the `expires` parameter.
+    - The method calls `generate_presigned_url` on the `s3_client` with `ClientMethod` set to 'put_object'.
+    - It passes a dictionary of parameters including 'Bucket', 'Key', 'ContentType', and 'Metadata' to the `Params` argument.
+    - The `ExpiresIn` argument is set to the `expires` parameter value.
     - The method returns the generated pre-signed URL as a string.
 - **Output**: A string representing the pre-signed URL for uploading an object to the specified S3 bucket.
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -107,12 +107,12 @@ The `get_presigned_url` method generates a pre-signed URL for accessing an S3 ob
     - `organization_id`: A string representing the unique identifier of the organization, which will be hashed to form the bucket name.
     - `path`: A string representing the path or key of the object in the S3 bucket for which the pre-signed URL is to be generated.
 - **Control Flow**:
-    - The method begins by hashing the `organization_id` using SHA-256 and truncating the result to 63 characters to form the `org_id_hash`, which serves as the bucket name.
-    - It then calls the [`generate_get_presigned_url`](#AWSS3Clientgenerate_get_presigned_url) method with the `path` as the key and `org_id_hash` as the bucket name to generate the pre-signed URL.
-- **Output**: A string representing the pre-signed URL for accessing the specified S3 object.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_get_presigned_url`](#AWSS3Clientgenerate_get_presigned_url)
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+    - The method starts by hashing the `organization_id` using SHA-256 and truncating the result to 63 characters to form the `org_id_hash`, which serves as the bucket name.
+    - It then calls the [`generate_get_presigned_url`](<#AWSS3Clientgenerate_get_presigned_url>) method with the `path` as the key and `org_id_hash` as the bucket name to generate the pre-signed URL.
+- **Output**: A string representing the generated pre-signed URL for accessing the specified S3 object.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_get_presigned_url`](<#AWSS3Clientgenerate_get_presigned_url>)
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -121,21 +121,21 @@ The `upload_to_s3` method uploads a zip file to an S3 bucket using a pre-signed 
 - **Inputs**:
     - `zip_content`: A bytes object representing the content of the zip file to be uploaded.
     - `metadata`: A dictionary containing metadata to be associated with the uploaded file.
-    - `upload_key`: A string representing the key (or path) under which the file will be stored in the S3 bucket.
+    - `upload_key`: A string representing the key under which the file will be stored in the S3 bucket.
     - `bucket`: A string representing the name of the S3 bucket where the file will be uploaded.
 - **Control Flow**:
-    - The method first ensures the specified S3 bucket exists by calling [`create_bucket_if_dne`](#AWSS3Clientcreate_bucket_if_dne).
-    - It generates a pre-signed URL for uploading the file using [`generate_put_presigned_url`](#AWSS3Clientgenerate_put_presigned_url).
-    - If the URL generation fails, it logs an error message and returns `False`.
+    - The method first ensures the specified S3 bucket exists by calling [`create_bucket_if_dne`](<#AWSS3Clientcreate_bucket_if_dne>) with the bucket name.
+    - It generates a pre-signed URL for uploading the file using [`generate_put_presigned_url`](<#AWSS3Clientgenerate_put_presigned_url>), specifying the upload key, bucket, content type, and metadata.
+    - If the pre-signed URL is not generated successfully, it logs an error message and returns `False`.
     - It sets up HTTP headers for the upload, including content type and content length.
-    - The method performs an HTTP PUT request to the pre-signed URL with the zip content and headers.
+    - The method performs an HTTP PUT request to the pre-signed URL with the zip content and headers, using a timeout of 120 seconds.
     - It raises an exception if the HTTP request fails.
-    - Finally, it returns `True` if the upload is successful (HTTP status code 200), otherwise `False`.
+    - Finally, it returns `True` if the HTTP response status code is 200, indicating a successful upload.
 - **Output**: A boolean value indicating whether the upload was successful (`True`) or not (`False`).
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](#AWSS3Clientcreate_bucket_if_dne)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_put_presigned_url`](#AWSS3Clientgenerate_put_presigned_url)
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](<#AWSS3Clientcreate_bucket_if_dne>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_put_presigned_url`](<#AWSS3Clientgenerate_put_presigned_url>)
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -148,15 +148,15 @@ The `upload_file_to_s3` method uploads a file to an S3 bucket, creating the buck
     - `metadata`: An optional dictionary containing metadata to be associated with the file in S3.
     - `content_type`: An optional string specifying the content type of the file.
 - **Control Flow**:
-    - The method first calls [`create_bucket_if_dne`](#AWSS3Clientcreate_bucket_if_dne) to ensure the specified bucket exists, creating it if necessary.
-    - An empty dictionary `extra_args` is initialized to hold optional parameters for the upload.
-    - If `metadata` is provided, it is added to `extra_args` under the key 'Metadata'.
-    - If `content_type` is provided, it is added to `extra_args` under the key 'ContentType'.
-    - The method then calls `self.s3_client.upload_file` with the file path, bucket name, upload key, and any extra arguments to perform the file upload.
-- **Output**: The method does not return any value; it performs the upload operation as a side effect.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](#AWSS3Clientcreate_bucket_if_dne)
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+    - Call [`create_bucket_if_dne`](<#AWSS3Clientcreate_bucket_if_dne>) to ensure the specified bucket exists, creating it if necessary.
+    - Initialize an empty dictionary `extra_args` to hold optional parameters for the upload.
+    - If `metadata` is provided, add it to `extra_args` under the key 'Metadata'.
+    - If `content_type` is provided, add it to `extra_args` under the key 'ContentType'.
+    - Use the `s3_client.upload_file` method to upload the file to S3, passing the file path, bucket name, upload key, and any extra arguments.
+- **Output**: The method does not return any value; it performs the side effect of uploading a file to an S3 bucket.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.create_bucket_if_dne`](<#AWSS3Clientcreate_bucket_if_dne>)
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 ---
@@ -164,14 +164,14 @@ The `upload_file_to_s3` method uploads a file to an S3 bucket, creating the buck
 The `download_file_from_presigned_url` method downloads a file from a given presigned URL and saves it to a specified local path.
 - **Inputs**:
     - `presigned_url`: A string representing the presigned URL from which the file will be downloaded.
-    - `download_destination`: A Path object representing the local file path where the downloaded file will be saved.
+    - `download_destination`: A Path object indicating the local file path where the downloaded file will be saved.
 - **Control Flow**:
     - Initiates a streaming GET request to the provided presigned URL using httpx.
     - Checks the response status and raises an error if the request was unsuccessful.
-    - Opens the specified download destination file in write-binary mode.
-    - Iterates over the response content in chunks and writes each chunk to the file.
+    - Opens the specified download destination file in binary write mode.
+    - Iterates over the response content in chunks and writes each chunk to the destination file.
 - **Output**: The method does not return any value; it writes the downloaded file to the specified path.
-- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](#AWSS3Client)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<#AWSS3Client>)  (Base Class)
 
 
 

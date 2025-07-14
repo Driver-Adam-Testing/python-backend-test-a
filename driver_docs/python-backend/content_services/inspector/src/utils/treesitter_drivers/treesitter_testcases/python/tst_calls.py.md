@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst_calls.py` file contains various test cases for Python function and method calls, demonstrating different types of calls including simple, built-in, method, chained, class instance, lambda, module function, and async calls, as well as calls in expressions, control structures, and class definitions.
+The `tst_calls.py` file contains various test cases for Python function and method calls, demonstrating different types of calls including simple, built-in, method, chained, class instance, lambda, module function, and async function calls, as well as calls with unpacking, complex expressions, and property access.
 
 # Purpose
-This Python source code file is a comprehensive collection of test cases designed to demonstrate and verify various types of function and method calls in Python. The file covers a wide range of scenarios, including simple function calls, built-in function calls, method calls on objects, chained method calls, and calls involving class instances. It also explores more advanced topics such as function calls with argument unpacking, lambda expressions, module function calls, and async function calls. Additionally, the file includes examples of function calls within control structures, class definitions, and complex expressions, as well as property access that resembles method calls.
+This Python source code file serves as a comprehensive demonstration of various types of function and method calls in Python. It is structured to cover a wide range of scenarios, from simple function calls and built-in functions to more complex constructs like lambda functions, method calls on class instances, and async function calls. The file is not intended to be a standalone script or a library for import but rather a collection of examples that illustrate different ways to invoke functions and methods in Python. The examples include standard free functions, function calls with argument unpacking, chained method calls, and even property access that resembles method calls.
 
-The code is structured to provide a broad overview of Python's function and method call capabilities, making it a valuable resource for understanding how different types of calls are executed in Python. It includes both standard free functions and class methods, demonstrating the use of decorators like `@classmethod` and `@staticmethod`. The file also illustrates the use of constructors and the `super()` function for method overriding in class inheritance. While the code is not intended to be a standalone script or library, it serves as an educational tool or reference for developers looking to deepen their understanding of Python's function and method call mechanics.
+The code also includes examples of class definitions with methods, class methods, static methods, and the use of the `super()` function to call parent class methods. Additionally, it demonstrates the use of function calls within control structures like loops and conditionals, as well as the use of constructors and complex expressions as arguments in function calls. The file is a valuable resource for understanding the breadth of function and method invocation techniques available in Python, making it a useful reference for both novice and experienced Python developers looking to deepen their understanding of function and method calls.
 # Imports and Dependencies
 
 ---
@@ -24,8 +24,8 @@ The code is structured to provide a broad overview of Python's function and meth
 ---
 ### data
 - **Type**: `list`
-- **Description**: The variable `data` is a list containing a sequence of integers from 1 to 5. It is defined at the top level of the script, making it a global variable accessible throughout the file.
-- **Use**: This variable is used in various function calls to demonstrate operations such as calculating length, finding maximum and minimum values, and summing elements.
+- **Description**: The variable `data` is a list containing the integers 1 through 5. It is used as a collection of numerical values for various operations throughout the code.
+- **Use**: This variable is used in multiple function calls to demonstrate operations such as calculating length, finding maximum and minimum values, and summing elements.
 
 
 ---
@@ -38,15 +38,15 @@ The code is structured to provide a broad overview of Python's function and meth
 ---
 ### numbers
 - **Type**: `dict`
-- **Description**: The variable `numbers` is a dictionary containing two key-value pairs, where the keys are strings 'a' and 'b', and the corresponding values are integers 1 and 2. This dictionary is defined at the top level of the script, making it a global variable accessible throughout the file.
-- **Use**: This variable is used to store a simple mapping of string keys to integer values, and it is serialized to a JSON string using the `json.dumps` function.
+- **Description**: The variable `numbers` is a dictionary that maps string keys to integer values. It contains two key-value pairs: 'a' mapped to 1 and 'b' mapped to 2.
+- **Use**: This variable is used to store a simple mapping of characters to numbers, which can be utilized in various operations or function calls within the code.
 
 
 ---
 ### result
 - **Type**: `int`
-- **Description**: The variable `result` is an integer that stores the length of the list `data`. The list `data` contains five integer elements.
-- **Use**: This variable is used to store the number of elements in the list `data`.
+- **Description**: The variable `result` is an integer that stores the length of the list `data`. The list `data` contains five integer elements, so `result` will be set to 5.
+- **Use**: This variable is used to store the result of the `len()` function applied to the list `data`, which is the number of elements in the list.
 
 
 ---
@@ -66,15 +66,15 @@ The code is structured to provide a broad overview of Python's function and meth
 ---
 ### maximum
 - **Type**: `int`
-- **Description**: The variable `maximum` is an integer that stores the maximum value from the list `data`. It is determined using the built-in `max()` function, which iterates over the elements of `data` to find the largest one.
-- **Use**: This variable is used to hold the largest number in the `data` list for further processing or comparison.
+- **Description**: The variable `maximum` is an integer that stores the maximum value from the list `data`. It is determined using the built-in `max()` function, which iterates over the list to find the largest element.
+- **Use**: This variable is used to hold the maximum value from the list `data` for further processing or comparison.
 
 
 ---
 ### minimum
 - **Type**: `int`
-- **Description**: The variable `minimum` is an integer that holds the smallest value from the list `data`. It is determined using the built-in `min()` function, which calculates the minimum value from the provided iterable.
-- **Use**: This variable is used to store the minimum value from the list `data` for further processing or reference in the program.
+- **Description**: The variable `minimum` holds the smallest value from the list `data`, which is determined using the built-in `min()` function. In this context, `data` is a list of integers `[1, 2, 3, 4, 5]`, so `minimum` will be assigned the value `1`. This variable is used to store the result of finding the minimum value in a list of numbers.
+- **Use**: This variable is used to store the minimum value from the list `data`.
 
 
 ---
@@ -88,7 +88,7 @@ The code is structured to provide a broad overview of Python's function and meth
 ### string\_rep
 - **Type**: `str`
 - **Description**: The variable `string_rep` is a string representation of the integer 42. It is created using the built-in `str()` function, which converts the integer to a string.
-- **Use**: This variable is used to store the string '42', which is the result of converting the integer 42 to a string.
+- **Use**: This variable is used to store the string '42', which can be used in contexts where a string representation of the number is required.
 
 
 ---
@@ -101,92 +101,92 @@ The code is structured to provide a broad overview of Python's function and meth
 ---
 ### stripped
 - **Type**: `str`
-- **Description**: The variable `stripped` is a string that results from removing any leading and trailing whitespace from the `text` variable. The `strip()` method is used to perform this operation on the original string `text`, which is initialized as 'hello world'. This results in `stripped` containing the string 'hello world' without any surrounding whitespace.
-- **Use**: This variable is used to store a cleaned version of the `text` string, with whitespace removed from both ends.
+- **Description**: The variable `stripped` is a string that results from removing any leading and trailing whitespace from the `text` variable, which initially contains the string 'hello world'. The `strip()` method is used to perform this operation, ensuring that `stripped` contains 'hello world' without any surrounding spaces.
+- **Use**: This variable is used to store a cleaned version of the `text` string, free of leading and trailing whitespace.
 
 
 ---
 ### replaced
 - **Type**: `str`
-- **Description**: The variable `replaced` is a string that results from replacing the substring 'world' with 'python' in the original string 'hello world'. This operation is performed using the `replace` method on the `text` variable.
+- **Description**: The variable `replaced` is a string that results from replacing the substring 'world' with 'python' in the original string `text`, which is 'hello world'. This operation is performed using the `replace` method of the string object.
 - **Use**: This variable is used to store the modified version of the `text` string with the specified substring replacement.
 
 
 ---
 ### path\_obj
 - **Type**: `Path`
-- **Description**: The `path_obj` variable is an instance of the `Path` class from the `pathlib` module, representing a filesystem path to the file 'test.txt'. This variable encapsulates the path and provides methods for interacting with the filesystem path in a platform-independent manner.
-- **Use**: This variable is used to perform operations on the specified file path, such as checking its existence, reading from or writing to the file, or manipulating the path.
+- **Description**: The `path_obj` variable is an instance of the `Path` class from the `pathlib` module, representing a filesystem path to the file 'test.txt'. This object provides various methods to interact with the file path, such as checking its existence, reading or writing to the file, and manipulating the path string.
+- **Use**: This variable is used to represent and manipulate the file path 'test.txt' within the filesystem.
 
 
 ---
 ### processed
 - **Type**: `str`
-- **Description**: The `processed` variable is a string that results from applying a series of string manipulation methods on the `text` variable. It first removes any leading and trailing whitespace from `text`, converts the entire string to uppercase, and then replaces occurrences of the substring 'HELLO' with 'HI'. This transformation is applied to the initial value of `text`, which is 'hello world'.
-- **Use**: This variable is used to store a modified version of the `text` string with specific transformations applied.
+- **Description**: The variable `processed` is a string that results from applying a series of string manipulation methods on the `text` variable. It first removes any leading and trailing whitespace from `text`, converts the entire string to uppercase, and then replaces occurrences of the substring 'HELLO' with 'HI'. This transformation is applied to the initial value of `text`, which is 'hello world'.
+- **Use**: This variable is used to store a modified version of the `text` string after applying a series of transformations.
 
 
 ---
 ### path\_result
 - **Type**: `str`
 - **Description**: The variable `path_result` is a string representation of the absolute path of the parent directory of the specified path 'some/path'. It is obtained by creating a `Path` object, accessing its parent directory, converting it to an absolute path, and then converting it to a POSIX-style string.
-- **Use**: This variable is used to store the POSIX-style string representation of the absolute path of a directory.
+- **Use**: This variable is used to store the absolute path of a directory in a POSIX-compliant string format.
 
 
 ---
 ### example
 - **Type**: `Example`
-- **Description**: The variable `example` is an instance of the `Example` class. This class contains a method `method` that takes two parameters, `x` and an optional `y` with a default value of 10, and returns their sum. The class also includes a class method and a static method that return strings 'class' and 'static', respectively.
-- **Use**: The `example` variable is used to call the `method` function with an argument of 5, demonstrating instance method invocation.
+- **Description**: The `example` variable is an instance of the `Example` class. This class contains a method `method` that takes two parameters, `x` and an optional `y` with a default value of 10, and returns their sum. The class also includes a class method and a static method that return strings 'class' and 'static', respectively.
+- **Use**: The `example` variable is used to call the `method` function with an argument of 5, demonstrating instance method invocation on a class object.
 
 
 ---
 ### instance\_result
 - **Type**: `int`
-- **Description**: The variable `instance_result` is an integer that stores the result of calling the `method` function on an instance of the `Example` class with the argument `5`. The `method` function adds the provided argument `x` to a default value `y` of `10`, resulting in `15`.
-- **Use**: This variable is used to store the result of a method call on an instance of a class, demonstrating instance method invocation.
+- **Description**: The variable `instance_result` is an integer that stores the result of calling the `method` function on an instance of the `Example` class. The `method` function takes an integer `x` and an optional integer `y` (defaulting to 10) and returns their sum.
+- **Use**: This variable is used to store the result of the `method` call with the argument `5`, resulting in the value `15`.
 
 
 ---
 ### class\_result
 - **Type**: `str`
-- **Description**: The variable `class_result` is a global variable that stores the result of calling the class method `class_method` from the `Example` class. The `class_method` is a class-level method that returns the string 'class'. This method does not require an instance of the class to be called, as it operates on the class itself.
-- **Use**: This variable is used to store the result of a class method call, demonstrating how class methods can be invoked and their results captured.
+- **Description**: The variable `class_result` is a global variable that stores the result of calling the class method `class_method` from the `Example` class. This method returns a string value, specifically 'class', which is then assigned to `class_result`. The `class_method` is a class-level method, meaning it is called on the class itself rather than an instance of the class.
+- **Use**: This variable is used to store the result of a class method call for later use or reference in the program.
 
 
 ---
 ### static\_result
 - **Type**: `str`
-- **Description**: The variable `static_result` is a global variable that stores the result of calling the static method `static_method` from the `Example` class. This method returns the string 'static', which is then assigned to `static_result`. The use of a static method here indicates that the method can be called on the class itself without needing an instance of the class.
-- **Use**: This variable is used to store the result of a static method call from the `Example` class.
+- **Description**: The variable `static_result` is a global variable that stores the result of calling the static method `static_method` from the `Example` class. This method returns the string 'static', which is then assigned to `static_result`. The use of a static method here indicates that the method does not depend on any instance-specific data.
+- **Use**: This variable is used to store the result of a static method call, which is a string 'static'.
 
 
 ---
 ### calculated
 - **Type**: `int`
-- **Description**: The variable `calculated` is an integer that is computed by taking the maximum of the lengths of `text` and `data`, and adding the minimum of the numbers 1, 2, and 3. The `max` function returns the larger of the two lengths, while the `min` function always returns 1 since it is the smallest of the three numbers.
+- **Description**: The variable `calculated` is an integer that is computed by taking the maximum of the lengths of `text` and `data`, and adding the minimum of the numbers 1, 2, and 3. This results in the length of the longer of the two sequences (`text` or `data`) plus 1.
 - **Use**: This variable is used to store a computed integer value based on the lengths of `text` and `data` and a constant minimum value.
 
 
 ---
 ### conditional
 - **Type**: `NoneType`
-- **Description**: The variable `conditional` is a global variable that executes a conditional expression using the ternary operator. It evaluates the length of the list `data` and prints 'yes' if the length is greater than 0, otherwise it prints 'no'. The result of this expression is the return value of the `print` function, which is `None`, hence `conditional` is of type `NoneType`. This variable does not store any meaningful data as it is primarily used for its side effect of printing to the console.
-- **Use**: This variable is used to conditionally print a message based on the length of the `data` list.
+- **Description**: The variable `conditional` is a global variable that executes a conditional expression using the ternary operator. It prints 'yes' if the length of the list `data` is greater than 0, otherwise it prints 'no'. The result of the print function, which is `None`, is assigned to `conditional`. This means `conditional` itself does not store any meaningful data beyond the execution of the print statement.
+- **Use**: This variable is used to demonstrate a conditional expression that executes different print statements based on the length of the list `data`.
 
 
 ---
 ### args
 - **Type**: `list`
 - **Description**: The variable `args` is a list containing three integer elements: 1, 2, and 3. It is defined at the top level of the script, making it a global variable.
-- **Use**: This variable is used for unpacking arguments in function calls, as demonstrated in the code with the `max(*args)` function call.
+- **Use**: This variable is used to demonstrate function calls with argument unpacking in the script.
 
 
 ---
 ### kwargs
 - **Type**: `dict`
-- **Description**: The `kwargs` variable is a dictionary containing two key-value pairs: 'x' with a value of 10, and 'y' with a value of 20. This dictionary is intended to be used for keyword argument unpacking in function calls.
-- **Use**: The `kwargs` variable is used to provide keyword arguments when calling functions that accept parameters 'x' and 'y'.
+- **Description**: The `kwargs` variable is a dictionary containing two key-value pairs: 'x' with a value of 10 and 'y' with a value of 20. This dictionary is typically used to pass keyword arguments to functions.
+- **Use**: The `kwargs` variable is intended to be used for unpacking keyword arguments in function calls, although in the provided code, it is defined but not used in a function call.
 
 
 ---
@@ -199,8 +199,8 @@ The code is structured to provide a broad overview of Python's function and meth
 ---
 ### square
 - **Type**: `function`
-- **Description**: The `square` variable is a lambda function that takes a single argument `x` and returns the square of `x` by raising it to the power of 2. It is a concise way to define a function for squaring numbers without explicitly using the `def` keyword.
-- **Use**: This variable is used to compute the square of a given number, as demonstrated by its use in calculating `squared_value`.
+- **Description**: The `square` variable is a lambda function that takes a single argument `x` and returns the square of `x`. It is a concise way to define a function for squaring numbers without using the `def` keyword.
+- **Use**: This variable is used to compute the square of a given number by calling it with an argument.
 
 
 ---
@@ -228,13 +228,13 @@ The code is structured to provide a broad overview of Python's function and meth
 ### current\_dir
 - **Type**: `str`
 - **Description**: The variable `current_dir` is a string that holds the current working directory path of the process. It is obtained by calling the `os.getcwd()` function, which returns the absolute path of the current working directory.
-- **Use**: This variable is used to store the current directory path for reference or further operations within the script.
+- **Use**: This variable is used to store and potentially reference the current working directory path within the script.
 
 
 ---
 ### path\_instance
 - **Type**: `Path`
-- **Description**: The variable `path_instance` is an instance of the `Path` class from the `pathlib` module, initialized with the string "/some/path". This represents a filesystem path and provides various methods for path manipulation and file operations.
+- **Description**: The `path_instance` variable is an instance of the `Path` class from the `pathlib` module, initialized with the string "/some/path". This represents a filesystem path and provides various methods for path manipulation and file operations.
 - **Use**: This variable is used to represent and manipulate a specific filesystem path in the code.
 
 
@@ -248,40 +248,40 @@ The code is structured to provide a broad overview of Python's function and meth
 ---
 ### dict\_instance
 - **Type**: `dict`
-- **Description**: The variable `dict_instance` is a dictionary object created using the `dict` constructor with two key-value pairs: 'a' mapped to 1 and 'b' mapped to 2. This dictionary is a simple data structure used to store and access values by their associated keys.
+- **Description**: The variable `dict_instance` is a dictionary object created using the `dict` constructor with two key-value pairs: 'a' mapped to 1 and 'b' mapped to 2. This dictionary is a simple data structure used to store and retrieve values associated with specific keys.
 - **Use**: This variable is used to store a small set of key-value pairs for quick access and manipulation.
 
 
 ---
 ### complex\_call
 - **Type**: `int`
-- **Description**: The `complex_call` variable is an integer that represents the maximum value among three calculated expressions: the length of the `text` string, the sum of the `data` list, and the minimum value of the `numbers` dictionary values. Each expression is evaluated conditionally, defaulting to 0 if the respective variable is empty or not present.
-- **Use**: This variable is used to determine the largest value from a set of conditional calculations based on the provided data structures.
+- **Description**: The `complex_call` variable is an integer that represents the maximum value among three computed expressions: the length of the `text` string, the sum of the `data` list, and the minimum value of the `numbers` dictionary values. Each expression is evaluated conditionally, ensuring that if the respective data structure is empty or None, a default value of 0 is used instead.
+- **Use**: This variable is used to store the result of a complex expression that evaluates multiple conditions and returns the maximum value among them.
 
 
 ---
 ### prop\_example
 - **Type**: `PropertyExample`
-- **Description**: The variable `prop_example` is an instance of the `PropertyExample` class. This class contains a property `computed_value` that calculates and returns the length of the string 'property'. The property is accessed like an attribute, not a method call.
-- **Use**: The `prop_example` variable is used to demonstrate property access in Python, specifically accessing the `computed_value` property.
+- **Description**: The variable `prop_example` is an instance of the `PropertyExample` class. This class contains a property `computed_value` which calculates and returns the length of the string 'property'. The property is accessed like an attribute rather than a method call.
+- **Use**: This variable is used to demonstrate property access in Python, specifically accessing the `computed_value` property of the `PropertyExample` instance.
 
 
 ---
 ### attr\_value
-- **Type**: `int`
-- **Description**: The variable `attr_value` is an integer that holds the result of accessing the `computed_value` property of the `prop_example` instance of the `PropertyExample` class. The `computed_value` property returns the length of the string 'property', which is 8.
-- **Use**: This variable is used to store the value of the `computed_value` property accessed via the `getattr` function.
+- **Type**: `Any`
+- **Description**: The variable `attr_value` is assigned the result of the `getattr` function, which retrieves the value of the attribute named 'computed_value' from the `prop_example` instance of the `PropertyExample` class. The `computed_value` is a property that returns the length of the string 'property', which is 8.
+- **Use**: This variable is used to store the value of the 'computed_value' property from the `prop_example` instance.
 
 
 # Classes
 
 ---
 ### Example<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example}} -->
-- **Description**: The `Example` class is a simple demonstration class that includes an instance method, a class method, and a static method. It serves as an example of different types of methods that can be defined within a class in Python, showcasing how each method type can be called and utilized.
+- **Description**: The `Example` class is a simple demonstration class that includes an instance method, a class method, and a static method. The instance method `method` takes two parameters and returns their sum, with a default value for the second parameter. The class method `class_method` returns a string indicating it is a class method, and the static method `static_method` returns a string indicating it is a static method. This class serves as a basic example of different types of methods in Python.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.method`](#Examplemethod)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.class_method`](#Exampleclass_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.static_method`](#Examplestatic_method)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.method`](<#Examplemethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.class_method`](<#Exampleclass_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.static_method`](<#Examplestatic_method>)
 
 **Methods**
 
@@ -289,14 +289,14 @@ The code is structured to provide a broad overview of Python's function and meth
 #### Example\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example.method}} -->
 The `method` function in the `Example` class adds two numbers, `x` and `y`, with a default value for `y`.
 - **Inputs**:
-    - `self`: The instance of the class `Example` on which the method is called.
-    - `x`: The first number to be added.
+    - `self`: Represents the instance of the class `Example` and is used to access the attributes and methods of the class.
+    - `x`: The first number to be added, required as an input.
     - `y`: The second number to be added, with a default value of 10.
 - **Control Flow**:
-    - The method takes two parameters, `x` and `y`, with `y` defaulting to 10 if not provided.
-    - It calculates the sum of `x` and `y`.
-- **Output**: The method returns the sum of the two input numbers, `x` and `y`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example`](#Example)  (Base Class)
+    - The method takes two parameters, `x` and `y`, with `y` having a default value of 10.
+    - It returns the sum of `x` and `y`.
+- **Output**: The output is the sum of the two input numbers, `x` and `y`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example`](<#Example>)  (Base Class)
 
 
 ---
@@ -304,13 +304,12 @@ The `method` function in the `Example` class adds two numbers, `x` and `y`, with
 The `class_method` is a class method of the `Example` class that returns the string 'class'.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: Represents the class itself, passed automatically to class methods.
+    - `cls`: Represents the class itself, not an instance of the class, and is automatically passed to the class method.
 - **Control Flow**:
-    - The method is defined as a class method using the `@classmethod` decorator.
-    - It takes the class itself as the first argument, conventionally named `cls`.
-    - The method returns the string 'class'.
+    - The method is defined as a class method using the `@classmethod` decorator, which means it receives the class (`cls`) as its first argument instead of an instance of the class.
+    - The method simply returns the string 'class'.
 - **Output**: The method returns the string 'class'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example`](#Example)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example`](<#Example>)  (Base Class)
 
 
 ---
@@ -322,7 +321,7 @@ The `static_method` is a static method of the `Example` class that returns the s
     - The method is defined as a static method, meaning it does not require an instance of the class to be called.
     - The method simply returns the string 'static' without performing any additional operations.
 - **Output**: The method returns a string 'static'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example`](#Example)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Example`](<#Example>)  (Base Class)
 
 
 
@@ -330,10 +329,10 @@ The `static_method` is a static method of the `Example` class that returns the s
 ### WithCallsInDefinition<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.WithCallsInDefinition}} -->
 - **Members**:
     - `default_value`: A class variable initialized to the string representation of the number 42.
-    - `computed`: A class variable initialized to the length of the string 'class_name'.
-- **Description**: The `WithCallsInDefinition` class demonstrates the use of function calls within class variable definitions. It includes two class variables, `default_value` and `computed`, which are initialized using the `str` and `len` functions, respectively. The class also contains a method `method_with_calls` that returns the maximum of these two class variables, showcasing the integration of function calls within class methods.
+    - `computed`: A class variable that holds the length of the string 'class_name'.
+- **Description**: The `WithCallsInDefinition` class demonstrates the use of function calls within class variable definitions. It includes two class variables, `default_value` and `computed`, which are initialized using the `str` and `len` functions, respectively. The class also contains a method `method_with_calls` that returns the maximum of these two class variables, showcasing the integration of function calls in class definitions.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.WithCallsInDefinition.method_with_calls`](#WithCallsInDefinitionmethod_with_calls)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.WithCallsInDefinition.method_with_calls`](<#WithCallsInDefinitionmethod_with_calls>)
 
 **Methods**
 
@@ -343,10 +342,10 @@ The `method_with_calls` method returns the maximum value between the class's `de
 - **Inputs**: None
 - **Control Flow**:
     - The method retrieves the `default_value` and `computed` attributes from the class.
-    - It uses the built-in `max` function to determine the maximum of these two values.
+    - It uses the built-in `max` function to determine the maximum value between `default_value` and `computed`.
     - The method returns the result of the `max` function.
-- **Output**: The method returns the maximum value between the `default_value` and `computed` attributes of the class instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.WithCallsInDefinition`](#WithCallsInDefinition)  (Base Class)
+- **Output**: The method returns the maximum value between the `default_value` and `computed` attributes, which are both strings.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.WithCallsInDefinition`](<#WithCallsInDefinition>)  (Base Class)
 
 
 
@@ -354,7 +353,7 @@ The `method_with_calls` method returns the maximum value between the class's `de
 ### Parent<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent}} -->
 - **Description**: The `Parent` class is a simple class with a single method `method` that returns the string "parent". It serves as a base class for inheritance, as demonstrated by the `Child` class, which extends its functionality.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent.method`](#Parentmethod)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent.method`](<#Parentmethod>)
 
 **Methods**
 
@@ -362,11 +361,11 @@ The `method_with_calls` method returns the maximum value between the class's `de
 #### Parent\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent.method}} -->
 The `method` function in the `Parent` class returns the string 'parent'.
 - **Inputs**:
-    - `self`: Represents the instance of the class on which the method is called.
+    - `self`: Represents the instance of the class `Parent` on which the method is called.
 - **Control Flow**:
-    - The method directly returns the string 'parent' without any conditions or iterations.
-- **Output**: The output is a string 'parent'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent`](#Parent)  (Base Class)
+    - The method directly returns the string 'parent' without any additional logic or conditions.
+- **Output**: The output is a string, specifically 'parent'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent`](<#Parent>)  (Base Class)
 
 
 
@@ -374,32 +373,32 @@ The `method` function in the `Parent` class returns the string 'parent'.
 ### Child<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Child}} -->
 - **Description**: The `Child` class is a subclass of the `Parent` class, and it overrides the `method` function to extend its functionality by calling the `Parent` class's `method` using `super()` and appending additional text to the result.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Child.method`](#Childmethod)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Child.method`](<#Childmethod>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent`](#Parent)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent`](<#Parent>)
 
 **Methods**
 
 ---
 #### Child\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Child.method}} -->
-The [`method`](#Parentmethod) in the `Child` class overrides the parent class method to extend its result with a custom string.
+The [`method`](<#Parentmethod>) in the `Child` class overrides the parent class method to extend its result with a custom string.
 - **Inputs**:
     - `self`: Represents the instance of the class `Child` on which the method is called.
 - **Control Flow**:
-    - Calls the [`method`](#Parentmethod) from the parent class using `super()` and stores the result in `parent_result`.
+    - Calls the [`method`](<#Parentmethod>) from the parent class using `super()` and stores the result in `parent_result`.
     - Returns a string that combines 'child extends' with the `parent_result`.
-- **Output**: A string that combines 'child extends' with the result of the parent class's [`method`](#Parentmethod).
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent.method`](#Parentmethod)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Child`](#Child)  (Base Class)
+- **Output**: A string that combines 'child extends' with the result of the parent class's [`method`](<#Parentmethod>).
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Parent.method`](<#Parentmethod>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.Child`](<#Child>)  (Base Class)
 
 
 
 ---
 ### PropertyExample<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.PropertyExample}} -->
-- **Description**: The `PropertyExample` class is a simple class that demonstrates the use of a property in Python. It contains a single property, `computed_value`, which calculates and returns the length of the string 'property' when accessed. This class serves as an example of how to define and use properties in Python to encapsulate and manage access to computed values.
+- **Description**: The `PropertyExample` class demonstrates the use of a property in Python, specifically showcasing how to define a read-only computed property `computed_value` that returns the length of the string 'property'.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.PropertyExample.computed_value`](#PropertyExamplecomputed_value)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.PropertyExample.computed_value`](<#PropertyExamplecomputed_value>)
 
 **Methods**
 
@@ -412,7 +411,7 @@ The `computed_value` method is a property that returns the length of the string 
     - The method is decorated with `@property`, making it accessible as an attribute rather than a method call.
     - The method returns the result of the `len` function applied to the string 'property'.
 - **Output**: The output is an integer representing the length of the string 'property', which is 8.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.PropertyExample`](#PropertyExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 
@@ -429,10 +428,10 @@ The function `foo` prints 'Hello, World!' to the console.
 
 ---
 ### bar<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.bar}} -->
-The function `bar` takes two integers as input and returns their sum.
+The `bar` function takes two integers as input and returns their sum.
 - **Inputs**:
-    - `x`: An integer representing the first operand for addition.
-    - `y`: An integer representing the second operand for addition.
+    - `x`: An integer representing the first operand in the addition.
+    - `y`: An integer representing the second operand in the addition.
 - **Control Flow**:
     - The function directly returns the result of adding the two input integers `x` and `y`.
 - **Output**: The function returns an integer which is the sum of the two input integers.
@@ -440,26 +439,25 @@ The function `bar` takes two integers as input and returns their sum.
 
 ---
 ### async\_example<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.async_example}} -->
-The `async_example` function is an asynchronous function that waits for a second and then calls another asynchronous function, returning its result.
+The `async_example` function is an asynchronous function that waits for one second and then calls another asynchronous function, returning its result.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by awaiting a 1-second pause using `asyncio.sleep(1)`.
+    - The function begins by awaiting a one-second pause using `asyncio.sleep(1)`.
     - After the pause, it awaits the result of `some_async_function()`.
     - Finally, it returns the result obtained from `some_async_function()`.
-- **Output**: The function returns the result of the `some_async_function()` call, which is expected to be an asynchronous result.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.some_async_function`](#some_async_function)
+- **Output**: The function returns the result of the `some_async_function()` call, which is expected to be a string 'async_result'.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.some_async_function`](<#some_async_function>)
 
 
 ---
 ### some\_async\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_calls.some_async_function}} -->
 The function `some_async_function` is an asynchronous function that returns a fixed string value.
-- **Decorators**: `@async`
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as asynchronous using the `async` keyword.
-    - The function immediately returns the string 'async_result'.
-- **Output**: The function returns a string 'async_result'.
+    - The function is defined as an asynchronous function using the `async def` syntax.
+    - It immediately returns the string 'async_result' without performing any additional operations or awaiting any asynchronous tasks.
+- **Output**: The function returns the string 'async_result'.
 
 
 

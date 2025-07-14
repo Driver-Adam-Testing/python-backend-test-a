@@ -6,9 +6,9 @@
 The `bcolors.py` file defines classes for text color, background color, and text weight using ANSI escape codes, and includes a function to print dictionary keys and values with color-coded keys.
 
 # Purpose
-This Python code provides functionality for printing dictionary keys and values with colored text in the terminal. It defines several classes that encapsulate ANSI escape codes for text styling, including `print_text_color` for text colors, `print_text_background` for background colors, `text_weight` for text weight attributes like bold and underline, and `text_reset` for resetting text formatting. The primary function, [`print_dict`](#print_dict), takes a dictionary as input and prints each key-value pair with the key displayed in a color determined by a hash of the key. This ensures consistent color assignment for each key across different executions.
+This Python code provides functionality for printing text with various colors and styles in the terminal. It defines several classes that encapsulate ANSI escape codes for text color, background color, and text weight (such as bold and underline). The `print_text_color` and `print_text_background` classes provide constants for different colors, while the `text_weight` class offers options for bold and underlined text. The `text_reset` class contains a constant to reset the text formatting to default, ensuring that subsequent text is not affected by the previous formatting.
 
-The code is structured to be a utility script, potentially useful for debugging or enhancing the readability of console outputs by visually distinguishing different dictionary keys. It does not define a public API or external interfaces, as its primary purpose is to provide a specific functionality related to text styling in terminal outputs. The use of ANSI escape codes suggests that it is intended for environments that support such codes, typically Unix-like systems. The commented-out section indicates a potential feature for truncating long string values, which is not currently active in the code.
+The code also includes a function, [`print_dict`](<#print_dict>), which is designed to print the keys and values of a dictionary with colored keys. The function uses a list of color codes and a hashing mechanism to consistently assign a color to each key based on its hash value. This ensures that the same key will always be printed in the same color. The function iterates over the dictionary's keys, applies the color, and prints each key-value pair with the specified formatting. This code is likely intended for use in scripts or applications where visually distinguishing dictionary keys can enhance readability and debugging.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The code is structured to be a utility script, potentially useful for debugging 
     - `MAGENTA`: ANSI escape code for magenta text color.
     - `CYAN`: ANSI escape code for cyan text color.
     - `WHITE`: ANSI escape code for white text color.
-- **Description**: The `print_text_color` class provides a set of constants representing ANSI escape codes for different text colors, allowing for colored text output in terminal applications.
+- **Description**: The `print_text_color` class provides a set of class variables that represent ANSI escape codes for different text colors, allowing for colored text output in terminal applications.
 
 
 ---
@@ -42,7 +42,7 @@ The code is structured to be a utility script, potentially useful for debugging 
     - `BG_MAGENTA`: ANSI escape code for magenta background color.
     - `BG_CYAN`: ANSI escape code for cyan background color.
     - `BG_WHITE`: ANSI escape code for white background color.
-- **Description**: The `print_text_background` class provides a set of constants representing ANSI escape codes for various background colors, allowing text to be printed with different background colors in terminal applications.
+- **Description**: The `print_text_background` class provides a set of constants representing ANSI escape codes for setting the background color of text in terminal output. Each class variable corresponds to a specific color, allowing for easy customization of text background colors in console applications.
 
 
 ---
@@ -57,25 +57,24 @@ The code is structured to be a utility script, potentially useful for debugging 
 ### text\_reset<!-- {{#class:python-backend/packages/shared/shared/utils/bcolors.text_reset}} -->
 - **Members**:
     - `ENDC`: A string representing the ANSI escape code to reset text formatting.
-- **Description**: The `text_reset` class provides a single class variable, `ENDC`, which is used to reset text formatting in terminal outputs by utilizing the ANSI escape code for resetting all attributes.
+- **Description**: The `text_reset` class provides a single class variable, `ENDC`, which is used to reset text formatting in terminal outputs by using the ANSI escape code `\033[0m`. This class is part of a larger set of classes designed to handle text color, background, and weight formatting for terminal output.
 
 
 # Functions
 
 ---
 ### print\_dict<!-- {{#callable:python-backend/packages/shared/shared/utils/bcolors.print_dict}} -->
-The `print_dict` function prints each key-value pair from a dictionary with the key colored based on a hash of the key.
+The `print_dict` function prints each key-value pair from a dictionary with the key displayed in a color determined by a hash of the key.
 - **Inputs**:
-    - `dict_to_print`: A dictionary whose key-value pairs are to be printed with colored keys.
+    - `dict_to_print`: A dictionary whose key-value pairs are to be printed, with keys displayed in color.
 - **Control Flow**:
-    - Define a list of color codes from the `print_text_color` class.
-    - Convert the dictionary keys to a list.
-    - Define an inner function `get_color_for_key` that computes a color for a given key by hashing the key and using the hash to index into the color list.
-    - Iterate over each key in the dictionary.
-    - For each key, determine its color using `get_color_for_key`.
-    - Retrieve the corresponding value from the dictionary.
-    - Print the key-value pair with the key in the determined color and reset the text color after printing.
-- **Output**: The function does not return any value; it prints the dictionary's key-value pairs to the console with colored keys.
+    - A list of color codes is defined for printing text in different colors.
+    - The keys of the input dictionary are extracted and stored in a list.
+    - A nested function `get_color_for_key` is defined to determine the color for a key by hashing the key and using the hash to index into the color list.
+    - The function iterates over each key in the dictionary.
+    - For each key, the corresponding color is determined using `get_color_for_key`.
+    - The key and its associated value are printed with the key in the determined color and the text reset at the end.
+- **Output**: The function does not return any value; it prints the colored key-value pairs to the console.
 
 
 

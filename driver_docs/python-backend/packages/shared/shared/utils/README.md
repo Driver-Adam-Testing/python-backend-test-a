@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains utility scripts and configurations, including text styling with ANSI codes, function decorators, Mermaid diagram rendering, OpenAI file uploads, and Puppeteer configuration.
+Utility scripts and configurations, including text styling, function decorators, Mermaid rendering, OpenAI file upload, and Puppeteer settings.
 
 
 ## Files
@@ -13,7 +13,7 @@ The `utils` folder in the `python-backend` codebase contains utility scripts and
 - **[decorators_test.py](decorators_test.py.md)**: The `decorators_test.py` file contains unit tests for the `expiring_cache` decorator, verifying its caching behavior, expiration functionality, and cache clearing capability.
 - **[mermaid_render.py](mermaid_render.py.md)**: The `mermaid_render.py` file provides functionality to check if a given Mermaid diagram code can be rendered using the Mermaid CLI, utilizing temporary files and subprocess calls for validation.
 - **[openai_file.py](openai_file.py.md)**: The `openai_file.py` file contains a utility function to upload a file to OpenAI's API and return the file ID.
-- **[puppeteer-config.json](puppeteer-config.json.md)**: The `puppeteer-config.json` file specifies configuration arguments for Puppeteer, including disabling the sandbox and setuid sandbox features.
+- **[puppeteer-config.json](puppeteer-config.json.md)**: The `puppeteer-config.json` file contains configuration settings for Puppeteer, specifying arguments to run without a sandbox and disable the setuid sandbox.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

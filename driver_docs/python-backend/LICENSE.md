@@ -6,7 +6,7 @@
 The `LICENSE` file in the `python-backend` codebase contains the MIT License, granting permission to use, copy, modify, and distribute the software with certain conditions.
 
 # Purpose
-The provided content is a standard MIT License text, which is a permissive free software license. It grants users broad rights to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, as long as the original copyright notice and permission notice are included in all copies or substantial portions of the software. This license also disclaims any warranties, ensuring that the software is provided "as is" without any guarantees of performance or suitability for a particular purpose. By using this license, the author, Sebastián Ramírez, allows others to freely use and distribute the software while limiting liability for any potential issues arising from its use.
+The provided content is the text of the MIT License, a widely used open-source software license. This license grants users broad permissions to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, as long as the original copyright notice and permission notice are included in all copies or substantial portions of the software. It also includes a disclaimer that the software is provided "as is," without any warranties, thus limiting the liability of the authors or copyright holders for any potential issues arising from the use of the software. The inclusion of this license in a software codebase indicates that the software is open-source and can be freely used and modified under the terms specified.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

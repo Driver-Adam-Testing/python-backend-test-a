@@ -3,19 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `content_services` folder in the `python-backend` codebase encompasses various submodules and scripts for handling tasks such as modal interface setup, documentation automation, code inspection, diagram validation, event handling, and PDF processing, along with a deployment script for service automation.
+Modules and scripts for configuration, documentation, code inspection, deployment, and dependency management.
 
 ## Folders
-- **[agent](agent/README.md)**: The `agent` folder in the `python-backend` codebase contains the source code for setting up a modal interface and application configuration, test scripts for rendering diagrams, and configuration files for managing project dependencies and metadata.
-- **[autodocs](autodocs/README.md)**: The `autodocs` folder in the `python-backend` codebase is designed for automating the generation of structured technical documentation using AI models, containing configuration files, utility classes, and scripts in the `src` folder, along with `poetry.lock` and `pyproject.toml` files for managing project dependencies and environments.
-- **[generation](generation/README.md)**: The `generation` folder in the `python-backend` codebase contains the `src` directory for processing inline edits and smart instructions, along with configuration files like `poetry.lock` and `pyproject.toml` for managing dependencies and project settings.
-- **[inspector](inspector/README.md)**: The `inspector` folder in the `python-backend` codebase contains modules for code inspection, onboarding, and documentation generation, along with configuration files for package management and deployment instructions.
-- **[mermaid_validator](mermaid_validator/README.md)**: The `mermaid_validator` folder in the `python-backend` codebase contains the source code and configuration files necessary for setting up a Node.js environment to validate Mermaid diagram syntax using the Mermaid CLI.
-- **[onboarding_event_handler](onboarding_event_handler/README.md)**: The `onboarding_event_handler` folder in the `python-backend` codebase contains the source code and tests for handling AWS Lambda events related to onboarding, along with configuration files for managing dependencies and project metadata.
-- **[pdf_preprocessing](pdf_preprocessing/README.md)**: The `pdf_preprocessing` folder in the `python-backend` codebase contains the source code for processing and embedding PDF summaries, along with configuration files for dependency management and version control.
+- **[agent](agent/README.md)**: Main source code for modal interface and block kind agents, tests for Mermaid diagrams, and configuration files.
+- **[auto_toml](auto_toml/README.md)**: Python scripts for TOML configuration management, CLI, OpenAI chat, logging, and dependency files.
+- **[autodocs](autodocs/README.md)**: Configuration files, utility scripts, and Python modules for automated documentation, OpenAI API, and Modal, supported by `poetry.lock` and `pyproject.toml` for package management and project metadata.
+- **[generation](generation/README.md)**: Source code for processing inline edits and smart instructions using Modal, with configuration files for managing dependencies and project settings with Poetry.
+- **[inspector](inspector/README.md)**: Modules for code inspection and task management, configuration and documentation for `uctags`, and essential project files for managing dependencies and setup instructions.
+- **[mermaid_validator](mermaid_validator/README.md)**: Source code and configuration files for setting up a Modal app to validate Mermaid diagram syntax.
+- **[onboarding_event_handler](onboarding_event_handler/README.md)**: Main logic and unit tests for handling AWS Lambda events related to onboarding, with configuration files.
+- **[pdf_preprocessing](pdf_preprocessing/README.md)**: Processing PDF files with dependency management and project configuration, including `src`, `.gitignore`, `poetry.lock`, `pyproject.toml`, and an empty `README.md`.
 
 ## Files
-- **[modal_deploy.sh](modal_deploy.sh.md)**: The `modal_deploy.sh` file is a bash script that automates the deployment of multiple services by executing the `modal deploy` command with a specified environment argument for various directories within the `python-backend` codebase.
+- **[modal_deploy.sh](modal_deploy.sh.md)**: The `modal_deploy.sh` file is a bash script that automates the deployment of multiple services in different directories using a specified environment argument.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_long_descriptions.txt` file provides instructions for summarizing a software codebase into a single paragraph using detailed descriptions of its modules.
+The `single_paragraph_from_long_descriptions.txt` file provides instructions for summarizing a software codebase into a concise paragraph using detailed descriptions of its modules.
 
 # Purpose
-The provided content outlines a template for generating a comprehensive summary of a software codebase based on detailed descriptions of its components. This template is designed to assist a software engineering expert in crafting a concise and informative paragraph that encapsulates the essence of a codebase. It specifies a structured approach where the expert is expected to summarize the codebase in a single paragraph, limited to six sentences, using the detailed descriptions of files and folders provided. The template emphasizes the importance of including the name of the codebase in the summary and instructs the expert to rely solely on the given information without introducing any assumptions or external data. This ensures that the summary is accurate, focused, and reflective of the actual components and structure of the codebase.
+The provided content appears to be a template or guideline for generating a comprehensive summary of a software codebase based on detailed descriptions of its components. The purpose of this template is to assist in creating a concise yet informative overview of a codebase by summarizing the purpose and contents of the codebase in a single paragraph. It instructs the user to utilize detailed descriptions of files and folders within the codebase to construct a coherent narrative that highlights the key functionalities and structure of the software. The template emphasizes accuracy and relevance by advising against speculation and ensuring that the summary is derived solely from the provided information. This approach ensures that the documentation is both precise and useful for understanding the architecture and purpose of the codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,9 +6,7 @@
 The `tests_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection using a retry mechanism to ensure the database is awake before proceeding.
 
 # Purpose
-This Python script is designed to ensure the initialization and readiness of a database service by attempting to establish a connection to the database using SQLAlchemy and SQLModel. The script employs the `tenacity` library to implement a retry mechanism, which repeatedly attempts to connect to the database for a specified duration (up to 5 minutes, with attempts every second) until a successful connection is made or the maximum number of attempts is reached. The [`init`](#init) function is the core component, where it tries to create a session and execute a simple query to verify the database's availability. Logging is used extensively to provide feedback on the connection attempts, with logs indicating the start and completion of the initialization process, as well as any errors encountered during the connection attempts.
-
-The script is structured to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](#main) function. This function orchestrates the initialization process by logging the start of the service, invoking the [`init`](#init) function with the database engine, and logging the completion of the initialization. The script does not define public APIs or external interfaces, as its primary purpose is to serve as an initialization routine for ensuring the database is ready for use, making it a utility script rather than a library module intended for importation.
+This Python script is designed to ensure the initialization of a database connection, providing a narrow and specific functionality. It uses the `tenacity` library to implement a retry mechanism, attempting to establish a session with a database engine up to a maximum of 300 attempts, with a one-second wait between each attempt. The script logs the process of initialization, including any errors encountered, using Python's `logging` module. The [`init`](<#init>) function checks if the database is responsive by executing a simple query, and the [`main`](<#main>) function orchestrates the initialization process, logging the start and completion of the service initialization. This script is typically used in scenarios where a service needs to ensure that a database is ready before proceeding with further operations.
 # Imports and Dependencies
 
 ---
@@ -29,22 +27,22 @@ The script is structured to be executed as a standalone program, as indicated by
 ---
 ### logger
 - **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the Python `logging` module. It is configured to use the module's name as its logger name, which helps in identifying the source of log messages. The logger is set up to log messages at the INFO level and above, providing a mechanism to record informational messages and errors during the execution of the program.
-- **Use**: The `logger` is used to log informational and error messages throughout the program, particularly in the `init` and `main` functions, to track the application's execution flow and handle exceptions.
+- **Description**: The `logger` variable is an instance of a Logger object obtained from the Python logging module. It is configured to use the module's name as its logger name, which helps in identifying the source of log messages. The logger is set up to log messages at the INFO level and above.
+- **Use**: This logger is used throughout the code to log informational messages, warnings, and errors, particularly during the initialization of a database connection and the main service.
 
 
 ---
 ### max\_tries
 - **Type**: `int`
-- **Description**: The variable `max_tries` is an integer that represents the maximum number of retry attempts allowed, calculated as 60 attempts per minute over a span of 5 minutes, resulting in a total of 300 attempts. This value is used to control the retry mechanism for database initialization.
-- **Use**: This variable is used to set the limit on the number of retry attempts in the `retry` decorator for the `init` function.
+- **Description**: The variable `max_tries` is an integer that represents the maximum number of retry attempts allowed for a certain operation. It is calculated as 60 multiplied by 5, which equates to 300 attempts, corresponding to a 5-minute duration if each attempt is spaced by 1 second.
+- **Use**: This variable is used to define the stopping condition for the retry mechanism in the `init` function, limiting the number of retry attempts to 300.
 
 
 ---
 ### wait\_seconds
 - **Type**: `int`
-- **Description**: The `wait_seconds` variable is an integer that specifies the fixed amount of time, in seconds, to wait between retry attempts when initializing a database connection. It is used in conjunction with the `tenacity` library to manage retry behavior.
-- **Use**: This variable is used to define the wait time between retry attempts in the `retry` decorator applied to the `init` function.
+- **Description**: The `wait_seconds` variable is an integer that specifies the fixed amount of time, in seconds, to wait between retry attempts when initializing a database connection. It is used in conjunction with the `tenacity` library to manage retry logic.
+- **Use**: This variable is used to define the wait time between retry attempts in the `init` function's retry decorator.
 
 
 # Functions
@@ -58,21 +56,21 @@ The `init` function attempts to establish a session with a database engine to ve
 - **Control Flow**:
     - The function is decorated with `@retry`, which applies retry logic with specified stop, wait, before, and after conditions.
     - Within a try block, a session is created using the provided `db_engine` to execute a simple SQL select statement to check if the database is responsive.
-    - If the session creation or execution fails, an exception is caught, logged as an error, and then re-raised.
+    - If an exception occurs during the session creation or execution, it is caught, logged as an error, and then re-raised.
 - **Output**: The function does not return any value; it raises an exception if the database connection check fails after the retry attempts.
 
 
 ---
 ### main<!-- {{#callable:python-backend/backend/app/tests_pre_start.main}} -->
-The `main` function initializes a service by logging the start and end of the initialization process and calling the [`init`](#init) function to ensure the database engine is ready.
+The `main` function initializes a service by logging the start and end of the initialization process and calling the [`init`](<#init>) function to ensure the database engine is ready.
 - **Inputs**: None
 - **Control Flow**:
-    - Logs the message 'Initializing service' to indicate the start of the service initialization.
-    - Calls the [`init`](#init) function with the `engine` to ensure the database is ready.
-    - Logs the message 'Service finished initializing' to indicate the completion of the service initialization.
-- **Output**: The function does not return any value; it performs logging and calls the [`init`](#init) function to initialize the service.
-- **Functions called**:
-    - [`python-backend/backend/app/tests_pre_start.init`](#init)
+    - Logs an informational message indicating the start of the service initialization.
+    - Calls the [`init`](<#init>) function with the `engine` to ensure the database is ready.
+    - Logs an informational message indicating the completion of the service initialization.
+- **Output**: The function does not return any value as its return type is `None`.
+- **Functions Called**:
+    - [`python-backend/backend/app/tests_pre_start.init`](<#init>)
 
 
 

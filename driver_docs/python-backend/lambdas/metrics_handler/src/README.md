@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains the main logic for handling AWS Lambda events and includes utility functions for configuration management.
+Main logic for handling AWS Lambda events and utility functions for configuration management.
 
 ## Folders
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains configuration management functionality using Pydantic, as indicated by the `config.py` file, alongside an empty `__init__.py` file.
+- **[utils](utils/README.md)**: Configuration management functionality using Pydantic, with an empty `__init__.py` file.
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase is responsible for handling AWS Lambda events by logging event details, retrieving database connection settings from AWS Secrets Manager, and storing usage event data in a database.
+- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase is responsible for handling AWS Lambda events by logging event details and storing usage events in a database using SQLModel.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

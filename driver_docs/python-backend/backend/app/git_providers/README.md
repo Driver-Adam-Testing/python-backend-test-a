@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `git_providers` folder in the `python-backend` codebase contains various subfolders that manage GitLab integration, including configuration, OAuth strategy, provider management, resource interaction, and utility functions.
+Various components for managing GitLab integration, including configuration, OAuth, providers, API, and utilities.
 
 ## Folders
-- **[core](core/README.md)**: The `core` folder in the `python-backend` codebase contains configuration-related files for Git provider settings, including a Pydantic model and a configuration loader function for GitLab Enterprise Self-Managed providers.
+- **[core](core/README.md)**: The `core` folder in the `python-backend` codebase contains configuration-related files for Git provider settings, including a Pydantic model and a configuration loader for GitLab Enterprise Self-Managed providers.
 - **[oauth](oauth/README.md)**: The `oauth` folder in the `python-backend` codebase contains the `gitlab_oauth_strategy.py` file, which implements the GitLab OAuth strategy for managing authorization and token processes.
-- **[providers](providers/README.md)**: The `providers` folder in the `python-backend` codebase contains the `gitlab_provider.py` file, which implements the `GitLabProvider` class for managing GitLab OAuth, access tokens, repository operations, and AWS integrations.
-- **[resources](resources/README.md)**: The `resources` folder in the `python-backend` codebase contains the `gitlab_resources.py` file, which provides functionality for interacting with GitLab, such as fetching repositories and retrieving project details.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains utility files for handling Git provider errors and generating codebase metadata.
+- **[providers](providers/README.md)**: The `providers` folder in the `python-backend` codebase contains the `gitlab_provider.py` file, which implements the `GitLabProvider` class for managing GitLab OAuth, access tokens, and repository operations with AWS integration.
+- **[resources](resources/README.md)**: The `resources` folder in the `python-backend` codebase contains a file, `gitlab_resources.py`, which provides functionality for interacting with GitLab through its API.
+- **[utils](utils/README.md)**: Utility files for handling Git provider errors and generating codebase metadata.
 
 
 ---

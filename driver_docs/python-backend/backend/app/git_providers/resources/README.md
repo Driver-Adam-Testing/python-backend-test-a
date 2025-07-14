@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `resources` folder in the `python-backend` codebase contains the `gitlab_resources.py` file, which provides functionality for interacting with GitLab, such as fetching repositories and retrieving project details.
+The `resources` folder in the `python-backend` codebase contains a file, `gitlab_resources.py`, which provides functionality for interacting with GitLab through its API.
 
 
 ## Files
-- **[gitlab_resources.py](gitlab_resources.py.md)**: The `gitlab_resources.py` file provides functionality for interacting with GitLab, including fetching repositories, retrieving project details, and downloading repository archives.
+- **[gitlab_resources.py](gitlab_resources.py.md)**: The `gitlab_resources.py` file provides functionality for interacting with GitLab, including fetching repositories, retrieving project details, and downloading repository archives using the GitLab API.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_imports.java` file demonstrates the usage of various Java imports, including collections, file handling, and static imports for mathematical operations.
+The `test_imports.java` file demonstrates the usage of various Java imports, including utility classes, file handling, and static imports for mathematical operations.
 
 # Purpose
-The provided Java code demonstrates the use of various import statements to incorporate classes and static members from different packages, showcasing narrow functionality focused on illustrating import usage. The `ImportExamples` class includes a method [`useImports`](#ImportExamplesuseImports) that utilizes the `List` and `ArrayList` from the `java.util` package to create a list, the `File` class from `java.io` to instantiate a file object, and static imports from `java.lang.Math` to calculate the area of a circle using the constant `PI` and the `pow` method. This code serves as an educational example to highlight how different types of imports can be used in Java to access classes and methods from standard libraries, rather than providing a specific application or utility.
+The provided Java code demonstrates the use of various import statements to incorporate classes and static members from different packages, showcasing a broad functionality. It imports utility classes from `java.util` for handling collections, `java.io` for file operations, and static members from `java.lang.Math` for mathematical calculations. Within the [`useImports`](<#ImportExamplesuseImports>) method, it creates an `ArrayList` to store strings, initializes a `File` object for file manipulation, and calculates the area of a circle using the static `PI` constant and `pow` method from the `Math` class. This code serves as an example of how to leverage Java's import capabilities to simplify access to commonly used classes and methods across different domains.
 # Imports and Dependencies
 
 ---
@@ -23,9 +23,9 @@ The provided Java code demonstrates the use of various import statements to inco
 ---
 ### ImportExamples<!-- {{#class:com.example.imports.ImportExamples}} -->
 - **Modifiers**: `public`
-- **Description**: The `ImportExamples` class demonstrates the use of various import statements in Java, including importing entire packages, specific classes, and static members, to utilize their functionalities within the `useImports` method.
+- **Description**: The `ImportExamples` class demonstrates the use of various import statements in Java, including importing entire packages, specific classes, and static members, to utilize their functionalities within a method.
 - **Methods**:
-    - [`com.example.imports.ImportExamples.useImports`](#ImportExamplesuseImports)
+    - [`com.example.imports.ImportExamples.useImports`](<#ImportExamplesuseImports>)
 
 **Methods**
 
@@ -40,8 +40,8 @@ The `useImports` method demonstrates the usage of various imported classes and s
     - Declare a `double` variable `radius` and initialize it with the value 5.0.
     - Calculate the area of a circle using the formula `PI * pow(radius, 2)` and assign the result to the variable `area`.
 - **Output**:
-    - The method does not return any value.
-- **See also**: [`com.example.imports.ImportExamples`](#ImportExamples)  (Base Class)
+    - This method does not return any value as it is declared with a `void` return type.
+- **See also**: [`com.example.imports.ImportExamples`](<#ImportExamples>)  (Base Class)
 
 
 

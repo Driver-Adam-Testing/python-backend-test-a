@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `api` folder in the `python-backend` codebase contains Python files that define various FastAPI endpoints for health checks, user authentication, chat requests, asset retrieval, and search functionalities.
+Defines API routes for health checks, chat handling, asset management, search, and user profile access.
 
 
 ## Files
-- **[healthcheck.py](healthcheck.py.md)**: The `healthcheck.py` file defines API routes for checking the health status of the application and retrieving user information based on an API key token.
-- **[migrated_studio_endpoints.py](migrated_studio_endpoints.py.md)**: The `migrated_studio_endpoints.py` file defines several FastAPI endpoints for handling chat requests, retrieving primary assets, contents, codebase trees, and document sets within the `python-backend` codebase.
+- **[healthcheck.py](healthcheck.py.md)**: The `healthcheck.py` file defines API routes for checking the health status of the application and retrieving user information using FastAPI.
+- **[migrated_studio_endpoints.py](migrated_studio_endpoints.py.md)**: The `migrated_studio_endpoints.py` file defines several API endpoints for handling chat requests, retrieving primary assets, contents, codebase trees, and document sets within the `python-backend` codebase.
 - **[ping.py](ping.py.md)**: The `ping.py` file defines an API route that returns the user ID of the caller authenticated via an API key token.
 - **[search.py](search.py.md)**: The `search.py` file defines an API endpoint for performing a search using a hybrid search tool, which requires either node IDs or relative paths as input parameters.
 - **[user.py](user.py.md)**: The `user.py` file defines API routes for retrieving user profile and organization information using Auth0 authentication.

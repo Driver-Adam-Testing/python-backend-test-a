@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `usage` folder in the `python-backend` codebase contains files that define data models and utilities for handling and testing usage metrics and events, including conversions and metadata.
+Defines data models and utilities for usage metrics and events, with tests for their functionality.
 
 
 ## Files
 - **[event_metadata.py](event_metadata.py.md)**: The `event_metadata.py` file defines data models for usage session, payment session, and event metadata, as well as a usage metric class that can convert its data into a `UsageEvent` object.
-- **[usage_schema.py](usage_schema.py.md)**: The `usage_schema.py` file defines data models and utilities for handling usage metrics, events, and conversions between units such as bytes and SLOC within the `python-backend` codebase.
-- **[usage_schema_test.py](usage_schema_test.py.md)**: The `usage_schema_test.py` file contains a suite of tests for validating the functionality of usage-related classes and conversion utilities, such as `UsageBalance` and `UsageEventSummary`, within the `python-backend` codebase.
+- **[usage_schema.py](usage_schema.py.md)**: The `usage_schema.py` file defines data models and utilities for handling usage metrics, events, and conversions between units in the `python-backend` codebase.
+- **[usage_schema_test.py](usage_schema_test.py.md)**: The `usage_schema_test.py` file contains a suite of tests for validating the functionality of usage balance and event summary conversions between SLOC and bytes, as well as testing the usage event range within the `python-backend` codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

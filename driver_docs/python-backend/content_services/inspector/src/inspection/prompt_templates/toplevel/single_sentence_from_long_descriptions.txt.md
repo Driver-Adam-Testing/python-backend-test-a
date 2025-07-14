@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_long_descriptions.txt` file provides instructions for summarizing detailed descriptions of modules within a codebase into a single sentence description of the entire codebase.
+The `single_sentence_from_long_descriptions.txt` file outlines a process for creating a concise, single-sentence summary of a codebase by utilizing detailed descriptions of its modules.
 
 # Purpose
-The provided content outlines a structured approach for summarizing a software codebase by leveraging detailed descriptions of its components, such as files and folders. The purpose of this configuration is to guide a software engineering expert in crafting a concise, single-sentence summary of the entire codebase. This summary is constructed by synthesizing the detailed descriptions of each module, ensuring that the name of the codebase and specific file names are included in the final sentence. This process ensures that the summary is accurate and reflective of the actual components and structure of the codebase, without introducing any speculative or extraneous information.
+The provided content outlines a structured approach for generating a concise, single-sentence description of a software codebase. This process involves analyzing detailed descriptions of individual files and folders within the codebase, which are provided in a specific format. Each file and folder is described with its name, path, and a brief explanation of its purpose or content. The goal is to synthesize these detailed descriptions into a coherent summary that accurately reflects the overall purpose and functionality of the entire codebase, without introducing any additional information or assumptions. This method ensures that the final description is both precise and comprehensive, capturing the essence of the codebase based solely on the provided metadata.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

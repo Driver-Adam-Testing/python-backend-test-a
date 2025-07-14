@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.py` file in the `python-backend` codebase defines asynchronous functions for processing inline edits and smart instructions using modal functions with specified images and secrets.
+The `main.py` file in the `python-backend` codebase defines asynchronous functions for processing inline edits and smart instructions using Modal, with dependencies managed via a Debian Slim image and secrets for external services.
 
 # Purpose
-This Python code defines a set of asynchronous functions within a Modal application, which is a framework for deploying and running serverless applications. The code is structured to handle specific data processing tasks using pipelines, as indicated by the function names and imported modules. The primary functionality revolves around two main pipelines: `inline_edit` and `smart_instruction`, each with two associated functions—one for streaming data ([`inline_edit_stream`](#inline_edit_stream) and [`smart_instruction_stream`](#smart_instruction_stream)) and another for running a complete process ([`inline_edit_run`](#inline_edit_run) and [`smart_instruction_run`](#smart_instruction_run)). These functions are designed to process input data asynchronously, leveraging the `AsyncGenerator` to yield results incrementally, which is useful for handling large datasets or streaming data.
+This Python code defines a set of asynchronous functions within a Modal application, which is a platform for deploying and running serverless applications. The code is structured to handle specific data processing tasks using pipelines, as indicated by the function names and imported modules. The primary functionality revolves around two main operations: "inline edit" and "smart instruction," each with streaming and run variants. These operations are likely part of a larger data processing or machine learning workflow, as suggested by the use of terms like "pipeline" and the integration with external services through secrets.
 
-The code utilizes the Modal framework to define application components, such as images and secrets, which are essential for configuring the runtime environment and accessing secure credentials. The `modal.Image` is configured to use a Debian Slim base with Python 3.12, and it installs necessary dependencies, including FastAPI and additional packages specified in a `pyproject.toml` file. The use of `modal.Secret` indicates that the functions require access to sensitive information, such as API keys or database credentials, which are managed securely. The functions are decorated with `@app.function`, specifying the image and secrets they depend on, thus encapsulating the logic for deployment and execution within the Modal platform. This code is intended to be part of a larger application, likely serving as a backend service for processing and transforming data through defined pipelines.
+The code utilizes the Modal framework to define serverless functions, specifying dependencies and environment configurations using a Debian-based image with Python 3.12. It installs necessary packages via pip and poetry, and includes local directories into the deployment environment. The functions are designed to process input data asynchronously, leveraging Pydantic models for data validation and transformation. The use of secrets indicates integration with external services such as OpenAI, databases, and AWS, suggesting that the functions may interact with these services for data retrieval, processing, or storage. Overall, this file serves as a component of a larger application, providing specific data processing capabilities in a serverless context.
 # Imports and Dependencies
 
 ---
@@ -24,22 +24,22 @@ The code utilizes the Modal framework to define application components, such as 
 ---
 ### app
 - **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'generation'. This object serves as the main application container for defining and managing functions and their execution environment in a Modal application.
-- **Use**: The `app` variable is used to define and manage asynchronous functions with specific configurations, such as image and secrets, within the Modal framework.
+- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'generation'. This object serves as the main application container for defining and managing functions and their execution environment in a cloud-based infrastructure.
+- **Use**: This variable is used to register and manage asynchronous functions that are executed with specific configurations, such as custom images and secrets, within the application.
 
 
 ---
 ### image
 - **Type**: `modal.Image`
 - **Description**: The `image` variable is an instance of `modal.Image` configured with a Debian Slim base image and Python version 3.12. It includes additional local directories added to the image at specified remote paths and installs dependencies from a `pyproject.toml` file using Poetry.
-- **Use**: This variable is used to define the environment for the Modal app functions, specifying the base image, additional directories, and dependencies required for execution.
+- **Use**: This variable is used to define the environment for the Modal app functions, specifying the base image, additional directories, and dependencies.
 
 
 ---
 ### secrets
 - **Type**: `list`
 - **Description**: The `secrets` variable is a list containing instances of `modal.Secret` objects, each created using the `from_name` method with specific secret names: 'open-ai', 'db', and 'aws-inspector-s3'. These secrets are likely used to securely store and access sensitive information such as API keys or database credentials.
-- **Use**: This variable is used to pass a list of secrets to the `@app.function` decorator, ensuring that the functions have access to the necessary credentials or sensitive data during execution.
+- **Use**: This variable is used to provide the necessary secrets to the `modal.App` functions, ensuring they have access to the required secure credentials during execution.
 
 
 # Functions
@@ -52,29 +52,29 @@ The `inline_edit_stream` function processes an input dictionary through an inlin
     - `input`: A dictionary containing the data to be processed by the inline edit pipeline.
 - **Control Flow**:
     - Import the `InlineEditPipelineRequest` class from the `shared.v3.app.pipelines.inline_edit` module.
-    - Parse the input dictionary into an `InlineEditPipelineRequest` object using the [`from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict) method.
-    - Iterate asynchronously over the chunks produced by the [`stream`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream) method of the `InlineEditPipelineRequest` object.
-    - Yield each chunk as it is produced.
+    - Parse the input dictionary into an `InlineEditPipelineRequest` object using the [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>) method.
+    - Iterate asynchronously over the chunks produced by the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream>) method of the `InlineEditPipelineRequest` object.
+    - Yield each chunk of data as it is processed.
 - **Output**: An asynchronous generator that yields chunks of data, each represented as a `BaseModel` instance.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream>)
 
 
 ---
 ### inline\_edit\_run<!-- {{#callable:python-backend/content_services/generation/src/main.inline_edit_run}} -->
-The `inline_edit_run` function processes an input dictionary through an inline edit pipeline and returns the result as an asynchronous generator.
+The `inline_edit_run` function asynchronously processes an input dictionary using the `InlineEditPipelineRequest` class and returns the result of its [`run`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun>) method.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `input`: A dictionary containing the data to be processed by the inline edit pipeline.
+    - `input`: A dictionary containing the data to be processed by the `InlineEditPipelineRequest`.
 - **Control Flow**:
     - The function imports `InlineEditPipelineRequest` from the `shared.v3.app.pipelines.inline_edit` module.
-    - It parses the input dictionary into an `InlineEditPipelineRequest` object using the [`from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict) method.
-    - The function calls the [`run`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun) method on the parsed input object and returns its result.
-- **Output**: An asynchronous generator yielding instances of `BaseModel` as processed by the [`run`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun) method of `InlineEditPipelineRequest`.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun)
+    - It converts the input dictionary into an `InlineEditPipelineRequest` object using the [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>) method.
+    - The function then calls the [`run`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun>) method on the `InlineEditPipelineRequest` object and returns its result.
+- **Output**: An asynchronous generator yielding instances of `BaseModel` as processed by the [`run`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun>) method of `InlineEditPipelineRequest`.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun>)
 
 
 ---
@@ -85,29 +85,29 @@ The `smart_instruction_stream` function asynchronously processes input data thro
     - `input`: A dictionary containing the input data to be processed by the smart instruction pipeline.
 - **Control Flow**:
     - The function imports `SmartInstructionPipelineRequest` from the `shared.v3.app.pipelines.smart_instruction` module.
-    - The input dictionary is parsed into a `SmartInstructionPipelineRequest` object using the [`from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict) method.
-    - The function enters an asynchronous loop, iterating over chunks produced by the [`stream`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream) method of the `SmartInstructionPipelineRequest` object.
+    - The input dictionary is parsed into a `SmartInstructionPipelineRequest` object using the [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>) method.
+    - The function enters an asynchronous loop, iterating over chunks produced by the [`stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream>) method of the `SmartInstructionPipelineRequest` object.
     - Each chunk is yielded as part of the asynchronous generator output.
-- **Output**: An asynchronous generator that yields `BaseModel` instances, representing processed chunks of data from the smart instruction pipeline.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream)
+- **Output**: An asynchronous generator that yields chunks of data, each represented as a `BaseModel` instance, processed by the smart instruction pipeline.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequeststream>)
 
 
 ---
 ### smart\_instruction\_run<!-- {{#callable:python-backend/content_services/generation/src/main.smart_instruction_run}} -->
-The `smart_instruction_run` function asynchronously processes a dictionary input using the SmartInstructionPipelineRequest and returns the result of its run method.
+The `smart_instruction_run` function asynchronously executes a smart instruction pipeline using input data and returns the result as an asynchronous generator.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `input`: A dictionary containing the data to be processed by the SmartInstructionPipelineRequest.
+    - `input`: A dictionary containing the input data required to run the smart instruction pipeline.
 - **Control Flow**:
-    - The function imports SmartInstructionPipelineRequest from the shared.v3.app.pipelines.smart_instruction module.
-    - It parses the input dictionary into a SmartInstructionPipelineRequest object using the from_dict method.
-    - The function then calls the run method on the parsed SmartInstructionPipelineRequest object and returns its result.
-- **Output**: An asynchronous generator yielding BaseModel instances, as returned by the run method of SmartInstructionPipelineRequest.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run`](../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun)
+    - The function imports `SmartInstructionPipelineRequest` from the `shared.v3.app.pipelines.smart_instruction` module.
+    - It parses the input dictionary into a `SmartInstructionPipelineRequest` object using the [`from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>) method.
+    - The function calls the [`run`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun>) method on the parsed input object, which executes the pipeline and returns the result.
+- **Output**: An asynchronous generator yielding instances of `BaseModel`, representing the result of the smart instruction pipeline execution.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestfrom_dict>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run`](<../../../packages/shared/shared/v3/app/pipelines/pipeline_request.py.md#PipelineRequestrun>)
 
 
 

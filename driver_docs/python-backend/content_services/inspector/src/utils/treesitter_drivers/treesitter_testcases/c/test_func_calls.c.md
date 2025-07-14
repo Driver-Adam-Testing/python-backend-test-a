@@ -6,12 +6,12 @@
 The `test_func_calls.c` file contains test functions for demonstrating function calls as arguments and conditional function calls, with one function wrapped in a preprocessor conditional directive.
 
 # Purpose
-This C code snippet is a small test script designed to demonstrate function calls used as arguments and conditional compilation. The [`test_function_calls_as_args`](#test_function_calls_as_args) function showcases the use of `strlen` and `sizeof` as arguments to the `max` function, and it prints the length of the string "example" using `printf`. The [`test_conditional_calls`](#test_conditional_calls) function, which is conditionally compiled only if the `hi` macro is defined, illustrates a simple conditional logic where `is_valid` checks a condition on the string "test", and based on the result, either `process` or `handle_error` is called. This code is likely part of a larger testing or demonstration suite, focusing on basic function usage and conditional compilation in C.
+This C code snippet is a small function collection demonstrating function calls as arguments and conditional compilation. The [`test_function_calls_as_args`](<#test_function_calls_as_args>) function showcases the use of function calls (`strlen` and `sizeof`) as arguments to another function (`max`), and it also prints the length of a string using `printf`. The [`test_conditional_calls`](<#test_conditional_calls>) function, which is conditionally compiled only if the `hi` macro is defined, illustrates a simple conditional logic where a string is validated using `is_valid`, and based on the result, either `process` or `handle_error` is called. This code is likely part of a larger program where these utility functions are used for testing or demonstration purposes.
 # Functions
 
 ---
 ### test\_function\_calls\_as\_args<!-- {{#callable:test_function_calls_as_args}} -->
-The function `test_function_calls_as_args` demonstrates the use of function calls as arguments in other function calls.
+The function `test_function_calls_as_args` demonstrates the use of function calls as arguments to other functions.
 - **Inputs**: None
 - **Control Flow**:
     - The function initializes an integer variable `x` with the result of the `max` function, which takes the length of the string "test" and the size of an integer as arguments.
@@ -21,13 +21,13 @@ The function `test_function_calls_as_args` demonstrates the use of function call
 
 ---
 ### test\_conditional\_calls<!-- {{#callable:test_conditional_calls}} -->
-The function `test_conditional_calls` checks if a condition is valid and processes it or handles an error accordingly.
+The function `test_conditional_calls` checks if a condition is valid and processes it if true, otherwise it handles an error.
 - **Inputs**: None
 - **Control Flow**:
-    - The function checks if the result of `is_valid("test")` is true.
-    - If true, it calls the `process("test")` function.
-    - If false, it calls the `handle_error("invalid")` function.
-- **Output**: The function does not return any value.
+    - The function checks the result of `is_valid("test")`.
+    - If `is_valid("test")` returns true, it calls `process("test")`.
+    - If `is_valid("test")` returns false, it calls `handle_error("invalid")`.
+- **Output**: The function does not return any value; it performs actions based on the validity of a condition.
 
 
 

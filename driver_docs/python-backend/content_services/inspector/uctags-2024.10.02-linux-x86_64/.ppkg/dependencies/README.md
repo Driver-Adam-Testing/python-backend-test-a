@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dependencies` folder in the `python-backend` codebase contains YAML files that provide metadata, configuration, and installation instructions for various libraries such as libiconv, libjansson, libxml2, libyaml, and libz.
+YAML configuration files detailing installation and build instructions for libraries like libiconv, libjansson, libxml2, libyaml, and libz.
 
 
 ## Files
-- **[libiconv.yml](libiconv.yml.md)**: The `libiconv.yml` file in the `python-backend` codebase specifies metadata and installation instructions for the libiconv charset conversion library, including its source URL, license information, and configuration options.
-- **[libjansson.yml](libjansson.yml.md)**: The `libjansson.yml` file specifies the configuration and installation details for the Jansson C library, which is used for encoding, decoding, and manipulating JSON.
-- **[libxml2.yml](libxml2.yml.md)**: The `libxml2.yml` file in the `python-backend` codebase specifies the configuration and installation details for the GNOME XML library, including its dependencies, source URLs, and installation instructions.
+- **[libiconv.yml](libiconv.yml.md)**: The `libiconv.yml` file in the `python-backend` codebase specifies the configuration and installation details for the libiconv charset conversion library, including its source URL, license information, and build instructions.
+- **[libjansson.yml](libjansson.yml.md)**: The `libjansson.yml` file specifies the configuration and installation details for the Jansson C library, which is used for encoding, decoding, and manipulating JSON, within the `python-backend` codebase.
+- **[libxml2.yml](libxml2.yml.md)**: The `libxml2.yml` file in the `python-backend` codebase specifies the configuration and installation details for the GNOME XML library, including its dependencies and build options.
 - **[libyaml.yml](libyaml.yml.md)**: The `libyaml.yml` file specifies metadata for the libyaml C library, including its source URL, checksum, license, and build system configuration.
 - **[libz.yml](libz.yml.md)**: The `libz.yml` file in the `python-backend` codebase specifies metadata and build instructions for the zlib data compression library, including its source URL, license, and developer information.
 

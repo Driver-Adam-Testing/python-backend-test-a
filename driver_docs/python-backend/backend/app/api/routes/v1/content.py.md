@@ -6,9 +6,9 @@
 The `content.py` file in the `python-backend` codebase defines a FastAPI router with endpoints for managing content, including listing, retrieving, updating, deleting, and exporting content, as well as handling content tags and document sources.
 
 # Purpose
-This Python file is a FastAPI router module that defines a set of RESTful API endpoints for managing and interacting with content within an application. The module provides a broad range of functionalities related to content management, including listing content, retrieving content by ID, downloading content, updating and deleting content, and managing content tags. It also includes an endpoint for exporting Markdown content to reStructuredText (RST) format. The endpoints are organized under a common theme of content management and are designed to be part of a larger web application, likely serving as a backend service for a content management system.
+This Python file defines a FastAPI router that provides a RESTful API for managing and interacting with content within an application. The code is structured to handle various HTTP methods (GET, PUT, DELETE, POST) to perform operations such as listing content, retrieving content by ID, downloading content, updating content, and deleting content. The API endpoints are protected by permissions, ensuring that only users with the appropriate access rights can perform certain actions. The endpoints utilize a `ContentService` to interact with the underlying data models and perform the necessary business logic.
 
-The technical components of this module include the use of FastAPI's `APIRouter` to define and organize the endpoints, and the integration with a `ContentService` class that encapsulates the business logic for content operations. The module also employs dependency injection for session management and user authentication, ensuring that only authorized users can perform certain actions. The endpoints are protected by permissions such as `ContentReadonlyPermission` and `ContentEditorPermission`, which enforce access control. The module defines public APIs that can be consumed by external clients, such as frontend applications, to perform content-related operations. The use of type annotations and structured request/response schemas enhances the clarity and robustness of the API design.
+The file imports several components from other modules, such as authentication and session management, content schemas, and a content service, indicating that it is part of a larger application. The endpoints are designed to handle specific tasks related to content management, such as exporting Markdown content to RST format, retrieving document sources, and managing content tags. The use of FastAPI's dependency injection system allows for seamless integration of session and user information, ensuring that each request is processed in the context of the current user and session. This file serves as a critical component of the application's backend, providing a well-defined API for content-related operations.
 # Imports and Dependencies
 
 ---
@@ -36,8 +36,8 @@ The technical components of this module include the use of FastAPI's `APIRouter`
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a set of routes for the application, allowing for modular and organized route management. This instance is used to register various HTTP endpoints for content management operations, such as listing, retrieving, updating, and deleting content.
-- **Use**: The `router` variable is used to register and manage HTTP routes for content-related operations in the FastAPI application.
+- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a set of API routes that can be included in a FastAPI application. This allows for modular route definitions and helps in organizing the codebase by grouping related endpoints together.
+- **Use**: The `router` is used to register various HTTP endpoints for content management operations, such as listing, retrieving, updating, and deleting content, as well as exporting content to different formats.
 
 
 # Functions
@@ -50,64 +50,63 @@ The `list_content` function retrieves a list of content items from the database 
     - `session`: An instance of `CurrentSession` representing the current database session.
     - `user`: An instance of `UserToken` representing the authenticated user making the request.
     - `latest_version_only`: A boolean flag indicating whether to retrieve only the latest version of the content; defaults to `False`.
-    - `limit`: An optional integer specifying the maximum number of content items to return; defaults to 20.
-    - `offset`: An optional integer specifying the number of content items to skip before starting to collect the result set; defaults to 0.
-    - `content_type_name`: An optional list of strings specifying the content type names to filter by.
-    - `order`: An optional integer specifying the order of the content items.
+    - `limit`: An optional integer specifying the maximum number of content items to return; defaults to `20`.
+    - `offset`: An optional integer specifying the number of content items to skip before starting to collect the result set; defaults to `0`.
+    - `content_type_name`: An optional list of strings specifying the content type names to filter by, provided as a query parameter.
+    - `order`: An optional integer specifying the order in which to sort the content items.
     - `sort_by`: An optional string specifying the field by which to sort the content items.
-    - `sort_direction`: An optional string specifying the direction of sorting, either 'ASC' or 'DESC'; defaults to 'ASC'.
-    - `status`: An optional string specifying the status of the content items to filter by.
-    - `tag`: An optional list of strings specifying the tags to filter the content items by.
-    - `tag_id`: An optional list of strings specifying the tag IDs to filter the content items by.
-    - `text`: An optional string specifying a text to search for within the content items.
-    - `version_id`: An optional list of strings specifying the version IDs to filter the content items by.
+    - `sort_direction`: An optional string specifying the direction of sorting, either 'ASC' for ascending or 'DESC' for descending; defaults to 'ASC'.
+    - `status`: An optional string specifying the status of the content to filter by.
+    - `tag`: An optional list of strings specifying tags to filter the content by, provided as a query parameter.
+    - `tag_id`: An optional list of strings specifying tag IDs to filter the content by, provided as a query parameter.
+    - `text`: An optional string specifying a text to search for within the content.
+    - `version_id`: An optional list of strings specifying version IDs to filter the content by, provided as a query parameter.
 - **Control Flow**:
-    - A [`ContentService`](../../../services/content_service.py.md#ContentService) instance is created using the provided `session`.
-    - The [`get_list_content`](../../../services/content_service.py.md#ContentServiceget_list_content) method of [`ContentService`](../../../services/content_service.py.md#ContentService) is called with the user's organization ID and a [`ListContentInput`](../../../schemas/content_schema.py.md#ListContentInput) object containing all the filter criteria.
-    - The results from [`get_list_content`](../../../services/content_service.py.md#ContentServiceget_list_content) are returned as the output of the function.
-- **Output**: The function returns an instance of `ListContentResults`, which contains the list of content items matching the provided filter criteria.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](../../../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_list_content`](../../../services/content_service.py.md#ContentServiceget_list_content)
-    - [`python-backend/backend/app/schemas/content_schema.ListContentInput`](../../../schemas/content_schema.py.md#ListContentInput)
+    - A [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is created using the provided `session`.
+    - The [`get_list_content`](<../../../services/content_service.py.md#ContentServiceget_list_content>) method of [`ContentService`](<../../../services/content_service.py.md#ContentService>) is called with the user's organization ID and a [`ListContentInput`](<../../../schemas/content_schema.py.md#ListContentInput>) object containing all the filter criteria.
+    - The results from [`get_list_content`](<../../../services/content_service.py.md#ContentServiceget_list_content>) are returned.
+- **Output**: The function returns an instance of `ListContentResults`, which contains the list of content items matching the filter criteria.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_list_content`](<../../../services/content_service.py.md#ContentServiceget_list_content>)
+    - [`python-backend/backend/app/schemas/content_schema.ListContentInput`](<../../../schemas/content_schema.py.md#ListContentInput>)
 
 
 ---
 ### get\_content\_by\_id<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.get_content_by_id}} -->
-The [`get_content_by_id`](../../../services/content_service.py.md#ContentServiceget_content_by_id) function retrieves content details by its unique identifier (UUID) for a specific user and session.
+The [`get_content_by_id`](<../../../services/content_service.py.md#ContentServiceget_content_by_id>) function retrieves content details by its unique identifier (UUID) for a specific user and session.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: Current session object representing the user's session.
-    - `user`: UserToken object representing the current user making the request.
-    - `content_id`: UUID of the content to be retrieved.
+    - `session`: The current session object, representing the active database session.
+    - `user`: The current user object, containing user-specific information such as organization ID.
+    - `content_id`: The UUID of the content to be retrieved.
 - **Control Flow**:
-    - A ContentService instance is created using the provided session.
-    - The [`get_content_by_id`](../../../services/content_service.py.md#ContentServiceget_content_by_id) method of the ContentService instance is called with the content_id and the user's organization_id.
-    - The result from the ContentService is returned as the output of the function.
-- **Output**: The function returns a DerivedContent object containing the details of the requested content.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](../../../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_content_by_id`](../../../services/content_service.py.md#ContentServiceget_content_by_id)
+    - A [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is created using the provided session.
+    - The [`get_content_by_id`](<../../../services/content_service.py.md#ContentServiceget_content_by_id>) method of the [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is called with the `content_id` and the user's organization ID to retrieve the content details.
+- **Output**: The function returns a `DerivedContent` object containing the details of the requested content.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_content_by_id`](<../../../services/content_service.py.md#ContentServiceget_content_by_id>)
 
 
 ---
 ### get\_download\_content\_by\_id<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.get_download_content_by_id}} -->
-The `get_download_content_by_id` function retrieves a download URL from S3 for a specific node ID.
+The `get_download_content_by_id` function retrieves a download URL from S3 for a specific node ID using the current session and user information.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: The current session object, representing the active database session.
-    - `user`: The current user object, containing user authentication and authorization details.
-    - `node_id`: The UUID of the node for which the download URL is requested.
+    - `session`: The current session object, which provides context for the request.
+    - `user`: The current user object, containing user-specific information such as organization ID.
+    - `node_id`: The UUID of the node for which the download URL is being requested.
 - **Control Flow**:
-    - A [`ContentService`](../../../services/content_service.py.md#ContentService) instance is created using the provided session.
-    - The [`get_content_download_url`](../../../services/content_service.py.md#ContentServiceget_content_download_url) method of the [`ContentService`](../../../services/content_service.py.md#ContentService) is called with the `node_id` and the user's organization ID to retrieve the download URL.
-- **Output**: The function returns a `DownloadContentResponse` object containing the download URL and related content details.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](../../../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_content_download_url`](../../../services/content_service.py.md#ContentServiceget_content_download_url)
+    - A [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is created using the provided session.
+    - The [`get_content_download_url`](<../../../services/content_service.py.md#ContentServiceget_content_download_url>) method of the [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is called with the `node_id` and the user's organization ID to retrieve the download URL.
+- **Output**: Returns a `DownloadContentResponse` object containing the download URL and related content details.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_content_download_url`](<../../../services/content_service.py.md#ContentServiceget_content_download_url>)
 
 
 ---
@@ -115,17 +114,17 @@ The `get_download_content_by_id` function retrieves a download URL from S3 for a
 The `get_content_root_by_id` function retrieves the root codebase content record for a specified content ID.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: Current session object, representing the current database session.
-    - `user`: Current user object, containing user-related information such as organization ID.
+    - `session`: Current session object, representing the active database session.
+    - `user`: Current user object, containing user-specific information such as organization ID.
     - `content_id`: UUID of the content for which the root codebase content record is to be retrieved.
 - **Control Flow**:
-    - A [`ContentService`](../../../services/content_service.py.md#ContentService) object is instantiated using the provided `session`.
-    - The `get_content_root_by_id` method of the [`ContentService`](../../../services/content_service.py.md#ContentService) object is called with `content_id` and `user.organization_id` as arguments.
-    - The result from the `get_content_root_by_id` method is returned as the output of the function.
-- **Output**: The function returns a `DerivedContent` object, which contains the root codebase content details for the specified content ID.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](../../../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
+    - Instantiate a [`ContentService`](<../../../services/content_service.py.md#ContentService>) object using the provided `session`.
+    - Call the `get_content_root_by_id` method of the [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance, passing `content_id` and `user.organization_id` as arguments.
+    - Return the result of the `get_content_root_by_id` method call.
+- **Output**: Returns a `DerivedContent` object containing the root codebase content details for the specified content ID.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
 
 
 ---
@@ -133,39 +132,38 @@ The `get_content_root_by_id` function retrieves the root codebase content record
 The `get_document_sources` function retrieves the sources associated with a specific document identified by its content ID.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: The current session object, which provides context for the database operations.
-    - `user`: The current user object, which includes user-specific information such as the organization ID.
-    - `content_id`: The UUID of the content for which the document sources are being requested.
+    - `session`: The current session object, representing the database session or connection.
+    - `user`: The current user object, containing user-related information such as the organization ID.
+    - `content_id`: The UUID of the content for which the document sources are to be retrieved.
 - **Control Flow**:
-    - A [`ContentService`](../../../services/content_service.py.md#ContentService) instance is created using the provided session.
-    - The `get_content_sources` method of the [`ContentService`](../../../services/content_service.py.md#ContentService) instance is called with the `content_id` and the user's organization ID to retrieve the document sources.
-- **Output**: The function returns a `ContentSourceResponse` object containing details about the document sources.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](../../../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
+    - A [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is created using the provided session.
+    - The `get_content_sources` method of the [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance is called with the `content_id` and the user's organization ID to retrieve the document sources.
+- **Output**: The function returns a `ContentSourceResponse` object containing the details of the document sources associated with the specified content.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
 
 
 ---
 ### update\_content<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.update_content}} -->
-The `update_content` function updates content by its ID using the provided update data.
+The `update_content` function updates a content record by its ID using the provided update data.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: The current session object, which provides the context for database operations.
-    - `user`: The user token object, representing the authenticated user making the request.
-    - `content_id`: The UUID of the content to be updated.
-    - `update_data`: A dictionary containing the data to update the content with; validation is noted as a TODO.
+    - `session`: An instance of CurrentSession representing the current database session.
+    - `user`: An instance of UserToken representing the current authenticated user.
+    - `content_id`: A UUID representing the unique identifier of the content to be updated.
+    - `update_data`: A dictionary containing the data to update the content with.
 - **Control Flow**:
-    - A [`ContentService`](../../../services/content_service.py.md#ContentService) instance is created using the provided session.
-    - The `edit_content` method of the [`ContentService`](../../../services/content_service.py.md#ContentService) is called with the user's organization ID, the content ID, and the update data.
-    - The result of the `edit_content` method is returned.
-- **Output**: The function returns a `DerivedContent` object representing the updated content.
-- **Functions called**:
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
+    - A ContentService instance is created using the provided session.
+    - The edit_content method of the ContentService instance is called with the user's organization ID, the content ID, and the update data.
+- **Output**: Returns an instance of DerivedContent representing the updated content.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
 
 
 ---
 ### delete\_content<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.delete_content}} -->
-The `delete_content` function deletes a content item identified by its UUID from the database for a specific organization.
+The `delete_content` function deletes a content item identified by its UUID from the database for a given user's organization.
 - **Decorators**: `@router.delete`
 - **Inputs**:
     - `session`: An instance of CurrentSession representing the current database session.
@@ -173,30 +171,30 @@ The `delete_content` function deletes a content item identified by its UUID from
     - `content_id`: A UUID representing the unique identifier of the content to be deleted.
 - **Control Flow**:
     - Initialize a ContentService instance using the provided session.
-    - Call the delete_content method of the ContentService instance, passing the user's organization ID and the content ID to delete the specified content.
-- **Output**: The function returns None, indicating that it performs an action without returning a value.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](../../../repositories/base_repository.py.md#BaseRepositorydelete)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
+    - Call the `delete_content` method of the ContentService instance, passing the user's organization ID and the content ID to delete the specified content.
+- **Output**: The function returns None, indicating that the content has been successfully deleted, and it sets the HTTP response status code to 204 (No Content).
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#BaseRepositorydelete>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
 
 
 ---
 ### get\_content\_tags<!-- {{#callable:python-backend/backend/app/api/routes/v1/content.get_content_tags}} -->
-The [`get_content_tags`](../../../services/content_service.py.md#ContentServiceget_content_tags) function retrieves tags associated with a specific content item using its UUID.
+The [`get_content_tags`](<../../../services/content_service.py.md#ContentServiceget_content_tags>) function retrieves tags associated with a specific content item identified by its UUID.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: Current session object, representing the current database session.
-    - `user`: UserToken object, representing the current authenticated user.
+    - `user`: Current user object, containing user authentication and authorization details.
     - `content_id`: UUID of the content for which tags are to be retrieved.
 - **Control Flow**:
-    - Initialize a ContentService object with the current session.
-    - Call the [`get_content_tags`](../../../services/content_service.py.md#ContentServiceget_content_tags) method of the ContentService object, passing the content_id and the user's organization_id.
-    - Return the result of the [`get_content_tags`](../../../services/content_service.py.md#ContentServiceget_content_tags) method call.
-- **Output**: A ContentTagsResponse object containing the list of tags associated with the specified content.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](../../../repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_content_tags`](../../../services/content_service.py.md#ContentServiceget_content_tags)
+    - Initialize a [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance using the provided session.
+    - Call the [`get_content_tags`](<../../../services/content_service.py.md#ContentServiceget_content_tags>) method of the [`ContentService`](<../../../services/content_service.py.md#ContentService>) instance, passing the `content_id` and the user's organization ID.
+    - Return the result of the [`get_content_tags`](<../../../services/content_service.py.md#ContentServiceget_content_tags>) method call.
+- **Output**: A `ContentTagsResponse` object containing the list of tags associated with the specified content.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_content_tags`](<../../../services/content_service.py.md#ContentServiceget_content_tags>)
 
 
 ---
@@ -204,16 +202,16 @@ The [`get_content_tags`](../../../services/content_service.py.md#ContentServiceg
 The function exports Markdown content to reStructuredText (RST) format and returns it as a downloadable file.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of CurrentSession representing the current session context.
-    - `request`: An instance of ExportSingleRequest containing the Markdown content to be converted to RST.
+    - `session`: An instance of CurrentSession, representing the current session context.
+    - `request`: An instance of ExportSingleRequest, containing the Markdown content to be converted to RST.
 - **Control Flow**:
     - Initialize a ContentService object using the provided session.
     - Convert the Markdown content from the request to RST format using the ContentService.
-    - Return a StreamingResponse containing the RST content with appropriate headers for file download.
-- **Output**: A StreamingResponse object containing the converted RST content, with headers set for downloading the file as 'exported_content.rst'.
-- **Functions called**:
-    - [`python-backend/backend/app/services/content_service.ContentService`](../../../services/content_service.py.md#ContentService)
-    - [`python-backend/backend/app/services/content_service.ContentService.convert_markdown_to_rst`](../../../services/content_service.py.md#ContentServiceconvert_markdown_to_rst)
+    - Return a StreamingResponse containing the RST content, with appropriate media type and headers for file download.
+- **Output**: A StreamingResponse object containing the converted RST content, with headers set for file download.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/content_service.ContentService`](<../../../services/content_service.py.md#ContentService>)
+    - [`python-backend/backend/app/services/content_service.ContentService.convert_markdown_to_rst`](<../../../services/content_service.py.md#ContentServiceconvert_markdown_to_rst>)
 
 
 

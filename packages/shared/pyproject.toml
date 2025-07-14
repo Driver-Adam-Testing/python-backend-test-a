@@ -6,7 +6,7 @@ authors = ["Neil Zumwalde <neilzumwalde@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.13"
 markdown = "^3.6"
 database = { path = "../../driver_db", develop = true }
 tiktoken = "^0.7.0"

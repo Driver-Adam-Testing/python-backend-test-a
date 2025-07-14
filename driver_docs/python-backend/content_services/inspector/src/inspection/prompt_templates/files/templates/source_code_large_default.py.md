@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_default.py` file defines a template for inspecting and organizing source code, focusing on purpose, imports, global variables, data structures, and functions.
+The `source_code_large_default.py` file defines a template for inspecting and structuring large source code files, focusing on purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code defines a template for processing and analyzing source code, focusing on extracting and organizing information about the code's purpose, imports, global variables, data structures, and functions. The file imports several components from a module named `utils.lang_specialization.default`, which appear to be specialized collections and checkers for handling different aspects of source code, such as functions, variables, and data structures. Additionally, it imports a template utility from `utils.templates` to facilitate the structuring of the template.
+This Python code defines a structured template for generating documentation or structured prompts related to source code analysis. It imports various components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`, which provide instructions and data structure collections necessary for creating detailed documentation. The primary purpose of this file is to establish a framework for generating sections of documentation, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions," using predefined templates and instructions. Each section is associated with specific components and functions that facilitate the extraction and presentation of relevant information from the source code.
 
-The main component of this file is the `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT`, a list of tuples that define different sections of the template. Each tuple specifies a section of the source code analysis, such as "# Purpose" or "# Imports and Dependencies," and associates it with specific functions or collections that process the relevant information. The template uses a combination of single and multi-prompt text processing, leveraging language model (LLM) conditions to extract and format the data. This code is likely part of a larger system designed to automate the documentation or analysis of source code, providing a structured approach to understanding and documenting the various components of a codebase.
+The code is organized as a collection of tuples within the `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` list, where each tuple represents a section of the documentation. These tuples contain identifiers, section headers, and functions or instructions for processing and formatting the content. The file is designed to be part of a larger system that automates the generation of structured documentation, making it easier to understand and analyze Python codebases. It does not define public APIs or external interfaces directly but rather serves as a backend utility for documentation generation.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.default.SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT`
 - `utils.lang_specialization.default.DefaultDataStructureCollection`
@@ -29,8 +34,8 @@ The main component of this file is the `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT`, a l
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_DEFAULT
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` is a list of tuples, each containing a set of parameters used to define different sections of a source code template. Each tuple includes a type specifier, a section header, and various functions or prompts related to that section, such as handling imports, global variables, data structures, and functions.
-- **Use**: This variable is used to structure and define the components of a large source code template, facilitating the generation or analysis of code by specifying how each section should be processed or represented.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` is a list of tuples, each representing a different section of a structured code template. Each tuple contains a section identifier, a section title, and various components or functions related to that section, such as prompts, instructions, or collection methods for symbols and functions.
+- **Use**: This variable is used to define a comprehensive template for generating structured code documentation, covering aspects like purpose, imports, global variables, data structures, and functions.
 
 
 

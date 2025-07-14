@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `base_repository.py` file defines a generic `BaseRepository` class for performing common database operations such as retrieving, creating, updating, and deleting records using SQLModel and SQLAlchemy.
+The `base_repository.py` file defines a generic `BaseRepository` class that provides common database operations such as create, read, update, delete, and query functionalities for SQLModel-based models.
 
 # Purpose
-The provided Python code defines a generic repository class, `BaseRepository`, which serves as a foundational component for interacting with a database using SQLModel and SQLAlchemy. This class is designed to be a reusable and extendable data access layer, providing a set of common database operations such as retrieving, creating, updating, and deleting records. The class is generic, allowing it to be used with any SQLModel-derived model, making it a versatile tool for managing database entities in a consistent manner. The repository pattern encapsulated in this class abstracts the complexities of direct database interactions, promoting cleaner and more maintainable code.
+The provided code defines a generic repository class, `BaseRepository`, which serves as a foundational component for interacting with a database using SQLAlchemy and SQLModel. This class is designed to be a reusable and extendable data access layer, providing a set of common database operations such as create, read, update, and delete (CRUD) for any SQLModel-derived model. By utilizing Python's generics, the `BaseRepository` can be tailored to work with different model types, making it a versatile tool for managing database entities in a consistent manner.
 
-Key technical components of the `BaseRepository` include methods for fetching single or multiple records based on primary keys or conditions, as well as methods for creating, updating, and deleting records. The class also supports advanced query features such as sorting, pagination, and joining with other models. The use of SQLAlchemy's session management ensures that database transactions are handled efficiently and safely. Additionally, the class includes utility methods like [`exists`](#BaseRepositoryexists) to check for the presence of records and [`count_by`](#BaseRepositorycount_by) to count records matching specific conditions. This code is intended to be part of a larger application, likely imported and extended by other modules to provide specific data access logic tailored to the application's needs.
+Key functionalities of the `BaseRepository` include methods for retrieving single or multiple records based on primary keys or specific conditions, as well as methods for creating, updating, and deleting records. The class also supports advanced query features such as sorting, pagination, and joining with other models. Additionally, it includes utility methods like [`exists`](<#BaseRepositoryexists>) to check the presence of a record and [`count_by`](<#BaseRepositorycount_by>) to count records matching certain conditions. This repository pattern abstracts the database interaction logic, promoting code reusability and separation of concerns, which is particularly beneficial in larger applications where multiple models require similar database operations.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ Key technical components of the `BaseRepository` include methods for fetching si
 ---
 ### T
 - **Type**: `TypeVar`
-- **Description**: The variable `T` is a type variable that is bound to the `SQLModel` class. It is used to define a generic type for the `BaseRepository` class, allowing it to operate on any subclass of `SQLModel`. This binding ensures that `T` can only be a type that is a subclass of `SQLModel`, providing type safety and flexibility in the repository pattern.
-- **Use**: `T` is used as a generic type parameter in the `BaseRepository` class to allow operations on various `SQLModel` subclasses.
+- **Description**: The variable `T` is a type variable defined using Python's `TypeVar` from the `typing` module. It is bound to the `SQLModel` class, meaning that `T` can be any subclass of `SQLModel`. This allows for type-safe operations within the `BaseRepository` class, ensuring that the methods work with instances of `SQLModel` or its subclasses.
+- **Use**: `T` is used as a generic type parameter in the `BaseRepository` class to enable type-safe operations on SQLModel instances.
 
 
 # Classes
@@ -39,21 +39,21 @@ Key technical components of the `BaseRepository` include methods for fetching si
 ---
 ### BaseRepository<!-- {{#class:python-backend/backend/app/repositories/base_repository.BaseRepository}} -->
 - **Members**:
-    - `session`: A SQLAlchemy session used for database operations.
-    - `model`: The SQLModel class type that the repository will manage.
-- **Description**: The `BaseRepository` class is a generic repository pattern implementation for managing database operations on SQLModel entities. It provides a set of methods for common CRUD operations, including retrieving, creating, updating, and deleting records, as well as checking for existence and counting records based on conditions. The class is designed to work with a specified SQLModel type and utilizes a SQLAlchemy session to execute queries. It supports complex query operations with conditions and joins, and allows for sorting and pagination of results.
+    - `session`: The SQLAlchemy session used for database operations.
+    - `model`: The SQLModel type that the repository will manage.
+- **Description**: The BaseRepository class is a generic repository pattern implementation for managing SQLModel entities in a database using SQLAlchemy. It provides a set of common database operations such as retrieving, creating, updating, and deleting records, as well as checking for existence and counting records based on conditions. The class is designed to be flexible, allowing for operations with conditions and joins, and supports sorting and pagination for retrieval operations. It is intended to be subclassed or instantiated with specific SQLModel types to perform operations on those models.
 - **Methods**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.__init__`](#BaseRepository__init__)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](#BaseRepositoryget)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk`](#BaseRepositoryget_by_pk)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](#BaseRepositoryget_by_conditions)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](#BaseRepositoryget_all)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.create`](#BaseRepositorycreate)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.update`](#BaseRepositoryupdate)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](#BaseRepositorydelete)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete_by_pk`](#BaseRepositorydelete_by_pk)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.exists`](#BaseRepositoryexists)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.count_by`](#BaseRepositorycount_by)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.__init__`](<#BaseRepository__init__>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<#BaseRepositoryget>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk`](<#BaseRepositoryget_by_pk>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<#BaseRepositoryget_by_conditions>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](<#BaseRepositoryget_all>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.create`](<#BaseRepositorycreate>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.update`](<#BaseRepositoryupdate>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<#BaseRepositorydelete>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete_by_pk`](<#BaseRepositorydelete_by_pk>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.exists`](<#BaseRepositoryexists>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.count_by`](<#BaseRepositorycount_by>)
 
 **Methods**
 
@@ -63,12 +63,12 @@ The `__init__` method initializes a `BaseRepository` instance with a database se
 - **Inputs**:
     - `self`: The instance of the `BaseRepository` being initialized.
     - `session`: A `Session` object from SQLModel used to interact with the database.
-    - `model`: The type of the model (a subclass of `SQLModel`) that the repository will manage.
+    - `model`: A type of `T`, where `T` is a subclass of `SQLModel`, representing the database model associated with this repository.
 - **Control Flow**:
     - Assigns the provided `session` to the instance's `session` attribute.
     - Assigns the provided `model` to the instance's `model` attribute.
 - **Output**: This method does not return any value; it initializes the instance attributes.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
@@ -78,23 +78,23 @@ The `get` method retrieves an instance of the model from the database using its 
     - `self`: An instance of the BaseRepository class.
     - `pk_id`: A UUID representing the primary key of the model instance to retrieve.
 - **Control Flow**:
-    - The method calls `self.session.get` with `self.model` and `pk_id` to retrieve the model instance from the database.
-- **Output**: The method returns an instance of the model if found, otherwise it returns None.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+    - The method calls `self.session.get` with `self.model` and `pk_id` as arguments to retrieve the model instance.
+- **Output**: The method returns an instance of the model if found, otherwise None.
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
 #### BaseRepository\.get\_by\_pk<!-- {{#callable:python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk}} -->
 The `get_by_pk` method retrieves an instance of a model from the database using specified primary key fields and their values.
 - **Inputs**:
-    - `kwargs`: A dictionary of key-value pairs representing primary key fields and their corresponding values to filter the query.
+    - `kwargs`: A dictionary of key-value pairs representing primary key fields and their corresponding values.
 - **Control Flow**:
     - Initialize a query to select the model associated with the repository.
     - Iterate over each key-value pair in the `kwargs` dictionary.
-    - For each key-value pair, add a condition to the query to filter the model's attribute (matching the key) to be equal to the value.
+    - For each key-value pair, add a condition to the query to filter the model's field (specified by the key) to match the given value.
     - Execute the query using the session and return the first result, if any.
 - **Output**: The method returns an instance of the model if found, otherwise it returns `None`.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
@@ -110,7 +110,7 @@ The `get_by_conditions` method retrieves the first instance of a model that matc
     - Iterate over the provided conditions and apply each as a filter to the query using the `where` clause.
     - Execute the query using the session and return the first result, if any.
 - **Output**: The method returns the first instance of the model that matches the given conditions and joins, or `None` if no such instance is found.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
@@ -125,45 +125,44 @@ The `get_all` method retrieves a list of model instances from the database with 
     - `joins`: An optional list of SQLModel types to join with the main model.
 - **Control Flow**:
     - Initialize a SQLAlchemy select statement for the model with the specified offset and limit.
-    - If joins are provided, iterate over each join model and apply a join to the statement.
-    - If conditions are provided, iterate over each condition and apply a where clause to the statement.
+    - If joins are provided, iterate over each join model and add a join to the statement.
+    - If conditions are provided, iterate over each condition and add a where clause to the statement.
     - If a sort_by field is specified, check if the field exists on the model; if not, raise a ValueError.
-    - Determine the field name for sorting and apply the appropriate order_by clause based on the sort_direction.
+    - Determine the full field name for sorting and apply the appropriate order_by clause based on the sort_direction.
     - Execute the statement using the session and return all results as a list.
 - **Output**: A list of model instances that match the specified criteria.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
 #### BaseRepository\.create<!-- {{#callable:python-backend/backend/app/repositories/base_repository.BaseRepository.create}} -->
-The `create` method adds a new object to the database session, commits the transaction, refreshes the object to reflect any changes made during the commit, and returns the object.
+The `create` method adds a new object to the database session, commits the transaction, refreshes the object to reflect any database-generated values, and returns the object.
 - **Inputs**:
     - `self`: An instance of the `BaseRepository` class, which provides access to the database session and model.
     - `obj_in`: An instance of type `T`, which is the object to be added to the database.
 - **Control Flow**:
     - The method begins by adding the `obj_in` object to the database session using `self.session.add(obj_in)`.
-    - It then commits the transaction to the database with `self.session.commit()`, ensuring that the object is saved.
-    - After committing, the method refreshes the `obj_in` object using `self.session.refresh(obj_in)` to update it with any changes made during the commit, such as auto-generated fields.
+    - It then commits the transaction to the database with `self.session.commit()`, ensuring that the changes are saved.
+    - After committing, the method refreshes the `obj_in` object using `self.session.refresh(obj_in)` to update it with any changes made by the database, such as auto-generated fields.
     - Finally, the method returns the `obj_in` object.
 - **Output**: The method returns the `obj_in` object after it has been added to the database and refreshed.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
 #### BaseRepository\.update<!-- {{#callable:python-backend/backend/app/repositories/base_repository.BaseRepository.update}} -->
-The `update` method updates an existing instance with new data and commits the changes to the database.
+The `update` method updates an existing instance of a model with new data and commits the changes to the database.
 - **Inputs**:
-    - `instance`: The existing instance of the model to be updated.
+    - `instance`: The existing model instance to be updated.
     - `data`: A model instance containing the new data to update the existing instance with.
 - **Control Flow**:
     - Iterates over the key-value pairs of the `data` model instance, excluding unset fields.
-    - For each key-value pair, updates the corresponding attribute of the `instance` using `setattr`.
-    - Adds the updated `instance` to the session.
+    - For each key-value pair, updates the corresponding attribute of the `instance` with the new value.
+    - Adds the updated `instance` to the session for tracking.
     - Commits the session to save changes to the database.
     - Refreshes the `instance` to reflect the latest state from the database.
-    - Returns the updated `instance`.
-- **Output**: The updated instance of the model.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **Output**: The updated model instance.
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
@@ -173,14 +172,14 @@ The `delete` method removes an object from the database using its primary key an
     - `self`: An instance of the `BaseRepository` class, which provides access to the session and model.
     - `pk_id`: A UUID representing the primary key of the object to be deleted.
 - **Control Flow**:
-    - Retrieve the object from the database using the primary key `pk_id` by calling the [`get`](#BaseRepositoryget) method.
+    - Retrieve the object from the database using the primary key `pk_id` by calling the [`get`](<#BaseRepositoryget>) method.
     - Check if the object exists; if it does, proceed to delete it from the session.
     - Commit the transaction to persist the deletion in the database.
     - Return the deleted object if it was found, otherwise return `None`.
 - **Output**: The method returns the deleted object if it was found and deleted, otherwise it returns `None`.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](#BaseRepositoryget)
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<#BaseRepositoryget>)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
@@ -189,14 +188,14 @@ The `delete_by_pk` method deletes an object from the database using its primary 
 - **Inputs**:
     - `kwargs`: A dictionary of key-value pairs representing the primary key fields and their values for identifying the object to delete.
 - **Control Flow**:
-    - Call the [`get_by_pk`](#BaseRepositoryget_by_pk) method with the provided `kwargs` to retrieve the object by its primary key(s).
+    - Call [`get_by_pk`](<#BaseRepositoryget_by_pk>) with the provided `kwargs` to retrieve the object by its primary key(s).
     - Check if the object exists; if it does, delete it from the session and commit the transaction.
     - Return the object that was deleted, or `None` if no object was found.
 - **Output**: The method returns the deleted object if it was found and deleted, otherwise it returns `None`.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk`](#BaseRepositoryget_by_pk)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](#BaseRepositorydelete)
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_pk`](<#BaseRepositoryget_by_pk>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<#BaseRepositorydelete>)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
@@ -206,30 +205,30 @@ The `exists` method checks if an instance with a given ID exists in the reposito
     - `id`: A UUID representing the unique identifier of the instance to check for existence.
     - `organization_id`: An optional string representing the organization ID to verify the instance's association with a specific organization.
 - **Control Flow**:
-    - Call the [`get`](#BaseRepositoryget) method with the provided `id` to retrieve the instance from the repository.
+    - Call the [`get`](<#BaseRepositoryget>) method with the provided `id` to retrieve the instance from the repository.
     - If the instance is not found, return `False`.
-    - If `organization_id` is provided, check if the instance's `organization_id` attribute matches the provided `organization_id`.
-    - Return `True` if the instance exists and matches the organization ID (if provided), otherwise return `False`.
-- **Output**: A boolean value indicating whether the instance exists and, if an organization ID is provided, whether it belongs to the specified organization.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](#BaseRepositoryget)
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+    - If `organization_id` is provided, check if the instance's `organization_id` attribute matches the provided `organization_id` and return the result of this comparison.
+    - If `organization_id` is not provided, return `True` as the instance exists.
+- **Output**: A boolean value indicating whether the instance exists and, if `organization_id` is provided, whether it matches the instance's organization ID.
+- **Functions Called**:
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<#BaseRepositoryget>)
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 ---
 #### BaseRepository\.count\_by<!-- {{#callable:python-backend/backend/app/repositories/base_repository.BaseRepository.count_by}} -->
 The `count_by` method counts the number of records in the database that match specified conditions and optional join models.
 - **Inputs**:
-    - `self`: Refers to the instance of the BaseRepository class.
+    - `self`: An instance of the `BaseRepository` class, providing access to the session and model.
     - `conditions`: A list of conditions to filter the records in the database.
     - `joins`: An optional list of SQLModel types to join with the main model for the query.
 - **Control Flow**:
     - Initialize a query to count records from the model associated with the repository.
-    - If `joins` is provided, iterate over each join model and apply a join to the query.
-    - Iterate over each condition in `conditions` and apply it as a filter to the query.
+    - If `joins` is provided, iterate over each join model and add it to the query using the `join` method.
+    - Iterate over each condition in `conditions` and add it to the query using the `where` method.
     - Execute the query using the session and return the count of matching records.
-- **Output**: Returns an integer representing the count of records that match the specified conditions and joins.
-- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](#BaseRepository)  (Base Class)
+- **Output**: An integer representing the count of records that match the specified conditions and joins.
+- **See also**: [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<#BaseRepository>)  (Base Class)
 
 
 

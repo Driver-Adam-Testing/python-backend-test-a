@@ -6,9 +6,9 @@
 The `event_client.py` file in the `python-backend` codebase is responsible for sending usage events related to LLM (Large Language Model) sessions, either concurrently or sequentially, by utilizing the `LLMUsageSession` class to track and report the success or failure of these events.
 
 # Purpose
-This Python script is designed to facilitate the concurrent sending of usage events to a logging or monitoring system, specifically within the context of a large language model (LLM) usage session. The script leverages the `concurrent.futures.ThreadPoolExecutor` to manage multiple threads, allowing for the simultaneous execution of event-sending tasks. The primary function, [`send_event`](#send_event), constructs a `UsageMetric` object containing metadata about the event, such as session and organization IDs, and attempts to send this event using the `LLMUsageSession`'s [`send_event`](#send_event) method. The script includes error handling to catch and report any exceptions that occur during the event-sending process.
+The provided Python code is a script designed to facilitate the concurrent sending of usage events to a logging or monitoring system, specifically using a session with a language model (LLM) API. The script leverages the `concurrent.futures` module to manage multiple threads, allowing for the simultaneous execution of event-sending tasks. The primary function, [`send_event`](<#send_event>), constructs a detailed usage event with metadata and attempts to send it through the `LLMUsageSession` object. The [`send_events_concurrently`](<#send_events_concurrently>) function orchestrates the concurrent execution of these tasks, tracking the success and failure of each event transmission. Additionally, the script includes a [`send_events`](<#send_events>) function that generates responses from the LLM API in a loop, adjusting the temperature parameter to explore different response variations.
 
-The script is structured to be executed as a standalone program, with the [`main`](#main) function serving as the entry point. It initializes a `LLMUsageSession` with metadata and calls the [`send_events_concurrently`](#send_events_concurrently) function to dispatch a specified number of events concurrently. The script also includes an alternative function, [`send_events`](#send_events), which demonstrates a sequential approach to sending events, iterating over a range and generating responses from the LLM session. This setup is useful for testing and monitoring the performance and reliability of event logging in systems that utilize LLMs, ensuring that events are accurately recorded and any failures are tracked.
+The script is structured to be executed as a standalone program, with the [`main`](<#main>) function serving as the entry point. It initializes a session with metadata and invokes the concurrent event-sending process. The script is designed to be run from the command line, accepting an integer argument that specifies the number of events to send. This setup is particularly useful for testing and monitoring the performance and reliability of the LLM API under load, providing insights into the system's ability to handle multiple concurrent requests. The use of detailed logging and exception handling ensures that the script can provide feedback on the success and failure of each event, aiding in debugging and performance tuning.
 # Imports and Dependencies
 
 ---
@@ -29,19 +29,19 @@ The script is structured to be executed as a standalone program, with the [`main
 
 ---
 ### send\_event<!-- {{#callable:python-backend/lambdas/metrics_handler/event_client.send_event}} -->
-The [`send_event`](../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event) function sends a usage event to a specified LLM session and handles any exceptions that occur during the process.
+The [`send_event`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event>) function sends a usage event to a specified LLM session and handles any exceptions that occur during the process.
 - **Inputs**:
-    - `llm_session`: An instance of LLMUsageSession, which represents the session to which the usage event will be sent.
+    - `llm_session`: An instance of LLMUsageSession, representing the session to which the usage event will be sent.
 - **Control Flow**:
     - Create a UsageEventMetadata object with detailed input prompts and model information.
     - Create a UsageMetric object with event details such as event type, session ID, organization ID, user ID, event source, byte and token counts, timestamp, and the previously created metadata.
-    - Attempt to send the event using the [`send_event`](../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event) method of the `llm_session` object.
+    - Attempt to send the event using the [`send_event`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event>) method of the `llm_session` object.
     - If an exception occurs during the event sending, print an error message and re-raise the exception.
-- **Output**: Returns a dictionary response from the `llm_session.send_event` method, or raises an exception if an error occurs.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageEventMetadata`](../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageEventMetadata)
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageMetric)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event)
+- **Output**: Returns the result of the [`send_event`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event>) method call on the `llm_session` object, which is expected to be a dictionary.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageEventMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageEventMetadata>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageMetric>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessionsend_event>)
 
 
 ---
@@ -65,20 +65,21 @@ The `send_events_concurrently` function sends multiple events concurrently using
 ### send\_events<!-- {{#callable:python-backend/lambdas/metrics_handler/event_client.send_events}} -->
 The `send_events` function generates and prints responses from an LLM session for a specified number of iterations, adjusting the temperature parameter incrementally.
 - **Inputs**:
-    - `n`: An integer representing the number of iterations or events to send.
+    - `n`: The number of iterations to perform, representing how many responses to generate from the LLM session.
     - `llm_session`: An instance of `LLMUsageSession` used to generate responses from the language model.
 - **Control Flow**:
-    - Initialize `success_count` and `failure_count` to zero to track the number of successful and failed events.
-    - Set up a fixed `system_prompt` and `user_prompt` for generating responses.
-    - Initialize a temperature variable `temp` to 0.0, which will be incremented in each iteration.
-    - Iterate `n` times, generating a response from the `llm_session` using the specified prompts, model, and temperature.
-    - Print the iteration index, current temperature, and the generated response.
+    - Initialize `success_count` and `failure_count` to zero to track the number of successful and failed operations, though they are not updated in this function.
+    - Set a fixed `system_prompt` and `user_prompt` to guide the LLM in generating responses.
+    - Initialize a `temp` variable to 0.0, which will be used to adjust the temperature parameter for the LLM response generation.
+    - Iterate `n` times, where `n` is the input parameter, to generate responses from the LLM session.
+    - In each iteration, call `llm_session.generate_response` with the specified prompts, a default output configuration, a fixed model, the current temperature, and a request timeout.
+    - Print the current iteration index, temperature, and the generated response.
     - Increment the temperature by 0.2 after each iteration.
-    - Print a final summary of the number of successfully sent and failed events.
-- **Output**: The function does not return any value; it prints the generated responses and a summary of the event counts.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.generate_response`](../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessiongenerate_response)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](../../packages/shared/shared/agent/chat_openai.py.md#OutputConfigdefault)
+    - After the loop, print a summary of the success and failure counts, although these counts are not modified in this function.
+- **Output**: The function does not return any value; it prints the generated responses and a summary of success and failure counts to the console.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.generate_response`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSessiongenerate_response>)
+    - [`python-backend/content_services/auto_toml/src/chat_openai.OutputConfig.default`](<../../content_services/auto_toml/src/chat_openai.py.md#OutputConfigdefault>)
 
 
 ---
@@ -87,14 +88,14 @@ The `main` function initializes a usage session and sends events concurrently us
 - **Inputs**:
     - `n`: An integer representing the number of events to send concurrently.
 - **Control Flow**:
-    - Initialize [`UsageSessionMetadata`](../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageSessionMetadata) with content type and ID.
-    - Create an [`LLMUsageSession`](../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSession) using organization ID, user ID, and metadata.
-    - Within the session context, call [`send_events_concurrently`](#send_events_concurrently) with `n` and the session object.
+    - Initialize [`UsageSessionMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageSessionMetadata>) with content type and ID.
+    - Create an [`LLMUsageSession`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSession>) using organization ID, user ID, and metadata.
+    - Within the session context, call [`send_events_concurrently`](<#send_events_concurrently>) with `n` and the session object.
 - **Output**: The function does not return any value; it performs actions within the session context.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageSessionMetadata)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSession)
-    - [`python-backend/lambdas/metrics_handler/event_client.send_events_concurrently`](#send_events_concurrently)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../packages/shared/shared/interfaces/usage/event_metadata.py.md#UsageSessionMetadata>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<../../packages/shared/shared/usage/llm_session.py.md#LLMUsageSession>)
+    - [`python-backend/lambdas/metrics_handler/event_client.send_events_concurrently`](<#send_events_concurrently>)
 
 
 

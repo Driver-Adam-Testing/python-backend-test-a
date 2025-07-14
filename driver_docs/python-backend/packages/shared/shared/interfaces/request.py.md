@@ -6,7 +6,7 @@
 The `request.py` file defines data models for driver requests using Pydantic, including `DriverRequest`, `DriverModalRequest` with a `call_id`, and `DriverModalBatchRequest` with a list of `call_ids`.
 
 # Purpose
-This code defines a set of data models using the Pydantic library, which is commonly used for data validation and settings management in Python. The file provides narrow functionality, focusing specifically on defining structured data models for handling driver-related requests. It introduces a base class, `DriverRequest`, which is an empty subclass of Pydantic's `BaseModel`, serving as a foundation for more specific request types. The `DriverModalRequest` class extends `DriverRequest` by adding a single attribute, `call_id`, which is a string, while `DriverModalBatchRequest` further extends it to handle multiple requests with a `call_ids` attribute, which is a list of strings. This setup is likely part of a larger system where these models are used to validate and manage data related to driver operations or interactions.
+This code defines a set of data models using the Pydantic library, which is commonly used for data validation and settings management in Python. It provides narrow functionality by defining structured data models for handling driver-related requests. The `DriverRequest` class serves as a base model, while `DriverModalRequest` and `DriverModalBatchRequest` extend it to include specific fields: `call_id` for single requests and `call_ids` for batch requests, respectively. This setup is typical in applications where structured data validation and serialization are required, ensuring that the data conforms to expected formats and types.
 # Imports and Dependencies
 
 ---
@@ -17,7 +17,7 @@ This code defines a set of data models using the Pydantic library, which is comm
 
 ---
 ### DriverRequest<!-- {{#class:python-backend/packages/shared/shared/interfaces/request.DriverRequest}} -->
-- **Description**: The `DriverRequest` class is a subclass of Pydantic's `BaseModel` and serves as a base class for other request types, but it does not define any additional attributes or functionality on its own.
+- **Description**: The `DriverRequest` class is a subclass of Pydantic's `BaseModel` and serves as a base class for other request types, such as `DriverModalRequest` and `DriverModalBatchRequest`, but does not define any additional attributes or functionality itself.
 - **Inherits From**:
     - `BaseModel`
 
@@ -26,18 +26,18 @@ This code defines a set of data models using the Pydantic library, which is comm
 ### DriverModalRequest<!-- {{#class:python-backend/packages/shared/shared/interfaces/request.DriverModalRequest}} -->
 - **Members**:
     - `call_id`: A string representing the unique identifier for the call.
-- **Description**: The DriverModalRequest class is a subclass of DriverRequest and is used to represent a request with a specific call identifier, encapsulating the call_id attribute to uniquely identify the call within the request context.
+- **Description**: The DriverModalRequest class is a subclass of DriverRequest, designed to handle requests that require a specific call identifier, represented by the call_id attribute. This class is part of a system that likely manages or processes driver-related requests, where each request is associated with a unique call ID for tracking or processing purposes.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](#DriverRequest)
+    - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](<#DriverRequest>)
 
 
 ---
 ### DriverModalBatchRequest<!-- {{#class:python-backend/packages/shared/shared/interfaces/request.DriverModalBatchRequest}} -->
 - **Members**:
-    - `call_ids`: A list of strings representing call identifiers.
-- **Description**: The DriverModalBatchRequest class extends the DriverRequest class and is designed to handle batch requests by storing multiple call identifiers in a list. This allows for the processing of multiple requests in a single operation, making it suitable for scenarios where batch processing of driver-related requests is required.
+    - `call_ids`: A list of strings representing call identifiers for batch processing.
+- **Description**: The DriverModalBatchRequest class extends the DriverRequest class and is designed to handle batch requests by storing multiple call identifiers in a list. This class is part of a system that processes driver-related requests, allowing for the management of multiple calls in a single request.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](#DriverRequest)
+    - [`python-backend/packages/shared/shared/interfaces/request.DriverRequest`](<#DriverRequest>)
 
 
 

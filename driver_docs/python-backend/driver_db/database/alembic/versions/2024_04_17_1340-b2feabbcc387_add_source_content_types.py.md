@@ -6,9 +6,9 @@
 The `2024_04_17_1340-b2feabbcc387_add_source_content_types.py` file is an Alembic migration script that adds new entries to the `source_content_types` table if they do not already exist and provides a downgrade function to remove them.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding new entries to the `source_content_types` table. The script is part of a version-controlled database migration system, as indicated by the use of Alembic, a lightweight database migration tool for SQLAlchemy. The primary functionality of this script is to ensure that specific content types, such as "codebase", "codebase-directory", "codebase-file", and "supplemental-document", are present in the `source_content_types` table. The [`upgrade`](#upgrade) function checks for the existence of these content types in the table and inserts any that are missing, while the [`downgrade`](#downgrade) function removes these entries, effectively reversing the changes made by the [`upgrade`](#upgrade) function.
+This Python file is an Alembic migration script designed to modify a database schema by adding new entries to the `source_content_types` table. The script is part of a version control system for database schemas, which is facilitated by Alembic, a lightweight database migration tool for SQLAlchemy. The primary function of this script is to ensure that specific content types, such as "codebase", "codebase-directory", "codebase-file", and "supplemental-document", are present in the `source_content_types` table. The [`upgrade`](<#upgrade>) function checks the existing entries in the table and inserts any of the specified content types that are not already present. Conversely, the [`downgrade`](<#downgrade>) function removes these content types from the table, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function.
 
-The script defines important metadata for Alembic, such as `revision`, `down_revision`, `branch_labels`, and `depends_on`, which are used to track the migration's place in the sequence of database changes. The use of SQLAlchemy and Alembic's `op` module allows for database-agnostic operations, making the script adaptable to different database backends. This file is not a standalone script but rather a component of a larger migration framework, intended to be executed by Alembic during the database migration process. It does not define public APIs or external interfaces but instead focuses on internal database schema management.
+The script is structured to be executed as part of a migration process, with revision identifiers (`revision` and `down_revision`) that help track the order of migrations. It uses SQLAlchemy's text-based SQL execution to interact with the database, ensuring that the operations are performed efficiently. The use of Alembic's `op.get_bind()` function allows the script to obtain a connection to the database, which is necessary for executing the SQL queries. This script is a focused component of a larger database management system, providing a specific and narrow functionality related to managing content types within a database schema.
 # Imports and Dependencies
 
 ---
@@ -23,36 +23,36 @@ The script defines important metadata for Alembic, such as `revision`, `down_rev
 ---
 ### revision
 - **Type**: `str`
-- **Description**: The `revision` variable is a string that uniquely identifies the current database schema migration version in the Alembic migration script. It is used to track the specific changes made to the database schema in this migration.
-- **Use**: This variable is used by Alembic to apply or rollback the specific migration associated with this revision ID.
+- **Description**: The `revision` variable is a string that uniquely identifies the current database schema version in the Alembic migration script. It is used to track changes and manage database schema upgrades and downgrades.
+- **Use**: This variable is used by Alembic to apply or revert migrations based on the specified revision identifier.
 
 
 ---
 ### down\_revision
 - **Type**: `Union[str, None]`
-- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the identifier of the previous database schema revision that this migration depends on. It is set to the string '71e87ac95035', which is the revision ID of the immediate predecessor of the current migration.
+- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the identifier of the previous database schema revision that this migration depends on. It is set to the string '71e87ac95035', which is the revision ID of the migration that directly precedes the current one.
 - **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `branch_labels` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a version control system for database schema changes.
-- **Use**: This variable is used to specify labels for a branch in database migration scripts, although it is currently set to None in the provided code.
+- **Description**: The `branch_labels` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a migration script.
+- **Use**: This variable is used to define labels for a branch in a database migration, which can help in identifying or categorizing the migration.
 
 
 ---
 ### depends\_on
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic migrations to specify dependencies between different database schema revisions.
-- **Use**: This variable is used to define dependencies for the current database migration revision, indicating which other revisions must be applied before this one.
+- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic migrations, which are part of the SQLAlchemy library for database schema management.
+- **Use**: This variable is used to specify dependencies for a database migration script, indicating which other migrations must be applied before this one.
 
 
 ---
 ### content\_types
 - **Type**: `list`
-- **Description**: The `content_types` variable is a list of strings representing different types of content that can be stored or managed, such as 'codebase', 'codebase-directory', 'codebase-file', and 'supplemental-document'. This list is used to define the types of content that are relevant to the database operations in the upgrade and downgrade functions.
-- **Use**: This variable is used to determine which content types need to be inserted into or deleted from the `source_content_types` table during database migrations.
+- **Description**: The `content_types` variable is a list of strings representing different types of content that can be stored or managed in the system. It includes types such as 'codebase', 'codebase-directory', 'codebase-file', and 'supplemental-document', which likely correspond to different categories or formats of content handled by the application.
+- **Use**: This variable is used to determine which content types should be inserted into or deleted from the `source_content_types` table in the database during upgrade and downgrade operations.
 
 
 # Functions
@@ -62,12 +62,13 @@ The script defines important metadata for Alembic, such as `revision`, `down_rev
 The `upgrade` function adds new content types to the `source_content_types` table if they do not already exist.
 - **Inputs**: None
 - **Control Flow**:
-    - Execute a SQL query to retrieve existing type names from the `source_content_types` table.
+    - Retrieve a database connection using `op.get_bind()`.
+    - Execute a SQL query to select all existing type names from the `source_content_types` table.
     - Store the result of the query in a set called `existing_types`.
     - Create a list `new_types` containing type names from `content_types` that are not in `existing_types`.
     - If `new_types` is not empty, construct an SQL `INSERT` statement to add these new types to the `source_content_types` table.
-    - Execute the constructed `INSERT` SQL statement using the database connection.
-- **Output**: The function does not return any value; it performs database operations to insert new content types.
+    - Execute the constructed `INSERT` statement using the database connection.
+- **Output**: The function does not return any value; it performs a database update operation.
 
 
 ---
@@ -75,10 +76,10 @@ The `upgrade` function adds new content types to the `source_content_types` tabl
 The `downgrade` function removes specific content types from the `source_content_types` table in the database.
 - **Inputs**: None
 - **Control Flow**:
-    - A string of content type names is created by joining each type name from the `content_types` list with commas and enclosing them in single quotes.
-    - A SQL DELETE query is constructed to remove entries from the `source_content_types` table where the `type_name` matches any of the names in the `values_clause`.
-    - A database connection is obtained using `op.get_bind()`.
-    - The DELETE query is executed using the obtained database connection.
+    - Constructs a comma-separated string of content type names from the `content_types` list.
+    - Builds a SQL DELETE query to remove entries from the `source_content_types` table where the `type_name` matches any of the names in the constructed string.
+    - Retrieves a database connection using `op.get_bind()`.
+    - Executes the DELETE query using the database connection.
 - **Output**: The function does not return any value; it performs a database operation to delete specific rows.
 
 

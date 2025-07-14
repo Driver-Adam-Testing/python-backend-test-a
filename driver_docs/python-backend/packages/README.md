@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `packages` folder in the `python-backend` codebase contains a `shared` directory that includes modules, utilities, and configuration files for backend functionalities, Docker, and dependency management with Poetry.
+Includes the `shared` folder with components for backend functionalities, dependencies, and Docker configuration.
 
 ## Folders
-- **[shared](shared/README.md)**: The `shared` folder in the `python-backend` codebase contains modules and utilities for various backend functionalities, along with configuration files for Docker and dependency management using Poetry.
+- **[shared](shared/README.md)**: Essential subfolders and files for managing backend functionalities, with configuration for dependencies and Docker.
 
 
 ---

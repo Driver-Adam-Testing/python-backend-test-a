@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `abbreviate_page_content_messages.py` file defines system and user message classes for processing and summarizing document sections to provide concise, information-dense context for downstream language models.
+The `abbreviate_page_content_messages.py` file defines classes for creating system and user messages that assist in summarizing and structuring document content for effective use by downstream language models.
 
 # Purpose
-This Python code defines two classes, `AbbreviatePageContentSystemMessage` and `AbbreviatePageContentUserMessage`, both of which extend the `LlmMessage` class. The primary purpose of these classes is to facilitate the preprocessing and summarization of document content for use by a downstream language model (LLM). The `AbbreviatePageContentSystemMessage` class is designed to provide a system-level message that outlines the task of converting document sections into concise, information-dense summaries. It emphasizes the importance of not assuming information not present in the document and aims to provide context that helps the LLM avoid unnecessary external searches. The `AbbreviatePageContentUserMessage` class, on the other hand, is intended to generate user-level messages that summarize relevant document parts based on a given user prompt and cursor position, ensuring that only pertinent information is returned.
-
-The code imports several constants and descriptions from shared modules, which are used to construct the content of the messages. The `AbbreviatePageContentSystemMessage` class includes a detailed description of the task, highlighting the need to supply relevant background details, clarify the scope of selected text, and summarize document parts effectively. The `AbbreviatePageContentUserMessage` class provides a class method [`from_context`](#AbbreviatePageContentUserMessagefrom_context) that constructs a message based on user input, page content, and cursor position, ensuring that the summary is concise and relevant. This code is likely part of a larger system designed to enhance the interaction between users and LLMs by providing structured and context-rich inputs.
+This Python code defines two classes, `AbbreviatePageContentSystemMessage` and `AbbreviatePageContentUserMessage`, both of which extend the `LlmMessage` class. The purpose of these classes is to facilitate the processing and summarization of document content for use by a downstream language model (LLM). The `AbbreviatePageContentSystemMessage` class provides a detailed system message that outlines the task of converting document sections into concise, context-rich summaries, ensuring that the LLM has the necessary context to generate accurate and non-redundant documentation. The `AbbreviatePageContentUserMessage` class, on the other hand, is designed to create user messages based on a given prompt and document content, focusing on summarizing relevant parts of the document in response to user input. This code provides narrow functionality, specifically tailored for preprocessing document content to enhance the performance of LLMs in generating technical documentation.
 # Imports and Dependencies
 
 ---
@@ -31,44 +29,44 @@ The code imports several constants and descriptions from shared modules, which a
 - **Members**:
     - `content`: A string containing detailed instructions and context for processing document sections for LLMs.
     - `message_kind`: Specifies the kind of message, set to MessageKind.SYSTEM.
-- **Description**: The AbbreviatePageContentSystemMessage class is a specialized message type that extends LlmMessage, designed to provide a structured and detailed context for processing document sections. It includes a comprehensive content string that outlines the role of the message in converting document parts into concise, information-dense summaries for use by downstream language models. This class ensures that the LLM has the necessary context to produce accurate and non-redundant technical documentation or explanations, emphasizing the importance of not assuming information not present in the document.
+- **Description**: The AbbreviatePageContentSystemMessage class is a specialized message type that extends LlmMessage, designed to provide a structured and detailed context for processing document sections. It includes a comprehensive content string that outlines the role of the message in converting document sections into concise, information-dense context for agentic systems. This class ensures that a downstream LLM has the necessary context to produce accurate and non-redundant technical documentation or explanations by summarizing document parts, clarifying their location and scope, and identifying existing information to avoid duplication.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 
 ---
 ### AbbreviatePageContentUserMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage}} -->
 - **Members**:
     - `message_kind`: Specifies the kind of message, set to MessageKind.USER.
-- **Description**: The `AbbreviatePageContentUserMessage` class is a specialized message class that inherits from `LlmMessage` and is designed to handle user messages related to summarizing document content. It includes a class method `from_context` that constructs a message by taking a user prompt, page content, cursor position, and optionally selected text, to generate a concise summary of relevant document parts. If the page content is not relevant to the user prompt, it returns an empty string.
+- **Description**: The `AbbreviatePageContentUserMessage` class is a specialized subclass of `LlmMessage` designed to handle user messages that require summarizing document content based on a given prompt and cursor position. It includes a class method `from_context` that constructs an instance by generating a concise summary of relevant document parts, or returns an empty string if the content is not pertinent to the prompt. This class is part of a system that processes document sections to provide context for language models.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage.from_context`](#AbbreviatePageContentUserMessagefrom_context)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage.from_context`](<#AbbreviatePageContentUserMessagefrom_context>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 **Methods**
 
 ---
 #### AbbreviatePageContentUserMessage\.from\_context<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage.from_context}} -->
-The `from_context` method creates an `AbbreviatePageContentUserMessage` instance with a content string summarizing relevant document parts based on a user prompt and cursor position.
+The `from_context` method creates an `AbbreviatePageContentUserMessage` instance by generating a content string based on a user prompt, page content, cursor position, and optionally selected text.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `prompt`: A string representing the user's prompt or query.
-    - `page_content`: A string containing the content of the page or document being summarized.
-    - `before`: A boolean indicating whether the cursor is positioned before or after the selected text.
-    - `selected_text`: An optional string representing the text selected by the user, which can be None if no text is selected.
+    - `cls`: The class `AbbreviatePageContentUserMessage` itself, used to create an instance.
+    - `prompt`: A string representing the user's prompt that guides the content summarization.
+    - `page_content`: A string containing the content of the page to be summarized.
+    - `before`: A boolean indicating whether the cursor is positioned before the page content.
+    - `selected_text`: An optional string representing the text selected by the user, which may be included in the summary.
 - **Control Flow**:
-    - The method constructs a content string that includes a predefined instruction for summarization.
-    - It wraps the user prompt using `USER_PROMPT.wrap(prompt)` and appends it to the content string.
-    - If `before` is True, it wraps the `page_content` using `DOCUMENT_CONTENT_BEFORE_CURSOR.wrap(page_content)` and appends it to the content string.
-    - It wraps the `selected_text` using `CURSOR_SELECTION.wrap(selected_text)` and appends it to the content string, if `selected_text` is not None.
-    - If `before` is False, it wraps the `page_content` using `DOCUMENT_CONTENT_AFTER_CURSOR.wrap(page_content)` and appends it to the content string.
-    - The constructed content string is stripped of leading and trailing whitespace.
-    - The method returns a new instance of `AbbreviatePageContentUserMessage` with the constructed content string.
-- **Output**: An instance of `AbbreviatePageContentUserMessage` with the constructed content string.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](../../../globals/glossary.py.md#GlossaryDefinitionwrap)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage`](#AbbreviatePageContentUserMessage)  (Base Class)
+    - Constructs a content string starting with a fixed instruction to provide a concise summary based on the user prompt and page content.
+    - Wraps the user prompt using `USER_PROMPT.wrap(prompt)` and appends it to the content string.
+    - Depending on the `before` boolean, wraps and appends either the page content before or after the cursor using `DOCUMENT_CONTENT_BEFORE_CURSOR.wrap(page_content)` or `DOCUMENT_CONTENT_AFTER_CURSOR.wrap(page_content)`.
+    - Wraps and appends the selected text using `CURSOR_SELECTION.wrap(selected_text)` if `selected_text` is provided.
+    - Strips any leading or trailing whitespace from the constructed content string.
+    - Returns a new instance of `AbbreviatePageContentUserMessage` with the constructed content.
+- **Output**: An instance of `AbbreviatePageContentUserMessage` with the generated content string.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#GlossaryDefinitionwrap>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage`](<#AbbreviatePageContentUserMessage>)  (Base Class)
 
 
 

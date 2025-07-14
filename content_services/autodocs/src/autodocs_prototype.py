@@ -369,6 +369,7 @@ class DriverDocsContent(BaseModel):
             except Exception as e:
                 print(codebase_name)
                 raise e
+
             dag = build_file_tree_dag(
                 codebase_name=codebase_name,
                 content=content,
@@ -494,9 +495,10 @@ def build_file_tree_dag(
     return dag
 
 
-def build_subgraph(dag: dict[str, set[str]], start: str) -> dict[str, set[str]]:
+def build_subgraph(dag: dict[str, set[str]], start: str) -> dict[str, set[str]] | None:
     if start not in dag:
-        raise ValueError(f"Node {start} is not present in the DAG.")
+        print(f"Node {start} is not present in the DAG.")
+        return None
 
     subgraph = dict()
 
@@ -1895,10 +1897,16 @@ Your output is the full content of the document with editing updates based on yo
                     case _:
                         raise ValueError("Invalid execution mode")
 
-                subgraphs = [
-                    build_subgraph(dag=dd.dag, start=code_cfg.node_path)
-                    for dd, code_cfg in zip(driver_docs, cfg.scope.code)
-                ]
+                subgraphs = []
+                for dd, code_cfg in zip(driver_docs, cfg.scope.code):
+                    subgraph = build_subgraph(dag=dd.dag, start=code_cfg.node_path)
+                    if subgraph:
+                        subgraphs.append(subgraph)
+                if len(subgraphs) == 0:
+                    raise ValueError(
+                        "Subgraphs could not be built for any supplied source nodes."
+                    )
+
                 toposorts = [
                     list(TopologicalSorter(sg).static_order()) for sg in subgraphs
                 ]
@@ -2638,10 +2646,17 @@ Your output is the full content of the document with editing updates based on yo
                     ]
                 case _:
                     raise ValueError("Invalid execution mode")
-            subgraphs = [
-                build_subgraph(dag=dd.dag, start=code_cfg.node_path)
-                for dd, code_cfg in zip(driver_docs, self.scope.code)
-            ]
+
+            subgraphs = []
+            for dd, code_cfg in zip(driver_docs, self.scope.code):
+                subgraph = build_subgraph(dag=dd.dag, start=code_cfg.node_path)
+                if subgraph:
+                    subgraphs.append(subgraph)
+            if len(subgraphs) == 0:
+                raise ValueError(
+                    "Subgraphs could not be built for any supplied source nodes."
+                )
+
             toposorts = [list(TopologicalSorter(sg).static_order()) for sg in subgraphs]
             topos = [
                 [(p, dd.content[p]) for p in ts]

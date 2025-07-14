@@ -1,5 +1,6 @@
 import concurrent.futures
 from abc import ABC, abstractclassmethod, abstractstaticmethod
+from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Self
@@ -42,8 +43,11 @@ class CodebaseScorable(BaseModel, ABC):
             reverse=True,
         )
 
-    def take(self, n: int) -> list[tuple[str, float]]:
-        return self.sorted_list[:n]
+    def take(self, n: int, pred: Callable | None = None) -> list[tuple[str, float]]:
+        if pred is None:
+            return self.sorted_list[:n]
+        else:
+            return [el for el in self.sorted_list if pred(el)][:n]
 
     def top(self) -> tuple[str, float]:
         return self.take(1)[0]
@@ -97,12 +101,12 @@ class CodebaseKindScores(CodebaseScorable):
     sdk: float
     lib: float
     application: float
-    frontend: float
-    backend: float
+    service: float
+    api: float
     data_pipeline: float
     devops: float
     algorithm: float
-    tool: float
+    cli: float
 
     @staticmethod
     def system_prompt() -> str:
@@ -112,14 +116,14 @@ In the case that multiple tags are relevant, it is important to score them all w
         tag_descriptions = """
 {
     "sdk": Implements a software development kit (SDK) -- a collection of tools for developers to use to build applications for a specific platform or framework.
-    "lib": A library designed to be used by/integrated with by other developers in building applications but not used as a standalone executable or application.
-    "application": An application or executable intended to be executed directly as a program cf., a library to be integrated into another program.
-    "frontend": A frontend web application.
-    "backend": A backend web application with HTTP endpoints to support an application programming interface (API) or, more broadly, intended to run on a backend server.
+    "lib": A library designed to be imported and used by other developers in building other programs but not used as a standalone executable or application.
+    "application": An application or executable intended to be executed as a program and directly serve users. Cf., a library to be integrated into another program or a systems program intended to provide services to other programs. E.g., web application, desktop application, mobile application.
+    "service": A standalone networked service or daemon, such as a microservice, background daemon, or async job worker.
+    "api": A codebase whose primary purpose is to define, implement, or expose a formal application programming interface (API) — including REST, GraphQL, gRPC, or language-native interfaces — for use by other software systems or developers.
     "data_pipeline": ETL, analytics, or other data processing system.
     "devops": DevOps or infrastructure code for deployment, CI/CD, monitoring, cloud, or other infrastructure management.
     "algorithm": Heavy computational, numeric, or algorithm implementation code.
-    "tool": A developer tool for software engineers, such as a utility with a command line interface (CLI).
+    "cli": Provides a command line interface utility or application.
 }
 """
         return (
@@ -156,11 +160,16 @@ class CodebaseDomainScores(CodebaseScorable):
     enterprise: float
     game: float
     finance: float
+    industrial: float
+    healthcare: float
+    scientific: float
+    cloud: float
+    security: float
     desktop: float
     mobile: float
     academic: float
     educational: float
-    utility: float
+    systems: float
 
     @staticmethod
     def system_prompt() -> str:
@@ -169,16 +178,72 @@ In the case that multiple tags are relevant, it is important to score them all w
 """
         tag_descriptions = """
 {
-    "embedded": Lower level embedded software or mixed HW/SW code.
-    "web": Implements pare or the whole of a web application.
+    "embedded": Lower level embedded software or mixed HW/SW code. E.g.: embedded software libraries, firmware, drivers, RTL code.
+    "web": Implements part or the whole of a web application.
     "enterprise": Business applications for the enterprise such as an ERP system.
     "game": Interactive game or entertainment software.
     "finance": Code to serve finance-related applications, such as banking and trading.
+    "industrial": Manufacturing, robotics, and automation.
+    "healthcare": Applications in medical technologies or regulated health systems.
+    "scientific": Code used for computational science or numerical simulations.
+    "cloud": Software directly targeting cloud platforms or cloud-native systems.
+    "security": Security tools, infosec (e.g., scanning, authentication, identity, threat detection), or systems in cryptography.
     "desktop": Standalone application, with some form of UI, deployed as a native desktop application.
     "mobile": An application deployed on a mobile device, such as iOS or Android.
     "academic": Experimental, research, or academic code.
     "educational": Primary purpose is educational or to provide examples.
-    "utility": Generic software engineering utility code to support other development.
+    "systems": Systems software -- low-level or core operational software and which is often intended to provide services to other programs. E.g.: operating systems, compilers.
+}
+"""
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=CODEBASE_SCORING_PROMPT_TEMPLATE.format(
+                        specific_context=specific_context,
+                        tag_descriptions=tag_descriptions,
+                    )
+                )
+            )
+            .into_str()
+        )
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        docs: dict[LiteNode, dict[str, Any]],
+    ) -> Self:
+        user_prompt = build_scoring_user_prompt(docs=docs)
+        content_raw = llm.generate_response(
+            system_prompt=cls.system_prompt(),
+            user_prompt=user_prompt,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+        return cls.parse_raw(content_raw)
+
+
+class CodebaseAudienceScores(CodebaseScorable):
+    internal_user: float
+    internal_dev: float
+    end_user: float
+    end_dev: float
+    system: float
+    researcher: float
+
+    @staticmethod
+    def system_prompt() -> str:
+        specific_context = """
+You are scoring tags for the intended or relevant audiences for the codebase. That is, higher scores should go to audience tags that most directly benefits from or interact with the codebase. In the case that multiple tags are relevant, it is important to score them all with high values but also differentiate based on the most to least relevant in context. For example, an important embedded firmware library may be highly relevant for both "internal_dev" and "system". As a core program for product delivery, "internal_dev" should receive a higher score than the "system" tag, but both should be high.
+"""
+        tag_descriptions = """
+{
+    "internal_user": Internal tools for non-developer employees (such as Sales, Support, Operations). E.g.: Internal CRM dashbord.
+    "internal_dev": Tools used by internal developers to build, test, deploy, or operate applications. E.g.: Core product internals or CI/CD pipeline scripts.
+    "end_user": Customer-facing applications intended for end users. E.g.: Mobile app for end users.
+    "end_dev": SDKs, APIs, or CLIs used by developers outside the organization. E.g.: Open-source Python SDK.
+    "system": Codebases that are consumed or executed by systems rather than human users (e.g., telemetry agents, embedded firmware). E.g.: Embedded telemetry daemon.
+    "researcher": Tools or code intended for internal or external researchers or data scientists.
 }
 """
         return (
@@ -641,20 +706,28 @@ def comprehend_codebase_top_down(
     single_paragraph = single_paragraph.replace("\x00", "")
     long = long.replace("\x00", "")
 
-    codebase_kind_scores = CodebaseKindScores.from_llm(llm=llm, docs=docs)
-    codebase_domain_scores = CodebaseDomainScores.from_llm(llm=llm, docs=docs)
+    kind_scores = CodebaseKindScores.from_llm(llm=llm, docs=docs)
+    domain_scores = CodebaseDomainScores.from_llm(llm=llm, docs=docs)
+    audience_scores = CodebaseAudienceScores.from_llm(llm=llm, docs=docs)
 
-    print(f"Codebase kind scores:\n\n{codebase_kind_scores.sorted_list}")
-    print(f"Codebase domain scores:\n\n{codebase_domain_scores.sorted_list}")
-    # terse_sentence = f"[{top4[0]}] {terse_sentence}"
+    print(f"Codebase kind scores:\n\n{kind_scores.sorted_list}")
+    print(f"Codebase domain scores:\n\n{domain_scores.sorted_list}")
+    print(f"Codebase audience scores:\n\n{audience_scores.sorted_list}")
     terse_sentence = "KIND: "
-    for kind, score in codebase_kind_scores.sorted_list[:-1]:
+    top_kind = kind_scores.take(n=3, pred=lambda el: el[1] > 0.0)
+    for kind, score in top_kind[:-1]:
         terse_sentence += f"{kind}[{score}], "
-    terse_sentence += f"{codebase_kind_scores.sorted_list[-1][0]}[{codebase_kind_scores.sorted_list[-1][1]}]"
+    terse_sentence += f"{top_kind[-1][0]}[{top_kind[-1][1]}]"
     terse_sentence += " DOMAIN: "
-    for kind, score in codebase_domain_scores.sorted_list[:-1]:
-        terse_sentence += f"{kind}[{score}], "
-    terse_sentence += f"{codebase_domain_scores.sorted_list[-1][0]}[{codebase_domain_scores.sorted_list[-1][1]}]"
+    top_domain = domain_scores.take(n=3, pred=lambda el: el[1] > 0.0)
+    for domain, score in top_domain[:-1]:
+        terse_sentence += f"{domain}[{score}], "
+    terse_sentence += f"{top_domain[-1][0]}[{top_domain[-1][1]}]"
+    terse_sentence += " AUDIENCE: "
+    top_audience = audience_scores.take(3, pred=lambda el: el[1] > 0.0)
+    for audience, score in top_audience[:-1]:
+        terse_sentence += f"{audience}[{score}], "
+    terse_sentence += f"{top_audience[-1][0]}[{top_audience[-1][1]}]"
 
     short_descriptions = {
         "terse_sentence": terse_sentence,

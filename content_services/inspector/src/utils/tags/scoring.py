@@ -1,4 +1,4 @@
-from abc import ABC, abstractclassmethod, abstractmethod, abstractstaticmethod
+from abc import ABC, abstractclassmethod, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
 from typing import Any, Self
@@ -13,8 +13,12 @@ from utils.dag import LiteNode, NodeKind
 
 
 class Scorable(BaseModel, ABC):
-    @abstractstaticmethod
-    def system_prompt() -> str:
+    @abstractclassmethod
+    def tag_descriptions() -> dict[str, str]:
+        pass
+
+    @abstractclassmethod
+    def system_prompt(cls) -> str:
         pass
 
     @abstractclassmethod

@@ -78,19 +78,11 @@ In the case that multiple tags are relevant, it is important to score them all w
         tag_descriptions_map = cls.tag_descriptions()
         tag_descriptions_structured = Prompt.empty()
         for k, v in tag_descriptions_map.items():
-            tag_descriptions_structured.append(f"{k}: {v}")
+            tag_descriptions_structured.append(Component(string=f"{k}: {v}"))
 
-        return (
-            Prompt.empty()
-            .append(
-                Component(
-                    string=CODEBASE_SCORING_PROMPT_TEMPLATE.format(
-                        specific_context=specific_context,
-                        tag_descriptions=tag_descriptions_structured.into_str(sep="\n"),
-                    )
-                )
-            )
-            .into_str()
+        return CODEBASE_SCORING_PROMPT_TEMPLATE.format(
+            specific_context=specific_context,
+            tag_descriptions=tag_descriptions_structured.into_str(sep="\n"),
         )
 
     def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:
@@ -141,19 +133,11 @@ In the case that multiple tags are relevant, it is important to score them all w
         tag_descriptions_map = cls.tag_descriptions()
         tag_descriptions_structured = Prompt.empty()
         for k, v in tag_descriptions_map.items():
-            tag_descriptions_structured.append(f"{k}: {v}")
+            tag_descriptions_structured.append(Component(string=f"{k}: {v}"))
 
-        return (
-            Prompt.empty()
-            .append(
-                Component(
-                    string=CODEBASE_SCORING_PROMPT_TEMPLATE.format(
-                        specific_context=specific_context,
-                        tag_descriptions=tag_descriptions_structured.into_str(sep="\n"),
-                    )
-                )
-            )
-            .into_str()
+        return CODEBASE_SCORING_PROMPT_TEMPLATE.format(
+            specific_context=specific_context,
+            tag_descriptions=tag_descriptions_structured.into_str(sep="\n"),
         )
 
     def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:
@@ -195,19 +179,11 @@ You are scoring tags for the intended or relevant audiences for the codebase. Th
         tag_descriptions_map = cls.tag_descriptions()
         tag_descriptions_structured = Prompt.empty()
         for k, v in tag_descriptions_map.items():
-            tag_descriptions_structured.append(f"{k}: {v}")
+            tag_descriptions_structured.append(Component(string=f"{k}: {v}"))
 
-        return (
-            Prompt.empty()
-            .append(
-                Component(
-                    string=CODEBASE_SCORING_PROMPT_TEMPLATE.format(
-                        specific_context=specific_context,
-                        tag_descriptions=tag_descriptions_structured.into_str(sep="\n"),
-                    )
-                )
-            )
-            .into_str()
+        return CODEBASE_SCORING_PROMPT_TEMPLATE.format(
+            specific_context=specific_context,
+            tag_descriptions=tag_descriptions_structured.into_str(sep="\n"),
         )
 
     def to_tag_and_score_pairs(self) -> list[tuple[str, float]]:

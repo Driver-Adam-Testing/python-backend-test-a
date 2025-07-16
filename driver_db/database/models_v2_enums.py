@@ -45,6 +45,7 @@ class AutoDocConfigKind(str, enum.Enum):
     ADI_DRIVER = "ADI_DRIVER"
     ARCHITECTURE = "ARCHITECTURE"
     CUSTOM = "CUSTOM"
+    FROM_DOCUMENT_GOAL = "FROM_DOCUMENT_GOAL"
 
 
 @strawberry.enum

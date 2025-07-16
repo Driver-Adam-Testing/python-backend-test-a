@@ -37,7 +37,7 @@ from app.schemas.secret_management_schema import (
 
 logger = logging.getLogger(__name__)
 
-
+# TODO:
 def fetch_git_provider_apps_by_org_id(
     session: Session, organization_id: str
 ) -> list[GitProviderApp]:

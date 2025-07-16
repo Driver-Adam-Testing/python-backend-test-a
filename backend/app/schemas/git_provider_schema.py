@@ -1,3 +1,4 @@
+from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
 from database.models_v1 import GitProviderKind
 from pydantic import BaseModel, Field
 
@@ -28,13 +29,14 @@ class GitProviderAppConfig(BaseModel):
     scope: str | None = None
 
 
-class GroupAccessToken(BaseModel):
+class GroupAccessToken(AccessTokenData):
     name: str | None = None
     token: str
+    token_type: TokenType = TokenType.GROUP_ACCESS_TOKEN
 
 
 class CreateGitProviderAppRequest(BaseModel):
-    organization_id: str
+    organization_id: str = Field(serialization_alias="owner_organization_id")
     name: str
     provider_kind: GitProviderKind
     shared_provider: bool = False
@@ -60,3 +62,10 @@ class WebhookInfo(BaseModel):
     secret_token: str
     ssl_verification: bool
     triggers: list[str]
+
+
+class WorkspaceAccessToken(BaseModel):
+    """Bitbucket Workspace Access Token - mirrors GroupAccessToken"""
+    workspace: str  # Workspace name/slug
+    token: str
+    name: str | None = None

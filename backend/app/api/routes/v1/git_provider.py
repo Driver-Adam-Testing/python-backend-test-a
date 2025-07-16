@@ -7,6 +7,8 @@ from itertools import groupby
 from uuid import UUID
 
 import modal
+
+from app.services.git_provider_service import get_git_provider_service
 from database.models_v1 import (
     GithubAppInstallation,
     GitProviderApp,
@@ -57,18 +59,20 @@ from app.schemas.git_provider_schema import (
     WebhookInfo,
 )
 from app.schemas.secret_management_schema import APP_INSTALL_GAT_NAME_PREFIX
-from app.services.gitlab_provider_service import (
-    authorize_git_provider,
-    clone_git_repository,
-    create_git_provider_app,
-    fetch_git_provider_apps_by_org_id,
-    fetch_group_repositories_by_installation_id,
-    handle_authorization_callback,
-    handle_delete_git_provider_app,
-    handle_group_access_revoke,
-    install_group_access_token,
-    update_group_access_token,
-)
+# from app.services.gitlab_provider_service import (
+#     authorize_git_provider,
+#     clone_git_repository,
+#     create_git_provider_app,
+#     fetch_git_provider_apps_by_org_id,
+#     fetch_group_repositories_by_installation_id,
+#     handle_authorization_callback,
+#     handle_delete_git_provider_app,
+#     handle_group_access_revoke,
+#     install_group_access_token,
+#     update_group_access_token,
+# )
+# import app.services.gitlab_provider_service as gitlab_service
+
 from app.utils.aws_s3 import org_id_to_hash
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
 from app.utils.gh_ops import (
@@ -93,11 +97,14 @@ aws_config = AWSClientConfig(
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
 )
 
+provider_service = get_git_provider_service(aws_config)
+
 
 class OkResponse(BaseModel):
     """Response model to validate and return when performing a health check."""
 
     status: str = "OK"
+
 
 
 #### APP ###
@@ -111,7 +118,8 @@ def get_apps(
     session: CurrentSession,
     current_user: UserToken,
 ) -> list[GitProviderApp]:
-    return fetch_git_provider_apps_by_org_id(session, current_user.organization_id)
+    # ✅
+    return provider_service.list_apps(session, current_user.organization_id)
 
 
 @router.post(
@@ -124,7 +132,8 @@ def create_app(
     session: CurrentSession,
     gp_app_input: CreateGitProviderAppRequest,
 ) -> GitProviderApp:
-    return create_git_provider_app(session, gp_app_input, aws_config)
+    # ✅
+    return provider_service.create_app(session, gp_app_input.model_dump(by_alias=True))
 
 
 @router.delete(
@@ -137,22 +146,21 @@ def delete_git_provider_app(
     current_user: UserToken,
     application_id: str,
 ) -> JSONResponse:
-    handle_delete_git_provider_app(
-        session, current_user.organization_id, application_id, aws_config
-    )
+    # ✅
+    provider_service.delete_app(session,current_user.organization_id, application_id)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": "App deleted."},
     )
 
-
+# 🚫
 @router.get("/app/{application_id}/authorize")
 def get_provider_authorize_url(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
 ) -> JSONResponse:
-    auth_url = authorize_git_provider(
+    auth_url = gitlab_service.authorize_git_provider(
         session,
         current_user.organization_id,
         current_user.user_id,
@@ -175,12 +183,11 @@ def get_app_installation(
     current_user: UserToken,
     application_id: str,
 ) -> list[GitProviderAppInstallation]:
-    installs = git_provider_app_installation_by_org_id(
+    return provider_service.list_app_installations(
         session,
         current_user.organization_id,
         application_id,
     )
-    return installs
 
 
 @router.post(
@@ -192,11 +199,11 @@ def add_group_access_token(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
-    gat: GroupAccessToken,
+    gat: GroupAccessToken, # TODO: Update this to use new AccessToken model
 ) -> JSONResponse:
     try:
-        install = install_group_access_token(
-            session, current_user.organization_id, application_id, gat, aws_config
+        install = provider_service.install_access_token(
+            session, current_user.organization_id, application_id, gat.model_dump(by_alias=True)
         )
 
         if not install:
@@ -223,18 +230,26 @@ def get_app_installation_webhook_info(
     application_id: UUID,
     installation_id: UUID,
 ) -> WebhookInfo:
-    app_install = git_provider_app_installation_by_id(session, installation_id)
-    if app_install.git_provider_app_id != application_id:
-        raise HTTPException(status_code=404, detail="Installation not found.")
-    secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
-        format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
-    )
-    webhook_info = WebhookInfo(
-        callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
-        custom_headers={"x-driver-token": installation_id},
-        secret_token=secret["secret_token"],
-        ssl_verification=True,
-        triggers=["push events", "Project or group access token events"],
+    # ❌
+    # app_install = git_provider_app_installation_by_id(session, installation_id)
+    # if app_install.git_provider_app_id != application_id:
+    #     raise HTTPException(status_code=404, detail="Installation not found.")
+    # secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
+    #     format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
+    # )
+    # webhook_info = WebhookInfo(
+    #     callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
+    #     custom_headers={"x-driver-token": installation_id},
+    #     secret_token=secret["secret_token"],
+    #     ssl_verification=True,
+    #     triggers=["push events", "Project or group access token events"],
+    # )
+    # ✅
+    webhook_info = provider_service.get_webhook_info(
+        session,
+        current_user.organization_id,
+        application_id,
+        installation_id,
     )
     return webhook_info
 
@@ -250,13 +265,16 @@ def delete_app_installation(
     application_id: str,
     installation_id: str,
 ) -> JSONResponse:
-    handle_group_access_revoke(
-        session,
-        current_user.organization_id,
-        application_id,
-        installation_id,
-        aws_config,
-    )
+    # ❌
+    # gitlab_service.handle_group_access_revoke(
+    #     session,
+    #     current_user.organization_id,
+    #     application_id,
+    #     installation_id,
+    #     aws_config,
+    # )
+    # ✅
+    provider_service.revoke_access_token(session, current_user.organization_id,application_id,installation_id)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": "Installation deleted."},
@@ -275,13 +293,12 @@ def get_repositories_by_installation_id(
     installation_id: str,
 ) -> list[GitRepository]:
     try:
-        return fetch_group_repositories_by_installation_id(
+        # ✅
+        return provider_service.list_repositories(
             session,
             current_user.organization_id,
-            current_user.user_id,
             application_id,
             installation_id,
-            aws_config,
         )
     except GitProviderAccessTokenError as e:
         logger.error(f"Error fetching repositories: {e}")
@@ -298,18 +315,26 @@ def update_git_provider_group_access_token(
     current_user: UserToken,
     application_id: str,
     installation_id: str,
-    new_gat: GroupAccessToken = Body(...),
+    new_gat: GroupAccessToken = Body(...), # TODO: Update this to use new AccessToken model
 ) -> JSONResponse:
     try:
-        update_group_access_token(
+        # ❌
+        # gitlab_service.update_group_access_token(
+        #     session,
+        #     current_user.organization_id,
+        #     application_id,
+        #     installation_id,
+        #     new_gat,
+        #     aws_config,
+        # )
+        # ✅
+        provider_service.update_access_token(
             session,
             current_user.organization_id,
             application_id,
             installation_id,
-            new_gat,
-            aws_config,
+            new_gat.model_dump(by_alias=True)
         )
-
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"message": "Token updated."},
@@ -318,7 +343,7 @@ def update_git_provider_group_access_token(
         logger.exception("Error adding token")
         raise HTTPException(status_code=500, detail="Invalid token")
 
-
+# 🚫
 @router.get("/app/callback")
 def git_provider_app_callback(
     session: CurrentSession,
@@ -332,12 +357,12 @@ def git_provider_app_callback(
     if error:  # if the user denies the authorization request
         logger.error(f"Error in callback: {error}")
     else:
-        handle_authorization_callback(session, code, state, aws_config)
+        gitlab_service.handle_authorization_callback(session, code, state, aws_config)
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
 
-
+# 🚫
 @router.post("/app/{application_id}/clone-repo", dependencies=[ContentEditorPermission])
 def clone_git_provider_repo(
     session: CurrentSession,
@@ -353,7 +378,8 @@ def clone_git_provider_repo(
         if not settings.USE_LEGACY_DROPZONE
         else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
     )
-    analysis_download_url = clone_git_repository(
+    # ❌
+    analysis_download_url = gitlab_service.clone_git_repository(
         session,
         current_user.organization_id,
         current_user.user_id,
@@ -379,6 +405,8 @@ def connect_git_provider_repo(
     application_id: UUID,
     repos: list[GitRepository],
 ) -> JSONResponse:
+    #TODO: update this to support BB move connect logic into the provider service
+    # ❌
     handle_gitlab_events = modal.Function.lookup(
         "inspector-v2",
         "handle_gitlab_events",
@@ -396,6 +424,7 @@ def connect_git_provider_repo(
             or app_install.organization_id != current_user.organization_id
         ):
             raise HTTPException(status_code=404, detail="Installation not found.")
+        # ❌
         handle_gitlab_events.spawn(
             installation_id,
             current_user.organization_id,
@@ -464,7 +493,7 @@ def github_callback(
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
 
-
+# 🚫
 @router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
 def clone_repo(
     session: CurrentSession,
@@ -921,7 +950,7 @@ def handle_gitlab_push_event(
         content={"ok": ""},
     )
 
-
+# ❌
 @router.post("/app/webhook")
 def gitlab_webhook(
     session: CurrentSession,

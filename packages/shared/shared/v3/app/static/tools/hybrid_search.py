@@ -31,7 +31,7 @@ class HybridSearchTool(LlmTool):
     Consider using keywords and descriptions of the documentation information or source code snippets you're looking for.
 
     Attributes:
-        search_query (str): The query string.
+        search_query (str): The query string. ALWAYS include the name of the top level directory(ies) in the query string.
     """
 
     search_query: str

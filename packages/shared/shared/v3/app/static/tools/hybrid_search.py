@@ -29,9 +29,9 @@ class HybridSearchTool(LlmTool):
 
     You can use this tool to search the codebase and files to obtain context for your response.
     Consider using keywords and descriptions of the documentation information or source code snippets you're looking for.
-
+    ALWAYS include the name of the top level directory(ies) in the query string, unless searching for a specific symbol or function name.
     Attributes:
-        search_query (str): The query string. ALWAYS include the name of the top level directory(ies) in the query string.
+        search_query (str): The query string.
     """
 
     search_query: str

@@ -1421,6 +1421,21 @@ files = [
 ]
 
 [[package]]
+name = "notion-client"
+version = "2.4.0"
+description = "Python client for the official Notion API"
+optional = false
+python-versions = "<4,>=3.7"
+groups = ["main"]
+files = [
+    {file = "notion_client-2.4.0-py2.py3-none-any.whl", hash = "sha256:89f47c0a5eedc08f1170c04e85f422091ce3e095f20b69a3877152e875f0094f"},
+    {file = "notion_client-2.4.0.tar.gz", hash = "sha256:e7ff32f733fdbe0f18a37f5d98ff665681e5b3c4dcf2faa6e602bb1b16a3b15d"},
+]
+
+[package.dependencies]
+httpx = ">=0.23.0"
+
+[[package]]
 name = "numpy"
 version = "2.2.4"
 description = "Fundamental package for array computing in Python"
@@ -3176,4 +3191,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "12f1b1dceefc201b0d6e2ccbe3110c191182e562809227ceb29b15d5e50663c9"
+content-hash = "3cacec61d48c6075b6f4388cae12634ffcb5e57040d915c1861bb662dec6a98b"

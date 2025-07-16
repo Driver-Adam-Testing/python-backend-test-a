@@ -50,10 +50,15 @@ class CodebaseFolderSummaryTool(ToolStrict):
 
             # Iterate over all results
             for content in derived_contents:
+                version_display_name = (
+                    content.node.version.vcs_hash
+                    if content.node.version.vcs_hash
+                    else "Unversioned"
+                )
                 formatted_result = f"""<result>
         <content>{content.content}</content>
         <content_type>long_description</content_type>
-        <path>{content.node.version.display_name}/{content.node.relative_path}</path>
+        <path>{version_display_name}/{content.node.relative_path}</path>
     </result>""".strip()
                 formatted_results.append(formatted_result)
 
@@ -61,7 +66,7 @@ class CodebaseFolderSummaryTool(ToolStrict):
                     content=content.content,
                     score=0.0,
                     relative_path=content.node.relative_path,
-                    version_display_name=content.node.version.display_name,
+                    version_display_name=version_display_name,
                     node_id=content.node.id,
                     version_id=content.node.version_id,
                     metadata={"content_type": content.content_kind},

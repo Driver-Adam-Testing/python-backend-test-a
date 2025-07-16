@@ -10,7 +10,7 @@ from database.models_v2 import (
     Version,
     VersionCreator,
 )
-from database.models_v2_enums import VersionStatus
+from database.models_v2_enums import PrimaryAssetProvider, VersionStatus
 from fastapi import Body, HTTPException, Path, Response
 from sqlmodel import select
 
@@ -98,6 +98,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
         display_name=new_display_name,
         organization_id=user.organization_id,
         kind=PrimaryAssetKind.PAGE,
+        provider=PrimaryAssetProvider.USER,
     )
     session.add(new_primary_asset)
     session.commit()
@@ -113,8 +114,9 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
 
     new_version = Version(
         primary_asset_id=new_primary_asset.id,
-        display_name="0",
+        vcs_hash=None,
         status=VersionStatus.GENERATION_COMPLETE,
+        vcs_metadata=None,
     )
     session.add(new_version)
     session.commit()
@@ -176,13 +178,15 @@ def new_template(
         display_name=new_display_name,
         organization_id=user.organization_id,
         kind=PrimaryAssetKind.PAGE_TEMPLATE,
+        provider=PrimaryAssetProvider.USER,
     )
     session.add(new_primary_asset)
     session.commit()
 
     new_version = Version(
-        display_name="0",
+        vcs_hash=None,
         status=VersionStatus.GENERATION_COMPLETE,
+        vcs_metadata=None,
     )
     new_version.primary_asset = new_primary_asset
     session.add(new_version)

@@ -100,7 +100,9 @@ class HybridSearchTool(LlmTool):
                     content=chunk.text,
                     score=combo_score,
                     relative_path=rel_path,
-                    version_display_name=str(ver_id),
+                    version_display_name=str(
+                        ver_id
+                    ),  # TODO: should this be vcs_hash instead of the DB id?
                     version_id=ver_id,
                     node_id=node_id,
                     chunk_id=chunk.id,

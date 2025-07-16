@@ -66,11 +66,14 @@ class FolderSummaryTool(LlmTool):
 
             for dc in rows:
                 node = dc.node
+                version_display_name = (
+                    node.version.vcs_hash if node.version.vcs_hash else "Unversioned"
+                )
                 ref = Reference(
                     content=dc.content,
                     score=0.0,
                     relative_path=node.relative_path,
-                    version_display_name=str(node.version.display_name),
+                    version_display_name=version_display_name,
                     version_id=node.version_id,
                     node_id=node.id,
                     chunk_id=None,

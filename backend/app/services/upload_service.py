@@ -9,6 +9,7 @@ from database.models_v2 import (
 )
 from database.models_v2_enums import (
     PrimaryAssetKind,
+    PrimaryAssetProvider,
     VersionStatus,
 )
 from fastapi import HTTPException
@@ -64,14 +65,16 @@ class UploadService:
                     kind=asset_kind,
                     repository_id=None,
                     codebase_settings_auto_commit_docs=codebase_settings_auto_commit_docs,
+                    provider=PrimaryAssetProvider.USER,
                 )
                 self.session.add(new_asset)
                 primary_asset_id = new_asset.id
                 new_version = Version(
                     primary_asset_id=new_asset.id,
-                    display_name="Unversioned",
+                    vcs_hash=None,
                     status=VersionStatus.CONNECTING,
                     previous_version_id=None,
+                    vcs_metadata=None,
                 )
                 self.session.add(new_version)
                 version_id = new_version.id

@@ -140,11 +140,12 @@ class BulkAssetCopier:
                     {
                         "id": v.id,
                         "primary_asset_id": v.primary_asset_id,
-                        "display_name": v.display_name,
+                        "vcs_hash": v.vcs_hash,
                         "status": v.status,
                         "previous_version_id": None,  # Set to None initially
                         "created_at": v.created_at,
                         "updated_at": v.updated_at,
+                        "vcs_metadata": v.vcs_metadata,
                     }
                     for v in versions
                 ]

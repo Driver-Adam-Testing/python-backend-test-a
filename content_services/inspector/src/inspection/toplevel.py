@@ -1,7 +1,9 @@
+import asyncio
 import concurrent.futures
 from pathlib import Path
 from typing import Any
 
+from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
@@ -21,6 +23,7 @@ from utils.tags.codebase_wide import (
     CodebaseDomainScores,
     CodebaseKindScores,
 )
+from utils.tags.entry_point import EntryPoints
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
@@ -462,24 +465,35 @@ def comprehend_codebase_top_down(
     domain_scores = CodebaseDomainScores.from_llm(llm=llm, docs=docs)
     audience_scores = CodebaseAudienceScores.from_llm(llm=llm, docs=docs)
 
+    async_llm = AsyncChatOpenAI(
+        model="gpt-4o-2024-08-06",
+        temperature=0,
+        request_timeout=500,
+    )
+    entry_points = asyncio.run(EntryPoints.from_llm(llm=async_llm, docs=docs, n=3))
+
     print(f"Codebase kind scores:\n\n{kind_scores.sorted_list}")
     print(f"Codebase domain scores:\n\n{domain_scores.sorted_list}")
     print(f"Codebase audience scores:\n\n{audience_scores.sorted_list}")
-    terse_sentence = "KIND: "
-    top_kind = kind_scores.take(n=3, pred=lambda el: el[1] > 0.0)
-    for kind, score in top_kind[:-1]:
-        terse_sentence += f"{kind}[{score}], "
-    terse_sentence += f"{top_kind[-1][0]}[{top_kind[-1][1]}]"
-    terse_sentence += " DOMAIN: "
-    top_domain = domain_scores.take(n=3, pred=lambda el: el[1] > 0.0)
-    for domain, score in top_domain[:-1]:
-        terse_sentence += f"{domain}[{score}], "
-    terse_sentence += f"{top_domain[-1][0]}[{top_domain[-1][1]}]"
-    terse_sentence += " AUDIENCE: "
-    top_audience = audience_scores.take(3, pred=lambda el: el[1] > 0.0)
-    for audience, score in top_audience[:-1]:
-        terse_sentence += f"{audience}[{score}], "
-    terse_sentence += f"{top_audience[-1][0]}[{top_audience[-1][1]}]"
+    print(str(entry_points))
+
+    # terse_sentence = "KIND: "
+    # top_kind = kind_scores.take(n=3, pred=lambda el: el[1] > 0.0)
+    # for kind, score in top_kind[:-1]:
+    #     terse_sentence += f"{kind}[{score}], "
+    # terse_sentence += f"{top_kind[-1][0]}[{top_kind[-1][1]}]"
+    # terse_sentence += " DOMAIN: "
+    # top_domain = domain_scores.take(n=3, pred=lambda el: el[1] > 0.0)
+    # for domain, score in top_domain[:-1]:
+    #     terse_sentence += f"{domain}[{score}], "
+    # terse_sentence += f"{top_domain[-1][0]}[{top_domain[-1][1]}]"
+    # terse_sentence += " AUDIENCE: "
+    # top_audience = audience_scores.take(3, pred=lambda el: el[1] > 0.0)
+    # for audience, score in top_audience[:-1]:
+    #     terse_sentence += f"{audience}[{score}], "
+    # terse_sentence += f"{top_audience[-1][0]}[{top_audience[-1][1]}]"
+
+    terse_sentence = entry_points.entry_point_paths()
 
     short_descriptions = {
         "terse_sentence": terse_sentence,

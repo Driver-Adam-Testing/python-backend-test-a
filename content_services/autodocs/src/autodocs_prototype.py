@@ -1745,6 +1745,11 @@ class AutoDocInitState(BaseModel):
     document: DocumentCfg
     scope: Scope
     sections: list[SectionCommitted]
+    _source_list: dict[str, list[str]] = {}
+
+    @property
+    def section_sources(self) -> str:
+        return self._source_list
 
     def assembly_system_prompt(self) -> str:
         system_prompt_template = """
@@ -1845,6 +1850,37 @@ Your output is the full content of the document with editing updates based on yo
             .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
             .into_str()
         )
+
+    def _generate_sources_list(
+        self,
+        annotations: dict[str, list[Category]] | None,
+        pdf_annotations: dict[str, list[Category]] | None,
+    ) -> dict[str, list[str]]:
+        sources_dict = {}
+
+        if not annotations and not pdf_annotations:
+            return sources_dict
+
+        for idx, section in enumerate(self.sections):
+            sources = []
+            if annotations:
+                sources.extend(
+                    path
+                    for path, categories in annotations.items()
+                    if categories[idx] == Category.HighlyRelevant
+                )
+
+            if pdf_annotations:
+                sources.extend(
+                    f"{pdf_path!s} (page {page_idx + 1})"
+                    for pdf_path, pages in pdf_annotations.items()
+                    for page_idx, categories in pages.items()
+                    if categories[idx] == Category.HighlyRelevant
+                )
+
+            sources_dict[section.title] = sources
+
+        return sources_dict
 
     def to_disk(self, json_p: Path) -> None:
         with open(json_p) as f:
@@ -2679,17 +2715,21 @@ Your output is the full content of the document with editing updates based on yo
                 )
 
             # Annotate nodes with tags, if applicable.
-            annotations, pdf_annotations = (
-                await self._annotate_nodes(
+            if self.document.use_tagging:
+                annotations, pdf_annotations = await self._annotate_nodes(
                     llm=llm_tagging,
                     topo=appended_topo,
                     graph=joined_graph,
                     execution_mode=execution_mode,
                     pdf_pages_dict=pdf_pages_dict,
                 )
-                if self.document.use_tagging
-                else (None, None)
-            )
+                self._source_list = self._generate_sources_list(
+                    annotations=annotations, pdf_annotations=pdf_annotations
+                )
+            else:
+                annotations = None
+                pdf_annotations = None
+
             # self.save_annotations(annotations=annotations)
             if execution_mode == ExecutionMode.MODAL:
                 await update_autodocs_status(
@@ -2844,7 +2884,9 @@ Your output is the full content of the document with editing updates based on yo
             system_prompt=self.final_copy_editor_system_prompt(),
             user_prompt=copy_editor_user_prompt,
         )
+
         final_document += "\n\nMade with ❤️ by [Driver](https://www.driver.ai/)"
+
         final_doc_revisions.append(final_document)
         final_doc_revisions.append(fix_mermaid_syntax_in_response(text=final_document))
         self.save_state(

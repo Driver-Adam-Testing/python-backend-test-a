@@ -1,24 +1,25 @@
 import json
 import logging
-from typing import List, Dict, Optional, Tuple
-from app.git_providers.interfaces.provider_interface import GitProviderInterface
-from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
+
 from app.git_providers.core.config import GitProviderConfig
+from app.git_providers.interfaces.provider_interface import (
+    GitProviderCapabilities,
+    GitProviderInterface,
+)
+from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
 from app.git_providers.oauth.gitlab_oauth_strategy import GitLabOAuthStrategy
 from app.git_providers.resources.gitlab_resources import GitLabAPIResources
-from app.git_providers.utils.errors import GitProviderAccessTokenError
 from app.git_providers.utils.git_provider_utils import generate_codebase_metadata
-from app.schemas.git_provider_schema import GitRepository, GitProviderAppTokenSecret
+from app.schemas.git_provider_schema import GitProviderAppTokenSecret, GitRepository
 from app.schemas.secret_management_schema import (
     APP_INSTALL_GAT_NAME_PREFIX,
-    APP_SECRET_NAME_PREFIX
 )
 from database.models_v1 import GitProviderApp, GitProviderAppInstallation
 from shared.file_storage.aws_s3_client import AWSS3Client
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
-    format_secret_name
+    format_secret_name,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,16 +28,20 @@ logger = logging.getLogger(__name__)
 class GitLabProvider(GitProviderInterface):
     """GitLab provider implementation supporting Group Access Tokens only"""
 
-
-
-    def __init__(self, config: GitProviderConfig, secrets_manager: AWSSecretManagementStrategy):
+    def __init__(
+        self, config: GitProviderConfig, secrets_manager: AWSSecretManagementStrategy
+    ):
         self.config = config
         self.secrets_manager = secrets_manager
-        self.auth_strategy = GitLabOAuthStrategy(config)  # Still used for token validation
+        self.auth_strategy = GitLabOAuthStrategy(
+            config
+        )  # Still used for token validation
         self.api_strategy = GitLabAPIResources(config.base_url, config.provider_kind)
 
     @classmethod
-    def from_config(cls, app: GitProviderApp, aws_config: AWSClientConfig) -> 'GitLabProvider':
+    def from_config(
+        cls, app: GitProviderApp, aws_config: AWSClientConfig
+    ) -> "GitLabProvider":
         """Create GitLabProvider from app configuration"""
         from app.git_providers.core.config_loader import load_provider_config
 
@@ -47,8 +52,8 @@ class GitLabProvider(GitProviderInterface):
 
         return cls(config, secrets_manager)
 
-    #TODO: revisit this throw error vs return False
-    def validate_access_token(self, token_data: Dict) -> Tuple[bool, Optional[str]]:
+    # TODO: revisit this throw error vs return False
+    def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
         """Validate GitLab Group Access Token"""
         access_token = AccessTokenData(**token_data)
 
@@ -63,8 +68,9 @@ class GitLabProvider(GitProviderInterface):
             logger.error(f"GAT validation failed: {e}")
             return False, str(e)
 
-    def create_installation(self, organization_id: str, app_id: str,
-                            token_data: Dict) -> GitProviderAppInstallation:
+    def create_installation(
+        self, organization_id: str, app_id: str, token_data: dict
+    ) -> GitProviderAppInstallation:
         """Create GitLab installation record"""
         access_token = AccessTokenData(**token_data)
         return GitProviderAppInstallation(
@@ -73,19 +79,23 @@ class GitLabProvider(GitProviderInterface):
             misc_metadata={
                 "kind": token_data["token_type"],
                 "name": access_token.name,
-            }
+            },
         )
 
-    def store_secrets(self, installation: GitProviderAppInstallation,
-                      token_data: Dict) -> None:
+    def store_secrets(
+        self, installation: GitProviderAppInstallation, token_data: dict
+    ) -> None:
         """Store GitLab GAT in AWS Secrets Manager"""
         access_token = AccessTokenData(**token_data)
 
         # Generate webhook secret
         import secrets
+
         webhook_secret = secrets.token_urlsafe(32)
 
-        secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation.id))
+        secret_key = format_secret_name(
+            APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
+        )
         secret_value = json.dumps(
             GitProviderAppTokenSecret(
                 token=access_token.token, secret_token=webhook_secret
@@ -93,13 +103,17 @@ class GitLabProvider(GitProviderInterface):
         )
         self.secrets_manager.write_secret(secret_key, secret_value)
         logger.info(f"Stored GAT for GitLab installation {installation.id}")
+
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
         secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, installation.id)
         secret_value = self.secrets_manager.read_secret(secret_key)
         if not secret_value:
             raise ValueError(f"GAT not found for installation: {installation.id}")
         return secret_value
-    def fetch_repositories(self, installation: GitProviderAppInstallation) -> List[GitRepository]:
+
+    def fetch_repositories(
+        self, installation: GitProviderAppInstallation
+    ) -> list[GitRepository]:
         """Fetch GitLab repositories using GAT"""
         logger.info(f"Fetching repositories for installation: {installation.id}")
 
@@ -115,8 +129,14 @@ class GitLabProvider(GitProviderInterface):
             logger.error(f"Failed to fetch repositories: {e}")
             raise
 
-    def clone_repository(self, repo_info: GitRepository, user_id: str,
-                         org_id: str, upload_key: str, bucket_name: str) -> str:
+    def clone_repository(
+        self,
+        repo_info: GitRepository,
+        user_id: str,
+        org_id: str,
+        upload_key: str,
+        bucket_name: str,
+    ) -> str:
         """Clone GitLab repository and upload to S3"""
         logger.info(f"Cloning GitLab repository: {repo_info.repo_name}")
 
@@ -126,10 +146,14 @@ class GitLabProvider(GitProviderInterface):
 
             # Get repository details
             repo_id = repo_info.repo_id
-            latest_commit = repo_info.latest_commit.get("id") if repo_info.latest_commit else None
+            latest_commit = (
+                repo_info.latest_commit.get("id") if repo_info.latest_commit else None
+            )
 
             if not latest_commit:
-                logger.warning(f"No commit specified for {repo_info.repo_name}, fetching latest")
+                logger.warning(
+                    f"No commit specified for {repo_info.repo_name}, fetching latest"
+                )
                 # Fetch latest commit from default branch
                 project = self.api_strategy.fetch_project(repo_id, access_token)
                 if project:
@@ -137,7 +161,9 @@ class GitLabProvider(GitProviderInterface):
 
             # Download repository
             logger.info(f"Downloading repository {repo_id} at commit {latest_commit}")
-            zip_content = self.api_strategy.download_repo(repo_id, latest_commit, access_token)
+            zip_content = self.api_strategy.download_repo(
+                repo_id, latest_commit, access_token
+            )
 
             # Generate metadata
             metadata = generate_codebase_metadata(
@@ -148,7 +174,7 @@ class GitLabProvider(GitProviderInterface):
                 owner=repo_info.metadata.get("namespace", {}).get("full_path", ""),
                 provider="gitlab",
                 commit=latest_commit,
-                upload_key=upload_key
+                upload_key=upload_key,
             )
 
             # Upload to S3
@@ -159,7 +185,7 @@ class GitLabProvider(GitProviderInterface):
                 file_content=zip_content,
                 bucket_name=bucket_name,
                 s3_key=upload_key,
-                metadata_dict=metadata
+                metadata_dict=metadata,
             )
 
             if not upload_success:
@@ -175,10 +201,13 @@ class GitLabProvider(GitProviderInterface):
             logger.error(f"Failed to clone repository: {e}")
             raise
 
-    def handle_webhook(self, event_type: str, payload: Dict,
-                       installation_id: str) -> Dict:
+    def handle_webhook(
+        self, event_type: str, payload: dict, installation_id: str
+    ) -> dict:
         """Handle GitLab webhook events"""
-        logger.info(f"Handling GitLab webhook: {event_type} for installation {installation_id}")
+        logger.info(
+            f"Handling GitLab webhook: {event_type} for installation {installation_id}"
+        )
 
         try:
             if event_type == "push":
@@ -200,10 +229,11 @@ class GitLabProvider(GitProviderInterface):
         logger.info(f"Revoking access for GitLab installation {installation.id}")
 
         # Delete GAT secret
-        secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation.id))
+        secret_key = format_secret_name(
+            APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
+        )
         self.secrets_manager.delete_secret(secret_key)
         logger.info(f"Deleted GAT secret for installation {installation.id}")
-
 
     # Private helper methods
 
@@ -217,26 +247,30 @@ class GitLabProvider(GitProviderInterface):
 
         return secret_value["token"]
 
-    def _handle_push_event(self, payload: Dict, installation_id: str) -> Dict:
+    def _handle_push_event(self, payload: dict, installation_id: str) -> dict:
         """Handle push webhook event"""
         project = payload.get("project", {})
         commits = payload.get("commits", [])
         ref = payload.get("ref", "")
 
-        logger.info(f"Push event for project {project.get('name')} with {len(commits)} commits")
+        logger.info(
+            f"Push event for project {project.get('name')} with {len(commits)} commits"
+        )
 
         # Extract branch name from ref
-        branch = ref.replace("refs/heads/", "") if ref.startswith("refs/heads/") else ref
+        branch = (
+            ref.replace("refs/heads/", "") if ref.startswith("refs/heads/") else ref
+        )
 
         return {
             "status": "processed",
             "event": "push",
             "project": project.get("name"),
             "branch": branch,
-            "commits": len(commits)
+            "commits": len(commits),
         }
 
-    def _handle_merge_request_event(self, payload: Dict, installation_id: str) -> Dict:
+    def _handle_merge_request_event(self, payload: dict, installation_id: str) -> dict:
         """Handle merge request webhook event"""
         merge_request = payload.get("merge_request", {})
         action = payload.get("object_attributes", {}).get("action")
@@ -247,10 +281,10 @@ class GitLabProvider(GitProviderInterface):
             "status": "processed",
             "event": "merge_request",
             "action": action,
-            "merge_request_id": merge_request.get("iid")
+            "merge_request_id": merge_request.get("iid"),
         }
 
-    def _handle_tag_push_event(self, payload: Dict, installation_id: str) -> Dict:
+    def _handle_tag_push_event(self, payload: dict, installation_id: str) -> dict:
         """Handle tag push webhook event"""
         project = payload.get("project", {})
         ref = payload.get("ref", "")
@@ -264,7 +298,38 @@ class GitLabProvider(GitProviderInterface):
             "status": "processed",
             "event": "tag_push",
             "project": project.get("name"),
-            "tag": tag
+            "tag": tag,
         }
 
-
+    @property
+    def capabilities(self) -> GitProviderCapabilities:
+        """Get GitLab provider capabilities"""
+        return GitProviderCapabilities(
+            # Authentication
+            supports_oauth_flow=False,
+            supports_group_access_token=True,
+            supports_workspace_access_token=False,
+            supports_project_access_token=False,
+            supports_repository_access_token=False,
+            supports_personal_access_token=False,
+            # Repository operations
+            can_list_repositories=True,
+            can_clone_repository=True,
+            can_get_latest_commit=True,
+            can_create_pull_request=False,
+            # Webhook support
+            supports_webhooks=True,
+            handles_push_events=True,
+            handles_merge_request_events=True,
+            handles_tag_events=True,
+            handles_fork_events=False,
+            # Access control
+            supports_granular_permissions=False,  # GAT gives access to all group repos
+            supports_multiple_installations=True,
+            # API features
+            supports_pagination=False,  # TODO comment indicates not implemented
+            max_repos_per_fetch=1000,  # get_all=True in GitLab API
+            uses_git_clone=False,  # Uses API download
+            # Provider info
+            api_version="v4",  # GitLab API v4
+        )

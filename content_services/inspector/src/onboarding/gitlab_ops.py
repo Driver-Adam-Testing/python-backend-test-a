@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 from datetime import UTC, datetime
 from uuid import UUID
@@ -6,6 +7,13 @@ from uuid import UUID
 import modal
 import requests
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
+from onboarding.vcs_utils import (
+    AuthorInfo,
+    BranchInfo,
+    CommitInfo,
+    RepoInfo,
+    VersionControlInfo,
+)
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -18,6 +26,8 @@ from sqlmodel import Session, select
 # TODO: update generate_codebase_metadata to include installation_id
 # TODO: update download_and_upload_repo match gh_ops:download_and_upload_repo
 # TODO: add get_repo_clone_info_from_id like in gh_ops
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_access_token(installation_id: str) -> str:
@@ -49,6 +59,67 @@ def download_repo(base_url: str, repo_id: str, commit: str, access_token: str) -
     )
     response.raise_for_status()
     return response.content
+
+
+def fetch_vcs_info(
+    base_url: str, repo_id: str, access_token: str, commit_sha: str | None = None
+) -> VersionControlInfo:
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Fetch repository information
+    repo_response = requests.get(
+        f"{base_url}/api/v4/projects/{repo_id}",
+        headers=headers,
+        timeout=120,
+    )
+    repo_response.raise_for_status()
+    repo_data = repo_response.json()
+    logger.info(
+        f"Repo information retrieved from GitLab API (status code {repo_response.status_code}): {repo_data}"
+    )
+
+    default_branch = repo_data["default_branch"]
+
+    # Fetch detailed commit information
+    commit_response = requests.get(
+        f"{base_url}/api/v4/projects/{repo_id}/repository/commits/{commit_sha}",
+        headers=headers,
+        timeout=120,
+    )
+    commit_response.raise_for_status()
+    commit_data = commit_response.json()
+    logger.info(
+        f"Commit data retrieved from GitLab API (status code {commit_response.status_code}): {commit_data}"
+    )
+
+    # Build VersionControlInfo
+    author_info = AuthorInfo(
+        email=commit_data["author_email"],
+        name=commit_data["author_name"],
+        date=commit_data["authored_date"],
+    )
+
+    commit_info = CommitInfo(
+        sha=commit_data["id"],
+        message=commit_data["message"],
+        url=commit_data["web_url"],
+        author=author_info,
+    )
+
+    branch_info = BranchInfo(name=default_branch)
+
+    repo_info = RepoInfo(
+        name=repo_data["name"],
+        namespace=repo_data["namespace"]["name"],
+        full_name=repo_data["name_with_namespace"],
+        url=repo_data["web_url"],
+    )
+
+    return VersionControlInfo(
+        repository=repo_info,
+        commit=commit_info,
+        branch=branch_info,
+    )
 
 
 def generate_codebase_metadata(
@@ -110,6 +181,13 @@ def download_and_upload_repo(
             ).one()
             base_url = app_install.git_provider_app.base_url
 
+            vcs_info = fetch_vcs_info(
+                base_url=base_url,
+                repo_id=repo_id,
+                access_token=access_token,
+                commit_sha=commit,
+            )
+
             if is_push:
                 primary_asset = session.exec(
                     select(PrimaryAsset)
@@ -135,7 +213,7 @@ def download_and_upload_repo(
                         previous_version_id=primary_asset.versions[
                             0
                         ].id,  # TODO: don't link this for connected only?
-                        vcs_metadata=None,  # TODO: add metadata here
+                        vcs_metadata=vcs_info.model_dump(),
                     )
                     session.add(new_version)
                     version_id = new_version.id
@@ -159,7 +237,7 @@ def download_and_upload_repo(
                                 vcs_hash=commit,
                                 status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
                                 previous_version_id=version.id,
-                                vcs_metadata=None,  # TODO: add metadata here
+                                vcs_metadata=vcs_info.model_dump(),
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -249,7 +327,7 @@ def download_and_upload_repo(
                                 status=VersionStatus.GENERATING,
                                 # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
                                 previous_version_id=version.previous_version_id,
-                                vcs_metadata=None,  # TODO: add metadata here
+                                vcs_metadata=vcs_info.model_dump(),
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -275,7 +353,7 @@ def download_and_upload_repo(
                     repository_id=repo_id,
                     installation_id=installation_id,
                     codebase_settings_auto_commit_docs=False,
-                    provider=PrimaryAssetProvider.GITLAB_ENTERPRISE_SELF_MANAGED,
+                    provider=PrimaryAssetProvider.GITLAB_SELF_MANAGED,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id
@@ -285,7 +363,7 @@ def download_and_upload_repo(
                     vcs_hash=commit,
                     status=VersionStatus.CONNECTING,
                     previous_version_id=None,
-                    vcs_metadata=None,
+                    vcs_metadata=vcs_info.model_dump(),
                 )
                 session.add(version)
                 version_id = version.id

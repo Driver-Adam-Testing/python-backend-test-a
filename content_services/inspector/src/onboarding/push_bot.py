@@ -48,7 +48,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     from database.db import engine
     from database.models_v1 import GitProviderAppInstallation
-    from onboarding import gh_ops, gitlab_ops
+    from onboarding import gh_ops, gitlab_ops, bitbucket_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
@@ -64,6 +64,19 @@ async def push_docs(version_id: uuid.UUID) -> None:
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
     is_github = version.primary_asset.installation_id is None
+    is_bitbucket = False
+    
+    # Check if it's a Bitbucket installation
+    if not is_github and version.primary_asset.installation_id:
+        with Session(engine) as session:
+            installation = session.exec(
+                select(GitProviderAppInstallation).where(
+                    GitProviderAppInstallation.id == version.primary_asset.installation_id
+                )
+            ).first()
+            if installation and installation.git_provider_app:
+                from database.models_v1 import GitProviderKind
+                is_bitbucket = installation.git_provider_app.provider_kind == GitProviderKind.BITBUCKET
 
     with (
         tempfile.TemporaryDirectory() as temp_dir,
@@ -84,6 +97,18 @@ async def push_docs(version_id: uuid.UUID) -> None:
             access_token = gh_ops.fetch_app_access_token(install_id)
             clone_url, full_name = gh_ops.get_repo_clone_info_from_id(
                 repo_id, access_token
+            )
+        elif is_bitbucket:
+            access_token = bitbucket_ops.fetch_access_token(install_id)
+            workspace = version.primary_asset.metadata.get("workspace") if version.primary_asset.metadata else None
+            repo_slug = version.primary_asset.metadata.get("slug") if version.primary_asset.metadata else None
+            if not workspace or not repo_slug:
+                # Fallback: extract from display name or other sources
+                # This is a simplified approach - you may need to adjust based on your data model
+                workspace = org_id  # or extract from somewhere else
+                repo_slug = repo_name
+            clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
+                workspace, repo_slug, access_token
             )
         else:
             with Session(engine) as session:
@@ -137,6 +162,12 @@ async def push_docs(version_id: uuid.UUID) -> None:
         if is_github:
             # Create a pull request after successful push
             gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
+        elif is_bitbucket:
+            # Create a pull request after successful push
+            workspace, repo_slug = full_name.split("/", 1)
+            bitbucket_ops.create_pull_request(
+                workspace, repo_slug, access_token, branch, commit_slug
+            )
         else:
             # Create a merge request after successful push
             gitlab_ops.create_pull_request(

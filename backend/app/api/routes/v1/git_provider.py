@@ -14,6 +14,7 @@ from database.models_v1 import (
     GithubAppInstallation,
     GitProviderApp,
     GitProviderAppInstallation,
+    GitProviderKind,
 )
 from database.models_v2 import PrimaryAsset
 from database.models_v2_enums import PrimaryAssetKind
@@ -406,18 +407,41 @@ def connect_git_provider_repo(
     application_id: UUID,
     repos: list[GitRepository],
 ) -> JSONResponse:
-    #TODO: update this to support BB move connect logic into the provider service
-    # ❌
-    handle_gitlab_events = modal.Function.lookup(
-        "inspector-v2",
-        "handle_gitlab_events",
-        environment_name=settings.MODAL_ENVIRONMENT,
-    )
+    # Get the app to determine provider type
+    app = session.get(GitProviderApp, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found.")
+    
+    # Determine which handler to use based on provider type
+    if app.provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
+        handle_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_gitlab_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
+    elif app.provider_kind == GitProviderKind.BITBUCKET:
+        handle_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_bitbucket_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
+    # elif app.provider_kind == GitProviderKind.GITHUB:
+    #     handle_events = modal.Function.lookup(
+    #         "inspector-v2",
+    #         "handle_github_events",
+    #         environment_name=settings.MODAL_ENVIRONMENT,
+    #     )
+    else:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported provider kind: {app.provider_kind}"
+        )
 
     repos.sort(key=lambda x: x.installation_id)
     installation_groups = {
         k: list(v) for k, v in groupby(repos, key=lambda x: x.installation_id)
     }
+    
     for installation_id, repo_group in installation_groups.items():
         app_install = git_provider_app_installation_by_id(session, installation_id)
         if (
@@ -425,8 +449,8 @@ def connect_git_provider_repo(
             or app_install.organization_id != current_user.organization_id
         ):
             raise HTTPException(status_code=404, detail="Installation not found.")
-        # ❌
-        handle_gitlab_events.spawn(
+        
+        handle_events.spawn(
             installation_id,
             current_user.organization_id,
             repos_added=[repo.model_dump() for repo in repo_group],
@@ -951,40 +975,167 @@ def handle_gitlab_push_event(
         content={"ok": ""},
     )
 
+
+def handle_bitbucket_push_event(
+    session: CurrentSession,
+    app_id: UUID,
+    installation_id: str,
+    body: dict,
+) -> JSONResponse:
+    """Handle Bitbucket push webhook event"""
+    push = body.get("push", {})
+    repository = body.get("repository", {})
+    changes = push.get("changes", [])
+    
+    # Extract repository info
+    repo_name = repository.get("name")
+    repo_id = repository.get("uuid")
+    workspace = repository.get("workspace", {}).get("slug")
+    full_name = repository.get("full_name")
+    
+    app_install = git_provider_app_installation_by_id(session, installation_id)
+    organization_id = app_install.organization_id
+    
+    # Process all branch changes
+    for change in changes:
+        if change.get("new", {}).get("type") == "branch":
+            branch_name = change["new"]["name"]
+            commit_hash = change["new"]["target"]["hash"]
+            
+            # Get default branch from repository
+            default_branch = repository.get("mainbranch", {}).get("name", "main")
+            
+            if branch_name != default_branch:
+                logger.info(
+                    "Push event ignored: Not the default branch. Workspace: %s, Repo: %s, Branch: %s, Install ID: %s",
+                    workspace,
+                    repo_name,
+                    branch_name,
+                    installation_id,
+                )
+                continue
+            
+            logger.info(
+                "Push event on default branch. Workspace: %s, Repo: %s, Branch: %s, Install ID: %s",
+                workspace,
+                repo_name,
+                branch_name,
+                installation_id,
+            )
+            
+            if app_install.git_provider_app_id != app_id:
+                raise HTTPException(status_code=404, detail="Installation not found.")
+            
+            repos_pushed = [
+                {
+                    "repo_id": repo_id,
+                    "repo_name": repo_name,
+                    "full_name": full_name,
+                    "commit": commit_hash,
+                    "metadata": {
+                        "workspace": workspace,
+                        "slug": repository.get("slug"),
+                        **repository
+                    },
+                    "installation_id": installation_id,
+                    "latest_commit": {
+                        "id": commit_hash,
+                    },
+                }
+            ]
+            
+            handle_bitbucket_events = modal.Function.lookup(
+                "inspector-v2",
+                "handle_bitbucket_events",
+                environment_name=settings.MODAL_ENVIRONMENT,
+            )
+            handle_bitbucket_events.spawn(
+                installation_id,
+                organization_id,
+                [],
+                [],
+                repos_pushed,
+            )
+    
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"ok": ""},
+    )
+
 # ❌
 @router.post("/app/webhook")
-def gitlab_webhook(
+def git_provider_webhook(
     session: CurrentSession,
     body_data: dict = Depends(_extract_body_and_headers),
 ) -> JSONResponse:
+    """Generic webhook handler for GitLab and Bitbucket"""
     # TODO: Use install id as the token
     # TODO: handle token expire events
     body = body_data["json_body"]
     headers = body_data["headers"]
-    object_kind = body.get("object_kind")
-    installation_id = headers["x-driver-token"]
-    incoming_secret_token = headers["x-gitlab-token"]
-    secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
-        format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
-    )
-    if not secret.get("secret_token"):
-        logger.error(f"Secret not found for installation ID {installation_id}")
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-
-    secret_token = secret["secret_token"]
-
-    if secret_token != incoming_secret_token:
-        logger.error(f"Secret token mismatch for installation ID {installation_id}")
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-
+    installation_id = headers.get("x-driver-token")
+    
+    if not installation_id:
+        logger.error("Installation ID not found in headers")
+        raise HTTPException(status_code=403, detail="Installation ID required")
+    
+    # Fetch the app installation to determine provider type
     app_install = git_provider_app_installation_by_id(session, installation_id)
-
-    if object_kind == "push":
-        print("Push event")
-        handle_gitlab_push_event(
-            session, app_install.git_provider_app_id, installation_id, body
+    if not app_install:
+        logger.error(f"Installation not found for ID {installation_id}")
+        raise HTTPException(status_code=404, detail="Installation not found")
+    
+    # Determine provider based on app type
+    provider_kind = app_install.git_provider_app.provider_kind
+    
+    # Handle GitLab webhooks
+    if provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
+        object_kind = body.get("object_kind")
+        incoming_secret_token = headers.get("x-gitlab-token")
+        
+        secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
+            format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
         )
-
+        if not secret.get("secret_token"):
+            logger.error(f"Secret not found for installation ID {installation_id}")
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        secret_token = secret["secret_token"]
+        
+        if secret_token != incoming_secret_token:
+            logger.error(f"Secret token mismatch for installation ID {installation_id}")
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        if object_kind == "push":
+            logger.info("GitLab push event")
+            return handle_gitlab_push_event(
+                session, app_install.git_provider_app_id, installation_id, body
+            )
+    
+    # Handle Bitbucket webhooks
+    elif provider_kind == GitProviderKind.BITBUCKET:
+        event_key = headers.get("x-event-key")
+        incoming_secret = headers.get("x-hook-uuid")
+        
+        # For Bitbucket, validate the webhook secret if provided
+        secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
+            format_secret_name(APP_INSTALL_WAT_NAME_PREFIX, str(installation_id))
+        )
+        if secret and secret.get("secret_token") and incoming_secret:
+            if secret["secret_token"] != incoming_secret:
+                logger.error(f"Secret token mismatch for Bitbucket installation ID {installation_id}")
+                raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        if event_key == "repo:push":
+            logger.info("Bitbucket push event")
+            return handle_bitbucket_push_event(
+                session, app_install.git_provider_app_id, installation_id, body
+            )
+    
+    else:
+        logger.error(f"Unsupported provider kind: {provider_kind}")
+        raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider_kind}")
+    
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED, content={"message": "Event ignored"}
     )

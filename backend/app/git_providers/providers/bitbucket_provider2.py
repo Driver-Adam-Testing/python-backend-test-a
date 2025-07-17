@@ -218,19 +218,20 @@ class BitbucketProvider(GitProviderInterface):
                     provider_kind=installation.git_provider_app.provider_kind,
                     provider_name=str(installation.git_provider_app.provider_kind),
                     repo_name=repo["name"],
-                    repo_id=repo["uuid"],
-                    repo_full_name=repo["full_name"],
-                    repo_url=repo["links"]["html"]["href"],
-                    latest_commit=latest_commit,
+                    # repo_id doesn't exist in GitRepository schema - store in metadata
                     last_updated=repo.get("updated_on"),
+                    latest_commit=latest_commit,
                     metadata={
+                        "id": repo["uuid"],  # Store repo ID in metadata
                         "workspace": workspace,
                         "slug": repo["slug"],
                         "project_key": repo.get("project", {}).get("key"),
                         "is_private": repo.get("is_private", True),
                         "language": repo.get("language"),
                         "created_on": repo.get("created_on"),
-                        "updated_on": repo.get("updated_on")
+                        "updated_on": repo.get("updated_on"),
+                        "full_name": repo["full_name"],
+                        "links": repo.get("links", {})
                     }
                 ))
 
@@ -289,7 +290,7 @@ class BitbucketProvider(GitProviderInterface):
                 org_id=org_id,
                 org_name=workspace,
                 repo=repo_info.repo_name,
-                repo_id=repo_info.repo_id,
+                repo_id=repo_info.metadata.get("id", ""),  # Get repo ID from metadata
                 owner=workspace,
                 provider="bitbucket",
                 commit=commit,

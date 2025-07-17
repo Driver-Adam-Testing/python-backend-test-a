@@ -195,18 +195,106 @@ class BitbucketAPIResources:
 
     def download_repo(self, workspace: str, repo_slug: str,
                       commit: str, access_token: str) -> bytes:
-        """Download repository archive using WAT"""
-        headers = {"Authorization": f"Bearer {access_token}"}
-
-        # Bitbucket download URL format
-        url = f"{self.api_base}/repositories/{workspace}/{repo_slug}/downloads/{commit}.tar.gz"
-
-        try:
-            with httpx.Client() as client:
-                response = client.get(url, headers=headers, timeout=120)
-                response.raise_for_status()
-                return response.content
-
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to download repo {workspace}/{repo_slug} at {commit}: {e}")
-            raise
+        """Download repository using git clone with WAT"""
+        import tempfile
+        import subprocess
+        import zipfile
+        import shutil
+        from pathlib import Path
+        
+        logger.info(f"Using git clone to download repository {workspace}/{repo_slug} at commit {commit}")
+        
+        # Create a temporary directory for cloning
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_path = Path(temp_dir) / repo_slug
+            
+            # Clone URL with x-token-auth and the access token
+            # Format: https://x-token-auth:{token}@bitbucket.org/{workspace}/{repo_slug}.git
+            clone_url = f"https://x-token-auth:{access_token}@bitbucket.org/{workspace}/{repo_slug}.git"
+            
+            try:
+                # Clone the repository
+                logger.info(f"Cloning repository...")
+                clone_cmd = [
+                    "git", "clone",
+                    "--no-checkout",  # Don't checkout files yet
+                    clone_url,
+                    str(repo_path)
+                ]
+                
+                clone_result = subprocess.run(
+                    clone_cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
+                
+                if clone_result.returncode != 0:
+                    logger.error(f"Clone failed: {clone_result.stderr}")
+                    raise Exception(f"Failed to clone repository: {clone_result.stderr}")
+                
+                logger.info("Repository cloned successfully, checking out specific commit...")
+                
+                # Checkout the specific commit
+                checkout_result = subprocess.run(
+                    ["git", "checkout", commit],
+                    cwd=str(repo_path),
+                    capture_output=True,
+                    text=True
+                )
+                
+                if checkout_result.returncode != 0:
+                    logger.warning(f"Could not checkout commit {commit}: {checkout_result.stderr}")
+                    # Try fetching all commits
+                    logger.info("Fetching all commits and trying again...")
+                    
+                    fetch_result = subprocess.run(
+                        ["git", "fetch", "--unshallow"],
+                        cwd=str(repo_path),
+                        capture_output=True,
+                        text=True
+                    )
+                    
+                    # Try checkout again
+                    checkout_result = subprocess.run(
+                        ["git", "checkout", commit],
+                        cwd=str(repo_path),
+                        capture_output=True,
+                        text=True
+                    )
+                    
+                    if checkout_result.returncode != 0:
+                        logger.error(f"Failed to checkout commit {commit}: {checkout_result.stderr}")
+                        raise Exception(f"Failed to checkout commit {commit}")
+                
+                logger.info(f"Successfully checked out commit {commit}")
+                
+                # Remove .git directory to reduce size
+                git_dir = repo_path / ".git"
+                if git_dir.exists():
+                    shutil.rmtree(git_dir)
+                
+                # Create a zip archive
+                zip_path = Path(temp_dir) / f"{repo_slug}.zip"
+                logger.info(f"Creating zip archive...")
+                
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    # Walk through all files and add them to the zip
+                    for file_path in repo_path.rglob('*'):
+                        if file_path.is_file():
+                            # Get the relative path from the repo root
+                            arcname = file_path.relative_to(repo_path)
+                            zipf.write(file_path, arcname)
+                
+                # Read the zip file content
+                with open(zip_path, 'rb') as f:
+                    zip_content = f.read()
+                
+                logger.info(f"Archive created successfully. Size: {len(zip_content)} bytes")
+                return zip_content
+                
+            except subprocess.TimeoutExpired:
+                raise Exception("Git clone operation timed out")
+            except Exception as e:
+                logger.error(f"Error during repository download: {str(e)}")
+                raise

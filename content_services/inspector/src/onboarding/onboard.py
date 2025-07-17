@@ -23,7 +23,7 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("tree")
     .apt_install("ripgrep")
-    .apt_install("git")
+    .apt_install("git")  # need git for bitbucket_ops.py
     .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/packages/shared", copy=True
@@ -404,7 +404,7 @@ def handle_bitbucket_events(
     for repo in repos_added:
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
-    
+
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
             executor.submit(bitbucket_ops.download_and_upload_repo, org_id, repo, token)
@@ -419,7 +419,7 @@ def handle_bitbucket_events(
         # Add installation_id to repo dict if not present
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
-        
+
         repo_name_or_none = bitbucket_ops.download_and_upload_repo(
             org_id=org_id,
             repo=repo,

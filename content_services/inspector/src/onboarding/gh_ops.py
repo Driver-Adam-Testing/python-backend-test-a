@@ -131,6 +131,7 @@ def download_and_upload_repo(
     )
     from database.models_v2_enums import (
         PrimaryAssetKind,
+        PrimaryAssetProvider,
         VersionStatus,
     )
     from onboarding.onboard_utils import upload_to_s3_with_metadata
@@ -166,11 +167,12 @@ def download_and_upload_repo(
                 ):
                     new_version = Version(
                         primary_asset_id=primary_asset.id,
-                        display_name=commit,
+                        vcs_hash=commit,
                         status=VersionStatus.CONNECTING,
                         previous_version_id=primary_asset.versions[
                             0
                         ].id,  # TODO: don't link this for connected only?
+                        vcs_metadata=None,  # TODO: add metadata here
                     )
                     session.add(new_version)
                     version_id = new_version.id
@@ -191,9 +193,10 @@ def download_and_upload_repo(
                         ]:
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
-                                display_name=commit,
+                                vcs_hash=commit,
                                 status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
                                 previous_version_id=version.id,
+                                vcs_metadata=None,  # TODO: add metadata here
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -279,9 +282,10 @@ def download_and_upload_repo(
 
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
-                                display_name=commit,
+                                vcs_hash=commit,
                                 status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
                                 previous_version_id=version.previous_version_id,
+                                vcs_metadata=None,  # TODO: add metadata here
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -306,15 +310,17 @@ def download_and_upload_repo(
                     kind=PrimaryAssetKind.CODEBASE,
                     repository_id=repo["id"],
                     codebase_settings_auto_commit_docs=False,
+                    provider=PrimaryAssetProvider.GITHUB,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id
 
                 version = Version(
                     primary_asset_id=primary_asset.id,
-                    display_name=commit,
+                    vcs_hash=commit,
                     status=VersionStatus.CONNECTING,
                     previous_version_id=None,
+                    vcs_metadata=None,  # TODO: add metadata here
                 )
                 session.add(version)
                 version_id = version.id

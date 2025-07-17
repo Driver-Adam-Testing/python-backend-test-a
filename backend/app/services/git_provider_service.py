@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.git_providers.interfaces.provider_interface import GitProviderInterface
 from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
 from app.git_providers.providers.gitlab_provider2 import GitLabProvider
-from app.git_providers.providers.bitbucket_provider import BitbucketProvider
+from app.git_providers.providers.bitbucket_provider2 import BitbucketProvider
 from app.git_providers.utils.errors import GitProviderAccessTokenError, GitProviderAppRevokeError
 from app.repositories.git_provider_repository import *
 from app.schemas.git_provider_schema import GitRepository, WebhookInfo
@@ -43,6 +43,11 @@ class GitProviderService:
     def create_app(self, session: Session, app_data: Dict) -> GitProviderApp:
         """Create a new git provider app"""
         app = GitProviderApp(**app_data)
+
+        if app.provider_kind in [GitProviderKind.BITBUCKET]:
+            # Bitbucket requires a workspace for apps
+            app.provider_metadata = {"workspace": app.name}
+
         session.add(app)
 
         try:

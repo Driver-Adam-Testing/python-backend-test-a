@@ -67,12 +67,11 @@ class GitLabProvider(GitProviderInterface):
                             token_data: Dict) -> GitProviderAppInstallation:
         """Create GitLab installation record"""
         access_token = AccessTokenData(**token_data)
-        kind = "group"
         return GitProviderAppInstallation(
             git_provider_app_id=app_id,
             organization_id=organization_id,
             misc_metadata={
-                "kind": kind,
+                "kind": token_data["token_type"],
                 "name": access_token.name,
             }
         )

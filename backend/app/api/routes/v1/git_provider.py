@@ -8,6 +8,7 @@ from uuid import UUID
 
 import modal
 
+from app.git_providers.interfaces.token_types import AccessTokenData
 from app.services.git_provider_service import get_git_provider_service
 from database.models_v1 import (
     GithubAppInstallation,
@@ -199,7 +200,7 @@ def add_group_access_token(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
-    gat: GroupAccessToken, # TODO: Update this to use new AccessToken model
+    gat: AccessTokenData, # TODO: Update this to use new AccessToken model
 ) -> JSONResponse:
     try:
         install = provider_service.install_access_token(

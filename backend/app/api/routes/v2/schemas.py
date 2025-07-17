@@ -40,7 +40,7 @@ class PrimaryAssetRead(BaseModel):
 class VersionRead(BaseModel):
     id: UUID
     primary_asset_id: UUID
-    display_name: str
+    vcs_hash: str | None
     created_at: datetime | None
     updated_at: datetime | None
     status: str | None
@@ -217,13 +217,7 @@ class PrimaryAssetUpdate(BaseModel):
     codebase_settings_auto_commit_docs: bool | None = None
 
 
-class VersionCreate(BaseModel):
-    primary_asset_id: UUID
-    display_name: str
-
-
 class VersionUpdate(BaseModel):
-    display_name: str | None = None
     status: VersionStatus | None = None
 
 

@@ -10,6 +10,13 @@ class PrimaryAssetKind(str, enum.Enum):
     PAGE_TEMPLATE = "PAGE_TEMPLATE"
 
 
+class PrimaryAssetProvider(enum.StrEnum):
+    GITHUB = enum.auto()
+    GITLAB_SELF_MANAGED = enum.auto()
+    BITBUCKET = enum.auto()
+    USER = enum.auto()
+
+
 class VersionStatus(str, enum.Enum):
     GENERATING = "GENERATING"
     GENERATION_COMPLETE = "GENERATION_COMPLETE"
@@ -71,6 +78,10 @@ class ContentKind(str, enum.Enum):
     CODEBASE = "codebase"
     CODEBASE_DIRECTORY = "codebase-directory"
     CODEBASE_FILE = "codebase-file"
+    CODEBASE_AUDIENCES = "codebase-audiences"
+    CODEBASE_DOMAINS = "codebase-domains"
+    CODEBASE_KINDS = "codebase-kinds"
+    CODEBASE_ENTRY_POINTS = "codebase-entry-points"
     SUPPLEMENTAL_DOCUMENT = "supplemental-document"
     TOP_LEVEL_SHORT_SENTENCE = "TOP_LEVEL_SHORT_SENTENCE"
     TOP_LEVEL_SHORT_PARAGRAPH = "TOP_LEVEL_SHORT_PARAGRAPH"

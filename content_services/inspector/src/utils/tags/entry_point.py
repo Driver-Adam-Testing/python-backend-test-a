@@ -23,6 +23,7 @@ An entry point is a canonical place where users or systems begin interacting wit
 - For executables, an entry point typically includes the definition of a `main()` function (or context-specific analog) or definition of the command line interface (CLI).
 - For libraries, an entry point could be the root module that exposes the public API surface (e.g., as curated through reexports or a prelude module). Be careful of identifying trivial reexport files, though. For example, in Python `__init__.py` files are used empty to indicate a module and sometimes populated with just re-exported content. Anything like the former should definitely not be considered an entry point, and the latter may be, but the actual implementation files would be better.
 - In some contexts, the major entry point(s) may be script files (shell scripts or language-specific scripts such as an `app.py` or `run.rb` for example) that are run or invoked as an integral part of using the codebase.
+- Focus on entry points important for a human user to review when onboarding to a codebase and navigating its contents. Particularly long and complex build files or related files may be important to the codebase and its operation, but may not be very useful for a human to review and understand the flow of execution in the code itself. So you should de-prioritize build files, complex build/dependency configuration files, and entities like Makefiles.
 
 An entry point can look like many things, but it is undoubtedly a focal point for interacting with and understanding a codebase. We wanto identify entry points to help orient developers to how the system is intended to be used and good places to get started looking at documentation and/or source code.
 """
@@ -180,7 +181,7 @@ Your job is to decide, from this list of candidates, which are the top {n} entry
 
 Your output will be a list of finalized entry points with three pieces of information for each of your choice of finalized entry points:
 - The path of the file. This is stated in the report information given to you.
-- A terse single single sentence. Do not recapitulate the name of the file or the fact that this is an entry point. Be direct and terse in describing why this is an entry point. If important, name a particular component of the file (e.g., the `main` function) that represents the entry point in particular.
+- A terse single single sentence. Do not recapitulate the name of the file or the fact that this is an entry point. Be direct and terse in describing why this is an entry point. If applicable and important, however, name a particular component of the file (e.g., the `main` function) that represents the entry point in particular.
 - Your rationale and justification for why this is a critical and clear entry point for the codebase in no more than one paragraph.
 """
 

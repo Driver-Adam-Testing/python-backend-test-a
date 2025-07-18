@@ -97,6 +97,7 @@ class CodebaseCard(BaseModel):
     primary_asset_created_at: datetime = Field(alias="created_at")
     primary_asset_updated_at: datetime = Field(alias="updated_at")
     codebase_settings_auto_commit_docs: bool | None = None
+    status: str
     browsable: bool
     tags: list[TagRead]
     most_recent_metadata: MostRecentMetadata
@@ -164,10 +165,10 @@ def codebase_card(
     pagination: Pagination,
     id: list[UUID] | None = Query(default=None),
     primary_asset_kind: list[str] | None = Query(default=None, alias="asset_kind"),
-    codebase_kinds: list[str] | None = Query(default=None),
-    codebase_domains: list[str] | None = Query(default=None),
-    codebase_audiences: list[str] | None = Query(default=None),
-    top_language: list[str] | None = Query(default=None),
+    codebase_kind: str | None = Query(default=None),
+    codebase_domain: str | None = Query(default=None),
+    codebase_audience: str | None = Query(default=None),
+    top_language: str | None = Query(default=None),
 ) -> list[CodebaseCard]:
     pa = aliased(PrimaryAsset)
     completed_ver_id_subq = (
@@ -203,56 +204,56 @@ def codebase_card(
         )
 
     def _add_dc_filter(
-        q: select, keys: list[str] | None, dc_kind: ContentKind, alias_name: str
+        q: select, key: str | None, dc_kind: ContentKind, alias_name: str
     ) -> select:
-        if not keys:
+        if not key:
             return q
         dc_alias = aliased(DerivedContent, name=alias_name)
-        cond = or_(*[dc_alias.misc_metadata.has_key(k) for k in keys])
+        cond = or_(dc_alias.misc_metadata.has_key(key))
         return q.join(
             dc_alias,
             (dc_alias.node_id == root.id) & (dc_alias.content_kind == dc_kind),
         ).where(cond)
 
     base_subq = _add_dc_filter(
-        base_subq, codebase_kinds, ContentKind.CODEBASE_KINDS, "dc_kinds"
+        base_subq, codebase_kind, ContentKind.CODEBASE_KINDS, "dc_kinds"
     )
     base_subq = _add_dc_filter(
-        base_subq, codebase_domains, ContentKind.CODEBASE_DOMAINS, "dc_domains"
+        base_subq, codebase_domain, ContentKind.CODEBASE_DOMAINS, "dc_domains"
     )
     base_subq = _add_dc_filter(
-        base_subq, codebase_audiences, ContentKind.CODEBASE_AUDIENCES, "dc_auds"
+        base_subq, codebase_audience, ContentKind.CODEBASE_AUDIENCES, "dc_auds"
     )
 
     assets_stmt = (
-        select(PrimaryAsset)
-        .where(PrimaryAsset.id.in_(base_subq.subquery()))
+        select(PrimaryAsset, Version)
+        .join(Version, Version.primary_asset_id == PrimaryAsset.id)
+        .where(
+            PrimaryAsset.id.in_(base_subq.subquery()),
+            Version.status == VersionStatus.GENERATION_COMPLETE,
+        )
+        .distinct(PrimaryAsset.id)
         .options(
             selectinload(PrimaryAsset.tags),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.root_node
             ),
         )
-        .order_by(PrimaryAsset.updated_at.desc())
+        .order_by(PrimaryAsset.id, Version.updated_at.desc())
     )
-    assets: list[PrimaryAsset] = session.exec(assets_stmt).unique().all()
-    assets = assets[pagination.offset : pagination.offset + pagination.limit]
+
+    assets_with_versions: list[tuple[PrimaryAsset, Version]] = (
+        session.exec(assets_stmt).unique().all()
+    )
+    assets_with_versions = assets_with_versions[
+        pagination.offset : pagination.offset + pagination.limit
+    ]
 
     cards: list[CodebaseCard] = []
-    for pa_row in assets:
+    for pa_row, v_done in assets_with_versions:
         v_cur = pa_row.most_recent_version
         if v_cur is None:
             continue
-
-        v_done: Version | None = session.exec(
-            select(Version)
-            .where(
-                Version.primary_asset_id == pa_row.id,
-                Version.status == VersionStatus.GENERATION_COMPLETE,
-            )
-            .order_by(Version.updated_at.desc())
-            .limit(1)
-        ).one_or_none()
         root_done: Node | None = v_done.root_node if v_done else None  # type: ignore
 
         kind_list = domain_list = audience_list = terse_sentence = None
@@ -272,20 +273,32 @@ def codebase_card(
                 # accept either enum value depending on your DB
                 getattr(
                     ContentKind,
-                    "TOP_LEVEL_SHORT_SENTENCE",
-                    ContentKind.TOP_LEVEL_SHORT_SENTENCE,
+                    "TOP_LEVEL_TERSE_SENTENCE",
+                    ContentKind.TOP_LEVEL_TERSE_SENTENCE,
                 ),  # type: ignore[arg-type]
             )
 
             kind_list = (
                 _extract_ordered_keys(dc_kinds.misc_metadata) if dc_kinds else None
             )
+            # This filtering is happening in memory, which can mess up counts if we have them.
+            # TODO: Fix this by filtering in the database.
+            if codebase_kind and kind_list and kind_list[0] != codebase_kind:
+                continue
             domain_list = (
                 _extract_ordered_keys(dc_domains.misc_metadata) if dc_domains else None
             )
+            if codebase_domain and domain_list and domain_list[0] != codebase_domain:
+                continue
             audience_list = (
                 _extract_ordered_keys(dc_auds.misc_metadata) if dc_auds else None
             )
+            if (
+                codebase_audience
+                and audience_list
+                and audience_list[0] != codebase_audience
+            ):
+                continue
             terse_sentence = dc_terse.content if dc_terse else None
 
         node_meta: dict[str, Any] = (
@@ -354,6 +367,7 @@ def codebase_card(
                 display_name=pa_row.display_name,
                 created_at=pa_row.created_at,
                 updated_at=pa_row.updated_at,
+                status=v_cur.status.value,
                 codebase_settings_auto_commit_docs=pa_row.codebase_settings_auto_commit_docs,
                 browsable=v_cur.browsable,
                 tags=[TagRead.model_validate(t) for t in pa_row.tags],

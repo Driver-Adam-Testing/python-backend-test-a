@@ -13,14 +13,18 @@ from database.models_v2 import (
     Version,
 )
 from database.models_v2_enums import ContentKind, VersionStatus
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import func, or_
 from sqlalchemy.orm import aliased, selectinload
 from sqlmodel import select
 
 from app.api.auth import UserToken  # noqa: TCH001
-from app.api.routes.v2.query_utils import Pagination  # noqa: TCH001
+from app.api.routes.v2.query_utils import (
+    Pagination,
+    apply_filters_to_query,
+    apply_sorting_to_query,
+)
 from app.api.routes.v2.schemas import ListWithCount, TagRead
 from app.api.session import CurrentSession  # noqa: TCH001
 
@@ -138,6 +142,7 @@ router = APIRouter()
 
 @router.get("/", response_model=ListWithCount[CodebaseCard])
 def codebase_card(
+    request: Request,
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
@@ -214,24 +219,39 @@ def codebase_card(
     )
 
     apply_pagination = not (codebase_kind or codebase_domain or codebase_audience)
+    version_ranked = (
+        select(
+            Version.id.label("v_id"),
+            Version.primary_asset_id,
+            func.row_number()
+            .over(
+                partition_by=Version.primary_asset_id,
+                order_by=Version.updated_at.desc(),
+            )
+            .label("rn"),
+        )
+        .where(Version.status == VersionStatus.GENERATION_COMPLETE)
+        .cte("version_ranked")
+    )
+    latest_v = aliased(Version)
 
     assets_stmt = (
-        select(PrimaryAsset, Version)
-        .join(Version, Version.primary_asset_id == PrimaryAsset.id)
-        .where(
-            PrimaryAsset.id.in_(base_subq.subquery()),
-            Version.status == VersionStatus.GENERATION_COMPLETE,
-        )
-        .distinct(PrimaryAsset.id)
+        select(PrimaryAsset, latest_v)
+        .join(version_ranked, PrimaryAsset.id == version_ranked.c.primary_asset_id)
+        .join(latest_v, latest_v.id == version_ranked.c.v_id)
+        .where(version_ranked.c.rn == 1, PrimaryAsset.id.in_(base_subq.subquery()))
         .options(
             selectinload(PrimaryAsset.tags),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.root_node
             ),
         )
-        .order_by(PrimaryAsset.id, Version.updated_at.desc())
+    )
+    assets_stmt = apply_filters_to_query(
+        assets_stmt, request.query_params, PrimaryAsset
     )
     total_count = session.exec(select(func.count()).select_from(assets_stmt)).one()
+    assets_stmt = apply_sorting_to_query(assets_stmt, pagination, PrimaryAsset)
     if apply_pagination:
         assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
 
@@ -245,7 +265,7 @@ def codebase_card(
         if v and v.root_node
     ]
     if not root_ids:
-        return []
+        return ListWithCount(results=[], total_count=0)
 
     wanted_kinds = (
         ContentKind.CODEBASE_KINDS,
@@ -418,5 +438,5 @@ def codebase_card(
 
     return ListWithCount(
         results=cards,
-        total_count=total_count,
+        total_count=total_count or 0,
     )

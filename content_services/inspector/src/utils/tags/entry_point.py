@@ -5,6 +5,7 @@ from typing import Any, Self
 from aiolimiter import AsyncLimiter
 from pydantic import BaseModel, PrivateAttr
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
+from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     Component,
@@ -14,6 +15,15 @@ from utils.dag import LiteNode, NodeKind
 
 OPENAI_SEM = asyncio.Semaphore(300)
 OPENAI_RATE_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
+CHUNK_SIZE_LIMIT = 96_000
+
+
+def _clip_prompt(p: str, chunk_size: int) -> str:
+    prompt_chunks = split_text(p, chunk_size=chunk_size, chunk_overlap=0)
+    if len(prompt_chunks) > 1:
+        return prompt_chunks[0].text
+    else:
+        return p
 
 
 ENTRY_POINT_PREAMBLE = Component(
@@ -84,8 +94,9 @@ You will be given exhaustive technical documentation for a specific file and wil
         cls, llm: ChatOpenAI, root_rel_path: str, long_description: str
     ) -> Self:
         system_prompt = cls.system_prompt()
-        user_prompt = (
-            f"File (`{root_rel_path}`) technical documentation:\n{long_description}"
+        user_prompt = _clip_prompt(
+            p=f"File (`{root_rel_path}`) technical documentation:\n{long_description}",
+            chunk_size=CHUNK_SIZE_LIMIT,
         )
         content_raw = await bounded_llm_generate(
             llm=llm,
@@ -134,7 +145,10 @@ Entry points are few and far between in a codebase -- most files or code in file
         long_description: str,
     ) -> Self:
         system_prompt = cls.system_prompt()
-        user_prompt = f"File (`{root_rel_path}`) with entry point relevance flag:\n{relevance.flag.value}\n\nTechnical documentation:\n{long_description}"
+        user_prompt = _clip_prompt(
+            p=f"File (`{root_rel_path}`) with entry point relevance flag:\n{relevance.flag.value}\n\nTechnical documentation:\n{long_description}",
+            chunk_size=CHUNK_SIZE_LIMIT,
+        )
         content_raw = await bounded_llm_generate(
             llm=llm,
             system_prompt=system_prompt,
@@ -262,11 +276,19 @@ Your output will be a list of finalized entry points with three pieces of inform
                     string=f"Candidate path: {candidate._root_rel_path}\nDescription:\n{candidate.description}\nRationale:\n{candidate.rationale}"
                 )
             )
+        # TODO Clipping here could be quite bad to achieving good results. But this would have to
+        # be an extremely large codebase/context to do so because that would mean the serialized
+        # set of entry point candidate (should be heavily filtered) descriptive data (short for
+        # each) would trip the max chunk size. That would have to be a LOT of files and candidates.
+        # Possible, but unlikely. Need to investigate further; blindly clipping for now.
+        user_prompt = _clip_prompt(
+            p=user_prompt_structured.into_str(), chunk_size=CHUNK_SIZE_LIMIT
+        )
 
         content_raw = await bounded_llm_generate(
             llm=llm,
             system_prompt=system_prompt,
-            user_prompt=user_prompt_structured.into_str(),
+            user_prompt=user_prompt,
             sem=OPENAI_SEM,
             rate_limiter=OPENAI_RATE_LIMITER,
             output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),

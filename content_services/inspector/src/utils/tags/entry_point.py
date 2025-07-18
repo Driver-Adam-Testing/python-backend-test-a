@@ -2,6 +2,7 @@ import asyncio
 from enum import Enum
 from typing import Any, Self
 
+from aiolimiter import AsyncLimiter
 from pydantic import BaseModel, PrivateAttr
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.prompts.structured_prompting import (
@@ -12,6 +13,7 @@ from shared.prompts.structured_prompting import (
 from utils.dag import LiteNode, NodeKind
 
 OPENAI_SEM = asyncio.Semaphore(300)
+OPENAI_RATE_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 
 
 ENTRY_POINT_PREAMBLE = Component(
@@ -32,9 +34,10 @@ async def bounded_llm_generate(
     system_prompt: str,
     user_prompt: str,
     sem: asyncio.Semaphore,
+    rate_limiter: AsyncLimiter,
     output_cfg: OutputConfig = OutputConfig.default(),
 ) -> str:
-    async with sem:
+    async with sem, rate_limiter:
         return await llm.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt, output_cfg=output_cfg
         )
@@ -88,6 +91,7 @@ You will be given exhaustive technical documentation for a specific file and wil
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
             output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
         )
         return cls.parse_raw(content_raw)
@@ -135,6 +139,7 @@ Entry points are few and far between in a codebase -- most files or code in file
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
             output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
         )
         candidate = cls.parse_raw(content_raw)
@@ -262,6 +267,7 @@ Your output will be a list of finalized entry points with three pieces of inform
             system_prompt=system_prompt,
             user_prompt=user_prompt_structured.into_str(),
             sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
             output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
         )
         return cls.parse_raw(content_raw)

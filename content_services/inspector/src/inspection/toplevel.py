@@ -3,6 +3,7 @@ import concurrent.futures
 from pathlib import Path
 from typing import Any
 
+from database.models_v2_enums import ContentKind
 from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
@@ -461,40 +462,6 @@ def comprehend_codebase_top_down(
     single_paragraph = single_paragraph.replace("\x00", "")
     long = long.replace("\x00", "")
 
-    kind_scores = CodebaseKindScores.from_llm(llm=llm, docs=docs)
-    domain_scores = CodebaseDomainScores.from_llm(llm=llm, docs=docs)
-    audience_scores = CodebaseAudienceScores.from_llm(llm=llm, docs=docs)
-
-    async_llm = AsyncChatOpenAI(
-        model="gpt-4o-2024-08-06",
-        temperature=0,
-        request_timeout=500,
-    )
-    entry_points = asyncio.run(EntryPoints.from_llm(llm=async_llm, docs=docs, n=3))
-
-    print(f"Codebase kind scores:\n\n{kind_scores.sorted_list}")
-    print(f"Codebase domain scores:\n\n{domain_scores.sorted_list}")
-    print(f"Codebase audience scores:\n\n{audience_scores.sorted_list}")
-    print(str(entry_points))
-
-    # terse_sentence = "KIND: "
-    # top_kind = kind_scores.take(n=3, pred=lambda el: el[1] > 0.0)
-    # for kind, score in top_kind[:-1]:
-    #     terse_sentence += f"{kind}[{score}], "
-    # terse_sentence += f"{top_kind[-1][0]}[{top_kind[-1][1]}]"
-    # terse_sentence += " DOMAIN: "
-    # top_domain = domain_scores.take(n=3, pred=lambda el: el[1] > 0.0)
-    # for domain, score in top_domain[:-1]:
-    #     terse_sentence += f"{domain}[{score}], "
-    # terse_sentence += f"{top_domain[-1][0]}[{top_domain[-1][1]}]"
-    # terse_sentence += " AUDIENCE: "
-    # top_audience = audience_scores.take(3, pred=lambda el: el[1] > 0.0)
-    # for audience, score in top_audience[:-1]:
-    #     terse_sentence += f"{audience}[{score}], "
-    # terse_sentence += f"{top_audience[-1][0]}[{top_audience[-1][1]}]"
-
-    terse_sentence = entry_points.entry_point_paths()
-
     short_descriptions = {
         "terse_sentence": terse_sentence,
         "single_sentence": single_sentence,
@@ -507,3 +474,42 @@ def comprehend_codebase_top_down(
         "short": short_descriptions,
         "long": long,
     }
+
+
+def tag_codebase(
+    llm: ChatOpenAI,
+    docs: dict[LiteNode, dict[str, Any]],
+    content_kinds: set[ContentKind],
+) -> dict[ContentKind, list[dict]]:
+    results = {}
+    if ContentKind.CODEBASE_KINDS in content_kinds:
+        results[ContentKind.CODEBASE_KINDS] = [
+            dict(CodebaseKindScores.from_llm(llm=llm, docs=docs).sorted_list)
+        ]
+        print(f"Codebase kind scores:\n\n{results[ContentKind.CODEBASE_KINDS]}")
+    if ContentKind.CODEBASE_DOMAINS in content_kinds:
+        results[ContentKind.CODEBASE_DOMAINS] = [
+            dict(CodebaseDomainScores.from_llm(llm=llm, docs=docs).sorted_list)
+        ]
+        print(f"Codebase domain scores:\n\n{results[ContentKind.CODEBASE_DOMAINS]}")
+    if ContentKind.CODEBASE_AUDIENCES in content_kinds:
+        results[ContentKind.CODEBASE_AUDIENCES] = [
+            dict(CodebaseAudienceScores.from_llm(llm=llm, docs=docs).sorted_list)
+        ]
+        print(f"Codebase audience scores:\n\n{results[ContentKind.CODEBASE_AUDIENCES]}")
+    if ContentKind.CODEBASE_ENTRY_POINTS in content_kinds:
+        entry_points = asyncio.run(
+            EntryPoints.from_llm(
+                llm=AsyncChatOpenAI(
+                    model="gpt-4o-2024-08-06", temperature=0, request_timeout=500
+                ),
+                docs=docs,
+                n=3,
+            )
+        )
+        results[ContentKind.CODEBASE_ENTRY_POINTS] = [
+            e.model_dump() for e in entry_points.entry_points
+        ]
+        print(f"Codebase entry points:\n\n{results[ContentKind.CODEBASE_ENTRY_POINTS]}")
+
+    return results

@@ -763,7 +763,7 @@ def calculate_directory_stats(
                     for e, b in stats["analyzable_bytes_by_extension"].items()
                 },
                 "top_language": max(
-                    stats["analyzable_bytes_by_types"],
+                    stats["analyzable_bytes_by_type"],
                     key=stats["analyzable_bytes_by_type"].get,
                     default=None,
                 ),

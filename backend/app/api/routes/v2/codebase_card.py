@@ -1,13 +1,3 @@
-"""
-app/api/routes/v2/codebase_cards.py
------------------------------------
-
-Return “CodebaseCards” with rich metadata and content classification.
-
-Optimised version - minimises database round-trips while preserving
-exactly the same read logic and response model.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003
@@ -33,10 +23,6 @@ from app.api.auth import UserToken  # noqa: TCH001
 from app.api.routes.v2.query_utils import Pagination  # noqa: TCH001
 from app.api.routes.v2.schemas import ListWithCount, TagRead
 from app.api.session import CurrentSession  # noqa: TCH001
-
-# --------------------------------------------------------------------------------------
-# Pydantic response models (unchanged)
-# --------------------------------------------------------------------------------------
 
 
 class CommitAuthor(BaseModel):
@@ -109,12 +95,7 @@ class CodebaseCard(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-# --------------------------------------------------------------------------------------
-# Small helpers (unchanged)
-# --------------------------------------------------------------------------------------
-
-
-def _provider_to_source_type(provider: PrimaryAssetProvider) -> str:  # unchanged
+def _provider_to_source_type(provider: PrimaryAssetProvider) -> str:
     return {
         PrimaryAssetProvider.GITHUB: "Github Codebase",
         PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
@@ -123,7 +104,7 @@ def _provider_to_source_type(provider: PrimaryAssetProvider) -> str:  # unchange
     }.get(provider, "Unknown")
 
 
-def _safe_commit_sha(version: Version) -> str | None:  # unchanged
+def _safe_commit_sha(version: Version) -> str | None:
     disp = getattr(version, "display_name", None)
     cand = version.vcs_hash or disp
     if cand and str(cand).lower() == "unversioned":
@@ -131,7 +112,7 @@ def _safe_commit_sha(version: Version) -> str | None:  # unchanged
     return str(cand) if cand else None
 
 
-def _parse_asset_kinds(values: list[str] | None) -> list[PrimaryAssetKind]:  # unchanged
+def _parse_asset_kinds(values: list[str] | None) -> list[PrimaryAssetKind]:
     if not values:
         return []
     kinds: list[PrimaryAssetKind] = []
@@ -146,15 +127,11 @@ def _parse_asset_kinds(values: list[str] | None) -> list[PrimaryAssetKind]:  # u
     return kinds
 
 
-def _extract_ordered_keys(md: dict[str, Any] | None) -> list[str] | None:  # unchanged
+def _extract_ordered_keys(md: dict[str, Any] | None) -> list[str] | None:
     if not md:
         return None
     return [k for k, _ in sorted(md.items(), key=lambda kv: (-float(kv[1]), kv[0]))][:3]
 
-
-# --------------------------------------------------------------------------------------
-# Main endpoint - optimised
-# --------------------------------------------------------------------------------------
 
 router = APIRouter()
 
@@ -178,9 +155,6 @@ def codebase_card(
     database round-trips** thanks to batched loading of `DerivedContent`.
     """
 
-    # ------------------------------------------------------------------
-    # 1. Build the sub-query that finds an organisation's PrimaryAssets
-    # ------------------------------------------------------------------
     pa = aliased(PrimaryAsset)
     root = aliased(Node)
 
@@ -201,9 +175,6 @@ def codebase_card(
         .join(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
     )
 
-    # ------------------------------------------------------------------
-    # 2. Apply user filters (same logic as original)
-    # ------------------------------------------------------------------
     kinds = _parse_asset_kinds(primary_asset_kind) or [
         PrimaryAssetKind.CODEBASE,
         PrimaryAssetKind.FILE,
@@ -220,7 +191,6 @@ def codebase_card(
             | func.lower(root.misc_metadata["top_language"].astext).in_(tl)
         )
 
-    # derived-content filters
     def _add_dc_filter(
         q: select, key: str | None, dc_kind: ContentKind, alias_name: str
     ) -> select:
@@ -243,12 +213,8 @@ def codebase_card(
         base_subq, codebase_audience, ContentKind.CODEBASE_AUDIENCES, "dc_auds"
     )
 
-    # Should pagination be applied at SQL level?
     apply_pagination = not (codebase_kind or codebase_domain or codebase_audience)
 
-    # ------------------------------------------------------------------
-    # 3. Main query: PrimaryAsset + its most recent completed Version
-    # ------------------------------------------------------------------
     assets_stmt = (
         select(PrimaryAsset, Version)
         .join(Version, Version.primary_asset_id == PrimaryAsset.id)
@@ -269,16 +235,12 @@ def codebase_card(
     if apply_pagination:
         assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
 
-    # One round-trip to get all assets + their most-recent completed version
     assets_with_versions: list[tuple[PrimaryAsset, Version]] = (
         session.exec(assets_stmt).unique().all()
     )
 
-    # ------------------------------------------------------------------
-    # 4. Batch-load latest DerivedContent for *all* root nodes in one go
-    # ------------------------------------------------------------------
     root_ids: list[UUID] = [
-        v.root_node.id  # type: ignore[arg-type]
+        v.root_node.id  # type: ignore[attr-defined]
         for _, v in assets_with_versions
         if v and v.root_node
     ]
@@ -296,7 +258,6 @@ def codebase_card(
         ),
     )
 
-    # ── rank each row per (node_id, content_kind) and keep rn == 1 ──────────────
     dc_ranked = (
         select(
             DerivedContent.id.label("dc_id"),
@@ -314,14 +275,12 @@ def codebase_card(
         .cte("dc_ranked")
     )
 
-    # bring back full ORM rows so we can use attribute access safely
     latest_dc_stmt = (
         select(DerivedContent)
         .join(dc_ranked, DerivedContent.id == dc_ranked.c.dc_id)
         .where(dc_ranked.c.rn == 1)
     )
 
-    # one round-trip, returns real DerivedContent objects
     latest_dc_rows: list[DerivedContent] = session.exec(latest_dc_stmt).all()
 
     latest_dc: dict[tuple[UUID, ContentKind], DerivedContent] = {
@@ -330,7 +289,6 @@ def codebase_card(
 
     cards: list[CodebaseCard] = []
 
-    # If pagination was pushed to Python (because derived-content filters prevent SQL-side pagination)
     def _should_skip(idx: int) -> bool:
         return (not apply_pagination) and (
             idx < pagination.offset or len(cards) >= pagination.limit
@@ -345,7 +303,6 @@ def codebase_card(
         if root_node is None:
             continue
 
-        # Grab the latest derived-content rows from the lookup table
         def _dc(kind: ContentKind) -> DerivedContent | None:
             return latest_dc.get((root_node.id, kind))  # noqa: B023
 

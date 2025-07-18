@@ -81,6 +81,45 @@ def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
     return all_files, all_directories
 
 
+def collect_ignored_file_paths(extracted_path: Path) -> list[Path]:
+    """Return list of files ignored by .driverignore under extracted_path."""
+    file_list = os.listdir(extracted_path)
+    if ".driverignore" not in file_list:
+        return []  # no ignored files if no ignore file
+
+    def run_rg(cmd: list[str]) -> set[Path]:
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=extracted_path,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return {Path(p.strip()) for p in result.stdout.splitlines()}
+        except subprocess.CalledProcessError as e:
+            print(f"Error running rg: {e.stderr}")
+            raise
+
+    # All files without any ignore
+    all_files = run_rg(["rg", "--files", "--hidden", "--no-ignore"])
+
+    # Files *not* ignored by .driverignore
+    unignored_files = run_rg(
+        [
+            "rg",
+            "--files",
+            "--hidden",
+            "--ignore-file=.driverignore",
+            "--no-ignore-parent",
+            "--no-ignore-vcs",
+        ]
+    )
+
+    ignored_files = all_files - unignored_files
+    return [extracted_path / p for p in ignored_files]
+
+
 def process_file(local_path_and_extracted_path: tuple[Path, Path]) -> tuple[Path, dict]:
     from onboarding.onboard_utils import run_file_stats_and_reencode
 
@@ -633,6 +672,7 @@ def run_codebase_connection(
         analyzable_bytes = 0
 
         all_files, all_directories = collect_file_paths(extracted_path)
+        ignored_files = collect_ignored_file_paths(extracted_path)
         tasks = [(file_path, extracted_path) for file_path in all_files]
         folder_results = []
         with ProcessPoolExecutor(max_workers=28) as executor:
@@ -702,12 +742,21 @@ def run_codebase_connection(
             # Add directories source contents
             for directory_stats, relative_path in folder_results:
                 if directory_stats is not None:
-                    dir_node = Node(
-                        version_id=version_id,
-                        relative_path=relative_path,
-                        kind=NodeKind.CODEBASE_DIRECTORY,
-                        misc_metadata=directory_stats,
-                    )
+                    if relative_path == codebase_name + "/":
+                        directory_stats["driver_ignored_files"] = len(ignored_files)
+                        dir_node = Node(
+                            version_id=version_id,
+                            relative_path=relative_path,
+                            kind=NodeKind.CODEBASE_DIRECTORY,
+                            misc_metadata=directory_stats,
+                        )
+                    else:
+                        dir_node = Node(
+                            version_id=version_id,
+                            relative_path=relative_path,
+                            kind=NodeKind.CODEBASE_DIRECTORY,
+                            misc_metadata=directory_stats,
+                        )
                     session.add(dir_node)
                     print(
                         f"Created but not committed source content for: {relative_path}."

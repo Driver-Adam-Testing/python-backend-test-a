@@ -21,6 +21,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    UniqueConstraint,
     desc,
     func,
 )
@@ -106,11 +107,11 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
 class Version(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_version"
     __table_args__ = (
-        Index(
-            "ix_v2_version_primary_asset_id_vcs_hash",
+        UniqueConstraint(
             "primary_asset_id",
             "vcs_hash",
-            unique=True,
+            name="ix_v2_version_primary_asset_id_vcs_hash",
+            postgresql_nulls_not_distinct=True,
         ),
         Index(
             "ix_version_primary_asset_id_updated_at_desc",

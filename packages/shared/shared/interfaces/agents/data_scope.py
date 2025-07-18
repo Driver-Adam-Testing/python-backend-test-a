@@ -118,7 +118,7 @@ class DataScope(BaseModel):
                                         # TODO: are datascopes still needed?
                                         # TODO: if so, unsure how to approach this query
                                         Version.vcs_hash == identifier.split("/", 1)[0],
-                                        Version.vcs_hash is None,
+                                        Version.vcs_hash == None,  # noqa: E711
                                     ),
                                 )
                                 for identifier in identifiers

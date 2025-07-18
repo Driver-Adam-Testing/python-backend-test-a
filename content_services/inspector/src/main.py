@@ -1,6 +1,7 @@
 import hashlib
 import os
 import uuid
+from collections import defaultdict
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
@@ -54,6 +55,7 @@ from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
 
 with inspection_image.imports():
     from tasks import (
+        CodebaseTaggingTask,
         CSymbolTableTask,
         EmbeddingTask,
         FileTechDocTask,
@@ -585,12 +587,37 @@ async def inspect_files(
         ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
         db_node_id=root_db_node_id,
     )
+
+    has_previous_version = (
+        root_node.root_rel_path in rel_path_to_previous_version_db_node_ids
+    )
+    if has_previous_version:
+        prev_db_root_node_id = rel_path_to_previous_version_db_node_ids[
+            root_node.root_rel_path
+        ]
+        prev_root_node_derived_contents = await get_all_derived_content_by_node_id(
+            prev_db_root_node_id
+        )
+        previous_root_node_metadata = defaultdict(list)
+        for dc in prev_root_node_derived_contents:
+            previous_root_node_metadata[dc.content_kind].append(dc.misc_metadata)
+    codebase_tagging_task = CodebaseTaggingTask(
+        root_node=root_node,
+        codebase_name=codebase_name,
+        ordered_tech_docs_tasks=all_tech_docs_tasks,
+        db_root_node_id=root_db_node_id,
+        previous_root_node_metadata=previous_root_node_metadata
+        if has_previous_version
+        else None,
+    )
     top_level_embedding_task = EmbeddingTask(
         node=root_node,
         task_name="Embedding TopLevelDocs",
         dependent_tasks=[top_level_tech_docs_task],
     )
-    tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
+    tasks.extend(
+        [top_level_tech_docs_task, top_level_embedding_task, codebase_tagging_task]
+    )
 
     print("\n---------- All tasks ----------")
     for t in tasks:

@@ -10,6 +10,7 @@ from database.models_v1 import (
 )
 from database.models_v2_enums import ContentKind
 from modal_funcs import (
+    make_codebase_tags,
     make_folder_tech_doc,
     make_symbol_docs,
     make_tech_doc,
@@ -452,6 +453,135 @@ class TopLevelDocsTask(Task):
                     DerivedContent.node_id == self.db_node_id,
                     DerivedContent.content_kind.in_(
                         [dc_slug for dc_slug, _ in top_level_tups]
+                    ),
+                )
+                await session.exec(dc_delete_query)
+                await session.commit()
+
+                session.add_all(dc_contents)
+                await session.commit()
+
+                content_ids = []
+                for record in dc_contents:
+                    await session.refresh(record)
+                    content_ids.append(record.id)
+                content_ids = [str(cid) for cid in content_ids]
+        return {"content_ids": content_ids}
+
+
+class CodebaseTaggingTask(Task):
+    def __init__(
+        self,
+        root_node: LiteNode,
+        codebase_name: str,
+        ordered_tech_docs_tasks: tuple[TechDocsTask],
+        db_root_node_id: uuid.UUID,
+        previous_root_node_metadata: dict[ContentKind, list[dict]] | None = None,
+    ) -> None:
+        # NOTE: since the root node is always marked as modified on a diff update, we know this code will
+        # execute every time a codebase is updated.
+        self.codebase_name = codebase_name
+        self.db_root_node_id = db_root_node_id
+        self.previous_root_node_metadata = previous_root_node_metadata
+        super().__init__(
+            task_name=f"CodebaseTaggingTask of {codebase_name}",
+            node=root_node,
+            dependencies=ordered_tech_docs_tasks,
+        )
+
+    async def run_implementation(
+        self, dependent_results: dict["Task", TaskResult]
+    ) -> TaskResult:
+        # We put this data into the format expected by the top level task.
+        # TODO: could this get too big to send over the container wire? The current limit of modal is 100MB
+        required_content_kinds = {
+            ContentKind.CODEBASE_AUDIENCES,
+            ContentKind.CODEBASE_DOMAINS,
+            ContentKind.CODEBASE_KINDS,
+            ContentKind.CODEBASE_ENTRY_POINTS,
+        }
+        if self.previous_root_node_metadata is not None:
+            content_kinds_to_compute = {
+                content_kind
+                for content_kind in required_content_kinds
+                if content_kind not in self.previous_root_node_metadata
+            }
+            existing_tags = {
+                content_kind: self.previous_root_node_metadata[content_kind]
+                for content_kind in required_content_kinds
+            }
+        else:
+            # If no previous content, we need to compute all the tags
+            content_kinds_to_compute = required_content_kinds
+            existing_tags = {}
+
+        if len(content_kinds_to_compute) == 0:
+            # collect existing content and return
+            return TaskResult(
+                data=existing_tags, serialization=SerializationMethod.JSON
+            )
+        else:
+            children_nodes_to_docs = {
+                task.node: dr.data["docs"] for task, dr in dependent_results.items()
+            }
+            tags = await make_codebase_tags.remote.aio(
+                codebase_name=self.codebase_name,
+                nodes_to_docs=children_nodes_to_docs,
+                content_kinds=content_kinds_to_compute,
+            )
+
+        return TaskResult(
+            data={**tags, **existing_tags}, serialization=SerializationMethod.JSON
+        )
+
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.TAGS
+
+    async def post_run_io(
+        self,
+        task_result: TaskResult,
+        dependent_io_results: dict["Task", dict[str, any]],
+    ) -> dict[str, any]:
+        tags = task_result.data
+
+        async with database_sem:
+            tag_tups = [
+                (
+                    ContentKind.CODEBASE_AUDIENCES,
+                    tags[ContentKind.CODEBASE_AUDIENCES],
+                ),
+                (
+                    ContentKind.CODEBASE_DOMAINS,
+                    tags[ContentKind.CODEBASE_DOMAINS],
+                ),
+                (ContentKind.CODEBASE_KINDS, tags[ContentKind.CODEBASE_KINDS]),
+                (
+                    ContentKind.CODEBASE_ENTRY_POINTS,
+                    tags[ContentKind.CODEBASE_ENTRY_POINTS],
+                ),
+            ]
+
+            dc_contents = []
+            for content_kind, dc_tags in tag_tups:
+                for tag in dc_tags:
+                    dc = DerivedContent(
+                        content_kind=content_kind,
+                        node_id=self.db_root_node_id,
+                        relative_path=str(self.node.root_rel_path),
+                        content=None,
+                        misc_metadata=tag,
+                    )
+                    dc_contents.append(dc)
+
+            from database.db import async_engine
+            from sqlmodel.ext.asyncio.session import AsyncSession
+
+            async with AsyncSession(async_engine) as session:
+                dc_delete_query = delete(DerivedContent).where(
+                    DerivedContent.node_id == self.db_root_node_id,
+                    DerivedContent.content_kind.in_(
+                        [dc_slug for dc_slug, _ in tag_tups]
                     ),
                 )
                 await session.exec(dc_delete_query)

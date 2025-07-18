@@ -36,6 +36,7 @@ image = (
             "tree-sitter-python==0.23.6",
             "tree-sitter-c-sharp==0.23.1",
             "tree-sitter-typescript==0.23.2",
+            "aiolimiter==1.2.1",
         ]
     )  # TODO lock versions down
     .add_local_python_source(
@@ -170,6 +171,31 @@ def make_toplevel_tech_docs(
     )
     print(f"Processed top-level docs for `{codebase_name}`")
     return top_level_docs
+
+
+@app.function(max_containers=1, timeout=60 * 60, **function_cfg)
+def make_codebase_tags(
+    codebase_name: str,
+    nodes_to_docs: dict[LiteNode, dict],
+    content_kinds: set,
+) -> dict[str, any]:
+    from inspection.toplevel import tag_codebase
+    from utils.models import ChatOpenAI
+
+    llm = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+        temperature=0,
+        request_timeout=TOP_LEVEL_DOC_LLM_TIMEOUT,
+    )
+
+    print(f"Processing tags for `{codebase_name}`")
+    tags = tag_codebase(
+        llm=llm,
+        docs=nodes_to_docs,
+        content_kinds=content_kinds,
+    )
+    print(f"Processed tags for `{codebase_name}`")
+    return tags
 
 
 @app.function(

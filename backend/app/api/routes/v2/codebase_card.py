@@ -225,6 +225,9 @@ def codebase_card(
         base_subq, codebase_audience, ContentKind.CODEBASE_AUDIENCES, "dc_auds"
     )
 
+    # Determine if pagination should be applied
+    apply_pagination = not (codebase_kind or codebase_domain or codebase_audience)
+
     assets_stmt = (
         select(PrimaryAsset, Version)
         .join(Version, Version.primary_asset_id == PrimaryAsset.id)
@@ -242,15 +245,21 @@ def codebase_card(
         .order_by(PrimaryAsset.id, Version.updated_at.desc())
     )
 
+    # Apply pagination only if no specific filters are applied
+    if apply_pagination:
+        assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
+
     assets_with_versions: list[tuple[PrimaryAsset, Version]] = (
         session.exec(assets_stmt).unique().all()
     )
-    assets_with_versions = assets_with_versions[
-        pagination.offset : pagination.offset + pagination.limit
-    ]
 
     cards: list[CodebaseCard] = []
-    for pa_row, v_done in assets_with_versions:
+    for index, (pa_row, v_done) in enumerate(assets_with_versions):
+        # If pagination is not applied in the query, we need to skip cards that are not in the current page
+        if not apply_pagination and len(cards) >= pagination.limit:
+            continue
+        if not apply_pagination and index < pagination.offset:
+            continue
         v_cur = pa_row.most_recent_version
         if v_cur is None:
             continue

@@ -2,29 +2,14 @@
 app/api/routes/v2/codebase_cards.py
 -----------------------------------
 
-Return “CodebaseCards” for every PrimaryAsset that:
-
-* belongs to the caller's organisation;
-* optionally matches an explicit PrimaryAsset ID list;
-* matches one or more PrimaryAsset.kind values (CODEBASE, FILE, …);
-* matches **top-language** directly in SQL (Node.misc_metadata);
-* matches requested CODEBASE_KINDS / _DOMAINS / _AUDIENCES
-  (keys inside JSONB on the derived-content rows that hang off the
-  root node of the most-recent COMPLETED version).
-
-The query pulls:
-
-* **pa** - the PrimaryAsset row
-* **v_cur** - pa.most_recent_version (current status)
-* **v_done** - most-recent COMPLETED Version
-* **root_done** - root node of v_done
-* three DerivedContent rows hanging off root_done
-  (for kinds, domains, audiences) - used only for SQL filtering
+Return “CodebaseCards” with rich metadata and content classification.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from datetime import datetime  # noqa: TCH003
+from typing import Any
+from uuid import UUID  # noqa: TCH003
 
 from database.models_v1 import DerivedContent
 from database.models_v2 import (
@@ -41,20 +26,14 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import aliased, selectinload
 from sqlmodel import select
 
+from app.api.auth import UserToken  # noqa: TCH001
+from app.api.routes.v2.query_utils import (
+    Pagination,  # noqa: TCH001
+)
 from app.api.routes.v2.schemas import TagRead
-
-if TYPE_CHECKING:
-    from datetime import datetime
-    from uuid import UUID
-
-    from app.api.auth import UserToken
-    from app.api.session import CurrentSession
+from app.api.session import CurrentSession  # noqa: TCH001
 
 router = APIRouter()
-
-# --------------------------------------------------------------------------- #
-# Response schemas (simple - use built-ins `list`/`dict`)                     #
-# --------------------------------------------------------------------------- #
 
 
 class CommitAuthor(BaseModel):
@@ -127,76 +106,70 @@ class CodebaseCard(BaseModel):
 
 
 def _provider_to_source_type(provider: PrimaryAssetProvider) -> str:
-    mapping = {
+    return {
         PrimaryAssetProvider.GITHUB: "Github Codebase",
         PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
         PrimaryAssetProvider.BITBUCKET: "Bitbucket Codebase",
         PrimaryAssetProvider.USER: "ZIP Upload",
-    }
-    return mapping.get(provider, "Unknown")
+    }.get(provider, "Unknown")
 
 
 def _safe_commit_sha(version: Version) -> str | None:
-    display_name = getattr(version, "display_name", None)
-    candidate = version.vcs_hash or display_name
-    if candidate and str(candidate).lower() == "unversioned":
+    disp = getattr(version, "display_name", None)
+    cand = version.vcs_hash or disp
+    if cand and str(cand).lower() == "unversioned":
         return None
-    return str(candidate) if candidate else None
+    return str(cand) if cand else None
 
 
 def _parse_asset_kinds(values: list[str] | None) -> list[PrimaryAssetKind]:
-    kinds: list[PrimaryAssetKind] = []
     if not values:
-        return kinds
+        return []
+    kinds: list[PrimaryAssetKind] = []
     for raw in values:
         try:
             kinds.append(PrimaryAssetKind[raw.upper()])
-            continue
         except KeyError:
-            pass
-        try:
-            kinds.append(PrimaryAssetKind(raw.lower()))
-        except ValueError:
-            continue
+            try:
+                kinds.append(PrimaryAssetKind(raw.lower()))
+            except ValueError:
+                continue
     return kinds
 
 
-# --------------------------------------------------------------------------- #
-# Endpoint                                                                    #
-# --------------------------------------------------------------------------- #
+def _latest_dc_content(
+    session: CurrentSession, node_id: UUID, kind: ContentKind
+) -> DerivedContent | None:
+    return session.exec(
+        select(DerivedContent)
+        .where(
+            DerivedContent.node_id == node_id,
+            DerivedContent.content_kind == kind,
+        )
+        .order_by(DerivedContent.updated_at.desc())
+        .limit(1)
+    ).one_or_none()
+
+
+def _extract_ordered_keys(md: dict[str, Any] | None) -> list[str] | None:
+    if not md:
+        return None
+    return [k for k, _ in sorted(md.items(), key=lambda kv: (-float(kv[1]), kv[0]))][:3]
 
 
 @router.get("/", response_model=list[CodebaseCard])
 def codebase_card(
     session: CurrentSession,
     user: UserToken,
-    # ---- PrimaryAsset-level filters -------------------------------- #
-    id: list[UUID] | None = Query(
-        default=None, description="One or more PrimaryAsset IDs to include"
-    ),
-    primary_asset_kind: list[str] | None = Query(
-        default=None, alias="asset_kind", description="CODEBASE, FILE, ..."
-    ),
-    # ---- Codebase metadata filters (derived-content) --------------- #
+    pagination: Pagination,
+    id: list[UUID] | None = Query(default=None),
+    primary_asset_kind: list[str] | None = Query(default=None, alias="asset_kind"),
     codebase_kinds: list[str] | None = Query(default=None),
     codebase_domains: list[str] | None = Query(default=None),
     codebase_audiences: list[str] | None = Query(default=None),
-    # ---- Language filter (root-node JSON) -------------------------- #
     top_language: list[str] | None = Query(default=None),
 ) -> list[CodebaseCard]:
-    """
-    One DB round-trip:
-
-    * sub-query gets IDs of assets that satisfy **all** requested filters;
-    * main query fetches those assets with relationships eager-loaded
-      so we can build the response in Python with zero additional queries.
-    """
-
-    # ------------------------ build filter sub-query ---------------- #
-
     pa = aliased(PrimaryAsset)
-
-    # Most-recent COMPLETED Version per asset
     completed_ver_id_subq = (
         select(Version.id)
         .where(
@@ -207,53 +180,39 @@ def codebase_card(
         .limit(1)
         .scalar_subquery()
     )
-
-    # Root node of that completed version
     root = aliased(Node)
     base_subq = (
         select(pa.id)
         .where(pa.organization_id == user.organization_id)
-        .join(
-            root,
-            (root.version_id == completed_ver_id_subq) & (root.depth == 0),
-        )
+        .join(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
     )
 
-    # ---------------- primary-asset filters ------------------------ #
     kinds = _parse_asset_kinds(primary_asset_kind) or [
         PrimaryAssetKind.CODEBASE,
         PrimaryAssetKind.FILE,
     ]
     base_subq = base_subq.where(pa.kind.in_(kinds))
-
     if id:
         base_subq = base_subq.where(pa.id.in_(id))
 
-    # ---------------- top-language filter -------------------------- #
     if top_language:
-        tlower = [t.lower() for t in top_language]
+        tl = [t.lower() for t in top_language]
         base_subq = base_subq.where(
-            func.lower(root.misc_metadata["top_language_by_file_count"].astext).in_(
-                tlower
-            )
-            | func.lower(root.misc_metadata["top_language"].astext).in_(tlower)
+            func.lower(root.misc_metadata["top_language_by_file_count"].astext).in_(tl)
+            | func.lower(root.misc_metadata["top_language"].astext).in_(tl)
         )
 
-    # ------------------- derived-content filters ------------------- #
     def _add_dc_filter(
-        query: select,
-        keys: list[str] | None,
-        dc_kind: ContentKind,
-        alias_name: str,
+        q: select, keys: list[str] | None, dc_kind: ContentKind, alias_name: str
     ) -> select:
         if not keys:
-            return query
+            return q
         dc_alias = aliased(DerivedContent, name=alias_name)
-        conditions = or_(*[dc_alias.misc_metadata.has_key(k) for k in keys])
-        return query.join(
+        cond = or_(*[dc_alias.misc_metadata.has_key(k) for k in keys])
+        return q.join(
             dc_alias,
             (dc_alias.node_id == root.id) & (dc_alias.content_kind == dc_kind),
-        ).where(conditions)
+        ).where(cond)
 
     base_subq = _add_dc_filter(
         base_subq, codebase_kinds, ContentKind.CODEBASE_KINDS, "dc_kinds"
@@ -262,15 +221,12 @@ def codebase_card(
         base_subq, codebase_domains, ContentKind.CODEBASE_DOMAINS, "dc_domains"
     )
     base_subq = _add_dc_filter(
-        base_subq, codebase_audiences, ContentKind.CODEBASE_AUDIENCES, "dc_audiences"
+        base_subq, codebase_audiences, ContentKind.CODEBASE_AUDIENCES, "dc_auds"
     )
 
-    filter_subq = base_subq.subquery()
-
-    # ------------------------- main query -------------------------- #
-    stmt = (
+    assets_stmt = (
         select(PrimaryAsset)
-        .where(PrimaryAsset.id.in_(select(filter_subq.c.id)))
+        .where(PrimaryAsset.id.in_(base_subq.subquery()))
         .options(
             selectinload(PrimaryAsset.tags),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
@@ -279,21 +235,15 @@ def codebase_card(
         )
         .order_by(PrimaryAsset.updated_at.desc())
     )
+    assets: list[PrimaryAsset] = session.exec(assets_stmt).unique().all()
+    assets = assets[pagination.offset : pagination.offset + pagination.limit]
 
-    assets: list[PrimaryAsset] = (
-        session.exec(stmt).unique().all()  # type: ignore[arg-type]
-    )
-
-    # ---------------------------------------------------------------- #
-    # Build response                                                   #
-    # ---------------------------------------------------------------- #
     cards: list[CodebaseCard] = []
     for pa_row in assets:
         v_cur = pa_row.most_recent_version
         if v_cur is None:
-            continue  # data inconsistency
+            continue
 
-        # -------- find most-recent COMPLETED version (may be same) --- #
         v_done: Version | None = session.exec(
             select(Version)
             .where(
@@ -303,19 +253,51 @@ def codebase_card(
             .order_by(Version.updated_at.desc())
             .limit(1)
         ).one_or_none()
+        root_done: Node | None = v_done.root_node if v_done else None  # type: ignore
 
-        root_done: Node | None = (
-            v_done.root_node if v_done else None  # type: ignore[attr-defined]
+        kind_list = domain_list = audience_list = terse_sentence = None
+        if root_done:
+            dc_kinds = _latest_dc_content(
+                session, root_done.id, ContentKind.CODEBASE_KINDS
+            )
+            dc_domains = _latest_dc_content(
+                session, root_done.id, ContentKind.CODEBASE_DOMAINS
+            )
+            dc_auds = _latest_dc_content(
+                session, root_done.id, ContentKind.CODEBASE_AUDIENCES
+            )
+            dc_terse = _latest_dc_content(
+                session,
+                root_done.id,
+                # accept either enum value depending on your DB
+                getattr(
+                    ContentKind,
+                    "TOP_LEVEL_SHORT_SENTENCE",
+                    ContentKind.TOP_LEVEL_SHORT_SENTENCE,
+                ),  # type: ignore[arg-type]
+            )
+
+            kind_list = (
+                _extract_ordered_keys(dc_kinds.misc_metadata) if dc_kinds else None
+            )
+            domain_list = (
+                _extract_ordered_keys(dc_domains.misc_metadata) if dc_domains else None
+            )
+            audience_list = (
+                _extract_ordered_keys(dc_auds.misc_metadata) if dc_auds else None
+            )
+            terse_sentence = dc_terse.content if dc_terse else None
+
+        node_meta: dict[str, Any] = (
+            root_done.misc_metadata if root_done and root_done.misc_metadata else {}
         )
-        node_meta: dict[str, Any] = root_done.misc_metadata if root_done else {}
-        if node_meta is None:
-            node_meta = {}
-        vcs_meta: dict[str, Any] = v_cur.vcs_metadata or {}
-        repo_meta = vcs_meta.get("repository", {})
-        branch_meta = vcs_meta.get("branch", {})
-        commit_meta = vcs_meta.get("commit", {})
-
         sha = _safe_commit_sha(v_cur)
+        vcs_meta = v_cur.vcs_metadata or {}
+        repo_meta, branch_meta, commit_meta = (
+            vcs_meta.get("repository", {}),
+            vcs_meta.get("branch", {}),
+            vcs_meta.get("commit", {}),
+        )
         commit_block = CommitInfo(
             sha=sha,
             short_sha=sha[:8] if sha else None,
@@ -327,7 +309,6 @@ def codebase_card(
                 date=commit_meta.get("author", {}).get("date") or v_cur.updated_at,
             ),
         )
-
         vc_block = VersionControlInfo(
             provider=pa_row.provider.value.lower(),
             repository=RepositoryInfo(
@@ -344,18 +325,23 @@ def codebase_card(
             ),
             commit=commit_block,
         )
-
-        # ---------------- metadata block ----------------------------- #
         meta_block = MostRecentMetadata(
             id=v_cur.id,
-            total_files=(root_done.total_files if root_done else None) or 1,
-            driver_ignored_files=node_meta.get("driver_ignored_files", None),
+            total_files=(root_done.total_files if root_done else 1) or 1,
+            driver_ignored_files=node_meta.get("driver_ignored_files"),
             status=v_cur.status.value,
-            total_sloc=node_meta.get("total_sloc", 0),
-            analyzable_sloc=node_meta.get("analyzable_sloc", 0),
-            top_language=node_meta.get("top_language_by_file_count", None)
-            or node_meta.get("top_language", None),
-            analyzable_sloc_by_type=node_meta.get("analyzable_sloc_by_type", None),
+            total_sloc=node_meta.get("total_sloc"),
+            analyzable_sloc=node_meta.get("analyzable_sloc"),
+            top_language=node_meta.get("top_language_by_file_count")
+            or node_meta.get("top_language"),
+            analyzable_sloc_by_type=node_meta.get("analyzable_sloc_by_type"),
+        )
+
+        mrv_content = MostRecentVersionContent(
+            kind=kind_list,
+            domain=domain_list,
+            audience=audience_list,
+            content=terse_sentence,
         )
 
         cards.append(
@@ -372,7 +358,7 @@ def codebase_card(
                 browsable=v_cur.browsable,
                 tags=[TagRead.model_validate(t) for t in pa_row.tags],
                 most_recent_metadata=meta_block,
-                most_recent_version_content=None,  # future work
+                most_recent_version_content=mrv_content,
             )
         )
 

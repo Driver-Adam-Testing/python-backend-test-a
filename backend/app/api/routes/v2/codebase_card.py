@@ -469,7 +469,11 @@ def codebase_card(
         )
         meta_block = MostRecentMetadata(
             id=v_latest.id,
-            total_files=(root_node_complete.total_files if root_node_complete else 1),
+            total_files=(
+                root_node_complete.total_files
+                if root_node_complete and root_node_complete.total_files
+                else 1
+            ),
             driver_ignored_files=node_meta.get("driver_ignored_files"),
             status=v_latest.status.value,
             total_sloc=node_meta.get("total_sloc"),

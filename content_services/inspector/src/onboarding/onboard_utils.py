@@ -762,6 +762,11 @@ def calculate_directory_stats(
                     e: bytes_to_sloc(b)
                     for e, b in stats["analyzable_bytes_by_extension"].items()
                 },
+                "top_language": max(
+                    stats["analyzable_bytes_by_type"],
+                    key=stats["analyzable_bytes_by_type"].get,
+                    default=None,
+                ),
             }
 
             directory_path = Path(directory).relative_to(temp_dir)

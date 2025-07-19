@@ -15,7 +15,7 @@ from database.models_v2 import (
 from database.models_v2_enums import ContentKind, VersionStatus
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import aliased, selectinload
 from sqlmodel import select
 
@@ -169,7 +169,7 @@ def codebase_card(
             Version.primary_asset_id == pa.id,
             Version.status == VersionStatus.GENERATION_COMPLETE,
         )
-        .order_by(Version.updated_at.desc())
+        .order_by(Version.created_at.desc())
         .limit(1)
         .scalar_subquery()
     )
@@ -177,7 +177,7 @@ def codebase_card(
     base_subq = (
         select(pa.id)
         .where(pa.organization_id == user.organization_id)
-        .join(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
+        .outerjoin(root, (root.version_id == completed_ver_id_subq) & (root.depth == 0))
     )
 
     kinds = _parse_asset_kinds(primary_asset_kind) or [
@@ -219,31 +219,91 @@ def codebase_card(
     )
 
     apply_pagination = not (codebase_kind or codebase_domain or codebase_audience)
-    version_ranked = (
+    latest_complete_versions_subq = (
         select(
             Version.id.label("v_id"),
             Version.primary_asset_id,
             func.row_number()
             .over(
                 partition_by=Version.primary_asset_id,
-                order_by=Version.updated_at.desc(),
+                order_by=Version.created_at.desc(),
             )
             .label("rn"),
         )
         .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-        .cte("version_ranked")
+        .cte("most_recent_version_complete_subq")
     )
-    latest_v = aliased(Version)
+    latest_versions_subq = select(
+        Version.id.label("v_id"),
+        Version.primary_asset_id,
+        func.row_number()
+        .over(
+            partition_by=Version.primary_asset_id,
+            order_by=Version.created_at.desc(),
+        )
+        .label("rn"),
+    ).cte("most_recent_version_subq")
 
+    latest_complete_version = aliased(Version)
+    latest_version = aliased(Version)
+    latest_version_root_node = aliased(Node)
+    latest_complete_version_root_node = aliased(Node)
     assets_stmt = (
-        select(PrimaryAsset, latest_v)
-        .join(version_ranked, PrimaryAsset.id == version_ranked.c.primary_asset_id)
-        .join(latest_v, latest_v.id == version_ranked.c.v_id)
-        .where(version_ranked.c.rn == 1, PrimaryAsset.id.in_(base_subq.subquery()))
+        select(
+            PrimaryAsset,
+            latest_version,
+            latest_complete_version,
+            latest_version_root_node,
+            latest_complete_version_root_node,
+        )
+        .outerjoin(
+            latest_complete_versions_subq,
+            PrimaryAsset.id == latest_complete_versions_subq.c.primary_asset_id,
+        )
+        .outerjoin(
+            latest_complete_version,
+            latest_complete_version.id == latest_complete_versions_subq.c.v_id,
+        )
+        .join(
+            latest_versions_subq,
+            and_(
+                PrimaryAsset.id == latest_versions_subq.c.primary_asset_id,
+                latest_versions_subq.c.rn == 1,
+            ),
+        )
+        .join(
+            latest_version,
+            latest_version.id == latest_versions_subq.c.v_id,
+        )
+        .join(
+            latest_version_root_node,
+            and_(
+                latest_version_root_node.version_id == latest_version.id,
+                latest_version_root_node.depth == 0,
+            ),
+        )
+        .outerjoin(
+            latest_complete_version_root_node,
+            and_(
+                latest_complete_version_root_node.version_id
+                == latest_complete_version.id,
+                latest_complete_version_root_node.depth == 0,
+            ),
+        )
+        .where(
+            or_(
+                latest_complete_versions_subq.c.rn == 1,
+                latest_complete_versions_subq.c.rn.is_(None),
+            ),
+            PrimaryAsset.id.in_(base_subq.subquery()),
+        )
         .options(
             selectinload(PrimaryAsset.tags),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.root_node
+            ),
+            selectinload(PrimaryAsset.most_recent_version).selectinload(
+                Version.creator
             ),
         )
     )
@@ -255,14 +315,14 @@ def codebase_card(
     if apply_pagination:
         assets_stmt = assets_stmt.offset(pagination.offset).limit(pagination.limit)
 
-    assets_with_versions: list[tuple[PrimaryAsset, Version]] = (
+    assets_with_versions: list[tuple[PrimaryAsset, Version, Version, Node, Node]] = (
         session.exec(assets_stmt).unique().all()
     )
 
     root_ids: list[UUID] = [
-        v.root_node.id  # type: ignore[attr-defined]
-        for _, v in assets_with_versions
-        if v and v.root_node
+        latest_version_root_node.id
+        for _, _, _, latest_version_root_node, _ in assets_with_versions
+        if latest_version_root_node
     ]
     if not root_ids:
         return ListWithCount(results=[], total_count=0)
@@ -314,17 +374,21 @@ def codebase_card(
             idx < pagination.offset or len(cards) >= pagination.limit
         )
 
-    for index, (pa_row, v_done) in enumerate(assets_with_versions):
-        v_cur = pa_row.most_recent_version
-        if v_cur is None:
+    for index, (
+        pa_row,
+        v_latest,
+        _,
+        latest_version_root_node,
+        latest_complete_version_root_node,
+    ) in enumerate(assets_with_versions):  # type: ignore[arg-type]
+        if v_latest is None:
             continue
 
-        root_node: Node | None = v_done.root_node if v_done else None  # type: ignore
-        if root_node is None:
-            continue
+        root_node_complete: Node | None = latest_complete_version_root_node
+        root_node_latest: Node | None = latest_version_root_node
 
         def _dc(kind: ContentKind) -> DerivedContent | None:
-            return latest_dc.get((root_node.id, kind))  # noqa: B023
+            return latest_dc.get((root_node_latest.id, kind))  # noqa: B023
 
         dc_kinds = _dc(ContentKind.CODEBASE_KINDS)
         dc_domains = _dc(ContentKind.CODEBASE_DOMAINS)
@@ -363,9 +427,13 @@ def codebase_card(
             continue
         terse_sentence = dc_terse.content if dc_terse else None
 
-        node_meta: dict[str, Any] = root_node.misc_metadata or {}
-        sha = _safe_commit_sha(v_cur)
-        vcs_meta = v_cur.vcs_metadata or {}
+        node_meta: dict[str, Any] | None = (
+            root_node_complete.misc_metadata if root_node_complete else None
+        )
+        node_meta = node_meta or {}
+
+        sha = _safe_commit_sha(v_latest)
+        vcs_meta = v_latest.vcs_metadata or {}
         repo_meta, branch_meta, commit_meta = (
             vcs_meta.get("repository", {}),
             vcs_meta.get("branch", {}),
@@ -379,7 +447,8 @@ def codebase_card(
             author=CommitAuthor(
                 name=commit_meta.get("author", {}).get("name"),
                 email=commit_meta.get("author", {}).get("email"),
-                date=commit_meta.get("author", {}).get("date") or v_cur.updated_at,
+                date=commit_meta.get("author", {}).get("date")
+                or pa_row.most_recent_version.updated_at,
             ),
         )
         vc_block = VersionControlInfo(
@@ -399,10 +468,10 @@ def codebase_card(
             commit=commit_block,
         )
         meta_block = MostRecentMetadata(
-            id=v_cur.id,
-            total_files=(root_node.total_files or 1),
+            id=v_latest.id,
+            total_files=(root_node_complete.total_files if root_node_complete else 1),
             driver_ignored_files=node_meta.get("driver_ignored_files"),
-            status=v_cur.status.value,
+            status=v_latest.status.value,
             total_sloc=node_meta.get("total_sloc"),
             analyzable_sloc=node_meta.get("analyzable_sloc"),
             top_language=node_meta.get("top_language_by_file_count")
@@ -427,9 +496,9 @@ def codebase_card(
                 display_name=pa_row.display_name,
                 created_at=pa_row.created_at,
                 updated_at=pa_row.updated_at,
-                status=v_cur.status.value,
+                status=v_latest.status.value,
                 codebase_settings_auto_commit_docs=pa_row.codebase_settings_auto_commit_docs,
-                browsable=v_cur.browsable,
+                browsable=v_latest.browsable,
                 tags=[TagRead.model_validate(t) for t in pa_row.tags],
                 most_recent_metadata=meta_block,
                 most_recent_version_content=mrv_content,

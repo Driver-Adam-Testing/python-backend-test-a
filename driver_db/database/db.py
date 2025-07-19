@@ -7,7 +7,7 @@ from database.config import settings
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=10)
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True)
 
 
 @contextmanager
@@ -68,9 +68,9 @@ if settings.ASYNC_DATABASE_URL:
         },  # Disable prepared statements for PgBouncer compatibility,
         # Verify these below are good values
         future=True,
-        pool_size=10,
+        pool_size=20,
         max_overflow=10,
-        pool_recycle=3600,
+        pool_pre_ping=True
     )
 
 

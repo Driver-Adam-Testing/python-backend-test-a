@@ -192,7 +192,7 @@ def codebase_card(
         base_subq = base_subq.where(pa.id.in_(id))
 
     if top_language:
-        tl = [t.lower() for t in top_language]
+        tl = [t.lower() for t in top_language.split(",")]
         base_subq = base_subq.where(
             func.lower(root.misc_metadata["top_language_by_file_count"].astext).in_(tl)
             | func.lower(root.misc_metadata["top_language"].astext).in_(tl)

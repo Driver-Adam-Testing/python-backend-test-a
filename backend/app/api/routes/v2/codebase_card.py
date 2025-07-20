@@ -65,6 +65,7 @@ class VersionControlInfo(BaseModel):
 
 class MostRecentMetadata(BaseModel):
     id: UUID
+    root_node_id: UUID | None = None
     total_files: int
     driver_ignored_files: int | None = None
     status: str
@@ -75,6 +76,7 @@ class MostRecentMetadata(BaseModel):
 
 
 class MostRecentVersionContent(BaseModel):
+    root_node_id: UUID | None = None
     kind: list[str] | None = None
     domain: list[str] | None = None
     audience: list[str] | None = None
@@ -379,6 +381,7 @@ def codebase_card(
             )
             meta_block = MostRecentMetadata(
                 id=v_latest.id,
+                root_node_id=None,  # No root id in Connecting
                 total_files=0,
                 driver_ignored_files=0,
                 status=v_latest.status.value,
@@ -389,6 +392,7 @@ def codebase_card(
             )
 
             mrv_content = MostRecentVersionContent(
+                root_node_id=None,  # No root id in Connecting
                 kind=None,
                 domain=None,
                 audience=None,
@@ -560,6 +564,7 @@ def codebase_card(
         )
         meta_block = MostRecentMetadata(
             id=v_latest.id,
+            root_node_id=root_node_latest.id if root_node_latest else None,
             total_files=(
                 root_node_latest.total_files
                 if root_node_latest and root_node_latest.total_files
@@ -575,6 +580,7 @@ def codebase_card(
         )
 
         mrv_content = MostRecentVersionContent(
+            root_node_id=root_node_complete.id if root_node_complete else None,
             kind=kind_list,
             domain=domain_list,
             audience=audience_list,

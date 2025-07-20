@@ -10,6 +10,7 @@ from database.models_v2 import (
     PrimaryAsset,
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    PrimaryAssetTag,
     Version,
 )
 from database.models_v2_enums import ContentKind, VersionStatus
@@ -152,6 +153,7 @@ def codebase_card(
     codebase_domain: str | None = Query(default=None),
     codebase_audience: str | None = Query(default=None),
     top_language: str | None = Query(default=None),
+    tag_ids: str | None = Query(default=None),
 ) -> ListWithCount[CodebaseCard]:
     """
     Return a list of `CodebaseCard` objects.
@@ -310,6 +312,13 @@ def codebase_card(
     assets_stmt = apply_filters_to_query(
         assets_stmt, request.query_params, PrimaryAsset
     )
+    if tag_ids:
+        assets_stmt = assets_stmt.where(
+            select(PrimaryAssetTag)
+            .where(PrimaryAssetTag.primary_asset_id == PrimaryAsset.id)
+            .where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
+            .exists()
+        )
     total_count = session.exec(select(func.count()).select_from(assets_stmt)).one()
     assets_stmt = apply_sorting_to_query(assets_stmt, pagination, PrimaryAsset)
     if apply_pagination:

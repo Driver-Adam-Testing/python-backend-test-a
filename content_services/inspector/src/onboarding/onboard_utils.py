@@ -18,7 +18,7 @@ from botocore.client import ClientError
 from database.models_v2 import Version
 from sqlmodel import Session
 
-top_language_blacklist = [
+TOP_LANGUAGE_BLACKLIST = [
     "TOML",
     "YAML",
     "JSON",
@@ -758,7 +758,7 @@ def calculate_directory_stats(
             allowed_top_languages = {
                 lang: byte_count
                 for lang, byte_count in stats["analyzable_bytes_by_type"].items()
-                if lang not in top_language_blacklist
+                if lang not in TOP_LANGUAGE_BLACKLIST
             }
             if len(allowed_top_languages) == 0:
                 # If no allowed languages exist, allow blacklisted types

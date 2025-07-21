@@ -1,5 +1,6 @@
 import ssl
 import uuid
+import urllib.request
 from contextlib import contextmanager
 from urllib.parse import parse_qs, urlparse
 
@@ -7,7 +8,9 @@ from database.config import settings
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True)
+external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
+app_name = "pback-" + external_ip
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True, application_name=app_name)
 
 
 @contextmanager
@@ -70,7 +73,8 @@ if settings.ASYNC_DATABASE_URL:
         future=True,
         pool_size=20,
         max_overflow=10,
-        pool_pre_ping=True
+        pool_pre_ping=True,
+        application_name="as" + app_name
     )
 
 

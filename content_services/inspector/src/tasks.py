@@ -509,6 +509,7 @@ class CodebaseTaggingTask(Task):
             existing_tags = {
                 content_kind: self.previous_root_node_metadata[content_kind]
                 for content_kind in required_content_kinds
+                if content_kind in self.previous_root_node_metadata
             }
         else:
             # If no previous content, we need to compute all the tags

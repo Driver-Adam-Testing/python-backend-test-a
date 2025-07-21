@@ -230,11 +230,11 @@ def apply_sorting_to_query(
                 query = query.order_by(sort_column.asc())
         else:
             if model.id:
-                query = query.order_by(sort_column.desc(), model.id).distinct(
-                    sort_column, model.id
-                )
+                query = query.order_by(
+                    sort_column.desc().nulls_last(), model.id
+                ).distinct(sort_column, model.id)
             else:
-                query = query.order_by(sort_column.desc())
+                query = query.order_by(sort_column.desc().nulls_last())
 
     # Apply pagination
     query = query.limit(pagination.limit).offset(pagination.offset)

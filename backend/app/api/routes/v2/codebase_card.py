@@ -10,6 +10,7 @@ from database.models_v2 import (
     PrimaryAsset,
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    PrimaryAssetTag,
     Version,
 )
 from database.models_v2_enums import ContentKind, VersionStatus
@@ -64,6 +65,7 @@ class VersionControlInfo(BaseModel):
 
 class MostRecentMetadata(BaseModel):
     id: UUID
+    root_node_id: UUID | None = None
     total_files: int
     driver_ignored_files: int | None = None
     status: str
@@ -74,6 +76,7 @@ class MostRecentMetadata(BaseModel):
 
 
 class MostRecentVersionContent(BaseModel):
+    root_node_id: UUID | None = None
     kind: list[str] | None = None
     domain: list[str] | None = None
     audience: list[str] | None = None
@@ -152,6 +155,7 @@ def codebase_card(
     codebase_domain: str | None = Query(default=None),
     codebase_audience: str | None = Query(default=None),
     top_language: str | None = Query(default=None),
+    tag_ids: str | None = Query(default=None),
 ) -> ListWithCount[CodebaseCard]:
     """
     Return a list of `CodebaseCard` objects.
@@ -190,7 +194,7 @@ def codebase_card(
         base_subq = base_subq.where(pa.id.in_(id))
 
     if top_language:
-        tl = [t.lower() for t in top_language]
+        tl = [t.lower() for t in top_language.split(",")]
         base_subq = base_subq.where(
             func.lower(root.misc_metadata["top_language_by_file_count"].astext).in_(tl)
             | func.lower(root.misc_metadata["top_language"].astext).in_(tl)
@@ -310,6 +314,13 @@ def codebase_card(
     assets_stmt = apply_filters_to_query(
         assets_stmt, request.query_params, PrimaryAsset
     )
+    if tag_ids:
+        assets_stmt = assets_stmt.where(
+            select(PrimaryAssetTag)
+            .where(PrimaryAssetTag.primary_asset_id == PrimaryAsset.id)
+            .where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
+            .exists()
+        )
     total_count = session.exec(select(func.count()).select_from(assets_stmt)).one()
     assets_stmt = apply_sorting_to_query(assets_stmt, pagination, PrimaryAsset)
     if apply_pagination:
@@ -370,6 +381,7 @@ def codebase_card(
             )
             meta_block = MostRecentMetadata(
                 id=v_latest.id,
+                root_node_id=None,  # No root id in Connecting
                 total_files=0,
                 driver_ignored_files=0,
                 status=v_latest.status.value,
@@ -380,6 +392,7 @@ def codebase_card(
             )
 
             mrv_content = MostRecentVersionContent(
+                root_node_id=None,  # No root id in Connecting
                 kind=None,
                 domain=None,
                 audience=None,
@@ -551,6 +564,7 @@ def codebase_card(
         )
         meta_block = MostRecentMetadata(
             id=v_latest.id,
+            root_node_id=root_node_latest.id if root_node_latest else None,
             total_files=(
                 root_node_latest.total_files
                 if root_node_latest and root_node_latest.total_files
@@ -566,6 +580,7 @@ def codebase_card(
         )
 
         mrv_content = MostRecentVersionContent(
+            root_node_id=root_node_complete.id if root_node_complete else None,
             kind=kind_list,
             domain=domain_list,
             audience=audience_list,

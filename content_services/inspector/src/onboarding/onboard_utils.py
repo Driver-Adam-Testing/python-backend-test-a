@@ -18,6 +18,22 @@ from botocore.client import ClientError
 from database.models_v2 import Version
 from sqlmodel import Session
 
+TOP_LANGUAGE_BLACKLIST = [
+    "TOML",
+    "YAML",
+    "JSON",
+    "XML",
+    "Markdown",
+    "Text",
+    "HTML",
+    "CSV",
+    "reStructuredText",
+    "AsciiDoc",
+    "Haml",
+    "INI",
+    "Makefile",
+]
+
 
 class AccessTokenError(Exception): ...
 
@@ -739,6 +755,14 @@ def calculate_directory_stats(
         directory = str(directory)
         if directory in dir_stats:
             stats = dir_stats[directory]
+            allowed_top_languages = {
+                lang: byte_count
+                for lang, byte_count in stats["analyzable_bytes_by_type"].items()
+                if lang not in TOP_LANGUAGE_BLACKLIST
+            }
+            if len(allowed_top_languages) == 0:
+                # If no allowed languages exist, allow blacklisted types
+                allowed_top_languages = stats["analyzable_bytes_by_type"]
             final_stats = {
                 "analyzable_bytes": stats["analyzable_bytes"],
                 "analyzable_files": stats["analyzable_files"],
@@ -763,8 +787,8 @@ def calculate_directory_stats(
                     for e, b in stats["analyzable_bytes_by_extension"].items()
                 },
                 "top_language": max(
-                    stats["analyzable_bytes_by_type"],
-                    key=stats["analyzable_bytes_by_type"].get,
+                    allowed_top_languages,
+                    key=allowed_top_languages.get,
                     default=None,
                 ),
             }

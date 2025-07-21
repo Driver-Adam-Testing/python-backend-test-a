@@ -7,6 +7,7 @@ from database.models_v2_enums import ContentKind
 from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
+    NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
     Component,
@@ -111,18 +112,19 @@ def toplevel_terse_sentence_from_chunk_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
     user_prompt = (
         Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .append(
             Component(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
             )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
-        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
@@ -174,17 +176,18 @@ def toplevel_single_paragraph_from_chunk_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
     user_prompt = (
         Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .append(
             Component(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
             )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
@@ -225,6 +228,7 @@ def toplevel_terse_sentence_from_long_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
@@ -276,6 +280,7 @@ def toplevel_single_paragraph_from_long_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )

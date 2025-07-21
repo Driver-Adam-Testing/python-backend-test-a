@@ -78,9 +78,9 @@ NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS = Component(
 In your output do not restate the identify of the component you are documenting technically.
 
 Here are some examples to understand what is meant. These are just examples, you do not need to use the particular words here unless it is relevant to how you would describe the content.
-- "The `<method_name>` method transforms/provides/implements ..."
-- "The `<function_name>` function processes... "
-- "The `<class_name>` class represents ..."
+- "The <method_name> method transforms/provides/implements ..."
+- "The <function_name> function processes... "
+- "The <class_name> class represents ..."
 
 Instead, you should be more direct such as providing just:
 - "Transforms/provides/implements ..."
@@ -126,5 +126,11 @@ RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS = Component(
 GENERIC_MARKDOWN_OUTPUT_INSTRUCTION = Component(
     string="""
 Make sure you format your output in Markdown format using, as relevant, Markdown syntax for headings, list, etc. and enclosing single code references with single backticks and large complete code blocks in triple backticks.
+    """
+)
+
+NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING = Component(
+    string="""
+Do not use special formatting, such as backticks or other forms of Markdown syntax, in your text output. Your output is to be consumed as raw text, so special formatting cannot be rendered correctly.
     """
 )

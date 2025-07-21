@@ -53,7 +53,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
         unpack_archive_to_finalized_path,
     )
     from sqlmodel import Session, select
-    from utils.db import get_version_by_id
+    from utils.db import get_version_by_id, git_provider_app_installation_by_id
     # parsed_values = extract_values_from_presigned_url(presigned_url)
 
     version = await get_version_by_id(version_id)
@@ -100,13 +100,9 @@ async def push_docs(version_id: uuid.UUID) -> None:
             )
         elif is_bitbucket:
             access_token = bitbucket_ops.fetch_access_token(install_id)
-            workspace = version.primary_asset.metadata.get("workspace") if version.primary_asset.metadata else None
-            repo_slug = version.primary_asset.metadata.get("slug") if version.primary_asset.metadata else None
-            if not workspace or not repo_slug:
-                # Fallback: extract from display name or other sources
-                # This is a simplified approach - you may need to adjust based on your data model
-                workspace = org_id  # or extract from somewhere else
-                repo_slug = repo_name
+            gp_install = git_provider_app_installation_by_id(installation_id=install_id)
+            workspace = gp_install.git_provider_app.provider_metadata["workspace"]
+            repo_slug = version.primary_asset.display_name
             clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
                 workspace, repo_slug, access_token
             )
@@ -127,9 +123,15 @@ async def push_docs(version_id: uuid.UUID) -> None:
             )
 
         repo_dir = Path(temp_dir) / full_name
+        print(f"Cloning repository {clone_url} into {repo_dir}")
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")
+        # Remove existing repo directory if it exists
+        # if repo_dir.exists():
+        #     shutil.rmtree(repo_dir)
+        
+        # run(f"git clone {clone_url} {repo_dir}")
 
         run(f"git checkout -B {branch}", cwd=repo_dir)
         src_path = os.path.abspath(extracted_path)
@@ -164,7 +166,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
         elif is_bitbucket:
             # Create a pull request after successful push
-            workspace, repo_slug = full_name.split("/", 1)
+            # workspace, repo_slug = full_name.split("/", 1)
             bitbucket_ops.create_pull_request(
                 workspace, repo_slug, access_token, branch, commit_slug
             )
@@ -205,3 +207,13 @@ def download_file_from_s3(
 
 def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> str:
     return f"driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip"
+
+
+
+if __name__ == "__main__":
+    import asyncio
+    import uuid
+
+    # Example usage
+    version_id = "686b4cae-030e-4dd6-af65-144f8a8b7a94"
+    asyncio.run(push_docs(version_id))

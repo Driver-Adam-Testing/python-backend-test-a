@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 from app.schemas.git_provider_schema import GitRepository
 from database.models_v1 import GitProviderApp, GitProviderAppInstallation
@@ -26,6 +27,7 @@ class GitProviderCapabilities:
 
     # Webhook support
     supports_webhooks: bool = True
+    can_register_webhooks: bool = False  # Can programmatically register webhooks
     handles_push_events: bool = True
     handles_merge_request_events: bool = True
     handles_tag_events: bool = True
@@ -42,6 +44,25 @@ class GitProviderCapabilities:
 
     # Provider info
     api_version: str = "v1"
+
+
+@dataclass
+class WebhookConfig:
+    """Generic webhook configuration"""
+
+    callback_url: str
+    triggers: list[str]  # Provider-specific event names
+    secret_token: str | None = None  # If None, use stored secret
+    custom_headers: dict[str, str] | None = None
+    ssl_verification: bool = True
+    description: str | None = None
+
+
+@dataclass
+class WebhookEventContext:
+    app_id: str
+    installation_id: str
+    organization_id: str
 
 
 class GitProviderInterface(ABC):
@@ -121,41 +142,38 @@ class GitProviderInterface(ABC):
             List of GitRepository objects
         """
 
+    # @abstractmethod
+    # def clone_repository(
+    #     self,
+    #     repo_info: GitRepository,
+    #     user_id: str,
+    #     org_id: str,
+    #     upload_key: str,
+    #     bucket_name: str,
+    # ) -> str:
+    #     """Clone a repository and upload to S3
+    #
+    #     Args:
+    #         repo_info: Repository information
+    #         user_id: User ID initiating the clone
+    #         org_id: Organization ID
+    #         upload_key: S3 upload key
+    #         bucket_name: S3 bucket name
+    #
+    #     Returns:
+    #         Presigned download URL
+    #     """
+
     @abstractmethod
-    def clone_repository(
-        self,
-        repo_info: GitRepository,
-        user_id: str,
-        org_id: str,
-        upload_key: str,
-        bucket_name: str,
-    ) -> str:
-        """Clone a repository and upload to S3
-
-        Args:
-            repo_info: Repository information
-            user_id: User ID initiating the clone
-            org_id: Organization ID
-            upload_key: S3 upload key
-            bucket_name: S3 bucket name
-
-        Returns:
-            Presigned download URL
-        """
-
-    @abstractmethod
-    def handle_webhook(
-        self, event_type: str, payload: dict, installation_id: str
+    def handle_webhook_event(
+        self, headers: dict, payload: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
-        """Handle webhook events
+        """Handle incoming webhook events
 
         Args:
-            event_type: Provider-specific event type
-            payload: Webhook payload
-            installation_id: Installation that received the webhook
-
-        Returns:
-            Response data
+            headers: HTTP headers from the webhook request
+            payload: JSON payload from the webhook request
+            webhook_event_ctx: Context containing app_id, installation_id, organization_id
         """
 
     @abstractmethod
@@ -173,4 +191,23 @@ class GitProviderInterface(ABC):
 
         Returns:
             GitProviderCapabilities instance describing what this provider supports
+        """
+
+    @abstractmethod
+    def register_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        config: WebhookConfig,
+        scope: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Register a webhook for the installation
+
+        Args:
+            installation: The installation to register webhook for
+            config: Webhook configuration including URL, triggers, headers, etc.
+            scope: Optional scope for webhook (e.g., {"type": "repository", "slug": "repo-name"})
+                   None for workspace/group level webhooks
+
+        Returns:
+            Dict containing webhook details (id, url, active, created_at, etc.)
         """

@@ -195,6 +195,7 @@ def generate_codebase_metadata(
 
     return {
         "unhashed_organization_id": org_id,
+        "full_repo_name": repo_name,  # NOTE: just used for debugging
         "workspace": workspace,
         "provider": provider,
         "version_id": str(version_id),
@@ -232,7 +233,7 @@ def download_and_upload_repo(
     repo_id = repo.get("repo_id") or metadata.get("id") or metadata.get("uuid")
     repo_name = repo.get("repo_name") or repo.get("name")
     workspace = metadata.get("workspace") or repo.get("workspace")
-    repo_slug = metadata.get("slug") or repo.get("slug")
+    repo_slug = repo_name
 
     # Handle missing fields
     if not repo_id:
@@ -484,28 +485,29 @@ def get_repo_clone_info_from_id(
     workspace: str, repo_slug: str, access_token: str
 ) -> tuple[str, str]:
     """Get repository clone URL and full name"""
-    headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
+    # headers = {"Authorization": f"Bearer {access_token}"}
+    # url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    # response = requests.get(url, headers=headers)
+    # response.raise_for_status()
 
-    data = response.json()
-    full_name = data["full_name"]
+    # data = response.json()
+    full_name = repo_slug
 
     # Get clone URL from links
-    clone_links = data.get("links", {}).get("clone", [])
-    https_link = next((link for link in clone_links if link["name"] == "https"), None)
+    # clone_links = data.get("links", {}).get("clone", [])
+    # https_link = next((link for link in clone_links if link["name"] == "https"), None)
 
-    if not https_link:
-        raise ValueError("HTTPS clone URL not found")
+    # if not https_link:
+    #     raise ValueError("HTTPS clone URL not found")
 
-    clone_url = https_link["href"]
+    # clone_url = https_link["href"]
+    clone_url = f"https://x-token-auth:{access_token}@bitbucket.org/{workspace}/{repo_slug}.git"
     # Insert token into URL
-    if clone_url.startswith("https://"):
-        clone_url = clone_url.replace(
-            "https://", f"https://x-token-auth:{access_token}@"
-        )
+    # if clone_url.startswith("https://"):
+    #     clone_url = clone_url.replace(
+    #         "https://", f"https://x-token-auth:{access_token}@"
+    #     )
 
     return clone_url, full_name
 

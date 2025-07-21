@@ -1,18 +1,33 @@
 import logging
-from typing import List, Dict, Optional, Type
+
+from database.models_v1 import (
+    GitProviderApp,
+    GitProviderAppInstallation,
+    GitProviderKind,
+)
+from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.secret_management.aws_secret_management import (
+    AWSSecretManagementStrategy,
+    format_secret_name,
+)
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.git_providers.interfaces.provider_interface import GitProviderInterface
-from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
-from app.git_providers.providers.gitlab_provider2 import GitLabProvider
+from app.git_providers.interfaces.provider_interface import (
+    GitProviderInterface,
+    WebhookEventContext,
+)
 from app.git_providers.providers.bitbucket_provider2 import BitbucketProvider
-from app.git_providers.utils.errors import GitProviderAccessTokenError, GitProviderAppRevokeError
+from app.git_providers.providers.gitlab_provider2 import GitLabProvider
+from app.git_providers.utils.errors import (
+    GitProviderAccessTokenError,
+    GitProviderAppRevokeError,
+)
 from app.repositories.git_provider_repository import *
 from app.schemas.git_provider_schema import GitRepository, WebhookInfo
-from database.models_v1 import GitProviderApp, GitProviderKind, GitProviderAppInstallation
-from shared.interfaces.aws_client_config import AWSClientConfig
-from shared.secret_management.aws_secret_management import AWSSecretManagementStrategy
+from app.schemas.secret_management_schema import (
+    APP_INSTALL_WAT_NAME_PREFIX,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +36,7 @@ class GitProviderService:
     """Unified service for all Git provider operations"""
 
     # Provider registry
-    PROVIDERS: Dict[GitProviderKind, Type[GitProviderInterface]] = {
+    PROVIDERS: dict[GitProviderKind, type[GitProviderInterface]] = {
         GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED: GitLabProvider,
         GitProviderKind.BITBUCKET: BitbucketProvider,
     }
@@ -38,9 +53,13 @@ class GitProviderService:
 
         return provider_class.from_config(app, self.aws_config)
 
+    # def _get_provider_for_installation(self, installation: GitProviderAppInstallation) -> GitProviderInterface:
+    #     """Get provider instance for an installation"""
+    #     return self.get_provider(installation.git_provider_app)
+
     # App Management
     # ✅
-    def create_app(self, session: Session, app_data: Dict) -> GitProviderApp:
+    def create_app(self, session: Session, app_data: dict) -> GitProviderApp:
         """Create a new git provider app"""
         app = GitProviderApp(**app_data)
 
@@ -60,8 +79,12 @@ class GitProviderService:
             session.rollback()
             raise
 
-    def list_apps(self, session: Session, organization_id: str,
-                  provider_kind: Optional[GitProviderKind] = None) -> List[GitProviderApp]:
+    def list_apps(
+        self,
+        session: Session,
+        organization_id: str,
+        provider_kind: GitProviderKind | None = None,
+    ) -> list[GitProviderApp]:
         """List git provider apps for an organization"""
         apps = git_provider_apps_by_org_id(session, organization_id)
 
@@ -70,7 +93,9 @@ class GitProviderService:
 
         return apps
 
-    def list_app_installations(self, session: Session, organization_id: str,app_id: str) -> List[GitProviderAppInstallation]:
+    def list_app_installations(
+        self, session: Session, organization_id: str, app_id: str
+    ) -> list[GitProviderAppInstallation]:
         """List git provider apps for an organization"""
         return git_provider_app_installation_by_org_id(session, organization_id, app_id)
 
@@ -80,7 +105,9 @@ class GitProviderService:
         provider = self.get_provider(app)
 
         # Delete all installations
-        installations = git_provider_app_installation_by_org_id(session, organization_id, app_id)
+        installations = git_provider_app_installation_by_org_id(
+            session, organization_id, app_id
+        )
         for installation in installations:
             provider.revoke_access(installation)
             session.delete(installation)
@@ -92,8 +119,9 @@ class GitProviderService:
 
     # Access Token Management
 
-    def install_access_token(self, session: Session, organization_id: str,
-                             app_id: str, token_data: Dict) -> GitProviderAppInstallation:
+    def install_access_token(
+        self, session: Session, organization_id: str, app_id: str, token_data: dict
+    ) -> GitProviderAppInstallation:
         """Install any type of access token (GAT, WAT, OAuth)"""
         try:
             # Get app and provider
@@ -106,7 +134,9 @@ class GitProviderService:
                 raise GitProviderAccessTokenError(error or "Invalid access token")
 
             # Create installation
-            installation = provider.create_installation(organization_id, app_id, token_data)
+            installation = provider.create_installation(
+                organization_id, app_id, token_data
+            )
 
             # Store in database
             app.app_installations.append(installation)
@@ -125,14 +155,23 @@ class GitProviderService:
             session.rollback()
             raise
 
-    def update_access_token(self, session: Session, organization_id: str,
-                            app_id: str, installation_id: str,
-                            token_data: Dict) -> GitProviderAppInstallation:
+    def update_access_token(
+        self,
+        session: Session,
+        organization_id: str,
+        app_id: str,
+        installation_id: str,
+        token_data: dict,
+    ) -> GitProviderAppInstallation:
         """Update an existing access token"""
         try:
             # Get installation and provider
             installation = git_provider_app_installation_by_id(session, installation_id)
-            if not installation or installation.organization_id != organization_id or str(installation.git_provider_app_id) != app_id:
+            if (
+                not installation
+                or installation.organization_id != organization_id
+                or str(installation.git_provider_app_id) != app_id
+            ):
                 raise ValueError("Installation not found or doesn't match app")
 
             # app = git_provider_app_by_id(session, organization_id, app_id)
@@ -153,13 +192,18 @@ class GitProviderService:
             logger.error(f"Failed to update access token: {e}")
             raise
 
-    def revoke_access_token(self, session: Session, organization_id: str,
-                            app_id: str, installation_id: str) -> None:
+    def revoke_access_token(
+        self, session: Session, organization_id: str, app_id: str, installation_id: str
+    ) -> None:
         """Revoke an access token installation"""
         try:
             # Get installation and provider
             installation = git_provider_app_installation_by_id(session, installation_id)
-            if not installation or installation.organization_id != organization_id or str(installation.git_provider_app_id) != app_id:
+            if (
+                not installation
+                or installation.organization_id != organization_id
+                or str(installation.git_provider_app_id) != app_id
+            ):
                 raise ValueError("Installation not found or doesn't match app")
 
             provider = self.get_provider(installation.git_provider_app)
@@ -180,14 +224,18 @@ class GitProviderService:
 
     # Repository Operations
 
-    def list_repositories(self, session: Session, organization_id: str,
-                          app_id: str, installation_id: str) -> List[GitRepository]:
+    def list_repositories(
+        self, session: Session, organization_id: str, app_id: str, installation_id: str
+    ) -> list[GitRepository]:
         """List repositories for an installation"""
         try:
             # Get installation and provider
             installation = git_provider_app_installation_by_id(session, installation_id)
-            if not installation or installation.organization_id != organization_id or str(
-                    installation.git_provider_app_id) != app_id:
+            if (
+                not installation
+                or installation.organization_id != organization_id
+                or str(installation.git_provider_app_id) != app_id
+            ):
                 raise ValueError("Installation not found or doesn't match app")
 
             provider = self.get_provider(installation.git_provider_app)
@@ -195,115 +243,62 @@ class GitProviderService:
             # Fetch repositories
             return provider.fetch_repositories(installation)
 
-        except GitProviderAppRevokeError as e:
+        except GitProviderAppRevokeError:
             logger.error(f"Access revoked for installation {installation_id}")
             # Handle revocation
-            self.handle_access_revoked(session, organization_id, app_id, installation_id)
+            self.handle_access_revoked(
+                session, organization_id, app_id, installation_id
+            )
             raise
         except Exception as e:
             logger.error(f"Failed to list repositories: {e}")
             raise
 
-    def clone_repository(self, session: Session, organization_id: str,
-                         user_id: str, app_id: str, repo_info: GitRepository,
-                         upload_key: str, bucket_name: str) -> str:
-        """Clone a repository and upload to S3"""
-        try:
-            # Get app and provider
-            app = git_provider_app_by_id(session, organization_id, app_id)
-            provider = self.get_provider(app)
-
-            # Clone repository
-            download_url = provider.clone_repository(
-                repo_info, user_id, organization_id, upload_key, bucket_name
-            )
-
-            logger.info(f"Cloned repository {repo_info.repo_name} from {app.provider_kind}")
-            return download_url
-
-        except Exception as e:
-            logger.error(f"Failed to clone repository: {e}")
-            raise
-
-    # OAuth Operations (GitLab only)
-
-    def authorize_oauth(self, session: Session, organization_id: str,
-                        user_id: str, app_id: str) -> str:
-        """Generate OAuth authorization URL (GitLab only)"""
-        app = git_provider_app_by_id(session, organization_id, app_id)
-
-        if app.provider_kind == GitProviderKind.BITBUCKET:
-            raise ValueError("Bitbucket uses Workspace Access Tokens, not OAuth")
-
-        provider = self.get_provider(app)
-        return provider.authorize_provider(organization_id, user_id, app_id)
-
-    def handle_oauth_callback(self, session: Session, code: str,
-                              state: str) -> None:
-        """Handle OAuth callback (GitLab only)"""
-        # Decode state to get app info
-        import base64
-        import json
-
-        state_data = json.loads(base64.b64decode(state))
-        app_id = state_data["application_id"]
-
-        app = git_provider_app_by_id(session, state_data["organization_id"], app_id)
-        provider = self.get_provider(app)
-
-        provider.handle_app_authorization_callback(code, state_data.get("installation_id"))
-
-    # Webhook Management
-
-    def handle_webhook(self, session: Session, app_id: str, event_type: str,
-                       payload: Dict, headers: Dict) -> Dict:
-        """Handle webhook events from any provider"""
-        # Determine provider from app
-        app = session.get(GitProviderApp, app_id)
-        if not app:
-            raise ValueError(f"App not found: {app_id}")
-
-        provider = self.get_provider(app)
-
-        # Find installation based on provider-specific logic
-        installation_id = self._extract_installation_id(app.provider_kind, payload, headers)
-
-        if not installation_id:
-            raise ValueError("Cannot determine installation from webhook")
-
-        # Verify webhook signature/secret
-        installation = git_provider_app_installation_by_id(session, installation_id)
-        if not installation:
-            raise ValueError(f"Installation not found: {installation_id}")
-
-        # Handle webhook
-        return provider.handle_webhook(event_type, payload, installation_id)
-
-    def get_webhook_info(self, session: Session, organization_id: str,
-                         app_id: str, installation_id: str) -> WebhookInfo:
+    def get_webhook_info(
+        self, session: Session, organization_id: str, app_id: str, installation_id: str
+    ) -> WebhookInfo:
         """Get webhook configuration info"""
 
         installation = git_provider_app_installation_by_id(session, installation_id)
-        if not installation or installation.organization_id != organization_id or str(
-                installation.git_provider_app_id) != str(app_id):
+        if (
+            not installation
+            or installation.organization_id != organization_id
+            or str(installation.git_provider_app_id) != str(app_id)
+        ):
             raise ValueError("Installation not found or doesn't match app")
 
         provider = self.get_provider(installation.git_provider_app)
         secret = provider.fetch_secrets(installation)
-        #TODO: move this to provider interface
-        webhook_info = WebhookInfo(
-            callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
-            custom_headers={"x-driver-token": installation_id},
-            secret_token=secret["secret_token"],
-            ssl_verification=True,
-            triggers=["push events", "Project or group access token events"],
-        )
+
+        if installation.git_provider_app.provider_kind == GitProviderKind.BITBUCKET:
+            # Bitbucket requires a specific webhook structure
+            webhook_info = WebhookInfo(
+                callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook?installation_id={installation_id}",
+                custom_headers={},
+                secret_token=secret["secret_token"],
+                ssl_verification=True,
+                triggers=["push events", "Project or group access token events"],
+            )
+        elif installation.provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
+            # TODO: move this to provider interface
+            webhook_info = WebhookInfo(
+                callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
+                custom_headers={"x-driver-token": installation_id},
+                secret_token=secret["secret_token"],
+                ssl_verification=True,
+                triggers=["push events", "Project or group access token events"],
+            )
+        else:
+            raise ValueError(
+                f"Unsupported provider kind: {installation.provider_kind}"
+            )
         return webhook_info
 
     # Helper Methods
 
-    def _extract_installation_id(self, provider_kind: GitProviderKind,
-                                 payload: Dict, headers: Dict) -> Optional[str]:
+    def _extract_installation_id(
+        self, provider_kind: GitProviderKind, payload: dict, headers: dict
+    ) -> str | None:
         """Extract installation ID from webhook payload/headers"""
         if provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
             return headers.get("x-installation-id")
@@ -322,8 +317,9 @@ class GitProviderService:
 
         return None
 
-    def handle_access_revoked(self, session: Session, organization_id: str,
-                              app_id: str, installation_id: str) -> None:
+    def handle_access_revoked(
+        self, session: Session, organization_id: str, app_id: str, installation_id: str
+    ) -> None:
         """Handle access revocation"""
         logger.info(f"Handling access revocation for installation {installation_id}")
 
@@ -331,6 +327,65 @@ class GitProviderService:
             self.revoke_access_token(session, organization_id, app_id, installation_id)
         except Exception as e:
             logger.error(f"Error during revocation cleanup: {e}")
+
+    # Webhook Event Handling
+    def handle_webhook_event(
+        self, session: Session, installation_id: str, headers: dict, body: dict
+    ) -> dict:
+        """Handle webhook event by routing to appropriate provider"""
+
+        app_install = git_provider_app_installation_by_id(session, installation_id)
+        if not app_install:
+            logger.error(f"Installation not found for ID {installation_id}")
+            raise ValueError("Installation not found")
+
+        git_provider = self.get_provider(app_install.git_provider_app)
+        return git_provider.handle_webhook_event(
+            headers,
+            body,
+            WebhookEventContext(
+                app_id=str(app_install.git_provider_app_id),
+                installation_id=installation_id,
+                organization_id=app_install.organization_id,
+            ),
+        )
+
+    def _handle_bitbucket_webhook(
+        self,
+        session: Session,
+        app_install: GitProviderAppInstallation,
+        headers: dict,
+        body: dict,
+    ) -> dict:
+        """Handle Bitbucket webhook with security validation"""
+        installation_id = str(app_install.id)
+        event_key = headers.get("x-event-key")
+        incoming_secret = headers.get("x-hub-signature")
+        webhook_id = headers.get(
+            "x-hook-uuid"
+        )  # store this during registration to identify the webhook event target
+
+        # For Bitbucket, validate the webhook secret if provided
+        secret = self.secrets_manager.read_secret(
+            format_secret_name(APP_INSTALL_WAT_NAME_PREFIX, installation_id)
+        )
+        if secret and secret.get("secret_token") and incoming_secret:
+            if secret["secret_token"] != incoming_secret:
+                logger.error(
+                    f"Secret token mismatch for Bitbucket installation ID {installation_id}"
+                )
+                raise PermissionError("Insufficient permissions")
+
+        # Get provider and handle event
+        provider = self.get_provider(app_install.git_provider_app)
+
+        if event_key == "repo:push":
+            logger.info("Bitbucket push event")
+            return provider.handle_push_event(
+                session, str(app_install.git_provider_app_id), installation_id, body
+            )
+
+        return {"message": "Event ignored"}
 
 
 # Create a singleton instance

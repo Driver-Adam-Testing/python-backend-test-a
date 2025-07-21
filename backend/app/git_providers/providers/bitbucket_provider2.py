@@ -1,19 +1,22 @@
 import json
 import logging
 from enum import Enum
+from typing import Any
 
+import modal
+from app.core.config import settings
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.interfaces.provider_interface import (
     GitProviderCapabilities,
     GitProviderInterface,
+    WebhookConfig,
+    WebhookEventContext,
 )
 from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
 from app.git_providers.resources.bitbucket_api_resources import BitbucketAPIResources
-from app.git_providers.utils.git_provider_utils import generate_codebase_metadata
 from app.schemas.git_provider_schema import GitProviderAppTokenSecret, GitRepository
 from app.schemas.secret_management_schema import APP_INSTALL_WAT_NAME_PREFIX
 from database.models_v1 import GitProviderApp, GitProviderAppInstallation
-from shared.file_storage.aws_s3_client import AWSS3Client
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -52,6 +55,40 @@ class BitbucketProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
 
         return cls(config, secrets_manager)
+
+    @property
+    def capabilities(self) -> GitProviderCapabilities:
+        """Get Bitbucket provider capabilities"""
+        return GitProviderCapabilities(
+            # Authentication
+            supports_oauth_flow=False,
+            supports_group_access_token=False,
+            supports_workspace_access_token=True,
+            supports_project_access_token=True,
+            supports_repository_access_token=True,
+            supports_personal_access_token=False,
+            # Repository operations
+            can_list_repositories=True,
+            can_clone_repository=True,
+            can_get_latest_commit=True,
+            can_create_pull_request=False,  # Not in provider interface
+            # Webhook support
+            supports_webhooks=True,
+            can_register_webhooks=True,  # Bitbucket supports webhook registration
+            handles_push_events=True,
+            handles_merge_request_events=False,  # Uses pull request events instead
+            handles_tag_events=False,
+            handles_fork_events=True,
+            # Access control
+            supports_granular_permissions=True,  # Project/repo tokens provide granular access
+            supports_multiple_installations=True,
+            # API features
+            supports_pagination=True,  # Implemented in list_repositories
+            max_repos_per_fetch=100,
+            uses_git_clone=True,  # Uses actual git clone
+            # Provider info
+            api_version="2.0",  # Bitbucket API v2
+        )
 
     def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
         """Validate Bitbucket Access Token (Workspace, Project, or Repository)"""
@@ -184,38 +221,8 @@ class BitbucketProvider(GitProviderInterface):
             # Get token and metadata from secrets
             secrets = self.fetch_secrets(installation)
             access_token = secrets["token"]
-
-            # token_type = BitbucketTokenType(secrets.get("token_type", BitbucketTokenType.WORKSPACE.value))
-            token_type = BitbucketTokenType(installation.misc_metadata["kind"])
-            # workspace = installation.misc_metadata["name"]
             workspace = installation.git_provider_app.name
-
-            # Fetch repositories based on token type
             repos_data = self.api_strategy.list_repositories(workspace, access_token)
-            # if token_type == BitbucketTokenType.WORKSPACE:
-            #
-            # elif token_type == BitbucketTokenType.PROJECT:
-            #     project_key = secrets.get("project_key")
-            #     if not project_key:
-            #         raise ValueError("Project key not found in secrets")
-            #     repos_data = self.api_strategy.list_project_repositories(
-            #         workspace, project_key, access_token
-            #     )
-            #
-            # elif token_type == BitbucketTokenType.REPOSITORY:
-            #     repo_slug = secrets.get("repository_slug")
-            #     if not repo_slug:
-            #         raise ValueError("Repository slug not found in secrets")
-            #     # For single repository, fetch just that one
-            #     repo_data = self.api_strategy.get_repository(
-            #         workspace, repo_slug, access_token
-            #     )
-            #     repos_data = [repo_data] if repo_data else []
-            #
-            # else:
-            #     raise ValueError(f"Unsupported token type: {token_type}")
-
-            # Convert to GitRepository objects
             repos = []
             for repo in repos_data:
                 # Fetch latest commit for each repo if needed
@@ -232,19 +239,20 @@ class BitbucketProvider(GitProviderInterface):
 
                 repos.append(
                     GitRepository(
-                        org=repo["owner"]["display_name"],
-                        installation_id=str(installation.id),
-                        provider_kind=installation.git_provider_app.provider_kind,
                         provider_name=str(installation.git_provider_app.provider_kind),
+                        provider_kind=installation.git_provider_app.provider_kind,
+                        org=repo["workspace"]["name"],
+                        installation_id=str(installation.id),
                         repo_name=repo["name"],
-                        # repo_id doesn't exist in GitRepository schema - store in metadata
                         last_updated=repo.get("updated_on"),
+                        default_branch=repo["mainbranch"]["name"],  #
                         latest_commit=latest_commit,
                         metadata={
                             "id": repo["uuid"],  # Store repo ID in metadata
-                            "workspace": workspace,
+                            "workspace": repo["workspace"]["name"],
                             "slug": repo["slug"],
                             "project_key": repo.get("project", {}).get("key"),
+                            "project_name": repo.get("project", {}).get("name"),
                             "is_private": repo.get("is_private", True),
                             "language": repo.get("language"),
                             "created_on": repo.get("created_on"),
@@ -264,129 +272,28 @@ class BitbucketProvider(GitProviderInterface):
             logger.error(f"Failed to fetch repositories: {e}")
             raise
 
-    def clone_repository(
-        self,
-        repo_info: GitRepository,
-        user_id: str,
-        org_id: str,
-        upload_key: str,
-        bucket_name: str,
-    ) -> str:
-        """Clone Bitbucket repository and upload to S3"""
-        logger.info(f"Cloning Bitbucket repository: {repo_info.repo_name}")
-
-        try:
-            # Get access token from installation
-            installation_id = repo_info.installation_id
-            secrets = self.fetch_secrets_by_id(installation_id)
-            access_token = secrets["token"]
-            token_type = BitbucketTokenType(
-                secrets.get("token_type", BitbucketTokenType.WORKSPACE.value)
-            )
-
-            # Verify access to repository based on token type
-            workspace = repo_info.metadata["workspace"]
-            repo_slug = repo_info.metadata["slug"]
-
-            if token_type == BitbucketTokenType.PROJECT:
-                # Verify repo belongs to the project
-                project_key = secrets.get("project_key")
-                repo_project = repo_info.metadata.get("project_key")
-                if repo_project != project_key:
-                    raise ValueError(
-                        f"Repository not in authorized project: {project_key}"
-                    )
-
-            elif token_type == BitbucketTokenType.REPOSITORY:
-                # Verify it's the authorized repository
-                authorized_repo = secrets.get("repository_slug")
-                if repo_slug != authorized_repo:
-                    raise ValueError(f"Not authorized for repository: {repo_slug}")
-
-            # Get latest commit if not specified
-            commit = (
-                repo_info.latest_commit.get("id") if repo_info.latest_commit else None
-            )
-            if not commit:
-                logger.warning(
-                    f"No commit specified for {repo_info.repo_name}, fetching latest"
-                )
-                commit = self.api_strategy.get_latest_commit(
-                    workspace, repo_slug, access_token
-                )
-
-            # Download repository
-            logger.info(
-                f"Downloading repository {workspace}/{repo_slug} at commit {commit}"
-            )
-            zip_content = self.api_strategy.download_repo(
-                workspace, repo_slug, commit, access_token
-            )
-
-            # Generate metadata
-            metadata = generate_codebase_metadata(
-                org_id=org_id,
-                org_name=workspace,
-                repo=repo_info.repo_name,
-                repo_id=repo_info.metadata.get("id", ""),  # Get repo ID from metadata
-                owner=workspace,
-                provider="bitbucket",
-                commit=commit,
-                upload_key=upload_key,
-            )
-
-            # Upload to S3
-            logger.info(f"Uploading repository to S3: {upload_key}")
-            s3_client = AWSS3Client(self.secrets_manager.aws_config)
-
-            upload_success = s3_client.upload_to_s3(
-                file_content=zip_content,
-                bucket_name=bucket_name,
-                s3_key=upload_key,
-                metadata_dict=metadata,
-            )
-
-            if not upload_success:
-                raise ValueError("Failed to upload repository to S3")
-
-            # Generate presigned URL
-            download_url = s3_client.generate_get_presigned_url(bucket_name, upload_key)
-            logger.info(f"Repository cloned successfully: {repo_info.repo_name}")
-
-            return download_url
-
-        except Exception as e:
-            logger.error(f"Failed to clone repository: {e}")
-            raise
-
-    def handle_webhook(
-        self, event_type: str, payload: dict, installation_id: str
+    # https://support.atlassian.com/bitbucket-cloud/docs/manage-webhooks/
+    def handle_webhook_event(
+        self, headers: dict, payload: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
         """Handle Bitbucket webhook events"""
+        installation_id = webhook_event_ctx.installation_id
+
+        event_type = headers["x-event-key"]
+        hook_id = headers["x-hook-uuid"]
         logger.info(
             f"Handling Bitbucket webhook: {event_type} for installation {installation_id}"
         )
 
-        try:
-            # Bitbucket event types are prefixed (e.g., "repo:push")
-            if event_type == "repo:push":
-                return self._handle_push_event(payload, installation_id)
-            elif (
-                event_type == "pullrequest:created"
-                or event_type == "pullrequest:updated"
-            ):
-                return self._handle_pull_request_event(
-                    payload, installation_id, event_type
-                )
-            elif event_type == "repo:fork":
-                return self._handle_fork_event(payload, installation_id)
-            else:
-                logger.info(f"Ignoring Bitbucket event type: {event_type}")
-                return {"status": "ignored", "event": event_type}
-
-        except Exception as e:
-            logger.error(f"Error handling webhook: {e}")
-            raise
+        # Bitbucket event types are prefixed (e.g., "repo:push")
+        if event_type == "repo:push":
+            return self._handle_push_event(payload, webhook_event_ctx)
+        elif event_type == "pullrequest:created" or event_type == "pullrequest:updated":
+            # TODO: Handle pull request events
+            return self._handle_pull_request_event()
+        else:
+            logger.info(f"Ignoring Bitbucket event type: {event_type}")
+        return {"message": "Event ignored"}
 
     def revoke_access(self, installation: GitProviderAppInstallation) -> None:
         """Revoke access for a Bitbucket installation"""
@@ -399,7 +306,84 @@ class BitbucketProvider(GitProviderInterface):
         self.secrets_manager.delete_secret(secret_key)
         logger.info(f"Deleted access token secret for installation {installation.id}")
 
-    # Private helper methods
+    def register_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        config: WebhookConfig,
+        scope: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Register a Bitbucket webhook with installation ID as query param"""
+        logger.info(f"Registering webhook for Bitbucket installation {installation.id}")
+
+        try:
+            # Add installation_id as query parameter
+            callback_url = config.callback_url
+            separator = "&" if "?" in callback_url else "?"
+            callback_url = f"{callback_url}{separator}installation_id={installation.id}"
+
+            # Use stored or provided secret token
+            secrets = self.fetch_secrets(installation)
+            secret_token = config.secret_token or secrets.get("secret_token")
+
+            # Map triggers to Bitbucket events
+            bitbucket_events = self._map_triggers_to_events(config.triggers)
+
+            # Get access token
+            access_token = secrets["token"]
+
+            # Create webhook configuration
+            webhook_config = {
+                "url": callback_url,
+                "events": bitbucket_events,
+                "secret": secret_token,
+                "active": True,
+                "description": config.description or "DriverAI Webhook",
+            }
+
+            # Create webhook based on scope
+            if scope and scope.get("type") == "repository":
+                webhook_data = self.api_strategy.create_repository_webhook(
+                    workspace=installation.git_provider_app.name,
+                    repo_slug=scope["slug"],
+                    config=webhook_config,
+                    access_token=access_token,
+                )
+            else:
+                # Workspace-level webhook
+                webhook_data = self.api_strategy.create_workspace_webhook(
+                    workspace=installation.git_provider_app.name,
+                    config=webhook_config,
+                    access_token=access_token,
+                )
+
+            # Store webhook metadata
+            self._store_webhook_metadata(
+                installation,
+                {
+                    "webhook_id": webhook_data["uuid"],
+                    "callback_url": callback_url,
+                    "custom_headers": config.custom_headers,  # Stored for reference
+                    "ssl_verification": config.ssl_verification,
+                    "scope": scope,
+                },
+            )
+
+            logger.info(
+                f"Successfully registered webhook {webhook_data['uuid']} for installation {installation.id}"
+            )
+
+            return {
+                "id": webhook_data["uuid"],
+                "callback_url": callback_url,
+                "triggers": config.triggers,
+                "active": webhook_data["active"],
+                "created_at": webhook_data.get("created_at"),
+                "provider_specific": webhook_data,
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to register webhook: {e}")
+            raise
 
     def fetch_secrets_by_id(self, installation_id: str) -> dict:
         """Fetch secrets by installation ID"""
@@ -421,95 +405,141 @@ class BitbucketProvider(GitProviderInterface):
 
         return secret_value
 
-    def _handle_push_event(self, payload: dict, installation_id: str) -> dict:
-        """Handle push webhook event"""
-        push = payload.get("push", {})
-        repository = payload.get("repository", {})
+    # Private helper methods
+
+    def _handle_push_event(
+        self, body: dict, webhook_event_ctx: WebhookEventContext
+    ) -> dict:
+        """Handle Bitbucket push event - moved from routes"""
+        installation_id = webhook_event_ctx.installation_id
+        organization_id = webhook_event_ctx.organization_id
+
+        push = body.get("push", {})
+        repository = body.get("repository", {})
         changes = push.get("changes", [])
 
-        logger.info(
-            f"Push event for repository {repository.get('name')} with {len(changes)} changes"
-        )
+        # Extract repository info
+        repo_name = repository.get("name")
+        repo_id = repository.get("uuid")
+        workspace = repository["workspace"]["name"]
+        full_name = repository.get("full_name")
 
-        # Extract branch info from changes
-        branches = []
-        commits_count = 0
-
+        # Process all branch changes
         for change in changes:
             if change.get("new", {}).get("type") == "branch":
                 branch_name = change["new"]["name"]
-                branches.append(branch_name)
-                commits_count += len(change.get("commits", []))
+                commit_hash = change["new"]["target"]["hash"]
 
-        return {
-            "status": "processed",
-            "event": "push",
-            "repository": repository.get("name"),
-            "branches": branches,
-            "commits": commits_count,
-        }
+                # Get default branch from repository
+                default_branch = repository.get("mainbranch", {}).get("name", "main")
+
+                if branch_name != default_branch:
+                    logger.info(
+                        "Push event ignored: Not the default branch. Workspace: %s, Repo: %s, Branch: %s, Install ID: %s",
+                        workspace,
+                        repo_name,
+                        branch_name,
+                        installation_id,
+                    )
+                    continue
+
+                logger.info(
+                    "Push event on default branch. Workspace: %s, Repo: %s, Branch: %s, Install ID: %s",
+                    workspace,
+                    repo_name,
+                    branch_name,
+                    installation_id,
+                )
+
+                repos_pushed = [
+                    {
+                        "repo_id": repo_id,
+                        "repo_name": repo_name,
+                        "full_name": full_name,
+                        "commit": commit_hash,
+                        "metadata": {
+                            "workspace": workspace,
+                            "slug": repo_name,
+                        },
+                        "installation_id": installation_id,
+                        "latest_commit": {
+                            "id": commit_hash,
+                        },
+                    }
+                ]
+
+                handle_bitbucket_events = modal.Function.lookup(
+                    "inspector-v2",
+                    "handle_bitbucket_events",
+                    environment_name=settings.MODAL_ENVIRONMENT,
+                )
+                handle_bitbucket_events.spawn(
+                    installation_id,
+                    organization_id,
+                    [],
+                    [],
+                    repos_pushed,
+                )
+
+        return {"message": "Push event processed"}
 
     def _handle_pull_request_event(
-        self, payload: dict, installation_id: str, event_type: str
+        self, payload: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
         """Handle pull request webhook event"""
-        pullrequest = payload.get("pullrequest", {})
-        action = event_type.split(":")[-1]  # Extract action from event type
+        # TODO: Implement pull request event handling
+        # TODO: in push tech docs cancel open pull requests before creating new ones
+        return {"message": "Event ignored: pull request events not implemented"}
 
-        logger.info(f"Pull request event: {action} for PR {pullrequest.get('id')}")
-
-        return {
-            "status": "processed",
-            "event": "pull_request",
-            "action": action,
-            "pull_request_id": pullrequest.get("id"),
-            "title": pullrequest.get("title"),
+    def _map_triggers_to_events(self, triggers: list[str]) -> list[str]:
+        """Map generic triggers to Bitbucket-specific events"""
+        TRIGGER_MAP = {
+            "push events": "repo:push",
+            "pull request events": ["pullrequest:created", "pullrequest:updated"],
+            "merge events": "pullrequest:fulfilled",
+            "fork events": "repo:fork",
         }
 
-    def _handle_fork_event(self, payload: dict, installation_id: str) -> dict:
-        """Handle fork webhook event"""
-        repository = payload.get("repository", {})
-        fork = payload.get("fork", {})
+        events = []
+        for trigger in triggers:
+            # Use exact match if it's already a Bitbucket event
+            if trigger in [
+                "repo:push",
+                "pullrequest:created",
+                "pullrequest:updated",
+                "pullrequest:fulfilled",
+                "repo:fork",
+            ]:
+                events.append(trigger)
+            else:
+                # Map generic trigger
+                mapped = TRIGGER_MAP.get(trigger, trigger)
+                if isinstance(mapped, list):
+                    events.extend(mapped)
+                else:
+                    events.append(mapped)
 
-        logger.info(f"Fork event for repository {repository.get('name')}")
+        return list(set(events))  # Remove duplicates
 
-        return {
-            "status": "processed",
-            "event": "fork",
-            "original_repository": repository.get("name"),
-            "fork_name": fork.get("name"),
-            "fork_owner": fork.get("owner", {}).get("display_name"),
-        }
-
-    @property
-    def capabilities(self) -> GitProviderCapabilities:
-        """Get Bitbucket provider capabilities"""
-        return GitProviderCapabilities(
-            # Authentication
-            supports_oauth_flow=False,
-            supports_group_access_token=False,
-            supports_workspace_access_token=True,
-            supports_project_access_token=True,
-            supports_repository_access_token=True,
-            supports_personal_access_token=False,
-            # Repository operations
-            can_list_repositories=True,
-            can_clone_repository=True,
-            can_get_latest_commit=True,
-            can_create_pull_request=False,  # Not in provider interface
-            # Webhook support
-            supports_webhooks=True,
-            handles_push_events=True,
-            handles_merge_request_events=False,  # Uses pull request events instead
-            handles_tag_events=False,
-            handles_fork_events=True,
-            # Access control
-            supports_granular_permissions=True,  # Project/repo tokens provide granular access
-            supports_multiple_installations=True,
-            # API features
-            supports_pagination=True,  # Implemented in list_repositories
-            max_repos_per_fetch=100,
-            uses_git_clone=True,  # Uses actual git clone
-            # Provider info
-            api_version="2.0",  # Bitbucket API v2
-        )
+    # def _store_webhook_metadata(
+    #     self, installation: GitProviderAppInstallation, webhook_info: Dict[str, Any]
+    # ) -> None:
+    #     """Store webhook metadata in installation"""
+    #     from datetime import datetime
+    #
+    #     metadata = installation.misc_metadata or {}
+    #     webhooks = metadata.get("webhooks", [])
+    #
+    #     webhooks.append(
+    #         {
+    #             **webhook_info,
+    #             "created_at": datetime.utcnow().isoformat(),
+    #         }
+    #     )
+    #
+    #     metadata["webhooks"] = webhooks
+    #     # Note: In a real implementation, you would update the installation
+    #     # record in the database here
+    #     logger.info(
+    #         f"Stored webhook metadata for installation {installation.id}: {webhook_info['webhook_id']}"
+    #     )

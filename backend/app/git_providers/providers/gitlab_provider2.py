@@ -1,21 +1,24 @@
 import json
 import logging
+from typing import Any
 
+import modal
+from app.core.config import settings
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.interfaces.provider_interface import (
     GitProviderCapabilities,
     GitProviderInterface,
+    WebhookConfig,
+    WebhookEventContext,
 )
 from app.git_providers.interfaces.token_types import AccessTokenData, TokenType
 from app.git_providers.oauth.gitlab_oauth_strategy import GitLabOAuthStrategy
 from app.git_providers.resources.gitlab_resources import GitLabAPIResources
-from app.git_providers.utils.git_provider_utils import generate_codebase_metadata
 from app.schemas.git_provider_schema import GitProviderAppTokenSecret, GitRepository
 from app.schemas.secret_management_schema import (
     APP_INSTALL_GAT_NAME_PREFIX,
 )
 from database.models_v1 import GitProviderApp, GitProviderAppInstallation
-from shared.file_storage.aws_s3_client import AWSS3Client
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -51,6 +54,40 @@ class GitLabProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
 
         return cls(config, secrets_manager)
+
+    @property
+    def capabilities(self) -> GitProviderCapabilities:
+        """Get GitLab provider capabilities"""
+        return GitProviderCapabilities(
+            # Authentication
+            supports_oauth_flow=False,
+            supports_group_access_token=True,
+            supports_workspace_access_token=False,
+            supports_project_access_token=False,
+            supports_repository_access_token=False,
+            supports_personal_access_token=False,
+            # Repository operations
+            can_list_repositories=True,
+            can_clone_repository=True,
+            can_get_latest_commit=True,
+            can_create_pull_request=False,
+            # Webhook support
+            supports_webhooks=True,
+            can_register_webhooks=False,  # Not implemented yet
+            handles_push_events=True,
+            handles_merge_request_events=True,
+            handles_tag_events=True,
+            handles_fork_events=False,
+            # Access control
+            supports_granular_permissions=False,  # GAT gives access to all group repos
+            supports_multiple_installations=True,
+            # API features
+            supports_pagination=False,  # TODO comment indicates not implemented
+            max_repos_per_fetch=1000,  # get_all=True in GitLab API
+            uses_git_clone=False,  # Uses API download
+            # Provider info
+            api_version="v4",  # GitLab API v4
+        )
 
     # TODO: revisit this throw error vs return False
     def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
@@ -129,100 +166,39 @@ class GitLabProvider(GitProviderInterface):
             logger.error(f"Failed to fetch repositories: {e}")
             raise
 
-    def clone_repository(
-        self,
-        repo_info: GitRepository,
-        user_id: str,
-        org_id: str,
-        upload_key: str,
-        bucket_name: str,
-    ) -> str:
-        """Clone GitLab repository and upload to S3"""
-        logger.info(f"Cloning GitLab repository: {repo_info.repo_name}")
-
-        try:
-            # Get GAT
-            access_token = self._fetch_group_access_token(repo_info.installation_id)
-
-            # Get repository details
-            repo_id = repo_info.repo_id
-            latest_commit = (
-                repo_info.latest_commit.get("id") if repo_info.latest_commit else None
-            )
-
-            if not latest_commit:
-                logger.warning(
-                    f"No commit specified for {repo_info.repo_name}, fetching latest"
-                )
-                # Fetch latest commit from default branch
-                project = self.api_strategy.fetch_project(repo_id, access_token)
-                if project:
-                    latest_commit = project.get("default_branch", "main")
-
-            # Download repository
-            logger.info(f"Downloading repository {repo_id} at commit {latest_commit}")
-            zip_content = self.api_strategy.download_repo(
-                repo_id, latest_commit, access_token
-            )
-
-            # Generate metadata
-            metadata = generate_codebase_metadata(
-                org_id=org_id,
-                org_name=org_id,  # Could enhance to fetch actual org name
-                repo=repo_info.repo_name,
-                repo_id=repo_id,
-                owner=repo_info.metadata.get("namespace", {}).get("full_path", ""),
-                provider="gitlab",
-                commit=latest_commit,
-                upload_key=upload_key,
-            )
-
-            # Upload to S3
-            logger.info(f"Uploading repository to S3: {upload_key}")
-            s3_client = AWSS3Client(self.secrets_manager.aws_config)
-
-            upload_success = s3_client.upload_to_s3(
-                file_content=zip_content,
-                bucket_name=bucket_name,
-                s3_key=upload_key,
-                metadata_dict=metadata,
-            )
-
-            if not upload_success:
-                raise ValueError("Failed to upload repository to S3")
-
-            # Generate presigned URL
-            download_url = s3_client.generate_get_presigned_url(bucket_name, upload_key)
-            logger.info(f"Repository cloned successfully: {repo_info.repo_name}")
-
-            return download_url
-
-        except Exception as e:
-            logger.error(f"Failed to clone repository: {e}")
-            raise
-
-    def handle_webhook(
-        self, event_type: str, payload: dict, installation_id: str
+    def handle_webhook_event(
+        self, headers: dict, payload: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
         """Handle GitLab webhook events"""
+        installation_id = webhook_event_ctx.installation_id
+
+        event_type = payload["object_kind"]
         logger.info(
             f"Handling GitLab webhook: {event_type} for installation {installation_id}"
         )
+        incoming_secret_token = headers.get("x-gitlab-token")
 
-        try:
-            if event_type == "push":
-                return self._handle_push_event(payload, installation_id)
-            elif event_type == "merge_request":
-                return self._handle_merge_request_event(payload, installation_id)
-            elif event_type == "tag_push":
-                return self._handle_tag_push_event(payload, installation_id)
-            else:
-                logger.info(f"Ignoring GitLab event type: {event_type}")
-                return {"status": "ignored", "event": event_type}
+        # Validate secret
+        secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, installation_id)
+        secret = self.secrets_manager.read_secret(secret_key)
 
-        except Exception as e:
-            logger.error(f"Error handling webhook: {e}")
-            raise
+        if not secret.get("secret_token"):
+            logger.error(f"Secret not found for installation ID {installation_id}")
+            raise PermissionError("Insufficient permissions")
+
+        secret_token = secret["secret_token"]
+        if secret_token != incoming_secret_token:
+            logger.error(f"Secret token mismatch for installation ID {installation_id}")
+            raise PermissionError("Insufficient permissions")
+
+        if event_type == "push":
+            logger.info("GitLab push event")
+            return self._handle_push_event(payload, webhook_event_ctx)
+        else:
+            logger.warning(
+                f"Unhandled GitLab event type: {event_type} for installation {installation_id}"
+            )
+        return {"message": "Event ignored"}
 
     def revoke_access(self, installation: GitProviderAppInstallation) -> None:
         """Revoke access for a GitLab installation"""
@@ -234,6 +210,18 @@ class GitLabProvider(GitProviderInterface):
         )
         self.secrets_manager.delete_secret(secret_key)
         logger.info(f"Deleted GAT secret for installation {installation.id}")
+
+    def register_webhook(
+        self,
+        installation: GitProviderAppInstallation,
+        config: WebhookConfig,
+        scope: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Register webhook - not implemented for GitLab"""
+        raise NotImplementedError(
+            "Webhook registration is not yet implemented for GitLab. "
+            "Please create webhooks manually through the GitLab UI."
+        )
 
     # Private helper methods
 
@@ -247,89 +235,65 @@ class GitLabProvider(GitProviderInterface):
 
         return secret_value["token"]
 
-    def _handle_push_event(self, payload: dict, installation_id: str) -> dict:
-        """Handle push webhook event"""
-        project = payload.get("project", {})
-        commits = payload.get("commits", [])
-        ref = payload.get("ref", "")
+    def _handle_push_event(
+        self, body: dict, webhook_event_ctx: WebhookEventContext
+    ) -> dict:
+        """Handle GitLab push event - moved from routes"""
+
+        installation_id = webhook_event_ctx.installation_id
+        organization_id = webhook_event_ctx.organization_id
+
+        repository = body["repository"]
+        project = body["project"]
+        repo_name = repository["name"]
+        repo_id = str(project["id"])
+        full_name = project["path_with_namespace"]
+        default_branch = project["default_branch"]
+        pushed_ref = body["ref"]
+        commit_hash = body["after"]
+
+        if pushed_ref != f"refs/heads/{default_branch}":
+            logger.info(
+                "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                organization_id,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return {"message": "Push event ignored: Not the default branch."}
 
         logger.info(
-            f"Push event for project {project.get('name')} with {len(commits)} commits"
+            "Push event on default branch. Org: %s, Repo: %s, Branch: %s, Install ID: %s",
+            organization_id,
+            repo_name,
+            default_branch,
+            installation_id,
         )
 
-        # Extract branch name from ref
-        branch = (
-            ref.replace("refs/heads/", "") if ref.startswith("refs/heads/") else ref
+        repos_pushed = [
+            {
+                "id": repo_id,
+                "name": repo_name,
+                "repo_name": repo_name,
+                "full_name": full_name,
+                "commit": commit_hash,
+                "metadata": project,
+                "installation_id": installation_id,
+                "latest_commit": {
+                    "commit": {
+                        "id": commit_hash,
+                    },
+                },
+            }
+        ]
+        handle_gitlab_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_gitlab_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
         )
-
-        return {
-            "status": "processed",
-            "event": "push",
-            "project": project.get("name"),
-            "branch": branch,
-            "commits": len(commits),
-        }
-
-    def _handle_merge_request_event(self, payload: dict, installation_id: str) -> dict:
-        """Handle merge request webhook event"""
-        merge_request = payload.get("merge_request", {})
-        action = payload.get("object_attributes", {}).get("action")
-
-        logger.info(f"Merge request event: {action} for MR {merge_request.get('iid')}")
-
-        return {
-            "status": "processed",
-            "event": "merge_request",
-            "action": action,
-            "merge_request_id": merge_request.get("iid"),
-        }
-
-    def _handle_tag_push_event(self, payload: dict, installation_id: str) -> dict:
-        """Handle tag push webhook event"""
-        project = payload.get("project", {})
-        ref = payload.get("ref", "")
-
-        # Extract tag name from ref
-        tag = ref.replace("refs/tags/", "") if ref.startswith("refs/tags/") else ref
-
-        logger.info(f"Tag push event for project {project.get('name')}: {tag}")
-
-        return {
-            "status": "processed",
-            "event": "tag_push",
-            "project": project.get("name"),
-            "tag": tag,
-        }
-
-    @property
-    def capabilities(self) -> GitProviderCapabilities:
-        """Get GitLab provider capabilities"""
-        return GitProviderCapabilities(
-            # Authentication
-            supports_oauth_flow=False,
-            supports_group_access_token=True,
-            supports_workspace_access_token=False,
-            supports_project_access_token=False,
-            supports_repository_access_token=False,
-            supports_personal_access_token=False,
-            # Repository operations
-            can_list_repositories=True,
-            can_clone_repository=True,
-            can_get_latest_commit=True,
-            can_create_pull_request=False,
-            # Webhook support
-            supports_webhooks=True,
-            handles_push_events=True,
-            handles_merge_request_events=True,
-            handles_tag_events=True,
-            handles_fork_events=False,
-            # Access control
-            supports_granular_permissions=False,  # GAT gives access to all group repos
-            supports_multiple_installations=True,
-            # API features
-            supports_pagination=False,  # TODO comment indicates not implemented
-            max_repos_per_fetch=1000,  # get_all=True in GitLab API
-            uses_git_clone=False,  # Uses API download
-            # Provider info
-            api_version="v4",  # GitLab API v4
+        handle_gitlab_events.spawn(
+            installation_id, organization_id, [], [], repos_pushed
         )
+        return {
+            "message": "Push event processed successfully.",
+        }

@@ -21,6 +21,7 @@ pymupdf4llm = "0.0.17"
 google-genai = "^1.9.0"
 shared = {path = "../../packages/shared", develop = true}
 aiolimiter = "^1.2.1"
+auto-toml = {path = "../auto_toml", develop = true}
 
 [build-system]
 requires = ["poetry-core"]

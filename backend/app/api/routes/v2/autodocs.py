@@ -1,3 +1,4 @@
+from enum import StrEnum
 from uuid import UUID
 
 import modal
@@ -10,7 +11,7 @@ from database.models_v2_enums import (
     VersionStatus,
 )
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -23,21 +24,56 @@ from app.core.config import settings
 router = APIRouter()
 
 
+class AutoDocSize(StrEnum):
+    SHORT = "SHORT"
+    MEDIUM = "MEDIUM"
+    LONG = "LONG"
+    UNBOUND = "UNBOUND"
+
+
 class AutoDocRequest(BaseModel):
     page_id: UUID
     config_kind: AutoDocConfigKind
+    document_goal: str | None = None
+    autodoc_size: AutoDocSize | None = None
+
+    @model_validator(mode="after")
+    def validate(self) -> "AutoDocRequest":
+        if self.config_kind == AutoDocConfigKind.FROM_DOCUMENT_GOAL:
+            if not self.document_goal:
+                raise ValueError(
+                    "document_goal is required when config_kind is FROM_DOCUMENT_GOAL"
+                )
+            if not self.autodoc_size:
+                raise ValueError(
+                    "autodoc_size is required when config_kind is FROM_DOCUMENT_GOAL"
+                )
+        return self
 
 
 class AutoDocCancelRequest(BaseModel):
     page_id: UUID
 
 
-class AutoDocResponse(BaseModel):
-    status: AutoDocStatusHistory
-
-
 class AutoDocCancelResponse(BaseModel):
     status: str
+
+
+def _autodoc_size_to_user_context(autodoc_size: AutoDocSize) -> str:
+    USER_CONTEXT_BASE = "The final TOML configuration file shall include the minimum number of sections required to adequately fulfil the document goal."
+
+    if autodoc_size == AutoDocSize.UNBOUND:
+        return USER_CONTEXT_BASE
+
+    match autodoc_size:
+        case AutoDocSize.SHORT:
+            section_range = (1, 3)
+        case AutoDocSize.MEDIUM:
+            section_range = (4, 6)
+        case AutoDocSize.LONG:
+            section_range = (7, 10)
+
+    return f"{USER_CONTEXT_BASE}  It should include a minimum of {section_range[0]} sections and no more than {section_range[1]} sections."
 
 
 @router.post(
@@ -104,7 +140,11 @@ def run_autodoc(
                         detail="Tune sources to only include at most a single driver and single project subfolder",
                     )
 
-        case AutoDocConfigKind.ARCHITECTURE:
+        case (
+            AutoDocConfigKind.ARCHITECTURE
+            | AutoDocConfigKind.CUSTOM
+            | AutoDocConfigKind.FROM_DOCUMENT_GOAL
+        ):
             code_node_count = 0
             for document_source in document_sources:
                 if (
@@ -115,20 +155,7 @@ def run_autodoc(
             if code_node_count == 0:
                 raise HTTPException(
                     status_code=400,
-                    detail="Architecture Overview requires at least one codebase source tuned",
-                )
-        case AutoDocConfigKind.CUSTOM:
-            code_node_count = 0
-            for document_source in document_sources:
-                if (
-                    document_source.source_node.version.primary_asset.kind
-                    == PrimaryAssetKind.CODEBASE
-                ):
-                    code_node_count += 1
-            if code_node_count == 0:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Custom Overview requires at least one codebase source tuned",
+                    detail="Sources must include at least one codebase.",
                 )
 
         case _:
@@ -148,6 +175,10 @@ def run_autodoc(
     call = run_autodoc.spawn(
         page_node_id=str(input.page_id),
         config_kind=input.config_kind,
+        document_goal=input.document_goal,
+        user_context=_autodoc_size_to_user_context(input.autodoc_size)
+        if input.autodoc_size
+        else None,
     )
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,

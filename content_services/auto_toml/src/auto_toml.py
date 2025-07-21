@@ -11,9 +11,6 @@ import tiktoken
 import toml
 from aiolimiter import AsyncLimiter
 from chat_openai import ChatOpenAI
-from database.db import get_session
-from database.models_v1 import DerivedContent, DocumentSource
-from database.models_v2 import Node
 from database.models_v2_enums import ContentKind, NodeKind
 from logger import logger
 from prompts import (
@@ -75,6 +72,9 @@ class AutoToml:
 
     @classmethod
     def from_page_id(cls, page_id: UUID, enable_auto_scaling: bool) -> Self:
+        from database.db import get_session
+        from database.models_v1 import DocumentSource
+
         logger.info(f"Fetching document sources for page ID: {page_id}\n")
         with get_session() as session:
             document_sources = session.exec(
@@ -203,8 +203,9 @@ class AutoToml:
     async def _generate_summary(
         self, path: str, system_prompt: str, user_prompt: str
     ) -> str:
-        async with asyncio.Semaphore(self.MAX_CONCURRENT_SUMMARIES), AsyncLimiter(
-            self.REQUESTS_PER_SECOND, 1
+        async with (
+            asyncio.Semaphore(self.MAX_CONCURRENT_SUMMARIES),
+            AsyncLimiter(self.REQUESTS_PER_SECOND, 1),
         ):
             try:
                 summary = await self.llm.generate_response(
@@ -375,6 +376,10 @@ class AutoToml:
 
     @classmethod
     def _get_source_stats(cls, node_ids: list[str]) -> SourceStats:
+        from database.db import get_session
+        from database.models_v1 import DerivedContent
+        from database.models_v2 import Node
+
         with get_session() as session:
             nodes_query = select(Node).where(Node.id.in_(node_ids))
             nodes = session.exec(nodes_query).all()
@@ -465,6 +470,8 @@ class AutoToml:
 
     @classmethod
     def _build_path_conditions(cls, directory_nodes: list["AutoToml.NodeInfo"]) -> list:
+        from database.models_v2 import Node
+
         path_conditions = []
         for dir_node in directory_nodes:
             path_conditions.append(
@@ -477,6 +484,10 @@ class AutoToml:
     def _get_file_and_pdf_content(
         cls, stats: SourceStats
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        from database.db import get_session
+        from database.models_v1 import DerivedContent
+        from database.models_v2 import Node
+
         with get_session() as session:
             code_contents = []
             pdf_contents = []
@@ -554,6 +565,10 @@ class AutoToml:
     def _get_directory_and_pdf_content(
         cls, stats: SourceStats
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        from database.db import get_session
+        from database.models_v1 import DerivedContent
+        from database.models_v2 import Node
+
         with get_session() as session:
             pdf_nodes = stats.pdf_nodes or []
             directory_nodes = stats.directory_nodes or []

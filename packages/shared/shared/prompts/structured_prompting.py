@@ -103,6 +103,12 @@ NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE = Component(
 )
 
 
+DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB = Component(
+    string="""This will be part of technical documentation. At the start of your output, identify the kind or category of thing you are describing followed by an action verb or more broadly the content that is relevant. Here is an example for if you are asked to document something about a whole codebase. The concept of more information dense description applies to other things you may be asked to document: For example, if you are describing a codebase as a whole that is clearly a library, you would start with something like "A library that implements ..." or if it is clearly a web application, then you would start with something like "A web application for ...". The key point is to **not** just state that it is a codebase or repo (e.g., not start with "A codebase that ..."), but to provide more information immediately by stating what **kind** of code.
+    """
+)
+
+
 NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE = Component(
     string="""This will be part of technical documentation for the source metadata content. In your output, do not refer to the fact that this content was provided to you in any way. For example, **do not** start off with something like "The provided configuration file..." Just start explaining the purpose of the content directly as you would find in typical, high quality technical documentation. So you might start out with "This configuration file ..." or even better, no reference to "this configuration file" is needed so you immediately start describing the purpose/functionality. As another example, prefer language like "This configuration file sets ..." instead of "The configuration file sets ..." which is more natural for documentation explicitly associated with a particular file, which is what you are building.
 """

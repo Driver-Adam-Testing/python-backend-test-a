@@ -40,7 +40,7 @@ class HybridSearchTool(LlmTool):
         embedded_query: list[float] = batch_embed_text([self.search_query])[0]
 
         with get_session() as session:
-            results = session.exec(
+            stmt = (
                 select(
                     ChunkAndEmbedding,
                     ChunkAndEmbedding.text_embedding_3_small.l2_distance(
@@ -56,8 +56,10 @@ class HybridSearchTool(LlmTool):
                     )
                 )
                 .order_by("semantic_score")
-                .limit(50)
-            ).all()
+                .limit(40)
+            )
+
+            results = session.exec(stmt).all()
 
             if not results:
                 return
@@ -134,10 +136,3 @@ class HybridSearchTool(LlmTool):
                 id=self.tool_call_id or None, name="HybridSearchTool"
             ),
         )
-
-    @property
-    def status(self) -> LlmTool.LlmToolStatusString:
-        if self._references:
-            unique_short_paths = {ref.short_path for ref in self.references}
-            return f"Found references for {self.search_query}\n{"\n".join(unique_short_paths)}"
-        return f"Searching: {self.search_query}...\n"

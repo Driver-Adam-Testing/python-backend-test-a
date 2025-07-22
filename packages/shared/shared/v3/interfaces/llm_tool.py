@@ -33,7 +33,7 @@ class LlmTool(LlmParseable, ABC):
 
     _references: ReferenceSet = ReferenceSet(references=[])
     _error_message: str | None = None
-    one_sentence_rationale_for_calling_the_tool: str | None = None
+    one_sentence_first_person_rationale_for_calling_the_tool: str | None = None
 
     @property
     def tool_call_id(self) -> str | None:
@@ -50,10 +50,6 @@ class LlmTool(LlmParseable, ABC):
     @property
     def error_message(self) -> str | None:
         return self._error_message
-
-    @property
-    def status(self) -> LlmToolStatusString:
-        return f"Tool called: {self.__class__.__name__}\n"
 
     def execute(
         self,
@@ -154,3 +150,12 @@ class LlmTool(LlmParseable, ABC):
             ),
             message_kind=MessageKind.PARSING_DESCRIPTION,
         )
+
+    @property
+    def status(self) -> LlmToolStatusString:
+        if self._references:
+            unique_short_paths = {ref.short_path for ref in self.references}
+            return f"References: \n{"\n".join(unique_short_paths)}"
+        if self.one_sentence_first_person_rationale_for_calling_the_tool:
+            return self.one_sentence_first_person_rationale_for_calling_the_tool
+        return f"Tool called: {self.__class__.__name__}"

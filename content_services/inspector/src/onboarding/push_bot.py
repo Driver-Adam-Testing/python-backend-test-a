@@ -48,7 +48,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     from database.db import engine
     from database.models_v1 import GitProviderAppInstallation
-    from onboarding import gh_ops, gitlab_ops, bitbucket_ops
+    from onboarding import bitbucket_ops, gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
@@ -65,18 +65,23 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     is_github = version.primary_asset.installation_id is None
     is_bitbucket = False
-    
+
     # Check if it's a Bitbucket installation
     if not is_github and version.primary_asset.installation_id:
         with Session(engine) as session:
             installation = session.exec(
                 select(GitProviderAppInstallation).where(
-                    GitProviderAppInstallation.id == version.primary_asset.installation_id
+                    GitProviderAppInstallation.id
+                    == version.primary_asset.installation_id
                 )
             ).first()
             if installation and installation.git_provider_app:
                 from database.models_v1 import GitProviderKind
-                is_bitbucket = installation.git_provider_app.provider_kind == GitProviderKind.BITBUCKET
+
+                is_bitbucket = (
+                    installation.git_provider_app.provider_kind
+                    == GitProviderKind.BITBUCKET
+                )
 
     with (
         tempfile.TemporaryDirectory() as temp_dir,
@@ -162,18 +167,22 @@ async def push_docs(version_id: uuid.UUID) -> None:
         elif is_bitbucket:
             # Check for and close existing bot PRs before creating a new one
             print("Checking for existing bot pull requests...")
-            
+
             # Define bot constants
             BOT_NAME = "docs-bot"
-            BOT_EMAIL = "bot@example.com"
-            
+            BOT_EMAIL = "bot@driverai.com"
+
             try:
                 # Get list of open pull requests
-                existing_prs = bitbucket_ops.list_pull_requests(workspace, repo_slug, access_token)
-                
+                existing_prs = bitbucket_ops.list_pull_requests(
+                    workspace, repo_slug, access_token
+                )
+
                 for pr in existing_prs:
-                    source_branch = pr.get("source", {}).get("branch", {}).get("name", "")
-                    
+                    source_branch = (
+                        pr.get("source", {}).get("branch", {}).get("name", "")
+                    )
+
                     # Check if PR is from a docs_* branch (bot pattern)
                     if source_branch.startswith("docs_"):
                         # Further verify by checking commits
@@ -182,36 +191,40 @@ async def push_docs(version_id: uuid.UUID) -> None:
                             commits = bitbucket_ops.get_pull_request_commits(
                                 workspace, repo_slug, pr_id, access_token
                             )
-                            
+
                             # Check if any commit is authored by the bot
                             is_bot_pr = False
                             for commit in commits:
                                 author = commit.get("author", {})
                                 raw_author = author.get("raw", "")
-                                
+
                                 # Check if bot email or name is in the author string
                                 if BOT_EMAIL in raw_author or BOT_NAME in raw_author:
                                     is_bot_pr = True
                                     break
-                            
+
                             # Close the PR if it's from the same branch and authored by bot
                             if is_bot_pr:
                                 try:
                                     bitbucket_ops.close_pull_request(
                                         workspace, repo_slug, pr_id, access_token
                                     )
-                                    print(f"Closed existing bot PR #{pr_id} from branch {branch}")
+                                    print(
+                                        f"Closed existing bot PR #{pr_id} from branch {branch}"
+                                    )
                                 except Exception as close_error:
                                     # Log but don't fail if we can't close the PR
-                                    print(f"Warning: Could not close PR #{pr_id}: {close_error}")
-                                
+                                    print(
+                                        f"Warning: Could not close PR #{pr_id}: {close_error}"
+                                    )
+
                         except Exception as e:
                             print(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
-                            
+
             except Exception as e:
                 print(f"Error listing pull requests: {e}")
                 # Continue with PR creation even if listing fails
-            
+
             # Create a pull request after successful push
             bitbucket_ops.create_pull_request(
                 workspace, repo_slug, access_token, branch, commit_slug
@@ -253,7 +266,6 @@ def download_file_from_s3(
 
 def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> str:
     return f"driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip"
-
 
 
 if __name__ == "__main__":

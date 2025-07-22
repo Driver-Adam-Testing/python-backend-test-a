@@ -7,7 +7,10 @@ from urllib.parse import parse_qs, urlparse
 from database.config import settings
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
-from logger import logger
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 external_ip = "nopublic"
 try:

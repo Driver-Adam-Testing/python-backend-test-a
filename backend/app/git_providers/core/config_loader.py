@@ -23,13 +23,11 @@ def load_provider_config(
             user_endpoint="api/v4/user",
         )
     elif app.provider_kind == GitProviderKind.BITBUCKET:
-        # Bitbucket with WAT doesn't need OAuth endpoints
         return GitProviderConfig(
             application_id=app.id,
             name=app.name,
             provider_kind=app.provider_kind,
             base_url="https://bitbucket.org",
-            # No OAuth configuration needed for WAT-only approach
             client_id=None,
             client_secret=None,
             redirect_uri=None,

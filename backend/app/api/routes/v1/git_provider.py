@@ -36,7 +36,7 @@ from app.api.auth import (
 )
 from app.api.session import CurrentSession
 from app.core.config import settings
-from app.git_providers.interfaces.token_types import AccessTokenData
+from app.schemas.git_provider_schema import AccessTokenData
 from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
 )
@@ -50,7 +50,6 @@ from app.repositories.github_app_installations_repository import (
 from app.schemas.git_provider_schema import (
     CreateGitProviderAppRequest,
     GitRepository,
-    GroupAccessToken,
     WebhookInfo,
 )
 from app.services.git_provider_service import get_git_provider_service
@@ -83,7 +82,6 @@ class OkResponse(BaseModel):
 
 
 #### APP ###
-# ✅
 @router.get(
     "/app",
     summary="Get git provider apps",
@@ -94,11 +92,9 @@ def get_apps(
     session: CurrentSession,
     current_user: UserToken,
 ) -> list[GitProviderApp]:
-    # ✅
     return provider_service.list_apps(session, current_user.organization_id)
 
 
-# ✅
 @router.post(
     "/app",
     summary="Create git provider app.",
@@ -109,11 +105,9 @@ def create_app(
     session: CurrentSession,
     gp_app_input: CreateGitProviderAppRequest,
 ) -> GitProviderApp:
-    # ✅
     return provider_service.create_app(session, gp_app_input.model_dump(by_alias=True))
 
 
-# ✅
 @router.delete(
     "/app/{application_id}",
     summary="Delete git provider app.",
@@ -124,7 +118,6 @@ def delete_git_provider_app(
     current_user: UserToken,
     application_id: str,
 ) -> JSONResponse:
-    # ✅
     provider_service.delete_app(session, current_user.organization_id, application_id)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -151,7 +144,6 @@ def get_app_installation(
     )
 
 
-# ✅
 @router.post(
     "/app/{application_id}/token",
     summary="Add access token to the app.",
@@ -180,7 +172,6 @@ def add_access_token(
         raise HTTPException(status_code=500, detail="Invalid token")
 
 
-# ✅
 @router.get(
     "/app/{application_id}/installations/{installation_id}/webhook",
     dependencies=[OrgManagerPermission],
@@ -202,7 +193,6 @@ def get_app_installation_webhook_info(
     return webhook_info
 
 
-# ❌
 @router.delete(
     "/app/{application_id}/installations/{installation_id}",
     dependencies=[OrgManagerPermission],
@@ -223,7 +213,6 @@ def delete_app_installation(
     )
 
 
-# ✅
 @router.get(
     "/app/{application_id}/repos/{installation_id}",
     dependencies=[OrgManagerPermission],
@@ -248,7 +237,6 @@ def get_repositories_by_installation_id(
         raise HTTPException(status_code=500, detail="Invalid Token")
 
 
-# ❌
 @router.put(
     "/app/{application_id}/repos/{installation_id}/token",
     dependencies=[OrgManagerPermission],
@@ -258,9 +246,7 @@ def update_git_provider_group_access_token(
     current_user: UserToken,
     application_id: str,
     installation_id: str,
-    new_gat: GroupAccessToken = Body(
-        ...
-    ),  # TODO: Update this to use new AccessToken model
+    new_gat: AccessTokenData,
 ) -> JSONResponse:
     try:
         provider_service.update_access_token(
@@ -718,7 +704,6 @@ def webhook(
     )
 
 
-# ❌
 @router.post("/app/webhook")
 def git_provider_webhook(
     session: CurrentSession,

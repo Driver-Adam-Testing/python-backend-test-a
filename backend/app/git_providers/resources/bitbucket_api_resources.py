@@ -51,54 +51,7 @@ class BitbucketAPIResources:
         except Exception as e:
             return False, f"Connection error: {e!s}"
 
-    # def validate_project_access(self, workspace: str, project_key: str,
-    #                             access_token: str) -> Tuple[bool, str]:
-    #     """Validate Project Access Token"""
-    #     try:
-    #         headers = {"Authorization": f"Bearer {access_token}"}
-    #         # Try to access the project
-    #         url = f"{self.api_base}/workspaces/{workspace}/projects/{project_key}"
-    #
-    #         with httpx.Client() as client:
-    #             response = client.get(url, headers=headers)
-    #
-    #             if response.status_code == 200:
-    #                 return True, "Valid project access token"
-    #             elif response.status_code == 401:
-    #                 return False, "Invalid token or insufficient permissions"
-    #             elif response.status_code == 404:
-    #                 return False, f"Project '{project_key}' not found or no access"
-    #             else:
-    #                 return False, f"Unexpected error: {response.status_code}"
-    #
-    #     except Exception as e:
-    #         return False, f"Connection error: {str(e)}"
-    #
-    # def validate_repository_access(self, workspace: str, repo_slug: str,
-    #                                access_token: str) -> Tuple[bool, str]:
-    #     """Validate Repository Access Token"""
-    #     try:
-    #         headers = {"Authorization": f"Bearer {access_token}"}
-    #         # Try to access the specific repository
-    #         url = f"{self.api_base}/repositories/{workspace}/{repo_slug}"
-    #
-    #         with httpx.Client() as client:
-    #             response = client.get(url, headers=headers)
-    #
-    #             if response.status_code == 200:
-    #                 return True, "Valid repository access token"
-    #             elif response.status_code == 401:
-    #                 return False, "Invalid token or insufficient permissions"
-    #             elif response.status_code == 404:
-    #                 return False, f"Repository '{repo_slug}' not found or no access"
-    #             else:
-    #                 return False, f"Unexpected error: {response.status_code}"
-    #
-    #     except Exception as e:
-    #         return False, f"Connection error: {str(e)}"
-
     def list_repositories(self, workspace: str, access_token: str) -> list[dict]:
-        """List repositories in workspace using WAT"""
         headers = {"Authorization": f"Bearer {access_token}"}
         repos = []
 
@@ -129,12 +82,10 @@ class BitbucketAPIResources:
     def list_project_repositories(
         self, workspace: str, project_key: str, access_token: str
     ) -> list[dict]:
-        """List all repositories in a project"""
         headers = {"Authorization": f"Bearer {access_token}"}
         repos = []
 
         try:
-            # Use query parameter to filter by project
             url = f"{self.api_base}/repositories/{workspace}"
             params = {"pagelen": 100, "q": f'project.key="{project_key}"'}
 
@@ -165,7 +116,6 @@ class BitbucketAPIResources:
     def get_repository(
         self, workspace: str, repo_slug: str, access_token: str
     ) -> dict | None:
-        """Get a single repository"""
         headers = {"Authorization": f"Bearer {access_token}"}
 
         try:
@@ -223,7 +173,6 @@ class BitbucketAPIResources:
             repo_path = Path(temp_dir) / repo_slug
 
             # Clone URL with x-token-auth and the access token
-            # Format: https://x-token-auth:{token}@bitbucket.org/{workspace}/{repo_slug}.git
             clone_url = f"https://x-token-auth:{access_token}@bitbucket.org/{workspace}/{repo_slug}.git"
 
             try:
@@ -269,7 +218,7 @@ class BitbucketAPIResources:
                     # Try fetching all commits
                     logger.info("Fetching all commits and trying again...")
 
-                    fetch_result = subprocess.run(
+                    subprocess.run(
                         ["git", "fetch", "--unshallow"],
                         cwd=str(repo_path),
                         capture_output=True,

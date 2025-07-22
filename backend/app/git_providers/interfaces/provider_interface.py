@@ -8,45 +8,6 @@ from shared.interfaces.aws_client_config import AWSClientConfig
 
 
 @dataclass
-class GitProviderCapabilities:
-    """Actual capabilities of a git provider implementation"""
-
-    # Authentication
-    supports_oauth_flow: bool = False
-    supports_group_access_token: bool = False  # GitLab GAT
-    supports_workspace_access_token: bool = False  # Bitbucket WAT
-    supports_project_access_token: bool = False  # Bitbucket Project token
-    supports_repository_access_token: bool = False  # Bitbucket Repo token
-    supports_personal_access_token: bool = False
-
-    # Repository operations
-    can_list_repositories: bool = True
-    can_clone_repository: bool = True
-    can_get_latest_commit: bool = True
-    can_create_pull_request: bool = False  # Not in provider interface
-
-    # Webhook support
-    supports_webhooks: bool = True
-    can_register_webhooks: bool = False  # Can programmatically register webhooks
-    handles_push_events: bool = True
-    handles_merge_request_events: bool = True
-    handles_tag_events: bool = True
-    handles_fork_events: bool = False
-
-    # Access control
-    supports_granular_permissions: bool = False  # Both use org-wide tokens
-    supports_multiple_installations: bool = True
-
-    # API features
-    supports_pagination: bool = False
-    max_repos_per_fetch: int = 100
-    uses_git_clone: bool = False  # vs API download
-
-    # Provider info
-    api_version: str = "v1"
-
-
-@dataclass
 class WebhookConfig:
     """Generic webhook configuration"""
 
@@ -120,6 +81,20 @@ class GitProviderInterface(ABC):
             token_data: Provider-specific token data
         """
 
+    def update_secrets(
+        self, installation: GitProviderAppInstallation, token_data: dict
+    ) -> None:
+        """Update access token while preserving other secrets like webhook tokens
+
+        Args:
+            installation: The installation record
+            token_data: Provider-specific token data containing new access token
+        
+        Note: Default implementation calls store_secrets for backward compatibility.
+              Providers should override this to preserve webhook secrets.
+        """
+        self.store_secrets(installation, token_data)
+
     @abstractmethod
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
         """Fetch stored secrets for an installation
@@ -182,15 +157,6 @@ class GitProviderInterface(ABC):
 
         Args:
             installation: The installation to revoke
-        """
-
-    @property
-    @abstractmethod
-    def capabilities(self) -> GitProviderCapabilities:
-        """Get provider capabilities
-
-        Returns:
-            GitProviderCapabilities instance describing what this provider supports
         """
 
     @abstractmethod

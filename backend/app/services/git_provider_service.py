@@ -17,8 +17,8 @@ from app.git_providers.interfaces.provider_interface import (
     GitProviderInterface,
     WebhookEventContext,
 )
-from app.git_providers.providers.bitbucket_provider2 import BitbucketProvider
-from app.git_providers.providers.gitlab_provider2 import GitLabProvider
+from app.git_providers.providers.bitbucket_provider import BitbucketProvider
+from app.git_providers.providers.gitlab_provider import GitLabProvider
 from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
     GitProviderAppRevokeError,
@@ -182,8 +182,8 @@ class GitProviderService:
             if not is_valid:
                 raise GitProviderAccessTokenError(error or "Invalid access token")
 
-            # Update secrets
-            provider.store_secrets(installation, token_data)
+            # Update secrets while preserving webhook secret
+            provider.update_secrets(installation, token_data)
 
             logger.info(f"Updated access token for installation {installation_id}")
             return installation

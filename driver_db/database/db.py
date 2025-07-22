@@ -10,7 +10,7 @@ from sqlmodel import Session, create_engine
 
 external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
 app_name = "pback-" + external_ip
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True, application_name=app_name)
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True, connect_kwargs={'application_name':app_name})
 
 
 @contextmanager
@@ -68,13 +68,13 @@ if settings.ASYNC_DATABASE_URL:
             "statement_cache_size": 0,
             "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
             "prepared_statement_cache_size": 0,
+            "server_settings": {"application_name":"as" + app_name}
         },  # Disable prepared statements for PgBouncer compatibility,
         # Verify these below are good values
         future=True,
         pool_size=20,
         max_overflow=10,
-        pool_pre_ping=True,
-        application_name="as" + app_name
+        pool_pre_ping=True  
     )
 
 

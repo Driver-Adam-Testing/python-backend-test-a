@@ -195,7 +195,7 @@ Your job is to decide, from this list of candidates, which are the top {n} entry
 
 Your output will be a list of finalized entry points with three pieces of information for each of your choice of finalized entry points:
 - The path of the file. This is stated in the report information given to you.
-- A terse single single sentence. Do not recapitulate the name of the file or the fact that this is an entry point. Be direct and terse in describing why this is an entry point. If applicable and important, however, name a particular component of the file (e.g., the `main` function) that represents the entry point in particular.
+- A terse single single sentence. Do not recapitulate the name of the file or the fact that this is an entry point. Be direct and terse in describing why this is an entry point. If applicable and important, however, name a particular component of the file (e.g., the `main` function) that represents the entry point in particular. Otherwise, if the file as a whole is the entry point, either just lead with an action word describing the nature of the entry point. For example: "Initializes ...", "Configures ...", "Defines ..." not "The file initializes ...", "It configures ...", "This file defines ...". Alternatively, you can start with "A script that ..." or "A module that ..." if you can identify the kind of file effectively. Prefer starting any such description with "A" rather than "The" or "This".
 - Your rationale and justification for why this is a critical and clear entry point for the codebase in no more than one paragraph.
 """
 

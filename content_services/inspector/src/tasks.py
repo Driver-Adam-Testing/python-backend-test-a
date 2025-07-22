@@ -516,6 +516,7 @@ class CodebaseTaggingTask(Task):
             content_kinds_to_compute = required_content_kinds
             existing_tags = {}
 
+        content_kinds_to_compute = required_content_kinds
         if len(content_kinds_to_compute) == 0:
             # collect existing content and return
             return TaskResult(

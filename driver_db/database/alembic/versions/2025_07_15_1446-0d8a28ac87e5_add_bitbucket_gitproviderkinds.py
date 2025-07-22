@@ -24,9 +24,9 @@ def upgrade() -> None:
         sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     )
     # ### end Alembic commands ###
-    op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET'")
-    op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_DATA_CENTER'")
-    op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_SERVER'")
+    # op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET'")
+    # op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_DATA_CENTER'")
+    # op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_SERVER'")
 
 
 def downgrade() -> None:

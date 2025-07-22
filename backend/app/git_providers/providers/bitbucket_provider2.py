@@ -458,6 +458,8 @@ class BitbucketProvider(GitProviderInterface):
                         "full_name": full_name,
                         "commit": commit_hash,
                         "metadata": {
+                            "id": repo_id,  # Add the repo UUID to metadata
+                            "uuid": repo_id,  # Also add as uuid for compatibility
                             "workspace": workspace,
                             "slug": repo_name,
                         },
@@ -465,6 +467,7 @@ class BitbucketProvider(GitProviderInterface):
                         "latest_commit": {
                             "id": commit_hash,
                         },
+                        "workspace": workspace,  # Add workspace at top level too
                     }
                 ]
 

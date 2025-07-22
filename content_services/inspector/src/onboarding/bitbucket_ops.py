@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 from datetime import UTC, datetime
 from uuid import UUID
@@ -7,6 +8,13 @@ from uuid import UUID
 import modal
 import requests
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
+from onboarding.vcs_utils import (
+    AuthorInfo,
+    BranchInfo,
+    CommitInfo,
+    RepoInfo,
+    VersionControlInfo,
+)
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -14,6 +22,8 @@ from shared.secret_management.aws_secret_management import (
 )
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_access_token(installation_id: str) -> str:
@@ -182,6 +192,62 @@ def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
     raise ValueError("No commits found")
 
 
+def fetch_vcs_info(
+    workspace: str, repo_slug: str, access_token: str, commit_sha: str
+) -> VersionControlInfo:
+    """Fetch version control information from Bitbucket API"""
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    # Fetch repository information
+    repo_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
+    repo_response = requests.get(repo_url, headers=headers)
+    repo_response.raise_for_status()
+    repo_data = repo_response.json()
+    logger.info(
+        f"Repo information retrieved from Bitbucket API (status code {repo_response.status_code}): {repo_data}"
+    )
+    
+    default_branch = repo_data.get("mainbranch", {}).get("name", "main")
+    
+    # Fetch detailed commit information
+    commit_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commit/{commit_sha}"
+    commit_response = requests.get(commit_url, headers=headers)
+    commit_response.raise_for_status()
+    commit_data = commit_response.json()
+    logger.info(
+        f"Commit data retrieved from Bitbucket API (status code {commit_response.status_code}): {commit_data}"
+    )
+    
+    # Build VersionControlInfo
+    author_info = AuthorInfo(
+        email=commit_data.get("author", {}).get("raw", "").split("<")[-1].rstrip(">") if "<" in commit_data.get("author", {}).get("raw", "") else "",
+        name=commit_data.get("author", {}).get("raw", "").split("<")[0].strip() if "<" in commit_data.get("author", {}).get("raw", "") else commit_data.get("author", {}).get("raw", ""),
+        date=commit_data.get("date", ""),
+    )
+    
+    commit_info = CommitInfo(
+        sha=commit_data.get("hash", ""),
+        message=commit_data.get("message", ""),
+        url=commit_data.get("links", {}).get("html", {}).get("href", ""),
+        author=author_info,
+    )
+    
+    branch_info = BranchInfo(name=default_branch)
+    
+    repo_info = RepoInfo(
+        name=repo_data.get("name", ""),
+        namespace=workspace,
+        full_name=repo_data.get("full_name", ""),
+        url=repo_data.get("links", {}).get("html", {}).get("href", ""),
+    )
+    
+    return VersionControlInfo(
+        repository=repo_info,
+        commit=commit_info,
+        branch=branch_info,
+    )
+
+
 def generate_codebase_metadata(
     org_id: str,
     workspace: str,
@@ -224,6 +290,7 @@ def download_and_upload_repo(
     )
     from database.models_v2_enums import (
         PrimaryAssetKind,
+        PrimaryAssetProvider,
         VersionStatus,
     )
     from sqlalchemy.exc import IntegrityError
@@ -272,6 +339,18 @@ def download_and_upload_repo(
         print(f"Missing installation_id for repo {repo_name}")
         return repo_name
 
+    # Fetch version control information
+    try:
+        vcs_info = fetch_vcs_info(
+            workspace=workspace,
+            repo_slug=repo_slug,
+            access_token=access_token,
+            commit_sha=commit,
+        )
+    except Exception as e:
+        print(f"Failed to fetch VCS info for {repo_name}: {e}")
+        vcs_info = None
+
     try:
         with Session(engine) as session, session.begin():
             if is_push:
@@ -279,7 +358,7 @@ def download_and_upload_repo(
                     select(PrimaryAsset)
                     .where(
                         PrimaryAsset.organization_id == org_id,
-                        PrimaryAsset.repository_id == repo_id,
+                        PrimaryAsset.repository_id == str(repo_id),  # Ensure it's a string
                     )
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
@@ -296,11 +375,12 @@ def download_and_upload_repo(
                 ):
                     new_version = Version(
                         primary_asset_id=primary_asset.id,
-                        display_name=commit,
+                        vcs_hash=commit,
                         status=VersionStatus.CONNECTING,
                         previous_version_id=primary_asset.versions[0].id
                         if primary_asset.versions
                         else None,
+                        vcs_metadata=vcs_info.model_dump() if vcs_info else None,
                     )
                     session.add(new_version)
                     version_id = new_version.id
@@ -321,9 +401,10 @@ def download_and_upload_repo(
                         ]:
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
-                                display_name=commit,
+                                vcs_hash=commit,
                                 status=VersionStatus.GENERATING,
                                 previous_version_id=version.id,
+                                vcs_metadata=vcs_info.model_dump() if vcs_info else None,
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -401,9 +482,10 @@ def download_and_upload_repo(
 
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
-                                display_name=commit,
+                                vcs_hash=commit,
                                 status=VersionStatus.GENERATING,
                                 previous_version_id=version.previous_version_id,
+                                vcs_metadata=vcs_info.model_dump() if vcs_info else None,
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -427,18 +509,20 @@ def download_and_upload_repo(
                     display_name=repo_name,
                     organization_id=org_id,
                     kind=PrimaryAssetKind.CODEBASE,
-                    repository_id=repo_id,
+                    repository_id=str(repo_id),  # Ensure it's a string
                     installation_id=installation_id,
                     codebase_settings_auto_commit_docs=False,
+                    provider=PrimaryAssetProvider.BITBUCKET,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id
 
                 version = Version(
                     primary_asset_id=primary_asset.id,
-                    display_name=commit,
+                    vcs_hash=commit,
                     status=VersionStatus.CONNECTING,
                     previous_version_id=None,
+                    vcs_metadata=vcs_info.model_dump() if vcs_info else None,
                 )
                 session.add(version)
                 version_id = version.id

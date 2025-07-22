@@ -10,7 +10,7 @@ from sqlmodel import Session, create_engine
 
 external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
 app_name = "pback-" + external_ip
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True, connect_kwargs={'application_name':app_name})
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True, connect_args={'application_name':app_name})
 
 
 @contextmanager

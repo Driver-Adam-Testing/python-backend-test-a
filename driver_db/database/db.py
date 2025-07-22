@@ -7,8 +7,15 @@ from urllib.parse import parse_qs, urlparse
 from database.config import settings
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
+from logger import logger
 
-external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
+external_ip = "nopublic"
+try:
+    with urllib.request.urlopen('https://ident.me') as response:
+        external_ip = response.read().decode('utf8')
+except Exception as e:
+    logger.info("Could not resolve public ip")
+
 app_name = "pback-" + external_ip
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True, connect_args={'application_name':app_name})
 

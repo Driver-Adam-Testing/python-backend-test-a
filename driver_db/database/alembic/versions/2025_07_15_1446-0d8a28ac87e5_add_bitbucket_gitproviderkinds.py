@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0d8a28ac87e5"
-down_revision = "6d7b7fe63930"
+down_revision = "d3db21ab0782"
 branch_labels = None
 depends_on = None
 
@@ -24,9 +24,9 @@ def upgrade() -> None:
         sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     )
     # ### end Alembic commands ###
-    # op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET'")
-    # op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_DATA_CENTER'")
-    # op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_SERVER'")
+    op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET'")
+    op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_DATA_CENTER'")
+    op.execute("ALTER TYPE gitproviderkind ADD VALUE 'BITBUCKET_SERVER'")
 
 
 def downgrade() -> None:

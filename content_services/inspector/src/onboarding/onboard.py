@@ -377,11 +377,8 @@ def handle_bitbucket_events(
     repos_pushed: list[dict],
 ) -> None:
     from database.db import (
-        engine,  # We defer the import since we'll have the secrets set here
+        engine,
     )
-
-    # TODO Import is a dummy import to avoid the issue with importing
-    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
     from onboarding import bitbucket_ops

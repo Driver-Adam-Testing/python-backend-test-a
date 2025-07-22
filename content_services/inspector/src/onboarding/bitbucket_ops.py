@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_access_token(installation_id: str) -> str:
-    """Fetch Workspace Access Token for Bitbucket installation"""
     print(f"Fetching workspace access token for installation ID {installation_id}")
     install_key = format_secret_name("GIT_PROVIDER_WAT_INSTALL_SECRET", installation_id)
     secrets_manager = AWSSecretManagementStrategy(
@@ -41,7 +40,6 @@ def fetch_access_token(installation_id: str) -> str:
     if not secret_value:
         raise AccessTokenError("Workspace access token not found")
 
-    # Handle both old format (direct token) and new format (dict)
     if isinstance(secret_value, str):
         return secret_value
 
@@ -49,7 +47,6 @@ def fetch_access_token(installation_id: str) -> str:
 
 
 def get_default_branch(workspace: str, repo_slug: str, access_token: str) -> str:
-    """Get the default branch name for a repository"""
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
 
@@ -64,7 +61,6 @@ def get_default_branch(workspace: str, repo_slug: str, access_token: str) -> str
 def download_repo(
     workspace: str, repo_slug: str, commit: str, access_token: str
 ) -> bytes:
-    """Download Bitbucket repository using git clone"""
     import shutil
     import subprocess
     import tempfile
@@ -79,8 +75,6 @@ def download_repo(
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_path = Path(temp_dir) / repo_slug
 
-        # Clone URL with x-token-auth and the access token
-        # Format: https://x-token-auth:{token}@bitbucket.org/{workspace}/{repo_slug}.git
         clone_url = f"https://x-token-auth:{access_token}@bitbucket.org/{workspace}/{repo_slug}.git"
 
         try:
@@ -179,7 +173,6 @@ def download_repo(
 
 
 def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
-    """Get latest commit SHA for main branch"""
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits"
 
@@ -195,9 +188,8 @@ def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
 def fetch_vcs_info(
     workspace: str, repo_slug: str, access_token: str, commit_sha: str
 ) -> VersionControlInfo:
-    """Fetch version control information from Bitbucket API"""
     headers = {"Authorization": f"Bearer {access_token}"}
-    
+
     # Fetch repository information
     repo_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
     repo_response = requests.get(repo_url, headers=headers)
@@ -206,9 +198,9 @@ def fetch_vcs_info(
     logger.info(
         f"Repo information retrieved from Bitbucket API (status code {repo_response.status_code}): {repo_data}"
     )
-    
+
     default_branch = repo_data.get("mainbranch", {}).get("name", "main")
-    
+
     # Fetch detailed commit information
     commit_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commit/{commit_sha}"
     commit_response = requests.get(commit_url, headers=headers)
@@ -217,30 +209,34 @@ def fetch_vcs_info(
     logger.info(
         f"Commit data retrieved from Bitbucket API (status code {commit_response.status_code}): {commit_data}"
     )
-    
+
     # Build VersionControlInfo
     author_info = AuthorInfo(
-        email=commit_data.get("author", {}).get("raw", "").split("<")[-1].rstrip(">") if "<" in commit_data.get("author", {}).get("raw", "") else "",
-        name=commit_data.get("author", {}).get("raw", "").split("<")[0].strip() if "<" in commit_data.get("author", {}).get("raw", "") else commit_data.get("author", {}).get("raw", ""),
+        email=commit_data.get("author", {}).get("raw", "").split("<")[-1].rstrip(">")
+        if "<" in commit_data.get("author", {}).get("raw", "")
+        else "",
+        name=commit_data.get("author", {}).get("raw", "").split("<")[0].strip()
+        if "<" in commit_data.get("author", {}).get("raw", "")
+        else commit_data.get("author", {}).get("raw", ""),
         date=commit_data.get("date", ""),
     )
-    
+
     commit_info = CommitInfo(
         sha=commit_data.get("hash", ""),
         message=commit_data.get("message", ""),
         url=commit_data.get("links", {}).get("html", {}).get("href", ""),
         author=author_info,
     )
-    
+
     branch_info = BranchInfo(name=default_branch)
-    
+
     repo_info = RepoInfo(
         name=repo_data.get("name", ""),
         namespace=workspace,
         full_name=repo_data.get("full_name", ""),
         url=repo_data.get("links", {}).get("html", {}).get("href", ""),
     )
-    
+
     return VersionControlInfo(
         repository=repo_info,
         commit=commit_info,
@@ -358,7 +354,8 @@ def download_and_upload_repo(
                     select(PrimaryAsset)
                     .where(
                         PrimaryAsset.organization_id == org_id,
-                        PrimaryAsset.repository_id == str(repo_id),  # Ensure it's a string
+                        PrimaryAsset.repository_id
+                        == str(repo_id),  # Ensure it's a string
                     )
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
@@ -404,7 +401,9 @@ def download_and_upload_repo(
                                 vcs_hash=commit,
                                 status=VersionStatus.GENERATING,
                                 previous_version_id=version.id,
-                                vcs_metadata=vcs_info.model_dump() if vcs_info else None,
+                                vcs_metadata=vcs_info.model_dump()
+                                if vcs_info
+                                else None,
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -485,7 +484,9 @@ def download_and_upload_repo(
                                 vcs_hash=commit,
                                 status=VersionStatus.GENERATING,
                                 previous_version_id=version.previous_version_id,
-                                vcs_metadata=vcs_info.model_dump() if vcs_info else None,
+                                vcs_metadata=vcs_info.model_dump()
+                                if vcs_info
+                                else None,
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -579,20 +580,9 @@ def get_repo_clone_info_from_id(
     data = response.json()
     full_name = data.get("full_name")
 
-    # Get clone URL from links
-    # clone_links = data.get("links", {}).get("clone", [])
-    # https_link = next((link for link in clone_links if link["name"] == "https"), None)
-
-    # if not https_link:
-    #     raise ValueError("HTTPS clone URL not found")
-
-    # clone_url = https_link["href"]
-    clone_url = f"https://x-token-auth:{access_token}@bitbucket.org/{workspace}/{repo_slug}.git"
-    # Insert token into URL
-    # if clone_url.startswith("https://"):
-    #     clone_url = clone_url.replace(
-    #         "https://", f"https://x-token-auth:{access_token}@"
-    #     )
+    clone_url = (
+        f"https://x-token-auth:{access_token}@bitbucket.org/{workspace}/{repo_slug}.git"
+    )
 
     return clone_url, full_name
 
@@ -611,118 +601,92 @@ def fetch_bitbucket_default_branch_name(
     return data.get("mainbranch", {}).get("name", "main")
 
 
-def list_pull_requests(workspace: str, repo_slug: str, access_token: str, state: str = "OPEN") -> list:
-    """List pull requests for a Bitbucket repository
-    
-    Args:
-        workspace: The workspace/owner of the repository
-        repo_slug: The repository slug
-        access_token: Bitbucket access token
-        state: PR state filter (OPEN, MERGED, DECLINED, SUPERSEDED)
-    
-    Returns:
-        List of pull request objects
-    """
+def list_pull_requests(
+    workspace: str, repo_slug: str, access_token: str, state: str = "OPEN"
+) -> list:
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests"
     params = {"state": state}
-    
+
     all_prs = []
-    
+
     # Handle pagination
     while url:
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
-        
+
         data = response.json()
         all_prs.extend(data.get("values", []))
-        
+
         # Get next page URL
         url = data.get("next")
         params = {}  # Clear params for subsequent requests as they're in the URL
-    
+
     return all_prs
 
 
-def get_pull_request_commits(workspace: str, repo_slug: str, pr_id: int, access_token: str) -> list:
-    """Get commits for a pull request
-    
-    Args:
-        workspace: The workspace/owner of the repository
-        repo_slug: The repository slug
-        pr_id: Pull request ID
-        access_token: Bitbucket access token
-    
-    Returns:
-        List of commit objects
-    """
+def get_pull_request_commits(
+    workspace: str, repo_slug: str, pr_id: int, access_token: str
+) -> list:
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/commits"
-    
+
     all_commits = []
-    
+
     # Handle pagination
     while url:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        
+
         data = response.json()
         all_commits.extend(data.get("values", []))
-        
+
         # Get next page URL
         url = data.get("next")
-    
+
     return all_commits
 
 
-def close_pull_request(workspace: str, repo_slug: str, pr_id: int, access_token: str) -> None:
-    """Close/decline a pull request in Bitbucket
-    
-    Args:
-        workspace: The workspace/owner of the repository
-        repo_slug: The repository slug
-        pr_id: Pull request ID
-        access_token: Bitbucket access token
-    """
+def close_pull_request(
+    workspace: str, repo_slug: str, pr_id: int, access_token: str
+) -> None:
     headers = {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
-    
+
     # First, check the PR status
     pr_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}"
     pr_response = requests.get(pr_url, headers=headers)
-    
+
     if pr_response.status_code == 200:
         pr_data = pr_response.json()
         state = pr_data.get("state", "").upper()
-        
+
         # Check if PR is already closed
         if state in ["MERGED", "DECLINED", "SUPERSEDED"]:
-            print(f"ℹ️  Pull request #{pr_id} is already {state.lower()}")
+            print(f"INFO: Pull request #{pr_id} is already {state.lower()}")
             return
-    
+
     # Try to decline the PR
     decline_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/decline"
-    data = {
-        "message": "Closing this PR - no longer needed"
-    }
+    data = {"message": "Closing this PR - no longer needed"}
     response = requests.post(decline_url, headers=headers, data=json.dumps(data))
 
     try:
         response.raise_for_status()
-        print(f"✅ Closed pull request #{pr_id}")
+        print(f"Closed pull request #{pr_id}")
     except requests.HTTPError as e:
-        print(f"❌ Failed to close pull request #{pr_id}: {e}")
+        print(f"Failed to close pull request #{pr_id}: {e}")
         # Get more details about the error
         error_detail = ""
         try:
             error_json = e.response.json()
             error_detail = f" - {error_json}"
-        except:
+        except (ValueError, AttributeError):
             error_detail = f" - {e.response.text}"
-        
-        print(f"❌ Failed to close pull request #{pr_id}: {e}{error_detail}")
+
+        print(f"Failed to close pull request #{pr_id}: {e}{error_detail}")
         raise
 
 
@@ -733,7 +697,6 @@ def create_pull_request(
     branch: str,
     commit_slug: str,
 ) -> None:
-    """Create a pull request for Bitbucket"""
     default_branch = fetch_bitbucket_default_branch_name(
         workspace, repo_slug, access_token
     )
@@ -762,7 +725,7 @@ def create_pull_request(
         if e.response.status_code == 400:
             error_detail = e.response.json()
             if "already exists" in str(error_detail):
-                print("⚠️ Pull request already exists for this branch")
+                print("Pull request already exists for this branch")
             else:
                 raise
         else:

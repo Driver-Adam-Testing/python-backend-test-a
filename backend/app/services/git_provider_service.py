@@ -1,4 +1,5 @@
 import logging
+from typing import ClassVar
 
 from database.models_v1 import (
     GitProviderApp,
@@ -23,7 +24,12 @@ from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
     GitProviderAppRevokeError,
 )
-from app.repositories.git_provider_repository import *
+from app.repositories.git_provider_repository import (
+    git_provider_app_by_id,
+    git_provider_app_installation_by_id,
+    git_provider_app_installation_by_org_id,
+    git_provider_apps_by_org_id,
+)
 from app.schemas.git_provider_schema import GitRepository, WebhookInfo
 from app.schemas.secret_management_schema import (
     APP_INSTALL_WAT_NAME_PREFIX,
@@ -36,12 +42,12 @@ class GitProviderService:
     """Unified service for all Git provider operations"""
 
     # Provider registry
-    PROVIDERS: dict[GitProviderKind, type[GitProviderInterface]] = {
+    PROVIDERS: ClassVar[dict[GitProviderKind, type[GitProviderInterface]]] = {
         GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED: GitLabProvider,
         GitProviderKind.BITBUCKET: BitbucketProvider,
     }
 
-    def __init__(self, aws_config: AWSClientConfig):
+    def __init__(self, aws_config: AWSClientConfig) -> None:
         self.aws_config = aws_config
         self.secrets_manager = AWSSecretManagementStrategy(aws_config)
 
@@ -277,9 +283,12 @@ class GitProviderService:
                 custom_headers={},
                 secret_token=secret["secret_token"],
                 ssl_verification=True,
-                triggers=["push events", "Project or group access token events"],
+                triggers=["push events"],
             )
-        elif installation.provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
+        elif (
+            installation.git_provider_app.provider_kind
+            == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED
+        ):
             # TODO: move this to provider interface
             webhook_info = WebhookInfo(
                 callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
@@ -290,7 +299,7 @@ class GitProviderService:
             )
         else:
             raise ValueError(
-                f"Unsupported provider kind: {installation.provider_kind}"
+                f"Unsupported provider kind: {installation.git_provider_app.provider_kind}"
             )
         return webhook_info
 
@@ -361,20 +370,24 @@ class GitProviderService:
         installation_id = str(app_install.id)
         event_key = headers.get("x-event-key")
         incoming_secret = headers.get("x-hub-signature")
-        webhook_id = headers.get(
-            "x-hook-uuid"
-        )  # store this during registration to identify the webhook event target
+        # webhook_id = headers.get(
+        #     "x-hook-uuid"
+        # )  # store this during registration to identify the webhook event target
 
         # For Bitbucket, validate the webhook secret if provided
         secret = self.secrets_manager.read_secret(
             format_secret_name(APP_INSTALL_WAT_NAME_PREFIX, installation_id)
         )
-        if secret and secret.get("secret_token") and incoming_secret:
-            if secret["secret_token"] != incoming_secret:
-                logger.error(
-                    f"Secret token mismatch for Bitbucket installation ID {installation_id}"
-                )
-                raise PermissionError("Insufficient permissions")
+        if (
+            secret
+            and secret.get("secret_token")
+            and incoming_secret
+            and secret["secret_token"] != incoming_secret
+        ):
+            logger.error(
+                f"Secret token mismatch for Bitbucket installation ID {installation_id}"
+            )
+            raise PermissionError("Insufficient permissions")
 
         # Get provider and handle event
         provider = self.get_provider(app_install.git_provider_app)

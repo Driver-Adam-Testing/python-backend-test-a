@@ -168,12 +168,10 @@ async def push_docs(version_id: uuid.UUID) -> None:
             # Check for and close existing bot PRs before creating a new one
             print("Checking for existing bot pull requests...")
 
-            # Define bot constants
             BOT_NAME = "docs-bot"
             BOT_EMAIL = "bot@driverai.com"
 
             try:
-                # Get list of open pull requests
                 existing_prs = bitbucket_ops.list_pull_requests(
                     workspace, repo_slug, access_token
                 )
@@ -183,9 +181,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
                         pr.get("source", {}).get("branch", {}).get("name", "")
                     )
 
-                    # Check if PR is from a docs_* branch (bot pattern)
                     if source_branch.startswith("docs_"):
-                        # Further verify by checking commits
                         try:
                             pr_id = pr["id"]
                             commits = bitbucket_ops.get_pull_request_commits(
@@ -203,7 +199,6 @@ async def push_docs(version_id: uuid.UUID) -> None:
                                     is_bot_pr = True
                                     break
 
-                            # Close the PR if it's from the same branch and authored by bot
                             if is_bot_pr:
                                 try:
                                     bitbucket_ops.close_pull_request(
@@ -223,7 +218,6 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
             except Exception as e:
                 print(f"Error listing pull requests: {e}")
-                # Continue with PR creation even if listing fails
 
             # Create a pull request after successful push
             bitbucket_ops.create_pull_request(

@@ -16,7 +16,6 @@ from app.schemas.git_provider_schema import (
     AccessTokenData,
     GitProviderAppTokenSecret,
     GitRepository,
-    TokenType,
 )
 from app.schemas.secret_management_schema import APP_INSTALL_WAT_NAME_PREFIX
 from database.models_v1 import GitProviderApp, GitProviderAppInstallation
@@ -42,7 +41,7 @@ class BitbucketProvider(GitProviderInterface):
 
     def __init__(
         self, config: GitProviderConfig, secrets_manager: AWSSecretManagementStrategy
-    ):
+    ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
         self.api_strategy = BitbucketAPIResources(config.base_url)
@@ -58,7 +57,6 @@ class BitbucketProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
 
         return cls(config, secrets_manager)
-
 
     def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
         """Validate Bitbucket Access Token (Workspace, Project, or Repository)"""
@@ -121,14 +119,16 @@ class BitbucketProvider(GitProviderInterface):
         secret_key = format_secret_name(
             APP_INSTALL_WAT_NAME_PREFIX, str(installation.id)
         )
-        
+
         # Fetch existing secrets to preserve webhook secret
         existing_secrets = self.secrets_manager.read_secret(secret_key)
         if not existing_secrets or "secret_token" not in existing_secrets:
-            raise ValueError(f"No existing webhook secret found for installation {installation.id}")
-        
+            raise ValueError(
+                f"No existing webhook secret found for installation {installation.id}"
+            )
+
         webhook_secret = existing_secrets["secret_token"]
-        
+
         # Update only the token, preserve webhook secret
         secret_value = json.dumps(
             GitProviderAppTokenSecret(
@@ -136,7 +136,9 @@ class BitbucketProvider(GitProviderInterface):
             ).model_dump()
         )
         self.secrets_manager.write_secret(secret_key, secret_value)
-        logger.info(f"Updated WAT for Bitbucket installation {installation.id}, webhook secret preserved")
+        logger.info(
+            f"Updated WAT for Bitbucket installation {installation.id}, webhook secret preserved"
+        )
 
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
         secret_key = format_secret_name(
@@ -220,7 +222,6 @@ class BitbucketProvider(GitProviderInterface):
         installation_id = webhook_event_ctx.installation_id
 
         event_type = headers["x-event-key"]
-        hook_id = headers["x-hook-uuid"] # Bitbucket webhook ID
         logger.info(
             f"Handling Bitbucket webhook: {event_type} for installation {installation_id}"
         )
@@ -347,6 +348,33 @@ class BitbucketProvider(GitProviderInterface):
 
     # Private helper methods
 
+    def _get_default_branch(
+        self,
+        workspace: str,
+        repo_slug: str,
+        access_token: str,
+        repository_data: dict | None = None,
+    ) -> str:
+        """Get default branch name for a repository, fetching from API if needed"""
+        # First check if it's in the provided repository data
+        if repository_data:
+            default_branch = repository_data.get("mainbranch", {}).get("name")
+            if default_branch:
+                return default_branch
+
+        # If not, fetch from API
+        try:
+            repo_data = self.api_strategy.get_repository(
+                workspace, repo_slug, access_token
+            )
+            if repo_data:
+                return repo_data.get("mainbranch", {}).get("name", "main")
+        except Exception as e:
+            logger.warning(f"Failed to fetch default branch for {repo_slug}: {e}")
+
+        # Fallback to 'main'
+        return "main"
+
     def _handle_push_event(
         self, body: dict, webhook_event_ctx: WebhookEventContext
     ) -> dict:
@@ -363,15 +391,28 @@ class BitbucketProvider(GitProviderInterface):
         repo_id = repository.get("uuid")
         workspace = repository["workspace"]["name"]
         full_name = repository.get("full_name")
+        repo_slug = repository.get("slug", repo_name)  # Use name as fallback
+
+        # Get access token for API calls
+        try:
+            secrets = self.fetch_secrets_by_id(installation_id)
+            access_token = secrets["token"]
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch access token for installation {installation_id}: {e}"
+            )
+            return {"message": "Failed to process push event: missing access token"}
+
+        # Get default branch using the helper function
+        default_branch = self._get_default_branch(
+            workspace, repo_slug, access_token, repository
+        )
 
         # Process all branch changes
         for change in changes:
             if change.get("new", {}).get("type") == "branch":
                 branch_name = change["new"]["name"]
                 commit_hash = change["new"]["target"]["hash"]
-
-                # Get default branch from repository
-                default_branch = repository.get("mainbranch", {}).get("name", "main")
 
                 if branch_name != default_branch:
                     logger.info(

@@ -485,14 +485,14 @@ def get_repo_clone_info_from_id(
     workspace: str, repo_slug: str, access_token: str
 ) -> tuple[str, str]:
     """Get repository clone URL and full name"""
-    # headers = {"Authorization": f"Bearer {access_token}"}
-    # url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
+    #
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
 
-    # response = requests.get(url, headers=headers)
-    # response.raise_for_status()
-
-    # data = response.json()
-    full_name = repo_slug
+    data = response.json()
+    full_name = data.get("full_name")
 
     # Get clone URL from links
     # clone_links = data.get("links", {}).get("clone", [])

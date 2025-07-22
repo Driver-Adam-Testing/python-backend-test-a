@@ -127,11 +127,6 @@ async def push_docs(version_id: uuid.UUID) -> None:
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")
-        # Remove existing repo directory if it exists
-        # if repo_dir.exists():
-        #     shutil.rmtree(repo_dir)
-        
-        # run(f"git clone {clone_url} {repo_dir}")
 
         run(f"git checkout -B {branch}", cwd=repo_dir)
         src_path = os.path.abspath(extracted_path)
@@ -215,5 +210,5 @@ if __name__ == "__main__":
     import uuid
 
     # Example usage
-    version_id = "686b4cae-030e-4dd6-af65-144f8a8b7a94"
+    version_id = "44447574-ef7e-4007-a334-dc7711ecccf4"
     asyncio.run(push_docs(version_id))

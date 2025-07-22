@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 from datetime import UTC, datetime
 from uuid import UUID
@@ -524,6 +525,121 @@ def fetch_bitbucket_default_branch_name(
 
     data = response.json()
     return data.get("mainbranch", {}).get("name", "main")
+
+
+def list_pull_requests(workspace: str, repo_slug: str, access_token: str, state: str = "OPEN") -> list:
+    """List pull requests for a Bitbucket repository
+    
+    Args:
+        workspace: The workspace/owner of the repository
+        repo_slug: The repository slug
+        access_token: Bitbucket access token
+        state: PR state filter (OPEN, MERGED, DECLINED, SUPERSEDED)
+    
+    Returns:
+        List of pull request objects
+    """
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests"
+    params = {"state": state}
+    
+    all_prs = []
+    
+    # Handle pagination
+    while url:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        all_prs.extend(data.get("values", []))
+        
+        # Get next page URL
+        url = data.get("next")
+        params = {}  # Clear params for subsequent requests as they're in the URL
+    
+    return all_prs
+
+
+def get_pull_request_commits(workspace: str, repo_slug: str, pr_id: int, access_token: str) -> list:
+    """Get commits for a pull request
+    
+    Args:
+        workspace: The workspace/owner of the repository
+        repo_slug: The repository slug
+        pr_id: Pull request ID
+        access_token: Bitbucket access token
+    
+    Returns:
+        List of commit objects
+    """
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/commits"
+    
+    all_commits = []
+    
+    # Handle pagination
+    while url:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        
+        data = response.json()
+        all_commits.extend(data.get("values", []))
+        
+        # Get next page URL
+        url = data.get("next")
+    
+    return all_commits
+
+
+def close_pull_request(workspace: str, repo_slug: str, pr_id: int, access_token: str) -> None:
+    """Close/decline a pull request in Bitbucket
+    
+    Args:
+        workspace: The workspace/owner of the repository
+        repo_slug: The repository slug
+        pr_id: Pull request ID
+        access_token: Bitbucket access token
+    """
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    # First, check the PR status
+    pr_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}"
+    pr_response = requests.get(pr_url, headers=headers)
+    
+    if pr_response.status_code == 200:
+        pr_data = pr_response.json()
+        state = pr_data.get("state", "").upper()
+        
+        # Check if PR is already closed
+        if state in ["MERGED", "DECLINED", "SUPERSEDED"]:
+            print(f"ℹ️  Pull request #{pr_id} is already {state.lower()}")
+            return
+    
+    # Try to decline the PR
+    decline_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/decline"
+    data = {
+        "message": "Closing this PR - no longer needed"
+    }
+    response = requests.post(decline_url, headers=headers, data=json.dumps(data))
+
+    try:
+        response.raise_for_status()
+        print(f"✅ Closed pull request #{pr_id}")
+    except requests.HTTPError as e:
+        print(f"❌ Failed to close pull request #{pr_id}: {e}")
+        # Get more details about the error
+        error_detail = ""
+        try:
+            error_json = e.response.json()
+            error_detail = f" - {error_json}"
+        except:
+            error_detail = f" - {e.response.text}"
+        
+        print(f"❌ Failed to close pull request #{pr_id}: {e}{error_detail}")
+        raise
 
 
 def create_pull_request(

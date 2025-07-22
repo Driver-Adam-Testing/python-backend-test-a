@@ -160,8 +160,59 @@ async def push_docs(version_id: uuid.UUID) -> None:
             # Create a pull request after successful push
             gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
         elif is_bitbucket:
+            # Check for and close existing bot PRs before creating a new one
+            print("Checking for existing bot pull requests...")
+            
+            # Define bot constants
+            BOT_NAME = "docs-bot"
+            BOT_EMAIL = "bot@example.com"
+            
+            try:
+                # Get list of open pull requests
+                existing_prs = bitbucket_ops.list_pull_requests(workspace, repo_slug, access_token)
+                
+                for pr in existing_prs:
+                    source_branch = pr.get("source", {}).get("branch", {}).get("name", "")
+                    
+                    # Check if PR is from a docs_* branch (bot pattern)
+                    if source_branch.startswith("docs_"):
+                        # Further verify by checking commits
+                        try:
+                            pr_id = pr["id"]
+                            commits = bitbucket_ops.get_pull_request_commits(
+                                workspace, repo_slug, pr_id, access_token
+                            )
+                            
+                            # Check if any commit is authored by the bot
+                            is_bot_pr = False
+                            for commit in commits:
+                                author = commit.get("author", {})
+                                raw_author = author.get("raw", "")
+                                
+                                # Check if bot email or name is in the author string
+                                if BOT_EMAIL in raw_author or BOT_NAME in raw_author:
+                                    is_bot_pr = True
+                                    break
+                            
+                            # Close the PR if it's from the same branch and authored by bot
+                            if is_bot_pr:
+                                try:
+                                    bitbucket_ops.close_pull_request(
+                                        workspace, repo_slug, pr_id, access_token
+                                    )
+                                    print(f"Closed existing bot PR #{pr_id} from branch {branch}")
+                                except Exception as close_error:
+                                    # Log but don't fail if we can't close the PR
+                                    print(f"Warning: Could not close PR #{pr_id}: {close_error}")
+                                
+                        except Exception as e:
+                            print(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
+                            
+            except Exception as e:
+                print(f"Error listing pull requests: {e}")
+                # Continue with PR creation even if listing fails
+            
             # Create a pull request after successful push
-            # workspace, repo_slug = full_name.split("/", 1)
             bitbucket_ops.create_pull_request(
                 workspace, repo_slug, access_token, branch, commit_slug
             )
@@ -210,5 +261,5 @@ if __name__ == "__main__":
     import uuid
 
     # Example usage
-    version_id = "44447574-ef7e-4007-a334-dc7711ecccf4"
+    version_id = "3d5cf3ea-642e-47ae-a0d5-3385bf6a62f1"
     asyncio.run(push_docs(version_id))

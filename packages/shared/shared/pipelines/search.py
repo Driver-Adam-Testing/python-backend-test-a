@@ -211,13 +211,18 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
         metadata = {
             "chunk_number": chunk.chunk_number,
         }
+        version_display_name = (
+            chunk.content.node.version.vcs_hash
+            if chunk.content.node.version.vcs_hash
+            else "Unversioned"
+        )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=overall_score(semantic_score=score),
                 metadata=metadata,
                 relative_path=chunk.content.node.relative_path,
-                version_display_name=chunk.content.node.version.display_name,
+                version_display_name=version_display_name,
                 version_id=chunk.content.node.version_id,
                 node_id=chunk.content.node_id,
             )
@@ -264,13 +269,18 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
             "version_id": chunk.content.node.version_id,
             "chunk_number": chunk.chunk_number,
         }
+        version_display_name = (
+            chunk.content.node.version.vcs_hash
+            if chunk.content.node.version.vcs_hash
+            else "Unversioned"
+        )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=overall_score(bm25_score=bm25_score),
                 metadata=metadata,
                 relative_path=chunk.content.node.relative_path,
-                version_display_name=chunk.content.node.version.display_name,
+                version_display_name=version_display_name,
                 version_id=chunk.content.node.version_id,
                 node_id=chunk.content.node_id,
             )
@@ -371,12 +381,17 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
         hybrid_score = overall_score(
             semantic_score=sem_score, bm25_score=bm25_scores[i]
         )
+        version_display_name = (
+            chunk.content.node.version.vcs_hash
+            if chunk.content.node.version.vcs_hash
+            else "Unversioned"
+        )
         search_results.append(
             SearchResult(
                 content=chunk.text,
                 score=hybrid_score,
                 relative_path=chunk.content.node.relative_path,
-                version_display_name=chunk.content.node.version.display_name,
+                version_display_name=version_display_name,
                 version_id=chunk.content.node.version_id,
                 node_id=chunk.content.node_id,
                 metadata=metadata,

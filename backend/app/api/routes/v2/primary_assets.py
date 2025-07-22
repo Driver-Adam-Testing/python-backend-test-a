@@ -6,7 +6,7 @@ import boto3
 from botocore.exceptions import ClientError
 from database.models_v1 import DerivedContent, InspectorRun
 from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Version
-from database.models_v2_enums import ContentKind
+from database.models_v2_enums import ContentKind, PrimaryAssetProvider
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlmodel import func, select
@@ -116,6 +116,7 @@ def create_primary_asset(
         display_name=payload.display_name,
         organization_id=user.organization_id,
         kind=payload.kind,
+        provider=PrimaryAssetProvider.USER,
     )
     session.add(new_asset)
     session.commit()

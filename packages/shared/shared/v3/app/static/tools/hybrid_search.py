@@ -29,7 +29,7 @@ class HybridSearchTool(LlmTool):
 
     You can use this tool to search the codebase and files to obtain context for your response.
     Consider using keywords and descriptions of the documentation information or source code snippets you're looking for.
-
+    ALWAYS include the name of the top level directory(ies) in the query string, unless searching for a specific symbol or function name.
     Attributes:
         search_query (str): The query string.
     """
@@ -100,7 +100,9 @@ class HybridSearchTool(LlmTool):
                     content=chunk.text,
                     score=combo_score,
                     relative_path=rel_path,
-                    version_display_name=str(ver_id),
+                    version_display_name=str(
+                        ver_id
+                    ),  # TODO: should this be vcs_hash instead of the DB id?
                     version_id=ver_id,
                     node_id=node_id,
                     chunk_id=chunk.id,

@@ -21,6 +21,7 @@ from app.api.routes.v2 import (
 from app.api.routes.v2 import (
     autodocs,
     chat,
+    codebase_card,
     contents,
     convenience_endpoints,
     document_sources,
@@ -68,3 +69,6 @@ if settings.ENVIRONMENT != "production":
 studio_router.include_router(generate.router, prefix="/generate", tags=["generate"])
 studio_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 studio_router.include_router(autodocs.router, prefix="/autodocs", tags=["autodocs"])
+studio_router.include_router(
+    codebase_card.router, prefix="/codebase_card", tags=["codebase_card"]
+)

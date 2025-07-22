@@ -91,7 +91,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
         extracted_path = unpack_archive_to_finalized_path(
             archive_path=Path(temp_file.name), extraction_root=Path(temp_dir)
         )
-        commit_slug = version.display_name[:7]
+        commit_slug = version.vcs_hash[:7]
         branch = f"docs_{commit_slug}"
         if is_github:
             access_token = gh_ops.fetch_app_access_token(install_id)

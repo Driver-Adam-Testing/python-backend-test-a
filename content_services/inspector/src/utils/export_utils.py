@@ -60,11 +60,13 @@ def replace_driver_compatible_links_with_markdown_links(
     # This means that the auto-generated anchor tags in Github flavored markdown do not match the FQN and we must account for this.
     # extract_link_pattern = r"\[[^\]]+\]\(<([^)]+)>\)"
     extract_link_pattern = r"\[[^\]]+\]\(\<?([^>)]+)\>?\)"
-    extracted_link = re.findall(extract_link_pattern, text)
-    if not extracted_link:
+    extracted_links = list(re.finditer(extract_link_pattern, text))
+    if not extracted_links:
         return text
 
-    for link in extracted_link:
+    for match in extracted_links:
+        full_match = match.group(0)
+        link = match.group(1)
         try:
             link_part = link.split("#")[0]
             node_kind_of_link = node_path_to_kind[Path(link_part)]
@@ -83,7 +85,8 @@ def replace_driver_compatible_links_with_markdown_links(
                 # strip anything after the '-' in the anchor tag
                 anchor_tag = anchor_tag.split("-")[0]  # e.g. L1234
                 new_url = f"{navigation_parts}{file_path}#{anchor_tag}"
-                text = text.replace(link, new_url)
+                replaced_match = full_match.replace(link, new_url)
+                text = text.replace(full_match, replaced_match)
                 continue  # Skip further processing for line links
             if node_kind_of_link.value == "CODEBASE_FILE":
                 converted_file_path = file_path.with_suffix(file_path.suffix + ".md")
@@ -123,8 +126,9 @@ def replace_driver_compatible_links_with_markdown_links(
                 for char in UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS:
                     link_name = link_name.replace(char, "")
                 # link_name = link_name.split("%")[0] #TODO: there is some potential weirdness with URL encoded links.
-                new_url += "#" + link_name
-            text = text.replace(link, new_url)
+                new_url += "#" + link_name.lower()
+            replaced_match = full_match.replace(link, new_url)
+            text = text.replace(full_match, replaced_match)
         except ValueError as e:
             # This specifically errors in the case of this file, since the tech doc contains an invalid link
             # But could occur elsewhere where these patterns naturally occur in our tech docs. We should

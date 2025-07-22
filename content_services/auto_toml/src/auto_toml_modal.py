@@ -2,7 +2,6 @@ import os
 from uuid import UUID
 
 import modal
-from auto_toml import AutoToml
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -53,6 +52,8 @@ class AutoTomlModal:
         document_goal: str,
         user_context: str = "",
     ) -> str:
+        from auto_toml import AutoToml
+
         auto_toml = AutoToml.from_page_id(
             page_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
         )
@@ -68,6 +69,8 @@ class AutoTomlModal:
         document_goal: str,
         user_context: str = "",
     ) -> str:
+        from auto_toml import AutoToml
+
         auto_toml = AutoToml.from_node_ids(
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )
@@ -83,6 +86,8 @@ class AutoTomlModal:
         user_toml: str,
         user_context: str = "",
     ) -> str:
+        from auto_toml import AutoToml
+
         auto_toml = AutoToml.from_page_id(
             page_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
         )
@@ -96,6 +101,8 @@ class AutoTomlModal:
         user_toml: str,
         user_context: str = "",
     ) -> str:
+        from auto_toml import AutoToml
+
         auto_toml = AutoToml.from_node_ids(
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )

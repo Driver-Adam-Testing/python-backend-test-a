@@ -48,13 +48,13 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     from database.db import engine
     from database.models_v1 import GitProviderAppInstallation
-    from onboarding import gh_ops, gitlab_ops
+    from database.models_v2 import PrimaryAssetProvider
+    from onboarding import bitbucket_ops, gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
     from sqlmodel import Session, select
-    from utils.db import get_version_by_id
-    # parsed_values = extract_values_from_presigned_url(presigned_url)
+    from utils.db import get_version_by_id, git_provider_app_installation_by_id
 
     version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
@@ -63,7 +63,8 @@ async def push_docs(version_id: uuid.UUID) -> None:
     org_id = version.primary_asset.organization_id
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    is_github = version.primary_asset.installation_id is None
+    # Clean provider detection using the enum directly
+    provider = version.primary_asset.provider
 
     with (
         tempfile.TemporaryDirectory() as temp_dir,
@@ -80,12 +81,22 @@ async def push_docs(version_id: uuid.UUID) -> None:
         )
         commit_slug = version.vcs_hash[:7]
         branch = f"docs_{commit_slug}"
-        if is_github:
+
+        # Get repository info based on provider
+        if provider == PrimaryAssetProvider.GITHUB:
             access_token = gh_ops.fetch_app_access_token(install_id)
             clone_url, full_name = gh_ops.get_repo_clone_info_from_id(
                 repo_id, access_token
             )
-        else:
+        elif provider == PrimaryAssetProvider.BITBUCKET:
+            access_token = bitbucket_ops.fetch_access_token(install_id)
+            gp_install = git_provider_app_installation_by_id(installation_id=install_id)
+            workspace = gp_install.git_provider_app.provider_metadata["workspace"]
+            repo_slug = version.primary_asset.display_name
+            clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
+                workspace, repo_slug, access_token
+            )
+        elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
             with Session(engine) as session:
                 installation_id = version.primary_asset.installation_id
                 app_install = session.exec(
@@ -100,8 +111,11 @@ async def push_docs(version_id: uuid.UUID) -> None:
             clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
                 base_url, repo_id, access_token
             )
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
 
         repo_dir = Path(temp_dir) / full_name
+        print(f"Cloning repository {clone_url} into {repo_dir}")
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")
@@ -122,7 +136,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)
-        run('git config user.email "bot@example.com"', cwd=repo_dir)
+        run('git config user.email "bot@driverai.com"', cwd=repo_dir)
         run(f"git add {target_dir}", cwd=repo_dir)
 
         diff = run("git diff --cached --quiet", cwd=repo_dir, check=False)
@@ -134,11 +148,15 @@ async def push_docs(version_id: uuid.UUID) -> None:
         run(f"git push --force {clone_url} {branch}", cwd=repo_dir)
         print(f"✅ Pushed `{target_dir}` to `{branch}`")
 
-        if is_github:
-            # Create a pull request after successful push
+        # Create pull request based on provider
+        if provider == PrimaryAssetProvider.GITHUB:
             gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
-        else:
-            # Create a merge request after successful push
+        elif provider == PrimaryAssetProvider.BITBUCKET:
+            #
+            bitbucket_ops.create_pull_request_with_bot_cleanup(
+                workspace, repo_slug, access_token, branch, commit_slug
+            )
+        elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
             gitlab_ops.create_pull_request(
                 base_url, repo_id, access_token, branch, commit_slug
             )
@@ -174,3 +192,12 @@ def download_file_from_s3(
 
 def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> str:
     return f"driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip"
+
+
+if __name__ == "__main__":
+    import asyncio
+    import uuid
+
+    # Example usage
+    version_id = "3d5cf3ea-642e-47ae-a0d5-3385bf6a62f1"
+    asyncio.run(push_docs(version_id))

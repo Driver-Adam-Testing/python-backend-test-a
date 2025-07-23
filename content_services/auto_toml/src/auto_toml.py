@@ -59,6 +59,7 @@ class AutoToml:
     REQUESTS_PER_SECOND: ClassVar[int] = 100
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10
+    MIN_THRESHOLD_FOR_USE_DIRS: ClassVar[int] = 15
 
     node_ids: list[str]
     enable_auto_scaling: bool
@@ -277,7 +278,7 @@ class AutoToml:
             scale_mode = cls.ScaleMode.NONE
             code_scale_factor = None
 
-        logger.info(f"Collecting content for nodes:\n{"\n".join(node_ids)}\n")
+        logger.info(f"Collecting content for nodes:\n{'\n'.join(node_ids)}\n")
 
         code_content, pdf_content = cls._get_content_and_apply_scaling(
             stats=stats,
@@ -380,7 +381,15 @@ class AutoToml:
         if source_ct > cls.SCALING_THRESHOLD:
             mode = cls.ScaleMode.FAIL
 
-        # mode = cls.ScaleMode.SCALE_PDF_AND_USE_DIRS
+        # TODO: redesign the logic to be built around dirs by default.
+        # Blanket use of using directories by default, unless below a critical file
+        # count threshold in scope. In that case, no scaling applied to code but
+        # keep PDF scaling.
+        mode = (
+            cls.ScaleMode.SCALE_PDFS
+            if source_file_ct <= cls.MIN_THRESHOLD_FOR_USE_DIRS
+            else cls.ScaleMode.SCALE_PDF_AND_USE_DIRS
+        )
         return mode, code_scale_factor
 
     @classmethod

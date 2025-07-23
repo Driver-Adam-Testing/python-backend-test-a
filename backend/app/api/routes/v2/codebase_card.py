@@ -102,13 +102,20 @@ class CodebaseCard(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-def _provider_to_source_type(provider: PrimaryAssetProvider) -> str:
-    return {
-        PrimaryAssetProvider.GITHUB: "Github Codebase",
-        PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
-        PrimaryAssetProvider.BITBUCKET: "Bitbucket Codebase",
-        PrimaryAssetProvider.USER: "ZIP Upload",
-    }.get(provider, "Unknown")
+def _provider_to_source_type(
+    provider: PrimaryAssetProvider, kind: PrimaryAssetKind
+) -> str:
+    if provider == PrimaryAssetProvider.USER:
+        return {
+            PrimaryAssetKind.CODEBASE: "Zip Upload",
+            PrimaryAssetKind.FILE: "PDF Upload",
+        }.get(kind, "Unknown")
+    else:
+        return {
+            PrimaryAssetProvider.GITHUB: "Github Codebase",
+            PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
+            PrimaryAssetProvider.BITBUCKET: "Bitbucket Codebase",
+        }.get(provider, "Unknown")
 
 
 def _safe_commit_sha(version: Version) -> str | None:
@@ -403,7 +410,7 @@ def codebase_card(
                     id=pa_row.id,
                     organization_id=pa_row.organization_id,
                     kind=pa_row.kind.value,
-                    source_type=_provider_to_source_type(pa_row.provider),
+                    source_type=_provider_to_source_type(pa_row.provider, pa_row.kind),
                     version_control=vc_block,
                     display_name=pa_row.display_name,
                     created_at=pa_row.created_at,
@@ -592,7 +599,7 @@ def codebase_card(
                 id=pa_row.id,
                 organization_id=pa_row.organization_id,
                 kind=pa_row.kind.value,
-                source_type=_provider_to_source_type(pa_row.provider),
+                source_type=_provider_to_source_type(pa_row.provider, pa_row.kind),
                 version_control=vc_block,
                 display_name=pa_row.display_name,
                 created_at=pa_row.created_at,

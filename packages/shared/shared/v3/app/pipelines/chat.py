@@ -97,6 +97,7 @@ class ChatPipelineRequest(PipelineRequest):
         return history
 
     def _run(self, client: LlmClient = LlmClient.gpt_4_1()) -> ChatPipelineResponse:
+        print(self.datasource.describe_contents_char_limit(char_limit=1000))
         history = self._get_or_create_message_history()
 
         information_response, called_tools = client.multi_shot(

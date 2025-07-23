@@ -730,3 +730,60 @@ def create_pull_request(
                 raise
         else:
             raise
+
+
+def create_pull_request_with_bot_cleanup(
+    workspace: str,
+    repo_slug: str,
+    access_token: str,
+    branch: str,
+    commit_slug: str,
+) -> None:
+    """Create a pull request and close any existing bot PRs from docs_* branches."""
+    BOT_NAME = "docs-bot"
+    BOT_EMAIL = "bot@driverai.com"
+
+    print("Checking for existing bot pull requests...")
+
+    try:
+        existing_prs = list_pull_requests(workspace, repo_slug, access_token)
+
+        for pr in existing_prs:
+            source_branch = pr.get("source", {}).get("branch", {}).get("name", "")
+
+            if source_branch.startswith("docs_"):
+                try:
+                    pr_id = pr["id"]
+                    commits = get_pull_request_commits(
+                        workspace, repo_slug, pr_id, access_token
+                    )
+
+                    # Check if any commit is authored by the bot
+                    is_bot_pr = any(
+                        BOT_EMAIL in commit.get("author", {}).get("raw", "")
+                        or BOT_NAME in commit.get("author", {}).get("raw", "")
+                        for commit in commits
+                    )
+
+                    if is_bot_pr:
+                        try:
+                            close_pull_request(
+                                workspace, repo_slug, pr_id, access_token
+                            )
+                            print(
+                                f"Closed existing bot PR #{pr_id} from branch {source_branch}"
+                            )
+                        except Exception as close_error:
+                            # Log but don't fail if we can't close the PR
+                            print(
+                                f"Warning: Could not close PR #{pr_id}: {close_error}"
+                            )
+
+                except Exception as e:
+                    print(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
+
+    except Exception as e:
+        print(f"Error listing pull requests: {e}")
+
+    # Create new pull request
+    create_pull_request(workspace, repo_slug, access_token, branch, commit_slug)

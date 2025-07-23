@@ -48,13 +48,13 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
     from database.db import engine
     from database.models_v1 import GitProviderAppInstallation
+    from database.models_v2 import PrimaryAssetProvider
     from onboarding import bitbucket_ops, gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
     from sqlmodel import Session, select
     from utils.db import get_version_by_id, git_provider_app_installation_by_id
-    # parsed_values = extract_values_from_presigned_url(presigned_url)
 
     version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
@@ -63,25 +63,8 @@ async def push_docs(version_id: uuid.UUID) -> None:
     org_id = version.primary_asset.organization_id
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    is_github = version.primary_asset.installation_id is None
-    is_bitbucket = False
-
-    # Check if it's a Bitbucket installation
-    if not is_github and version.primary_asset.installation_id:
-        with Session(engine) as session:
-            installation = session.exec(
-                select(GitProviderAppInstallation).where(
-                    GitProviderAppInstallation.id
-                    == version.primary_asset.installation_id
-                )
-            ).first()
-            if installation and installation.git_provider_app:
-                from database.models_v1 import GitProviderKind
-
-                is_bitbucket = (
-                    installation.git_provider_app.provider_kind
-                    == GitProviderKind.BITBUCKET
-                )
+    # Clean provider detection using the enum directly
+    provider = version.primary_asset.provider
 
     with (
         tempfile.TemporaryDirectory() as temp_dir,
@@ -98,12 +81,14 @@ async def push_docs(version_id: uuid.UUID) -> None:
         )
         commit_slug = version.vcs_hash[:7]
         branch = f"docs_{commit_slug}"
-        if is_github:
+
+        # Get repository info based on provider
+        if provider == PrimaryAssetProvider.GITHUB:
             access_token = gh_ops.fetch_app_access_token(install_id)
             clone_url, full_name = gh_ops.get_repo_clone_info_from_id(
                 repo_id, access_token
             )
-        elif is_bitbucket:
+        elif provider == PrimaryAssetProvider.BITBUCKET:
             access_token = bitbucket_ops.fetch_access_token(install_id)
             gp_install = git_provider_app_installation_by_id(installation_id=install_id)
             workspace = gp_install.git_provider_app.provider_metadata["workspace"]
@@ -111,7 +96,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
             clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
                 workspace, repo_slug, access_token
             )
-        else:
+        elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
             with Session(engine) as session:
                 installation_id = version.primary_asset.installation_id
                 app_install = session.exec(
@@ -126,6 +111,8 @@ async def push_docs(version_id: uuid.UUID) -> None:
             clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
                 base_url, repo_id, access_token
             )
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
 
         repo_dir = Path(temp_dir) / full_name
         print(f"Cloning repository {clone_url} into {repo_dir}")
@@ -149,7 +136,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)
-        run('git config user.email "bot@example.com"', cwd=repo_dir)
+        run('git config user.email "bot@driverai.com"', cwd=repo_dir)
         run(f"git add {target_dir}", cwd=repo_dir)
 
         diff = run("git diff --cached --quiet", cwd=repo_dir, check=False)
@@ -161,70 +148,15 @@ async def push_docs(version_id: uuid.UUID) -> None:
         run(f"git push --force {clone_url} {branch}", cwd=repo_dir)
         print(f"✅ Pushed `{target_dir}` to `{branch}`")
 
-        if is_github:
-            # Create a pull request after successful push
+        # Create pull request based on provider
+        if provider == PrimaryAssetProvider.GITHUB:
             gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
-        elif is_bitbucket:
-            # Check for and close existing bot PRs before creating a new one
-            print("Checking for existing bot pull requests...")
-
-            BOT_NAME = "docs-bot"
-            BOT_EMAIL = "bot@driverai.com"
-
-            try:
-                existing_prs = bitbucket_ops.list_pull_requests(
-                    workspace, repo_slug, access_token
-                )
-
-                for pr in existing_prs:
-                    source_branch = (
-                        pr.get("source", {}).get("branch", {}).get("name", "")
-                    )
-
-                    if source_branch.startswith("docs_"):
-                        try:
-                            pr_id = pr["id"]
-                            commits = bitbucket_ops.get_pull_request_commits(
-                                workspace, repo_slug, pr_id, access_token
-                            )
-
-                            # Check if any commit is authored by the bot
-                            is_bot_pr = False
-                            for commit in commits:
-                                author = commit.get("author", {})
-                                raw_author = author.get("raw", "")
-
-                                # Check if bot email or name is in the author string
-                                if BOT_EMAIL in raw_author or BOT_NAME in raw_author:
-                                    is_bot_pr = True
-                                    break
-
-                            if is_bot_pr:
-                                try:
-                                    bitbucket_ops.close_pull_request(
-                                        workspace, repo_slug, pr_id, access_token
-                                    )
-                                    print(
-                                        f"Closed existing bot PR #{pr_id} from branch {branch}"
-                                    )
-                                except Exception as close_error:
-                                    # Log but don't fail if we can't close the PR
-                                    print(
-                                        f"Warning: Could not close PR #{pr_id}: {close_error}"
-                                    )
-
-                        except Exception as e:
-                            print(f"Error checking PR #{pr.get('id', 'unknown')}: {e}")
-
-            except Exception as e:
-                print(f"Error listing pull requests: {e}")
-
-            # Create a pull request after successful push
-            bitbucket_ops.create_pull_request(
+        elif provider == PrimaryAssetProvider.BITBUCKET:
+            #
+            bitbucket_ops.create_pull_request_with_bot_cleanup(
                 workspace, repo_slug, access_token, branch, commit_slug
             )
-        else:
-            # Create a merge request after successful push
+        elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
             gitlab_ops.create_pull_request(
                 base_url, repo_id, access_token, branch, commit_slug
             )

@@ -191,6 +191,42 @@ The user defined TOML configuration file to extend is as follows:
 
 _NO_USER_CONTEXT = "No user context provided"
 
+_USER_CONTEXT_SIZE_SHORT = """CRITICAL INSTRUCTIONS ON CONTENT STRUCTURE:
+* The final TOML configuration should be structured in such a way that the final document is short, ideally around 1 page in length.
+* Length is a function of number of sections and the content of each section.
+* A TOML configuration with one medium-long section or multiple short sections are acceptable configurations as long as the final configuration is cohesive and well-structured and adheres to the 1 page guideline.
+* The configuration should be structured in such a way that the final document is concise and well-structured.
+* Craft the sections to best fit the document goal and source material provided.
+* Since the final document is short, produce ONLY sections that are absolutely necessary to fulfil the document goal.
+* Shorter form sections are also desirable in this case, so do not feel compelled to create longer sections if the content does not warrant it.
+"""
+
+_USER_CONTEXT_SIZE_MEDIUM = """CRITICAL INSTRUCTIONS ON CONTENT STRUCTURE:
+* The final TOML configuration should be structured in such a way that the final document is medium in length.
+* Length is a function of number of sections and the content of each section.
+* A TOML configuration with a mix of longer or short sections is acceptable as long as the final configuration is cohesive and well-structured.
+* The configuration should be structured in such a way that the final document is concise and well-structured, with select areas that are more detailed based on the document goal.
+* Craft the sections to best fit the document goal and source material provided.
+* Since the final document is medium in length, produce sections that are necessary to fulfil the document goal, but do not feel compelled to create longer sections if the content does not warrant it and it doesn't add value to the document goal.
+"""
+
+_USER_CONTEXT_SIZE_LONG = """CRITICAL INSTRUCTIONS ON CONTENT STRUCTURE:
+* The final TOML configuration should be structured in such a way that the final document is longer, ideally 5+ pages.
+* Length is a function of number of sections and the content of each section. Keep this in mind as you craft the configuration.
+* A TOML configuration with a mix of longer and shorter sections is acceptable as long as the final configuration is cohesive and well-structured and adheres to the 5+ page guideline.
+* The configuration should be structured in such a way that the final document is comprehensive, exhaustive, and well-structured while adhering to the document goal.
+* Craft the sections to best fit the document goal and source material provided.
+* Since the final document is long, produce sections that are necessary to fulfil the document goal.
+* In a longer document, sections that dive into more detail are desirable. More sections and more detailed/longer sections are acceptable in this case as long as the final configuration is cohesive and well-structured in achieving the document goal.
+"""
+
+USER_CONTEXT_BASE = "The final TOML configuration file shall include the minimum number of sections required to adequately fulfil the document goal."
+
+_USER_CONTEXT_SIZE_MAP = {
+    "SHORT": _USER_CONTEXT_SIZE_SHORT,
+    "MEDIUM": _USER_CONTEXT_SIZE_MEDIUM,
+    "LONG": _USER_CONTEXT_SIZE_LONG,
+}
 
 
 def summary_system_prompt() -> str:

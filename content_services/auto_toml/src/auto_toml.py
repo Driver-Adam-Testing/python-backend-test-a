@@ -14,7 +14,9 @@ from chat_openai import ChatOpenAI
 from database.models_v2_enums import ContentKind, NodeKind
 from logger import logger
 from prompts import (
+    _USER_CONTEXT_SIZE_MAP,
     NO_CONTENT_FOUND_RESPONSE,
+    USER_CONTEXT_BASE,
     append_system_prompt,
     append_user_prompt,
     generate_system_prompt,
@@ -53,7 +55,7 @@ class AutoToml:
     LLM_MODEL: ClassVar[str] = "gpt-4.1"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
-    SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 3
+    SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
     REQUESTS_PER_SECOND: ClassVar[int] = 100
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10
@@ -97,13 +99,14 @@ class AutoToml:
         logger.info(
             f"Gathering summaries from {len(self.code_contents)} source files/directories and {len(self.pdf_contents)} PDF pages...\n"
         )
+        user_context = _USER_CONTEXT_SIZE_MAP.get(user_context, USER_CONTEXT_BASE)
         source_summary = await self._gather_summaries(
             document_goal=document_goal,
             user_context=user_context,
             source_contents=itertools.chain(self.code_contents, self.pdf_contents),
         )
 
-        logger.debug(f"{source_summary}\n")
+        # logger.debug(f"{source_summary}\n")
 
         system_prompt = generate_system_prompt()
         user_prompt = generate_user_prompt(
@@ -112,7 +115,8 @@ class AutoToml:
             source_summary=source_summary,
         )
 
-        logger.info("Generating new TOML sections...\n")
+        # logger.info("Generating new TOML sections...\n")
+        print(f"user_context: {user_context}")
         generated_toml_sections = await self.llm.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
@@ -172,7 +176,7 @@ class AutoToml:
         async with asyncio.TaskGroup() as tg:
             for source_content in source_contents:
                 path = next(iter(source_content.keys()))
-                logger.debug(f"Generating summary for:\n{path}")
+                # logger.debug(f"Generating summary for:\n{path}")
                 content = source_content[path]
 
                 task = tg.create_task(
@@ -192,7 +196,11 @@ class AutoToml:
             task.result() for task in results if task.result().strip()
         )
 
+        print("Summary length before truncation:")
+        print(len(summary))
         new_summary = self._truncate_text(text=summary)
+        print("Summary length after truncation:")
+        print(len(new_summary))
 
         if new_summary is not summary:
             logger.error("Truncated content summary to fit within token limits\n")
@@ -212,7 +220,7 @@ class AutoToml:
                     system_prompt=system_prompt, user_prompt=user_prompt
                 )
                 if NO_CONTENT_FOUND_RESPONSE in summary:
-                    logger.debug(f"No relevant content found in:\n{path}")
+                    # logger.debug(f"No relevant content found in:\n{path}")
                     return ""
                 else:
                     return f"{path}\n\n{summary}"
@@ -372,6 +380,7 @@ class AutoToml:
         if source_ct > cls.SCALING_THRESHOLD:
             mode = cls.ScaleMode.FAIL
 
+        # mode = cls.ScaleMode.SCALE_PDF_AND_USE_DIRS
         return mode, code_scale_factor
 
     @classmethod

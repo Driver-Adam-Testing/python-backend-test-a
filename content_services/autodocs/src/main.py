@@ -256,14 +256,16 @@ async def run_autodoc(
 @app.local_entrypoint()
 def main(
     page_node_id: str,
+    document_goal: str,
+    size: str,
 ) -> None:
     from database.models_v2_enums import AutoDocConfigKind
 
     run_autodoc.remote(
         page_node_id=page_node_id,
         config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-        document_goal="Produce an architecture document.",
-        user_context="LONG",
+        document_goal=document_goal,
+        user_context=size,
     )
 
 

@@ -1,5 +1,30 @@
+from enum import Enum
+
 from database.models_v1 import GitProviderKind
 from pydantic import BaseModel, Field
+
+
+class TokenType(str, Enum):
+    # OAUTH = "oauth"
+    GROUP_ACCESS_TOKEN = "group_access_token"  # GitLab
+    WORKSPACE_ACCESS_TOKEN = "workspace_access_token"  # Bitbucket
+    PROJECT_ACCESS_TOKEN = "project_access_token"  # Bitbucket
+    REPOSITORY_ACCESS_TOKEN = "repository_access_token"  # Bitbucket
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AccessTokenData(BaseModel):
+    """Unified access token model"""
+    token_type: TokenType = TokenType.GROUP_ACCESS_TOKEN
+    token: str
+    workspace_or_group: str | None = None
+    name: str | None = None
+    metadata: dict = {}
+
+    def is_access_token(self) -> bool:
+        return self.token_type in [TokenType.GROUP_ACCESS_TOKEN, TokenType.WORKSPACE_ACCESS_TOKEN]
 
 
 class GitProvider(BaseModel):
@@ -28,13 +53,14 @@ class GitProviderAppConfig(BaseModel):
     scope: str | None = None
 
 
-class GroupAccessToken(BaseModel):
+class GroupAccessToken(AccessTokenData):
     name: str | None = None
     token: str
+    token_type: TokenType = TokenType.GROUP_ACCESS_TOKEN
 
 
 class CreateGitProviderAppRequest(BaseModel):
-    organization_id: str
+    organization_id: str = Field(serialization_alias="owner_organization_id")
     name: str
     provider_kind: GitProviderKind
     shared_provider: bool = False

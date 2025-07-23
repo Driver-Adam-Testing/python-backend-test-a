@@ -59,7 +59,7 @@ class AutoToml:
     REQUESTS_PER_SECOND: ClassVar[int] = 100
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10
-    MIN_THRESHOLD_FOR_USE_DIRS: ClassVar[int] = 15
+    MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS: ClassVar[int] = 30
 
     node_ids: list[str]
     enable_auto_scaling: bool
@@ -352,6 +352,7 @@ class AutoToml:
         code_scale_factor = 1
         pdf_page_ct = stats.pdf_page_ct
         source_file_ct = stats.source_file_ct
+        directory_ct = stats.directory_ct
 
         source_ct = source_file_ct + pdf_page_ct
 
@@ -387,7 +388,10 @@ class AutoToml:
         # keep PDF scaling.
         mode = (
             cls.ScaleMode.SCALE_PDFS
-            if source_file_ct <= cls.MIN_THRESHOLD_FOR_USE_DIRS
+            if (
+                directory_ct == 0
+                or source_file_ct <= cls.MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS
+            )
             else cls.ScaleMode.SCALE_PDF_AND_USE_DIRS
         )
         return mode, code_scale_factor

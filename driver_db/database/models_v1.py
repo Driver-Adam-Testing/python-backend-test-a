@@ -496,11 +496,13 @@ class Subscription(SQLModel, table=True):
 
 
 class GitProviderKind(str, enum.Enum):
-    # GITHUB = "GITHUB"
-    # GITHUB_ENTERPRISE = "GITHUB_ENTERPRISE"
-    # GITLAB = "GITLAB"
-    # GITLAB_ENTERPRISE = "GITLAB_ENTERPRISE"
+    # GitLab
+    GITLAB = "GITLAB"
     GITLAB_ENTERPRISE_SELF_MANAGED = "GITLAB_ENTERPRISE_SELF_MANAGED"
+    # Bitbucket
+    BITBUCKET = "BITBUCKET"
+    BITBUCKET_DATA_CENTER = "BITBUCKET_DATA_CENTER"
+    BITBUCKET_SERVER = "BITBUCKET_SERVER"
 
     def __str__(self) -> str:
         return self.name
@@ -520,6 +522,12 @@ class GitProviderApp(SQLModel, table=True):
     redirect_uri: str | None
     scopes: str | None
     ##
+    # Provider-specific metadata
+    provider_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True, default=None),
+        default_factory=dict,
+    )
+
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

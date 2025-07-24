@@ -45,7 +45,7 @@ class CommitInfo(BaseModel):
 
 
 class BranchInfo(BaseModel):
-    name: str
+    name: str | None
     protected: bool = False
 
 
@@ -88,7 +88,7 @@ class CodebaseCard(BaseModel):
     organization_id: str
     kind: str
     source_type: str
-    version_control: VersionControlInfo
+    version_control: VersionControlInfo | None
     display_name: str
     primary_asset_created_at: datetime = Field(alias="created_at")
     primary_asset_updated_at: datetime = Field(alias="updated_at")
@@ -102,13 +102,20 @@ class CodebaseCard(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-def _provider_to_source_type(provider: PrimaryAssetProvider) -> str:
-    return {
-        PrimaryAssetProvider.GITHUB: "Github Codebase",
-        PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
-        PrimaryAssetProvider.BITBUCKET: "Bitbucket Codebase",
-        PrimaryAssetProvider.USER: "ZIP Upload",
-    }.get(provider, "Unknown")
+def _provider_to_source_type(
+    provider: PrimaryAssetProvider, kind: PrimaryAssetKind
+) -> str:
+    if provider == PrimaryAssetProvider.USER:
+        return {
+            PrimaryAssetKind.CODEBASE: "Zip Upload",
+            PrimaryAssetKind.FILE: "PDF Upload",
+        }.get(kind, "Unknown")
+    else:
+        return {
+            PrimaryAssetProvider.GITHUB: "Github Codebase",
+            PrimaryAssetProvider.GITLAB_SELF_MANAGED: "Gitlab Codebase",
+            PrimaryAssetProvider.BITBUCKET: "Bitbucket Codebase",
+        }.get(provider, "Unknown")
 
 
 def _safe_commit_sha(version: Version) -> str | None:
@@ -345,40 +352,46 @@ def codebase_card(
         connecting_cards = []
         for pa_row, v_latest, _, _, _ in assets_with_versions:
             sha = _safe_commit_sha(v_latest)
-            vcs_meta = v_latest.vcs_metadata or {}
-            repo_meta, branch_meta, commit_meta = (
-                vcs_meta.get("repository", {}),
-                vcs_meta.get("branch", {}),
-                vcs_meta.get("commit", {}),
-            )
-            commit_block = CommitInfo(
-                sha=sha,
-                short_sha=sha[:8] if sha else None,
-                message=commit_meta.get("message"),
-                url=commit_meta.get("url"),
-                author=CommitAuthor(
-                    name=commit_meta.get("author", {}).get("name"),
-                    email=commit_meta.get("author", {}).get("email"),
-                    date=commit_meta.get("author", {}).get("date")
-                    or pa_row.most_recent_version.updated_at,
-                ),
-            )
-            vc_block = VersionControlInfo(
-                provider=pa_row.provider.value.lower(),
-                repository=RepositoryInfo(
-                    name=repo_meta.get("name") or pa_row.display_name,
-                    namespace=repo_meta.get("namespace"),
-                    full_name=repo_meta.get("full_name")
-                    or repo_meta.get("name")
-                    or pa_row.display_name,
-                    url=repo_meta.get("url"),
-                ),
-                branch=BranchInfo(
-                    name=branch_meta.get("name") or "main",
-                    protected=branch_meta.get("protected", False),
-                ),
-                commit=commit_block,
-            )
+            if (
+                pa_row.kind == PrimaryAssetKind.CODEBASE
+                and pa_row.provider != PrimaryAssetProvider.USER
+            ):
+                vcs_meta = v_latest.vcs_metadata or {}
+                repo_meta, branch_meta, commit_meta = (
+                    vcs_meta.get("repository", {}),
+                    vcs_meta.get("branch", {}),
+                    vcs_meta.get("commit", {}),
+                )
+                commit_block = CommitInfo(
+                    sha=sha,
+                    short_sha=sha[:8] if sha else None,
+                    message=commit_meta.get("message"),
+                    url=commit_meta.get("url"),
+                    author=CommitAuthor(
+                        name=commit_meta.get("author", {}).get("name"),
+                        email=commit_meta.get("author", {}).get("email"),
+                        date=commit_meta.get("author", {}).get("date")
+                        or pa_row.most_recent_version.updated_at,
+                    ),
+                )
+                vc_block = VersionControlInfo(
+                    provider=pa_row.provider.value.lower(),
+                    repository=RepositoryInfo(
+                        name=repo_meta.get("name") or pa_row.display_name,
+                        namespace=repo_meta.get("namespace"),
+                        full_name=repo_meta.get("full_name")
+                        or repo_meta.get("name")
+                        or pa_row.display_name,
+                        url=repo_meta.get("url"),
+                    ),
+                    branch=BranchInfo(
+                        name=branch_meta.get("name"),
+                        protected=branch_meta.get("protected", False),
+                    ),
+                    commit=commit_block,
+                )
+            else:
+                vc_block = None
             meta_block = MostRecentMetadata(
                 id=v_latest.id,
                 root_node_id=None,  # No root id in Connecting
@@ -403,7 +416,7 @@ def codebase_card(
                     id=pa_row.id,
                     organization_id=pa_row.organization_id,
                     kind=pa_row.kind.value,
-                    source_type=_provider_to_source_type(pa_row.provider),
+                    source_type=_provider_to_source_type(pa_row.provider, pa_row.kind),
                     version_control=vc_block,
                     display_name=pa_row.display_name,
                     created_at=pa_row.created_at,
@@ -528,40 +541,47 @@ def codebase_card(
         node_meta = node_meta or {}
 
         sha = _safe_commit_sha(v_latest)
-        vcs_meta = v_latest.vcs_metadata or {}
-        repo_meta, branch_meta, commit_meta = (
-            vcs_meta.get("repository", {}),
-            vcs_meta.get("branch", {}),
-            vcs_meta.get("commit", {}),
-        )
-        commit_block = CommitInfo(
-            sha=sha,
-            short_sha=sha[:8] if sha else None,
-            message=commit_meta.get("message"),
-            url=commit_meta.get("url"),
-            author=CommitAuthor(
-                name=commit_meta.get("author", {}).get("name"),
-                email=commit_meta.get("author", {}).get("email"),
-                date=commit_meta.get("author", {}).get("date")
-                or pa_row.most_recent_version.updated_at,
-            ),
-        )
-        vc_block = VersionControlInfo(
-            provider=pa_row.provider.value.lower(),
-            repository=RepositoryInfo(
-                name=repo_meta.get("name") or pa_row.display_name,
-                namespace=repo_meta.get("namespace"),
-                full_name=repo_meta.get("full_name")
-                or repo_meta.get("name")
-                or pa_row.display_name,
-                url=repo_meta.get("url"),
-            ),
-            branch=BranchInfo(
-                name=branch_meta.get("name") or "main",
-                protected=branch_meta.get("protected", False),
-            ),
-            commit=commit_block,
-        )
+        if (
+            pa_row.kind == PrimaryAssetKind.CODEBASE
+            and pa_row.provider != PrimaryAssetProvider.USER
+        ):
+            vcs_meta = v_latest.vcs_metadata or {}
+            repo_meta, branch_meta, commit_meta = (
+                vcs_meta.get("repository", {}),
+                vcs_meta.get("branch", {}),
+                vcs_meta.get("commit", {}),
+            )
+            commit_block = CommitInfo(
+                sha=sha,
+                short_sha=sha[:8] if sha else None,
+                message=commit_meta.get("message"),
+                url=commit_meta.get("url"),
+                author=CommitAuthor(
+                    name=commit_meta.get("author", {}).get("name"),
+                    email=commit_meta.get("author", {}).get("email"),
+                    date=commit_meta.get("author", {}).get("date")
+                    or pa_row.most_recent_version.updated_at,
+                ),
+            )
+            vc_block = VersionControlInfo(
+                provider=pa_row.provider.value.lower(),
+                repository=RepositoryInfo(
+                    name=repo_meta.get("name") or pa_row.display_name,
+                    namespace=repo_meta.get("namespace"),
+                    full_name=repo_meta.get("full_name")
+                    or repo_meta.get("name")
+                    or pa_row.display_name,
+                    url=repo_meta.get("url"),
+                ),
+                branch=BranchInfo(
+                    name=branch_meta.get("name"),
+                    protected=branch_meta.get("protected", False),
+                ),
+                commit=commit_block,
+            )
+        else:
+            vc_block = None
+
         meta_block = MostRecentMetadata(
             id=v_latest.id,
             root_node_id=root_node_latest.id if root_node_latest else None,
@@ -592,7 +612,7 @@ def codebase_card(
                 id=pa_row.id,
                 organization_id=pa_row.organization_id,
                 kind=pa_row.kind.value,
-                source_type=_provider_to_source_type(pa_row.provider),
+                source_type=_provider_to_source_type(pa_row.provider, pa_row.kind),
                 version_control=vc_block,
                 display_name=pa_row.display_name,
                 created_at=pa_row.created_at,

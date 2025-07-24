@@ -33,6 +33,7 @@ Guidelines for specifying the 'title' key:
 - The 'title' value must always be wrapped in double quotes
 
 Guidelines for specifying the 'level' key:
+- The 'level' key maps to heading levels (e.g., as used in Markdown syntax) and is used to add hierarchical structure by associating sections as headings or sub-headings. Use this to create the outline structure for sections that will map best to a final document structure. Especially for longer documents, building in some outline hierarchy with sub-headings/sub-sections is encouraged.
 - The 'level' shall be set to 1 unless the section is intended as a sub-section
 - Sub-sections shall have a 'level' of 2 or greater.
 - Sub-sections shall have a level that it one greater than the parent section.

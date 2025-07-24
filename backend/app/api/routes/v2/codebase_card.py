@@ -45,7 +45,7 @@ class CommitInfo(BaseModel):
 
 
 class BranchInfo(BaseModel):
-    name: str
+    name: str | None
     protected: bool = False
 
 
@@ -88,7 +88,7 @@ class CodebaseCard(BaseModel):
     organization_id: str
     kind: str
     source_type: str
-    version_control: VersionControlInfo
+    version_control: VersionControlInfo | None
     display_name: str
     primary_asset_created_at: datetime = Field(alias="created_at")
     primary_asset_updated_at: datetime = Field(alias="updated_at")
@@ -381,7 +381,7 @@ def codebase_card(
                     url=repo_meta.get("url"),
                 ),
                 branch=BranchInfo(
-                    name=branch_meta.get("name") or "main",
+                    name=branch_meta.get("name"),
                     protected=branch_meta.get("protected", False),
                 ),
                 commit=commit_block,
@@ -535,40 +535,47 @@ def codebase_card(
         node_meta = node_meta or {}
 
         sha = _safe_commit_sha(v_latest)
-        vcs_meta = v_latest.vcs_metadata or {}
-        repo_meta, branch_meta, commit_meta = (
-            vcs_meta.get("repository", {}),
-            vcs_meta.get("branch", {}),
-            vcs_meta.get("commit", {}),
-        )
-        commit_block = CommitInfo(
-            sha=sha,
-            short_sha=sha[:8] if sha else None,
-            message=commit_meta.get("message"),
-            url=commit_meta.get("url"),
-            author=CommitAuthor(
-                name=commit_meta.get("author", {}).get("name"),
-                email=commit_meta.get("author", {}).get("email"),
-                date=commit_meta.get("author", {}).get("date")
-                or pa_row.most_recent_version.updated_at,
-            ),
-        )
-        vc_block = VersionControlInfo(
-            provider=pa_row.provider.value.lower(),
-            repository=RepositoryInfo(
-                name=repo_meta.get("name") or pa_row.display_name,
-                namespace=repo_meta.get("namespace"),
-                full_name=repo_meta.get("full_name")
-                or repo_meta.get("name")
-                or pa_row.display_name,
-                url=repo_meta.get("url"),
-            ),
-            branch=BranchInfo(
-                name=branch_meta.get("name") or "main",
-                protected=branch_meta.get("protected", False),
-            ),
-            commit=commit_block,
-        )
+        if (
+            pa_row.kind == PrimaryAssetKind.CODEBASE
+            and pa_row.provider != PrimaryAssetProvider.USER
+        ):
+            vcs_meta = v_latest.vcs_metadata or {}
+            repo_meta, branch_meta, commit_meta = (
+                vcs_meta.get("repository", {}),
+                vcs_meta.get("branch", {}),
+                vcs_meta.get("commit", {}),
+            )
+            commit_block = CommitInfo(
+                sha=sha,
+                short_sha=sha[:8] if sha else None,
+                message=commit_meta.get("message"),
+                url=commit_meta.get("url"),
+                author=CommitAuthor(
+                    name=commit_meta.get("author", {}).get("name"),
+                    email=commit_meta.get("author", {}).get("email"),
+                    date=commit_meta.get("author", {}).get("date")
+                    or pa_row.most_recent_version.updated_at,
+                ),
+            )
+            vc_block = VersionControlInfo(
+                provider=pa_row.provider.value.lower(),
+                repository=RepositoryInfo(
+                    name=repo_meta.get("name") or pa_row.display_name,
+                    namespace=repo_meta.get("namespace"),
+                    full_name=repo_meta.get("full_name")
+                    or repo_meta.get("name")
+                    or pa_row.display_name,
+                    url=repo_meta.get("url"),
+                ),
+                branch=BranchInfo(
+                    name=branch_meta.get("name"),
+                    protected=branch_meta.get("protected", False),
+                ),
+                commit=commit_block,
+            )
+        else:
+            vc_block = None
+
         meta_block = MostRecentMetadata(
             id=v_latest.id,
             root_node_id=root_node_latest.id if root_node_latest else None,

@@ -92,7 +92,6 @@ class ChatPipelineRequest(PipelineRequest):
 
     def _run(self, client: LlmClient = LlmClient.gpt_4_1()) -> ChatPipelineResponse:
         history = self._get_or_create_message_history()
-        print(self.datasource.node_ids)
         information_response, called_tools = client.multi_shot(
             message_history=history,
             tool_types=[HybridSearchTool],
@@ -110,7 +109,6 @@ class ChatPipelineRequest(PipelineRequest):
         client: LlmClient = LlmClient.gpt_4_1(),
     ) -> AsyncGenerator[LlmStreamResponse, None]:
         history = self._get_or_create_message_history()
-        print(self.datasource.node_ids)
 
         async for chunk in client.multi_shot_stream(
             message_history=history,

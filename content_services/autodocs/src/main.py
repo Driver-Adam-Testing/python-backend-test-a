@@ -1,5 +1,6 @@
 import os
 import uuid
+from math import ceil
 from typing import Any
 
 import modal
@@ -11,6 +12,7 @@ from autodocs_prototype import (
     FullyQualifiedDriverPathCode,
     FullyQualifiedDriverPathPdf,
     Scope,
+    get_autodoc_elapsed_time,
     update_autodocs_status,
 )
 from common import app, wait_for_guard_duty_tag
@@ -195,28 +197,28 @@ async def run_autodoc(
             case _:
                 raise ValueError(f"Unsupported config kind: {config_kind}")
 
-        # scope.preamble = config.scope.preamble
-        # config.scope = scope
-        # print(config.scope)
+        scope.preamble = config.scope.preamble
+        config.scope = scope
+        print(config.scope)
 
-        # init_state = await AutoDocInitState.from_cfg(
-        #     cfg=config, execution_mode=ExecutionMode.MODAL, page_id=page_node_id
-        # )
-        # doc = await init_state.generate(
-        #     execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
-        # )
-        # elapsed_time_s = await get_autodoc_elapsed_time(
-        #     page_id=str(page_node_id),
-        # )
-        # elapsed_time_min = ceil(elapsed_time_s / 60)
-        # if elapsed_time_min == 1:
-        #     doc += f" in {elapsed_time_min} minute"
-        # else:
-        #     doc += f" in {elapsed_time_min} minutes"
+        init_state = await AutoDocInitState.from_cfg(
+            cfg=config, execution_mode=ExecutionMode.MODAL, page_id=page_node_id
+        )
+        doc = await init_state.generate(
+            execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
+        )
+        elapsed_time_s = await get_autodoc_elapsed_time(
+            page_id=str(page_node_id),
+        )
+        elapsed_time_min = ceil(elapsed_time_s / 60)
+        if elapsed_time_min == 1:
+            doc += f" in {elapsed_time_min} minute"
+        else:
+            doc += f" in {elapsed_time_min} minutes"
         await update_autodocs_status(
             page_id=str(page_node_id),
             status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
-            content=toml_content,
+            content=doc,
         )
         with get_session() as session, session.begin():
             derived_content = session.exec(
@@ -229,7 +231,7 @@ async def run_autodoc(
                 print("No existing derived content found for this page node.")
                 return
             else:
-                derived_content.content = toml_content
+                derived_content.content = doc
             node = session.exec(
                 select(Node)
                 .where(Node.id == page_node_id)

@@ -176,9 +176,7 @@ def run_autodoc(
         page_node_id=str(input.page_id),
         config_kind=input.config_kind,
         document_goal=input.document_goal,
-        user_context=_autodoc_size_to_user_context(input.autodoc_size)
-        if input.autodoc_size
-        else None,
+        user_context=input.autodoc_size.value if input.autodoc_size else None,
     )
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,

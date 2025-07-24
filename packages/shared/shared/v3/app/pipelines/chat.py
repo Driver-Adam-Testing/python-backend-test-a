@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
 
 from database.db import get_session
@@ -23,7 +22,6 @@ from shared.v3.globals.datasource_messages import (
     DataSourceSystemMessage,
     DataSourceTuningSystemMessage,
 )
-from shared.v3.utils.datasource import DataSource
 from sqlmodel import select
 
 if TYPE_CHECKING:
@@ -67,11 +65,6 @@ class ChatPipelineRequest(PipelineRequest):
             ).first()
             if chat_history_id is not None:
                 history = LlmMessageHistory.from_db(message_history_id=chat_history_id)
-                if self.datasource is None:
-                    self.datasource = DataSource.from_node_ids(
-                        json.loads(runtime_session.source_node_ids_str),
-                        runtime_session.organization_id,
-                    )
 
         if history is None:
             history = LlmMessageHistory(
@@ -89,7 +82,8 @@ class ChatPipelineRequest(PipelineRequest):
                 llm_session_id=runtime_session.id,
                 pipeline_kind=LlmPipelineKind.CHAT,
             )
-
+        if self._datasource_changed_since_llm_session:
+            history.add_message(DataSourceMessage.from_context(self.datasource))
         history.add_message(
             LlmMessage(message_kind=MessageKind.USER, content=self.user_prompt)
         )
@@ -97,9 +91,8 @@ class ChatPipelineRequest(PipelineRequest):
         return history
 
     def _run(self, client: LlmClient = LlmClient.gpt_4_1()) -> ChatPipelineResponse:
-        print(self.datasource.describe_contents_char_limit(char_limit=1000))
         history = self._get_or_create_message_history()
-
+        print(self.datasource.node_ids)
         information_response, called_tools = client.multi_shot(
             message_history=history,
             tool_types=[HybridSearchTool],
@@ -117,6 +110,7 @@ class ChatPipelineRequest(PipelineRequest):
         client: LlmClient = LlmClient.gpt_4_1(),
     ) -> AsyncGenerator[LlmStreamResponse, None]:
         history = self._get_or_create_message_history()
+        print(self.datasource.node_ids)
 
         async for chunk in client.multi_shot_stream(
             message_history=history,

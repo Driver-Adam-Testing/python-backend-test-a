@@ -14,13 +14,18 @@ from chat_openai import ChatOpenAI
 from database.models_v2_enums import ContentKind, NodeKind
 from logger import logger
 from prompts import (
+    _USER_CONTEXT_SIZE_MAP,
     NO_CONTENT_FOUND_RESPONSE,
+    USER_CONTEXT_BASE,
     append_system_prompt,
     append_user_prompt,
     generate_system_prompt,
     generate_user_prompt,
     summary_system_prompt,
     summary_user_prompt,
+)
+from shared.prompts.structured_prompting import (
+    Prompt,
 )
 from sqlalchemy import func
 from sqlmodel import or_, select
@@ -53,10 +58,11 @@ class AutoToml:
     LLM_MODEL: ClassVar[str] = "gpt-4.1"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
-    SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 3
+    SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
     REQUESTS_PER_SECOND: ClassVar[int] = 100
     MAX_CODE_SCALE_FACTOR: ClassVar[int] = 10
     PDF_SCALE_FACTOR: ClassVar[int] = 10
+    MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS: ClassVar[int] = 30
 
     node_ids: list[str]
     enable_auto_scaling: bool
@@ -97,13 +103,18 @@ class AutoToml:
         logger.info(
             f"Gathering summaries from {len(self.code_contents)} source files/directories and {len(self.pdf_contents)} PDF pages...\n"
         )
+        user_context = (
+            Prompt.empty()
+            .append(_USER_CONTEXT_SIZE_MAP.get(user_context, USER_CONTEXT_BASE))
+            .into_str()
+        )
         source_summary = await self._gather_summaries(
             document_goal=document_goal,
             user_context=user_context,
             source_contents=itertools.chain(self.code_contents, self.pdf_contents),
         )
 
-        logger.debug(f"{source_summary}\n")
+        # logger.debug(f"{source_summary}\n")
 
         system_prompt = generate_system_prompt()
         user_prompt = generate_user_prompt(
@@ -112,7 +123,8 @@ class AutoToml:
             source_summary=source_summary,
         )
 
-        logger.info("Generating new TOML sections...\n")
+        # logger.info("Generating new TOML sections...\n")
+        print(f"user_context: {user_context}")
         generated_toml_sections = await self.llm.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
@@ -172,7 +184,7 @@ class AutoToml:
         async with asyncio.TaskGroup() as tg:
             for source_content in source_contents:
                 path = next(iter(source_content.keys()))
-                logger.debug(f"Generating summary for:\n{path}")
+                # logger.debug(f"Generating summary for:\n{path}")
                 content = source_content[path]
 
                 task = tg.create_task(
@@ -192,7 +204,11 @@ class AutoToml:
             task.result() for task in results if task.result().strip()
         )
 
+        print("Summary length before truncation:")
+        print(len(summary))
         new_summary = self._truncate_text(text=summary)
+        print("Summary length after truncation:")
+        print(len(new_summary))
 
         if new_summary is not summary:
             logger.error("Truncated content summary to fit within token limits\n")
@@ -212,7 +228,7 @@ class AutoToml:
                     system_prompt=system_prompt, user_prompt=user_prompt
                 )
                 if NO_CONTENT_FOUND_RESPONSE in summary:
-                    logger.debug(f"No relevant content found in:\n{path}")
+                    # logger.debug(f"No relevant content found in:\n{path}")
                     return ""
                 else:
                     return f"{path}\n\n{summary}"
@@ -269,7 +285,7 @@ class AutoToml:
             scale_mode = cls.ScaleMode.NONE
             code_scale_factor = None
 
-        logger.info(f"Collecting content for nodes:\n{"\n".join(node_ids)}\n")
+        logger.info(f"Collecting content for nodes:\n{'\n'.join(node_ids)}\n")
 
         code_content, pdf_content = cls._get_content_and_apply_scaling(
             stats=stats,
@@ -343,6 +359,7 @@ class AutoToml:
         code_scale_factor = 1
         pdf_page_ct = stats.pdf_page_ct
         source_file_ct = stats.source_file_ct
+        directory_ct = stats.directory_ct
 
         source_ct = source_file_ct + pdf_page_ct
 
@@ -372,6 +389,18 @@ class AutoToml:
         if source_ct > cls.SCALING_THRESHOLD:
             mode = cls.ScaleMode.FAIL
 
+        # TODO: redesign the logic to be built around dirs by default.
+        # Blanket use of using directories by default, unless below a critical file
+        # count threshold in scope. In that case, no scaling applied to code but
+        # keep PDF scaling.
+        mode = (
+            cls.ScaleMode.SCALE_PDFS
+            if (
+                directory_ct == 0
+                or source_file_ct <= cls.MIN_FILE_COUNT_THRESHOLD_FOR_USE_DIRS
+            )
+            else cls.ScaleMode.SCALE_PDF_AND_USE_DIRS
+        )
         return mode, code_scale_factor
 
     @classmethod

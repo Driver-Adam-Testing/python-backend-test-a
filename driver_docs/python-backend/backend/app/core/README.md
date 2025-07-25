@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `core` folder in the `python-backend` codebase contains essential configuration and logging setup files, including `config.py` for application settings and `logger.py` for logging, with an empty `__init__.py` file.
+Essential configuration and logging setup files, including a Pydantic-based settings manager and a deprecated logger configuration.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[config.py](config.py.md)**: The `config.py` file defines application settings and configurations using Pydantic's BaseSettings, including environment variables, API endpoints, authentication credentials, and validation for non-default secrets.
+- **[config.py](config.py.md)**: The `config.py` file defines a `Settings` class using Pydantic to manage application configuration, including environment variables, API endpoints, authentication credentials, and other settings, with a mechanism to warn or raise errors if default secrets are not changed.
 - **[logger.py](logger.py.md)**: The `logger.py` file sets up a logging configuration with a stream handler for outputting log messages to standard output, but it is marked for deprecation in favor of a logger in `main.py`.
 
 ---

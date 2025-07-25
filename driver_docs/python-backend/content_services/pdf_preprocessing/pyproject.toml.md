@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata, dependencies, and build system configuration for the `pdf-preprocessing` package.
+Configuration for the `pdf-preprocessing` project using Poetry, specifying dependencies and build settings.
 
 # Purpose
-The provided content is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. The `[tool.poetry]` section specifies metadata about the project, including its name, version, and author information, as well as the path to the README file. The `[tool.poetry.dependencies]` section lists the project's runtime dependencies, specifying the required versions of Python and various libraries such as `requests`, `pymupdf`, and `openai`, along with local development paths for `database` and `shared` packages. The `[tool.poetry.group.dev.dependencies]` section defines development dependencies, in this case, `pytest` for testing purposes. Finally, the `[build-system]` section indicates the build requirements and backend, specifying `poetry-core` as the necessary package for building the project.
+The `pyproject.toml` file is a configuration file used by the Poetry tool to manage the dependencies and metadata of a Python project named `pdf-preprocessing`. The project is at version `0.1.0` and is authored by Eric Miller. The file specifies that the project requires Python version `3.12` or higher but less than `3.13`. It lists several dependencies, including `requests`, `pymupdf`, `openai`, `boto3`, `pydantic`, `tiktoken`, and `pillow`, each with specified version constraints. Additionally, it includes local dependencies from paths `../../driver_db` and `../../packages/shared`, marked for development use. The development group dependencies include `pytest` for testing purposes. The build system section indicates that the project uses `poetry-core` as a requirement and specifies `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

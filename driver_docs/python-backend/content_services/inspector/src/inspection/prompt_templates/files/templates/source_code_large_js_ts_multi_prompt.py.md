@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_js_ts_multi_prompt.py` file defines a template for generating multi-context prompts for analyzing large JavaScript and TypeScript source code, focusing on elements like imports, global variables, classes, interfaces, types, and functions.
+The `source_code_large_js_ts_multi_prompt.py` file defines a template for generating structured prompts to analyze and extract information from large JavaScript and TypeScript source code files, focusing on elements like imports, global variables, classes, interfaces, types, and functions.
 
 # Purpose
-This Python code file is designed to facilitate the analysis and documentation of JavaScript and TypeScript source code. It imports various utilities and classes from different modules, which are used to create a structured template for generating detailed documentation. The primary purpose of this file is to define a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS`, which outlines how different components of JavaScript and TypeScript code—such as imports, global variables, classes, interfaces, types, and functions—should be processed and documented. Each component is associated with specific functions that perform static analysis and leverage language models to extract and organize relevant information.
+This Python code defines a structured template for generating prompts related to JavaScript and TypeScript source code analysis. It is part of a larger system that appears to be focused on analyzing and documenting code, specifically JavaScript and TypeScript, by breaking down the code into various components such as imports, global variables, classes, interfaces, types, and functions. The file imports several modules and classes that facilitate the creation of structured prompts and the collection of code symbols through static analysis and language model (LLM) processing. The main structure, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS`, is a list of tuples, each representing a different aspect of the code to be analyzed and documented, with specific instructions and methods for extracting and formatting the relevant information.
 
-The file serves as a configuration or setup script that defines how to apply these analysis and documentation processes to JavaScript and TypeScript code. It does not directly perform the analysis but rather specifies the framework within which other parts of the system will operate. This makes it a crucial part of a larger system, likely intended to be used as a library or module within a broader codebase that deals with code analysis and documentation generation. The file does not define public APIs or external interfaces directly but sets up the internal logic for handling and documenting various code elements.
+The code is designed to be part of a larger framework or library, likely intended for use in automated code documentation or analysis tools. It does not define a standalone script but rather a set of templates and instructions that can be used by other components of the system to generate detailed documentation or analysis reports. The use of structured prompting and the integration of static analysis with LLM outputs suggest a sophisticated approach to understanding and documenting code, making it useful for developers and tools that need to process and interpret large codebases in JavaScript and TypeScript.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_PURPOSE_FROM_CHUNKS`
 - `utils.lang_specialization.ir_common.ListData`
@@ -35,8 +40,8 @@ The file serves as a configuration or setup script that defines how to apply the
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS` is a list of tuples, each representing a different section of a JavaScript/TypeScript code analysis template. Each tuple contains a prompt type, a section header, and various functions or data sources used to gather or process information about that section, such as imports, global variables, classes, interfaces, types, and functions.
-- **Use**: This variable is used to define a structured template for analyzing and generating prompts related to different components of JavaScript/TypeScript source code.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS` is a list of tuples, each containing structured data for generating prompts related to JavaScript and TypeScript code analysis. Each tuple includes a section identifier, a description, and various components or functions for processing or generating prompt content, such as static analysis collections and lambda functions for data transformation.
+- **Use**: This variable is used to define a template for generating multi-part prompts that facilitate the analysis and documentation of JavaScript and TypeScript source code.
 
 
 

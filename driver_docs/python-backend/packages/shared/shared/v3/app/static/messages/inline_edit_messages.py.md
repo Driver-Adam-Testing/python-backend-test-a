@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `inline_edit_messages.py` file defines classes for handling inline edit messages in a document editing context, including system and user messages that guide the process of refining text based on user prompts and document content.
+The `inline_edit_messages.py` file defines classes for handling inline edit messages in a document editing context, including system and user messages that guide the process of refining text based on user prompts and document context.
 
 # Purpose
-This Python code defines a set of classes that facilitate the creation and management of messages related to inline text editing within a document. The primary purpose of this code is to support a system where a user can highlight or position the cursor on a specific segment of a document, prompting a skilled technical writer (likely an AI model) to refine or edit the selected text based on the user's instructions. The code is structured around three main classes: `InlineEditSystemMessage`, `InlineEditToolUseMessage`, and `InlineEditUserMessage`, all of which inherit from the `LlmMessage` class. These classes are designed to handle different types of messages within the system, with `InlineEditSystemMessage` and `InlineEditToolUseMessage` focusing on system-level instructions and `InlineEditUserMessage` handling user-generated content.
-
-The code imports several constants and classes from shared modules, which are used to define the structure and content of the messages. The `InlineEditSystemMessage` class provides a detailed template for how the system should interpret and respond to user prompts, emphasizing the importance of replacing only the selected text. The `InlineEditToolUseMessage` class instructs the system to utilize additional tools if the user prompt requires context not present in the document. The `InlineEditUserMessage` class includes a class method [`from_context`](#InlineEditUserMessagefrom_context) that constructs a user message by wrapping the user prompt and document content in specific XML-like tags, ensuring that the system can accurately interpret the user's editing request. This code is likely part of a larger application or library that deals with document editing and processing, providing a structured way to handle inline editing tasks.
+This Python code defines a set of classes that extend the `LlmMessage` class to facilitate inline editing operations within a document editing system. The file provides narrow functionality, specifically tailored for handling messages related to inline text editing, where a user selects a portion of text to be revised based on a prompt. The `InlineEditSystemMessage` and `InlineEditToolUseMessage` classes are designed to guide the system's behavior, with predefined content that instructs the system on how to process user prompts and handle text selection. The `InlineEditUserMessage` class includes a class method [`from_context`](<#InlineEditUserMessagefrom_context>) that constructs a message by wrapping user input and document content around the cursor, effectively preparing the message for processing. This code is a specialized component of a larger system, likely part of a document editing or content management application, focusing on the interaction between user input and automated text refinement.
 # Imports and Dependencies
 
 ---
@@ -29,9 +27,9 @@ The code imports several constants and classes from shared modules, which are us
 - **Members**:
     - `message_kind`: Specifies the kind of message, set to MessageKind.SYSTEM.
     - `content`: Contains a detailed instructional message for refining text based on user prompts.
-- **Description**: The InlineEditSystemMessage class is a specialized message type that extends the LlmMessage class, designed to guide a technical writer in refining text based on user prompts. It provides a detailed instructional message that outlines how to handle inline edit requests, specifying how to identify and replace selected text segments within a document. The class sets the message kind to SYSTEM, indicating its role in system-level operations for text editing.
+- **Description**: The InlineEditSystemMessage class is a specialized message type that extends the LlmMessage class, designed to guide a technical writer in refining text based on user prompts. It provides a detailed instructional message that outlines how to handle inline edit requests, specifying how to identify and replace selected text within a document. The class sets the message kind to SYSTEM, indicating its role in system-level operations for text editing.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 
 ---
@@ -39,20 +37,20 @@ The code imports several constants and classes from shared modules, which are us
 - **Members**:
     - `message_kind`: Specifies the kind of message, set to MessageKind.SYSTEM.
     - `content`: Contains a predefined message guiding tool usage for context retrieval.
-- **Description**: The InlineEditToolUseMessage class is a specialized message type that extends the LlmMessage class, designed to instruct the system on how to handle user prompts that require additional context not present in the document. It emphasizes the necessity of using tools to gather context from source code or documentation when the user prompt involves questions beyond the visible text.
+- **Description**: The InlineEditToolUseMessage class is a specialized message type that extends the LlmMessage class, designed to instruct the system on how to handle user prompts that require additional context not present in the document. It emphasizes the necessity of using tools to gather context from source code or documentation when the user prompt involves questions beyond the immediate text selection.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 
 ---
 ### InlineEditUserMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage}} -->
 - **Members**:
     - `message_kind`: Specifies the kind of message, set to MessageKind.USER.
-- **Description**: The InlineEditUserMessage class is a specialized type of LlmMessage that represents a user-initiated message in an inline editing context. It is designed to encapsulate the user's prompt and the surrounding document content, including the text before and after the cursor, as well as the selected text. This class provides a class method, from_context, which constructs an instance of InlineEditUserMessage by wrapping the user prompt and document content in specific markers, facilitating the inline editing process.
+- **Description**: The InlineEditUserMessage class is a specialized type of LlmMessage that represents a user-initiated message in an inline editing context. It is designed to encapsulate the user's prompt and the surrounding document content, including the text before and after the cursor, as well as the selected text. This class provides a class method, from_context, to construct an instance by wrapping the user prompt and document content in specific markers, facilitating the inline editing process.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage.from_context`](#InlineEditUserMessagefrom_context)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage.from_context`](<#InlineEditUserMessagefrom_context>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 **Methods**
 
@@ -63,17 +61,18 @@ The `from_context` class method constructs an `InlineEditUserMessage` object by 
 - **Inputs**:
     - `user_prompt`: A string representing the user's prompt or instruction for editing the document.
     - `page_content_before_cursor`: A string representing the content of the document before the cursor position.
-    - `selected_text`: A string representing the text currently selected or highlighted by the user.
+    - `selected_text`: A string representing the text selected by the user for editing.
     - `page_content_after_cursor`: A string representing the content of the document after the cursor position.
 - **Control Flow**:
     - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
     - The method takes four string arguments: `user_prompt`, `page_content_before_cursor`, `selected_text`, and `page_content_after_cursor`.
-    - It constructs a new `InlineEditUserMessage` object by wrapping and concatenating the provided strings using predefined wrappers: `USER_PROMPT`, `DOCUMENT_CONTENT_BEFORE_CURSOR`, `CURSOR_SELECTION`, `CURSOR`, and `DOCUMENT_CONTENT_AFTER_CURSOR`.
-    - The concatenated and wrapped content is passed as the `content` argument to the `InlineEditUserMessage` constructor, which is then returned.
-- **Output**: An instance of `InlineEditUserMessage` with its `content` attribute set to the wrapped and concatenated input strings.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](../../../globals/glossary.py.md#GlossaryDefinitionwrap)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage`](#InlineEditUserMessage)  (Base Class)
+    - It constructs a new `InlineEditUserMessage` object by calling the class constructor `cls()` with a `content` argument.
+    - The `content` is a formatted string that wraps the `user_prompt` and the document content around the cursor using predefined wrappers: `USER_PROMPT`, `DOCUMENT_CONTENT_BEFORE_CURSOR`, `CURSOR`, `CURSOR_SELECTION`, and `DOCUMENT_CONTENT_AFTER_CURSOR`.
+    - The method returns the newly created `InlineEditUserMessage` object.
+- **Output**: An instance of `InlineEditUserMessage` with its `content` attribute set to a formatted string combining the user prompt and document content.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#GlossaryDefinitionwrap>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/inline_edit_messages.InlineEditUserMessage`](<#InlineEditUserMessage>)  (Base Class)
 
 
 

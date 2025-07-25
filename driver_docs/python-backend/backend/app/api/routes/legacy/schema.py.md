@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `schema.py` file defines a GraphQL schema with custom context and logging extensions for a FastAPI application, utilizing Strawberry and SQLModel for query and mutation handling.
+The `schema.py` file defines a GraphQL schema with custom context and middleware for a FastAPI application, utilizing Strawberry for schema creation and including routes for both standard and Apollo Sandbox GraphQL interfaces.
 
 # Purpose
-This Python file is designed to set up a GraphQL API using the Strawberry library in conjunction with FastAPI. It defines a GraphQL schema with specified query and mutation operations, leveraging the `strawberry.Schema` class. The schema is configured to disable automatic camel casing and includes custom scalar type handling for JSON data, as well as a logging extension for enhanced functionality. The file also defines a `Context` class, which is used to manage the session and user-related data, ensuring that each GraphQL request has access to the necessary context for execution.
+This Python file is designed to set up a GraphQL API using the Strawberry library in conjunction with FastAPI. It defines a GraphQL schema with specified query and mutation operations, which are imported from separate modules. The schema is configured to disable automatic camel casing and includes a custom scalar type for JSON data, as well as a logging extension to enhance functionality. The file also defines a custom context class, `Context`, which is used to manage the session and user-related data during GraphQL operations. This context is populated using dependency injection, leveraging FastAPI's `Depends` to ensure that JWT authentication is required for accessing the API.
 
-The file establishes two GraphQL routers: `graphql_router` and `sandbox_router`. Both routers utilize the defined schema and a context getter function, [`get_context`](#get_context), which ensures that each request is authenticated via JWT and has access to a database session. The `sandbox_router` is specifically configured to use the Apollo Sandbox IDE, providing a user-friendly interface for testing and interacting with the GraphQL API. This setup indicates that the file is intended to be part of a larger application, serving as a module that integrates GraphQL capabilities into a FastAPI-based web service.
+The file establishes two GraphQL routers: `graphql_router` and `sandbox_router`. Both routers utilize the defined schema and context, but the `sandbox_router` is specifically configured to use the Apollo Sandbox as its GraphQL IDE, accessible at a designated path. This setup indicates that the file is intended to be part of a larger application, serving as a critical component for handling GraphQL requests and providing a structured API interface. The use of dependency injection and middleware for authentication suggests a focus on security and modularity, making it suitable for integration into a broader web service architecture.
 # Imports and Dependencies
 
 ---
@@ -32,22 +32,22 @@ The file establishes two GraphQL routers: `graphql_router` and `sandbox_router`.
 ---
 ### schema
 - **Type**: `strawberry.Schema`
-- **Description**: The `schema` variable is an instance of `strawberry.Schema`, which is a GraphQL schema definition. It is configured with a query and mutation class, a custom configuration to disable automatic camel casing, a scalar override for dictionaries to be treated as JSON, and an extension for logging.
-- **Use**: This variable is used to define the GraphQL schema for the application, which is then utilized by the GraphQL routers to handle API requests.
+- **Description**: The `schema` variable is an instance of `strawberry.Schema`, which is a GraphQL schema object. It is configured with a query and mutation class, a custom configuration to disable automatic camel casing, a scalar override for the `dict` type to use a `JSON` scalar, and an extension for logging.
+- **Use**: This variable is used to define the GraphQL schema for the application, which is then utilized by the `GraphQLRouter` to handle GraphQL requests.
 
 
 ---
 ### graphql\_router
 - **Type**: `GraphQLRouter`
-- **Description**: The `graphql_router` is an instance of the `GraphQLRouter` class from the `strawberry.fastapi` module. It is configured with a GraphQL schema that includes query and mutation definitions, as well as a custom context getter function. The context getter function provides a context object containing session and user information for each request.
-- **Use**: This variable is used to handle GraphQL requests in a FastAPI application, providing the necessary schema and context for processing queries and mutations.
+- **Description**: The `graphql_router` is an instance of the `GraphQLRouter` class from the `strawberry.fastapi` module. It is configured with a GraphQL schema that includes query and mutation definitions, and it uses a custom context getter function to provide request-specific context data, such as user and session information.
+- **Use**: This variable is used to handle GraphQL requests in a FastAPI application, providing the necessary schema and context for executing GraphQL operations.
 
 
 ---
 ### sandbox\_router
 - **Type**: `GraphQLRouter`
-- **Description**: The `sandbox_router` is an instance of the `GraphQLRouter` class from the `strawberry.fastapi` module. It is configured to serve a GraphQL API using the provided `schema` and is accessible at the path `/apollo-sandbox/`. The router uses the Apollo Sandbox as its GraphQL IDE and utilizes a custom context getter function, `get_context`, to provide request-specific context.
-- **Use**: This variable is used to define and configure a GraphQL endpoint for the Apollo Sandbox, allowing for testing and interaction with the GraphQL API.
+- **Description**: The `sandbox_router` is an instance of the `GraphQLRouter` class, configured to serve a GraphQL API using the Apollo Sandbox IDE. It is initialized with a specific schema, a path for the API endpoint, and a context getter function to provide request-specific context.
+- **Use**: This variable is used to define a GraphQL API endpoint at '/apollo-sandbox/' with Apollo Sandbox as the IDE for testing and interacting with the API.
 
 
 # Classes
@@ -56,11 +56,11 @@ The file establishes two GraphQL routers: `graphql_router` and `sandbox_router`.
 ### Context<!-- {{#class:python-backend/backend/app/api/routes/legacy/schema.Context}} -->
 - **Members**:
     - `session`: Holds the database session for the context.
-    - `user`: Represents the user model associated with the context.
-    - `m2m`: Represents the many-to-many relationship model associated with the context.
-- **Description**: The `Context` class extends `BaseContext` and is used to encapsulate the session, user, and many-to-many relationship models within a GraphQL context, facilitating the management of these components during GraphQL operations.
+    - `user`: Represents the user information within the context.
+    - `m2m`: Stores the many-to-many relationship data for the context.
+- **Description**: The `Context` class extends `BaseContext` and is used to encapsulate the session, user, and many-to-many relationship data required for GraphQL operations. It initializes these components and provides a structured way to pass them around within the application, ensuring that each GraphQL request has access to the necessary context information.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/schema.Context.__init__`](#Context__init__)
+    - [`python-backend/backend/app/api/routes/legacy/schema.Context.__init__`](<#Context__init__>)
 - **Inherits From**:
     - `BaseContext`
 
@@ -68,20 +68,20 @@ The file establishes two GraphQL routers: `graphql_router` and `sandbox_router`.
 
 ---
 #### Context\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/api/routes/legacy/schema.Context.__init__}} -->
-The [`__init__`](../../../repositories/base_repository.py.md#BaseRepository__init__) method initializes a `Context` object with a database session, a user model, and a many-to-many relationship model, and calls the parent class initializer.
+The [`__init__`](<s3.py.md#S3BucketAccess__init__>) method initializes a `Context` object with a database session, a user model, and a many-to-many model, and calls the parent class initializer.
 - **Inputs**:
     - `session`: A `Session` object representing the database session.
     - `user`: A `BaseModel` object representing the user model.
-    - `m2m`: A `BaseModel` object representing the many-to-many relationship model.
+    - `m2m`: A `BaseModel` object representing the many-to-many model.
 - **Control Flow**:
     - Assigns the `session` parameter to the instance variable `self.session`.
     - Assigns the `user` parameter to the instance variable `self.user`.
     - Assigns the `m2m` parameter to the instance variable `self.m2m`.
-    - Calls the [`__init__`](../../../repositories/base_repository.py.md#BaseRepository__init__) method of the parent class `BaseContext`.
-- **Output**: The method does not return any value; it initializes the instance variables and sets up the object state.
-- **Functions called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.__init__`](../../../repositories/base_repository.py.md#BaseRepository__init__)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/schema.Context`](#Context)  (Base Class)
+    - Calls the [`__init__`](<s3.py.md#S3BucketAccess__init__>) method of the parent class `BaseContext`.
+- **Output**: This method does not return any value; it initializes the instance variables and sets up the object state.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/s3.S3BucketAccess.__init__`](<s3.py.md#S3BucketAccess__init__>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/schema.Context`](<#Context>)  (Base Class)
 
 
 
@@ -89,19 +89,20 @@ The [`__init__`](../../../repositories/base_repository.py.md#BaseRepository__ini
 
 ---
 ### get\_context<!-- {{#callable:python-backend/backend/app/api/routes/legacy/schema.get_context}} -->
-The `get_context` function asynchronously creates and returns a [`Context`](#Context) object using dependencies for user authentication and database session management.
+The `get_context` function asynchronously creates and returns a [`Context`](<#Context>) object using dependencies for user authentication and database session management.
 - **Inputs**:
-    - `user`: A `BaseModel` instance representing the user, obtained through the `require_jwt` dependency for JWT authentication.
-    - `m2m`: A `BaseModel` instance representing machine-to-machine authentication, also obtained through the `require_jwt` dependency.
-    - `session`: A `Session` object representing the database session, obtained through the `get_db` dependency.
+    - `user`: A `BaseModel` instance representing the authenticated user, obtained via the `require_jwt` dependency.
+    - `m2m`: A `BaseModel` instance representing machine-to-machine authentication, also obtained via the `require_jwt` dependency.
+    - `session`: A `Session` object representing the database session, obtained via the `get_db` dependency.
 - **Control Flow**:
-    - The function is defined as asynchronous, allowing it to handle I/O-bound operations efficiently.
-    - It uses the `Depends` function from FastAPI to inject dependencies for `user`, `m2m`, and `session`.
-    - A [`Context`](#Context) object is instantiated with the `session`, `user`, and `m2m` arguments.
-    - The newly created [`Context`](#Context) object is returned.
-- **Output**: The function returns a [`Context`](#Context) object initialized with the provided session, user, and m2m data.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/schema.Context`](#Context)
+    - The function is defined as asynchronous, allowing it to be used in an async context.
+    - The `user` and `m2m` parameters are populated using the `require_jwt` dependency, which likely handles JWT authentication.
+    - The `session` parameter is populated using the `get_db` dependency, which likely provides a database session.
+    - A [`Context`](<#Context>) object is instantiated with the `session`, `user`, and `m2m` parameters.
+    - The [`Context`](<#Context>) object is returned as the output of the function.
+- **Output**: A [`Context`](<#Context>) object initialized with the provided `session`, `user`, and `m2m` parameters.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/schema.Context`](<#Context>)
 
 
 

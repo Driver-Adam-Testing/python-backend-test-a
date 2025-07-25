@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `post_processing` folder in the `python-backend` codebase contains a utility file, `mermaid.py`, which is responsible for handling Mermaid diagram code blocks by extracting, validating, and repairing them to ensure proper rendering.
+The `post_processing` folder in the `python-backend` codebase contains utilities for handling Mermaid diagrams, specifically focusing on extraction, validation, and repair to ensure correct rendering.
 
 
 ## Files
-- **[mermaid.py](mermaid.py.md)**: The `mermaid.py` file provides utilities for extracting, validating, and repairing Mermaid diagram code blocks in text using a language model, ensuring they render correctly.
+- **[mermaid.py](mermaid.py.md)**: The `mermaid.py` file provides utilities for extracting, validating, and repairing Mermaid diagrams within text using a language model, ensuring they render correctly by replacing broken diagrams with fixed versions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -11,6 +11,7 @@ from database.models_v2_enums import (
     LlmPipelineKind,
     NodeKind,
     PrimaryAssetKind,
+    PrimaryAssetProvider,
     VersionStatus,
 )
 from sqlalchemy import (
@@ -20,6 +21,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    UniqueConstraint,
     desc,
     func,
 )
@@ -70,6 +72,9 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
+    provider: PrimaryAssetProvider = Field(
+        index=True,
+    )
     related_content_last_updated: None | datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
@@ -102,11 +107,11 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
 class Version(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_version"
     __table_args__ = (
-        Index(
-            "ix_v2_version_primary_asset_id_display_name",
+        UniqueConstraint(
             "primary_asset_id",
-            "display_name",
-            unique=True,
+            "vcs_hash",
+            name="ix_v2_version_primary_asset_id_vcs_hash",
+            postgresql_nulls_not_distinct=True,
         ),
         Index(
             "ix_version_primary_asset_id_updated_at_desc",
@@ -122,7 +127,6 @@ class Version(SQLModel, table=True):  # type: ignore
         ondelete="CASCADE",
         index=True,
     )
-    display_name: str
     status: VersionStatus = Field(index=True)
     previous_version_id: UUID | None = Field(
         default=None,
@@ -145,6 +149,10 @@ class Version(SQLModel, table=True):  # type: ignore
             index=True,
         ),
         default=None,
+    )
+    vcs_hash: str | None
+    vcs_metadata: dict | None = Field(  # type: ignore
+        sa_column=Column(JSONB, nullable=True),
     )
     primary_asset: "PrimaryAsset" = Relationship(
         back_populates="versions",

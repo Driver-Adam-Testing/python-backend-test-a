@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_04_07_1140-21e1da60676a_add_node_total_files.py` file is an Alembic migration script that adds a `total_files` column to the `v2_node` table, with a computed value from `misc_metadata`, and creates an index on this column.
+The `2025_04_07_1140-21e1da60676a_add_node_total_files.py` file is an Alembic migration script that adds a `total_files` column to the `v2_node` table, including an index for it, and provides downgrade functionality to remove these changes.
 
 # Purpose
-This source code file is an Alembic migration script used to modify a database schema by adding a new column to an existing table. Specifically, it adds a `total_files` column to the `v2_node` table, which is computed from a JSONB field (`misc_metadata`) and is indexed to improve query performance. The script provides narrow functionality, focusing solely on this schema change, and includes both an [`upgrade`](#upgrade) function to apply the change and a [`downgrade`](#downgrade) function to revert it. This type of script is typically part of a series of migrations used to manage database schema evolution in a controlled and versioned manner.
+This Python file is an Alembic migration script designed to modify a database schema by adding a new column to an existing table. Specifically, it adds a column named `total_files` to the `v2_node` table. The `total_files` column is of type `Integer` and is computed from the `misc_metadata` JSONB column, extracting the `total_files` value and casting it to an integer. This column is also indexed to potentially improve query performance when filtering or sorting by `total_files`. The script includes both an [`upgrade`](<#upgrade>) function to apply these changes and a [`downgrade`](<#downgrade>) function to revert them, ensuring that the migration can be rolled back if necessary.
+
+The script is part of a version-controlled database schema management process, as indicated by the use of Alembic, a database migration tool for SQLAlchemy. The `revision` and `down_revision` identifiers are used by Alembic to track the order of migrations, ensuring that changes are applied in the correct sequence. This file is not intended to be executed as a standalone script but rather as part of a larger migration workflow managed by Alembic. The presence of auto-generated comments suggests that the script was initially created using Alembic's command-line tools, which automate the generation of migration scripts based on detected changes in the database schema.
 # Imports and Dependencies
 
 ---
@@ -19,14 +21,14 @@ This source code file is an Alembic migration script used to modify a database s
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
+- **Use**: This variable is used by Alembic to identify the current migration version in the database schema history.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
 - **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
 
 
@@ -34,7 +36,7 @@ This source code file is an Alembic migration script used to modify a database s
 ### branch\_labels
 - **Type**: `NoneType`
 - **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to specify labels for the branch in Alembic migrations, but in this case, it is not utilized as it is set to `None`.
+- **Use**: This variable is used to define branch labels for the migration, but is currently not utilized as it is set to `None`.
 
 
 ---
@@ -48,14 +50,14 @@ This source code file is an Alembic migration script used to modify a database s
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_04_07_1140-21e1da60676a_add_node_total_files.upgrade}} -->
-The `upgrade` function adds a new column `total_files` to the `v2_node` table and creates an index on this column using Alembic migration commands.
+The `upgrade` function adds a new computed column `total_files` to the `v2_node` table and creates an index on this column.
 - **Inputs**: None
 - **Control Flow**:
     - The function begins by adding a new column named `total_files` to the `v2_node` table using the `op.add_column` method.
-    - The `total_files` column is defined as an `Integer` type and is computed from the `misc_metadata` JSON field, specifically extracting the `total_files` value and casting it to an integer.
+    - The `total_files` column is defined as an `Integer` type and is computed from the `misc_metadata` JSON field using a SQL expression.
     - The column is set to be nullable and the computed value is persisted in the database.
-    - Next, the function creates an index on the `total_files` column using the `op.create_index` method, which is not unique.
-- **Output**: The function does not return any value as it is designed to perform database schema modifications.
+    - An index is created on the `total_files` column using the `op.create_index` method to improve query performance on this column.
+- **Output**: The function does not return any value as it is designed to perform a database schema upgrade operation.
 
 
 ---
@@ -63,9 +65,9 @@ The `upgrade` function adds a new column `total_files` to the `v2_node` table an
 The `downgrade` function reverses database schema changes by removing the 'total_files' column and its associated index from the 'v2_node' table.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by dropping the index 'ix_v2_node_total_files' from the 'v2_node' table using the `op.drop_index` method.
-    - It then removes the 'total_files' column from the 'v2_node' table using the `op.drop_column` method.
-- **Output**: The function does not return any output as it performs schema modification operations directly on the database.
+    - The function begins by dropping the index 'ix_v2_node_total_files' from the 'v2_node' table using Alembic's `op.drop_index` method.
+    - It then removes the 'total_files' column from the 'v2_node' table using Alembic's `op.drop_column` method.
+- **Output**: The function does not return any value; it performs schema changes directly on the database.
 
 
 

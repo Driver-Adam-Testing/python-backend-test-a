@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_symbol_description.txt` file provides instructions for writing a single paragraph description of a symbol in a source file, including details such as the source file path, file description, symbol name, symbol kind, and code context.
+The `single_paragraph_symbol_description.txt` file provides instructions for writing a concise paragraph description of a symbol in a source file, including details such as the source file path, file description, symbol name, symbol kind, and code context.
 
 # Purpose
-The provided content appears to be a set of instructions for generating documentation for symbols within a source code file. It outlines a structured approach to describe a symbol, such as a function or variable, by providing the source file path, a description of the file's purpose, the symbol's name and kind, and relevant lines of code context. The instructions emphasize the importance of deriving information directly from the given data without making assumptions. An example is provided to illustrate how to construct a concise and informative paragraph that accurately describes the functionality and purpose of a specific symbol within the code, ensuring clarity and precision in technical documentation.
+The provided content appears to be a set of instructions for generating documentation for symbols within a source file. It outlines a structured approach to describe a symbol, such as a function or variable, by providing the source file path, a description of the file's purpose, the symbol's name and kind, and the relevant lines of code where the symbol is defined. The instructions emphasize the importance of deriving information directly from the given data without making assumptions. An example is provided to illustrate how to construct a concise and informative paragraph that explains the function `generate_response`, detailing its parameters and return value based on the code context. This approach ensures clarity and accuracy in documenting software components.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `lint.sh` file is a shell script for running static type checks and code formatting checks on the `app` and `driver_db` directories using `mypy` and `ruff`.
+The `lint.sh` file is a shell script that runs type checking and code formatting checks on the `app` and `driver_db` directories using `mypy` and `ruff`.
 
 # Purpose
-This Bash script is a utility for running static analysis and formatting checks on a Python project, providing narrow functionality focused on code quality assurance. It is not an executable or a library but rather a script intended to be executed in a development environment to ensure code compliance with certain standards. The script uses `mypy` to perform type checking on the `app` directory and within the `driver_db` directory, and it employs `ruff` to check and format the code in the `app` directory. The use of `set -e` ensures that the script exits immediately if any command fails, while `set -x` enables a trace of commands and their arguments, aiding in debugging.
+This Bash script is a utility script designed to perform static code analysis and formatting checks on a Python project. It provides narrow functionality focused on code quality assurance by using tools like `mypy` for type checking and `ruff` for linting and formatting. The script is not an executable in the traditional sense but rather a build or development tool that automates the process of running these checks. By setting `set -e` and `set -x`, the script ensures that it stops execution on any error and prints each command before executing it, which aids in debugging. This script is likely intended to be run by developers during the development process to maintain code quality and consistency.
 # Imports and Dependencies
 
 ---

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `config` folder in the `python-backend` codebase contains configuration files for large language models, including a Python script (`llm_config.py`) for defining and loading configurations and a TOML file (`llm_config.toml`) specifying settings for different models.
+Configuration files for large language models, including `llm_config.py` and `llm_config.toml`.
 
 
 ## Files
 - **[llm_config.py](llm_config.py.md)**: The `llm_config.py` file defines the configuration structure for large language models, including model providers, API versions, and supported models, and provides methods to load these configurations from a TOML file.
-- **[llm_config.toml](llm_config.toml.md)**: The `llm_config.toml` file in the `python-backend` codebase specifies configuration settings for various language models, including their model IDs, providers, context windows, output tokens, and API types.
+- **[llm_config.toml](llm_config.toml.md)**: The `llm_config.toml` file in the `python-backend` codebase specifies configuration settings for various language models, including their model IDs, providers, context windows, output tokens, and API kinds.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

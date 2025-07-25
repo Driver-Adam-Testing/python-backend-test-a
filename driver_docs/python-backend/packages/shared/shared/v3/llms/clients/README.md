@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `clients` folder in the `python-backend` codebase contains various Python files that define and implement clients for interacting with different language model APIs, including those from Anthropic and OpenAI, with support for message generation, streaming, and tool integration.
+Defines and implements clients for interacting with Anthropic and OpenAI language model APIs.
 
 
 ## Files
 - **[llm_client.py](llm_client.py.md)**: The `llm_client.py` file defines an abstract base class `LlmClient` for managing interactions with various language model APIs, including methods for single and multi-shot message generation and streaming, as well as handling tool execution and response management.
-- **[llm_client_claude.py](llm_client_claude.py.md)**: The `llm_client_claude.py` file implements a client for interacting with Anthropic's Claude models, converting messages to the required format and handling responses.
+- **[llm_client_claude.py](llm_client_claude.py.md)**: The `llm_client_claude.py` file implements a client for interacting with Anthropic's Claude models, converting messages to the expected format and handling responses.
 - **[llm_client_openai_chat.py](llm_client_openai_chat.py.md)**: The `llm_client_openai_chat.py` file implements an OpenAI Chat client for interacting with OpenAI's Chat models, supporting both synchronous and asynchronous message generation with tool integration capabilities.
-- **[llm_client_openai_o1.py](llm_client_openai_o1.py.md)**: The `llm_client_openai_o1.py` file defines the `OpenAiO1SeriesClient` class, a specialized LLM client for interacting with OpenAI's O-Series models, ensuring JSON strictness and allowing flexible tool integration.
-- **[llm_client_openai_strict.py](llm_client_openai_strict.py.md)**: The `llm_client_openai_strict.py` file implements a client for interacting with OpenAI's API in strict mode, supporting both synchronous and asynchronous message generation and streaming with tool integration.
+- **[llm_client_openai_o1.py](llm_client_openai_o1.py.md)**: The `llm_client_openai_o1.py` file implements the `OpenAiO1SeriesClient`, a specialized LLM client for interacting with OpenAI's O-Series models, focusing on JSON strictness and flexible tool integration.
+- **[llm_client_openai_strict.py](llm_client_openai_strict.py.md)**: The `llm_client_openai_strict.py` file implements a client for interacting with OpenAI's API in strict mode, providing both synchronous and asynchronous methods for generating and streaming language model messages with support for tool integration.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

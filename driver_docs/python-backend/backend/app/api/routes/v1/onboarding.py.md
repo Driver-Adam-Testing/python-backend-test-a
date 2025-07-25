@@ -6,9 +6,9 @@
 The `onboarding.py` file defines an API endpoint for triggering asset connections, handling different asset kinds, and updating version statuses based on processing requirements.
 
 # Purpose
-This Python file defines an API endpoint using FastAPI, specifically designed to handle asset connection requests. The primary functionality of this code is to process incoming requests that trigger asset connections based on the type of asset specified. It utilizes FastAPI's `APIRouter` to define a POST endpoint that accepts a request body conforming to the `AssetConnectionRequest` model. The endpoint processes the request by checking if the asset should be processed and, depending on the asset kind, either initiates a codebase connection or processes a file for PDF summaries. The code leverages external services through the `modal` library to perform these operations asynchronously.
+This Python file defines an API endpoint using FastAPI, specifically designed to handle asset connection requests. The primary functionality of this code is to process incoming requests that trigger asset connections based on the type of asset specified. It uses FastAPI's `APIRouter` to define a POST endpoint that accepts a request body conforming to the `AssetConnectionRequest` model. The endpoint processes the request by checking if the asset should be processed and, depending on the asset kind, either initiates a codebase connection or creates and embeds PDF summaries. The code leverages external services through the `modal` library to perform these operations asynchronously.
 
-The file is structured to be part of a larger application, likely a microservice, given its use of FastAPI and its modular design. It imports several components from other modules, such as authentication tokens and session management, indicating its integration into a broader system. The code also interacts with a database to update the status of asset versions, using SQLAlchemy for ORM operations. This file is not a standalone script but rather a component of a web service, providing a specific API endpoint for asset connection management. It defines a public API that can be accessed by other parts of the application or external clients to trigger asset processing workflows.
+The file imports several components from other modules, indicating that it is part of a larger application, likely a microservice architecture. It uses Pydantic models to validate and parse incoming request data, ensuring that the data adheres to expected formats and types. The code also interacts with a database using SQLAlchemy to update the status of asset versions, demonstrating its role in managing asset lifecycle states. This file is intended to be part of a web service, providing a specific API endpoint for asset connection operations, and it does not define a broad public API or external interfaces beyond this specific functionality.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ The file is structured to be part of a larger application, likely a microservice
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API, allowing for the organization of endpoints and their associated request handling logic.
-- **Use**: This variable is used to register and manage API endpoints, such as the POST endpoint for triggering asset connections.
+- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class, which is used to define a group of related API routes. It allows for modularizing the API by grouping routes together and applying common configurations such as dependencies, tags, and prefixes.
+- **Use**: The `router` is used to define and manage API endpoints, such as the `trigger_asset_connection` endpoint, within the FastAPI application.
 
 
 # Classes
@@ -41,7 +41,7 @@ The file is structured to be part of a larger application, likely a microservice
 - **Members**:
     - `status`: A string indicating the status of the asset connection, defaulting to 'OK'.
     - `call_id`: An optional string representing the call identifier for the asset connection.
-- **Description**: The `AssetConnection` class is a simple data model that extends Pydantic's `BaseModel` to represent the status and call identifier of an asset connection. It includes a default status of 'OK' and an optional call ID, which can be used to track the connection process.
+- **Description**: The `AssetConnection` class is a Pydantic model that represents the status and call identifier of an asset connection operation. It is used to encapsulate the result of an asset connection process, with a default status of 'OK' and an optional call ID that may be assigned during the connection process.
 - **Inherits From**:
     - `BaseModel`
 
@@ -49,12 +49,12 @@ The file is structured to be part of a larger application, likely a microservice
 ---
 ### AssetConnectionRequestParams<!-- {{#class:python-backend/backend/app/api/routes/v1/onboarding.AssetConnectionRequestParams}} -->
 - **Members**:
-    - `org_id`: The organization identifier associated with the asset.
-    - `asset_name`: The name of the asset to be connected.
-    - `asset_kind`: The type of the primary asset, defined by the PrimaryAssetKind enum.
-    - `provider`: The provider of the asset, which should ideally be an enum.
-    - `download_url`: The URL from which the asset can be downloaded.
-- **Description**: The AssetConnectionRequestParams class is a data model used to encapsulate the parameters required for requesting an asset connection. It includes essential information such as the organization ID, asset name, asset kind, provider, and the download URL. This class inherits from BaseModel, indicating it is designed to work seamlessly with Pydantic for data validation and serialization.
+    - `org_id`: The organization identifier as a string.
+    - `asset_name`: The name of the asset as a string.
+    - `asset_kind`: The kind of the asset, represented by the PrimaryAssetKind enum.
+    - `provider`: The provider of the asset, which should be an enum.
+    - `download_url`: The URL for downloading the asset as a string.
+- **Description**: The AssetConnectionRequestParams class is a Pydantic model that defines the parameters required for requesting an asset connection. It includes fields for the organization ID, asset name, asset kind, provider, and download URL. The class is used to encapsulate the necessary information for initiating a connection to an asset, with the asset kind being specified by the PrimaryAssetKind enum and the provider intended to be an enum as well.
 - **Inherits From**:
     - `BaseModel`
 
@@ -64,8 +64,8 @@ The file is structured to be part of a larger application, likely a microservice
 - **Members**:
     - `version_id`: A UUID representing the version identifier for the asset connection request.
     - `should_process`: A boolean indicating whether the asset connection should be processed.
-    - `params`: An optional set of parameters for the asset connection request, encapsulated in an AssetConnectionRequestParams object.
-- **Description**: The AssetConnectionRequest class is a data model used to encapsulate the details required to initiate an asset connection process. It includes a unique version identifier, a flag indicating whether the process should proceed, and optional parameters that provide additional context for the connection, such as organization ID, asset name, asset kind, provider, and download URL. This class is utilized in the API endpoint to trigger asset connections based on the provided data.
+    - `params`: An optional instance of AssetConnectionRequestParams containing parameters for the asset connection request.
+- **Description**: The AssetConnectionRequest class is a data model used to encapsulate the details required to initiate an asset connection process. It includes a unique version identifier, a flag to determine if the process should proceed, and optional parameters that specify details about the asset, such as its kind and download URL. This class is utilized in the context of triggering asset connections, where it provides the necessary information to either proceed with or halt the connection process based on the specified conditions.
 - **Inherits From**:
     - `BaseModel`
 
@@ -74,7 +74,7 @@ The file is structured to be part of a larger application, likely a microservice
 
 ---
 ### trigger\_asset\_connection<!-- {{#callable:python-backend/backend/app/api/routes/v1/onboarding.trigger_asset_connection}} -->
-The `trigger_asset_connection` function initiates an asset connection process based on the asset kind and updates the version status if processing is not required.
+The `trigger_asset_connection` function initiates a connection process for an asset based on its kind and updates the version status if necessary.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `current_token`: An instance of M2MToken representing the current machine-to-machine authentication token.
@@ -82,16 +82,15 @@ The `trigger_asset_connection` function initiates an asset connection process ba
     - `trigger_body`: An instance of AssetConnectionRequest containing the details of the asset connection request, including version ID, processing flag, and parameters.
 - **Control Flow**:
     - Check if `trigger_body.should_process` is False; if so, begin a database session.
-    - Attempt to retrieve the `Version` object using `trigger_body.version_id`; if not found, raise an exception indicating the version may have been deleted.
-    - Set the `version.status` to `VersionStatus.CONNECTION_FAILED` and add the version to the session.
-    - Raise an exception indicating the version was flagged by GuardDuty and set to CONNECTION_FAILED.
+    - Attempt to retrieve a Version object using `trigger_body.version_id`; if not found, raise an exception indicating the version may have been deleted.
+    - Set the version status to `VersionStatus.CONNECTION_FAILED` and add it to the session, then raise an exception indicating a GuardDuty issue.
     - Use a match-case statement to determine the asset kind from `trigger_body.params.asset_kind`.
-    - If the asset kind is `PrimaryAssetKind.CODEBASE`, look up and spawn the `run_codebase_connection` function with the provided parameters.
-    - If the asset kind is `PrimaryAssetKind.FILE`, look up and spawn the `create_and_embed_pdf_summaries` function with the provided parameters.
+    - If the asset kind is `PrimaryAssetKind.CODEBASE`, look up and spawn a `run_codebase_connection` function with the provided parameters.
+    - If the asset kind is `PrimaryAssetKind.FILE`, look up and spawn a `create_and_embed_pdf_summaries` function with the provided parameters.
     - If the asset kind is not supported, raise an exception indicating the unsupported asset kind.
-- **Output**: Returns an [`AssetConnection`](#AssetConnection) object with status 'OK' and the call ID of the spawned function.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/v1/onboarding.AssetConnection`](#AssetConnection)
+- **Output**: Returns an AssetConnection object with status 'OK' and the call ID of the spawned function.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/v1/onboarding.AssetConnection`](<#AssetConnection>)
 
 
 

@@ -3,13 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_verilog.py` file defines a template for handling large Verilog source code, including prompts for system and user purposes, as well as collections for Verilog modules and functions/tasks.
+The `source_code_large_verilog.py` file defines a template for handling large Verilog source code, including prompts and collections for modules, functions, and tasks.
 
 # Purpose
-This code defines a configuration for generating templates related to Verilog source code analysis and documentation. It imports specific components from a utility module focused on Verilog language specialization, such as prompts and collections for Verilog modules and functions. The `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` variable is a list of tuples, each representing a template configuration for different aspects of Verilog code, such as its purpose, modules, and functions/tasks. Each tuple contains a template type, a descriptive comment, and a combination of static analysis and language model methods to extract and document Verilog code elements. This code provides narrow functionality, specifically tailored for creating structured documentation templates for Verilog source code.
+This Python code is designed to facilitate the generation of structured prompts and templates specifically for analyzing and documenting Verilog source code. It imports various components and instructions from shared modules and utilities, which are then used to construct a template named `SOURCE_CODE_LARGE_TEMPLATE_VERILOG`. This template is a collection of tuples, each serving a distinct purpose in the documentation process. The first tuple focuses on generating a prompt for describing the overall purpose of the Verilog source code, utilizing specific instructions to ensure clarity and consistency in style. The subsequent tuples are concerned with identifying and documenting Verilog modules and functions/tasks, leveraging both static analysis and language model (LLM) capabilities to extract and organize relevant information.
+
+The code is structured as a library file intended to be imported and used in other parts of a larger system, likely one that involves automated code analysis and documentation. It does not define public APIs or external interfaces directly but rather provides a set of tools and templates for internal use. The common theme across the components is the structured and automated generation of documentation for Verilog code, highlighting the code's purpose, modules, and functions/tasks. This approach ensures that the documentation is both comprehensive and consistent, leveraging both static and dynamic analysis techniques.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.verilog.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.verilog.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_VERILOG`
 - `utils.lang_specialization.verilog.VerilogFnTaskCollection`
@@ -24,8 +31,8 @@ This code defines a configuration for generating templates related to Verilog so
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_VERILOG
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` is a list of tuples, each containing elements that define different aspects of Verilog code processing. Each tuple includes a type identifier, a descriptive string, and various components related to Verilog code analysis and generation, such as prompts and collections derived from static analysis or language model outputs.
-- **Use**: This variable is used to organize and structure the processing of Verilog code by associating specific prompts and collections with their respective purposes, modules, and functions/tasks.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` is a list of tuples, each containing structured data related to Verilog code processing. Each tuple includes a type identifier, a description string, and various components or functions related to Verilog code analysis and transformation.
+- **Use**: This variable is used to define templates for processing and analyzing Verilog code, including generating prompts and collecting module and function symbols.
 
 
 

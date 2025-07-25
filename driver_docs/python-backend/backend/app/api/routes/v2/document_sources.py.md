@@ -6,9 +6,9 @@
 The `document_sources.py` file in the `python-backend` codebase defines API endpoints for listing, creating, and deleting document sources, including batch operations, using FastAPI and SQLAlchemy.
 
 # Purpose
-This Python file is a FastAPI-based module that defines a set of RESTful API endpoints for managing `DocumentSource` entities within a database. The code provides CRUD (Create, Read, Update, Delete) operations specifically tailored for handling document sources, which are likely part of a larger application dealing with document management or content organization. The endpoints include functionalities to list document sources with pagination and filtering, create individual or batch document sources, and delete individual or batch document sources. The operations are secured by user authentication, ensuring that actions are performed within the context of the user's organization.
+This Python file is a FastAPI-based module that defines a set of RESTful API endpoints for managing `DocumentSource` entities within a database. The code provides CRUD (Create, Read, Update, Delete) operations specifically tailored for handling document sources, which are likely part of a larger application dealing with document management or content organization. The endpoints include functionalities to list document sources with pagination and filtering, create single or batch document sources, and delete single or batch document sources. The operations are secured by checking the user's organization ID, ensuring that users can only interact with document sources belonging to their organization.
 
-The technical components of this file include the use of SQLAlchemy and SQLModel for database interactions, leveraging asynchronous functions to handle requests efficiently. The code utilizes FastAPI's routing capabilities to define endpoints, and it employs utility functions for query filtering and sorting. The endpoints are designed to return structured responses, such as `ListWithCount` for paginated results and boolean values indicating the success of delete operations. This module is intended to be part of a larger application, as indicated by its imports from other parts of the application, and it serves as a public API interface for document source management.
+The file imports several components from external libraries and internal modules, such as SQLAlchemy for database interactions, FastAPI for defining the API routes, and custom utility functions for query filtering and sorting. The endpoints are defined using FastAPI's `@router` decorators, which map HTTP methods and paths to Python functions. The code also utilizes SQLAlchemy's ORM capabilities to perform database operations, including joins and eager loading of related entities, to efficiently retrieve and manipulate data. The use of response models ensures that the API returns structured and validated data, enhancing the robustness and reliability of the service.
 # Imports and Dependencies
 
 ---
@@ -38,7 +38,7 @@ The technical components of this file include the use of SQLAlchemy and SQLModel
 
 ---
 ### list\_document\_sources<!-- {{#callable:python-backend/backend/app/api/routes/v2/document_sources.list_document_sources}} -->
-The `list_document_sources` function retrieves a list of document sources with pagination, filtering, and sorting options, returning the results along with the total count.
+The `list_document_sources` function retrieves a list of document sources filtered and sorted according to the provided query parameters and pagination settings, returning the results along with the total count.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `request`: An instance of `Request` containing the HTTP request data, including query parameters for filtering.
@@ -46,19 +46,19 @@ The `list_document_sources` function retrieves a list of document sources with p
     - `user`: An instance of `UserToken` representing the authenticated user, used to filter document sources by organization.
     - `pagination`: An instance of `Pagination` containing pagination and sorting information for the query.
 - **Control Flow**:
-    - Check if the `pagination.sort_by` is set to 'updated_at' and set it to `None` if true.
-    - Construct a SQL query to select `DocumentSource` records, joining related tables for `source_node`, `version`, and `primary_asset`, and applying eager loading for performance.
-    - Filter the query to only include document sources belonging to the user's organization using `PrimaryAsset.organization_id`.
-    - Convert the request's query parameters into a dictionary and apply them as filters to the query using [`apply_filters_to_query`](query_utils.py.md#apply_filters_to_query).
-    - Create a count query to determine the total number of document sources matching the filters and execute it to get the `total_count`.
-    - Apply sorting to the query based on the `pagination` object using [`apply_sorting_to_query`](query_utils.py.md#apply_sorting_to_query).
-    - Execute the final query to retrieve the list of document sources and store the results.
-    - Return a [`ListWithCount`](schemas.py.md#ListWithCount) object containing the list of document sources and the total count.
-- **Output**: A [`ListWithCount`](schemas.py.md#ListWithCount) object containing the list of `DocumentSourceRead` objects and the total count of document sources matching the query.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](query_utils.py.md#apply_filters_to_query)
-    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](query_utils.py.md#apply_sorting_to_query)
-    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](schemas.py.md#ListWithCount)
+    - Check if the `sort_by` attribute of `pagination` is set to 'updated_at' and set it to `None` if true.
+    - Construct a SQL query to select `DocumentSource` records, joining related tables and applying eager loading for performance optimization.
+    - Filter the query based on the organization ID of the authenticated user.
+    - Convert query parameters from the request into filters and apply them to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
+    - Create a count query to determine the total number of records matching the filters and execute it to get the total count.
+    - Apply sorting to the query based on the pagination settings using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
+    - Execute the query to retrieve the list of document sources.
+    - Return the results as a [`ListWithCount`](<schemas.py.md#ListWithCount>) object, including the list of document sources and the total count.
+- **Output**: Returns a [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of `DocumentSourceRead` objects and the total count of document sources matching the query.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
+    - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#ListWithCount>)
 
 
 ---
@@ -75,13 +75,13 @@ The `create_document_source` function creates a new document source entry in the
     - The session is refreshed to ensure the new document source is updated with any changes made during the commit.
     - The newly created document source is returned.
 - **Output**: The function returns an instance of DocumentSourceDetailRead representing the newly created document source.
-- **Functions called**:
-    - [`python-backend/driver_db/database/models_v1.DocumentSource`](../../../../../driver_db/database/models_v1.py.md#DocumentSource)
+- **Functions Called**:
+    - [`python-backend/driver_db/database/models_v1.DocumentSource`](<../../../../../driver_db/database/models_v1.py.md#DocumentSource>)
 
 
 ---
 ### delete\_document\_source<!-- {{#callable:python-backend/backend/app/api/routes/v2/document_sources.delete_document_source}} -->
-The `delete_document_source` function deletes a document source identified by `page_node_id` and `source_node_id` for a specific organization and returns a boolean indicating success.
+The `delete_document_source` function deletes a document source identified by `source_node_id` and `page_node_id` for a specific organization and returns a boolean indicating success.
 - **Decorators**: `@router.delete`
 - **Inputs**:
     - `session`: An instance of `CurrentSession` used to interact with the database.
@@ -97,7 +97,7 @@ The `delete_document_source` function deletes a document source identified by `p
 
 ---
 ### batch\_create\_document\_sources<!-- {{#callable:python-backend/backend/app/api/routes/v2/document_sources.batch_create_document_sources}} -->
-The `batch_create_document_sources` function creates multiple [`DocumentSource`](../../../../../driver_db/database/models_v1.py.md#DocumentSource) records in the database, replacing any existing records with the same `page_node_id`.
+The `batch_create_document_sources` function creates multiple [`DocumentSource`](<../../../../../driver_db/database/models_v1.py.md#DocumentSource>) records in the database, replacing any existing records with the same `page_node_id`.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `session`: An instance of `CurrentSession` used to interact with the database.
@@ -106,14 +106,13 @@ The `batch_create_document_sources` function creates multiple [`DocumentSource`]
 - **Control Flow**:
     - Initialize an empty list `created_document_sources` to store the created document sources.
     - Iterate over each `data` item in the `payload` list.
-    - For each `data`, execute a delete operation to remove existing [`DocumentSource`](../../../../../driver_db/database/models_v1.py.md#DocumentSource) records with the same `page_node_id` from the database.
-    - Create a list `new_document_sources` of [`DocumentSource`](../../../../../driver_db/database/models_v1.py.md#DocumentSource) instances using the data from the `payload`.
+    - For each `data`, execute a delete operation to remove existing [`DocumentSource`](<../../../../../driver_db/database/models_v1.py.md#DocumentSource>) records with the same `page_node_id` from the database.
+    - Create a list `new_document_sources` of [`DocumentSource`](<../../../../../driver_db/database/models_v1.py.md#DocumentSource>) instances using the data from the `payload`.
     - Add all `new_document_sources` to the database session and commit the transaction to save them.
-    - Iterate over each `new_document_source` in `new_document_sources`, refresh it from the session to get the updated state, and append it to `created_document_sources`.
-    - Return the `created_document_sources` list.
+    - Refresh each `new_document_source` in the session to ensure they are up-to-date and append them to `created_document_sources`.
 - **Output**: A list of `DocumentSourceDetailRead` objects representing the newly created document sources.
-- **Functions called**:
-    - [`python-backend/driver_db/database/models_v1.DocumentSource`](../../../../../driver_db/database/models_v1.py.md#DocumentSource)
+- **Functions Called**:
+    - [`python-backend/driver_db/database/models_v1.DocumentSource`](<../../../../../driver_db/database/models_v1.py.md#DocumentSource>)
 
 
 ---
@@ -123,14 +122,14 @@ The `batch_delete_document_sources` function deletes multiple document sources b
 - **Inputs**:
     - `session`: An instance of `CurrentSession` used to interact with the database.
     - `user`: An instance of `UserToken` representing the authenticated user, used to verify organization access.
-    - `payload`: A list of `DocumentSourceCreate` objects containing the source_node_id and page_node_id for each document source to be deleted.
+    - `payload`: A list of `DocumentSourceCreate` objects containing the `source_node_id` and `page_node_id` for each document source to be deleted.
 - **Control Flow**:
-    - Initialize an empty list `deletion_results` to store the result of each deletion operation.
+    - Initialize an empty list `deletion_results` to store the results of each deletion operation.
     - Iterate over each `data` item in the `payload` list.
-    - For each `data`, execute a delete operation on the `DocumentSource` table where the `source_node_id` and `page_node_id` match those in `data`, and the `organization_id` matches the user's organization.
+    - For each `data`, execute a delete operation on the `DocumentSource` table where `source_node_id` and `page_node_id` match the values in `data`, and the `organization_id` matches the user's organization.
     - Commit the transaction to the database.
     - Append `True` to `deletion_results` if a row was deleted (i.e., `result.rowcount > 0`), otherwise append `False`.
-- **Output**: A list of booleans, each indicating whether the corresponding document source was successfully deleted (True) or not (False).
+- **Output**: A list of booleans, each indicating whether the corresponding document source in the payload was successfully deleted (True) or not (False).
 
 
 

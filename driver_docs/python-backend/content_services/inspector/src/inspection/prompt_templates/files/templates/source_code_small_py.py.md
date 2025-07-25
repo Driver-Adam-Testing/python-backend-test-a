@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_py.py` file defines a template for inspecting Python source code, focusing on extracting and organizing information about imports, global variables, classes, and functions.
+The `source_code_small_py.py` file defines a template for generating structured prompts related to Python source code, including sections for purpose, imports, global variables, classes, and functions.
 
 # Purpose
-This Python code defines a template for analyzing and documenting small Python source code files. It provides a structured approach to extract and describe various components of a Python script, such as imports, global variables, classes, and functions. The code leverages utility modules for language specialization and templates to facilitate this analysis, indicating a narrow functionality focused on code documentation. The template is organized into sections, each associated with a specific type of code element, and uses static analysis and language model (LLM) outputs to populate these sections. This setup is particularly useful for generating consistent and comprehensive documentation for small Python scripts.
+This Python code defines a structured template for analyzing and documenting small source code files, focusing on their purpose, imports, global variables, classes, and functions. It is a configuration script that leverages various components and utilities from shared and specialized modules to create a template (`SOURCE_CODE_SMALL_TEMPLATE_PY`) for generating structured documentation. The template is composed of tuples that specify different sections of the documentation, such as "Purpose," "Imports and Dependencies," "Global Variables," "Classes," and "Functions," each associated with specific data extraction and transformation logic. This code provides narrow functionality, specifically tailored for generating concise and organized documentation for small Python codebases.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.ir_common.ListData`
 - `utils.lang_specialization.python.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.python.SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_PY`
@@ -28,8 +33,8 @@ This Python code defines a template for analyzing and documenting small Python s
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_PY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_PY` is a list of tuples, each containing a set of parameters used for processing and analyzing Python source code. Each tuple includes a type identifier, a description string, and a combination of static analysis functions and LLM-based functions for extracting and processing different components of the code, such as imports, global variables, classes, and functions.
-- **Use**: This variable is used to define a template for analyzing Python source code by specifying the methods and prompts for extracting various code elements.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_PY` is a list of tuples, each representing a different aspect of Python source code analysis. Each tuple contains a type identifier, a description string, and a series of functions or instructions related to processing or generating prompts for specific code elements such as purpose, imports, global variables, classes, and functions.
+- **Use**: This variable is used to define a structured template for analyzing and generating prompts related to various components of Python source code.
 
 
 

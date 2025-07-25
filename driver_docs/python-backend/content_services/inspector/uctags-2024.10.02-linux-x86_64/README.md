@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `uctags-2024.10.02-linux-x86_64` folder in the `python-backend` codebase contains metadata, configuration files, and documentation for the `uctags` component, as detailed in its `.ppkg` subfolder.
+Configuration files, dependency graphs, licensing information, and documentation in the `.ppkg` subfolder.
 
 ## Folders
-- **[.ppkg](.ppkg/README.md)**: The `.ppkg` folder in the `python-backend` codebase contains metadata, configuration files, and documentation related to the `uctags` component, including its dependencies, licensing, version changes, and installation instructions.
+- **[.ppkg](.ppkg/README.md)**: Configuration files, dependency graphs, licensing information, and documentation for the `uctags` component.
 
 
 ---

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata, dependencies, and build system configuration for the `driver_data` package using Poetry.
+Configuration for a Python project using Poetry, specifying dependencies and build system details.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. It defines the metadata and dependencies for a Python project named "driver_data" with version "0.1.0". The file specifies the required Python version and lists the project's dependencies, including `sqlmodel`, `pydantic-settings`, `psycopg2-binary`, and `boto3`, which are necessary for the project's functionality. Additionally, it includes development dependencies such as `pytest`, `pytest-cov`, `mypy`, and `pre-commit` for testing, code coverage, type checking, and pre-commit hooks, respectively. The `[build-system]` section indicates that the project uses `poetry-core` for building, with `poetry.core.masonry.api` as the build backend.
+The `pyproject.toml` file configures the Python project using Poetry, a dependency management tool. It specifies the project metadata, including the project name `driver_data`, version `0.1.0`, and author information. The file defines the dependencies required for the project, such as `sqlmodel`, `pydantic-settings`, `psycopg2-binary`, and `boto3`, with specific version constraints. It also includes a development dependency group with tools like `pytest`, `pytest-cov`, `mypy`, and `pre-commit` for testing and code quality checks. The build system section indicates that `poetry-core` is required and specifies `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

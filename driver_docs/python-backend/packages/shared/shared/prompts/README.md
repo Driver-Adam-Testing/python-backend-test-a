@@ -3,18 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prompts` folder in the `python-backend` codebase contains various subfolders and files that provide prompts, templates, and models for different audiences, content types, and tasks, as well as initialization scripts for managing these components.
+Python scripts and modules for generating and managing content prompts for diverse audiences and tasks.
 
 ## Folders
-- **[audience](audience/README.md)**: The `audience` folder in the `python-backend` codebase contains various Python files that provide prompts and templates tailored for different audiences, including business development professionals, fifth graders, product managers, and software engineers.
-- **[block_kind](block_kind/README.md)**: The `block_kind` folder in the `python-backend` codebase contains various Python files that define Pydantic models and classes for handling different types of content, such as markdown, code, diagrams, lists, tables, and text, specifically for a copy editor agent.
-- **[interface](interface/README.md)**: The `interface` folder in the `python-backend` codebase contains Python files that define system message prompts and functions for managing iterative processes, tool execution, and context-based responses.
-- **[task](task/README.md)**: The `task` folder in the `python-backend` codebase contains various Python scripts that define prompts and templates for creating, editing, and verifying technical documents and code snippets, as well as initializing the `task` package.
-- **[tools](tools/README.md)**: The `tools` folder in the `python-backend` codebase contains initialization and module import files, specifically `__init__.py` for package marking and `think.py` for importing a module and defining an empty variable.
-- **[voice](voice/README.md)**: The `voice` folder in the `python-backend` codebase contains initialization and prompt files for defining roles and instructions related to content creation and editing, including technical copy editing and software engineering.
+- **[audience](audience/README.md)**: Various Python scripts for tailored content prompts for business development, fifth graders, product managers, and software engineers.
+- **[block_kind](block_kind/README.md)**: Python files that define Pydantic models for markdown conversion of text, code, diagrams, lists, and tables.
+- **[interface](interface/README.md)**: Python files that define system message prompts and templates for guiding tool execution and response formulation based on context, including modules for batch processing, iteration limits, and technical context handling.
+- **[task](task/README.md)**: Python scripts for task prompts including document planning, writing, code verification, and prompt enhancement.
+- **[tools](tools/README.md)**: Initialization and module import files, specifically `__init__.py` for package marking and `think.py` for importing a `think` module and defining an empty `PROMPT` variable.
+- **[voice](voice/README.md)**: Initialization and prompt files for roles and instructions in technical copy editing and content creation.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `shared.prompts` package by importing the `audience`, `interface`, `task`, and `voice` modules.
+- **[structured_prompting.py](structured_prompting.py.md)**: The `structured_prompting.py` file defines a system for creating and manipulating structured prompts using components, with various style instructions for technical documentation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,7 +6,7 @@
 The `mermaid_python_test.py` file contains a function to check if a given Mermaid diagram code can be rendered using the Mermaid CLI, along with examples of testing valid and invalid Mermaid diagrams.
 
 # Purpose
-This Python script provides a narrow functionality focused on verifying the renderability of Mermaid diagram code using the Mermaid CLI. It defines a function, [`is_mermaid_renderable`](#is_mermaid_renderable), which takes a string of Mermaid code and attempts to render it by creating temporary files for input and output, leveraging the `subprocess` module to execute the Mermaid CLI command. The script handles potential errors during rendering by catching `CalledProcessError` exceptions and cleaning up temporary files afterward. Additionally, the script includes a main block with examples of both valid and invalid Mermaid diagrams to demonstrate the function's usage and output, making it a practical utility for developers working with Mermaid diagrams.
+This Python script provides a narrow functionality focused on verifying the renderability of Mermaid diagram code using the Mermaid CLI. It defines a function, [`is_mermaid_renderable`](<#is_mermaid_renderable>), which takes a string of Mermaid code and attempts to render it by creating temporary files for input and output, leveraging the `subprocess` module to execute the Mermaid CLI command. If the rendering is successful, the function returns `True`; otherwise, it returns `False` and prints any errors encountered. The script includes a main block with examples of both valid and invalid Mermaid diagrams to demonstrate the function's usage and output. This code is a utility script designed for testing and validating Mermaid diagram syntax in an automated manner.
 # Imports and Dependencies
 
 ---
@@ -27,9 +27,9 @@ The function checks if a given Mermaid diagram code can be rendered using the Me
     - Another temporary file is created to serve as the output path for the rendering process, with a '.svg' extension.
     - The function attempts to render the Mermaid code using the 'mmdc' command-line tool, capturing any errors.
     - If the rendering is successful, the function returns True.
-    - If a CalledProcessError is raised during rendering, the error output is printed and the function returns False.
-    - Finally, the temporary files created for the input and output paths are deleted to clean up resources.
-- **Output**: A boolean value indicating whether the Mermaid code is renderable (True) or not (False).
+    - If a CalledProcessError is raised, indicating a rendering failure, the function prints the error message and returns False.
+    - Finally, the function ensures that all temporary files are deleted, regardless of success or failure.
+- **Output**: The function returns a boolean value: True if the Mermaid code is renderable, and False otherwise.
 
 
 

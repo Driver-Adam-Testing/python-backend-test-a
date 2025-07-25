@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `gitlab` folder in the `python-backend` codebase contains configuration files for setting up and deploying a GitLab Enterprise Edition service using Docker, including a `.gitignore` file, a `docker-compose.yml` file, and a `README.md` with setup instructions.
+Configuration files for deploying GitLab Enterprise Edition with Docker, including setup instructions.
 
 
 ## Files
 - **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies that the `gitlab-config`, `gitlab-data`, and `gitlab-logs` directories should be ignored by Git.
 - **[docker-compose.yml](docker-compose.yml.md)**: The `docker-compose.yml` file in the `python-backend` codebase sets up a GitLab Enterprise Edition service with specified ports, volumes, and environment variables for deployment.
-- **[README.md](README.md.md)**: The `README.md` file provides setup instructions for configuring and running a GitLab-ee:17.3.5 instance using Docker and ngrok.
+- **[README.md](README.md.md)**: The `README.md` file provides setup instructions for configuring and running a GitLab-ee:17.3.5 instance using Docker in the `python-backend` codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains the `main.py` file, which is responsible for setting up a modal interface and configuring an application for the agent package, and an empty `__init__.py` file.
+Main entry point for setting up a modal interface and executing block kind agents, with an empty `__init__.py`.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase sets up a modal interface for the agent package, configuring an application with specific image, secrets, and container settings, and defines a function to execute different types of block agents based on input.
+- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase sets up a modal interface for the agent package, configuring an application with specific image and secret settings, and defining a function to execute various block kind agents based on input.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

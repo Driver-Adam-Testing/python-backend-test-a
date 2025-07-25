@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `voice` folder in the `python-backend` codebase contains initialization and prompt files for defining roles and instructions related to content creation and editing, including technical copy editing and software engineering.
+Initialization and prompt files for roles and instructions in technical copy editing and content creation.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `voice` package by importing the `copy_editor` and `software_engineer` modules.
-- **[copy_editor.py](copy_editor.py.md)**: The `copy_editor.py` file contains a prompt for a technical copy editor, outlining detailed instructions for editing technical documents to ensure clarity, conciseness, and relevance to the specific project.
-- **[operator.py](operator.py.md)**: The `operator.py` file outlines a series of questions and options to define a content creation pipeline, including roles such as content creator agent, critic, and copy editor, as well as presets like entrypoint analysis and online docs page.
-- **[software_engineer.py](software_engineer.py.md)**: The `software_engineer.py` file defines a voice prompt for a system role that characterizes an expert software engineer who writes code and documentation based on recent data without instructing others or speculating.
+- **[copy_editor.py](copy_editor.py.md)**: The `copy_editor.py` file contains a prompt for a technical copy editor, outlining detailed instructions for editing technical documents to ensure clarity, conciseness, and relevance.
+- **[operator.py](operator.py.md)**: The `operator.py` file outlines a series of questions and options to define a pipeline for content creation, including roles such as content creator agent, critic, and copy editor, as well as presets like entrypoint analysis and online docs page.
+- **[software_engineer.py](software_engineer.py.md)**: The `software_engineer.py` file defines a voice prompt for a system role, characterizing an expert software engineer who writes code and documentation based on recent data without instructing others or speculating.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

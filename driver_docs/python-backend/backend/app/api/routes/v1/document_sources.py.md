@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `document_sources.py` file defines API routes for creating, retrieving, and deleting document sources, with permissions enforced for content editing and readonly access.
+The `document_sources.py` file defines API routes for creating, retrieving, and deleting document sources, with permissions enforced for content editors and readonly users.
 
 # Purpose
-This code defines a FastAPI router that provides a RESTful API for managing document sources. It includes three main endpoints: creating, retrieving, and deleting document sources. The [`create_document_source`](#create_document_source) endpoint allows users with content editor permissions to create a new document source by posting data that conforms to the `DocumentSourceCreate` schema. The [`get_document_source`](#get_document_source) endpoint retrieves a specific document source using its document and source IDs, requiring read-only permissions. If the document source is not found, it raises a 404 HTTP exception. The [`delete_document_source`](#delete_document_source) endpoint allows users with content editor permissions to delete a document source identified by its document and source IDs.
+This code defines a FastAPI router that provides a RESTful API for managing document sources. It includes three main endpoints: creating, retrieving, and deleting document sources. The [`create_document_source`](<#create_document_source>) endpoint allows users with content editor permissions to create a new document source by posting data that conforms to the `DocumentSourceCreate` schema. The [`get_document_source`](<#get_document_source>) endpoint retrieves a specific document source using its document and source IDs, requiring read-only permissions. If the document source is not found, it raises a 404 HTTP exception. The [`delete_document_source`](<#delete_document_source>) endpoint allows users with content editor permissions to delete a document source identified by its document and source IDs.
 
-The code leverages FastAPI's dependency injection system to enforce permissions and manage user sessions. It uses the `ContentEditorPermission` and `ContentReadonlyPermission` dependencies to control access to the endpoints. The `DocumentSourceService` class is used to encapsulate the business logic for interacting with document sources, ensuring a separation of concerns between the API layer and the service layer. This file is intended to be part of a larger application, serving as a module that defines specific API routes related to document source management.
+The code leverages FastAPI's dependency injection system to enforce permissions and manage user sessions. The `ContentEditorPermission` and `ContentReadonlyPermission` dependencies ensure that only authorized users can perform certain actions. The `CurrentSession` and `UserToken` dependencies provide the necessary context for each request, such as the current session and user information. The `DocumentSourceService` class is used to encapsulate the business logic for interacting with document sources, promoting a clean separation of concerns between the API layer and the service layer. This file is intended to be part of a larger application, serving as a modular component that can be imported and used within the FastAPI application to handle document source-related operations.
 # Imports and Dependencies
 
 ---
@@ -28,8 +28,8 @@ The code leverages FastAPI's dependency injection system to enforce permissions 
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class, which is used to create a modular and reusable set of routes for a FastAPI application. It allows for the grouping of related endpoints and can be included in the main application to organize the API structure.
-- **Use**: The `router` is used to define and manage the HTTP endpoints for creating, retrieving, and deleting document sources, with specific permissions required for each operation.
+- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a group of related API endpoints, which can be included in the main application. This allows for modular organization of routes in a FastAPI application.
+- **Use**: The `router` is used to register API endpoints for creating, retrieving, and deleting document sources, with specific permissions required for each operation.
 
 
 # Functions
@@ -53,31 +53,32 @@ The `create_document_source` function handles the creation of a new document sou
 The `get_document_source` function retrieves a document source by its document and source IDs, returning it if found or raising a 404 error if not.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `document_id`: A `UUID` representing the unique identifier of the document.
-    - `source_id`: A `UUID` representing the unique identifier of the source within the document.
+    - `session`: An instance of CurrentSession, representing the current database session.
+    - `user`: An instance of UserToken, representing the authenticated user making the request.
+    - `document_id`: A UUID representing the unique identifier of the document.
+    - `source_id`: A UUID representing the unique identifier of the source.
 - **Control Flow**:
-    - Instantiate `DocumentSourceService` with the current session.
-    - Call `get_document_source` method on the service with `document_id` and `source_id`.
-    - Check if `document_source` is `None`, and if so, raise an `HTTPException` with a 404 status code.
-    - Return the `document_source` if it exists.
-- **Output**: The function returns the document source object if found, otherwise it raises an `HTTPException` with a 404 status code.
+    - Instantiate a DocumentSourceService with the current session.
+    - Call the get_document_source method of DocumentSourceService with document_id and source_id.
+    - Check if the document source is found; if not, raise an HTTPException with a 404 status code.
+    - Return the document source if found.
+- **Output**: The function returns the document source if it is found, otherwise it raises an HTTPException with a 404 status code.
 
 
 ---
 ### delete\_document\_source<!-- {{#callable:python-backend/backend/app/api/routes/v1/document_sources.delete_document_source}} -->
-The `delete_document_source` function deletes a document source identified by `document_id` and `source_id` using the `DocumentSourceService`.
+The `delete_document_source` function deletes a document source identified by document and source IDs using the DocumentSourceService.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `document_id`: A `UUID` representing the unique identifier of the document.
-    - `source_id`: A `UUID` representing the unique identifier of the source to be deleted.
+    - `session`: An instance of CurrentSession, representing the current database session.
+    - `user`: An instance of UserToken, representing the authenticated user making the request.
+    - `document_id`: A UUID representing the unique identifier of the document.
+    - `source_id`: A UUID representing the unique identifier of the source to be deleted.
 - **Control Flow**:
-    - A `DocumentSourceService` instance is created using the provided `session`.
-    - The `delete_document_source` method of `DocumentSourceService` is called with `document_id` and `source_id` to perform the deletion.
-- **Output**: The function returns the result of the `delete_document_source` method from `DocumentSourceService`, which typically indicates the success or failure of the deletion operation.
+    - Initialize a DocumentSourceService instance with the current session.
+    - Call the `delete_document_source` method of the DocumentSourceService instance, passing the document_id and source_id as arguments.
+    - Return the result of the `delete_document_source` method call.
+- **Output**: The function returns the result of the `delete_document_source` method from the DocumentSourceService, which typically indicates the success or failure of the deletion operation.
 
 
 

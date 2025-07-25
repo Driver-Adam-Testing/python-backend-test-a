@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tag_contents_schema.py` file defines a Pydantic model `TagContentCreate` for creating tag content associations with fields for `tag_id`, `content_id`, and an `include` flag.
+The `tag_contents_schema.py` file defines a Pydantic model `TagContentCreate` for creating tag content associations with fields for `tag_id`, `content_id`, and an `include` boolean.
 
 # Purpose
-This code defines a Pydantic model named `TagContentCreate`, which is used for data validation and serialization in Python applications. The model includes three fields: `tag_id`, `content_id`, and `include`, where `tag_id` and `content_id` are UUIDs, ensuring that these fields contain valid universally unique identifiers, and `include` is a boolean indicating whether the content should be included. The functionality provided by this code is narrow, focusing specifically on the structure and validation of data related to tagging content, likely within a larger application that manages content and tags. This code is a short script that leverages Pydantic to enforce data integrity and type checking, which is particularly useful in applications that require strict data validation.
+This code defines a Pydantic model named `TagContentCreate`, which is used for data validation and serialization in Python applications. The model includes three fields: `tag_id` and `content_id`, both of which are UUIDs, and `include`, a boolean. This model is likely part of a larger system that manages relationships between tags and content, providing a structured way to create or update these associations. The functionality is narrow, focusing specifically on the data structure for tag-content relationships, and it leverages Pydantic to ensure data integrity and type safety.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ This code defines a Pydantic model named `TagContentCreate`, which is used for d
     - `tag_id`: A UUID representing the unique identifier for the tag.
     - `content_id`: A UUID representing the unique identifier for the content.
     - `include`: A boolean indicating whether the tag should be included with the content.
-- **Description**: The TagContentCreate class is a Pydantic model used to represent the association between a tag and content, with fields for the unique identifiers of both and a boolean to specify inclusion.
+- **Description**: The TagContentCreate class is a Pydantic model that defines the structure for creating a relationship between a tag and content, using unique identifiers for both and a boolean to specify inclusion.
 - **Inherits From**:
     - `BaseModel`
 

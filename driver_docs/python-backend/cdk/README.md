@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cdk` folder in the `python-backend` codebase contains AWS CDK constructs and stack definitions for various environments, including development, staging, production, and operations, with a focus on deploying and managing AWS services like Lambda functions, API backends, and infrastructure components.
+AWS CDK constructs and stack definitions for environments like development, staging, production, and operations.
 
 ## Folders
-- **[constructs](constructs/README.md)**: The `constructs` folder in the `python-backend` codebase contains various AWS CDK constructs for deploying and managing AWS services, including Lambda functions for asset onboarding and metrics processing, a Web Application Firewall, a backend service on ECS Fargate, and infrastructure for AWS Inspector.
+- **[constructs](constructs/README.md)**: Various AWS CDK constructs for deploying and managing AWS services, including Lambda functions, WAF, backend services, and infrastructure components like Inspector and metrics processing.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[development_stack.py](development_stack.py.md)**: The `development_stack.py` file defines a CDK stack for the development environment, setting up various AWS resources including a metrics lambda, API backend, asset onboarding lambda, and an inspector.
+- **[development_stack.py](development_stack.py.md)**: The `development_stack.py` file defines a development environment stack using AWS CDK, incorporating components such as a metrics lambda, API backend, asset onboarding lambda, and an inspector.
 - **[ops_stack.py](ops_stack.py.md)**: The `ops_stack.py` file defines the `OpsStack` class, which sets up various AWS CDK constructs including a backend, asset onboarding lambda, inspector, and metrics lambda for the "ops" environment.
 - **[production_stack.py](production_stack.py.md)**: The `production_stack.py` file defines a production stack using AWS CDK, incorporating components such as a metrics lambda, API backend, asset onboarding lambda, and inspector, all configured for a production environment.
-- **[staging_stack.py](staging_stack.py.md)**: The `staging_stack.py` file defines a CDK stack for the staging environment, setting up components such as a metrics lambda, API backend, asset onboarding lambda, and inspector.
+- **[staging_stack.py](staging_stack.py.md)**: The `staging_stack.py` file defines a CDK stack for the staging environment, incorporating components such as a metrics lambda, API backend, asset onboarding lambda, and an inspector.
 - **[test_in_dev_stack.py](test_in_dev_stack.py.md)**: The `test_in_dev_stack.py` file defines a CDK stack for manually deploying additional infrastructure for testing purposes in a development environment, utilizing a `MetricsLambda` construct.
 
 ---

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `database` folder in the `python-backend` codebase contains essential components for managing database migrations, configurations, and models, including Alembic migration scripts, SQL migration scripts, utility scripts for reindexing, and various SQLAlchemy models and configurations for PostgreSQL databases.
+Essential components for managing database configurations, migrations, and models, including Alembic migration scripts, SQL migration scripts, utility scripts for reindexing, and various Python files defining database connection settings, custom types, and SQLAlchemy models.
 
 ## Folders
-- **[alembic](alembic/README.md)**: The `alembic` folder in the `python-backend` codebase contains essential components for managing database migrations, including a collection of migration scripts in the `versions` folder, configuration and execution scripts like `env.py`, and templates for script generation, along with a `README` for guidance.
-- **[nodes_v2_sql](nodes_v2_sql/README.md)**: The `nodes_v2_sql` folder in the `python-backend` codebase contains a collection of SQL migration scripts designed to transition various data elements, such as codebases, pages, templates, PDFs, tags, and top-level content, to a new database schema.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains scripts for reindexing vector data in a PostgreSQL database, including a shell script for executing the reindexing process and a SQL script for recalculating and updating vector index parameters.
+- **[alembic](alembic/README.md)**: Essential components for managing database migrations, including migration scripts, configuration, and templates.
+- **[nodes_v2_sql](nodes_v2_sql/README.md)**: SQL migration scripts for transitioning codebases, pages, templates, PDFs, tags, and top-level content.
+- **[utils](utils/README.md)**: Scripts for reindexing vector data in a PostgreSQL database, including a shell script and a SQL script.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
@@ -16,12 +16,12 @@ The `database` folder in the `python-backend` codebase contains essential compon
 - **[config.py](config.py.md)**: The `config.py` file in the `python-backend` codebase defines a `Settings` class for configuring PostgreSQL database connection parameters, including support for different environments and SSL mode settings.
 - **[custom_types.py](custom_types.py.md)**: The `custom_types.py` file defines a custom SQLAlchemy type decorator for PostgreSQL's TSVECTOR type.
 - **[db.py](db.py.md)**: The `db.py` file in the `python-backend` codebase sets up synchronous and asynchronous database engines, manages database sessions, and includes functionality to parse database URLs and handle SSL configurations for asynchronous connections.
-- **[derived_content_types.py](derived_content_types.py.md)**: The `derived_content_types.py` file defines an enumeration of various derived content type names used within the `python-backend` codebase.
+- **[derived_content_types.py](derived_content_types.py.md)**: The `derived_content_types.py` file defines an enumeration of various derived content type names used in the `python-backend` codebase.
 - **[file_extensions.py](file_extensions.py.md)**: The `file_extensions.py` file defines an enumeration of file types and provides a function to map file extensions to these types, returning an appropriate `FileTypeEnum` value or `UNKNOWN` if the extension is not recognized.
 - **[models_v1.py](models_v1.py.md)**: The `models_v1.py` file in the `python-backend` codebase defines various SQLAlchemy models and enums for database tables related to runtime logs, document sources, derived content, usage sessions, subscriptions, and Git provider applications, along with their relationships and constraints.
-- **[models_v2.py](models_v2.py.md)**: The `models_v2.py` file in the `python-backend` codebase defines SQLAlchemy models for various entities such as `PrimaryAsset`, `Version`, `Node`, and others, which are used to represent and manage database tables related to assets, versions, nodes, and user sessions.
+- **[models_v2.py](models_v2.py.md)**: The `models_v2.py` file in the `python-backend` codebase defines SQLAlchemy models for various entities such as `PrimaryAsset`, `Version`, `Node`, and others, which are used to represent and manage database tables related to assets, versions, nodes, and user sessions in a PostgreSQL database.
 - **[models_v2_enums.py](models_v2_enums.py.md)**: The `models_v2_enums.py` file in the `python-backend` codebase defines various enumerations for categorizing assets, version statuses, node kinds, autodoc statuses, content types, file types, and LLM pipeline kinds, along with a function to map file extensions to their corresponding file type enums.
-- **[models_v2_test.py](models_v2_test.py.md)**: The `models_v2_test.py` file sets up fixtures for testing database interactions using SQLAlchemy and SQLModel, and includes a test to verify session creation.
+- **[models_v2_test.py](models_v2_test.py.md)**: The `models_v2_test.py` file contains pytest fixtures for setting up a test database environment and a test to verify session creation using SQLAlchemy and SQLModel.
 - **[py.typed](py.typed.md)**: Empty file (no analyzable contents).
 
 ---

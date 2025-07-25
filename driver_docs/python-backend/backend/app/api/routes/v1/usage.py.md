@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `usage.py` file defines API endpoints for managing usage data, including retrieving usage balance, summaries, charges, and issuing usage credits, within the `python-backend` codebase.
+The `usage.py` file defines API endpoints for managing and retrieving usage data, including balance summaries, detailed summaries, recent charges, and issuing usage credits, within the `python-backend` codebase.
 
 # Purpose
-This Python file is a FastAPI router module that defines a set of API endpoints related to usage management, specifically for handling usage balance, usage summaries, recent usage charges, and issuing usage credits. The code is structured to provide a RESTful interface for interacting with usage data, making it suitable for integration into a larger application that requires tracking and managing usage metrics. The endpoints are designed to be accessed by authenticated users, with some operations requiring specific permissions, such as issuing usage credits.
+This Python file is a FastAPI router module that defines a set of API endpoints related to usage management, specifically for handling usage balance, summaries, charges, and issuing usage credits. The code is structured to provide a RESTful interface for interacting with usage data, making it suitable for integration into a larger application that requires tracking and managing usage metrics. The endpoints are designed to be accessed by authenticated users, with some operations requiring specific permissions, such as issuing usage credits.
 
-The file imports several components from external libraries and internal modules, indicating its role as part of a larger system. Key components include the `UsageService` class, which encapsulates the business logic for retrieving and updating usage data, and the `boto3` library, which is used to interact with AWS services for event handling. The endpoints utilize FastAPI's dependency injection to manage authentication and authorization, ensuring that only authorized users can perform certain actions. The code defines public APIs that can be consumed by clients to retrieve usage information and manage usage credits, making it a critical part of the application's usage management functionality.
+The file imports several components from external libraries and internal modules, indicating its role as part of a broader application ecosystem. Key components include the `UsageService` class, which encapsulates the business logic for retrieving and manipulating usage data, and the `boto3` library, which is used to interact with AWS services for event handling. The endpoints leverage FastAPI's dependency injection system to manage authentication and authorization, ensuring secure access to the API. The code defines public APIs that can be consumed by clients to perform operations like retrieving usage balances, obtaining detailed usage summaries, fetching recent usage charges, and issuing credits, making it a critical part of the application's usage management functionality.
 # Imports and Dependencies
 
 ---
@@ -39,34 +39,34 @@ The file imports several components from external libraries and internal modules
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class, which is used to define a group of related API routes. It allows for modularizing the API by grouping routes together and applying common configurations such as dependencies, tags, and prefixes.
-- **Use**: This variable is used to register and manage API endpoints related to usage balance, summary, charges, and credit issuance within the application.
+- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a group of related API endpoints that can be included in a FastAPI application. This allows for modular and organized routing of HTTP requests.
+- **Use**: The `router` is used to register API endpoints for usage balance, usage summary, recent usage charges, and issuing usage credits.
 
 
 # Functions
 
 ---
 ### get\_usage\_balance<!-- {{#callable:python-backend/backend/app/api/routes/v1/usage.get_usage_balance}} -->
-The [`get_usage_balance`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance) function retrieves the usage balance for a user's organization using the current session.
+The [`get_usage_balance`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance>) function retrieves the usage balance for a user's organization using the current session.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: An instance of `CurrentSession` representing the current session context.
     - `user`: An instance of `UserToken` representing the authenticated user, which includes the user's organization ID.
 - **Control Flow**:
-    - Instantiate a [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService) object using the provided session.
-    - Retrieve the organization ID from the `user` object.
-    - Call the [`get_usage_balance`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance) method of the [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService) instance, passing the organization ID.
-    - Return the result of the [`get_usage_balance`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance) method call.
+    - Instantiate a [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) object using the provided session.
+    - Retrieve the organization ID from the `user` token.
+    - Call the [`get_usage_balance`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance>) method of the [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) instance with the organization ID to get the usage balance.
+    - Return the retrieved usage balance.
 - **Output**: Returns an instance of `UsageBalance` representing the usage balance for the user's organization.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance>)
 
 
 ---
 ### get\_usage\_summary<!-- {{#callable:python-backend/backend/app/api/routes/v1/usage.get_usage_summary}} -->
-The [`get_usage_summary`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary) function retrieves a detailed usage summary for a user's organization within an optional date range.
+The [`get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary>) function retrieves a detailed usage summary for a user's organization within an optional date range.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: An instance of `CurrentSession` representing the current database session.
@@ -74,20 +74,20 @@ The [`get_usage_summary`](../../../../../packages/shared/shared/usage/usage_serv
     - `start_date`: An optional `datetime` object representing the start date for the usage summary query, defaulting to `None`.
     - `end_date`: An optional `datetime` object representing the end date for the usage summary query, defaulting to `None`.
 - **Control Flow**:
-    - Initialize a [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService) object with the current session.
-    - Retrieve the organization ID from the `user` token.
-    - Call the [`get_usage_summary`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary) method of [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService) with the organization ID and optional start and end dates.
-    - Return the usage summary obtained from the [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService).
+    - Initialize a [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) object with the current session.
+    - Extract the `organization_id` from the `user` token.
+    - Call the [`get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary>) method of the [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) with the `organization_id`, `start_date`, and `end_date`.
+    - Return the result of the [`get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary>) method call.
 - **Output**: Returns a `UsageEventSummary` object containing the detailed usage summary for the specified organization and date range.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_summary`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_summary>)
 
 
 ---
 ### get\_charges<!-- {{#callable:python-backend/backend/app/api/routes/v1/usage.get_charges}} -->
-The [`get_charges`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges) function retrieves a list of recent usage charges for a user's organization, with support for pagination and sorting.
+The [`get_charges`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges>) function retrieves a list of recent usage charges for a user's organization, with support for pagination and sorting.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: An instance of `CurrentSession` representing the current database session.
@@ -95,13 +95,12 @@ The [`get_charges`](../../../../../packages/shared/shared/usage/usage_service.py
     - `pagination`: An instance of `Pagination` containing pagination parameters such as limit, offset, and sort direction.
 - **Control Flow**:
     - Extracts the `limit`, `offset`, and `sort_direction` from the `pagination` object.
-    - Calls the [`get_charges`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges) method of [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService) with the user's organization ID and the extracted pagination parameters.
-    - Returns the result of the [`get_charges`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges) method call, which is a list of `UsageCharge` objects.
-- **Output**: A list of `UsageCharge` objects representing the recent usage charges for the user's organization.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_charges`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges)
+    - Calls the [`get_charges`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges>) method of [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) with the user's organization ID and the extracted pagination parameters.
+- **Output**: Returns a list of `UsageCharge` objects representing the recent usage charges for the user's organization.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_charges`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_charges>)
 
 
 ---
@@ -113,17 +112,19 @@ The `credit_usage` function issues usage credits to an organization by interacti
     - `current_token`: An instance of `M2MToken` representing the current machine-to-machine authentication token.
     - `credit_usage_event`: An instance of `CreditUsageEvent` containing details about the credit usage event, including organization ID and SLOC credit amount.
 - **Control Flow**:
-    - Check if `current_token` is `None` and raise an HTTP 403 Forbidden exception if true.
+    - Check if `current_token` is `None` and raise an `HTTPException` with status 403 if true.
     - Create an AWS client for the 'events' service using credentials from settings.
-    - Extract `organization_id` and `user_id` from `credit_usage_event`, defaulting `user_id` to 'SYSTEM' if not provided.
-    - Convert the SLOC credit amount to bytes using [`sloc_to_bytes`](../../../../../packages/shared/shared/usage/utils.py.md#sloc_to_bytes).
-    - Call [`issue_usage_credits`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceissue_usage_credits) on [`UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService) with the organization ID, user ID, event type, and credit amount.
-    - Return a JSON response with status code 202 and a message indicating acceptance.
-- **Output**: A `JSONResponse` with status code 202 and a message indicating the request was accepted.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/usage/utils.sloc_to_bytes`](../../../../../packages/shared/shared/usage/utils.py.md#sloc_to_bytes)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.issue_usage_credits`](../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceissue_usage_credits)
+    - Extract `organization_id` from `credit_usage_event`.
+    - Determine `user_id` as 'SYSTEM' if `credit_usage_event.user_id` is `None`, otherwise use the provided `user_id`.
+    - Set `event_type` to `UsageEventType.BASE_PLATFORM_USAGE_CREDIT`.
+    - Convert `credit_usage_event.sloc_credit_amount` to bytes using [`sloc_to_bytes`](<../../../../../packages/shared/shared/usage/utils.py.md#sloc_to_bytes>).
+    - Call [`issue_usage_credits`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceissue_usage_credits>) on [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) with the session, AWS client, organization ID, user ID, event type, and credit amount.
+    - Return a `JSONResponse` with status code 202 and a message indicating acceptance.
+- **Output**: A `JSONResponse` with status code 202 and a message indicating that the request was accepted.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/usage/utils.sloc_to_bytes`](<../../../../../packages/shared/shared/usage/utils.py.md#sloc_to_bytes>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.issue_usage_credits`](<../../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceissue_usage_credits>)
 
 
 

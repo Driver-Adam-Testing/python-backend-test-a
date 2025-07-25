@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `smart_instruction_messages.py` file defines the `SmartInstructionInputMessage` class, which constructs a message from user prompts and document content around a cursor for use in a large language model interface.
+The `smart_instruction_messages.py` file defines the `SmartInstructionInputMessage` class, which constructs a message from user prompts and document content surrounding a cursor for use in a large language model (LLM) context.
 
 # Purpose
-This Python code defines a class `SmartInstructionInputMessage` that extends `LlmMessage`, providing a specialized message format for handling user instructions in a document editing context. The code offers narrow functionality, focusing on constructing a message that encapsulates a user prompt and the surrounding document content relative to a cursor position. It imports several constants and classes from shared modules, indicating that it is part of a larger system, likely related to a text editor or a document processing application. The [`from_context`](#SmartInstructionInputMessagefrom_context) class method is central to this functionality, as it constructs a formatted message by wrapping the user prompt and document content before and after the cursor, using predefined wrappers to ensure consistent formatting. This code is a concise utility within a broader application, designed to facilitate communication between user inputs and a language model interface.
+This code defines a class `SmartInstructionInputMessage` that extends `LlmMessage`, providing a specialized message format for handling user instructions in a document editing context. It offers narrow functionality, focusing on constructing a message that encapsulates a user prompt and the surrounding document content relative to a cursor position. The class method [`from_context`](<#SmartInstructionInputMessagefrom_context>) is used to create an instance of `SmartInstructionInputMessage` by wrapping and formatting the user prompt and document content before and after the cursor, utilizing predefined wrappers from imported modules. This code is part of a larger system, likely involving a language model interface, and is designed to facilitate communication between user inputs and the model by structuring the input data in a specific format.
 # Imports and Dependencies
 
 ---
@@ -25,11 +25,11 @@ This Python code defines a class `SmartInstructionInputMessage` that extends `Ll
 ### SmartInstructionInputMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/smart_instruction_messages.SmartInstructionInputMessage}} -->
 - **Members**:
     - `message_kind`: Specifies the kind of message, set to MessageKind.USER.
-- **Description**: The SmartInstructionInputMessage class is a specialized type of LlmMessage that represents a user instruction message. It includes a class method, from_context, which constructs an instance of the class by wrapping and formatting a user prompt along with optional document content before and after a cursor position. This class is designed to encapsulate the user's prompt and the surrounding document context into a single message format.
+- **Description**: The SmartInstructionInputMessage class extends the LlmMessage class and represents a user-specific message type. It includes a class method, from_context, which constructs an instance of the class by wrapping and formatting a user prompt and document content, including content before and after a cursor position. This class is designed to encapsulate the input message for smart instructions, providing a structured way to handle user prompts and associated document content.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/messages/smart_instruction_messages.SmartInstructionInputMessage.from_context`](#SmartInstructionInputMessagefrom_context)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/smart_instruction_messages.SmartInstructionInputMessage.from_context`](<#SmartInstructionInputMessagefrom_context>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
 
 **Methods**
 
@@ -43,14 +43,14 @@ The `from_context` class method constructs a `SmartInstructionInputMessage` obje
     - `page_content_after_cursor`: An optional string representing the document content after the cursor position.
 - **Control Flow**:
     - The method begins by wrapping the `page_content_before_cursor` using `DOCUMENT_CONTENT_BEFORE_CURSOR.wrap` and the `page_content_after_cursor` using `DOCUMENT_CONTENT_AFTER_CURSOR.wrap`.
-    - It inserts a cursor representation using `CURSOR.wrap` between the wrapped before and after content.
-    - The combined content is then wrapped using `WORKING_DOCUMENT_CONTENT.wrap` to form the complete document content.
-    - A formatted string is created that includes the user prompt wrapped with `USER_PROMPT.wrap` and the complete document content.
-    - The method returns a new instance of `SmartInstructionInputMessage` with the formatted content, stripped of leading and trailing whitespace.
-- **Output**: A `SmartInstructionInputMessage` object initialized with the combined and formatted content of the user prompt and document context.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](../../../globals/glossary.py.md#GlossaryDefinitionwrap)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/smart_instruction_messages.SmartInstructionInputMessage`](#SmartInstructionInputMessage)  (Base Class)
+    - It inserts a cursor representation using `CURSOR.wrap` between the wrapped before and after cursor content.
+    - The combined content is then wrapped using `WORKING_DOCUMENT_CONTENT.wrap` to form the `document_content`.
+    - A formatted string `content` is created, incorporating the wrapped user prompt and the `document_content`.
+    - The method returns a new instance of `SmartInstructionInputMessage` initialized with the stripped `content`.
+- **Output**: Returns an instance of `SmartInstructionInputMessage` with the combined prompt and document content.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#GlossaryDefinitionwrap>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/smart_instruction_messages.SmartInstructionInputMessage`](<#SmartInstructionInputMessage>)  (Base Class)
 
 
 

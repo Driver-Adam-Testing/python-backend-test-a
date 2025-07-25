@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `github_setup.py` file in the `python-backend` codebase generates a markdown guide for setting up a GitHub App using configuration details from a `GitHubAppResource` object.
+The `github_setup.py` file generates a markdown guide for setting up a GitHub App using configuration details from a `GitHubAppResource` object.
 
 # Purpose
-This Python script is designed to generate a Markdown guide for setting up a GitHub App, providing narrow functionality focused on documentation generation. It defines a function, [`generate_markdown`](#generate_markdown), which takes a configuration dictionary as input and constructs a detailed setup guide in Markdown format, covering steps such as app creation, webhook configuration, permissions, OAuth settings, and post-setup instructions. The script also includes a function, [`generate_github_app_setup_guide`](#generate_github_app_setup_guide), which extracts configuration data from a `GitHubAppResource` object, generates the Markdown guide using the [`generate_markdown`](#generate_markdown) function, and writes the output to a file. This code is a utility script that automates the creation of a comprehensive setup guide for GitHub Apps, ensuring consistency and accuracy in the documentation process.
+This Python script provides a narrow functionality focused on generating a Markdown setup guide for a GitHub App. It defines a function, [`generate_markdown`](<#generate_markdown>), which takes a configuration dictionary as input and constructs a detailed Markdown document outlining the steps to create and configure a GitHub App, including webhook settings, permissions, OAuth, and testing instructions. The script also includes a function, [`generate_github_app_setup_guide`](<#generate_github_app_setup_guide>), which utilizes a `GitHubAppResource` object to extract configuration data, generate the Markdown guide using the [`generate_markdown`](<#generate_markdown>) function, and save it to a file. This code is a utility script designed to automate the creation of documentation for setting up a GitHub App, making it easier for users to follow the necessary steps.
 # Imports and Dependencies
 
 ---
@@ -29,7 +29,7 @@ The `generate_markdown` function creates a detailed Markdown guide for setting u
     - Determine the status of OAuth and device flow from the config and append their statuses to the Markdown.
     - Add post-setup steps and installation instructions to the Markdown.
     - Return the complete Markdown string.
-- **Output**: A string containing the formatted Markdown guide for setting up a GitHub App.
+- **Output**: A string containing the formatted Markdown guide for setting up the GitHub App.
 
 
 ---
@@ -41,10 +41,10 @@ The function generates a GitHub App setup guide in markdown format and writes it
     - The function begins by dumping the model data from the github_app_resource into a JSON-compatible dictionary using the model_dump method.
     - It then calls the generate_markdown function, passing the configuration dictionary to generate a markdown string for the setup guide.
     - The function opens a file named 'github_app_setup_guide.md' in write mode with UTF-8 encoding in the './state/out/' directory.
-    - It writes the generated markdown string to the file and closes the file.
+    - Finally, it writes the generated markdown guide to the file and closes the file.
 - **Output**: The function does not return any value; it writes the output to a file.
-- **Functions called**:
-    - [`python-backend/dev_stack/src/github_setup.generate_markdown`](#generate_markdown)
+- **Functions Called**:
+    - [`python-backend/dev_stack/src/github_setup.generate_markdown`](<#generate_markdown>)
 
 
 

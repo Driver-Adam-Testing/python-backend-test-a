@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata, dependencies, and build system configuration for the `onboarding-event-handler` package.
+Configuration for the onboarding-event-handler project using Poetry, specifying dependencies and test settings.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. This file defines the metadata and dependencies for a Python project named "onboarding-event-handler" with version "0.1.0". It specifies the project's author, Eric Miller, and includes a reference to the project's README file. The file lists the main dependencies required for the project, such as `boto3`, `httpx`, and `pydantic`, along with their respective version constraints. Additionally, it defines development dependencies under a separate group, including testing tools like `pytest` and `moto`. The `[build-system]` section specifies the build requirements and backend, indicating the use of `poetry-core` for building the project. Furthermore, the `[tool.pytest.ini_options]` section configures `pytest` to look for tests in the "tests" directory and includes the "src" directory in the Python path for testing purposes.
+The file is a configuration file for the Poetry dependency management tool, which is used to manage Python project dependencies and packaging. The `[tool.poetry]` section specifies metadata about the project, such as its name `onboarding-event-handler`, version `0.1.0`, and author information. It also defines the location of the project's packages and the README file. The `[tool.poetry.dependencies]` section lists the runtime dependencies required for the project, specifying compatible versions for each package. The `[tool.poetry.group.dev.dependencies]` section defines additional dependencies needed for development and testing, such as `pytest` and `moto`. The `[build-system]` section indicates the build requirements and backend, which in this case is `poetry-core`. Finally, the `[tool.pytest.ini_options]` section configures `pytest` options, specifying the paths for tests and the Python path for the source code.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

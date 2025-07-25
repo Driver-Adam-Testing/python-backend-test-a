@@ -6,9 +6,9 @@
 The `agent_copy_editor.py` file defines a function to run a copy editing agent using a specified configuration and session, with logic to handle specific prompt types and generate a response.
 
 # Purpose
-The provided Python code defines a function [`run_agent_copy_editor`](#run_agent_copy_editor) that is part of a larger system designed to facilitate automated processing or editing tasks using an agent-based architecture. This function is specifically tailored to configure and run an agent that acts as a "copy editor," likely intended to process or refine text input based on certain parameters. The function takes in a `PipelineStepConfiguration` object, which contains configuration details such as the scope, model, iterations, tools, and response format, and an `LLMUsageSession` object, which likely tracks or manages the usage of a language model during the session. The function creates an agent using these configurations and adds system prompts to guide the agent's behavior. It also includes logic to handle specific types of input, such as those containing "mermaid" code blocks or diagrams, by adding specialized prompts.
+The provided Python code defines a function [`run_agent_copy_editor`](<#run_agent_copy_editor>), which is part of a larger system designed to facilitate automated processing or editing tasks using an agent-based architecture. This function is specifically tailored to configure and run an agent that acts as a "copy editor," likely intended to process and refine text or content based on the input configuration. The function takes in a `PipelineStepConfiguration` object, which specifies the parameters for the agent, such as its scope, model, and tools, and an `LLMUsageSession` object, which likely tracks the usage of a language model during the session. The function sets up the agent with system prompts and additional messages, including a specific prompt for handling code blocks or diagrams, and then invokes the agent with the provided input prompt. The response from the agent is processed and returned as a `PipelineStepResponse`, which includes the agent's ID, search results, and the final result of the agent's processing.
 
-This code is part of a broader framework, as indicated by its reliance on shared modules and interfaces, such as `prompts`, `create_agent`, and `PipelineStepResponse`. It is designed to be a component within a pipeline, suggesting that it is not a standalone script but rather a function intended to be integrated into a larger workflow. The function returns a `PipelineStepResponse` object, which encapsulates the results of the agent's processing, including the agent's ID, search results, and the final processed response. This indicates that the function is part of a modular system where different pipeline steps can be configured and executed in sequence, with each step potentially involving different agents or processing logic.
+This code is part of a broader framework, as indicated by the imports from shared modules, suggesting it is not a standalone script but rather a component of a larger application or library. The function is designed to be flexible, allowing for different configurations and response formats, and it hints at future enhancements with a TODO comment about improving branching logic based on response formats. The code is structured to be reusable and extendable, making it suitable for integration into a pipeline where different processing steps are configured and executed in sequence.
 # Imports and Dependencies
 
 ---
@@ -23,25 +23,25 @@ This code is part of a broader framework, as indicated by its reliance on shared
 
 ---
 ### run\_agent\_copy\_editor<!-- {{#callable:python-backend/packages/shared/shared/pipelines/agents/agent_copy_editor.run_agent_copy_editor}} -->
-The `run_agent_copy_editor` function creates and configures an agent to process a given prompt, potentially adding specific messages based on the prompt content, and returns the agent's response as a [`PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse).
+The `run_agent_copy_editor` function creates and configures an agent to process a given prompt, potentially adding specific messages based on the prompt content, and returns the agent's response in a structured format.
 - **Inputs**:
-    - `input`: An instance of `PipelineStepConfiguration` that contains configuration details such as scope, model, iterations, tools, response format, and the prompt to be processed.
-    - `llm_usage_session`: An instance of `LLMUsageSession` that manages the session for language model usage.
+    - `input`: An instance of `PipelineStepConfiguration` containing configuration details such as scope, model, iterations, tools, response format, and the prompt to be processed.
+    - `llm_usage_session`: An instance of `LLMUsageSession` that tracks the usage session for the language model.
 - **Control Flow**:
-    - Create an agent using the [`create_agent`](../../agent/agent_factory.py.md#create_agent) function with parameters from the `input` and `llm_usage_session`.
-    - Iterate over system prompts generated by `input.create_system_prompts()` and add each to the agent's messages.
-    - Check if the input prompt contains '```mermaid' or 'diagram' and add a specific message for code block syntax if true.
-    - Add a copy editor voice message to the agent's messages.
+    - Create an agent using the provided configuration details from the `input` and `llm_usage_session`.
+    - Iterate over system prompts generated by `input.create_system_prompts()` and add each to the agent's message queue.
+    - Check if the input prompt contains the string '```mermaid' or 'diagram', and if so, add a specific message related to code block syntax for mermaid diagrams to the agent.
+    - Add a copy editor voice message to the agent's message queue.
     - Invoke the agent with the input prompt and store the response.
-    - Convert the response to markdown if it is not a string and has a `to_markdown` method.
-    - Return a [`PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse) containing the agent's ID, search results, and the agent's response.
-- **Output**: A [`PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse) object containing the agent's ID, search results, and the processed agent result.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/agent_factory.create_agent`](../../agent/agent_factory.py.md#create_agent)
-    - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration.create_system_prompts`](../../interfaces/agents/agent_configuration.py.md#AgentConfigurationcreate_system_prompts)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](../../agent/agent_base.py.md#AgentBaseadd_message)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke`](../../agent/agent_anthropic_strict.py.md#AnthropicStrictAgentinvoke)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse)
+    - If the response is not a string and has a `to_markdown` method, convert the response to markdown format.
+    - Return a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) containing the agent's ID, search results, and the processed agent result.
+- **Output**: A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) object containing the agent's ID, search results, and the processed result of the agent's invocation.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/agent_factory.create_agent`](<../../agent/agent_factory.py.md#create_agent>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration.create_system_prompts`](<../../interfaces/agents/agent_configuration.py.md#AgentConfigurationcreate_system_prompts>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<../../agent/agent_base.py.md#AgentBaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke`](<../../agent/agent_anthropic_strict.py.md#AnthropicStrictAgentinvoke>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>)
 
 
 

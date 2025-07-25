@@ -51,6 +51,7 @@ class TaskWorkUnits:
     TOP_LEVEL_DOCS = 20
     SYMBOLS = 10
     EMBEDDING = 1
+    TAGS = 20
 
 
 class SerializationMethod(str, Enum):

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains utility functions for handling content extraction and naming, along with corresponding unit tests to ensure their functionality.
+Utility functions for content extraction and naming, with unit tests for their functionality.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[content_utils.py](content_utils.py.md)**: The `content_utils.py` file contains utility functions for extracting and determining the name of content from a `DerivedContent` object, with considerations for backward compatibility in handling JSON content and document paths.
-- **[content_utils_test.py](content_utils_test.py.md)**: The `content_utils_test.py` file contains unit tests for the functions `_get_name_from_content_json` and `get_content_name` from the `content_utils` module, using the `pytest` framework and `unittest.mock` for mocking dependencies.
+- **[content_utils.py](content_utils.py.md)**: The `content_utils.py` file provides utility functions for extracting and determining the name of content from a `DerivedContent` object, with considerations for backward compatibility in handling JSON content and document paths.
+- **[content_utils_test.py](content_utils_test.py.md)**: The `content_utils_test.py` file contains unit tests for the functions `_get_name_from_content_json` and `get_content_name` from the `content_utils` module, using the `pytest` framework and `unittest.mock` for mocking.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

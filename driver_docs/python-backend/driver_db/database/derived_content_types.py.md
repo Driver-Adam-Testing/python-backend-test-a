@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `derived_content_types.py` file defines an enumeration of various derived content type names used within the `python-backend` codebase.
+The `derived_content_types.py` file defines an enumeration of various derived content type names used in the `python-backend` codebase.
 
 # Purpose
-This code defines an enumeration class `DerivedContentTypeNames` using Python's `Enum` module, which provides a set of symbolic names for various types of content descriptions and document components. The functionality is narrow, focusing specifically on categorizing different content types, such as descriptions, quick start guides, architecture diagrams, and various PDF summaries. This enumeration can be used in a larger application to standardize the handling and identification of content types, ensuring consistency across different parts of the software. The code is a concise and organized way to manage a collection of related constants, making it easier to maintain and extend as new content types are introduced.
+This code defines an enumeration class `DerivedContentTypeNames` using Python's `Enum` module, which provides a set of symbolic names for various content types. Each member of the enumeration represents a specific type of content, such as descriptions, quick start guides, architecture diagrams, and various PDF-related summaries. The purpose of this code is to provide a structured and readable way to handle different content types within a software application, likely for categorization or processing purposes. This is a narrow functionality script, primarily serving as a configuration or reference for other parts of a program that need to work with these specific content types.
 # Imports and Dependencies
 
 ---
@@ -41,7 +41,7 @@ This code defines an enumeration class `DerivedContentTypeNames` using Python's 
     - `PDF_EXTRACTED_TEXT`: Represents a PDF extracted text content type.
     - `PDF_EXTRACTED_TABLE`: Represents a PDF extracted table content type.
     - `TEMPLATE`: Represents a template content type.
-- **Description**: The DerivedContentTypeNames class is an enumeration that defines a set of constants representing various types of content descriptions and formats. These constants are used to categorize and identify different content types such as descriptions, quick start guides, architecture diagrams, application notes, and various PDF summaries. This class provides a structured way to handle and reference these content types within a software application.
+- **Description**: The DerivedContentTypeNames class is an enumeration that defines a set of constants representing various types of content descriptions and formats, such as descriptions, quick start guides, architecture diagrams, and PDF summaries. Each member of the enumeration is associated with a string value that describes a specific content type, facilitating the categorization and identification of content within a software system.
 - **Inherits From**:
     - `Enum`
 

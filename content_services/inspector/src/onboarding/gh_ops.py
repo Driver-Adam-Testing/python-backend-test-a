@@ -11,6 +11,13 @@ import jwt
 import modal
 import requests
 from onboarding.onboard_utils import AccessTokenError
+from onboarding.vcs_utils import (
+    AuthorInfo,
+    BranchInfo,
+    CommitInfo,
+    RepoInfo,
+    VersionControlInfo,
+)
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
@@ -72,6 +79,50 @@ def fetch_default_branch_and_commit(full_repo_name: str, access_token: str) -> s
     return branch_data["commit"]["sha"]
 
 
+def fetch_vcs_info(
+    full_repo_name: str, access_token: str, commit_sha: str
+) -> VersionControlInfo:
+    headers = {"Authorization": f"token {access_token}"}
+    repo_url = get_github_repo_url(full_repo_name=full_repo_name)
+
+    repo = requests.get(repo_url, headers=headers)
+    repo_data = repo.json()
+    logger.info(
+        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    )
+    default_branch = repo_data["default_branch"]
+
+    commit_url = f"{repo_url}/commits/{commit_sha}"
+    commit_response = requests.get(commit_url, headers=headers)
+    commit_data = commit_response.json()
+    logger.info(
+        f"Commit data retrieved from github API (status code {commit_response.status_code}): {commit_data}"
+    )
+    author_info = AuthorInfo(
+        email=commit_data["commit"]["author"]["email"],
+        name=commit_data["commit"]["author"]["name"],
+        date=commit_data["commit"]["author"]["date"],
+    )
+    commit_info = CommitInfo(
+        sha=commit_data["sha"],
+        message=commit_data["commit"]["message"],
+        url=commit_data["html_url"],
+        author=author_info,
+    )
+    branch_info = BranchInfo(name=default_branch)
+    repo_info = RepoInfo(
+        name=repo_data["name"],
+        namespace=repo_data["owner"]["login"],
+        full_name=repo_data["full_name"],
+        url=repo_data["html_url"],
+    )
+    return VersionControlInfo(
+        repository=repo_info,
+        commit=commit_info,
+        branch=branch_info,
+    )
+
+
 def fetch_github_default_branch_name(full_repo_name: str, access_token: str) -> str:
     headers = {"Authorization": f"token {access_token}"}
     repo_url = get_github_repo_url(full_repo_name=full_repo_name)
@@ -131,6 +182,7 @@ def download_and_upload_repo(
     )
     from database.models_v2_enums import (
         PrimaryAssetKind,
+        PrimaryAssetProvider,
         VersionStatus,
     )
     from onboarding.onboard_utils import upload_to_s3_with_metadata
@@ -145,6 +197,11 @@ def download_and_upload_repo(
     else:
         commit = repo["commit"]
     try:
+        vcs_info = fetch_vcs_info(
+            full_repo_name=repo["full_name"],
+            access_token=access_token,
+            commit_sha=commit,
+        )
         with Session(engine) as session, session.begin():
             if is_push:
                 primary_asset = session.exec(
@@ -166,11 +223,12 @@ def download_and_upload_repo(
                 ):
                     new_version = Version(
                         primary_asset_id=primary_asset.id,
-                        display_name=commit,
+                        vcs_hash=commit,
                         status=VersionStatus.CONNECTING,
                         previous_version_id=primary_asset.versions[
                             0
                         ].id,  # TODO: don't link this for connected only?
+                        vcs_metadata=vcs_info.model_dump(),
                     )
                     session.add(new_version)
                     version_id = new_version.id
@@ -191,9 +249,10 @@ def download_and_upload_repo(
                         ]:
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
-                                display_name=commit,
+                                vcs_hash=commit,
                                 status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
                                 previous_version_id=version.id,
+                                vcs_metadata=vcs_info.model_dump(),
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -279,9 +338,10 @@ def download_and_upload_repo(
 
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
-                                display_name=commit,
+                                vcs_hash=commit,
                                 status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
                                 previous_version_id=version.previous_version_id,
+                                vcs_metadata=vcs_info.model_dump(),
                             )
                             session.add(new_version)
                             version_id = new_version.id
@@ -306,15 +366,17 @@ def download_and_upload_repo(
                     kind=PrimaryAssetKind.CODEBASE,
                     repository_id=repo["id"],
                     codebase_settings_auto_commit_docs=False,
+                    provider=PrimaryAssetProvider.GITHUB,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id
 
                 version = Version(
                     primary_asset_id=primary_asset.id,
-                    display_name=commit,
+                    vcs_hash=commit,
                     status=VersionStatus.CONNECTING,
                     previous_version_id=None,
+                    vcs_metadata=vcs_info.model_dump(),
                 )
                 session.add(version)
                 version_id = version.id

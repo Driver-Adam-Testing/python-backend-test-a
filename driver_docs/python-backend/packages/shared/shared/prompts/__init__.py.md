@@ -6,7 +6,7 @@
 The `__init__.py` file in the `python-backend` codebase initializes the `shared.prompts` package by importing the `audience`, `interface`, `task`, and `voice` modules.
 
 # Purpose
-This source code file is a module initializer, typically found in a Python package, and it provides narrow functionality by importing specific submodules: `audience`, `interface`, `task`, and `voice`. The `# flake8: noqa` comment at the top indicates that linting checks by Flake8 are disabled for this file, which is often done to suppress warnings about unused imports when the imports are necessary for package initialization. This file is not a standalone script but rather a part of a larger package structure, facilitating the organization and accessibility of related functionalities encapsulated in the imported submodules. By importing these submodules, the file allows users to access their functionalities directly from the package namespace, enhancing modularity and ease of use.
+This source code file is a module initializer in a Python package, indicated by the use of relative imports. It imports four submodules: `audience`, `interface`, `task`, and `voice`, which suggests that this package is likely designed to handle functionalities related to these concepts, possibly in a software dealing with communication or user interaction. The presence of `# flake8: noqa` at the top of the file indicates that linting checks are intentionally disabled, possibly to avoid warnings about unused imports, which are common in module initializers. This file provides narrow functionality, serving primarily as an organizational tool to facilitate access to the submodules within the package.
 # Imports and Dependencies
 
 ---

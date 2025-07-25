@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `long_from_code.txt` file appears to be a template or instructional text file intended to guide software engineers in writing detailed descriptions of software files, focusing on their purpose, functionality, usage, business logic, and critical components.
+The `long_from_code.txt` file appears to be a template or guide for writing detailed descriptions of software files, focusing on their purpose, functionality, and key components.
 
 # Purpose
-The provided content appears to be a template or guideline for documenting a software file, specifically focusing on metadata or configuration files within a codebase. This template outlines a structured approach to describing a file by breaking down its purpose, functionality, and key components. The instructions emphasize the importance of explaining the file's role, its usage, and identifying the main business logic, as well as critical APIs and components such as public functions, classes, and data structures. The template also specifies that the name of the file should be included in the summary, ensuring clarity and context. This structured approach is designed to provide a comprehensive understanding of the file's significance within the software project, aiding developers and stakeholders in navigating and utilizing the codebase effectively.
+Certainly! Please provide the contents of the file you would like me to describe, and I will generate a detailed explanation of its purpose and functionality.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

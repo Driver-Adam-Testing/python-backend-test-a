@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_code.txt` file provides instructions for writing a concise, single-paragraph description of a software file, emphasizing the inclusion of the file name and limiting the summary to six sentences.
+The `single_paragraph_from_code.txt` file provides instructions for writing a concise, single-paragraph description of a software file, emphasizing the importance of summarizing the file's purpose and contents without introducing any additional information.
 
 # Purpose
-Certainly! Please provide the contents of the file you would like me to describe.
+Certainly! Please provide the contents of the metadata or configuration file you would like me to describe.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

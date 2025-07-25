@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_diagram.py` file defines a Pydantic model for handling and formatting mermaid diagrams in markdown, including methods to extract and properly format the mermaid code blocks.
+The `block_kind_diagram.py` file defines a Pydantic model for handling and formatting mermaid diagrams in markdown, including methods to extract and properly format the mermaid code.
 
 # Purpose
-This Python code defines a Pydantic model class named `BlockKindCopyEditorDiagram`, which is designed to handle and process mermaid diagrams embedded in markdown format. The class provides narrow functionality, specifically for extracting and formatting mermaid code blocks from a given string. It includes attributes for storing the mermaid diagram and its description, and methods to extract the mermaid code from a markdown string, return it as a fenced code block, or provide the raw mermaid code without markdown fences. The code uses regular expressions to identify and extract the content of mermaid code blocks, ensuring that the diagrams are correctly formatted for rendering. This class is particularly useful for applications that need to validate or manipulate mermaid diagrams within markdown documents.
+This Python code defines a Pydantic model class named `BlockKindCopyEditorDiagram`, which is designed to handle and process mermaid diagrams embedded in markdown format. The class provides a narrow functionality focused on extracting and formatting mermaid code blocks, ensuring they adhere to specific formatting rules to avoid rendering errors. It includes methods to extract the mermaid code from a markdown string, return it as a fenced code block, and provide the raw mermaid code without markdown fences. The code is structured as a class definition with attributes and methods, making it suitable for use in applications that require validation and manipulation of mermaid diagrams within markdown documents.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This Python code defines a Pydantic model class named `BlockKindCopyEditorDiagra
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that is initialized as an empty triple-quoted string. It is intended to hold a multi-line string, potentially for use as a prompt or template in the application.
-- **Use**: This variable is used to store a multi-line string, likely for use in constructing messages or prompts within the application.
+- **Description**: The variable `PROMPT` is a global string variable that is initialized with an empty triple-quoted string. It is intended to hold a multi-line string, potentially for use as a prompt or template in the application.
+- **Use**: `PROMPT` is used to store a multi-line string that can be utilized as a prompt or template, and it is referenced in the `MESSAGE` dictionary.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is set to the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
-- **Use**: This variable is used to define a message structure, likely for communication or configuration purposes, where the role is specified as 'system' and the content is dynamically set by the `PROMPT` variable.
+- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
+- **Use**: This variable is used to store a structured message format, likely for communication or configuration purposes, with a predefined role and content.
 
 
 # Classes
@@ -38,11 +38,11 @@ This Python code defines a Pydantic model class named `BlockKindCopyEditorDiagra
 - **Members**:
     - `diagram_mermaid`: A markdown representation of the mermaid diagram.
     - `description`: A description of the diagram.
-- **Description**: The BlockKindCopyEditorDiagram class is a specialized data model for handling mermaid diagrams within markdown content, ensuring they are correctly formatted and free of errors that could prevent rendering. It provides functionality to extract and manipulate the mermaid code, ensuring it adheres to specific formatting rules, such as avoiding forbidden characters and ensuring correct list syntax. This class is designed to facilitate the work of a copy editor agent by providing structured access to the diagram's content and description.
+- **Description**: The BlockKindCopyEditorDiagram class is a specialized data model designed to handle and process mermaid diagrams embedded in markdown format. It ensures that the diagram is correctly formatted as a single, code-fenced mermaid block and provides methods to extract and manipulate the mermaid code for rendering purposes. The class also includes guidelines for correcting common formatting errors in mermaid diagrams to ensure proper rendering.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code`](#BlockKindCopyEditorDiagram_extract_mermaid_code)
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_markdown`](#BlockKindCopyEditorDiagramto_markdown)
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_mermaid_interior_string`](#BlockKindCopyEditorDiagramto_mermaid_interior_string)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code`](<#BlockKindCopyEditorDiagram_extract_mermaid_code>)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_markdown`](<#BlockKindCopyEditorDiagramto_markdown>)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_mermaid_interior_string`](<#BlockKindCopyEditorDiagramto_mermaid_interior_string>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -50,16 +50,16 @@ This Python code defines a Pydantic model class named `BlockKindCopyEditorDiagra
 
 ---
 #### BlockKindCopyEditorDiagram\.\_extract\_mermaid\_code<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code}} -->
-The `_extract_mermaid_code` method extracts the first Mermaid code block from the `diagram_mermaid` attribute, or returns the entire string if no code block is found.
+The `_extract_mermaid_code` method extracts the first Mermaid code block from the `diagram_mermaid` attribute, returning its content or the entire string if no block is found.
 - **Inputs**: None
 - **Control Flow**:
-    - The method starts by stripping any leading or trailing whitespace from the `diagram_mermaid` attribute and assigns it to `content`.
+    - The method begins by stripping whitespace from the `diagram_mermaid` attribute and storing it in the `content` variable.
     - A regular expression pattern is compiled to match text between '```mermaid' and the next '```'.
-    - The `search` method of the compiled pattern is used to find a match in `content`.
+    - The `search` method of the compiled pattern is used to find a match in the `content`.
     - If a match is found, the method returns the matched group (the Mermaid code) with leading and trailing whitespace removed.
     - If no match is found, the method returns the entire `content` string as a fallback.
-- **Output**: The method returns a string containing the Mermaid code block if found, or the entire `diagram_mermaid` string if no code block is found.
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram`](#BlockKindCopyEditorDiagram)  (Base Class)
+- **Output**: The method returns a string containing the extracted Mermaid code block or the entire `diagram_mermaid` string if no code block is found.
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram`](<#BlockKindCopyEditorDiagram>)  (Base Class)
 
 
 ---
@@ -67,27 +67,27 @@ The `_extract_mermaid_code` method extracts the first Mermaid code block from th
 The `to_markdown` method returns the Mermaid diagram as a markdown fenced code block.
 - **Inputs**: None
 - **Control Flow**:
-    - Call the [`_extract_mermaid_code`](#BlockKindCopyEditorDiagram_extract_mermaid_code) method to retrieve the Mermaid code from the `diagram_mermaid` attribute.
+    - Call the [`_extract_mermaid_code`](<#BlockKindCopyEditorDiagram_extract_mermaid_code>) method to retrieve the Mermaid code from the `diagram_mermaid` attribute.
     - Wrap the extracted Mermaid code in a markdown code fence with the language identifier `mermaid`.
 - **Output**: A string containing the Mermaid diagram wrapped in a markdown fenced code block.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code`](#BlockKindCopyEditorDiagram_extract_mermaid_code)
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram`](#BlockKindCopyEditorDiagram)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code`](<#BlockKindCopyEditorDiagram_extract_mermaid_code>)
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram`](<#BlockKindCopyEditorDiagram>)  (Base Class)
 
 
 ---
 #### BlockKindCopyEditorDiagram\.to\_mermaid\_interior\_string<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_mermaid_interior_string}} -->
-The `to_mermaid_interior_string` method returns the raw mermaid code string from the `diagram_mermaid` attribute without any markdown code fences.
+The `to_mermaid_interior_string` method returns the raw mermaid code from the `diagram_mermaid` attribute without any markdown code fences.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls the [`_extract_mermaid_code`](#BlockKindCopyEditorDiagram_extract_mermaid_code) method.
-    - The [`_extract_mermaid_code`](#BlockKindCopyEditorDiagram_extract_mermaid_code) method uses a regex to find the first fenced mermaid code block in the `diagram_mermaid` attribute.
-    - If a fenced block is found, it returns the code inside the block.
-    - If no fenced block is found, it returns the entire `diagram_mermaid` string as a fallback.
-- **Output**: A string containing the raw mermaid code without markdown fences.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code`](#BlockKindCopyEditorDiagram_extract_mermaid_code)
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram`](#BlockKindCopyEditorDiagram)  (Base Class)
+    - The method calls the [`_extract_mermaid_code`](<#BlockKindCopyEditorDiagram_extract_mermaid_code>) method.
+    - The [`_extract_mermaid_code`](<#BlockKindCopyEditorDiagram_extract_mermaid_code>) method uses a regular expression to search for a mermaid code block within the `diagram_mermaid` attribute.
+    - If a mermaid code block is found, it extracts and returns the code inside the block.
+    - If no mermaid code block is found, it returns the entire `diagram_mermaid` string as a fallback.
+- **Output**: A string containing the raw mermaid code without markdown code fences.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram._extract_mermaid_code`](<#BlockKindCopyEditorDiagram_extract_mermaid_code>)
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram`](<#BlockKindCopyEditorDiagram>)  (Base Class)
 
 
 

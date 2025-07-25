@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `start-reload.sh` file is a shell script for starting a Python backend application using Uvicorn with automatic reloading and optional pre-start script execution.
+The `start-reload.sh` file is a shell script for starting a Python application using Uvicorn with automatic reloading, configurable host, port, and log level, and an optional prestart script execution.
 
 # Purpose
-This script is a shell script designed to configure and launch a Python application using the Uvicorn ASGI server. It provides a narrow functionality focused on setting up the environment and executing the Uvicorn server with specific parameters. The script checks for the presence of a `main.py` file in specified directories to determine the default module name, which is then used to set the `APP_MODULE` environment variable. It also allows for customization of the host, port, and log level through environment variables, with default values provided. Additionally, the script checks for and optionally executes a `prestart.sh` script before starting the server, allowing for any necessary pre-launch configurations or setups. The script concludes by executing Uvicorn with options for automatic reloading and specifying directories to watch for changes, making it suitable for development environments.
+This script is a shell script designed to launch a Python application using the Uvicorn ASGI server, which is commonly used for running FastAPI or Starlette applications. It provides a narrow functionality focused on setting up and executing the Uvicorn server with specific configurations. The script checks for the presence of a main Python module in predefined locations and sets environment variables to configure the application module and server settings such as host, port, and log level. Additionally, it includes a mechanism to execute a pre-start script if available, allowing for any necessary setup before the server starts. The script concludes by executing Uvicorn with options for automatic reloading, which is useful during development to reflect code changes without restarting the server manually.
 # Global Variables
 
 ---
@@ -19,50 +19,50 @@ This script is a shell script designed to configure and launch a Python applicat
 ---
 ### MODULE\_NAME
 - **Type**: `string`
-- **Description**: `MODULE_NAME` is a global variable that determines the module name to be used when starting the application. It defaults to `DEFAULT_MODULE_NAME`, which is set based on the presence of specific Python files in the application directory. If `/app/app/main.py` exists, `DEFAULT_MODULE_NAME` is set to `app.main`; otherwise, if `/app/main.py` exists, it is set to `main`. The `MODULE_NAME` can be overridden by an environment variable.
-- **Use**: `MODULE_NAME` is used to construct the `APP_MODULE` variable, which specifies the module and variable name for the application entry point when running the `uvicorn` server.
+- **Description**: `MODULE_NAME` is a global variable that determines the name of the module to be used when starting the application. It defaults to the value of `DEFAULT_MODULE_NAME`, which is set based on the presence of specific Python files in the application directory.
+- **Use**: `MODULE_NAME` is used to construct the `APP_MODULE` variable, which specifies the module and variable name for the application entry point when running the server.
 
 
 ---
 ### VARIABLE\_NAME
 - **Type**: `string`
 - **Description**: `VARIABLE_NAME` is a global variable that defaults to the string 'app' if not already set in the environment. It is used to specify the variable name within the module that Uvicorn should use to run the application.
-- **Use**: This variable is used to construct the `APP_MODULE` environment variable, which Uvicorn uses to locate and run the application.
+- **Use**: This variable is used to construct the `APP_MODULE` environment variable, which Uvicorn uses to locate and run the application module and variable.
 
 
 ---
 ### APP\_MODULE
 - **Type**: `string`
-- **Description**: The `APP_MODULE` variable is a global environment variable that defines the module and variable name to be used by the Uvicorn server when starting the application. It is constructed by combining the `MODULE_NAME` and `VARIABLE_NAME`, defaulting to a format of `module_name:variable_name`. This allows Uvicorn to know which application instance to run.
-- **Use**: `APP_MODULE` is used to specify the application module and variable for the Uvicorn server to execute.
+- **Description**: `APP_MODULE` is a global environment variable that defines the module and variable name to be used by the Uvicorn server when starting the application. It is constructed by combining the `MODULE_NAME` and `VARIABLE_NAME`, defaulting to a format like `module_name:variable_name`. This variable is crucial for Uvicorn to locate and run the correct application entry point.
+- **Use**: This variable is used to specify the application module and variable for the Uvicorn server to execute.
 
 
 ---
 ### HOST
 - **Type**: `string`
-- **Description**: The `HOST` variable is a global string variable that specifies the network interface address on which the application server will listen for incoming connections. By default, it is set to '0.0.0.0', which means the server will be accessible from all network interfaces on the host machine.
+- **Description**: The `HOST` variable is a global string variable that specifies the network interface address on which the application server will listen for incoming connections. It is set to a default value of '0.0.0.0', which means the server will be accessible from any network interface on the host machine.
 - **Use**: This variable is used to configure the host address for the `uvicorn` server when starting the application.
 
 
 ---
 ### PORT
 - **Type**: `integer`
-- **Description**: The `PORT` variable is a global environment variable that specifies the network port on which the application server will listen for incoming connections. It is set to a default value of 80, which is the standard port for HTTP traffic.
-- **Use**: This variable is used to configure the port for the `uvicorn` server when starting the application.
+- **Description**: The `PORT` variable is a global environment variable that specifies the port number on which the application server will listen for incoming requests. It is set to a default value of 80, which is the standard port for HTTP traffic.
+- **Use**: This variable is used to configure the port for the `uvicorn` server to listen on when starting the application.
 
 
 ---
 ### LOG\_LEVEL
 - **Type**: `string`
-- **Description**: The `LOG_LEVEL` variable is a global environment variable that determines the verbosity of logging output for the application. It is set to a default value of 'info' if not explicitly defined elsewhere. This variable is used to control the level of detail in log messages, which can be useful for debugging or monitoring the application.
-- **Use**: This variable is used to set the logging level for the `uvicorn` server, affecting how much information is logged during the server's operation.
+- **Description**: The `LOG_LEVEL` variable is a global environment variable that determines the logging level for the application. It is set to a default value of 'info' if not explicitly provided. This variable is used to control the verbosity of log messages output by the application, which can be useful for debugging or monitoring purposes.
+- **Use**: This variable is used to set the logging level for the `uvicorn` server, affecting the detail of logs produced during the application's execution.
 
 
 ---
 ### PRE\_START\_PATH
 - **Type**: `string`
-- **Description**: The `PRE_START_PATH` variable is a global string variable that specifies the file path to a prestart script, typically used to perform initialization tasks before starting the main application. By default, it is set to '/app/prestart.sh', but it can be overridden by setting the `PRE_START_PATH` environment variable to a different path.
-- **Use**: This variable is used to determine the location of a prestart script and execute it if it exists before launching the main application with uvicorn.
+- **Description**: The `PRE_START_PATH` variable is a global string variable that specifies the file path to a prestart script, defaulting to '/app/prestart.sh'. This script is intended to be executed before the main application starts, allowing for any necessary setup or initialization tasks to be performed.
+- **Use**: This variable is used to determine the location of a prestart script and execute it if it exists, ensuring any required pre-execution steps are completed.
 
 
 

@@ -6,9 +6,9 @@
 The `source_code_large_header_multi_prompt.py` file defines a template for generating multi-prompt headers for large source code files, focusing on purposes, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code file is designed to define a template for generating structured documentation or analysis of C or C++ header files. It imports several components from utility modules that specialize in language-specific processing and template management. The primary purpose of this file is to create a multi-prompt template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER`, which outlines a systematic approach to analyzing and documenting various aspects of C or C++ header files. The template is organized into sections that cover the purpose of the code, imports and dependencies, global variables, data structures, and functions. Each section utilizes specific functions or collections to extract and process relevant information, either through static analysis or language model (LLM) assistance.
+This Python code defines a structured template for analyzing and documenting C or C++ header files. It imports several components from utility modules, which are used to create a multi-prompt template for extracting and organizing information about the purpose, imports, global variables, data structures, and functions within a header file. The template is designed to work with a multi-context approach, leveraging both static analysis and language model (LLM) insights to gather comprehensive details about the header file's contents. The code is likely part of a larger system that automates the documentation process for C or C++ codebases, providing a systematic way to generate detailed and organized documentation.
 
-The code is structured as a library file intended to be imported and used in a larger system that processes or documents source code. It does not define public APIs or external interfaces directly but rather provides a framework for generating detailed documentation. The use of lambda functions and collections from static analysis and LLMs indicates a sophisticated approach to combining automated code analysis with machine learning techniques to enhance the accuracy and depth of the generated documentation. This file is a part of a broader system that likely aims to automate the documentation process for software written in C or C++.
+The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER` is a list of tuples, each representing a different aspect of the header file to be documented. Each tuple contains a prompt type, a section title, and functions or methods that facilitate the extraction and formatting of information. For example, it uses static analysis to gather raw symbols for variables, data structures, and functions, and then refines this information using LLM-based methods. This code is not a standalone script but rather a component of a documentation generation library, intended to be imported and used within a larger framework that processes and documents source code files.
 # Imports and Dependencies
 
 ---
@@ -30,8 +30,8 @@ The code is structured as a library file intended to be imported and used in a l
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_HEADER
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER` is a list of tuples, each containing elements that define different sections of a multi-prompt template for source code analysis. Each tuple includes a type identifier, a section header, and various functions or lambdas that are used to process or analyze specific aspects of the source code, such as purpose, imports, global variables, data structures, and functions.
-- **Use**: This variable is used to organize and define the structure of a multi-prompt template for analyzing and processing large source code files.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER` is a list of tuples, where each tuple represents a section of a multi-prompt template for processing source code. Each tuple contains a type identifier, a section header, and a series of functions or variables that are used to process or analyze different aspects of the source code, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: This variable is used to define a structured template for generating prompts that guide the analysis and processing of large source code files.
 
 
 

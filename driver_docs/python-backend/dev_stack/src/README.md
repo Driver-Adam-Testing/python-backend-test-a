@@ -3,23 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains a comprehensive set of Python scripts and modules for managing authentication, configuration, developer setup, and integration with services like Auth0, AWS, GitHub, and ngrok, along with utility functions and models for handling various backend processes.
+Python scripts for authentication mechanisms, developer environments, application configuration, and resource management.
 
 ## Folders
-- **[auth](auth/README.md)**: The `auth` folder in the `python-backend` codebase contains various Python scripts that implement authentication mechanisms using Auth0, including device flow, PKCE-based OAuth2, and command-line interfaces for managing authentication processes and token storage.
+- **[auth](auth/README.md)**: Python scripts for Auth0 authentication mechanisms, including device flow, PKCE-based OAuth2, and CLI tools.
 
 ## Files
-- **[auth0_apps.py](auth/README.md0_apps.py)**: The `auth0_apps.py` file in the `python-backend` codebase provides functions for managing Auth0 applications and APIs, including creating and deleting SPA, API, and M2M apps, as well as assigning roles and permissions.
-- **[cli.py](cli.py.md)**: The `cli.py` file in the `python-backend` codebase provides a command-line interface for setting up, generating configurations, tearing down, and running ngrok tunnels for a developer environment, with options for GitHub integration and resource management.
-- **[config.py](config.py.md)**: The `config.py` file in the `python-backend` codebase loads environment variables from a `.env` file and defines a `Settings` class using Pydantic to manage configuration settings for various services like AWS, Auth0, PostgreSQL, and OpenAI.
-- **[deploy_secrets.py](deploy_secrets.py.md)**: The `deploy_secrets.py` file in the `python-backend` codebase is a script for deploying secrets to AWS Secrets Manager using CloudFormation stack outputs and command line arguments for AWS profile, region, and stack name.
-- **[developer_setup.py](developer_setup.py.md)**: The `developer_setup.py` file in the `python-backend` codebase provides functions to set up, configure, and tear down developer resources, including Auth0 applications, ngrok domains, and GitHub apps, while managing developer state and generating configuration files.
-- **[github_setup.py](github_setup.py.md)**: The `github_setup.py` file in the `python-backend` codebase generates a markdown guide for setting up a GitHub App using configuration details from a `GitHubAppResource` object.
+- **[auth0_apps.py](auth/README.md0_apps.py)**: The `auth0_apps.py` file in the `python-backend` codebase provides functions to manage Auth0 applications and APIs, including creating and deleting SPA, API, and M2M apps, as well as assigning roles and permissions.
+- **[cli.py](cli.py.md)**: The `cli.py` file in the `python-backend` codebase provides a command-line interface for setting up, generating configurations, tearing down, and running ngrok tunnels for a developer environment.
+- **[config.py](config.py.md)**: The `config.py` file in the `python-backend` codebase is responsible for loading environment variables from a `.env` file and defining application settings using Pydantic's `BaseSettings`.
+- **[deploy_secrets.py](deploy_secrets.py.md)**: The `deploy_secrets.py` file in the `python-backend` codebase is responsible for deploying secrets to AWS Secrets Manager by fetching CloudFormation stack outputs and updating secret values based on configurations loaded from JSON files.
+- **[developer_setup.py](developer_setup.py.md)**: The `developer_setup.py` file in the `python-backend` codebase provides functions to set up, configure, and tear down developer resources, including creating domains, TCP tunnels, and various application resources, as well as managing developer state and configuration files.
+- **[github_setup.py](github_setup.py.md)**: The `github_setup.py` file generates a markdown guide for setting up a GitHub App using configuration details from a `GitHubAppResource` object.
 - **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase provides a command-line interface for setting up and tearing down developer environments, including loading developer state from JSON files.
 - **[modal_scripts.py](modal_scripts.py.md)**: The `modal_scripts.py` file contains a function to generate a bash script for deploying various content services to a specified environment using modal and poetry.
-- **[models.py](models.py.md)**: The `models.py` file in the `python-backend` codebase defines various Pydantic models and enumerations for handling configurations and resources related to Auth0 applications, Ngrok domains, developer resources, and GitHub applications.
-- **[ngrok.py](ngrok.py.md)**: The `ngrok.py` file in the `python-backend` codebase provides functionality for managing ngrok tunnels, including creating and deleting reserved domains and TCP addresses, as well as running and controlling HTTP and TCP tunnels using asyncio.
-- **[ngrok_server.py](ngrok_server.py.md)**: The `ngrok_server.py` file implements a FastAPI application that manages WebSocket connections and a socket server to handle commands and responses for tunnel clients, providing a web interface for controlling ngrok tunnels.
+- **[models.py](models.py.md)**: The `models.py` file in the `python-backend` codebase defines various Pydantic models and enumerations for handling configurations and resources related to Auth0 applications, Ngrok domains, developer resources, GitHub apps, and database connections.
+- **[ngrok.py](ngrok.py.md)**: The `ngrok.py` file in the `python-backend` codebase provides functionality for managing ngrok tunnels, including creating and deleting reserved domains and TCP addresses, and running HTTP and TCP tunnels using asyncio.
+- **[ngrok_server.py](ngrok_server.py.md)**: The `ngrok_server.py` file implements a FastAPI application that manages WebSocket connections and a socket server to handle tunnel client connections, providing a web interface for sending commands to connected clients.
 - **[utils.py](utils.py.md)**: The `utils.py` file provides utility functions for loading a wordlist from a URL, generating a webhook secret using random words from the wordlist, and loading secrets from a JSON file.
 
 ---

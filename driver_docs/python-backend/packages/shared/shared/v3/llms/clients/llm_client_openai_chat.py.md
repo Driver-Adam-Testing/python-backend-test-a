@@ -6,9 +6,9 @@
 The `llm_client_openai_chat.py` file implements an OpenAI Chat client for interacting with OpenAI's Chat models, supporting both synchronous and asynchronous message generation with tool integration capabilities.
 
 # Purpose
-The provided Python code defines a class `OpenAiChatClient`, which serves as a client interface for interacting with OpenAI's Chat models. This class is part of a larger system that integrates with OpenAI's API to facilitate the generation of chat-based responses. The `OpenAiChatClient` class extends the `LlmClient` class and is designed to handle both synchronous and asynchronous interactions with OpenAI's chat models. It provides methods for generating chat completions and streaming responses, utilizing OpenAI's capabilities to process system prompts and execute tools natively through the tool_call chat response format.
+The provided Python code defines a class `OpenAiChatClient`, which serves as a client interface for interacting with OpenAI's Chat models. This class is part of a larger system that integrates with OpenAI's API to facilitate the generation of chat-based responses. The `OpenAiChatClient` class extends the `LlmClient` base class and is designed to handle both synchronous and asynchronous interactions with OpenAI's chat models. It leverages the OpenAI Python library to create chat completions and manage message histories, allowing for the execution of tools natively using OpenAI's tool_call chat response format.
 
-The class includes several key methods, such as [`_make_kwargs`](#OpenAiChatClient_make_kwargs), [`_generate`](#OpenAiChatClient_generate), and [`_generate_stream`](#OpenAiChatClient_generate_stream), which are responsible for preparing the necessary parameters for API calls, generating chat responses, and handling streaming of responses, respectively. The [`_make_kwargs`](#OpenAiChatClient_make_kwargs) method constructs the arguments required for the OpenAI API call, including model identifiers and message history. The [`_generate`](#OpenAiChatClient_generate) method handles synchronous response generation, while [`_generate_stream`](#OpenAiChatClient_generate_stream) manages asynchronous streaming of responses, allowing for real-time interaction. The code is structured to support tool integration, enabling the execution of specific functions based on the chat model's output. This file is intended to be part of a larger library or application, providing a specialized interface for leveraging OpenAI's chat models within a broader system.
+The class includes methods for generating chat responses, both in a standard and streaming manner, by constructing the necessary keyword arguments and processing the responses from OpenAI's API. The [`_make_kwargs`](<#OpenAiChatClient_make_kwargs>) method prepares the parameters required for the API call, including model identifiers and message histories. The [`_generate`](<#OpenAiChatClient_generate>) and [`_generate_stream`](<#OpenAiChatClient_generate_stream>) methods handle the actual interaction with the API, processing the responses into `LlmMessage` objects, which are then added to the message history. The code is structured to support tool integration, allowing for dynamic tool execution based on the chat model's responses. This file is intended to be part of a larger library or application, providing a specialized interface for OpenAI's chat capabilities.
 # Imports and Dependencies
 
 ---
@@ -34,30 +34,30 @@ The class includes several key methods, such as [`_make_kwargs`](#OpenAiChatClie
 - **Members**:
     - `client`: An instance of OpenAI's synchronous client for chat completions.
     - `async_client`: An instance of OpenAI's asynchronous client for chat completions.
-- **Description**: The OpenAiChatClient class is a specialized client for interacting with OpenAI's Chat models, inheriting from the LlmClient class. It is designed to facilitate communication with OpenAI's chat models by using system prompts to guide the model's behavior and supports native tool execution through the tool_call chat response format. The class provides methods for generating chat completions both synchronously and asynchronously, allowing for the integration of tool types and handling of message histories. It does not support response_type directly but allows for casting to create parsed responses.
+- **Description**: The OpenAiChatClient class is a specialized client for interacting with OpenAI's Chat models, inheriting from the LlmClient class. It is designed to facilitate communication with OpenAI's chat models by using system prompts to guide the model's behavior and supports native tool execution through the tool_call chat response format. The class provides both synchronous and asynchronous methods for generating chat completions, allowing for flexible integration into various applications. It manages message history and tool types to construct appropriate request parameters for OpenAI's API, and it can handle streaming responses to process tool calls and generate final responses.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient.__init__`](#OpenAiChatClient__init__)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._make_kwargs`](#OpenAiChatClient_make_kwargs)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._generate`](#OpenAiChatClient_generate)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._generate_stream`](#OpenAiChatClient_generate_stream)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient.__init__`](<#OpenAiChatClient__init__>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._make_kwargs`](<#OpenAiChatClient_make_kwargs>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._generate`](<#OpenAiChatClient_generate>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._generate_stream`](<#OpenAiChatClient_generate_stream>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](llm_client.py.md#LlmClient)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<llm_client.py.md#LlmClient>)
 
 **Methods**
 
 ---
 #### OpenAiChatClient\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient.__init__}} -->
-The [`__init__`](llm_client.py.md#LlmClient__init__) method initializes an instance of the `OpenAiChatClient` class by setting up synchronous and asynchronous OpenAI clients.
+The [`__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>) method initializes an instance of the `OpenAiChatClient` class by setting up synchronous and asynchronous OpenAI clients.
 - **Inputs**:
     - `config`: An instance of `LlmConfig` that contains configuration settings for the language model client.
 - **Control Flow**:
-    - Calls the parent class's [`__init__`](llm_client.py.md#LlmClient__init__) method with the provided `config` argument.
-    - Initializes `self.client` with an instance of `openai.OpenAI` for synchronous operations.
-    - Initializes `self.async_client` with an instance of `openai.AsyncOpenAI` for asynchronous operations.
+    - The method calls the parent class's [`__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>) method with the provided `config` argument.
+    - It initializes `self.client` with an instance of `openai.OpenAI`.
+    - It initializes `self.async_client` with an instance of `openai.AsyncOpenAI`.
 - **Output**: This method does not return any value; it initializes the instance attributes.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.__init__`](llm_client.py.md#LlmClient__init__)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](#OpenAiChatClient)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](<#OpenAiChatClient>)  (Base Class)
 
 
 ---
@@ -65,67 +65,68 @@ The [`__init__`](llm_client.py.md#LlmClient__init__) method initializes an insta
 The `_make_kwargs` method constructs a dictionary of keyword arguments for an OpenAI chat completion request based on the provided message history and optional tool types.
 - **Inputs**:
     - `message_history`: An instance of `LlmMessageHistory` representing the history of messages to be included in the chat completion request.
-    - `response_type`: An optional type of `LlmResponseType` that specifies the expected response type, though it is not used in this method.
-    - `tool_types`: An optional list of `LlmTool` types that, if provided, will be processed and included in the keyword arguments for tool usage in the chat completion.
+    - `response_type`: An optional type of `LlmResponseType` that specifies the expected response type, or `None` if not applicable.
+    - `tool_types`: An optional list of `LlmTool` types that specifies the tools to be used in the chat completion, or `None` if no tools are to be used.
 - **Control Flow**:
     - Initialize a dictionary `completion_kwargs` with the model ID from the configuration and the message history converted to OpenAI's strict format.
     - Check if `tool_types` is provided; if so, process each tool type using `openai.pydantic_function_tool` and add the processed tools to `completion_kwargs` under the key 'tools'.
     - Set the 'tool_choice' key in `completion_kwargs` to 'auto' if tools are included.
     - Return the `completion_kwargs` dictionary.
-- **Output**: A dictionary containing keyword arguments for an OpenAI chat completion request, including model ID, message history, and optionally processed tools and tool choice.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict`](../../interfaces/llm_message_history.py.md#LlmMessageHistoryto_openai_strict)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](#OpenAiChatClient)  (Base Class)
+- **Output**: A dictionary containing keyword arguments for an OpenAI chat completion request, including model ID, messages, and optionally tools and tool choice.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryto_openai_strict>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](<#OpenAiChatClient>)  (Base Class)
 
 
 ---
 #### OpenAiChatClient\.\_generate<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._generate}} -->
 The `_generate` method creates a chat completion message using OpenAI's API and updates the message history with the generated response.
 - **Inputs**:
-    - `message_history`: An instance of `LlmMessageHistory` representing the history of messages to be used for generating the chat completion.
-    - `response_type`: An optional type of `LlmResponseType` that specifies the expected type of the response, or `None` if not specified.
-    - `tool_types`: An optional list of `LlmTool` types that may be used in the chat completion, or `None` if not specified.
+    - `message_history`: An instance of `LlmMessageHistory` representing the history of messages exchanged with the model.
+    - `response_type`: An optional type of `LlmResponseType` that specifies the expected type of the response.
+    - `tool_types`: An optional list of `LlmTool` types that may be used by the model during the chat completion.
 - **Control Flow**:
     - A copy of the `message_history` is created to avoid modifying the original during processing.
-    - The [`_make_kwargs`](#OpenAiChatClient_make_kwargs) method is called to prepare the keyword arguments needed for the OpenAI API call, including model and message details.
-    - The OpenAI API is called using the `chat.completions.create` method with the prepared arguments to generate a chat completion message.
+    - The [`_make_kwargs`](<#OpenAiChatClient_make_kwargs>) method is called to prepare the keyword arguments needed for the OpenAI API call, including model ID and message history.
+    - The OpenAI API is called to generate a chat completion message using the prepared keyword arguments.
     - The first choice from the API response is extracted as the chat completion message.
     - The `LlmMessage.from_openai_chat_completion_message` method is used to convert the API response into an `LlmMessage` object, considering the `response_type` and `tool_types`.
     - The generated `LlmMessage` is added to the original `message_history`.
-    - The method returns the generated `LlmMessage` object.
-- **Output**: The method returns an `LlmMessage` object representing the generated chat completion message.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](../../interfaces/llm_message_history.py.md#LlmMessageHistorycopy)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._make_kwargs`](#OpenAiChatClient_make_kwargs)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](../../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](../../interfaces/llm_message_history.py.md#LlmMessageHistoryadd_message)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](#OpenAiChatClient)  (Base Class)
+- **Output**: Returns an `LlmMessage` object representing the generated response from the OpenAI chat completion.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](<../../interfaces/llm_message_history.py.md#LlmMessageHistorycopy>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._make_kwargs`](<#OpenAiChatClient_make_kwargs>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryadd_message>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](<#OpenAiChatClient>)  (Base Class)
 
 
 ---
 #### OpenAiChatClient\.\_generate\_stream<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._generate_stream}} -->
-The `_generate_stream` method asynchronously generates a stream of responses from an OpenAI chat model, yielding either content strings or structured LlmMessage objects based on the presence of tool calls.
-- **Decorators**: `@asyncio.coroutine`
+The `_generate_stream` method asynchronously generates a stream of responses from an OpenAI chat model, yielding either content strings or [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) objects based on the presence of tool calls.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `message_history`: An instance of `LlmMessageHistory` representing the history of messages to be used in the chat model.
-    - `response_type`: An optional type of `LlmResponseType` that specifies the expected response type for parsing the final content.
-    - `tool_types`: An optional list of `LlmTool` types that may be used by the chat model for tool calls.
+    - `message_history`: An instance of `LlmMessageHistory` representing the history of messages to be used in generating the chat completion.
+    - `response_type`: An optional type of `LlmResponseType` that specifies the expected type of the response, which can be used to parse the final content.
+    - `tool_types`: An optional list of `LlmTool` types that may be used by the chat model to perform tool calls.
 - **Control Flow**:
-    - Copies the provided message history to `openai_message_history`.
-    - Generates completion keyword arguments using [`_make_kwargs`](#OpenAiChatClient_make_kwargs) method.
-    - Initiates an asynchronous stream request to the OpenAI chat model with the generated keyword arguments.
-    - Iterates over the chunks of the stream asynchronously.
-    - For each chunk, checks if there is content in the delta and appends it to `final_content`, yielding the content.
-    - Checks for tool calls in the delta, appending them to `tool_calls` if present, and updates arguments if necessary.
-    - After the stream, checks if there are any tool calls and yields a [`LlmMessage`](../../interfaces/llm_message.py.md#LlmMessage) with tool call requests if present.
-    - If no tool calls are present, yields a final [`LlmMessage`](../../interfaces/llm_message.py.md#LlmMessage) with the accumulated content and parsed content if a response type is provided.
-- **Output**: Yields either strings of content or [`LlmMessage`](../../interfaces/llm_message.py.md#LlmMessage) objects, depending on the presence of tool calls in the response.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](../../interfaces/llm_message_history.py.md#LlmMessageHistorycopy)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._make_kwargs`](#OpenAiChatClient_make_kwargs)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../interfaces/llm_message.py.md#LlmMessage)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](../../interfaces/llm_message.py.md#LlmMessage.ToolCallRequest)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](#OpenAiChatClient)  (Base Class)
+    - Copy the provided `message_history` to `openai_message_history`.
+    - Generate `completion_kwargs` using [`_make_kwargs`](<#OpenAiChatClient_make_kwargs>) with `openai_message_history`, `response_type`, and `tool_types`.
+    - Create a streaming chat completion request using `self.async_client.chat.completions.create` with `completion_kwargs` and `stream=True`.
+    - Initialize an empty list `tool_calls` and an empty string `final_content`.
+    - Iterate asynchronously over each `chunk` in the `stream`.
+    - For each `chunk`, if `delta.content` is present, append it to `final_content` and yield the content.
+    - If `delta.tool_calls` is present, append tool call details to `tool_calls` and update arguments if necessary.
+    - After the stream, if `tool_calls` is not empty, yield an [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) with tool call requests.
+    - If no tool calls are present, yield a final [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) with the accumulated `final_content` and parsed content if `response_type` is provided.
+- **Output**: The method yields either strings representing content chunks or [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) objects, depending on whether tool calls are detected in the response stream.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](<../../interfaces/llm_message_history.py.md#LlmMessageHistorycopy>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient._make_kwargs`](<#OpenAiChatClient_make_kwargs>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../content_services/auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<../../interfaces/llm_message.py.md#LlmMessage.ToolCallRequest>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_chat.OpenAiChatClient`](<#OpenAiChatClient>)  (Base Class)
 
 
 

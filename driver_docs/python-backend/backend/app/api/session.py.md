@@ -6,7 +6,7 @@
 The `session.py` file defines a function to generate database sessions using SQLModel and FastAPI's dependency injection system.
 
 # Purpose
-This code provides a narrow functionality focused on managing database sessions within a FastAPI application. It defines a generator function, [`get_db`](#get_db), which creates a new SQLModel `Session` using a database engine and yields it, ensuring proper session management and resource cleanup. The `CurrentSession` variable is an annotated type that uses FastAPI's `Depends` to inject the database session into route handlers, facilitating dependency injection for database operations. This code is a utility script that integrates database session management into a FastAPI application, ensuring that each request can access a database session efficiently and safely.
+This code provides a narrow functionality focused on database session management within a FastAPI application. It defines a generator function, [`get_db`](<#get_db>), which yields a SQLModel `Session` object connected to a database engine, facilitating the management of database connections in a context-managed way. The `CurrentSession` variable is an annotated type that uses FastAPI's `Depends` to automatically inject the database session into route handlers, ensuring that each request has access to a properly managed session. This setup is typical in web applications to ensure efficient and safe database interactions by leveraging dependency injection.
 # Imports and Dependencies
 
 ---
@@ -22,8 +22,8 @@ This code provides a narrow functionality focused on managing database sessions 
 ---
 ### CurrentSession
 - **Type**: `Annotated`
-- **Description**: `CurrentSession` is an annotated type that combines the `Session` class from `sqlmodel` with a dependency injection mechanism provided by FastAPI's `Depends` function. This setup is used to ensure that a database session is available for use in FastAPI endpoints, with the session being provided by the `get_db` function.
-- **Use**: `CurrentSession` is used to inject a database session into FastAPI route handlers, ensuring that each request has access to a properly managed database session.
+- **Description**: `CurrentSession` is a global variable that uses Python's type hinting system to annotate a `Session` object with a dependency on the `get_db` function. This setup is typically used in FastAPI applications to manage database sessions, ensuring that a session is provided to the request handlers as a dependency.
+- **Use**: `CurrentSession` is used to inject a database session into FastAPI route handlers, facilitating database operations within the request lifecycle.
 
 
 # Functions
@@ -34,8 +34,7 @@ The `get_db` function provides a database session generator for use in dependenc
 - **Inputs**: None
 - **Control Flow**:
     - The function opens a new database session using the `Session` context manager with the provided `engine`.
-    - The session is yielded, allowing it to be used in a context where `get_db` is called.
-    - Once the session is no longer needed, it is automatically closed when the context manager exits.
+    - It yields the session object, allowing the caller to use it within a `with` block or as a generator.
 - **Output**: A generator that yields a `Session` object for interacting with the database.
 
 

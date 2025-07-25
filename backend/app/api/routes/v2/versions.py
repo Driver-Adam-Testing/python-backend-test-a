@@ -14,7 +14,6 @@ from app.api.routes.v2.query_utils import (
 from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ListWithCount,
-    VersionCreate,
     VersionDetailRead,
     VersionUpdate,
 )
@@ -51,29 +50,6 @@ def list_versions(
     return ListWithCount(results=versions, total_count=total_count)
 
 
-@router.post("/versions", response_model=Version)
-def create_version(
-    session: CurrentSession,
-    user: UserToken,
-    payload: VersionCreate = Body(...),
-) -> Version:
-    # Ensure that the primary asset belongs to the user's organization
-    primary_asset = session.exec(
-        select(PrimaryAsset)
-        .where(PrimaryAsset.id == payload.primary_asset_id)
-        .where(PrimaryAsset.organization_id == user.organization_id)
-    ).one_or_none()
-
-    if not primary_asset:
-        raise HTTPException(status_code=404, detail="Primary asset not found")
-
-    new_version = Version(**payload.dict())
-    session.add(new_version)
-    session.commit()
-    session.refresh(new_version)
-    return new_version
-
-
 @router.put("/versions/{version_id}", response_model=Version)
 def update_version(
     session: CurrentSession,
@@ -91,8 +67,6 @@ def update_version(
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    if payload.display_name:
-        version.display_name = payload.display_name
     if payload.status:
         version.status = payload.status
 

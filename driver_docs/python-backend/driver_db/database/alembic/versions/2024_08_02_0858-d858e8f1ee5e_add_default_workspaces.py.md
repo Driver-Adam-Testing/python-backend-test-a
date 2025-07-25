@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_08_02_0858-d858e8f1ee5e_add_default_workspaces.py` file contains an Alembic migration script that adds default workspaces to the database and provides a mechanism to remove them if needed.
+The `2024_08_02_0858-d858e8f1ee5e_add_default_workspaces.py` file contains an Alembic migration script that adds default workspaces to the database for each organization and provides a downgrade operation to remove them.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically for managing database schema changes related to workspaces within an organization. The script defines two functions: `upgrade()` and `downgrade()`. The `upgrade()` function inserts a new "Default" workspace for each distinct organization in the `workspaces` table, which is intended to serve as a placeholder for new content and facilitate future data migrations. Conversely, the `downgrade()` function removes these "Default" workspaces, effectively reversing the changes made by the `upgrade()` function. The script is identified by a unique revision ID and is part of a sequence of migrations, as indicated by the `down_revision` attribute.
+This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically designed to add and remove default workspaces in a database. The [`upgrade`](<#upgrade>) function inserts a new default workspace for each distinct organization, which is intended to serve as a placeholder for new content and facilitate future data migrations. Conversely, the [`downgrade`](<#downgrade>) function removes these default workspaces, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. This script is part of a version-controlled database schema, as indicated by the revision identifiers, and is used to manage changes to the database structure over time.
 # Imports and Dependencies
 
 ---
@@ -18,15 +18,15 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### revision
 - **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used to identify the current migration script in the Alembic migration history.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema that this script applies.
+- **Use**: This variable is used by Alembic to identify and apply the specific migration when upgrading or downgrading the database schema.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic, a database migration tool for SQLAlchemy, to determine the order of migrations.
+- **Use**: This variable is used to specify the immediate predecessor of the current migration, allowing Alembic to apply migrations in the correct sequence.
 
 
 ---
@@ -39,8 +39,8 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts, but in this case, it indicates that there are no dependencies for this migration script.
-- **Use**: This variable is used to define migration dependencies, and being set to `None` means this migration does not depend on any other migration.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
+- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
 
 
 # Functions

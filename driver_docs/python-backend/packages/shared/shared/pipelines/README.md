@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pipelines` folder in the `python-backend` codebase contains modules and scripts for defining and executing multi-step processes involving agents, block kind pipelines, file processing, and search functionalities.
+Python scripts and modules for agent-based pipelines, block kind pipelines, file processing, and search.
 
 ## Folders
-- **[agents](agents/README.md)**: The `agents` folder in the `python-backend` codebase contains Python scripts that define various agents and their functions for tasks such as code critique, copy editing, document editing, and prompt augmentation, all of which are executed within a multi-step pipeline process.
-- **[block_kind_pipelines](block_kind_pipelines/README.md)**: The `block_kind_pipelines` folder in the `python-backend` codebase contains Python scripts that define functions for executing various block agents, including code, diagram, list, and table, each utilizing prompt augmentation and agent tools to generate and verify their respective outputs.
-- **[process_file](process_file/README.md)**: The `process_file` folder in the `python-backend` codebase contains modules for processing files, particularly focusing on handling and extracting content from PDF files.
+- **[agents](agents/README.md)**: Python scripts for agent-based pipelines and functions like code critique, copy editing, and prompt augmentation.
+- **[block_kind_pipelines](block_kind_pipelines/README.md)**: Python scripts for executing block agents, including code, diagram, list, and table, with prompt tools.
+- **[process_file](process_file/README.md)**: Modules for processing PDF files, including parsing, summarizing, extracting content, and error handling.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[search.py](search.py.md)**: The `search.py` file in the `python-backend` codebase implements a search functionality that supports keyword, semantic, and hybrid search algorithms using BM25 and semantic embeddings, and integrates with a database to retrieve and rank search results.
+- **[search.py](search.py.md)**: The `search.py` file in the `python-backend` codebase implements a search pipeline that supports keyword, semantic, and hybrid search algorithms using BM25 and semantic embeddings to retrieve and rank content from a database.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

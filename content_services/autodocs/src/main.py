@@ -4,6 +4,7 @@ from math import ceil
 from typing import Any
 
 import modal
+from auto_toml import AutoToml
 from autodocs_prototype import (
     AutoDocCfg,
     AutoDocInitState,
@@ -25,6 +26,9 @@ image = inspection_image = (
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
     )
+    .add_local_dir(
+        local_path="../auto_toml/src", remote_path="/auto_toml_src", copy=True
+    )
     .pip_install(
         [
             "boto3",
@@ -38,6 +42,7 @@ image = inspection_image = (
             "aiolimiter",
         ]
     )
+    .env({"PYTHONPATH": "/auto_toml_src"})
     .add_local_file(
         "src/configs/adi_driver_readme.toml",
         "/autodocs_configs/adi_driver_page.toml",
@@ -80,6 +85,8 @@ image = inspection_image = (
 async def run_autodoc(
     page_node_id: uuid.UUID,
     config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
+    document_goal: str | None = None,
+    user_context: str | None = None,
 ) -> None:
     import hashlib
 
@@ -96,6 +103,11 @@ async def run_autodoc(
     )
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
+
+    if config_kind == AutoDocConfigKind.FROM_DOCUMENT_GOAL and not document_goal:
+        raise ValueError(
+            "document_goal is required when config_kind is FROM_DOCUMENT_GOAL"
+        )
 
     try:
         # Get document sources given page id
@@ -170,6 +182,18 @@ async def run_autodoc(
                     config = AutoDocCfg.from_file(
                         "/autodocs_configs/custom_config.toml"
                     )
+            case AutoDocConfigKind.FROM_DOCUMENT_GOAL:
+                toml_file = "config.toml"
+                auto_toml = AutoToml.from_page_id(
+                    page_node_id, enable_auto_scaling=True
+                )
+                toml_content = await auto_toml.generate(
+                    document_goal=document_goal,
+                    user_context=user_context if user_context else "",
+                )
+                with open(toml_file, "w") as f:
+                    f.write(toml_content)
+                config = AutoDocCfg.from_file(toml_file=toml_file)
             case _:
                 raise ValueError(f"Unsupported config kind: {config_kind}")
 
@@ -234,11 +258,16 @@ async def run_autodoc(
 @app.local_entrypoint()
 def main(
     page_node_id: str,
+    document_goal: str,
+    size: str,
 ) -> None:
     from database.models_v2_enums import AutoDocConfigKind
 
     run_autodoc.remote(
-        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ARCHITECTURE
+        page_node_id=page_node_id,
+        config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
+        document_goal=document_goal,
+        user_context=size,
     )
 
 

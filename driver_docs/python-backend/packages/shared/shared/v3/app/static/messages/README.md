@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `messages` folder in the `python-backend` codebase contains various Python files that define classes and messages for system and user interactions, focusing on document processing, technical editing, and leveraging language models for generating and refining technical content.
+Python files that define classes and system messages for document summarization, technical editing, driver application functionality, format-specific messaging, inline editing, mermaid code review, smart instruction input, and software expertise.
 
 
 ## Files
-- **[abbreviate_page_content_messages.py](abbreviate_page_content_messages.py.md)**: The `abbreviate_page_content_messages.py` file defines system and user message classes for processing and summarizing document sections to provide concise, information-dense context for downstream language models.
-- **[copy_editor_messages.py](copy_editor_messages.py.md)**: The `copy_editor_messages.py` file defines classes for system and user messages used by a technical copy editor, providing instructions and context for editing technical documents.
-- **[driver_app_messages.py](driver_app_messages.py.md)**: The `driver_app_messages.py` file defines various system messages for the Driver application, which assist in generating technical documentation through Smart Instructions and templates, leveraging LLMs to process user-supplied codebases and assets.
-- **[format_kind_message.py](format_kind_message.py.md)**: The `format_kind_message.py` file defines the `FormatKindMessage` class, which generates specific message content based on different `FormatKind` values, such as code examples, diagrams, text, tables, lists, and any format, ensuring the response adheres to strict formatting guidelines.
-- **[inline_edit_messages.py](inline_edit_messages.py.md)**: The `inline_edit_messages.py` file defines classes for handling inline edit messages in a document editing context, including system and user messages that guide the process of refining text based on user prompts and document content.
-- **[mermaid_messages.py](mermaid_messages.py.md)**: The `mermaid_messages.py` file defines a system message class for reviewing and correcting mermaid code blocks to ensure proper rendering and adherence to syntax rules.
-- **[smart_instruction_messages.py](smart_instruction_messages.py.md)**: The `smart_instruction_messages.py` file defines the `SmartInstructionInputMessage` class, which constructs a message from user prompts and document content around a cursor for use in a large language model interface.
+- **[abbreviate_page_content_messages.py](abbreviate_page_content_messages.py.md)**: The `abbreviate_page_content_messages.py` file defines classes for creating system and user messages that assist in summarizing and structuring document content for effective use by downstream language models.
+- **[copy_editor_messages.py](copy_editor_messages.py.md)**: The `copy_editor_messages.py` file defines classes for system and user messages used by a technical copy editor to edit and refine technical documents, ensuring clarity, conciseness, and relevance.
+- **[driver_app_messages.py](driver_app_messages.py.md)**: The `driver_app_messages.py` file defines various system messages for the Driver application, which is designed to assist in generating technical documentation using LLMs, including messages that outline the application's functionality, user interaction guidelines, and the structure of generated content.
+- **[format_kind_message.py](format_kind_message.py.md)**: The `format_kind_message.py` file defines the `FormatKindMessage` class, which generates specific message content based on different `FormatKind` types, such as code examples, diagrams, text, tables, lists, and any format, ensuring responses adhere to strict formatting guidelines.
+- **[inline_edit_messages.py](inline_edit_messages.py.md)**: The `inline_edit_messages.py` file defines classes for handling inline edit messages in a document editing context, including system and user messages that guide the process of refining text based on user prompts and document context.
+- **[mermaid_messages.py](mermaid_messages.py.md)**: The `mermaid_messages.py` file defines a system message class for reviewing and correcting mermaid code blocks to ensure proper rendering by avoiding syntax errors and forbidden characters.
+- **[smart_instruction_messages.py](smart_instruction_messages.py.md)**: The `smart_instruction_messages.py` file defines the `SmartInstructionInputMessage` class, which constructs a message from user prompts and document content surrounding a cursor for use in a large language model (LLM) context.
 - **[software_expertise.py](software_expertise.py.md)**: The `software_expertise.py` file defines a `SoftwareExpertiseMessage` class that represents a system message for an expert software engineer, emphasizing their role in writing high-quality code and documentation without instructing others.
 
 ---

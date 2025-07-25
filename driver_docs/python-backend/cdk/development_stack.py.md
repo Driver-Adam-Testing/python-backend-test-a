@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `development_stack.py` file defines a CDK stack for the development environment, setting up various AWS resources including a metrics lambda, API backend, asset onboarding lambda, and an inspector.
+The `development_stack.py` file defines a development environment stack using AWS CDK, incorporating components such as a metrics lambda, API backend, asset onboarding lambda, and an inspector.
 
 # Purpose
-The provided Python code defines a class `DevelopmentStack` that extends the AWS CDK `Stack` class, indicating that it is part of an infrastructure-as-code setup using the AWS Cloud Development Kit (CDK). This code is designed to configure and deploy a development environment stack for a cloud-based application. The stack includes several key components: a `MetricsLambda` for handling metrics and alarms, a `Backend` for API management with specified CORS origins and IP restrictions, an `AssetOnboardingLambda` for managing asset onboarding processes, and an `Inspector` for security or compliance checks. Each component is instantiated with parameters tailored for a development environment, such as specific URLs, environment identifiers, and resource ARNs.
+The provided Python code defines a class `DevelopmentStack` that extends the AWS Cloud Development Kit (CDK) `Stack` class. This code is designed to set up a development environment infrastructure using AWS resources. It leverages several custom constructs, such as `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector`, each initialized with specific parameters tailored for a development environment. These constructs are likely defined elsewhere in the codebase and encapsulate specific AWS services or configurations, such as Lambda functions for metrics and asset onboarding, a backend API with CORS and IP restrictions, and an inspector for monitoring or compliance purposes.
 
-The code is structured to be part of a larger application, likely serving as a module that is imported and executed within a broader AWS CDK application. It does not define public APIs or external interfaces directly but rather configures backend services and infrastructure components. The use of specific parameters and constructs suggests that this file is intended to be reused and adapted for different environments by modifying the parameters, making it a flexible and modular part of the infrastructure setup. The focus on development-specific configurations, such as CORS origins and environment tags, indicates that this stack is specifically tailored for non-production use, facilitating testing and development workflows.
+The `DevelopmentStack` class is a part of a broader infrastructure-as-code solution, intended to be deployed using AWS CDK. It provides a cohesive setup for a development environment by integrating various components that handle metrics, API backend configuration, asset onboarding, and inspection. The code specifies environment-specific parameters, such as CORS origins, allowed IPs, and API URLs, indicating that it is tailored for a specific stage in the software development lifecycle. This file is not a standalone script but rather a part of a larger system, likely imported and executed within a CDK application to provision and manage AWS resources programmatically.
 # Imports and Dependencies
 
 ---
@@ -33,9 +33,9 @@ The code is structured to be part of a larger application, likely serving as a m
     - `backend`: An instance of Backend configured with CORS origins and other parameters for development.
     - `onboarding_lambda`: An instance of AssetOnboardingLambda configured for asset onboarding in the development environment.
     - `inspector`: An instance of Inspector configured for the development environment.
-- **Description**: The DevelopmentStack class is a specialized AWS CDK stack designed for the development environment of the DriverAI application. It initializes and configures several components including a metrics lambda, an API backend, an asset onboarding lambda, and an inspector, each tailored with specific parameters for development. The stack sets up necessary configurations such as CORS origins, allowed IPs, and environment-specific URLs to facilitate development operations.
+- **Description**: The DevelopmentStack class is a specialized AWS CDK stack designed for the development environment, integrating various components such as MetricsLambda, Backend, AssetOnboardingLambda, and Inspector. It configures these components with specific parameters suitable for development, including CORS origins, allowed IPs, and environment-specific URLs. This class extends the base Stack class, providing a structured setup for deploying and managing development resources in AWS.
 - **Methods**:
-    - [`python-backend/cdk/development_stack.DevelopmentStack.__init__`](#DevelopmentStack__init__)
+    - [`python-backend/cdk/development_stack.DevelopmentStack.__init__`](<#DevelopmentStack__init__>)
 - **Inherits From**:
     - `Stack`
 
@@ -43,30 +43,30 @@ The code is structured to be part of a larger application, likely serving as a m
 
 ---
 #### DevelopmentStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/development_stack.DevelopmentStack.__init__}} -->
-The [`__init__`](constructs/metrics_lambda.py.md#MetricsLambdaParams__init__) method initializes a `DevelopmentStack` instance by setting up various components such as [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda), [`Backend`](constructs/backend.py.md#Backend), [`AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda), and [`Inspector`](constructs/inspector.py.md#Inspector) with specific parameters for a development environment.
+The [`__init__`](<constructs/metrics_lambda.py.md#MetricsLambdaParams__init__>) method initializes a `DevelopmentStack` instance by setting up various components such as [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>), [`Backend`](<constructs/backend.py.md#Backend>), [`AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>), and [`Inspector`](<constructs/inspector.py.md#Inspector>) with specific parameters for a development environment.
 - **Inputs**:
     - `scope`: A `Construct` object that represents the scope in which this stack is defined.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
-    - `kwargs`: Additional keyword arguments that can be passed to the parent class constructor.
+    - `kwargs`: Additional keyword arguments that can be passed to the parent class `Stack`.
 - **Control Flow**:
-    - The method begins by calling the parent class `Stack`'s [`__init__`](constructs/metrics_lambda.py.md#MetricsLambdaParams__init__) method with `scope`, `construct_id`, and `kwargs`.
+    - The method begins by calling the parent class `Stack`'s [`__init__`](<constructs/metrics_lambda.py.md#MetricsLambdaParams__init__>) method with `scope`, `construct_id`, and `kwargs`.
     - A string `cors_origins` is defined, containing a list of allowed CORS origins for the backend.
-    - An instance of [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda) is created with parameters for the development environment, including a CloudWatch alarm ARN.
-    - An instance of [`Backend`](constructs/backend.py.md#Backend) is created with parameters for the development environment, including CORS origins, allowed IPs, and a reference to the metrics bus from [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda).
-    - An instance of [`AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda) is created with parameters for the development environment, including API URLs, Auth0 configurations, and a reference to the dropzone bucket from [`Backend`](constructs/backend.py.md#Backend).
-    - An instance of [`Inspector`](constructs/inspector.py.md#Inspector) is created with parameters for the development environment.
+    - An instance of [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>) is created with parameters for the development environment, including a CloudWatch alarm ARN.
+    - An instance of [`Backend`](<constructs/backend.py.md#Backend>) is created with parameters for the development environment, including CORS origins, allowed IPs, and a reference to the metrics bus from [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>).
+    - An instance of [`AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>) is created with parameters for the development environment, including API URLs, Auth0 configurations, and a reference to the dropzone bucket from [`Backend`](<constructs/backend.py.md#Backend>).
+    - An instance of [`Inspector`](<constructs/inspector.py.md#Inspector>) is created with parameters for the development environment.
 - **Output**: The method does not return any value; it initializes the `DevelopmentStack` instance with configured components.
-- **Functions called**:
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams.__init__`](constructs/metrics_lambda.py.md#MetricsLambdaParams__init__)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](constructs/metrics_lambda.py.md#MetricsLambdaParams)
-    - [`python-backend/cdk/constructs/backend.Backend`](constructs/backend.py.md#Backend)
-    - [`python-backend/cdk/constructs/backend.BackendParams`](constructs/backend.py.md#BackendParams)
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda)
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams)
-    - [`python-backend/cdk/constructs/inspector.Inspector`](constructs/inspector.py.md#Inspector)
-    - [`python-backend/cdk/constructs/inspector.InspectorParams`](constructs/inspector.py.md#InspectorParams)
-- **See also**: [`python-backend/cdk/development_stack.DevelopmentStack`](#DevelopmentStack)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams.__init__`](<constructs/metrics_lambda.py.md#MetricsLambdaParams__init__>)
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>)
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](<constructs/metrics_lambda.py.md#MetricsLambdaParams>)
+    - [`python-backend/cdk/constructs/backend.Backend`](<constructs/backend.py.md#Backend>)
+    - [`python-backend/cdk/constructs/backend.BackendParams`](<constructs/backend.py.md#BackendParams>)
+    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>)
+    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams>)
+    - [`python-backend/cdk/constructs/inspector.Inspector`](<constructs/inspector.py.md#Inspector>)
+    - [`python-backend/cdk/constructs/inspector.InspectorParams`](<constructs/inspector.py.md#InspectorParams>)
+- **See also**: [`python-backend/cdk/development_stack.DevelopmentStack`](<#DevelopmentStack>)  (Base Class)
 
 
 

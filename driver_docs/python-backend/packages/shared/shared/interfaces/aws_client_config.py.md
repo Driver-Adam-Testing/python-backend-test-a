@@ -6,7 +6,7 @@
 The `aws_client_config.py` file defines a Pydantic model for AWS client configuration, including region name, access key ID, and secret access key.
 
 # Purpose
-This code defines a data model using the Pydantic library, which is used for data validation and settings management in Python. The `AWSClientConfig` class is a subclass of `BaseModel` and is designed to encapsulate configuration details required to connect to an AWS client, specifically the region name, AWS access key ID, and AWS secret access key. This code provides narrow functionality, focusing solely on the structure and validation of AWS client configuration data. It is not a standalone script but rather a component that would typically be used within a larger application to ensure that AWS credentials are correctly formatted and validated.
+This code defines a data model using the Pydantic library, which is a popular tool for data validation and settings management in Python. The `AWSClientConfig` class is a subclass of `BaseModel` and is designed to encapsulate configuration details necessary for connecting to AWS services. It includes three attributes: `region_name`, `aws_access_key_id`, and `aws_secret_access_key`, all of which are strings. This code provides narrow functionality, specifically for managing and validating AWS client configuration data, ensuring that the required fields are present and correctly typed. It is a concise and focused implementation, typical of configuration management in applications that interact with AWS.
 # Imports and Dependencies
 
 ---
@@ -21,7 +21,7 @@ This code defines a data model using the Pydantic library, which is used for dat
     - `region_name`: The AWS region name for the client configuration.
     - `aws_access_key_id`: The AWS access key ID for authentication.
     - `aws_secret_access_key`: The AWS secret access key for authentication.
-- **Description**: The AWSClientConfig class is a Pydantic model that encapsulates the configuration details required to authenticate and connect to AWS services. It includes the region name, access key ID, and secret access key, which are essential for setting up a client to interact with AWS resources.
+- **Description**: The AWSClientConfig class is a Pydantic model that encapsulates the configuration details required to authenticate and connect to AWS services, including the region name, access key ID, and secret access key.
 - **Inherits From**:
     - `BaseModel`
 

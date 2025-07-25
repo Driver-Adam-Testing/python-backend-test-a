@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libiconv.yml` file in the `python-backend` codebase specifies metadata and installation instructions for the libiconv charset conversion library, including its source URL, license information, and configuration options.
+The `libiconv.yml` file in the `python-backend` codebase specifies the configuration and installation details for the libiconv charset conversion library, including its source URL, license information, and build instructions.
 
 # Purpose
-The provided content is a configuration file for a software package, specifically for the GNU `libiconv` library, which is used for character set conversion. This file includes metadata such as a brief summary of the library, URLs for the Git repository, the official website, and the source tarball, along with its SHA-256 checksum for verification. It specifies the licensing terms under GPL-3.0-or-later and LGPL-2.0-or-later. The `install` section outlines a configuration command to enable extra encodings during installation. Additionally, the `dotweak` section contains a script to generate pkg-config files for the library components, setting up paths and flags necessary for compiling and linking against the library.
+The provided content is a configuration file for the libiconv library, which is a charset conversion library. This file includes metadata such as the library's summary, URLs for the Git repository, website, and source tarball, as well as the SHA-256 checksum for verifying the source file's integrity. It specifies the licenses under which the library is distributed, namely GPL-3.0-or-later and LGPL-2.0-or-later. The file also contains installation instructions, indicating that the library should be configured with extra encodings enabled. Additionally, it includes a script section labeled "dotweak," which generates pkg-config files for the library components, setting up necessary paths and flags for compiling and linking against the library.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

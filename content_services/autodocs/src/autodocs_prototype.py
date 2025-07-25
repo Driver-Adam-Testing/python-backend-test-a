@@ -369,6 +369,7 @@ class DriverDocsContent(BaseModel):
             except Exception as e:
                 print(codebase_name)
                 raise e
+
             dag = build_file_tree_dag(
                 codebase_name=codebase_name,
                 content=content,
@@ -494,9 +495,10 @@ def build_file_tree_dag(
     return dag
 
 
-def build_subgraph(dag: dict[str, set[str]], start: str) -> dict[str, set[str]]:
+def build_subgraph(dag: dict[str, set[str]], start: str) -> dict[str, set[str]] | None:
     if start not in dag:
-        raise ValueError(f"Node {start} is not present in the DAG.")
+        print(f"Node {start} is not present in the DAG.")
+        return None
 
     subgraph = dict()
 
@@ -1743,6 +1745,11 @@ class AutoDocInitState(BaseModel):
     document: DocumentCfg
     scope: Scope
     sections: list[SectionCommitted]
+    _source_list: dict[str, list[str]] = {}
+
+    @property
+    def section_sources(self) -> str:
+        return self._source_list
 
     def assembly_system_prompt(self) -> str:
         system_prompt_template = """
@@ -1844,6 +1851,37 @@ Your output is the full content of the document with editing updates based on yo
             .into_str()
         )
 
+    def _generate_sources_list(
+        self,
+        annotations: dict[str, list[Category]] | None,
+        pdf_annotations: dict[str, list[Category]] | None,
+    ) -> dict[str, list[str]]:
+        sources_dict = {}
+
+        if not annotations and not pdf_annotations:
+            return sources_dict
+
+        for idx, section in enumerate(self.sections):
+            sources = []
+            if annotations:
+                sources.extend(
+                    path
+                    for path, categories in annotations.items()
+                    if categories[idx] == Category.HighlyRelevant
+                )
+
+            if pdf_annotations:
+                sources.extend(
+                    f"{pdf_path!s} (page {page_idx + 1})"
+                    for pdf_path, pages in pdf_annotations.items()
+                    for page_idx, categories in pages.items()
+                    if categories[idx] == Category.HighlyRelevant
+                )
+
+            sources_dict[section.title] = sources
+
+        return sources_dict
+
     def to_disk(self, json_p: Path) -> None:
         with open(json_p) as f:
             f.write(self.model_dump_json())
@@ -1895,10 +1933,16 @@ Your output is the full content of the document with editing updates based on yo
                     case _:
                         raise ValueError("Invalid execution mode")
 
-                subgraphs = [
-                    build_subgraph(dag=dd.dag, start=code_cfg.node_path)
-                    for dd, code_cfg in zip(driver_docs, cfg.scope.code)
-                ]
+                subgraphs = []
+                for dd, code_cfg in zip(driver_docs, cfg.scope.code):
+                    subgraph = build_subgraph(dag=dd.dag, start=code_cfg.node_path)
+                    if subgraph:
+                        subgraphs.append(subgraph)
+                if len(subgraphs) == 0:
+                    raise ValueError(
+                        "Subgraphs could not be built for any supplied source nodes."
+                    )
+
                 toposorts = [
                     list(TopologicalSorter(sg).static_order()) for sg in subgraphs
                 ]
@@ -2638,10 +2682,17 @@ Your output is the full content of the document with editing updates based on yo
                     ]
                 case _:
                     raise ValueError("Invalid execution mode")
-            subgraphs = [
-                build_subgraph(dag=dd.dag, start=code_cfg.node_path)
-                for dd, code_cfg in zip(driver_docs, self.scope.code)
-            ]
+
+            subgraphs = []
+            for dd, code_cfg in zip(driver_docs, self.scope.code):
+                subgraph = build_subgraph(dag=dd.dag, start=code_cfg.node_path)
+                if subgraph:
+                    subgraphs.append(subgraph)
+            if len(subgraphs) == 0:
+                raise ValueError(
+                    "Subgraphs could not be built for any supplied source nodes."
+                )
+
             toposorts = [list(TopologicalSorter(sg).static_order()) for sg in subgraphs]
             topos = [
                 [(p, dd.content[p]) for p in ts]
@@ -2664,17 +2715,21 @@ Your output is the full content of the document with editing updates based on yo
                 )
 
             # Annotate nodes with tags, if applicable.
-            annotations, pdf_annotations = (
-                await self._annotate_nodes(
+            if self.document.use_tagging:
+                annotations, pdf_annotations = await self._annotate_nodes(
                     llm=llm_tagging,
                     topo=appended_topo,
                     graph=joined_graph,
                     execution_mode=execution_mode,
                     pdf_pages_dict=pdf_pages_dict,
                 )
-                if self.document.use_tagging
-                else (None, None)
-            )
+                self._source_list = self._generate_sources_list(
+                    annotations=annotations, pdf_annotations=pdf_annotations
+                )
+            else:
+                annotations = None
+                pdf_annotations = None
+
             # self.save_annotations(annotations=annotations)
             if execution_mode == ExecutionMode.MODAL:
                 await update_autodocs_status(
@@ -2829,7 +2884,9 @@ Your output is the full content of the document with editing updates based on yo
             system_prompt=self.final_copy_editor_system_prompt(),
             user_prompt=copy_editor_user_prompt,
         )
+
         final_document += "\n\nMade with ❤️ by [Driver](https://www.driver.ai/)"
+
         final_doc_revisions.append(final_document)
         final_doc_revisions.append(fix_mermaid_syntax_in_response(text=final_document))
         self.save_state(

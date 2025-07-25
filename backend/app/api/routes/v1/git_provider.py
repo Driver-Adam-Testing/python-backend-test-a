@@ -11,12 +11,12 @@ from database.models_v1 import (
     GithubAppInstallation,
     GitProviderApp,
     GitProviderAppInstallation,
+    GitProviderKind,
 )
 from database.models_v2 import PrimaryAsset
 from database.models_v2_enums import PrimaryAssetKind
 from fastapi import (
     APIRouter,
-    Body,
     Depends,
     HTTPException,
     Query,
@@ -27,14 +27,9 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from shared.interfaces.aws_client_config import AWSClientConfig
-from shared.secret_management.aws_secret_management import (
-    AWSSecretManagementStrategy,
-    format_secret_name,
-)
 from sqlmodel import select
 
 from app.api.auth import (
-    ContentEditorPermission,
     OrgManagerPermission,
     UserToken,
 )
@@ -44,39 +39,22 @@ from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
 )
 from app.repositories.git_provider_repository import (
+    git_provider_app_by_id,
     git_provider_app_installation_by_id,
-    git_provider_app_installation_by_org_id,
 )
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
 from app.schemas.git_provider_schema import (
+    AccessTokenData,
     CreateGitProviderAppRequest,
     GitRepository,
-    GroupAccessToken,
     WebhookInfo,
 )
-from app.schemas.secret_management_schema import APP_INSTALL_GAT_NAME_PREFIX
-from app.services.gitlab_provider_service import (
-    authorize_git_provider,
-    clone_git_repository,
-    create_git_provider_app,
-    fetch_git_provider_apps_by_org_id,
-    fetch_group_repositories_by_installation_id,
-    handle_authorization_callback,
-    handle_delete_git_provider_app,
-    handle_group_access_revoke,
-    install_group_access_token,
-    update_group_access_token,
-)
-from app.utils.aws_s3 import org_id_to_hash
+from app.services.git_provider_service import get_git_provider_service
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
 from app.utils.gh_ops import (
-    download_and_upload_repo,
     exchange_code_for_token,
-    fetch_app_access_token,
-    fetch_commit_hash,
-    verify_app_installation_access,
 )
 
 logger = logging.getLogger(__name__)
@@ -92,6 +70,8 @@ aws_config = AWSClientConfig(
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
 )
+
+provider_service = get_git_provider_service(aws_config)
 
 
 class OkResponse(BaseModel):
@@ -111,7 +91,7 @@ def get_apps(
     session: CurrentSession,
     current_user: UserToken,
 ) -> list[GitProviderApp]:
-    return fetch_git_provider_apps_by_org_id(session, current_user.organization_id)
+    return provider_service.list_apps(session, current_user.organization_id)
 
 
 @router.post(
@@ -124,7 +104,7 @@ def create_app(
     session: CurrentSession,
     gp_app_input: CreateGitProviderAppRequest,
 ) -> GitProviderApp:
-    return create_git_provider_app(session, gp_app_input, aws_config)
+    return provider_service.create_app(session, gp_app_input.model_dump(by_alias=True))
 
 
 @router.delete(
@@ -137,33 +117,14 @@ def delete_git_provider_app(
     current_user: UserToken,
     application_id: str,
 ) -> JSONResponse:
-    handle_delete_git_provider_app(
-        session, current_user.organization_id, application_id, aws_config
-    )
+    provider_service.delete_app(session, current_user.organization_id, application_id)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": "App deleted."},
     )
 
 
-@router.get("/app/{application_id}/authorize")
-def get_provider_authorize_url(
-    session: CurrentSession,
-    current_user: UserToken,
-    application_id: str,
-) -> JSONResponse:
-    auth_url = authorize_git_provider(
-        session,
-        current_user.organization_id,
-        current_user.user_id,
-        application_id,
-        aws_config,
-    )
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"authorize_url": auth_url}
-    )
-
-
+# ✅
 @router.get(
     "/app/{application_id}/installations",
     summary="Get app install for logged.",
@@ -175,28 +136,27 @@ def get_app_installation(
     current_user: UserToken,
     application_id: str,
 ) -> list[GitProviderAppInstallation]:
-    installs = git_provider_app_installation_by_org_id(
+    return provider_service.list_app_installations(
         session,
         current_user.organization_id,
         application_id,
     )
-    return installs
 
 
 @router.post(
     "/app/{application_id}/token",
-    summary="Add a group access token to the app.",
+    summary="Add access token to the app.",
     dependencies=[OrgManagerPermission],
 )
-def add_group_access_token(
+def add_access_token(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
-    gat: GroupAccessToken,
+    gat: AccessTokenData,
 ) -> JSONResponse:
     try:
-        install = install_group_access_token(
-            session, current_user.organization_id, application_id, gat, aws_config
+        install = provider_service.install_access_token(
+            session, current_user.organization_id, application_id, gat.model_dump()
         )
 
         if not install:
@@ -223,18 +183,11 @@ def get_app_installation_webhook_info(
     application_id: UUID,
     installation_id: UUID,
 ) -> WebhookInfo:
-    app_install = git_provider_app_installation_by_id(session, installation_id)
-    if app_install.git_provider_app_id != application_id:
-        raise HTTPException(status_code=404, detail="Installation not found.")
-    secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
-        format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
-    )
-    webhook_info = WebhookInfo(
-        callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
-        custom_headers={"x-driver-token": installation_id},
-        secret_token=secret["secret_token"],
-        ssl_verification=True,
-        triggers=["push events", "Project or group access token events"],
+    webhook_info = provider_service.get_webhook_info(
+        session,
+        current_user.organization_id,
+        application_id,
+        installation_id,
     )
     return webhook_info
 
@@ -250,12 +203,8 @@ def delete_app_installation(
     application_id: str,
     installation_id: str,
 ) -> JSONResponse:
-    handle_group_access_revoke(
-        session,
-        current_user.organization_id,
-        application_id,
-        installation_id,
-        aws_config,
+    provider_service.revoke_access_token(
+        session, current_user.organization_id, application_id, installation_id
     )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -275,13 +224,11 @@ def get_repositories_by_installation_id(
     installation_id: str,
 ) -> list[GitRepository]:
     try:
-        return fetch_group_repositories_by_installation_id(
+        return provider_service.list_repositories(
             session,
             current_user.organization_id,
-            current_user.user_id,
             application_id,
             installation_id,
-            aws_config,
         )
     except GitProviderAccessTokenError as e:
         logger.error(f"Error fetching repositories: {e}")
@@ -298,18 +245,16 @@ def update_git_provider_group_access_token(
     current_user: UserToken,
     application_id: str,
     installation_id: str,
-    new_gat: GroupAccessToken = Body(...),
+    new_gat: AccessTokenData,
 ) -> JSONResponse:
     try:
-        update_group_access_token(
+        provider_service.update_access_token(
             session,
             current_user.organization_id,
             application_id,
             installation_id,
-            new_gat,
-            aws_config,
+            new_gat.model_dump(by_alias=True),
         )
-
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"message": "Token updated."},
@@ -317,56 +262,6 @@ def update_git_provider_group_access_token(
     except GitProviderAccessTokenError:
         logger.exception("Error adding token")
         raise HTTPException(status_code=500, detail="Invalid token")
-
-
-@router.get("/app/callback")
-def git_provider_app_callback(
-    session: CurrentSession,
-    state: str,
-    code: str | None = None,
-    error: str | None = Query(None),
-) -> Response:
-    if not error and not code:
-        raise HTTPException(status_code=400, detail="Bad request")
-
-    if error:  # if the user denies the authorization request
-        logger.error(f"Error in callback: {error}")
-    else:
-        handle_authorization_callback(session, code, state, aws_config)
-
-    content = "<html><body><script>window.close();</script></body></html>"
-    return Response(content=content, media_type="text/html")
-
-
-@router.post("/app/{application_id}/clone-repo", dependencies=[ContentEditorPermission])
-def clone_git_provider_repo(
-    session: CurrentSession,
-    current_user: UserToken,
-    application_id: str,
-    repo: GitRepository,
-) -> JSONResponse:
-    upload_key = (
-        f"analysis/{org_id_to_hash(current_user.organization_id)}/{repo.repo_name}.zip"
-    )
-    bucket_name = (
-        settings.DROPZONE_BUCKET_NAME
-        if not settings.USE_LEGACY_DROPZONE
-        else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
-    )
-    analysis_download_url = clone_git_repository(
-        session,
-        current_user.organization_id,
-        current_user.user_id,
-        application_id,
-        repo,
-        upload_key,
-        bucket_name,
-        aws_config,
-    )
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED,
-        content={"download_url": analysis_download_url},
-    )
 
 
 @router.post(
@@ -379,16 +274,36 @@ def connect_git_provider_repo(
     application_id: UUID,
     repos: list[GitRepository],
 ) -> JSONResponse:
-    handle_gitlab_events = modal.Function.lookup(
-        "inspector-v2",
-        "handle_gitlab_events",
-        environment_name=settings.MODAL_ENVIRONMENT,
+    # Get the app to determine provider type
+    app = git_provider_app_by_id(
+        session, current_user.organization_id, str(application_id)
     )
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found.")
+
+    # Determine which handler to use based on provider type
+    if app.provider_kind == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED:
+        handle_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_gitlab_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
+    elif app.provider_kind == GitProviderKind.BITBUCKET:
+        handle_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_bitbucket_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
+    else:
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported provider kind: {app.provider_kind}"
+        )
 
     repos.sort(key=lambda x: x.installation_id)
     installation_groups = {
         k: list(v) for k, v in groupby(repos, key=lambda x: x.installation_id)
     }
+
     for installation_id, repo_group in installation_groups.items():
         app_install = git_provider_app_installation_by_id(session, installation_id)
         if (
@@ -396,7 +311,8 @@ def connect_git_provider_repo(
             or app_install.organization_id != current_user.organization_id
         ):
             raise HTTPException(status_code=404, detail="Installation not found.")
-        handle_gitlab_events.spawn(
+
+        handle_events.spawn(
             installation_id,
             current_user.organization_id,
             repos_added=[repo.model_dump() for repo in repo_group],
@@ -463,66 +379,6 @@ def github_callback(
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
-
-
-@router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
-def clone_repo(
-    session: CurrentSession,
-    current_user: UserToken,
-    provider: str,
-    repo: GitRepository,
-) -> JSONResponse:
-    if provider != "github":
-        raise NotImplementedError()
-
-    if not verify_app_installation_access(
-        session, current_user.organization_id, repo.metadata["installation_id"]
-    ):
-        logger.error(
-            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} "
-            f"in organization {current_user.organization_id}"
-        )
-        raise HTTPException(
-            status_code=403, detail="Unauthorized to access this installation ID."
-        )
-
-    token = fetch_app_access_token(repo.metadata["installation_id"])
-
-    # Defer to default branch if not the driver branch of no-OS for ADI
-    # TODO this is an ADI-specific hack!
-    if repo.repo_name == NO_OS_REPO_NAME and repo.org == NO_OS_GH_ORG:
-        commit_sha = fetch_commit_hash(
-            NO_OS_GH_ORG, NO_OS_REPO_NAME, NO_OS_DRIVER_BRANCH, token
-        )
-    elif repo.repo_name == "diff-tests" and repo.org == "driver-ai":
-        commit_sha = fetch_commit_hash("driver-ai", "diff-tests", "adi_test", token)
-    else:
-        commit_sha = None
-
-    upload_key = (
-        f"analysis/{org_id_to_hash(current_user.organization_id)}/{repo.repo_name}.zip"
-    )
-    upload_complete, analysis_download_url = download_and_upload_repo(
-        gh_org_name=repo.org,
-        owner=current_user.user_id,
-        org_id=current_user.organization_id,
-        repo=repo.repo_name,
-        repo_id=str(repo.metadata["id"]),
-        access_token=token,
-        upload_key=upload_key,
-        commit=commit_sha,
-    )
-
-    if upload_complete is True:
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={"download_url": analysis_download_url},
-        )
-    else:
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": "Upload failed"},
-        )
 
 
 def verify_signature(
@@ -700,19 +556,6 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
                 status_code=status.HTTP_202_ACCEPTED,
                 content={"message": "Push event ignored (not driver branch)"},
             )
-    elif org_name == "driver-ai" and repo_name == "diff-tests":
-        if pushed_ref != "refs/heads/adi_test":
-            logger.info(
-                "ADI event ignored: Not the adi_test branch of diff-tests. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-                org_name,
-                repo_name,
-                pushed_ref,
-                installation_id,
-            )
-            return JSONResponse(
-                status_code=status.HTTP_202_ACCEPTED,
-                content={"message": "Push event ignored (not adi_test branch)"},
-            )
     elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(
             "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
@@ -847,114 +690,31 @@ def webhook(
     )
 
 
-def handle_gitlab_push_event(
+@router.post("/app/webhook")
+def git_provider_webhook(
     session: CurrentSession,
-    app_id: UUID,
-    installation_id: str,
-    body: dict,
+    body_data: dict = Depends(_extract_body_and_headers),
+    installation_id: str | None = Query(None),  # NEW: For Bitbucket query param
 ) -> JSONResponse:
-    repository = body["repository"]
-    project = body["project"]
-    repo_name = repository["name"]
-    repo_id = str(project["id"])
-    full_name = project["path_with_namespace"]
-    default_branch = project["default_branch"]
-    pushed_ref = body["ref"]
-    commit_hash = body["after"]
-    app_install = git_provider_app_installation_by_id(session, installation_id)
-    organization_id = app_install.organization_id
+    """Generic webhook handler for GitLab and Bitbucket"""
+    body = body_data["json_body"]
+    headers = body_data["headers"]
+    logger.info("Received webhook event: %s", body)
+    # Get installation_id from query param OR header
+    if not installation_id:
+        installation_id = headers.get("x-driver-token")
 
-    if pushed_ref != f"refs/heads/{default_branch}":
-        logger.info(
-            "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-            organization_id,
-            repo_name,
-            pushed_ref,
-            installation_id,
+    if not installation_id:
+        logger.error("Installation ID not found in headers or query params")
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        # Delegate everything to the service
+        provider_service.handle_webhook_event(
+            session=session, installation_id=installation_id, headers=headers, body=body
         )
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
-            content={"message": "Push event ignored (not default branch)"},
+            content={"message": "Event processed"},
         )
-
-    logger.info(
-        "Push event on default branch. Org: %s, Repo: %s, Branch: %s, Install ID: %s",
-        organization_id,
-        repo_name,
-        default_branch,
-        installation_id,
-    )
-
-    if app_install.git_provider_app_id != app_id:
-        raise HTTPException(status_code=404, detail="Installation not found.")
-
-    repos_pushed = [
-        {
-            "id": repo_id,
-            "name": repo_name,
-            "repo_name": repo_name,
-            "full_name": full_name,
-            "commit": commit_hash,
-            "metadata": project,
-            "installation_id": installation_id,
-            "latest_commit": {
-                "commit": {
-                    "id": commit_hash,
-                },
-            },
-        }
-    ]
-    handle_github_events = modal.Function.lookup(
-        "inspector-v2",
-        "handle_gitlab_events",
-        environment_name=settings.MODAL_ENVIRONMENT,
-    )
-    handle_github_events.spawn(
-        installation_id,
-        organization_id,
-        [],
-        [],
-        repos_pushed,
-    )
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED,
-        content={"ok": ""},
-    )
-
-
-@router.post("/app/webhook")
-def gitlab_webhook(
-    session: CurrentSession,
-    body_data: dict = Depends(_extract_body_and_headers),
-) -> JSONResponse:
-    # TODO: Use install id as the token
-    # TODO: handle token expire events
-    body = body_data["json_body"]
-    headers = body_data["headers"]
-    object_kind = body.get("object_kind")
-    installation_id = headers["x-driver-token"]
-    incoming_secret_token = headers["x-gitlab-token"]
-    secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
-        format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
-    )
-    if not secret.get("secret_token"):
-        logger.error(f"Secret not found for installation ID {installation_id}")
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-
-    secret_token = secret["secret_token"]
-
-    if secret_token != incoming_secret_token:
-        logger.error(f"Secret token mismatch for installation ID {installation_id}")
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-
-    app_install = git_provider_app_installation_by_id(session, installation_id)
-
-    if object_kind == "push":
-        print("Push event")
-        handle_gitlab_push_event(
-            session, app_install.git_provider_app_id, installation_id, body
-        )
-
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED, content={"message": "Event ignored"}
-    )
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))

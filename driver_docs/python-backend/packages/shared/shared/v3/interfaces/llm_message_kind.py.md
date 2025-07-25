@@ -6,7 +6,7 @@
 The `llm_message_kind.py` file defines an enumeration `MessageKind` that categorizes different types of messages such as user, assistant, developer, and system within the `python-backend` codebase.
 
 # Purpose
-This code defines an enumeration class `MessageKind` using Python's `enum` module, which is a collection of symbolic names bound to unique, constant values. The `MessageKind` class inherits from both `str` and `Enum`, allowing its members to be used as strings while maintaining the benefits of an enumeration. Each member of the `MessageKind` enum represents a specific type of message, such as `USER`, `ASSISTANT`, `DEVELOPER`, etc., with corresponding string values. This code provides narrow functionality, serving as a structured way to handle and differentiate between various message types in a larger application, likely related to communication or interaction flows.
+This code defines an enumeration class `MessageKind` using Python's `enum` module, which is a collection of symbolic names bound to unique, constant values. The `MessageKind` class inherits from both `str` and `Enum`, allowing its members to be used as strings while also providing enumeration capabilities. Each member of the `MessageKind` enum represents a different type of message, such as "user", "assistant", "developer", and others, which suggests that this code is likely used to categorize or identify different kinds of messages or events in a system. The functionality provided by this code is narrow, focusing specifically on defining a set of constants for message types, which can be useful for ensuring consistency and clarity when handling different message kinds in a larger application.
 # Imports and Dependencies
 
 ---

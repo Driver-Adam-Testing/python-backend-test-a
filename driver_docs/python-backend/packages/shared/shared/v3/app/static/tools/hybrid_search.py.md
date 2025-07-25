@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `hybrid_search.py` file implements the `HybridSearchTool` class, which performs a hybrid search combining keyword and semantic search within a content repository of code and technical documentation, and returns the most relevant results.
+The `hybrid_search.py` file implements the `HybridSearchTool` class, which performs a hybrid search combining keyword and semantic search within a content repository of code and technical documentation.
 
 # Purpose
-The provided Python code defines a class named `HybridSearchTool`, which is a specialized tool designed to perform hybrid searches within a repository of code and technical documentation. This tool combines both keyword-based and semantic search techniques to retrieve relevant content, making it particularly useful for searching through large datasets where both types of search can complement each other. The class inherits from `LlmTool`, indicating that it is part of a larger framework or library that deals with language model tools, likely aimed at enhancing the capabilities of language models with additional context or data retrieval functionalities.
+The provided Python code defines a class `HybridSearchTool`, which is a specialized tool designed to perform hybrid searches combining both keyword-based and semantic search techniques within a repository of code and technical documentation. This class is part of a larger system, likely a library or framework, as it imports various components from shared modules and database models. The primary functionality of this tool is to process a search query, embed it using a text embedding function, and then retrieve and rank relevant content from a database using both semantic similarity and BM25 keyword scoring. The results are then combined, sorted, and the top matches are formatted into reference objects for further use.
 
-The `HybridSearchTool` class is structured to execute a search query by embedding the query text and comparing it against pre-stored text embeddings in a database. It utilizes SQLModel and SQLAlchemy for database interactions, specifically to retrieve and rank content based on semantic similarity and BM25 scores, a popular information retrieval metric. The results are then combined and sorted to provide the most relevant matches. The class also includes methods to format the search results into a response message, which can be used by other components of the system, such as a user interface or an API endpoint. This code is likely part of a larger application or library, serving as a backend component that provides search capabilities to other parts of the system.
+The `HybridSearchTool` class extends `LlmTool`, indicating it is part of a suite of tools designed for language model interactions. It provides a public API through its methods, such as [`_execute`](<#HybridSearchTool_execute>), which performs the search operation, and [`to_tool_call_response_message`](<#HybridSearchToolto_tool_call_response_message>), which formats the search results into a message suitable for communication with other components or systems. The class also maintains a status property to report on the progress or results of a search operation. This code is structured to be integrated into a larger application, likely involving natural language processing and information retrieval tasks, and is designed to be robust in handling search queries within a technical documentation context.
 # Imports and Dependencies
 
 ---
@@ -38,13 +38,13 @@ The `HybridSearchTool` class is structured to execute a search query by embeddin
 ### HybridSearchTool<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool}} -->
 - **Members**:
     - `search_query`: The query string used for searching.
-- **Description**: The `HybridSearchTool` class extends the `LlmTool` and is designed to perform a hybrid search that combines both keyword and semantic search techniques within a repository of code and technical documentation. It utilizes a search query to find relevant content by embedding the query and comparing it against stored embeddings, while also calculating BM25 scores for keyword relevance. The class then combines these scores to rank and return the most relevant results, encapsulating them in `Reference` objects for further use. This tool is particularly useful for obtaining context from a codebase or documentation by leveraging both semantic understanding and keyword matching.
+- **Description**: The `HybridSearchTool` class extends the `LlmTool` and is designed to perform a hybrid search that combines both keyword and semantic search techniques within a repository of code and technical documentation. It utilizes a search query to retrieve relevant content by embedding the query and comparing it against stored embeddings, while also calculating BM25 scores for keyword relevance. The class then combines these scores to rank and return the most relevant results, encapsulating them in `Reference` objects for further use. This tool is particularly useful for obtaining context from a codebase or documentation by leveraging both semantic understanding and keyword matching.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool._execute`](#HybridSearchTool_execute)
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool.to_tool_call_response_message`](#HybridSearchToolto_tool_call_response_message)
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool.status`](#HybridSearchToolstatus)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool._execute`](<#HybridSearchTool_execute>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool.to_tool_call_response_message`](<#HybridSearchToolto_tool_call_response_message>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool.status`](<#HybridSearchToolstatus>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](../../../interfaces/llm_tool.py.md#LlmTool)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../../../interfaces/llm_tool.py.md#LlmTool>)
 
 **Methods**
 
@@ -53,41 +53,41 @@ The `HybridSearchTool` class is structured to execute a search query by embeddin
 The `_execute` method performs a hybrid search by embedding the search query, retrieving and scoring relevant content chunks using semantic and BM25 scores, and storing the top results as references.
 - **Inputs**: None
 - **Control Flow**:
-    - Embed the search query using [`batch_embed_text`](../../../../embedding/text_embedder.py.md#batch_embed_text) to obtain a list of floats representing the query embedding.
-    - Open a database session using [`get_session`](../../../../../../../driver_db/database/db.py.md#get_session) and execute a SQL query to select content chunks and their semantic scores based on the L2 distance from the embedded query.
-    - Filter the results to include only those with node IDs present in the datasource nodes and limit the results to 50 entries ordered by semantic score.
+    - Embed the search query using [`batch_embed_text`](<../../../../embedding/text_embedder.py.md#batch_embed_text>) to obtain a list of floats representing the query embedding.
+    - Open a database session using [`get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>) and execute a SQL query to select content chunks and their semantic scores based on the embedded query.
+    - Filter the results to include only those with node IDs present in the datasource nodes and order them by semantic score, limiting to 50 results.
     - If no results are found, exit the method early.
     - Unpack the results into chunks, semantic scores, and node IDs.
-    - Compute BM25 scores for the text of each chunk using the search query.
-    - Combine semantic and BM25 scores for each chunk to calculate an overall score using [`overall_score`](../../../../pipelines/search.py.md#overall_score).
-    - Sort the combined results by the overall score in descending order and limit to the top 15 results.
-    - For each top result, find the corresponding node in the datasource, extract metadata, and create a [`Reference`](../../../utils/references.py.md#Reference) object with the chunk's information and score.
-    - Add each [`Reference`](../../../utils/references.py.md#Reference) object to the `_references` collection.
-- **Output**: The method does not return any value; it modifies the `_references` attribute by adding [`Reference`](../../../utils/references.py.md#Reference) objects for the top search results.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/embedding/text_embedder.batch_embed_text`](../../../../embedding/text_embedder.py.md#batch_embed_text)
-    - [`python-backend/driver_db/database/db.get_session`](../../../../../../../driver_db/database/db.py.md#get_session)
-    - [`python-backend/packages/shared/shared/pipelines/search.get_bm25_scores`](../../../../pipelines/search.py.md#get_bm25_scores)
-    - [`python-backend/packages/shared/shared/pipelines/search.overall_score`](../../../../pipelines/search.py.md#overall_score)
-    - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](../../../utils/references.py.md#Reference)
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](../../../utils/references.py.md#ReferenceSetadd_reference)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](#HybridSearchTool)  (Base Class)
+    - Compute BM25 scores for the text of each chunk using [`get_bm25_scores`](<../../../../pipelines/search.py.md#get_bm25_scores>).
+    - Combine semantic and BM25 scores for each chunk using [`overall_score`](<../../../../pipelines/search.py.md#overall_score>) to create a combined score.
+    - Sort the combined results by the combined score in descending order and limit to the top 15 results.
+    - For each top result, find the corresponding node in the datasource, extract metadata, and create a [`Reference`](<../../../utils/references.py.md#Reference>) object with the chunk's information and score.
+    - Add each [`Reference`](<../../../utils/references.py.md#Reference>) object to the `_references` collection.
+- **Output**: The method does not return any value but updates the `_references` attribute with [`Reference`](<../../../utils/references.py.md#Reference>) objects representing the top search results.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/embedding/text_embedder.batch_embed_text`](<../../../../embedding/text_embedder.py.md#batch_embed_text>)
+    - [`python-backend/driver_db/database/db.get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>)
+    - [`python-backend/packages/shared/shared/pipelines/search.get_bm25_scores`](<../../../../pipelines/search.py.md#get_bm25_scores>)
+    - [`python-backend/packages/shared/shared/pipelines/search.overall_score`](<../../../../pipelines/search.py.md#overall_score>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<../../../utils/references.py.md#Reference>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<../../../utils/references.py.md#ReferenceSetadd_reference>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](<#HybridSearchTool>)  (Base Class)
 
 
 ---
 #### HybridSearchTool\.to\_tool\_call\_response\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool.to_tool_call_response_message}} -->
-The `to_tool_call_response_message` method generates an LlmMessage response based on the presence or absence of search references.
+The `to_tool_call_response_message` method generates an LlmMessage response based on the presence of search references, indicating either a successful search result or an error message if no results are found.
 - **Inputs**: None
 - **Control Flow**:
-    - Check if there are no references in `self._references`.
-    - If no references exist, return an LlmMessage indicating no results were found for the search query.
-    - If references exist, construct a detailed LlmMessage with the search query and formatted reference details.
-- **Output**: An [`LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage) object representing the tool call response, either indicating no results or listing the search results.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../../../interfaces/llm_message.py.md#LlmMessage)
-    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](../../../globals/glossary.py.md#GlossaryDefinitionwrap)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse`](../../../interfaces/llm_message.py.md#LlmMessage.ToolCallResponse)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](#HybridSearchTool)  (Base Class)
+    - Check if `_references` is empty.
+    - If `_references` is empty, return an LlmMessage with a TOOL_CALL_RESPONSE kind, containing an error message indicating no results were found for the search query.
+    - If `_references` is not empty, construct a detailed LlmMessage with a TOOL_CALL_RESPONSE kind, including the search query and a formatted list of references with their content and relative paths.
+- **Output**: Returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>) object with a message kind of `TOOL_CALL_RESPONSE`, containing either an error message or a list of search results.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#GlossaryDefinitionwrap>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse`](<../../../interfaces/llm_message.py.md#LlmMessage.ToolCallResponse>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](<#HybridSearchTool>)  (Base Class)
 
 
 ---
@@ -96,12 +96,12 @@ The `status` method returns a string indicating the current search status or fou
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - Check if there are any references in `self._references`.
-    - If references exist, create a set of unique short paths from these references.
-    - Return a formatted string indicating found references and their short paths.
-    - If no references exist, return a string indicating that the search is ongoing.
-- **Output**: A string describing the search status or listing found references.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](#HybridSearchTool)  (Base Class)
+    - Checks if there are any references in `self._references`.
+    - If references exist, it creates a set of unique short paths from these references.
+    - Returns a string indicating that references were found for the search query, along with the unique short paths.
+    - If no references exist, returns a string indicating that the search is ongoing for the search query.
+- **Output**: A string describing the search status or found references.
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/hybrid_search.HybridSearchTool`](<#HybridSearchTool>)  (Base Class)
 
 
 

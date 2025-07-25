@@ -6,7 +6,7 @@
 The `README` file in the `python-backend` codebase provides information on a generic single-database configuration.
 
 # Purpose
-This file contains a brief description indicating that it is a configuration for a generic single-database setup. It likely serves as a placeholder or a comment to inform users or developers about the intended use of the configuration settings within the file, which are tailored for a single database environment.
+This file contains a brief description indicating that it is a configuration file for a generic single-database setup. It likely outlines settings or parameters necessary for connecting to and interacting with a single database instance within a software application.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

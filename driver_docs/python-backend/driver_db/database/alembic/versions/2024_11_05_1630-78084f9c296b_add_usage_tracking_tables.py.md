@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.py` file is an Alembic migration script that adds `usage_sessions` and `usage_events` tables to the database for tracking usage, including creating indices and handling downgrades.
+The `2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.py` file is an Alembic migration script that adds `usage_sessions` and `usage_events` tables to the database for tracking usage, including creating indices and handling the upgrade and downgrade processes.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding tables and indexes related to usage tracking. The script defines two primary functions, `upgrade()` and `downgrade()`, which are used to apply and revert the changes, respectively. The `upgrade()` function creates two new tables: `usage_sessions` and `usage_events`. The `usage_sessions` table is designed to track sessions with columns for session status, organization and user identifiers, metadata, and timestamps for creation and updates. The `usage_events` table records individual events within a session, capturing details such as event type, session ID, data transfer metrics, and metadata. Both tables include primary key constraints and are indexed for efficient querying, with foreign key constraints ensuring referential integrity between the `usage_events` and `usage_sessions` tables.
+This Python file is an Alembic migration script designed to modify a database schema by adding tables related to usage tracking. Specifically, it introduces two new tables: `usage_sessions` and `usage_events`. The `usage_sessions` table is intended to track individual usage sessions, with columns for session status, organization and user identifiers, metadata, and timestamps for creation and updates. The `usage_events` table records events within these sessions, capturing details such as event type, associated session, data transfer metrics, and additional metadata. Both tables utilize UUIDs for unique identification and include foreign key constraints to maintain referential integrity between sessions and events.
 
-The script is part of a broader database migration framework, as indicated by the use of Alembic, a popular database migration tool for SQLAlchemy. It includes revision identifiers to track the migration's place in the sequence of database changes. The `downgrade()` function provides the logic to reverse the changes made by `upgrade()`, ensuring that the database can be reverted to its previous state if necessary. This script is a crucial component of a system that requires detailed tracking of user interactions and data usage, likely for analytics or monitoring purposes.
+The script defines two primary functions: `upgrade()` and `downgrade()`. The `upgrade()` function is responsible for creating the new tables and their associated indexes, while the `downgrade()` function reverses these changes by dropping the tables and indexes. This migration script is part of a broader database version control system, as indicated by the use of Alembic, a popular database migration tool for SQLAlchemy. The script is not intended to be a standalone application but rather a component of a larger system, facilitating the evolution of the database schema in a controlled and reversible manner.
 # Imports and Dependencies
 
 ---
@@ -29,23 +29,23 @@ The script is part of a broader database migration framework, as indicated by th
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database schema changes.
-- **Use**: This variable is used by Alembic to determine the order of migrations and to apply them in the correct sequence.
+- **Type**: `string`
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Use**: This variable is used by Alembic to determine the order of database migrations.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a version control system for database schema migrations.
-- **Use**: This variable is used to define branch labels for Alembic migrations, but is currently set to `None`, indicating no specific branch labeling is applied.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration such as branching labels for the migration path.
+- **Use**: This variable is used to indicate that there are no specific branch labels associated with this Alembic migration script.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between database revisions.
+- **Use**: This variable is used to indicate that the current database revision does not depend on any other revisions.
 
 
 # Functions
@@ -55,14 +55,14 @@ The script is part of a broader database migration framework, as indicated by th
 The `upgrade` function creates two new database tables, `usage_sessions` and `usage_events`, along with their respective indexes, to track usage data.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by creating a new table named `usage_sessions` with columns for `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`.
+    - The function begins by creating a table named `usage_sessions` with columns for `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`.
     - A primary key constraint is set on the `id` column of the `usage_sessions` table.
-    - An index is created on the `status` column of the `usage_sessions` table to optimize queries filtering by status.
-    - Next, the function creates another table named `usage_events` with columns for `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`.
+    - An index is created on the `status` column of the `usage_sessions` table.
+    - Next, the function creates a table named `usage_events` with columns for `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`.
+    - A foreign key constraint is set on the `session_id` column of the `usage_events` table, referencing the `id` column of the `usage_sessions` table with a cascade delete option.
     - A primary key constraint is set on the `id` column of the `usage_events` table.
-    - A foreign key constraint is established on the `session_id` column of the `usage_events` table, referencing the `id` column of the `usage_sessions` table, with a cascade delete option.
-    - An index is created on the `session_id` column of the `usage_events` table to optimize queries filtering by session ID.
-- **Output**: The function does not return any value; it performs database schema modifications.
+    - An index is created on the `session_id` column of the `usage_events` table.
+- **Output**: The function does not return any output as it is designed to modify the database schema by creating tables and indexes.
 
 
 ---
@@ -70,12 +70,12 @@ The `upgrade` function creates two new database tables, `usage_sessions` and `us
 The `downgrade` function reverses database schema changes by dropping tables, indexes, and a type related to usage tracking.
 - **Inputs**: None
 - **Control Flow**:
-    - Drop the index 'ix_usage_events_session_id' from the 'usage_events' table.
-    - Drop the 'usage_events' table.
-    - Drop the index 'ix_usage_sessions_status' from the 'usage_sessions' table.
-    - Drop the 'usage_sessions' table.
-    - Execute a SQL command to drop the type 'usagesessionstatus' if it exists.
-- **Output**: The function does not return any output as it performs database schema modifications.
+    - The function begins by dropping the index 'ix_usage_events_session_id' from the 'usage_events' table.
+    - It then drops the 'usage_events' table entirely.
+    - Next, it drops the index 'ix_usage_sessions_status' from the 'usage_sessions' table.
+    - It proceeds to drop the 'usage_sessions' table.
+    - Finally, it executes a raw SQL command to drop the type 'usagesessionstatus' if it exists.
+- **Output**: The function does not return any value; it performs database schema modifications.
 
 
 

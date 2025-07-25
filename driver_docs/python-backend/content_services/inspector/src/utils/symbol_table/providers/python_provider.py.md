@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `python_provider.py` file defines the `PythonLanguageProvider` class, which specifies Python as the language and provides methods to retrieve a parser and resolver for Python code.
+The `python_provider.py` file defines the `PythonLanguageProvider` class, which specifies Python as the language and provides methods to obtain a parser and resolver for Python code.
 
 # Purpose
-This code defines a class `PythonLanguageProvider` that extends the `LanguageProvider` class, providing a narrow functionality specifically tailored for handling Python language constructs. It serves as a configuration or utility component within a larger system, likely involved in parsing and resolving symbols in Python code. The class specifies the language it supports as "python" and provides two class methods, [`get_parser`](#PythonLanguageProviderget_parser) and [`get_resolver`](#PythonLanguageProviderget_resolver), which return instances of `PythonParser` and `PythonResolver`, respectively. This setup suggests that the class is part of a modular architecture designed to support multiple languages, with this particular file focusing on the Python language.
+This code defines a class `PythonLanguageProvider` that extends the `LanguageProvider` class, providing a narrow functionality specifically tailored for handling Python language constructs. It serves as a configuration or utility class within a larger system, likely part of a symbol table management framework. The class specifies the language it supports as "python" and provides two class methods, [`get_parser`](<#PythonLanguageProviderget_parser>) and [`get_resolver`](<#PythonLanguageProviderget_resolver>), which return instances of `PythonParser` and `PythonResolver`, respectively. These methods facilitate the parsing and resolution of Python symbols, indicating that this code is part of a modular system designed to support multiple programming languages by providing language-specific components.
 # Imports and Dependencies
 
 ---
@@ -21,41 +21,41 @@ This code defines a class `PythonLanguageProvider` that extends the `LanguagePro
 ### PythonLanguageProvider<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider}} -->
 - **Members**:
     - `language`: Specifies the programming language as 'python'.
-- **Description**: The PythonLanguageProvider class is a specialized implementation of the LanguageProvider base class, tailored specifically for the Python programming language. It defines a class variable 'language' to indicate the language it supports, which is 'python'. The class provides two class methods, get_parser and get_resolver, which return instances of PythonParser and PythonResolver respectively, facilitating the parsing and resolution of Python code within a symbol table framework.
+- **Description**: The PythonLanguageProvider class is a specialized implementation of the LanguageProvider base class, designed to handle Python-specific language features. It defines the language attribute to indicate that it operates with Python, and provides class methods to retrieve instances of PythonParser and PythonResolver, which are responsible for parsing and resolving Python code, respectively.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider.get_parser`](#PythonLanguageProviderget_parser)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider.get_resolver`](#PythonLanguageProviderget_resolver)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider.get_parser`](<#PythonLanguageProviderget_parser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider.get_resolver`](<#PythonLanguageProviderget_resolver>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](../base.py.md#LanguageProvider)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<../base.py.md#LanguageProvider>)
 
 **Methods**
 
 ---
 #### PythonLanguageProvider\.get\_parser<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider.get_parser}} -->
-The `get_parser` method returns an instance of the [`PythonParser`](../symbol_parsers/python_parser.py.md#PythonParser) class.
+The `get_parser` method returns an instance of the [`PythonParser`](<../symbol_parsers/python_parser.py.md#PythonParser>) class.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `PythonLanguageProvider` itself, passed automatically as this is a class method.
 - **Control Flow**:
-    - The method directly returns a new instance of the [`PythonParser`](../symbol_parsers/python_parser.py.md#PythonParser) class without any additional logic or conditions.
-- **Output**: An instance of the [`PythonParser`](../symbol_parsers/python_parser.py.md#PythonParser) class.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/python_parser.PythonParser`](../symbol_parsers/python_parser.py.md#PythonParser)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider`](#PythonLanguageProvider)  (Base Class)
+    - The method directly returns a new instance of the [`PythonParser`](<../symbol_parsers/python_parser.py.md#PythonParser>) class.
+- **Output**: An instance of the [`PythonParser`](<../symbol_parsers/python_parser.py.md#PythonParser>) class.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/python_parser.PythonParser`](<../symbol_parsers/python_parser.py.md#PythonParser>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider`](<#PythonLanguageProvider>)  (Base Class)
 
 
 ---
 #### PythonLanguageProvider\.get\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider.get_resolver}} -->
-The `get_resolver` method returns an instance of the [`PythonResolver`](../import_resolvers/python_resolver.py.md#PythonResolver) class.
+The `get_resolver` method returns an instance of the [`PythonResolver`](<../import_resolvers/python_resolver.py.md#PythonResolver>) class.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `PythonLanguageProvider` itself, passed automatically as this is a class method.
 - **Control Flow**:
-    - The method directly returns a new instance of the [`PythonResolver`](../import_resolvers/python_resolver.py.md#PythonResolver) class.
-- **Output**: An instance of the [`PythonResolver`](../import_resolvers/python_resolver.py.md#PythonResolver) class.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/python_resolver.PythonResolver`](../import_resolvers/python_resolver.py.md#PythonResolver)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider`](#PythonLanguageProvider)  (Base Class)
+    - The method directly returns a new instance of the [`PythonResolver`](<../import_resolvers/python_resolver.py.md#PythonResolver>) class without any additional logic or conditions.
+- **Output**: An instance of the [`PythonResolver`](<../import_resolvers/python_resolver.py.md#PythonResolver>) class.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/python_resolver.PythonResolver`](<../import_resolvers/python_resolver.py.md#PythonResolver>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider`](<#PythonLanguageProvider>)  (Base Class)
 
 
 

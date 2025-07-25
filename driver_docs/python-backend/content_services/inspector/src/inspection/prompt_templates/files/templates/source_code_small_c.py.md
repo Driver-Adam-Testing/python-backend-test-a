@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_c.py` file defines a template for analyzing and organizing C source code, focusing on elements such as imports, global variables, data structures, functions, and function declarations.
+The `source_code_small_c.py` file defines a template for generating structured prompts and extracting components such as imports, global variables, data structures, functions, and function declarations from C source code.
 
 # Purpose
-This Python code file defines a template for generating documentation for C source code, focusing on extracting and organizing various components such as imports, global variables, data structures, functions, and function declarations. It provides narrow functionality, specifically tailored for analyzing and documenting C code by leveraging collections and prompts defined in imported modules. The file uses a structured approach to map different sections of a C source file to corresponding documentation sections, utilizing static analysis and language model (LLM) outputs to populate these sections. This setup is part of a larger system that automates the generation of detailed and organized documentation for C codebases, making it easier to understand and maintain.
+This Python source code file defines a template for generating structured documentation for small C source code files. It provides narrow functionality focused on creating a systematic way to document various components of C code, such as imports, global variables, data structures, functions, and function declarations. The file imports several modules and classes that facilitate the analysis and transformation of C code elements into structured prompts and components. The template is organized into sections, each corresponding to a specific aspect of the C code, and uses a combination of static analysis and language model (LLM) outputs to populate these sections. This code is part of a larger system that likely automates the generation of documentation for C codebases, ensuring consistency and clarity in how code elements are described.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.c.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.c.SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C`
 - `utils.lang_specialization.c.CDataStructureCollection`
@@ -30,8 +35,8 @@ This Python code file defines a template for generating documentation for C sour
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_C
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_C` is a list of tuples, where each tuple represents a section of a C source code template. Each tuple contains a section identifier, a section title, and functions or prompts related to that section, such as static analysis functions or user prompts.
-- **Use**: This variable is used to define the structure and content of a C source code template, facilitating the generation or analysis of C code by providing organized sections and associated processing functions.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_C` is a list of tuples, each representing a different section of a code analysis template for C language. Each tuple contains a section identifier, a section title, and a combination of static analysis and LLM-based processing functions to extract and format information about the code, such as imports, global variables, data structures, functions, and public API declarations.
+- **Use**: This variable is used to define a structured template for analyzing and documenting various components of C source code.
 
 
 

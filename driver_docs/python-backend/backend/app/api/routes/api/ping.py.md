@@ -6,7 +6,7 @@
 The `ping.py` file defines an API route that returns the user ID of the caller authenticated via an API key token.
 
 # Purpose
-This code is a short script that defines a simple API endpoint using FastAPI, a modern web framework for building APIs with Python. It provides narrow functionality, specifically a single GET endpoint at the root path ("/"). The endpoint, named [`ping`](#ping), requires an `ApiKeyToken` object, which is likely used for authentication purposes, to access the endpoint. When accessed, it returns a JSON response containing the `user_id` of the authenticated caller. This script is part of a larger application, as indicated by the import of `ApiKeyToken` from `app.api.auth`, and it uses FastAPI's `APIRouter` to define and manage the route.
+This code defines a simple FastAPI route that provides narrow functionality, specifically for handling a GET request to the root endpoint ("/"). It imports an `ApiKeyToken` class from an authentication module, which is used to authenticate the caller of the endpoint. The [`ping`](<#ping>) function is an asynchronous endpoint that returns a dictionary containing the `user_id` of the authenticated caller, indicating that the endpoint is likely used to verify the identity or presence of a user. The use of `APIRouter` suggests that this code is part of a larger application, where this router can be included as a module to handle specific API routes.
 # Imports and Dependencies
 
 ---
@@ -27,14 +27,15 @@ This code is a short script that defines a simple API endpoint using FastAPI, a 
 
 ---
 ### ping<!-- {{#callable:python-backend/backend/app/api/routes/api/ping.ping}} -->
-The `ping` function is an asynchronous FastAPI route handler that returns the user ID of the caller extracted from an API key token.
+The 'ping' function is an asynchronous FastAPI endpoint that returns the user ID of the caller authenticated via an API key.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `caller`: An instance of `ApiKeyToken` representing the authenticated caller, which contains user identification information.
+    - `caller`: An instance of ApiKeyToken representing the authenticated caller, which contains user authentication details.
 - **Control Flow**:
-    - The function is defined as an asynchronous function using the `async def` syntax, indicating it can be used with asynchronous operations.
-    - The function immediately returns a dictionary containing the `user_id` attribute of the `caller` object.
-- **Output**: A dictionary with a single key-value pair, where the key is 'user_id' and the value is the `user_id` attribute of the `caller`.
+    - The function is defined as an asynchronous endpoint using FastAPI's routing capabilities.
+    - It takes a single parameter 'caller', which is expected to be an instance of ApiKeyToken.
+    - The function returns a dictionary containing the 'user_id' attribute of the 'caller' object.
+- **Output**: A dictionary with a single key 'user_id', whose value is the user ID extracted from the 'caller' object.
 
 
 

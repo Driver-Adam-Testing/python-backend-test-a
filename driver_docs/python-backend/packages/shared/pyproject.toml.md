@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the configuration for the `shared` package, including its dependencies, development dependencies, and build system settings using Poetry.
+Configuration for a Python package using Poetry, specifying dependencies and build system details.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. This file specifies the metadata and dependencies for a Python project named "shared" with version "0.1.0". It includes the author's information and points to a README file for additional project details. The `[tool.poetry.dependencies]` section lists the required runtime dependencies, specifying compatible versions for each package, such as Python 3.12 and various libraries like `markdown`, `boto3`, and `openai`. Additionally, the `[tool.poetry.group.dev.dependencies]` section outlines development dependencies, including `pytest` for testing. The `[build-system]` section indicates that the project requires `poetry-core` for building, using the `poetry.core.masonry.api` as the build backend.
+The `pyproject.toml` file is a configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. The `[tool.poetry]` section specifies the project's name, version, description, author information, and the path to the README file. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, including specific versions or version ranges for each package, such as `python`, `markdown`, and `boto3`. The `[tool.poetry.group.dev.dependencies]` section defines additional dependencies needed for development, such as `pytest` and `pytest-asyncio`. The `[build-system]` section indicates the build requirements and backend, specifying `poetry-core` as a requirement and `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

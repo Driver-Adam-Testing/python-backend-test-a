@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_llm_message_history.py` file contains a suite of tests for the `LlmMessage` and `LlmMessageHistory` classes, verifying their functionality in terms of persistence, message addition, conversion to different formats, and handling of various message kinds.
+The `test_llm_message_history.py` file contains a suite of tests for the `LlmMessage` and `LlmMessageHistory` classes, verifying their functionality in converting to persistent formats, handling different message kinds, and ensuring correct behavior in saving, loading, and converting to Anthropic format.
 
 # Purpose
-This Python file is a collection of unit tests using the `pytest` framework, designed to validate the functionality of message handling and persistence within a system that manages different types of messages, such as user, system, and assistant messages. The tests focus on the `LlmMessage` and `LlmMessageHistory` classes, ensuring that messages can be correctly converted to persistent formats, saved, loaded, and manipulated. The file includes fixtures for creating test data, such as `message`, `organization_id`, and `user_id`, and tests various scenarios, including message history conversion to an Anthropic format, message copying, and complex save/load operations. This code provides narrow functionality, specifically targeting the integrity and behavior of message-related operations in a database-backed application.
+This Python file is a collection of unit tests using the `pytest` framework to validate the functionality of message handling and persistence in a system that deals with different types of messages, such as user, system, and assistant messages. The tests focus on the conversion of `LlmMessage` and `LlmMessageHistory` objects to their persistent counterparts, ensuring that data integrity is maintained during save and load operations. Additionally, the tests verify the correct transformation of message histories into a specific format, referred to as the "Anthropic" format, and check the behavior of message histories when adding, copying, and handling various message kinds. This code provides narrow functionality, specifically targeting the robustness and correctness of message handling and persistence logic within a larger application.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

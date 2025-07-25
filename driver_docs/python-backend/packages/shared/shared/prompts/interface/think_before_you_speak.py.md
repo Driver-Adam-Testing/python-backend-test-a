@@ -6,21 +6,21 @@
 The `think_before_you_speak.py` file defines a system message prompt that instructs the user to include a thought explanation with each batch of tool calls.
 
 # Purpose
-This code defines a configuration for a messaging system, specifically setting up a prompt and a message template. It provides narrow functionality by establishing a constant prompt string (`PROMPT`) and a dictionary (`MESSAGE`) that pairs a system role with the prompt content. The purpose of this setup is likely to standardize communication or interaction within a system that involves tool calls, ensuring that each batch of tool calls is accompanied by a thought explanation. This code is a simple configuration snippet, useful for initializing or maintaining consistent messaging behavior in a larger application.
+This code defines a configuration for a messaging system, specifically setting up a system message with a predefined prompt. It consists of a single string variable, `PROMPT`, which contains a message template, and a dictionary, `MESSAGE`, which pairs a role identifier with the content of the prompt. The purpose of this code is narrow, as it is likely intended to be used in a larger application where automated or system-generated messages are required to include a specific thought process explanation. This setup suggests that the code is part of a configuration or initialization script for a system that involves communication or interaction with users, possibly in a chatbot or AI assistant context.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The `PROMPT` variable is a string that contains a message template or guideline for how tool calls should be accompanied by a thought explanation. It emphasizes the importance of communicating the thought process behind each batch of tool calls to the user.
-- **Use**: This variable is used to provide a consistent message or guideline for explaining tool call thoughts to users.
+- **Description**: The `PROMPT` variable is a string that provides a template or guideline for how thoughts should be communicated to the user in the context of tool calls. It emphasizes the importance of explaining the thought process behind each batch of tool calls and suggests that these thoughts should be accompanied by other tools.
+- **Use**: This variable is used as a content template for system messages, ensuring that thoughts are clearly communicated to the user.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', indicating the type or context of the message, while the 'content' key is assigned the value of the `PROMPT` variable, which is a string providing instructions about tool calls and thoughts.
-- **Use**: This variable is used to store and convey system-level instructions or messages, particularly related to the explanation of thoughts accompanying tool calls.
+- **Description**: The `MESSAGE` variable is a dictionary with two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions about tool calls and thoughts.
+- **Use**: This variable is used to store and convey system-level instructions or messages, likely for a communication or logging system.
 
 
 

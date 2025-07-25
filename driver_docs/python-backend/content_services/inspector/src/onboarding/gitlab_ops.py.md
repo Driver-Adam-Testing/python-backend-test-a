@@ -6,9 +6,9 @@
 The `gitlab_ops.py` file in the `python-backend` codebase provides functions for interacting with GitLab repositories, including fetching access tokens, downloading and uploading repositories, generating codebase metadata, and creating pull requests.
 
 # Purpose
-This Python code file is designed to facilitate interactions with GitLab repositories, focusing on tasks such as fetching access tokens, downloading repositories, generating metadata, and managing repository versions. It provides a set of functions that handle the retrieval and management of GitLab repository data, including downloading repository archives, generating metadata for codebases, and uploading these archives to an S3 bucket with associated metadata. The code also includes functionality for creating pull requests and fetching repository information such as the default branch name and clone URLs.
+This Python code file is designed to facilitate interactions with GitLab repositories, focusing on tasks such as downloading repositories, managing access tokens, and handling repository metadata. It provides a set of functions that collectively enable the fetching of access tokens from AWS Secrets Manager, downloading repository archives, generating metadata for codebases, and uploading these archives to an S3 bucket. The code also includes functionality for creating pull requests and fetching repository information such as the default branch name and clone URLs. The file is structured to be part of a larger system, likely a backend service, that automates the management and processing of GitLab repositories, particularly in the context of continuous integration or deployment pipelines.
 
-The file is structured as a library intended to be used within a larger application, likely one that manages code repositories and their versions. It integrates with AWS for secret management and S3 storage, and it uses SQLAlchemy for database interactions, indicating that it is part of a system that tracks repository versions and usage events. The code defines several public functions that serve as interfaces for these operations, making it a crucial component for automating and managing repository-related workflows in a software development environment. The presence of TODO comments suggests ongoing development and potential expansion of its capabilities.
+The code integrates with several external services and libraries, including AWS for secret management, SQLAlchemy for database interactions, and requests for HTTP operations. It uses SQLModel for ORM capabilities to manage database sessions and transactions, ensuring that repository metadata and versioning are accurately recorded and updated. The functions are designed to handle various scenarios, such as push events and version status updates, indicating that the code is part of a sophisticated system for managing codebase versions and deployments. The presence of TODO comments suggests ongoing development and potential enhancements, such as additional metadata handling and feature parity with other components of the system.
 # Imports and Dependencies
 
 ---
@@ -50,88 +50,88 @@ The `fetch_access_token` function retrieves a group access token for a given ins
 - **Control Flow**:
     - Prints a message indicating the start of the token fetching process for the given installation ID.
     - Formats the secret name using the installation ID and a predefined secret name prefix.
-    - Creates an instance of [`AWSSecretManagementStrategy`](../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy) using AWS client configuration details from environment variables.
+    - Creates an instance of [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>) using AWS client configuration details from environment variables.
     - Reads the secret value associated with the formatted secret name from AWS Secrets Manager.
-    - Checks if the secret value is not found and raises an [`AccessTokenError`](onboard_utils.py.md#AccessTokenError) if it is missing.
+    - Checks if the secret value is not found and raises an [`AccessTokenError`](<onboard_utils.py.md#AccessTokenError>) if it is missing.
     - Extracts the 'token' from the secret value if it exists.
 - **Output**: Returns the group access token as a string.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy)
-    - [`python-backend/packages/shared/shared/interfaces/aws_client_config.AWSClientConfig`](../../../../packages/shared/shared/interfaces/aws_client_config.py.md#AWSClientConfig)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret)
-    - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.AccessTokenError`](onboard_utils.py.md#AccessTokenError)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>)
+    - [`python-backend/packages/shared/shared/interfaces/aws_client_config.AWSClientConfig`](<../../../../packages/shared/shared/interfaces/aws_client_config.py.md#AWSClientConfig>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret>)
+    - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.AccessTokenError`](<onboard_utils.py.md#AccessTokenError>)
 
 
 ---
 ### download\_repo<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/gitlab_ops.download_repo}} -->
-The `download_repo` function downloads a specific commit of a repository as a zip archive from a GitLab server using an access token for authentication.
+The `download_repo` function downloads a specific commit of a repository from a GitLab server as a zip archive using an access token for authentication.
 - **Inputs**:
     - `base_url`: The base URL of the GitLab server from which the repository is to be downloaded.
     - `repo_id`: The unique identifier of the repository to be downloaded.
     - `commit`: The specific commit SHA of the repository to be downloaded.
     - `access_token`: The access token used for authenticating the request to the GitLab server.
 - **Control Flow**:
-    - Set the authorization header using the provided access token.
-    - Make a GET request to the GitLab API to download the repository archive as a zip file for the specified commit.
-    - Raise an HTTP error if the request fails.
-    - Return the content of the response, which is the zip file of the repository.
-- **Output**: The function returns the content of the response, which is a bytes object representing the zip archive of the repository.
+    - Constructs an authorization header using the provided access token.
+    - Sends a GET request to the GitLab API to download the repository archive for the specified commit.
+    - Raises an HTTP error if the request fails.
+    - Returns the content of the response, which is the zip archive of the repository.
+- **Output**: The function returns the content of the response as bytes, which is the zip archive of the specified repository commit.
 
 
 ---
 ### generate\_codebase\_metadata<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/gitlab_ops.generate_codebase_metadata}} -->
-The `generate_codebase_metadata` function creates a dictionary containing metadata about a codebase, including organization, repository, provider, version, asset, and installation details.
+The `generate_codebase_metadata` function creates a dictionary containing metadata about a codebase, including organization, repository, and version details.
 - **Inputs**:
     - `org_id`: A string representing the organization ID.
     - `full_repo_name`: A string representing the full name of the repository, used for debugging purposes.
     - `repo_id`: A string or integer representing the repository ID, used for debugging purposes.
-    - `provider`: A string representing the provider of the repository.
+    - `provider`: A string representing the provider of the codebase.
     - `version_id`: A string or UUID representing the version ID of the codebase.
     - `asset_name`: A string representing the name of the asset.
     - `install_id`: A string representing the installation ID.
 - **Control Flow**:
-    - The function imports `PrimaryAssetKind` from `database.models_v2_enums` to use as a constant value in the metadata.
-    - It constructs a dictionary with keys for organization ID, full repository name, provider, version ID, repository ID, asset name, asset kind, and installation ID.
-    - The `version_id` and `repo_id` are converted to strings to ensure consistent data types in the output dictionary.
-    - The `asset_kind` is set to `PrimaryAssetKind.CODEBASE`, indicating the type of asset.
-- **Output**: The function returns a dictionary containing metadata about the codebase, including organization ID, full repository name, provider, version ID, repository ID, asset name, asset kind, and installation ID.
+    - The function imports `PrimaryAssetKind` from `database.models_v2_enums`.
+    - It returns a dictionary with keys such as 'unhashed_organization_id', 'full_repo_name', 'provider', 'version_id', 'repository_id', 'asset_name', 'asset_kind', and 'install_id'.
+    - The 'version_id' and 'repository_id' are converted to strings before being added to the dictionary.
+    - The 'asset_kind' is set to `PrimaryAssetKind.CODEBASE`.
+- **Output**: A dictionary containing metadata about the codebase, including organization ID, full repository name, provider, version ID, repository ID, asset name, asset kind, and installation ID.
 
 
 ---
 ### download\_and\_upload\_repo<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/gitlab_ops.download_and_upload_repo}} -->
-The `download_and_upload_repo` function manages the downloading of a repository from a Git provider and uploads it to an S3 bucket, handling different versioning scenarios based on the repository's status.
+The `download_and_upload_repo` function manages the process of downloading a repository from a Git provider and uploading it to an S3 bucket, handling different versioning scenarios based on the repository's status.
 - **Inputs**:
     - `org_id`: A string representing the organization ID.
     - `repo`: A dictionary containing metadata about the repository, including its ID, name, latest commit, and installation ID.
     - `access_token`: A string representing the access token used for authentication with the Git provider.
-    - `is_push`: A boolean flag indicating whether the operation is triggered by a push event (default is False).
+    - `is_push`: A boolean flag indicating whether the operation is triggered by a push event, defaulting to False.
 - **Control Flow**:
     - Extracts repository details such as ID, name, commit ID, and installation ID from the `repo` dictionary.
     - Opens a database session and retrieves the Git provider application installation details using the installation ID.
     - Checks if the operation is a push event (`is_push` is True).
-    - If a push event, it attempts to find the primary asset associated with the organization and repository ID.
-    - Handles different versioning scenarios based on the status of existing versions (CONNECTED, GENERATING, etc.).
+    - If a push event, it attempts to find the primary asset associated with the repository and organization.
+    - Handles different versioning scenarios based on the status of existing versions (CONNECTED, GENERATING, GENERATION_COMPLETE, GENERATION_ERROR, CONNECTING).
     - Creates a new version or updates existing versions based on the current status and conditions.
     - If not a push event, creates a new primary asset and version for the repository.
     - Handles exceptions such as `IntegrityError` to manage database operation failures.
-    - Generates metadata for the codebase using the [`generate_codebase_metadata`](#generate_codebase_metadata) function.
-    - Downloads the repository as a zip file using the [`download_repo`](#download_repo) function.
-    - Uploads the downloaded repository to an S3 bucket with metadata using the [`upload_to_s3_with_metadata`](onboard_utils.py.md#upload_to_s3_with_metadata) function.
-- **Output**: Returns `None` if the operation is successful, or the `repo` dictionary if an error occurs during the process.
-- **Functions called**:
-    - [`python-backend/driver_db/database/models_v2.Version`](../../../../driver_db/database/models_v2.py.md#Version)
-    - [`python-backend/driver_db/database/models_v1.UsageSession`](../../../../driver_db/database/models_v1.py.md#UsageSession)
-    - [`python-backend/driver_db/database/models_v1.UsageEvent`](../../../../driver_db/database/models_v1.py.md#UsageEvent)
-    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](../../../../driver_db/database/models_v2.py.md#PrimaryAsset)
-    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.generate_codebase_metadata`](#generate_codebase_metadata)
-    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.download_repo`](#download_repo)
-    - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.upload_to_s3_with_metadata`](onboard_utils.py.md#upload_to_s3_with_metadata)
+    - Generates metadata for the codebase using the [`generate_codebase_metadata`](<#generate_codebase_metadata>) function.
+    - Downloads the repository as a zip file using the [`download_repo`](<#download_repo>) function.
+    - Uploads the downloaded repository to an S3 bucket with metadata using the [`upload_to_s3_with_metadata`](<onboard_utils.py.md#upload_to_s3_with_metadata>) function.
+- **Output**: Returns `None` if successful, or the `repo` dictionary if an error occurs during processing.
+- **Functions Called**:
+    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../driver_db/database/models_v2.py.md#Version>)
+    - [`python-backend/driver_db/database/models_v1.UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>)
+    - [`python-backend/driver_db/database/models_v1.UsageEvent`](<../../../../driver_db/database/models_v1.py.md#UsageEvent>)
+    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../driver_db/database/models_v2.py.md#PrimaryAsset>)
+    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.generate_codebase_metadata`](<#generate_codebase_metadata>)
+    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.download_repo`](<#download_repo>)
+    - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.upload_to_s3_with_metadata`](<onboard_utils.py.md#upload_to_s3_with_metadata>)
 
 
 ---
 ### fetch\_gitlab\_default\_branch\_name<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/gitlab_ops.fetch_gitlab_default_branch_name}} -->
-The function fetches the default branch name of a GitLab repository using the GitLab API.
+Fetches the default branch name of a GitLab repository using the GitLab API.
 - **Inputs**:
     - `base_url`: The base URL of the GitLab instance.
     - `repo_id`: The unique identifier of the repository in GitLab.
@@ -140,49 +140,49 @@ The function fetches the default branch name of a GitLab repository using the Gi
     - Constructs the authorization headers using the provided access token.
     - Sends a GET request to the GitLab API endpoint for the specified repository to retrieve its details.
     - Raises an HTTP error if the request fails.
-    - Extracts and returns the 'default_branch' field from the JSON response.
+    - Parses the JSON response to extract and return the 'default_branch' field.
 - **Output**: Returns the name of the default branch of the specified GitLab repository as a string.
 
 
 ---
 ### get\_repo\_clone\_info\_from\_id<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/gitlab_ops.get_repo_clone_info_from_id}} -->
-The function retrieves the clone URL and full name of a GitLab repository using its ID and an access token.
+The function retrieves the clone URL and full name of a GitLab repository using its ID and access token, and modifies the clone URL to include authentication details.
 - **Inputs**:
-    - `base_url`: The base URL of the GitLab instance.
-    - `repo_id`: The unique identifier of the repository in GitLab.
-    - `access_token`: The access token for authenticating API requests to GitLab.
+    - `base_url`: The base URL of the GitLab instance from which the repository information is to be fetched.
+    - `repo_id`: The unique identifier of the repository whose clone information is to be retrieved.
+    - `access_token`: The access token used for authenticating the request to the GitLab API.
 - **Control Flow**:
     - Set up headers for the request using the provided access token.
     - Make a GET request to the GitLab API to fetch repository details using the base URL and repo ID.
     - Raise an exception if the request fails.
     - Extract the clone URL and full name of the repository from the JSON response.
-    - Retrieve the GitLab username using the helper function [`get_gitlab_username`](#get_gitlab_username).
+    - Retrieve the GitLab username using the base URL and access token.
     - If both the clone URL and username are available, modify the clone URL to include the username and access token for authentication.
     - Raise a ValueError if either the clone URL or username is missing.
     - Return the modified clone URL and the full name of the repository.
 - **Output**: A tuple containing the modified clone URL and the full name of the repository.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.get_gitlab_username`](#get_gitlab_username)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.get_gitlab_username`](<#get_gitlab_username>)
 
 
 ---
 ### create\_pull\_request<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/gitlab_ops.create_pull_request}} -->
-The `create_pull_request` function creates a pull request on a GitLab repository by specifying the source branch, target branch, and commit details.
+The `create_pull_request` function creates a pull request on a GitLab repository from a specified branch to the default branch.
 - **Inputs**:
-    - `base_url`: The base URL of the GitLab instance where the repository is hosted.
-    - `repo_id`: The unique identifier of the repository within the GitLab instance.
-    - `access_token`: The access token used for authentication to perform actions on the GitLab API.
+    - `base_url`: The base URL of the GitLab instance.
+    - `repo_id`: The unique identifier of the repository on GitLab.
+    - `access_token`: The access token used for authentication with the GitLab API.
     - `branch`: The name of the source branch from which the pull request will be created.
-    - `commit_slug`: A string representing the commit details, used in the title of the pull request.
+    - `commit_slug`: A string representing the commit identifier used in the pull request title.
 - **Control Flow**:
-    - Fetches the default branch name of the repository using the [`fetch_gitlab_default_branch_name`](#fetch_gitlab_default_branch_name) function.
-    - Sets up the authorization headers using the provided access token.
-    - Sends a POST request to the GitLab API to create a merge request (pull request) from the specified source branch to the default branch, with a title that includes the commit slug.
-    - Raises an exception if the request fails, ensuring the pull request creation is successful.
-    - Prints a success message with the URL of the created pull request.
-- **Output**: The function does not return any value; it prints a success message with the URL of the created pull request if successful.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.fetch_gitlab_default_branch_name`](#fetch_gitlab_default_branch_name)
+    - Fetch the default branch name of the repository using the [`fetch_gitlab_default_branch_name`](<#fetch_gitlab_default_branch_name>) function.
+    - Set up the authorization headers using the provided access token.
+    - Make a POST request to the GitLab API to create a merge request from the specified branch to the default branch.
+    - Raise an exception if the request fails using `response.raise_for_status()`.
+    - Print a success message with the URL of the created pull request.
+- **Output**: The function does not return any value; it prints a success message upon creating the pull request.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.fetch_gitlab_default_branch_name`](<#fetch_gitlab_default_branch_name>)
 
 
 ---
@@ -194,12 +194,12 @@ The `get_gitlab_username` function retrieves the GitLab username associated with
 - **Control Flow**:
     - Constructs the API endpoint URL by appending '/api/v4/user' to the provided base URL, ensuring no trailing slashes.
     - Sets up the request headers with the provided access token under the 'PRIVATE-TOKEN' key.
-    - Prints a message indicating the URL from which the username will be fetched.
+    - Prints a message indicating the URL from which the username is being fetched.
     - Sends a GET request to the constructed URL with the specified headers.
-    - Raises an HTTP error if the request fails using `response.raise_for_status()`.
+    - Raises an HTTP error if the response status indicates a failure.
     - Prints the JSON response from the API call.
     - Extracts and returns the 'username' field from the JSON response.
-- **Output**: Returns the GitLab username as a string extracted from the API response.
+- **Output**: Returns the GitLab username as a string, extracted from the API response.
 
 
 

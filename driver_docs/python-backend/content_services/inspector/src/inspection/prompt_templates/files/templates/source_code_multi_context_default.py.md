@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_multi_context_default.py` file defines a template for inspecting and categorizing different components of source code, such as imports, global variables, data structures, and functions, using multiple context prompts.
+The `source_code_multi_context_default.py` file defines a template for generating structured prompts to analyze source code, focusing on aspects like purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code file is designed to define a template for analyzing and extracting structured information from source code, particularly in a multi-context environment. It imports several components from utility modules that specialize in language processing and data structure handling. The primary purpose of this file is to create a template, `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT`, which outlines a systematic approach to dissecting source code into various sections such as purpose, imports and dependencies, global variables, data structures, and functions. Each section is associated with specific prompts and functions that facilitate the extraction and organization of relevant information from the source code.
+This Python code file is designed to facilitate structured prompting and analysis of source code, particularly in the context of understanding and documenting the purpose and structure of code files. It imports various components and instructions from shared and utility modules, which are then used to construct prompts and templates for analyzing code. The file defines a template, `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT`, which is a collection of tuples. Each tuple represents a specific aspect of code analysis, such as determining the purpose of the code, identifying imports and dependencies, and extracting information about global variables, data structures, and functions. These tuples utilize components like `Prompt` and `Component` to build structured prompts that can be used to query or instruct a language model to perform specific tasks related to code analysis.
 
-The file is structured to leverage predefined collections and prompts, such as `DefaultDataStructureCollection` and `SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT`, to ensure consistent and comprehensive analysis. The template is organized as a list of tuples, where each tuple represents a different aspect of the source code to be analyzed. This setup suggests that the code is part of a larger framework or library intended for use in environments where understanding and documenting code structure is essential. The use of lambda functions and conditional JSON processing indicates that the template is designed to be flexible and adaptable to different codebases, making it a valuable tool for developers and analysts working with complex or unfamiliar code.
+The code is not a standalone script but rather a part of a larger system, likely intended to be imported and used within a broader application or library focused on code analysis and documentation. It provides a structured approach to dissecting and understanding code by leveraging predefined instructions and templates. The file does not define public APIs or external interfaces directly but instead focuses on assembling the necessary components to facilitate the analysis of code through structured prompts. This makes it a crucial part of a system that aims to automate or assist in the documentation and understanding of software codebases.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default.SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT`
 - `utils.lang_specialization.default.DefaultDataStructureCollection`
 - `utils.lang_specialization.default.DefaultDataStructureRawSymbolCollection`
@@ -30,8 +35,8 @@ The file is structured to leverage predefined collections and prompts, such as `
 ---
 ### SOURCE\_CODE\_MULTI\_CONTEXT\_TEMPLATE\_DEFAULT
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` is a list of tuples, each containing elements that define different sections of a multi-context template for source code analysis. Each tuple includes a type identifier, a section header, and various functions or prompts related to that section, such as system prompts, user prompts, and collection methods for variables, data structures, and functions.
-- **Use**: This variable is used to structure and organize the analysis of source code by categorizing it into different sections like purpose, imports, global variables, data structures, and functions, each with specific processing functions.
+- **Description**: `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` is a list of tuples, each containing a structured prompt configuration for different aspects of source code analysis. Each tuple includes a type identifier, a description string, and a series of prompt or function calls that are used to generate or process specific parts of the source code, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: This variable is used to define a template for generating and processing structured prompts for analyzing various components of source code in a multi-context environment.
 
 
 

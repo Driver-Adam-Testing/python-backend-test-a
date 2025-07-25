@@ -78,9 +78,9 @@ NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS = Component(
 In your output do not restate the identify of the component you are documenting technically.
 
 Here are some examples to understand what is meant. These are just examples, you do not need to use the particular words here unless it is relevant to how you would describe the content.
-- "The `<method_name>` method transforms/provides/implements ..."
-- "The `<function_name>` function processes... "
-- "The `<class_name>` class represents ..."
+- "The <method_name> method transforms/provides/implements ..."
+- "The <function_name> function processes... "
+- "The <class_name> class represents ..."
 
 Instead, you should be more direct such as providing just:
 - "Transforms/provides/implements ..."
@@ -100,6 +100,12 @@ Your output is just one extremely terse single sentence. It is intended to fit o
 NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE = Component(
     string="""This will be part of technical documentation for the source code. In your output, do not refer to the fact that this code was provided to you in any way. For example, **do not** start off with something like "The provided module..." Just start explaining the purpose of the code directly as you would find in typical, high quality technical documentation for the relevant language. So you might start out with "This module ..." or even better, no reference to "this module" is needed so you immediately start describing the purpose/functionality. As another example, prefer language like "This code is a test suite for ..." instead of "The code is a test suite for ..." which is more natural for documentation explicitly associated with a particular file, which is what you are building.
 """
+)
+
+
+DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB = Component(
+    string="""This will be part of technical documentation. At the start of your output, identify the kind or category of thing you are describing followed by an action verb or more broadly the content that is relevant. Here is an example for if you are asked to document something about a whole codebase. The concept of more information dense description applies to other things you may be asked to document: For example, if you are describing a codebase as a whole that is clearly a library, you would start with something like "A library that implements ..." or if it is clearly a web application, then you would start with something like "A web application for ...". The key point is to **not** just state that it is a codebase or repo (e.g., not start with "A codebase that ..."), but to provide more information immediately by stating what **kind** of code.
+    """
 )
 
 
@@ -126,5 +132,11 @@ RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS = Component(
 GENERIC_MARKDOWN_OUTPUT_INSTRUCTION = Component(
     string="""
 Make sure you format your output in Markdown format using, as relevant, Markdown syntax for headings, list, etc. and enclosing single code references with single backticks and large complete code blocks in triple backticks.
+    """
+)
+
+NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING = Component(
+    string="""
+Do not use special formatting, such as backticks or other forms of Markdown syntax, in your text output. Your output is to be consumed as raw text, so special formatting cannot be rendered correctly.
     """
 )

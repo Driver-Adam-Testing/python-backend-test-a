@@ -6,16 +6,16 @@
 The `migrate_pdfs.py` file contains a SQL migration script that processes and migrates PDF records from a legacy system to a new database schema, involving steps to gather, distinctify, insert, bridge, and update records across multiple tables.
 
 # Purpose
-The provided SQL script is designed to migrate and transform data related to PDF documents from an existing database schema to a new schema. The script is structured as a series of Common Table Expressions (CTEs) that systematically process and insert data into new tables while maintaining relationships between the old and new data structures. The primary focus is on handling records where the `content_kind` is 'supplemental-document', and it involves creating new entries in the `v2_primary_asset`, `v2_version`, and `v2_node` tables, which are part of the new schema.
+The provided SQL script is designed to migrate and transform data related to PDF documents from an existing database schema to a new schema. The script is structured as a series of Common Table Expressions (CTEs) that systematically process and insert data into new tables while maintaining relationships between the old and new data structures. The primary focus is on handling records where the `content_kind` is 'supplemental-document', and it involves creating new entries in tables such as `v2_primary_asset`, `v2_version`, and `v2_node`, while ensuring that each document version is uniquely identified and linked back to its original data.
 
-The script begins by selecting relevant records from the `derived_contents` table, assigning version numbers, and generating unique row keys. It then identifies distinct records to be used as primary assets in the new schema. Subsequent steps involve inserting these primary assets into the `v2_primary_asset` table, linking them back to the original data, and creating corresponding versions in the `v2_version` table. The process continues with the creation of nodes in the `v2_node` table, which are linked back to the versions. Finally, the script updates the `derived_contents` table to reflect the new node associations. This migration script is a comprehensive solution for transitioning data to a new schema while preserving the integrity and relationships of the original data.
+The script begins by selecting relevant records from the `derived_contents` table, assigning version numbers, and generating unique row keys. It then identifies distinct documents to be used as primary assets in the new schema. Subsequent steps involve inserting these assets into the `v2_primary_asset` table, creating versions in the `v2_version` table, and linking these versions to nodes in the `v2_node` table. Each step includes a bridging process to maintain the integrity of relationships between the old and new data. Finally, the script updates the `derived_contents` table to reflect the new node associations, ensuring that the migration process is complete and consistent. This script is a comprehensive data migration tool that ensures data integrity and continuity across schema changes.
 # Global Variables
 
 ---
 ### MIGRATE\_PDFS
 - **Type**: `str`
-- **Description**: The `MIGRATE_PDFS` variable is a multi-line string containing a SQL script. This script is designed to migrate PDF-related data from a source table to a new schema, involving several steps such as creating common table expressions (CTEs), inserting data into new tables, and updating existing records.
-- **Use**: This variable is used to store and execute a complex SQL migration script for handling PDF data within a database.
+- **Description**: The `MIGRATE_PDFS` variable is a multi-line string containing a SQL script. This script is designed to migrate PDF-related data from a legacy system to a new system by creating a series of Common Table Expressions (CTEs) and performing various operations such as selecting, inserting, and updating data across multiple tables.
+- **Use**: This variable is used to store and execute a complex SQL migration script for PDF data transformation and insertion into a new database schema.
 
 
 

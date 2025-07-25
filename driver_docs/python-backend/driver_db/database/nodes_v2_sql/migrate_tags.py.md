@@ -6,14 +6,16 @@
 The `migrate_tags.py` file contains a SQL script for migrating tag data by associating tags with primary asset IDs and inserting them into the `v2_primary_asset_tag` table.
 
 # Purpose
-This code is a SQL query stored as a multi-line string in a Python variable named `MIGRATE_TAGS`. It provides narrow functionality, specifically designed to migrate or associate tags with primary asset IDs in a database. The query first creates a Common Table Expression (CTE) named `tags_primary_asset_ids` to select distinct tag IDs and their corresponding primary asset IDs by joining several tables: `tags_contents`, `derived_contents`, `v2_node`, and `v2_version`. It then inserts these associations into the `v2_primary_asset_tag` table, ensuring that only non-null primary asset IDs are considered. The `RETURNING tag_id` clause indicates that the query will return the tag IDs that were successfully inserted, which can be useful for verification or logging purposes. This code is likely part of a larger data migration or transformation process within a database management context.
+The provided code is a SQL migration script embedded within a Python file, designed to transfer or map tags to primary asset IDs in a database. This script is focused on data migration, specifically targeting the relationship between tags and primary assets. It achieves this by first creating a temporary table, `tags_primary_asset_ids`, which collects distinct pairs of `tag_id` and `primary_asset_id` from a series of joined tables: `tags_contents`, `derived_contents`, `v2_node`, and `v2_version`. The script ensures that only entries with non-null `primary_asset_id` values are considered, indicating that the data integrity and relevance are maintained during the migration process.
+
+The core functionality of this script is to populate the `v2_primary_asset_tag` table with the tag and primary asset ID pairs derived from the temporary table. This is done through an `INSERT INTO ... SELECT` statement, which efficiently transfers the data. The use of `RETURNING tag_id` at the end of the script suggests that the operation is intended to provide feedback on the tags that have been successfully migrated, which can be useful for logging or further processing. This script is a specialized tool for database administrators or developers who need to update or maintain the consistency of tag associations within a content management system or similar application.
 # Global Variables
 
 ---
 ### MIGRATE\_TAGS
 - **Type**: `str`
-- **Description**: The `MIGRATE_TAGS` variable is a multi-line string containing a SQL query. This query is designed to migrate tag data by selecting distinct tag IDs and their associated primary asset IDs from a series of joined tables and inserting them into the `v2_primary_asset_tag` table. The query ensures that only records with non-null primary asset IDs are considered for insertion.
-- **Use**: This variable is used to store a SQL query for migrating tag data to a new table structure in a database.
+- **Description**: The `MIGRATE_TAGS` variable is a multi-line string containing a SQL query. This query is designed to migrate tag data by selecting distinct tag IDs and their associated primary asset IDs from a series of joined tables, and then inserting these into the `v2_primary_asset_tag` table. The query ensures that only records with non-null primary asset IDs are considered, and it returns the tag IDs that were inserted.
+- **Use**: This variable is used to execute a SQL migration script that updates the `v2_primary_asset_tag` table with tag and primary asset ID associations.
 
 
 

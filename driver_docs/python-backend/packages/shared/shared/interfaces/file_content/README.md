@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `file_content` folder in the `python-backend` codebase contains Python files that define models and classes for handling and representing processed file content, including specific handling for PDF files.
+Defines models and classes for handling processed file content, with specific support for PDF files.
 
 
 ## Files
 - **[file_content.py](file_content.py.md)**: The `file_content.py` file defines a Pydantic model `ProcessedFileContent` for handling file content as a string.
-- **[pdf_file_content.py](pdf_file_content.py.md)**: The `pdf_file_content.py` file defines an enumeration for different types of processed PDF content and a class for representing processed PDF file content, including attributes for an OpenAI file ID, page number, and content type.
+- **[pdf_file_content.py](pdf_file_content.py.md)**: The `pdf_file_content.py` file defines an enumeration for different types of processed PDF content and a class for representing processed PDF file content, including attributes for OpenAI file ID, page number, and content type.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

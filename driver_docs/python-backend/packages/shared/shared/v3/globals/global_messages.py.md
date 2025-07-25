@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `global_messages.py` file defines a `GlobalSystemMessage` class for the LLM Framework, detailing universal behaviors for LLM calls, including the use of XML tags for inputs and JSON formatting for tool calls, with final responses in markdown.
+The `global_messages.py` file defines the `GlobalSystemMessage` class, which outlines universal behaviors for LLM calls, including the use of XML tags for input components and formatting tool calls as JSON, while ensuring final responses are in markdown without XML tags.
 
 # Purpose
-This code defines a class `GlobalSystemMessage` that extends the `LlmMessage` class, providing a specific type of message within a larger Language Learning Model (LLM) framework. The purpose of this class is to encapsulate a global system message that outlines universal behaviors and guidelines for handling LLM calls, regardless of the specific API, model, or pipeline being used. The class includes a detailed docstring that specifies the expected input and output formats, such as using XML tags for input components and JSON for tool calls, while ensuring the final assistant response is in markdown format. This code provides narrow functionality, focusing on defining a consistent communication protocol for LLM interactions, and serves as a configuration or guideline within the broader LLM framework.
+This Python code defines a class `GlobalSystemMessage` that extends `LlmMessage` and serves as a global system message within an LLM (Language Model) Framework. The class provides narrow functionality by specifying universal behaviors and guidelines for handling LLM calls, ensuring consistency across different API, model, and pipeline interactions. It outlines how inputs should be structured with XML tags, the formatting of tool calls as JSON, and the format of final assistant responses in markdown. The class encapsulates these rules in a `content` string, which acts as a template for how the system should respond to requests, emphasizing clarity and uniformity in communication without assuming specific operational contexts.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ This code defines a class `GlobalSystemMessage` that extends the `LlmMessage` cl
     - `content`: Contains the predefined message content for the global system message.
 - **Description**: The GlobalSystemMessage class is a specialized message class within the LLM Framework that defines universal behaviors for all LLM calls. It ensures that the message does not assume specifics about the API, model, or pipeline being used. The class outlines that inputs will have XML tags, tool calls must be formatted as JSON, and the final assistant response should be in markdown without XML tags. It provides a structured approach to handling requests, emphasizing the use of tool calls and final responses without describing the process steps.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](../interfaces/llm_message.py.md#LlmMessage)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
 
 
 

@@ -6,7 +6,7 @@
 The `test_in_dev_stack.py` file defines a CDK stack for manually deploying additional infrastructure for testing purposes in a development environment, utilizing a `MetricsLambda` construct.
 
 # Purpose
-This Python code defines a class `TestInDevStack` that extends the AWS CDK `Stack` class, indicating that it is part of an infrastructure-as-code setup using AWS Cloud Development Kit (CDK). The primary purpose of this stack is to facilitate the manual deployment of additional infrastructure components for testing purposes in a development environment. It includes a `MetricsLambda` construct, which is configured using environment variables for the environment type and database URL, suggesting that it is designed to handle metrics-related tasks. The code is narrow in functionality, focusing specifically on setting up a testing infrastructure that is temporary and likely to be discarded after its intended use.
+This Python file defines a class `TestInDevStack` that extends the AWS CDK `Stack` class, providing a narrow functionality focused on deploying additional infrastructure for testing purposes in a development environment. The stack is designed to be temporary and is intended for manual deployment alongside existing resources to facilitate testing. The primary component of this stack is the instantiation of a `MetricsLambda` construct, which is configured using environment variables for the environment and database URL. This code is a part of an infrastructure-as-code setup, leveraging AWS CDK to manage cloud resources programmatically.
 # Imports and Dependencies
 
 ---
@@ -23,9 +23,9 @@ This Python code defines a class `TestInDevStack` that extends the AWS CDK `Stac
 ### TestInDevStack<!-- {{#class:python-backend/cdk/test_in_dev_stack.TestInDevStack}} -->
 - **Members**:
     - `metrics_lambda`: An instance of MetricsLambda configured with environment and database URL parameters.
-- **Description**: The TestInDevStack class is a specialized AWS CDK stack designed for deploying additional infrastructure components for testing purposes in a development environment. It extends the base Stack class and initializes a MetricsLambda instance, which is configured using environment variables for the environment and database URL. This stack is intended for temporary use and may be deleted after its purpose is fulfilled.
+- **Description**: The TestInDevStack class is a specialized AWS CDK Stack designed for deploying additional infrastructure components for testing purposes in a development environment. It extends the base Stack class and initializes a MetricsLambda instance, which is configured using environment variables for the environment and database URL. This stack is intended for temporary use and may be deleted after its purpose is fulfilled.
 - **Methods**:
-    - [`python-backend/cdk/test_in_dev_stack.TestInDevStack.__init__`](#TestInDevStack__init__)
+    - [`python-backend/cdk/test_in_dev_stack.TestInDevStack.__init__`](<#TestInDevStack__init__>)
 - **Inherits From**:
     - `Stack`
 
@@ -33,20 +33,20 @@ This Python code defines a class `TestInDevStack` that extends the AWS CDK `Stac
 
 ---
 #### TestInDevStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/test_in_dev_stack.TestInDevStack.__init__}} -->
-The `__init__` method initializes an instance of the `TestInDevStack` class, setting up a [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda) with environment and database URL parameters.
+The `__init__` method initializes an instance of the `TestInDevStack` class, setting up a [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>) with environment and database URL parameters.
 - **Inputs**:
     - `scope`: A `Construct` object that defines the scope in which this stack is created.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
     - `kwargs`: Additional keyword arguments that can be passed to the parent class constructor.
 - **Control Flow**:
     - Calls the parent class `__init__` method with `scope`, `construct_id`, and `kwargs` to initialize the base `Stack` class.
-    - Creates an instance of [`MetricsLambdaParams`](constructs/metrics_lambda.py.md#MetricsLambdaParams) with environment and database URL parameters fetched from environment variables.
-    - Initializes a [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda) instance with the current object (`self`), a string identifier 'MetricsLambda', and the [`MetricsLambdaParams`](constructs/metrics_lambda.py.md#MetricsLambdaParams) instance.
-- **Output**: The method does not return any value; it initializes the instance attributes of the `TestInDevStack` class.
-- **Functions called**:
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](constructs/metrics_lambda.py.md#MetricsLambdaParams)
-- **See also**: [`python-backend/cdk/test_in_dev_stack.TestInDevStack`](#TestInDevStack)  (Base Class)
+    - Creates an instance of [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>) and assigns it to `self.metrics_lambda`.
+    - Initializes [`MetricsLambdaParams`](<constructs/metrics_lambda.py.md#MetricsLambdaParams>) with environment and database URL fetched from environment variables, defaulting to 'development' if not set.
+- **Output**: The method does not return any value; it initializes the instance attributes of the class.
+- **Functions Called**:
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>)
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](<constructs/metrics_lambda.py.md#MetricsLambdaParams>)
+- **See also**: [`python-backend/cdk/test_in_dev_stack.TestInDevStack`](<#TestInDevStack>)  (Base Class)
 
 
 

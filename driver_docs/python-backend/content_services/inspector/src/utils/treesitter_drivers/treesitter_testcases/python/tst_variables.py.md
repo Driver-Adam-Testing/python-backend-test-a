@@ -6,7 +6,7 @@
 The `tst_variables.py` file contains test cases for various types of Python variable definitions, including module-level variables, constants, type-annotated variables, final variables, class variables, and variables in different scopes.
 
 # Purpose
-This Python source code file serves as a comprehensive demonstration of various types of variable definitions and their scopes within a Python program. It includes examples of module-level variables, constants, type-annotated variables, and final variables, showcasing both simple and complex data types. The file also illustrates the use of class variables and instance variables within a class, as well as the concept of global variables that can be modified by functions. Additionally, it provides examples of variable scope, including module, function, and nested scopes, highlighting how variables can be accessed and modified in different contexts. Overall, this file is a well-rounded educational resource for understanding variable management in Python.
+This Python script serves as a comprehensive demonstration of various types of variable definitions and their scopes within a module. It includes examples of simple module-level variables, constants, type-annotated variables, and final variables that cannot be reassigned. The script also illustrates multiple assignment, module-level collections, and the use of class variables and instance variables within a class. Additionally, it showcases the manipulation of global variables and the use of different scopes, including module, function, and nested scopes. Overall, this code provides a broad overview of variable usage in Python, making it a useful reference for understanding variable definitions and scope management.
 # Imports and Dependencies
 
 ---
@@ -23,22 +23,22 @@ This Python source code file serves as a comprehensive demonstration of various 
 ---
 ### simple\_var
 - **Type**: `str`
-- **Description**: The variable `simple_var` is a module-level variable that holds a string value 'hello world'. It is defined at the top level of the module, making it accessible throughout the module.
-- **Use**: This variable is used to store a simple string message that can be accessed and utilized anywhere within the module.
+- **Description**: The variable `simple_var` is a module-level variable defined as a string with the value 'hello world'. It is a straightforward example of a simple variable assignment in Python.
+- **Use**: This variable is used to store a basic string value at the module level.
 
 
 ---
 ### number\_var
 - **Type**: `int`
 - **Description**: The variable `number_var` is a simple integer variable defined at the module level with a value of 42. It is a straightforward representation of a numeric value.
-- **Use**: This variable is used to store a fixed integer value, which can be utilized wherever a numeric constant is needed in the module.
+- **Use**: This variable is used to store a numeric value that can be accessed throughout the module.
 
 
 ---
 ### API\_VERSION
 - **Type**: `str`
-- **Description**: The `API_VERSION` variable is a string that represents the version of the API being used or defined in the module. It is set to the value "1.0.0", indicating the initial version of the API.
-- **Use**: This variable is used to track and reference the current version of the API throughout the module.
+- **Description**: `API_VERSION` is a string variable that holds the version number of the API, set to "1.0.0". It is defined as a constant, indicated by its uppercase naming convention, suggesting that it should not be changed during the execution of the program.
+- **Use**: This variable is used to specify the current version of the API, which can be referenced throughout the codebase to ensure compatibility and version control.
 
 
 ---
@@ -58,21 +58,21 @@ This Python source code file serves as a comprehensive demonstration of various 
 ---
 ### typed\_list
 - **Type**: `List[int]`
-- **Description**: The variable `typed_list` is a type-annotated list of integers, initialized with the values [1, 2, 3, 4, 5]. It is defined at the module level, making it a global variable accessible throughout the module.
-- **Use**: This variable is used to store a collection of integer values with type safety provided by the List[int] annotation.
+- **Description**: The `typed_list` variable is a list of integers, specifically containing the elements [1, 2, 3, 4, 5]. It is type-annotated to indicate that it should only contain integer values.
+- **Use**: This variable is used to store a sequence of integer values, ensuring type safety through its annotation.
 
 
 ---
 ### FINAL\_CONSTANT
 - **Type**: `Final[str]`
 - **Description**: `FINAL_CONSTANT` is a global variable defined as a constant string with the value 'cannot be reassigned'. It is annotated with `Final` from the `typing` module, indicating that it should not be reassigned after its initial definition.
-- **Use**: This variable is used to represent a constant string value that is intended to remain unchanged throughout the program.
+- **Use**: This variable is used to store a constant string value that is intended to remain unchanged throughout the program.
 
 
 ---
 ### FINAL\_NUMBER
 - **Type**: `Final`
-- **Description**: `FINAL_NUMBER` is a global variable defined with the `Final` type hint, indicating that it is intended to be a constant and should not be reassigned after its initial definition. It is assigned the integer value 42.
+- **Description**: `FINAL_NUMBER` is a global variable defined with the `Final` type hint, indicating that it is intended to be a constant and should not be reassigned. It is assigned the integer value 42.
 - **Use**: This variable is used to represent a constant integer value that should remain unchanged throughout the program.
 
 
@@ -93,7 +93,7 @@ This Python source code file serves as a comprehensive demonstration of various 
 ---
 ### c
 - **Type**: `int`
-- **Description**: The variable `c` is an integer that is initialized to the value 3 through a multiple assignment statement. It is defined at the module level, making it a global variable within the module.
+- **Description**: The variable `c` is a simple integer variable that is initialized to the value 3 through a multiple assignment statement. It is defined at the module level, making it a global variable within the module.
 - **Use**: This variable is used to store the integer value 3 and can be accessed throughout the module.
 
 
@@ -137,32 +137,32 @@ This Python source code file serves as a comprehensive demonstration of various 
 ---
 ### VariableExamples<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples}} -->
 - **Members**:
-    - `class_var`: A class variable shared across all instances of the class.
-    - `counter`: A class variable that acts as a counter shared across instances.
-    - `name`: An instance variable representing the name associated with an instance.
-    - `value`: An instance variable representing the value associated with an instance.
-    - `_private_var`: An optional instance variable intended for internal use.
-    - `__very_private`: A private instance variable with restricted access.
-- **Description**: The VariableExamples class demonstrates the use of different types of variables in Python, including class variables shared across instances and instance variables specific to each instance. It includes both public and private instance variables, showcasing encapsulation practices. The class also features a computed property that combines the name and value instance variables into a formatted string.
+    - `class_var`: A class variable shared across instances.
+    - `counter`: A class variable that counts instances or actions.
+    - `name`: An instance variable storing the name.
+    - `value`: An instance variable storing the value.
+    - `_private_var`: An optional private instance variable.
+    - `__very_private`: A very private instance variable with a default value of 42.
+- **Description**: The `VariableExamples` class demonstrates the use of class and instance variables in Python. It includes class variables `class_var` and `counter`, which are shared across all instances, and instance variables `name`, `value`, `_private_var`, and `__very_private`, which are specific to each instance. The class also features a computed property `computed_property` that combines the `name` and `value` into a formatted string. This class serves as an example of variable scoping and encapsulation in Python.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.__init__`](#VariableExamples__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.computed_property`](#VariableExamplescomputed_property)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.__init__`](<#VariableExamples__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.computed_property`](<#VariableExamplescomputed_property>)
 
 **Methods**
 
 ---
 #### VariableExamples\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.__init__}} -->
-The `__init__` method initializes an instance of the `VariableExamples` class with specified name and value, and sets up additional private instance variables.
+The `__init__` method initializes an instance of the `VariableExamples` class by setting up instance variables with provided and default values.
 - **Inputs**:
     - `name`: A string representing the name to be assigned to the instance.
     - `value`: An integer representing the value to be assigned to the instance.
 - **Control Flow**:
-    - Assigns the provided `name` to the instance variable `self.name`.
-    - Assigns the provided `value` to the instance variable `self.value`.
-    - Initializes `self._private_var` as `None`, indicating a private variable that can be optionally set later.
-    - Sets `self.__very_private` to the integer `42`, indicating a very private variable with a default value.
+    - Assigns the provided `name` argument to the instance variable `self.name`.
+    - Assigns the provided `value` argument to the instance variable `self.value`.
+    - Initializes the instance variable `self._private_var` to `None`.
+    - Initializes the instance variable `self.__very_private` to the integer `42`.
 - **Output**: The method does not return any value; it initializes the instance variables of the class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](#VariableExamples)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](<#VariableExamples>)  (Base Class)
 
 
 ---
@@ -175,7 +175,7 @@ The `computed_property` method returns a formatted string combining the instance
     - Accesses the instance's `value` attribute.
     - Formats and returns a string combining `name` and `value` separated by a colon.
 - **Output**: A string formatted as "name:value" where `name` and `value` are the instance's attributes.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](#VariableExamples)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](<#VariableExamples>)  (Base Class)
 
 
 
@@ -183,12 +183,12 @@ The `computed_property` method returns a formatted string combining the instance
 
 ---
 ### modify\_globals<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.modify_globals}} -->
-The `modify_globals` function increments a global counter and appends a formatted string to a global registry list.
+The `modify_globals` function increments a global counter and appends a new entry to a global registry list.
 - **Inputs**: None
 - **Control Flow**:
     - The function declares `global_counter` and `global_registry` as global variables, allowing it to modify them.
     - It increments the `global_counter` by 1.
-    - It appends a new string formatted as `entry_<global_counter>` to the `global_registry` list.
+    - It appends a new string entry, formatted with the updated `global_counter`, to the `global_registry` list.
 - **Output**: The function does not return any value; it modifies global variables in place.
 
 
@@ -203,7 +203,7 @@ The function `function_scope_example` demonstrates variable scope and modificati
     - The `nonlocal` keyword is used to modify the `function_scope` variable from the enclosing scope, changing its value to 'modified'.
     - The `nested_scope` function returns a tuple containing the values of `nested_scope` and `function_scope`.
     - The `function_scope_example` function returns the result of calling `nested_scope`.
-- **Output**: A tuple containing the values of the `nested_scope` and `function_scope` variables, which are 'nested' and 'modified', respectively.
+- **Output**: A tuple containing the values of the `nested_scope` and `function_scope` variables, specifically ('nested', 'modified').
 
 
 

@@ -6,7 +6,7 @@
 The `agent_factory.py` file defines a function to create and return either an `OpenAIStrictAgent` or an `AnthropicStrictAgent` based on the specified model configuration and provider.
 
 # Purpose
-This Python code defines a function [`create_agent`](#create_agent) that serves as a factory for creating instances of either `OpenAIStrictAgent` or `AnthropicStrictAgent`, based on the specified model configuration. The function takes several parameters, including `scope`, `model`, `max_iterations`, `tools`, `response_type`, `debug`, `log`, and `llm_usage_session`, allowing for customization of the agent's behavior and configuration. It utilizes the `ModelConfig` class to determine the appropriate model provider, either OpenAI or Anthropic, and raises an error if an unsupported provider is specified. This code provides narrow functionality, focusing specifically on the instantiation of strict agent objects for language model interactions, and is likely part of a larger system dealing with AI model management and usage tracking.
+This Python code defines a function [`create_agent`](<#create_agent>) that serves as a factory for creating instances of either `OpenAIStrictAgent` or `AnthropicStrictAgent`, based on the specified model configuration. The function takes several parameters, including `scope`, `model`, `max_iterations`, `tools`, `response_type`, `debug`, `log`, and `llm_usage_session`, allowing for customization of the agent's behavior and configuration. It utilizes the `ModelConfig` class to determine the appropriate model provider, either OpenAI or Anthropic, and raises an error if an unsupported provider is specified. This code provides narrow functionality, focusing specifically on the instantiation of strict agent objects for language model interactions, and is part of a larger system that likely involves language model management and usage tracking.
 # Imports and Dependencies
 
 ---
@@ -23,28 +23,28 @@ This Python code defines a function [`create_agent`](#create_agent) that serves 
 
 ---
 ### create\_agent<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_factory.create_agent}} -->
-The `create_agent` function initializes and returns an agent object based on the specified model provider, either OpenAI or Anthropic.
+The `create_agent` function initializes and returns an agent object based on the specified model provider, either OpenAI or Anthropic, with configurable parameters.
 - **Inputs**:
-    - `scope`: A `DataScope` object that defines the data context for the agent.
+    - `scope`: A `DataScope` object that defines the scope of data the agent will operate on.
     - `model`: An optional string specifying the model name; if not provided, a default model configuration is used.
     - `max_iterations`: An integer specifying the maximum number of iterations the agent can perform, defaulting to 1.
     - `tools`: An optional object representing tools available to the agent.
     - `response_type`: An optional `BaseModel` object defining the response format for the agent.
     - `debug`: A boolean indicating whether debugging is enabled, defaulting to True.
     - `log`: A boolean indicating whether logging is enabled, defaulting to True.
-    - `llm_usage_session`: An optional `LLMUsageSession` object for tracking usage metrics.
+    - `llm_usage_session`: An optional `LLMUsageSession` object for tracking usage of the language model.
 - **Control Flow**:
     - Determine the model configuration using the provided model name or default configuration if none is provided.
     - Check the model provider from the configuration.
-    - If the provider is OpenAI, instantiate and return an [`OpenAIStrictAgent`](agent_openai_strict.py.md#OpenAIStrictAgent) with the specified parameters.
-    - If the provider is Anthropic, instantiate and return an [`AnthropicStrictAgent`](agent_anthropic_strict.py.md#AnthropicStrictAgent) with the specified parameters.
+    - If the provider is OpenAI, instantiate and return an [`OpenAIStrictAgent`](<agent_openai_strict.py.md#OpenAIStrictAgent>) with the specified parameters.
+    - If the provider is Anthropic, instantiate and return an [`AnthropicStrictAgent`](<agent_anthropic_strict.py.md#AnthropicStrictAgent>) with the specified parameters.
     - Raise a `ValueError` if the provider is not supported.
-- **Output**: Returns an instance of either [`OpenAIStrictAgent`](agent_openai_strict.py.md#OpenAIStrictAgent) or [`AnthropicStrictAgent`](agent_anthropic_strict.py.md#AnthropicStrictAgent) based on the model provider.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](models/llm_models.py.md#ModelConfigdefault)
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](models/llm_models.py.md#ModelConfigfrom_name)
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](agent_openai_strict.py.md#OpenAIStrictAgent)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](agent_anthropic_strict.py.md#AnthropicStrictAgent)
+- **Output**: Returns an instance of either [`OpenAIStrictAgent`](<agent_openai_strict.py.md#OpenAIStrictAgent>) or [`AnthropicStrictAgent`](<agent_anthropic_strict.py.md#AnthropicStrictAgent>) based on the model provider.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<models/llm_models.py.md#ModelConfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<models/llm_models.py.md#ModelConfigfrom_name>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<agent_openai_strict.py.md#OpenAIStrictAgent>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<agent_anthropic_strict.py.md#AnthropicStrictAgent>)
 
 
 

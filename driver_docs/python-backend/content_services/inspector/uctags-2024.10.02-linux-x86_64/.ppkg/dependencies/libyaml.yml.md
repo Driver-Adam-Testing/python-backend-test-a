@@ -6,7 +6,7 @@
 The `libyaml.yml` file specifies metadata for the libyaml C library, including its source URL, checksum, license, and build system configuration.
 
 # Purpose
-This file provides metadata for a C library focused on parsing and emitting YAML. It includes the library's summary, source URL, source SHA checksum for verification, license type, build system, and the developer's contact information.
+This file provides metadata for a C library focused on parsing and emitting YAML. It includes the library's description, source URL, and SHA-256 checksum for verification, along with licensing information under the MIT License. Additionally, it specifies the build system as "configure" and lists the developer's contact information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

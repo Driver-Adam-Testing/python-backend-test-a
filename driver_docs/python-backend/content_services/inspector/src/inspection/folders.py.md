@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `folders.py` file in the `python-backend` codebase provides functionality for generating and compressing descriptions of folder contents using a language model, with support for both synchronous and asynchronous processing.
+The `folders.py` file in the `python-backend` codebase provides functionality for generating descriptions of folder contents, including single sentence and paragraph summaries, using a language model to process and compress content from child nodes.
 
 # Purpose
-This Python code file is designed to process and generate descriptive summaries of folder contents within a codebase. It leverages a language model, specifically `ChatOpenAI`, to create human-readable descriptions of folders and their contents, which can include both files and subfolders. The code is structured to handle various scenarios, such as empty directories or redundant folders, and it can process large amounts of data by splitting it into manageable chunks. The primary functionality revolves around generating single-sentence and single-paragraph summaries, as well as more detailed descriptions, by utilizing predefined prompt templates and the language model's response generation capabilities.
+This Python code file is designed to generate descriptive summaries of folder contents within a codebase, leveraging a language model (specifically, `ChatOpenAI`). The primary functionality revolves around processing and summarizing the contents of folders, potentially containing both files and subfolders, into concise descriptions. The code is structured to handle large amounts of content by splitting it into manageable chunks, processing these chunks to generate detailed descriptions, and then compressing these descriptions if necessary. The code supports both synchronous and asynchronous processing, utilizing a thread pool executor for concurrent execution to enhance performance.
 
-The file is a collection of functions that work together to achieve the goal of folder content comprehension. It includes utility functions for generating descriptions based on different levels of content aggregation, such as individual child descriptions or compressed chunk descriptions. The [`comprehend_folder_top_down`](#comprehend_folder_top_down) function is the core component, orchestrating the entire process from data aggregation to final description generation. It supports both synchronous and asynchronous execution, allowing for efficient processing of large datasets. The code is intended to be part of a larger system, as indicated by its reliance on external modules and utilities, and it does not define a public API or external interface on its own.
+The file defines several functions that interact with a language model to generate descriptions at different levels of granularity, such as single sentences or paragraphs. It uses a combination of prompt templates and structured prompting to guide the language model in generating these descriptions. The code also includes mechanisms to handle edge cases, such as empty directories or redundant folders, and provides options for error handling and iterative compression to ensure the generated content is concise and informative. The file is likely part of a larger system that automates documentation or codebase analysis, providing a programmatic interface for generating human-readable summaries of code structures.
 # Imports and Dependencies
 
 ---
@@ -18,6 +18,13 @@ The file is a collection of functions that work together to achieve the goal of 
 - `enum.auto`
 - `pathlib.Path`
 - `typing.Any`
+- `database.models_v2_enums.ContentKind`
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES`
+- `shared.prompts.structured_prompting.RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS`
+- `shared.prompts.structured_prompting.TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.dag.LiteNode`
 - `utils.dag.NodeKind`
 - `utils.io.get_prompt_template`
@@ -32,22 +39,29 @@ The file is a collection of functions that work together to achieve the goal of 
 ### PARENT\_PATH
 - **Type**: `Path`
 - **Description**: `PARENT_PATH` is a global variable that holds the directory path of the current file's parent directory. It is defined using the `Path` class from the `pathlib` module, which provides an object-oriented interface for filesystem paths.
-- **Use**: This variable is used to construct paths to various prompt template files within the same directory structure.
+- **Use**: This variable is used to construct file paths relative to the current file's directory, facilitating access to resources like templates or configuration files.
 
 
 # Classes
 
 ---
 ### ContentDocs<!-- {{#class:python-backend/content_services/inspector/src/inspection/folders.ContentDocs}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L24>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `docs`: A dictionary containing documentation content with string keys and values of any type.
-- **Description**: The `ContentDocs` class is a data structure designed to hold documentation content in a dictionary format, where the keys are strings and the values can be of any type. It is marked as immutable with the `frozen=True` parameter in the `@dataclass` decorator, ensuring that once an instance is created, its contents cannot be modified. This class is useful for storing and managing documentation data in a structured and consistent manner.
+    - `docs`: A dictionary mapping string keys to any type of values.
+- **Description**: The `ContentDocs` class is a data structure designed to hold documentation content in a dictionary format, where the keys are strings and the values can be of any type. It is marked as immutable with the `frozen=True` parameter in the `@dataclass` decorator, ensuring that once an instance is created, its contents cannot be modified. This class is likely used to store and manage documentation data in a structured manner within the application.
 
 
 ---
 ### AggregationState<!-- {{#class:python-backend/content_services/inspector/src/inspection/folders.AggregationState}} -->
-- **Description**: The `AggregationState` class is an enumeration that defines two possible states, `CHILD_LIST` and `MANY_CHUNKS`, which are used to represent different aggregation strategies or conditions in a folder processing context.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L29>)
+
+- **Members**:
+    - `CHILD_LIST`: Represents a state where aggregation is based on a list of child elements.
+    - `MANY_CHUNKS`: Represents a state where aggregation involves multiple chunks of data.
+- **Description**: The AggregationState class is an enumeration that defines two possible states for data aggregation: CHILD_LIST and MANY_CHUNKS. These states are used to determine the strategy for aggregating data, either by compiling a list of child elements or by handling multiple chunks of data, respectively. This class is part of a larger system that processes and summarizes folder contents in a codebase.
 - **Inherits From**:
     - `Enum`
 
@@ -56,159 +70,207 @@ The file is a collection of functions that work together to achieve the goal of 
 
 ---
 ### folder\_chunk\_description<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.folder_chunk_description}} -->
-The `folder_chunk_description` function generates a response from a language model based on a system prompt and a human prompt describing a folder's child descriptions in a codebase.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L34>)
+
+The `folder_chunk_description` function generates a detailed description for a folder's content chunk using a language model.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model used to generate responses.
+    - `llm`: An instance of `ChatOpenAI`, which is a language model used to generate responses.
     - `folder_name`: A string representing the name of the folder for which the description is being generated.
-    - `codebase_name`: A string representing the name of the codebase containing the folder.
-    - `description_chunk`: A string containing a chunk of descriptions related to the folder's children.
+    - `codebase_name`: A string representing the name of the codebase that contains the folder.
+    - `description_chunk`: A string containing a chunk of descriptions related to the folder's contents.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path.
-    - Construct a human prompt using the folder name, codebase name, and description chunk.
-    - Call the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object with the system and human prompts to generate a response.
-- **Output**: Returns a string which is the response generated by the language model based on the provided prompts.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - The function begins by retrieving a system prompt template from a specified file path using the [`get_prompt_template`](<../utils/io.py.md#get_prompt_template>) function.
+    - It constructs a human-readable prompt by formatting the folder name, codebase name, and description chunk into a string.
+    - The function then calls the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object, passing the system prompt and human prompt as arguments.
+    - Finally, it returns the response generated by the language model.
+- **Output**: A string containing the response generated by the language model, which is a detailed description of the folder's content chunk.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### folder\_compress\_chunks<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.folder_compress_chunks}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L50>)
+
 The `folder_compress_chunks` function generates a compressed response for a folder's child subset descriptions using a language model.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, which is used to generate responses based on prompts.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model used to generate responses.
     - `folder_name`: A string representing the name of the folder for which the descriptions are being processed.
     - `codebase_name`: A string representing the name of the codebase that contains the folder.
-    - `description_chunk`: A string containing a chunk of descriptions for the child subsets of the folder.
+    - `description_chunk`: A string containing a chunk of descriptions for the child subsets within the folder.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path for compressing folder chunks.
-    - Construct a human-readable prompt that includes the folder name, codebase name, and the provided description chunk.
-    - Use the `llm` instance to generate a response by passing the system and human prompts to the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method.
-    - Return the generated response as a string.
-- **Output**: A string that is the generated response from the language model, representing a compressed version of the folder's child subset descriptions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Retrieve a system prompt template from a file path specific to compressing folder chunks.
+    - Construct a human-readable prompt using the folder name, codebase name, and the provided description chunk.
+    - Invoke the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object, passing the system and human prompts to generate a compressed response.
+- **Output**: Returns a string which is the response generated by the language model, representing a compressed version of the folder's child subset descriptions.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### folder\_single\_sentence\_from\_child\_list<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.folder_single_sentence_from_child_list}} -->
-Generates a single sentence description of a folder's child content using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L66>)
+
+Generates a single sentence description for a folder based on its child content and previous descriptions using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class used to generate responses.
+    - `llm`: An instance of ChatOpenAI used to generate responses based on prompts.
     - `folder_name`: The name of the folder for which the description is being generated.
-    - `codebase_name`: The name of the codebase containing the folder.
+    - `codebase_name`: The name of the codebase to which the folder belongs.
     - `data`: A string containing the child content of the folder.
+    - `is_root`: A boolean indicating whether the folder is the root of the codebase.
+    - `previous_content`: An optional string containing the previous single sentence description of the folder.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path.
-    - Construct a human-readable prompt by formatting the folder name, codebase name, and child content into a string.
-    - Use the language model (llm) to generate a response based on the system and human prompts.
-- **Output**: Returns a string that is a single sentence description of the folder's child content.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Initialize a structured system prompt with a template and general style instructions.
+    - If previous content is provided, append instructions to return unedited content if no substantial changes are detected.
+    - Convert the structured system prompt into a string.
+    - Initialize a structured user prompt and append a root specialization if the folder is the root of the codebase.
+    - Append style instructions and the folder's child content to the user prompt.
+    - Convert the structured user prompt into a string.
+    - Use the language model to generate a response based on the system and user prompts.
+- **Output**: A single sentence description of the folder as a string.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### folder\_single\_paragraph\_from\_child\_list<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.folder_single_paragraph_from_child_list}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L116>)
+
 Generates a single paragraph description of a folder's child content using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class used to generate responses.
+    - `llm`: An instance of ChatOpenAI used to generate responses.
     - `folder_name`: The name of the folder for which the description is being generated.
-    - `codebase_name`: The name of the codebase containing the folder.
+    - `codebase_name`: The name of the codebase that contains the folder.
     - `data`: A string containing the child content of the folder.
+    - `previous_content`: An optional string containing the previous paragraph description of the folder, if available.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path.
-    - Construct a human-readable prompt by formatting the folder name, codebase name, and child content into a string.
-    - Invoke the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object, passing the system and human prompts to generate a response.
-- **Output**: A string containing the generated single paragraph description of the folder's child content.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Initialize a structured system prompt using a template for generating a single paragraph from a child list and append general style instructions.
+    - Check if previous_content is provided; if so, append instructions to return unedited content if no substantial changes are detected, along with the previous description.
+    - Convert the structured system prompt into a string format.
+    - Create a user prompt by appending instructions to avoid restatement and include the folder's child content.
+    - Convert the user prompt into a string format.
+    - Use the language model (llm) to generate a response based on the system and user prompts.
+- **Output**: Returns a string containing the generated single paragraph description of the folder's child content.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### folder\_single\_sentence\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.folder_single_sentence_from_chunk_descriptions}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L158>)
+
 Generates a single sentence description for a folder based on chunk descriptions using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
-    - `folder_name`: The name of the folder for which the single sentence description is being generated.
+    - `llm`: An instance of ChatOpenAI used to generate responses based on prompts.
+    - `folder_name`: The name of the folder for which the description is being generated.
     - `codebase_name`: The name of the codebase that contains the folder.
-    - `data`: A string containing the chunk descriptions that will be used to generate the single sentence description.
+    - `data`: A string containing the data or content descriptions of the folder's chunks.
+    - `is_root`: A boolean indicating whether the folder is the root of the codebase.
+    - `previous_content`: An optional string containing the previous single sentence description, if any.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path specific to generating single sentence descriptions from chunk descriptions.
-    - Set the human prompt to the provided data, which contains the chunk descriptions.
-    - Use the language model (llm) to generate a response by passing the system prompt and human prompt to the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method.
-    - Return the generated response as the single sentence description.
-- **Output**: A string representing the single sentence description generated by the language model.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - A structured system prompt is created using a template for generating single sentence descriptions from chunk descriptions.
+    - If previous_content is provided, an additional component is appended to the system prompt to handle unchanged content.
+    - A user prompt is constructed with specific style instructions and the provided data.
+    - The function calls the generate_response method of the llm object with the system and user prompts to generate the final single sentence description.
+- **Output**: Returns a string which is the generated single sentence description for the folder.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### folder\_single\_paragraph\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.folder_single_paragraph_from_chunk_descriptions}} -->
-Generates a single paragraph description from chunk descriptions for a specified folder using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L197>)
+
+Generates a single paragraph description for a folder based on chunk descriptions using a language model.
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class used to generate responses.
     - `folder_name`: The name of the folder for which the description is being generated.
     - `codebase_name`: The name of the codebase that contains the folder.
-    - `data`: The chunk descriptions data to be used as input for generating the paragraph.
+    - `data`: A string containing the chunk descriptions of the folder's contents.
+    - `previous_content`: An optional string containing the previous paragraph description, if available.
 - **Control Flow**:
-    - Retrieve the system prompt template from a predefined file path.
-    - Set the human prompt to the provided data.
-    - Use the language model (llm) to generate a response using the system and human prompts.
-    - Return the generated response as a single paragraph description.
-- **Output**: A string representing the single paragraph description generated by the language model.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Initialize a structured system prompt using a template for single paragraph descriptions and general style instructions.
+    - Check if previous content is provided; if so, append instructions to return unedited content if no substantial changes are detected, along with the previous content.
+    - Convert the structured system prompt into a string format.
+    - Create a user prompt by appending no restatement style instructions and the provided data, then convert it into a string format.
+    - Use the language model (llm) to generate a response based on the system and user prompts.
+- **Output**: Returns a string containing the generated single paragraph description for the folder.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### \_return\_with\_simple\_message<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders._return_with_simple_message}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L234>)
+
 The function returns a dictionary containing a simple message as both a short and long description.
 - **Inputs**:
-    - `message`: A string representing the message to be used as both the short and long description.
-    - `folder_node`: An instance of LiteNode, representing a node in a folder structure, though it is not used in the function.
+    - `message`: A string representing the message to be used for both short and long descriptions.
+    - `folder_node`: An instance of LiteNode, representing a folder node, though it is not used in the function logic.
 - **Control Flow**:
     - Assigns the input message to the variable 'long_description'.
     - Creates a dictionary 'short_descriptions' with keys 'single_sentence' and 'single_paragraph', both set to the input message.
     - Returns a dictionary with keys 'short' and 'long', where 'short' is the 'short_descriptions' dictionary and 'long' is the 'long_description'.
-- **Output**: A dictionary with two keys: 'short', containing a dictionary with the message as both a single sentence and a single paragraph, and 'long', containing the message as a long description.
+- **Output**: A dictionary with two keys: 'short', containing a dictionary with the message as both 'single_sentence' and 'single_paragraph', and 'long', containing the message as a long description.
 
 
 ---
 ### comprehend\_folder\_top\_down<!-- {{#callable:python-backend/content_services/inspector/src/inspection/folders.comprehend_folder_top_down}} -->
-The `comprehend_folder_top_down` function generates a comprehensive description of a folder's contents by processing and potentially compressing child node descriptions using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/folders.py#L246>)
+
+The function `comprehend_folder_top_down` generates descriptive summaries for a folder's contents in a codebase, handling both small and large data sets with optional asynchronous processing.
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used for generating descriptions.
-    - `codebase_name`: The name of the codebase to which the folder belongs.
-    - `node`: A `LiteNode` object representing the folder to be processed.
-    - `chunk_size`: The maximum size of each text chunk for processing.
+    - `llm`: An instance of `ChatOpenAI` used for generating text responses.
+    - `codebase_name`: The name of the codebase being processed.
+    - `node`: A `LiteNode` object representing the folder node in the codebase.
+    - `chunk_size`: The size of each text chunk for processing.
     - `chunk_overlap`: The overlap size between consecutive text chunks.
-    - `max_workers`: The maximum number of worker threads to use for asynchronous processing.
-    - `child_nodes_to_docs`: A dictionary mapping `LiteNode` objects to their corresponding `ContentDocs`.
+    - `max_workers`: The maximum number of worker threads for asynchronous processing.
+    - `child_nodes_to_docs`: A dictionary mapping `LiteNode` objects to `ContentDocs`, representing the child nodes and their documentation.
     - `compression_loop_max_itr`: The maximum number of iterations allowed for the compression loop.
     - `raise_hard_errors`: A boolean flag indicating whether to raise errors if the compression loop exceeds the maximum iterations.
     - `redundant_folder_flag`: A boolean flag indicating if the folder is redundant and should not be processed further.
     - `use_async`: A boolean flag indicating whether to use asynchronous processing.
+    - `previous_content`: An optional dictionary containing previous content descriptions for comparison.
 - **Control Flow**:
-    - Check if the folder is empty or redundant and return a simple message if true.
+    - Check if the folder is empty or redundant and return a simple message if so.
     - Aggregate child node descriptions into a list, separating files and folders.
-    - Split the aggregated descriptions into chunks based on the specified chunk size and overlap.
-    - If multiple chunks are created, process each chunk to generate detailed descriptions, potentially using asynchronous processing.
-    - Iteratively compress the chunk descriptions if they exceed the chunk size, up to a maximum number of iterations.
+    - Split the aggregated list into chunks based on the specified chunk size and overlap.
+    - If multiple chunks are created, process each chunk to generate detailed descriptions, optionally using asynchronous processing.
+    - Iteratively compress the chunk descriptions if they exceed the chunk size, up to the maximum iteration limit.
     - Select the appropriate functions for generating single sentence and paragraph descriptions based on the aggregation state.
-    - Generate the final descriptions using the selected functions, either synchronously or asynchronously.
+    - Generate the final descriptions using the selected functions, optionally using asynchronous processing.
     - Return a dictionary containing both short and long descriptions of the folder's contents.
 - **Output**: A dictionary with 'short' and 'long' keys, where 'short' contains single sentence and paragraph descriptions, and 'long' contains a detailed description of the folder's contents.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/inspection/folders._return_with_simple_message`](#_return_with_simple_message)
-    - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text)
-    - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](../utils/threadpool.py.md#FastShutdownThreadPoolExecutor)
-    - [`python-backend/content_services/inspector/src/inspection/folders.folder_chunk_description`](#folder_chunk_description)
-    - [`python-backend/content_services/inspector/src/inspection/folders.folder_compress_chunks`](#folder_compress_chunks)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/inspection/folders._return_with_simple_message`](<#_return_with_simple_message>)
+    - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
+    - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](<../utils/threadpool.py.md#FastShutdownThreadPoolExecutor>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/content_services/inspector/src/inspection/folders.folder_chunk_description`](<#folder_chunk_description>)
+    - [`python-backend/content_services/inspector/src/inspection/folders.folder_compress_chunks`](<#folder_compress_chunks>)
 
 
 

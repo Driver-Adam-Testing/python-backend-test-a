@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_child_list.txt` file is a template used within the `python-backend` codebase, specifically located in the `python-backend/content_services/inspector/src/inspection/prompt_templates/folders` directory, to guide the creation of a single paragraph description for a software folder by summarizing its child files and folders.
+The `single_paragraph_from_child_list.txt` file is a template used in the `python-backend` codebase to guide the creation of a single paragraph description for a software folder based on its child files and folders.
 
 # Purpose
-The provided content appears to be a set of instructions for generating a summary of a software folder based on its contents. The instructions specify that the summary should be a single paragraph, limited to six sentences, and should broadly and conceptually encapsulate the folder's purpose and contents. The process involves using a comprehensive list of all child files and folders, each accompanied by a one-sentence description, to inform the summary. The goal is to provide a clear and concise overview of the folder, including its name, without introducing any information not directly derived from the given list. This approach ensures that the summary is both accurate and informative, offering a high-level understanding of the folder's role within the software codebase.
+The provided content appears to be a set of instructions for a software engineering expert tasked with writing documentation for a software folder. The instructions specify that the expert will receive a list of all child files and folders within a given folder, each accompanied by a one-sentence description. The expert's task is to synthesize this information into a single paragraph, no longer than six sentences, that describes the contents and purpose of the folder. The instructions emphasize the importance of being concise and accurate, without speculating or adding information not derived from the provided data.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

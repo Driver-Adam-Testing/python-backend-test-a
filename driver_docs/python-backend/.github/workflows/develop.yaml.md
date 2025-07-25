@@ -6,25 +6,25 @@
 The `develop.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend development environment, triggered by successful unit tests or manual dispatch, and includes steps for setting up Node.js, Python, AWS credentials, and deploying various services using Poetry and Modal.
 
 # Purpose
-The provided file is a GitHub Actions workflow configuration file, written in YAML, which automates the deployment process for a backend development environment. This file is designed to trigger deployments based on specific events, such as the completion of unit tests or manual dispatches, and it ensures that deployments are executed on the latest Ubuntu environment. The workflow includes multiple steps, such as setting up Node.js and Python environments, installing dependencies with Poetry, configuring AWS credentials, and deploying various components of the application using the AWS CDK and a custom modal deployment action. The file's content is crucial for continuous integration and continuous deployment (CI/CD) processes within the codebase, as it defines the automated steps necessary to deploy the application components consistently and efficiently across different environments.
+The provided content is a GitHub Actions workflow configuration file, written in YAML, which automates the deployment process for a backend development environment. This file is designed to trigger deployments when certain conditions are met, such as the completion of unit tests on the "develop" branch or manual dispatch. It defines a series of jobs that run on an Ubuntu environment, setting up necessary tools like Node.js and Python, and configuring AWS credentials for deployment. The workflow includes multiple deployment steps for different components of the application, such as Inspector, PDF Preprocessing, and others, using Poetry for dependency management and Modal for deployment. This file is crucial for continuous integration and deployment (CI/CD) processes, ensuring that the application is consistently and reliably deployed to the development environment.
 # Content Summary
 The provided file is a GitHub Actions workflow configuration designed for deploying a backend development environment. The workflow is named "Backend Dev Deployment" and is triggered by two events: the completion of a "Unit Test" workflow on the "develop" branch, or a manual dispatch via `workflow_dispatch`. The workflow ensures concurrency by grouping jobs based on the workflow name and reference, and it cancels any in-progress jobs if a new one is triggered.
 
-The workflow grants specific permissions, allowing write access to the `id-token` and read access to the `contents`. It defines a single job named "Deploy to Dev Environment" that runs on the latest Ubuntu environment. The job is conditional, executing only if triggered by a `workflow_dispatch` event or if a preceding workflow run concludes successfully.
+The workflow grants specific permissions, allowing write access to the `id-token` and read access to the `contents`. It defines a single job named "Deploy to Dev Environment" that runs on the latest Ubuntu environment. The job is conditional, executing only if triggered by a manual dispatch or if the preceding workflow run concludes successfully.
 
 The deployment process involves several steps:
 
-1. **Checkout Code**: Uses the `actions/checkout@v4` to pull the repository code.
-2. **Setup Node.js**: Configures Node.js version 20.x with npm caching using `actions/setup-node@v4`.
-3. **Install Node.js Dependencies**: Executes `npm ci` to install Node.js dependencies.
-4. **Setup Python**: Configures Python version 3.12 using `actions/setup-python@v5`.
-5. **Install Poetry**: Utilizes `snok/install-poetry@v1` to install Poetry, a Python dependency manager.
-6. **Install Python Dependencies**: Installs dependencies without creating a virtual environment using Poetry.
-7. **Configure AWS Credentials**: Sets up AWS credentials for deployment using `aws-actions/configure-aws-credentials@v4`, assuming a role specified by `AWS_CICD_ROLE`.
-8. **CDK Deployment**: Deploys infrastructure using AWS CDK with the command `poetry run npx cdk deploy --require-approval never`.
-9. **Deploy Services**: Sequentially deploys various services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) located in different directories under `content_services`. Each service deployment involves installing dependencies and executing a deployment command using Poetry and Modal, with environment variables for authentication and environment configuration.
+1. **Checkout Code**: The repository code is checked out using `actions/checkout@v4`.
+2. **Node.js Setup**: Node.js version 20.x is set up with npm caching enabled.
+3. **Install Node.js Dependencies**: Node.js dependencies are installed using `npm ci`.
+4. **Python Setup**: Python version 3.12 is configured.
+5. **Poetry Installation**: Poetry, a Python dependency manager, is installed.
+6. **Dependency Installation**: Dependencies are installed without creating a virtual environment using Poetry.
+7. **AWS Credentials Configuration**: AWS credentials are configured using a specified role and region.
+8. **CDK Deployment**: AWS Cloud Development Kit (CDK) is used to deploy infrastructure without requiring approval.
+9. **Service Deployments**: Several services are deployed using a custom GitHub Action (`modal-deploy`) and Poetry. Each service (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) is deployed from its respective directory, using environment variables for authentication and environment configuration.
 
-The workflow leverages secrets and variables for secure handling of sensitive information such as AWS roles and Modal tokens. This configuration facilitates a streamlined and automated deployment process for the development environment, ensuring that all necessary services are updated and deployed consistently.
+The deployment steps utilize environment variables and secrets for secure configuration, ensuring that sensitive information such as AWS roles and modal tokens are not hardcoded. This workflow automates the deployment process, facilitating continuous integration and delivery in a development environment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

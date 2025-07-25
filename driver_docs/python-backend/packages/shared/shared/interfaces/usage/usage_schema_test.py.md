@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `usage_schema_test.py` file contains a suite of tests for validating the functionality of usage-related classes and conversion utilities, such as `UsageBalance` and `UsageEventSummary`, within the `python-backend` codebase.
+The `usage_schema_test.py` file contains a suite of tests for validating the functionality of usage balance and event summary conversions between SLOC and bytes, as well as testing the usage event range within the `python-backend` codebase.
 
 # Purpose
-This Python file is a test suite using the `pytest` framework to validate the functionality of usage-related data structures and conversion utilities. It provides narrow functionality focused on testing the behavior of `UsageBalance` and `UsageEventSummary` objects, particularly their ability to handle conversions between source lines of code (SLOC) and bytes, as well as computing balances. The file includes several `pytest` fixtures to set up test data and a series of test functions that assert the correctness of conversion methods and balance computations. Additionally, it tests the `UsageEventRange` class for proper date handling and validation. Overall, this file is a collection of unit tests designed to ensure the integrity and correctness of usage metrics and their conversions within a software system.
+This Python file is a test suite using the `pytest` framework to validate the functionality of a usage tracking system, specifically focusing on the conversion and computation of usage metrics in different units (SLOC and BYTES). The code defines several `pytest` fixtures to set up initial conditions for `UsageBalance` and `UsageEventSummary` objects, which are then used in various test functions. These tests check the correctness of conversion functions (`sloc_to_bytes` and `bytes_to_sloc`), balance computations, and unit conversions for both usage balances and event summaries. Additionally, the code tests the `UsageEventRange` class for proper date handling and validation. Overall, this file provides narrow functionality focused on ensuring the accuracy and reliability of usage metric calculations and conversions within the system.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

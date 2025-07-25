@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libjansson.yml` file specifies the configuration and installation details for the Jansson C library, which is used for encoding, decoding, and manipulating JSON.
+The `libjansson.yml` file specifies the configuration and installation details for the Jansson C library, which is used for encoding, decoding, and manipulating JSON, within the `python-backend` codebase.
 
 # Purpose
-The provided content is a metadata file that describes the configuration and installation instructions for the Jansson library, a C library used for encoding, decoding, and manipulating JSON data. It includes metadata such as a brief summary of the library's purpose, a web URL for more information, a source URL for downloading the library's release, and a SHA-256 checksum for verifying the integrity of the downloaded file. The license field indicates that the library is distributed under the MIT License. The install section provides a script using `cmakew` to configure the build process, specifying options to control the building of shared libraries, documentation, coverage, examples, and tests, with two configurations: one with shared libraries turned off and another with them turned on.
+The provided content is a metadata configuration file for a software package, specifically the Jansson library, which is a C library used for encoding, decoding, and manipulating JSON data. The file includes metadata such as a brief summary of the library's purpose, a web URL for more information, a source URL for downloading the library's tarball, and a SHA-256 checksum for verifying the integrity of the downloaded file. It also specifies the license under which the library is distributed, which is the MIT License. Additionally, the file contains installation instructions using `cmakew`, detailing two configurations: one for building the library without shared libraries and tests, and another for building with shared libraries, both excluding documentation, coverage, examples, and tests.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

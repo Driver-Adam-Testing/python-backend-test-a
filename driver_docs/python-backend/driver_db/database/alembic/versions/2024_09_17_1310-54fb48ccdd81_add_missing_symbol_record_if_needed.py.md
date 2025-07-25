@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_09_17_1310-54fb48ccdd81_add_missing_symbol_record_if_needed.py` file is an Alembic migration script that adds a missing 'symbol' record to the `derived_content_types` table if it does not already exist, and provides a downgrade function to remove it.
+The `2024_09_17_1310-54fb48ccdd81_add_missing_symbol_record_if_needed.py` file contains an Alembic migration script that adds a missing 'symbol' record to the `derived_content_types` table if it does not already exist, and provides a downgrade function to remove it.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically designed to manage the schema of a database by adding or removing a record in the `derived_content_types` table. The [`upgrade`](#upgrade) function checks if a record with the `type_name` 'symbol' exists and inserts it if missing, while the [`downgrade`](#downgrade) function removes this record. The script is identified by a unique revision ID and is part of a sequence of migrations, as indicated by the `down_revision` attribute, ensuring that database changes are applied in a controlled and reversible manner.
+This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically designed to manage the addition and removal of a record in the `derived_content_types` table. The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` 'symbol' exists and inserts it if missing, ensuring the database schema is updated to include this type. Conversely, the [`downgrade`](<#downgrade>) function removes the 'symbol' record, allowing for a rollback of the schema change. This script is part of a version control system for database schemas, facilitating controlled and reversible changes to the database structure.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that uniquely identifies the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema that this script represents.
-- **Use**: This variable is used by Alembic to apply or rollback database migrations in the correct order.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema that this script applies.
+- **Use**: This variable is used by Alembic to identify the specific migration script and ensure the correct order of migrations.
 
 
 ---
@@ -33,8 +33,8 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision ID and down revision.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as `revision`, `down_revision`, and optionally `branch_labels` and `depends_on`. In this context, `branch_labels` is not being used to label any branches in the migration history.
+- **Use**: This variable is used as part of the Alembic migration script metadata to potentially label branches, but in this case, it is not utilized.
 
 
 ---
@@ -51,9 +51,11 @@ This code is a database migration script using Alembic, a lightweight database m
 The `upgrade` function checks for the existence of a 'symbol' record in the `derived_content_types` table and inserts it if it does not exist.
 - **Inputs**: None
 - **Control Flow**:
-    - Execute a SQL query to select 'symbol' from the `derived_content_types` table.
-    - Check if the result of the query is empty, indicating that 'symbol' does not exist in the table.
-    - If 'symbol' does not exist, execute an insert SQL query to add 'symbol' to the `derived_content_types` table.
+    - A SQL query is defined to select 'symbol' from the `derived_content_types` table.
+    - A database connection is obtained using `op.get_bind()`.
+    - The query is executed to check if the 'symbol' type already exists in the table.
+    - If the result of the query is empty, indicating 'symbol' does not exist, a new SQL insert query is defined to add 'symbol' to the table.
+    - The insert query is executed to add the 'symbol' record to the `derived_content_types` table.
 - **Output**: The function does not return any value; it performs a database operation to ensure a 'symbol' record exists in the `derived_content_types` table.
 
 
@@ -62,10 +64,10 @@ The `upgrade` function checks for the existence of a 'symbol' record in the `der
 The `downgrade` function removes the 'symbol' record from the `derived_content_types` table in the database.
 - **Inputs**: None
 - **Control Flow**:
-    - A SQL DELETE query is defined to remove entries with type_name 'symbol' from the derived_content_types table.
-    - A database connection is obtained using Alembic's `op.get_bind()` method.
-    - The DELETE query is executed using the connection.
-- **Output**: The function does not return any value; it performs a database operation to delete a specific record.
+    - A SQL DELETE query is defined to remove entries with `type_name` equal to 'symbol' from the `derived_content_types` table.
+    - A database connection is obtained using `op.get_bind()`.
+    - The DELETE query is executed using the obtained connection.
+- **Output**: The function does not return any value; it performs a database operation to delete specific records.
 
 
 

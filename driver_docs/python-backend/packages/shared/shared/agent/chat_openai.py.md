@@ -6,9 +6,9 @@
 The `chat_openai.py` file defines a `ChatOpenAI` class for generating responses using OpenAI's API, with support for different output configurations and error handling through retry mechanisms.
 
 # Purpose
-This Python code file defines a set of classes and functions designed to interact with the OpenAI API, specifically for generating chat completions. The primary components include the `OutputConfigKind` enumeration, the `OutputConfig` class, and the `ChatOpenAI` data class. The `OutputConfigKind` enumeration specifies different output formats for the API responses, such as JSON or plain text. The `OutputConfig` class, which inherits from Pydantic's `BaseModel`, is used to configure the output format of the API responses, providing a default configuration and a method to convert the configuration into a format suitable for the OpenAI API.
+This Python code file defines a structured approach to interacting with the OpenAI API, specifically for generating chat completions. It provides a class-based implementation that encapsulates configuration and execution details for making requests to the OpenAI service. The `OutputConfig` class, which inherits from `BaseModel`, is used to specify the format of the output, supporting different modes such as JSON and text. The `OutputConfigKind` enumeration defines the possible output types, ensuring that the output configuration is both flexible and type-safe. The `ChatOpenAI` class is a dataclass that manages the interaction with the OpenAI API, including setting up the client and handling the response generation process. It uses a retry mechanism with exponential backoff to handle common API errors, ensuring robustness in communication with the OpenAI service.
 
-The `ChatOpenAI` class is a data class that encapsulates the configuration and interaction logic with the OpenAI API. It initializes an OpenAI client and provides a method, [`generate_response`](#ChatOpenAIgenerate_response), to send prompts to the API and retrieve responses. This method supports retry logic with exponential backoff for handling various API errors, ensuring robustness in communication with the OpenAI service. The code is structured to be part of a larger application, likely serving as a library module that can be imported and used to facilitate chat-based interactions with OpenAI's models. The use of decorators, type hints, and Pydantic models indicates a focus on reliability and type safety in API interactions.
+The code is designed to be part of a larger application, likely serving as a library module that can be imported and used to facilitate OpenAI API interactions. It defines a public API through the `ChatOpenAI` class, which provides a method [`generate_response`](<#ChatOpenAIgenerate_response>) to generate chat completions based on system and user prompts. This method supports different output configurations and includes error handling for specific API-related exceptions. The use of Pydantic for data validation and the integration of a retry decorator from a shared utilities module indicate a focus on reliability and maintainability. Overall, the code provides a well-structured and extensible framework for integrating OpenAI's chat capabilities into applications.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ The `ChatOpenAI` class is a data class that encapsulates the configuration and i
 
 ---
 ### OutputConfigKind<!-- {{#class:python-backend/packages/shared/shared/agent/chat_openai.OutputConfigKind}} -->
-- **Description**: The `OutputConfigKind` class is an enumeration that defines different output configuration modes, specifically `JSON_MODE`, `JSON_STRICT`, and `TEXT`, which are used to specify the format of output data in the application.
+- **Description**: The `OutputConfigKind` class is an enumeration that defines different output configuration modes, including `JSON_MODE`, `JSON_STRICT`, and `TEXT`, each represented by an automatically assigned value.
 - **Inherits From**:
     - `Enum`
 
@@ -38,10 +38,10 @@ The `ChatOpenAI` class is a data class that encapsulates the configuration and i
 - **Members**:
     - `kind`: Specifies the type of output configuration using the OutputConfigKind enum.
     - `payload`: Holds an optional payload of type BaseModel or None.
-- **Description**: The OutputConfig class is a configuration model that defines the type of output expected from an OpenAI response, using the OutputConfigKind enum to specify the format. It includes an optional payload attribute for additional data and provides methods to return a default configuration and to convert the configuration into a format suitable for OpenAI responses.
+- **Description**: The OutputConfig class is a Pydantic model that defines the configuration for output types in an application, utilizing the OutputConfigKind enum to specify the kind of output and optionally holding a payload of type BaseModel. It provides a default configuration method and a method to convert the configuration into a format suitable for OpenAI responses, supporting different output modes such as JSON and text.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](#OutputConfigdefault)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.into_openai_response_format`](#OutputConfiginto_openai_response_format)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](<#OutputConfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.into_openai_response_format`](<#OutputConfiginto_openai_response_format>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -49,29 +49,29 @@ The `ChatOpenAI` class is a data class that encapsulates the configuration and i
 
 ---
 #### OutputConfig\.default<!-- {{#callable:python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default}} -->
-The `default` class method returns an instance of `OutputConfig` with the `kind` attribute set to `OutputConfigKind.TEXT`.
+The `default` class method creates an instance of `OutputConfig` with a default kind of `OutputConfigKind.TEXT`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `OutputConfig`, which is passed automatically when the method is called on the class.
+    - `cls`: The class itself, `OutputConfig`, which is passed automatically by Python when the method is called on the class.
 - **Control Flow**:
-    - The method directly returns a new instance of the `OutputConfig` class.
-    - The `kind` attribute of this instance is set to `OutputConfigKind.TEXT`.
+    - The method returns a new instance of the `OutputConfig` class.
+    - The `kind` attribute of the new instance is set to `OutputConfigKind.TEXT`.
 - **Output**: An instance of `OutputConfig` with the `kind` attribute set to `OutputConfigKind.TEXT`.
-- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig`](#OutputConfig)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig`](<#OutputConfig>)  (Base Class)
 
 
 ---
 #### OutputConfig\.into\_openai\_response\_format<!-- {{#callable:python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.into_openai_response_format}} -->
-The `into_openai_response_format` method converts the `OutputConfig` instance into a format suitable for OpenAI responses based on its `kind` attribute.
+The `into_openai_response_format` method converts the `OutputConfig` instance into a format suitable for OpenAI's response requirements based on the `kind` attribute.
 - **Inputs**: None
 - **Control Flow**:
-    - The method uses a match-case statement to determine the action based on the `kind` attribute of the `OutputConfig` instance.
+    - The method uses a match-case statement to determine the behavior based on the `kind` attribute of the `OutputConfig` instance.
     - If `kind` is `OutputConfigKind.JSON_MODE`, it returns a dictionary with `{"type": "json_object"}`.
     - If `kind` is `OutputConfigKind.JSON_STRICT`, it returns the `payload` attribute of the instance.
     - If `kind` is `OutputConfigKind.TEXT`, it returns a dictionary with `{"type": "text"}`.
-    - If none of the cases match, it raises a `ValueError` indicating an unreachable state.
-- **Output**: The method returns either a dictionary with a single key-value pair indicating the type of response or the `payload` attribute, depending on the `kind` of the `OutputConfig` instance.
-- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig`](#OutputConfig)  (Base Class)
+    - If `kind` does not match any of the specified cases, it raises a `ValueError` indicating an unreachable state.
+- **Output**: The method returns either a dictionary with a single key-value pair indicating the type of response format or the `payload` attribute if the kind is `JSON_STRICT`.
+- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig`](<#OutputConfig>)  (Base Class)
 
 
 
@@ -79,48 +79,49 @@ The `into_openai_response_format` method converts the `OutputConfig` instance in
 ### ChatOpenAI<!-- {{#class:python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI}} -->
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `model`: Specifies the model to be used for generating chat completions.
-    - `temperature`: Controls the randomness of the model's output.
-    - `request_timeout`: Sets the timeout duration for requests to the OpenAI API.
+    - `model`: Specifies the model to be used for generating chat responses.
+    - `temperature`: Controls the randomness of the response generation.
+    - `request_timeout`: Sets the timeout duration for API requests.
     - `client`: Holds the OpenAI client instance initialized with the request timeout.
     - `session_id`: Stores the session identifier for the chat instance.
-- **Description**: The ChatOpenAI class is designed to facilitate interactions with the OpenAI API for generating chat completions. It is initialized with a specific model, temperature, and request timeout, and it manages an OpenAI client instance. The class includes a method to generate responses based on system and user prompts, with support for different output configurations, including JSON strict mode. The class is decorated with a retry mechanism to handle various API errors gracefully.
+- **Description**: The ChatOpenAI class is designed to facilitate interaction with OpenAI's chat models by managing configurations such as model type, response temperature, and request timeout. It initializes an OpenAI client and provides a method to generate chat responses, supporting different output configurations and handling potential API errors with a retry mechanism.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.__post_init__`](#ChatOpenAI__post_init__)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](#ChatOpenAIgenerate_response)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.__post_init__`](<#ChatOpenAI__post_init__>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<#ChatOpenAIgenerate_response>)
 
 **Methods**
 
 ---
 #### ChatOpenAI\.\_\_post\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.__post_init__}} -->
 The `__post_init__` method initializes the `client` attribute of the `ChatOpenAI` class with an `OpenAI` instance using the specified request timeout.
-- **Inputs**:
-    - `self`: An instance of the `ChatOpenAI` class.
+- **Inputs**: None
 - **Control Flow**:
-    - The method sets the `client` attribute of the `ChatOpenAI` instance to a new `OpenAI` object, passing the `request_timeout` attribute as the timeout parameter.
-- **Output**: This method does not return any value; it modifies the `client` attribute of the instance.
-- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](#ChatOpenAI)  (Base Class)
+    - The method is automatically called after the `ChatOpenAI` dataclass is initialized.
+    - It sets the `client` attribute to an instance of `OpenAI`, passing the `request_timeout` attribute as the timeout parameter.
+- **Output**: The method does not return any value; it modifies the `client` attribute of the instance.
+- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<#ChatOpenAI>)  (Base Class)
 
 
 ---
 #### ChatOpenAI\.generate\_response<!-- {{#callable:python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response}} -->
-The `generate_response` method generates a chat completion response using the OpenAI API, with support for different output configurations and retry logic for handling specific API errors.
+The `generate_response` method generates a chat completion response from OpenAI's API based on provided system and user prompts, with configurable output settings.
 - **Decorators**: `@retry_with_exponential_backoff`
 - **Inputs**:
     - `system_prompt`: A string representing the system's prompt to be included in the chat completion request.
     - `user_prompt`: A string representing the user's prompt to be included in the chat completion request.
-    - `output_cfg`: An instance of `OutputConfig` that specifies the desired output format for the chat completion response, defaulting to a text format.
+    - `output_cfg`: An instance of `OutputConfig` that specifies the desired output configuration, defaulting to `OutputConfig.default()`.
 - **Control Flow**:
-    - Check if the output configuration is JSON_STRICT and the model is not 'gpt-4o-2024-08-06'; if so, raise a ValueError indicating the model does not support JSON strict mode.
-    - If the output configuration is JSON_STRICT, use the `beta.chat.completions.parse` method of the OpenAI client to generate the response with the specified model, temperature, and response format.
-    - If the output configuration is not JSON_STRICT, use the `chat.completions.create` method of the OpenAI client to generate the response with the specified model, temperature, and response format.
-    - Return the generated response from the OpenAI API.
+    - The method checks if the `output_cfg` is set to `JSON_STRICT` and if the model is not 'gpt-4o-2024-08-06', it raises a `ValueError` indicating the model does not support JSON strict mode.
+    - If the `output_cfg` is `JSON_STRICT`, it uses the `self.client.beta.chat.completions.parse` method to generate the response with the specified model, temperature, and response format.
+    - If the `output_cfg` is not `JSON_STRICT`, it uses the `self.client.chat.completions.create` method to generate the response with the specified model, temperature, and response format.
+    - The method constructs the messages list with roles 'system' and 'user' using the provided prompts.
+    - Finally, the method returns the generated response.
 - **Output**: The method returns an `openai.ChatCompletion` object representing the generated chat completion response.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/utils/decorators.retry_with_exponential_backoff`](../utils/decorators.py.md#retry_with_exponential_backoff)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](#OutputConfigdefault)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.into_openai_response_format`](#OutputConfiginto_openai_response_format)
-- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](#ChatOpenAI)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/utils/decorators.retry_with_exponential_backoff`](<../utils/decorators.py.md#retry_with_exponential_backoff>)
+    - [`python-backend/content_services/auto_toml/src/chat_openai.OutputConfig.default`](<../../../../content_services/auto_toml/src/chat_openai.py.md#OutputConfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.into_openai_response_format`](<#OutputConfiginto_openai_response_format>)
+- **See also**: [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<#ChatOpenAI>)  (Base Class)
 
 
 

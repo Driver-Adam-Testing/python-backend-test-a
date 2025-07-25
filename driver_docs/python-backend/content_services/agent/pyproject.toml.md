@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the configuration for the `agent` project, including its dependencies, build system, and metadata such as the version and author.
+Configuration for the Poetry package manager, specifying dependencies and build system for the "agent" project.
 
 # Purpose
-This file is a `pyproject.toml` configuration file for a Python project managed by Poetry. It specifies the project's metadata, including its name, version, author, and a reference to the README file. It also defines the project's dependencies, indicating compatibility with Python 3.12 and a local development dependency on a shared package, and sets up the build system requirements using `poetry-core`.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. It specifies the project's name as `agent`, version `0.1.0`, and author information. The `readme` field points to `README.md` for project documentation. Under `[tool.poetry.dependencies]`, it defines the required Python version as any version from 3.12 up to, but not including, 3.13, and includes a local dependency on a shared package located at `../../packages/shared` with development mode enabled. The `[build-system]` section specifies that the project requires `poetry-core` and uses `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

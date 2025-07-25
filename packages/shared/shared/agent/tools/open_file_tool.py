@@ -62,11 +62,16 @@ class OpenFileTool(ToolStrict):
                     "The file is too long. Use the SearchTool to return relevant context."
                 )
 
+            version_display_name = (
+                datascope.nodes[0].version.vcs_hash
+                if datascope.nodes[0].version.vcs_hash
+                else "Unversioned"
+            )
             search_result = SearchResult(
                 content=full_text,
                 score=1.0,
                 relative_path=datascope.nodes[0].node.relative_path,
-                version_display_name=datascope.nodes[0].node.version.display_name,
+                version_display_name=version_display_name,
                 node_id=datascope.nodes[0].node.id,
                 version_id=datascope.nodes[0].node.version_id,
                 metadata={},

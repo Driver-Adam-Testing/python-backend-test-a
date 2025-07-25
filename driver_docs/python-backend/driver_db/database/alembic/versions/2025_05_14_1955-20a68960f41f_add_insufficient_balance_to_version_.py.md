@@ -6,7 +6,7 @@
 The `2025_05_14_1955-20a68960f41f_add_insufficient_balance_to_version_.py` file is an Alembic migration script that adds the 'INSUFFICIENT_BALANCE' value to the `versionstatus` enum in the database.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for usage with SQLAlchemy. It provides narrow functionality, specifically altering a database schema by adding a new value, 'INSUFFICIENT_BALANCE', to an existing PostgreSQL enum type called `versionstatus`. The script includes an [`upgrade`](#upgrade) function that executes the SQL command to modify the enum, while the [`downgrade`](#downgrade) function is currently a placeholder with no operations defined, indicating that the migration is not reversible through this script. The script is part of a version-controlled sequence of migrations, as indicated by the `revision` and `down_revision` identifiers, which help track the order of changes applied to the database schema.
+This Python script is an Alembic migration file, which provides narrow functionality specifically for managing database schema changes. The purpose of this file is to modify an existing database type, `versionstatus`, by adding a new enumeration value, `INSUFFICIENT_BALANCE`. The [`upgrade`](<#upgrade>) function contains the SQL command to perform this alteration, while the [`downgrade`](<#downgrade>) function is currently a placeholder, indicating that no reverse operation is defined. This script is part of a version control system for database schemas, allowing developers to track and apply changes systematically.
 # Imports and Dependencies
 
 ---
@@ -18,22 +18,22 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema.
+- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to track the predecessor of the current migration, ensuring that migrations are applied in the correct sequence.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
+- **Use**: This variable is used by Alembic to track the migration history and ensure that migrations are applied in the correct order.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a version control system for database schema changes. However, in this specific code, it is not assigned any value or label, indicating that no branch labeling is being utilized for this migration script.
-- **Use**: This variable is used to potentially label branches in Alembic migrations, but is currently set to `None`, indicating no branch labeling is applied.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
+- **Use**: This variable is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
@@ -47,12 +47,11 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_05_14_1955-20a68960f41f_add_insufficient_balance_to_version_.upgrade}} -->
-The `upgrade` function executes a SQL command to add a new value 'INSUFFICIENT_BALANCE' to the 'versionstatus' enum type in the database.
+The `upgrade` function adds a new value 'INSUFFICIENT_BALANCE' to the 'versionstatus' enum type in the database schema.
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses the Alembic `op.execute` method to run a SQL command.
-    - The SQL command alters the 'versionstatus' enum type by adding a new value 'INSUFFICIENT_BALANCE'.
-- **Output**: The function does not return any value.
+    - The function uses the Alembic `op.execute` method to run a SQL command that alters the 'versionstatus' enum type by adding a new value 'INSUFFICIENT_BALANCE'.
+- **Output**: The function does not return any value as its return type is `None`.
 
 
 ---
@@ -60,10 +59,9 @@ The `upgrade` function executes a SQL command to add a new value 'INSUFFICIENT_B
 The `downgrade` function is a placeholder for reversing database schema changes made in the corresponding `upgrade` function, but currently contains no operations.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined with no parameters and a return type of `None`.
-    - It contains a comment indicating that commands were auto-generated by Alembic, suggesting that this function is intended to reverse changes made by the `upgrade` function.
-    - Currently, the function body contains only a `pass` statement, meaning it performs no actions.
-- **Output**: The function returns `None` and performs no operations.
+    - The function is defined with no input parameters and a return type of `None`.
+    - It contains a `pass` statement, indicating that no operations are performed during the downgrade process.
+- **Output**: The function does not produce any output or perform any actions.
 
 
 

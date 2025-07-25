@@ -1,10 +1,14 @@
+import asyncio
 import concurrent.futures
 from pathlib import Path
 from typing import Any
 
+from database.models_v2_enums import ContentKind
+from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.prompts.structured_prompting import (
+    DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB,
     GENERAL_STE_STYLE_INSTRUCTION,
-    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
     Component,
     Prompt,
@@ -16,6 +20,12 @@ from utils.io import (
 )
 from utils.llm import chunk_str
 from utils.models import ChatOpenAI
+from utils.tags.codebase_wide import (
+    CodebaseAudienceScores,
+    CodebaseDomainScores,
+    CodebaseKindScores,
+)
+from utils.tags.entry_point import EntryPoints
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
@@ -102,18 +112,19 @@ def toplevel_terse_sentence_from_chunk_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
     user_prompt = (
         Prompt.empty()
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .append(
             Component(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
             )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
-        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
@@ -144,7 +155,7 @@ def toplevel_single_sentence_from_chunk_descriptions(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
             )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
@@ -165,17 +176,18 @@ def toplevel_single_paragraph_from_chunk_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
     user_prompt = (
         Prompt.empty()
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(
             Component(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
             )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
@@ -216,12 +228,13 @@ def toplevel_terse_sentence_from_long_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
         .into_str()
@@ -247,7 +260,7 @@ def toplevel_single_sentence_from_long_descriptions(
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
         .into_str()
     )
@@ -267,12 +280,13 @@ def toplevel_single_paragraph_from_long_descriptions(
                 )
             )
         )
+        .append(NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING)
         .append(GENERAL_STE_STYLE_INSTRUCTION)
         .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
         .into_str()
     )
@@ -465,3 +479,42 @@ def comprehend_codebase_top_down(
         "short": short_descriptions,
         "long": long,
     }
+
+
+def tag_codebase(
+    llm: ChatOpenAI,
+    docs: dict[LiteNode, dict[str, Any]],
+    content_kinds: set[ContentKind],
+) -> dict[ContentKind, list[dict]]:
+    results = {}
+    if ContentKind.CODEBASE_KINDS in content_kinds:
+        results[ContentKind.CODEBASE_KINDS] = [
+            dict(CodebaseKindScores.from_llm(llm=llm, docs=docs).sorted_list)
+        ]
+        print(f"Codebase kind scores:\n\n{results[ContentKind.CODEBASE_KINDS]}")
+    if ContentKind.CODEBASE_DOMAINS in content_kinds:
+        results[ContentKind.CODEBASE_DOMAINS] = [
+            dict(CodebaseDomainScores.from_llm(llm=llm, docs=docs).sorted_list)
+        ]
+        print(f"Codebase domain scores:\n\n{results[ContentKind.CODEBASE_DOMAINS]}")
+    if ContentKind.CODEBASE_AUDIENCES in content_kinds:
+        results[ContentKind.CODEBASE_AUDIENCES] = [
+            dict(CodebaseAudienceScores.from_llm(llm=llm, docs=docs).sorted_list)
+        ]
+        print(f"Codebase audience scores:\n\n{results[ContentKind.CODEBASE_AUDIENCES]}")
+    if ContentKind.CODEBASE_ENTRY_POINTS in content_kinds:
+        entry_points = asyncio.run(
+            EntryPoints.from_llm(
+                llm=AsyncChatOpenAI(
+                    model="gpt-4o-2024-08-06", temperature=0, request_timeout=500
+                ),
+                docs=docs,
+                n=3,
+            )
+        )
+        results[ContentKind.CODEBASE_ENTRY_POINTS] = [
+            e.model_dump() for e in entry_points.entry_points
+        ]
+        print(f"Codebase entry points:\n\n{results[ContentKind.CODEBASE_ENTRY_POINTS]}")
+
+    return results

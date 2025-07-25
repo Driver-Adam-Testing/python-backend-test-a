@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `repositories` folder in the `python-backend` codebase contains unit tests for the `BaseRepository` class, focusing on CRUD operations with a mock SQLModel and session.
+Unit tests for the `BaseRepository` class, focusing on CRUD operations with a mock SQLModel and session.
 
 
 ## Files

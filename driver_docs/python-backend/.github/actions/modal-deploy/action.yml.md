@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `action.yml` file defines a GitHub Action for deploying a modal package, including steps for installing dependencies, running tests, and deploying the package using specified environment variables and credentials.
+The `action.yml` file defines a GitHub Action for deploying a modal package, including steps for installing dependencies, running tests, and deploying the package using specified inputs such as working directory, package name, environment, and authentication tokens.
 
 # Purpose
-The provided content is a configuration file for a GitHub Action workflow designed to automate the deployment of a modal package. It specifies the necessary inputs required for the deployment process, such as the working directory, package name, environment, and authentication credentials (token ID and secret). The workflow is executed using a composite run step, which includes installing dependencies, running tests, and deploying the package. The deployment step utilizes environment variables to securely pass the modal token credentials and environment settings, ensuring that the deployment is executed in the correct context. This configuration facilitates continuous integration and deployment by automating the steps needed to deploy a modal package from a specified directory.
+The provided content is a configuration file for a GitHub Action workflow designed to automate the deployment of a modal package. It specifies the necessary inputs required for the deployment process, such as the working directory, package name, environment, and authentication tokens, all of which are marked as required. The workflow is defined to run using a composite action, consisting of three main steps: installing dependencies using Poetry, running tests with Pytest, and deploying the specified modal package. The deployment step utilizes environment variables for authentication and environment configuration, and it executes the deployment command with the specified environment and a tag derived from the GitHub commit SHA. This setup ensures a streamlined and automated deployment process within a continuous integration/continuous deployment (CI/CD) pipeline.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

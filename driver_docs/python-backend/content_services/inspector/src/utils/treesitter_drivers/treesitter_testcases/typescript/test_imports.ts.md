@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_imports.ts` file is a comprehensive test suite for various TypeScript import and export statement patterns, including default, named, namespace, type-only, dynamic, and side-effect imports, as well as numerous export variations such as default, named, re-exports, and complex patterns.
+The `test_imports.ts` file is a comprehensive test suite for various TypeScript import and export statement patterns, including default, named, namespace, type-only, dynamic, and side-effect imports, as well as numerous export scenarios such as default, named, re-exports, and complex patterns.
 
 # Purpose
-This TypeScript file serves as a comprehensive test suite for import and export statements, demonstrating a wide array of import/export patterns and techniques. It includes examples of default, named, namespace, and type-only imports, as well as dynamic imports and imports with assertions. The file also showcases various export styles, such as default exports, named exports, re-exports, and exports with aliases, along with more complex patterns like conditional exports and exports with decorators. Additionally, it illustrates the use of CommonJS-style imports and exports, as well as the integration of imports for side effects. This file is not intended to be executed as a standalone program but rather acts as a reference or test case for developers to understand and verify the behavior of different import/export scenarios in TypeScript.
+This TypeScript file serves as a comprehensive test suite for various import and export statement patterns, showcasing the versatility and complexity of module handling in TypeScript. It includes examples of default, named, namespace, and dynamic imports, as well as type-only and side-effect imports, demonstrating how to bring in modules from different sources and formats. The file also illustrates a wide range of export patterns, including default, named, re-exports, and type-only exports, along with more advanced concepts like export assignments, namespaces, and module declarations. Additionally, it covers CommonJS-style imports and exports, conditional exports, and the use of decorators, making it a valuable resource for understanding the full spectrum of module management capabilities in TypeScript. This file is not intended for production use but rather as a reference or educational tool for developers to understand and test the various import/export functionalities available in TypeScript.
 # Imports and Dependencies
 
 ---
@@ -23,6 +23,13 @@ This TypeScript file serves as a comprehensive test suite for import and export 
 - `./default-type`
 - `./polyfills`
 - `zone.js`
+- `./lazy`
+- `./lazy-component`
+- `./data.json`
+- `http`
+- `import.meta.url`
+- `import.meta.env`
+- `./dynamic`
 - `express`
 - `@rxjs/observable`
 - `./utils/helpers`
@@ -33,137 +40,36 @@ This TypeScript file serves as a comprehensive test suite for import and export 
 - `../../utils`
 - `./utils`
 - `./components`
-- `http`
 
 
 # Global Variables
 
 ---
-### lazyModule
-- **Type**: `Promise<any>`
-- **Description**: The `lazyModule` variable is a global constant that holds a promise resulting from a dynamic import of the './lazy' module. This allows for the module to be loaded asynchronously, which can be useful for code-splitting and reducing initial load times in applications.
-- **Use**: This variable is used to dynamically import a module at runtime, enabling lazy loading of the './lazy' module.
-
-
----
 ### url
-- **Type**: `string`
-- **Description**: The `url` variable is a string that represents the URL of the current module. It is obtained using the `import.meta.url` syntax, which is a feature in JavaScript modules that provides metadata about the module. This URL is typically the file path of the module in the context of the environment where the code is running.
-- **Use**: This variable is used to access the URL of the current module for purposes such as logging, debugging, or dynamically loading resources based on the module's location.
+- **Type**: ``string``
+- **Description**: The `url` variable is a global constant that holds the URL of the module in which the code is running. It is obtained using `import.meta.url`, which is a special meta property in JavaScript modules that provides metadata about the module.
+- **Use**: This variable is used to access the current module's URL, which can be useful for dynamic imports or module-specific operations.
 
 
 ---
 ### env
 - **Type**: `object`
-- **Description**: The `env` variable is a global object that provides access to environment-specific metadata. It is part of the `import.meta` object, which is a special object in JavaScript modules that contains metadata about the module. The `env` object typically includes environment variables and other configuration details that are specific to the runtime environment.
-- **Use**: This variable is used to access environment-specific information within a module, such as environment variables or configuration settings.
+- **Description**: The `env` variable is a global constant that holds the environment-specific metadata provided by the module system. It is accessed via `import.meta.env`, which is a feature of modern JavaScript environments that support ES modules, such as Vite or other bundlers that provide environment variables at build time.
+- **Use**: This variable is used to access environment-specific configuration and metadata within the module.
 
 
 ---
 ### dynamicModule
 - **Type**: `Promise<any>`
-- **Description**: The `dynamicModule` variable is a top-level constant that holds a promise resulting from a dynamic import of the './dynamic' module. This promise resolves to the module object, allowing access to its exports once the module is loaded.
-- **Use**: This variable is used to dynamically import a module at runtime, enabling asynchronous loading of the module's exports.
-
-
-# Data Structures
-
----
-### DefaultClass
-- **Type**: `class`
-- **Description**: The `DefaultClass` is a default export from the module, defined as an empty class. It serves as a placeholder or a base class that can be extended or instantiated elsewhere in the codebase. As a default export, it can be imported without specifying its name, allowing for flexible integration into other modules.
+- **Description**: The `dynamicModule` variable is a global constant that holds the result of a dynamic import operation. It uses the top-level `await` to asynchronously import the module located at './dynamic', which allows for loading the module only when needed, potentially improving performance by reducing initial load time.
+- **Use**: This variable is used to dynamically import a module and access its exports, specifically to retrieve and export the `value` property from the imported module.
 
 
 ---
-### ExportedClass
-- **Type**: `class`
-- **Members**:
-    - `ExportedClass`: A class that is exported from the module.
-- **Description**: The `ExportedClass` is a named export from the module, defined as a class. It is part of the module's public API, allowing other modules to import and utilize it. The class itself does not have any properties or methods defined in the provided code, indicating it may serve as a placeholder or be extended elsewhere in the application.
-
-
----
-### ExportedInterface
-- **Type**: `interface`
-- **Members**:
-    - `ExportedInterface`: An empty interface exported from the module.
-- **Description**: The `ExportedInterface` is a TypeScript interface that is exported from the module. It is defined as an empty interface, meaning it does not declare any properties or methods. This interface serves as a placeholder or a marker interface, which can be used for type-checking or to be extended by other interfaces or classes in the codebase.
-
-
----
-### ExportedEnum
-- **Type**: `enum`
-- **Members**:
-    - `A`: An enumerated value representing the first option.
-    - `B`: An enumerated value representing the second option.
-    - `C`: An enumerated value representing the third option.
-- **Description**: The `ExportedEnum` is an enumeration that defines a set of named constants, specifically `A`, `B`, and `C`. These constants are typically used to represent a collection of related values in a type-safe manner, allowing for more readable and maintainable code. Enumerations are often used in scenarios where a variable can only take one out of a small set of possible values.
-
-
----
-### DeclaredClass
-- **Type**: `class`
-- **Members**:
-    - `DeclaredClass`: A class declared for export without any defined members or methods.
-- **Description**: The `DeclaredClass` is a TypeScript class that is declared for export but does not have any defined members or methods within the provided code. It serves as a placeholder or a declaration for a class that might be implemented elsewhere, allowing it to be imported and used in other modules.
-
-
----
-### AbstractBase
-- **Type**: `abstract class`
-- **Members**:
-    - `method`: An abstract method that must be implemented by subclasses.
-- **Description**: The `AbstractBase` is an abstract class that serves as a base class for other classes to extend. It contains an abstract method `method()` which must be implemented by any subclass that extends `AbstractBase`. This design enforces a contract for subclasses to provide specific functionality, ensuring a consistent interface across different implementations.
-
-
----
-### Container
-- **Type**: `interface`
-- **Members**:
-    - `value`: A generic member that holds a value of type T.
-- **Description**: The `Container` is a generic TypeScript interface that defines a structure with a single member, `value`, which can hold any type specified by the generic parameter `T`. This allows for flexibility and reusability of the `Container` interface across different data types, making it a versatile component in TypeScript programming.
-
-
----
-### DecoratedService
-- **Type**: `class`
-- **Members**:
-    - `DecoratedService`: A class decorated with the @Injectable() decorator.
-- **Description**: The `DecoratedService` is a class that is exported with the `@Injectable()` decorator, indicating that it is intended to be used as a service in a dependency injection system, such as Angular's. This decorator allows the class to be injected into other components or services, facilitating the management of dependencies and promoting modularity and reusability within the application.
-
-
-# Functions
-
----
-### defaultFunction
-The `defaultFunction` is a default export function that currently has no implementation.
-- **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a default export, meaning it can be imported without specifying a name.
-    - The function body is empty, indicating no operations or logic are performed within it.
-- **Output**: The function does not return any value or perform any operations.
-
-
----
-### helperFunction
-The `helperFunction` is a named export function that currently has no implementation.
-- **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a named export in the module.
-    - It is declared but not implemented, meaning it does not perform any operations or return any values.
-- **Output**: The function does not return any value as it lacks an implementation.
-
-
----
-### genericFunction
-The `genericFunction` is a TypeScript generic function that returns the input value of any type.
-- **Inputs**:
-    - `T`: A generic type parameter representing any type.
-    - `value`: The input value of type T that the function will return.
-- **Control Flow**:
-    - The function takes a single parameter `value` of generic type `T`.
-    - It immediately returns the `value` parameter without any modification.
-- **Output**: The function returns the input value of type T.
+### dynamicValue
+- **Type**: ``any``
+- **Description**: The `dynamicValue` variable is a constant exported from the module, which is assigned the value of `value` from the dynamically imported `dynamicModule`. This variable is defined using top-level await, indicating that the module it imports is loaded asynchronously at runtime.
+- **Use**: `dynamicValue` is used to provide access to the `value` property of the dynamically imported `dynamicModule` for other modules that import it.
 
 
 

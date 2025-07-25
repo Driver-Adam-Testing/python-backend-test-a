@@ -37,8 +37,7 @@ router = APIRouter()
 
 class VersionResponse(BaseModel):
     id: UUID
-    version: str
-    display_name: str | None
+    vcs_hash: str | None
     created_at: datetime
 
 
@@ -97,9 +96,7 @@ def get_codebase_versions(
     response_data = [
         VersionResponse(
             id=version.id,
-            # Here we treat the version's display_name as the "version" string
-            version=version.display_name,
-            display_name=version.display_name,
+            vcs_hash=version.vcs_hash,
             created_at=version.created_at,
         )
         for version in versions

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for summarizing a software codebase into a single paragraph using a series of slightly overlapping descriptions of its subcomponents.
+The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for writing a single paragraph description of a software codebase by summarizing slightly overlapping descriptions of its subcomponents.
 
 # Purpose
-The provided content outlines a structured approach for summarizing a software codebase using detailed descriptions of its components. The instructions specify that the task involves creating a concise summary paragraph, limited to six sentences, that encapsulates the essence of the codebase. This summary is constructed by synthesizing slightly overlapping descriptions of various subcomponents, ensuring that the name of the codebase is included. The process emphasizes accuracy and fidelity to the provided information, explicitly prohibiting the introduction of speculative or fabricated details. This approach ensures that the summary is both comprehensive and precise, reflecting the true nature and functionality of the codebase as described in the given content subsets.
+The provided content appears to be a template or guideline for generating a comprehensive summary of a software codebase based on detailed descriptions of its subcomponents. The purpose of this template is to assist in creating a cohesive and concise overview of a codebase by synthesizing information from various module descriptions. It instructs the user to summarize the entire codebase in a single paragraph, ensuring that the summary does not exceed six sentences. The template emphasizes the importance of using only the provided descriptions to construct the summary, thereby maintaining accuracy and avoiding speculation. This structured approach ensures that the final paragraph effectively communicates the purpose and functionality of the codebase by integrating slightly overlapping descriptions of its subcomponents.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

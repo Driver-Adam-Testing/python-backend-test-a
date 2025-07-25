@@ -6,49 +6,49 @@
 The `permissions.py` file defines a set of permission strings used in JWTs for managing various roles such as organization management, content editing, and subscription management.
 
 # Purpose
-This code is a collection of global constants that define permission strings for embedding in JSON Web Tokens (JWTs). Each constant represents a specific permission level or role within an application, such as managing an organization, editing content, or managing subscriptions. The functionality provided by this code is narrow, as it is specifically focused on defining these permission strings for use in authentication and authorization processes. This setup is typically used in applications that require role-based access control, allowing different users to have varying levels of access based on their assigned permissions.
+This code is a collection of global string constants that define specific permission levels for use within a system, likely related to user roles and access control. Each constant represents a distinct permission string that can be embedded in JSON Web Tokens (JWTs) to manage and verify user capabilities within an application. The functionality provided by this code is narrow, focusing solely on defining these permission strings, which are crucial for implementing role-based access control in a software system. This setup allows for easy reference and modification of permissions, ensuring consistent use across the application.
 # Global Variables
 
 ---
 ### ORG\_MANAGER
-- **Type**: `string`
-- **Description**: The variable `ORG_MANAGER` is a string that represents a specific permission level related to organization management. It is used as a permission identifier within the system, likely embedded in JWTs (JSON Web Tokens) to control access to organization management functionalities.
-- **Use**: This variable is used to define and check permissions for organization management tasks within the application.
+- **Type**: `str`
+- **Description**: `ORG_MANAGER` is a string variable that represents a specific permission level related to organization management. It is used as a permission identifier in systems that require role-based access control.
+- **Use**: This variable is used to embed permission information in JSON Web Tokens (JWTs) for access control purposes.
 
 
 ---
 ### CONTENT\_EDITOR
-- **Type**: `str`
-- **Description**: The `CONTENT_EDITOR` variable is a string that represents a specific permission level related to content editing within a system. It is used as a permission identifier in JWTs (JSON Web Tokens) to denote users who have the ability to edit content.
-- **Use**: This variable is used to check or assign content editing permissions in authentication and authorization processes.
+- **Type**: `string`
+- **Description**: The `CONTENT_EDITOR` variable is a string that represents a specific permission level, 'content:editor', used within the system. It is part of a set of permission strings that are likely embedded in JSON Web Tokens (JWTs) to manage access control.
+- **Use**: This variable is used to define and check permissions for users who have editing capabilities on content within the application.
 
 
 ---
 ### CONTENT\_READONLY
 - **Type**: `str`
-- **Description**: The variable `CONTENT_READONLY` is a string that represents a specific permission level, indicating read-only access to content. It is used as a permission string that can be embedded in JSON Web Tokens (JWTs) to control access rights within an application.
-- **Use**: This variable is used to define a permission level for read-only access to content, which can be embedded in JWTs for access control.
+- **Description**: The variable `CONTENT_READONLY` is a string that represents a specific permission level, indicating read-only access to content. It is part of a set of permission strings used in the context of JWTs (JSON Web Tokens) to manage access control within an application.
+- **Use**: This variable is used to define and check for read-only content access permissions in JWTs.
 
 
 ---
 ### USAGE\_CREDITOR
 - **Type**: `string`
-- **Description**: The variable `USAGE_CREDITOR` is a string that represents a permission identifier used in the context of managing usage credits. It is likely used as a part of a permissions system, possibly embedded in JWTs (JSON Web Tokens) to control access to certain features or actions related to usage credit management.
-- **Use**: This variable is used to define a specific permission level for managing usage credits within a system, likely as part of an access control mechanism.
+- **Description**: The `USAGE_CREDITOR` variable is a string that represents a permission identifier used in the context of managing usage credits. It is part of a set of permission strings that are embedded in JSON Web Tokens (JWTs) to control access to various management functionalities.
+- **Use**: This variable is used to specify the permission required for managing usage credits within the system.
 
 
 ---
 ### SUBSCRIPTION\_MANAGER
-- **Type**: `str`
-- **Description**: The `SUBSCRIPTION_MANAGER` is a string variable that represents a permission level related to subscription management within a system. It is used as a permission identifier in JWTs (JSON Web Tokens) to control access to subscription management functionalities.
-- **Use**: This variable is used to define a specific permission level for managing subscriptions, which can be embedded in JWTs for access control.
+- **Type**: `string`
+- **Description**: The `SUBSCRIPTION_MANAGER` variable is a string that represents a permission level related to subscription management within a system. It is used as a permission identifier in the context of managing subscriptions, likely embedded in JWTs for access control.
+- **Use**: This variable is used to define a specific permission level for managing subscriptions, which can be checked against user permissions in the system.
 
 
 ---
 ### GIT\_PROVIDER\_MANAGER
-- **Type**: `str`
-- **Description**: The variable `GIT_PROVIDER_MANAGER` is a string that represents a permission level or role related to managing a git provider. It is likely used in the context of access control or authorization within a software system.
-- **Use**: This variable is used to define a specific permission string that can be embedded in JWTs for access control purposes.
+- **Type**: `string`
+- **Description**: The variable `GIT_PROVIDER_MANAGER` is a string that represents a permission level or role related to the management of a git provider. It is part of a set of permission strings that are likely used to define access levels or roles within a system, possibly embedded in JWTs for authentication or authorization purposes.
+- **Use**: This variable is used to specify a management-level permission for a git provider, likely in the context of access control or role-based authorization.
 
 
 

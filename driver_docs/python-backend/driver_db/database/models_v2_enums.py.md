@@ -6,9 +6,9 @@
 The `models_v2_enums.py` file in the `python-backend` codebase defines various enumerations for categorizing assets, version statuses, node kinds, autodoc statuses, content types, file types, and LLM pipeline kinds, along with a function to map file extensions to their corresponding file type enums.
 
 # Purpose
-This Python source code file defines a set of enumerations and a utility function, primarily serving as a configuration or reference module for a larger application. The enumerations, implemented using Python's `enum` module, categorize various types of assets, statuses, node kinds, document statuses, content kinds, file types, and pipeline kinds. These enumerations provide a structured way to handle and reference different constants throughout the application, ensuring consistency and reducing the likelihood of errors due to hard-coded strings. The use of `strawberry.enum` for the `ContentKind` class suggests integration with the Strawberry GraphQL library, indicating that some of these enumerations might be exposed as part of a GraphQL API.
+This Python source code file defines a series of enumerations and a utility function, primarily serving as a configuration or constants module. The enumerations, implemented using Python's `enum` module, categorize various types of assets, statuses, node kinds, document statuses, content kinds, file types, and pipeline kinds. These enumerations provide a structured way to handle and reference these categories throughout a larger application, ensuring consistency and reducing the likelihood of errors due to hardcoded strings. The use of `strawberry.enum` for the `ContentKind` class suggests integration with the Strawberry GraphQL library, indicating that these enums might be used in a GraphQL API context.
 
-The [`get_file_type`](#get_file_type) function is a utility that maps file extensions to their corresponding `FileTypeEnum` values, facilitating the identification of file types based on their extensions. This function is crucial for applications that need to process or categorize files dynamically. The file is likely part of a larger codebase, possibly serving as a library or module that other parts of the application import to utilize these enumerations and the file type mapping functionality. The presence of a TODO comment in the `AutoDocConfigKind` class indicates ongoing development or future enhancements, suggesting that this code is actively maintained and possibly part of a larger documentation or code generation system.
+The [`get_file_type`](<#get_file_type>) function is a utility that maps file extensions to their corresponding `FileTypeEnum` values, allowing the application to dynamically determine the type of a file based on its extension. This function supports a wide range of file types, reflecting the broad applicability of the module in handling diverse file formats. Overall, this file is likely part of a larger system, providing essential constants and utility functions that facilitate the management of different types of data and operations within the application.
 # Imports and Dependencies
 
 ---
@@ -25,7 +25,7 @@ The [`get_file_type`](#get_file_type) function is a utility that maps file exten
     - `FILE`: Represents the asset kind for a file.
     - `PAGE`: Represents the asset kind for a page.
     - `PAGE_TEMPLATE`: Represents the asset kind for a page template.
-- **Description**: The `PrimaryAssetKind` class is an enumeration that defines different types of primary assets, such as codebases, files, pages, and page templates, each represented as a string value. It extends both `str` and `enum.Enum`, allowing for easy comparison and usage of these asset kinds as string constants in the application.
+- **Description**: The `PrimaryAssetKind` class is an enumeration that defines different types of primary assets, such as codebases, files, pages, and page templates. It inherits from both `str` and `enum.Enum`, allowing each member to be treated as a string while also providing enumeration capabilities. This class is useful for categorizing and managing different asset types within a system.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -38,10 +38,10 @@ The [`get_file_type`](#get_file_type) function is a utility that maps file exten
     - `GENERATION_COMPLETE`: Indicates that the version generation process has completed successfully.
     - `GENERATION_ERROR`: Denotes an error occurred during the version generation process.
     - `CONNECTED`: Signifies that a connection has been successfully established.
-    - `CONNECTING`: Represents the status of attempting to establish a connection.
-    - `CONNECTION_FAILED`: Indicates that an attempt to connect has failed.
-    - `INSUFFICIENT_BALANCE`: Denotes that there is not enough balance to proceed with an operation.
-- **Description**: The VersionStatus class is an enumeration that defines various states related to the generation and connection processes, such as generating, completed, error states, and connection statuses. It extends both the str and enum.Enum classes, allowing for string representation of each status while maintaining enumeration capabilities.
+    - `CONNECTING`: Indicates that a connection attempt is currently in progress.
+    - `CONNECTION_FAILED`: Represents a failed attempt to establish a connection.
+    - `INSUFFICIENT_BALANCE`: Indicates that there is not enough balance to proceed with the operation.
+- **Description**: The VersionStatus class is an enumeration that defines various states related to the generation and connection processes, such as generating, completed, error states, and connection statuses. It extends both the str and enum.Enum classes, allowing for easy comparison and string representation of these states.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -53,7 +53,7 @@ The [`get_file_type`](#get_file_type) function is a utility that maps file exten
     - `CODEBASE_FILE`: Represents a file within a codebase.
     - `CODEBASE_DIRECTORY`: Represents a directory within a codebase.
     - `OTHER`: Represents any other type of node not specifically categorized as a file or directory.
-- **Description**: The NodeKind class is an enumeration that categorizes different types of nodes within a codebase, specifically distinguishing between files, directories, and other unspecified node types. It inherits from both str and enum.Enum, allowing for string representation and enumeration capabilities.
+- **Description**: The NodeKind class is an enumeration that categorizes different types of nodes within a codebase, specifically distinguishing between files, directories, and other unspecified node types. It inherits from both str and enum.Enum, allowing for string-based enumeration values.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -62,17 +62,17 @@ The [`get_file_type`](#get_file_type) function is a utility that maps file exten
 ---
 ### AutoDocStatusMessageKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.AutoDocStatusMessageKind}} -->
 - **Members**:
-    - `NOT_STARTED`: Represents the initial state where the process has not yet begun.
-    - `RETRIEVING_SOURCES`: Indicates the process of gathering necessary sources is underway.
-    - `EVALUATING_SECTIONS`: Denotes the phase where sections are being evaluated.
-    - `EVALUATING_SOURCES`: Represents the stage of assessing the gathered sources.
-    - `GENERATING_SECTION_DRAFTS`: Indicates the creation of draft sections is in progress.
-    - `OPTIMIZING_SECTION_STRUCTURE`: Denotes the phase of refining the structure of sections.
-    - `ASSEMBLING_FINAL_DOCUMENT`: Represents the stage of compiling the final document.
-    - `COPY_EDITING`: Indicates the process of editing the document for errors.
-    - `GENERATION_COMPLETE`: Denotes the successful completion of the document generation.
-    - `GENERATION_ERROR`: Represents an error occurred during the document generation process.
-- **Description**: The `AutoDocStatusMessageKind` class is an enumeration that defines various stages in the automated document generation process, from initiation to completion, including error handling. Each member of the enumeration represents a specific status message that can be used to track the progress and state of the document generation workflow.
+    - `NOT_STARTED`: Represents the status when the process has not started.
+    - `RETRIEVING_SOURCES`: Indicates the process of retrieving sources is underway.
+    - `EVALUATING_SECTIONS`: Denotes the evaluation of document sections.
+    - `EVALUATING_SOURCES`: Represents the evaluation of sources.
+    - `GENERATING_SECTION_DRAFTS`: Indicates the generation of section drafts.
+    - `OPTIMIZING_SECTION_STRUCTURE`: Denotes the optimization of section structure.
+    - `ASSEMBLING_FINAL_DOCUMENT`: Represents the assembly of the final document.
+    - `COPY_EDITING`: Indicates the copy editing phase.
+    - `GENERATION_COMPLETE`: Denotes the completion of the document generation.
+    - `GENERATION_ERROR`: Represents an error during the document generation process.
+- **Description**: The `AutoDocStatusMessageKind` class is an enumeration that defines various statuses for the stages of an automated document generation process, ranging from the initial 'NOT_STARTED' state to the final 'GENERATION_COMPLETE' or 'GENERATION_ERROR' states, providing a structured way to track the progress and state of the document generation workflow.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -121,7 +121,7 @@ The [`get_file_type`](#get_file_type) function is a utility that maps file exten
     - `TOP_LEVEL_SHORT_PARAGRAPH`: Represents a top-level short paragraph content type.
     - `TOP_LEVEL_TERSE_SENTENCE`: Represents a top-level terse sentence content type.
     - `TOP_LEVEL_LONG_DESCRIPTION`: Represents a top-level long description content type.
-- **Description**: The ContentKind class is an enumeration that defines various types of content that can be used in documentation or data processing. It includes a wide range of content types such as PDF summaries, text and image summaries, extracted text and tables from PDFs, templates, descriptions of varying lengths, quick start guides, architecture diagrams, and more. This class is decorated with the @strawberry.enum decorator, indicating its use in a GraphQL schema with Strawberry, a Python library for building GraphQL APIs.
+- **Description**: The ContentKind class is an enumeration that defines various types of content that can be used in documentation or data processing. It includes a wide range of content types such as PDF summaries, text and image summaries, extracted text and tables, templates, descriptions of varying lengths, quick start guides, architecture diagrams, and more. This class is decorated with the @strawberry.enum decorator, indicating its use in a Strawberry GraphQL schema, and it extends both the str and enum.Enum classes, allowing for string-based enumeration values.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -190,7 +190,7 @@ The [`get_file_type`](#get_file_type) function is a utility that maps file exten
     - `LST`: Represents a LST file type.
     - `DRIVER_PAGE`: Represents a driver page file type.
     - `UNKNOWN`: Represents an unknown file type.
-- **Description**: The FileTypeEnum class is an enumeration that defines a comprehensive list of file types, each represented by a unique string identifier. It is used to categorize and identify different types of files based on their extensions, providing a standardized way to handle various file formats in a software system. This class is particularly useful in scenarios where file type recognition is necessary, such as in file processing, code analysis, or configuration management.
+- **Description**: The FileTypeEnum class is an enumeration that defines a comprehensive list of file types, each represented by a unique string identifier. It is used to categorize and identify different types of files based on their extensions, providing a standardized way to handle various file formats in a software system. This class is particularly useful in scenarios where file type recognition and processing are required, such as in file management systems or compilers.
 - **Inherits From**:
     - `enum.Enum`
 
@@ -216,9 +216,9 @@ The `get_file_type` function maps a file extension to its corresponding `FileTyp
 - **Inputs**:
     - `extension`: A string representing the file extension, including the leading dot (e.g., '.py', '.java').
 - **Control Flow**:
-    - Initialize a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
-    - Use the `get` method on `extension_map` to retrieve the `FileTypeEnum` associated with the provided `extension`.
-    - If the `extension` is not found in the map, return `FileTypeEnum.UNKNOWN`.
+    - The function defines a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
+    - The function uses the `get` method on the `extension_map` dictionary to retrieve the `FileTypeEnum` value corresponding to the provided `extension`.
+    - If the `extension` is not found in the `extension_map`, the function returns `FileTypeEnum.UNKNOWN`.
 - **Output**: The function returns a `FileTypeEnum` value corresponding to the provided file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
 
 

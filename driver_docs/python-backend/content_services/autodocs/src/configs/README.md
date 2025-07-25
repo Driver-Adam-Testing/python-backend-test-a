@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `configs` folder in the `python-backend` codebase contains TOML configuration files for generating structured documentation, including a README for a driver, a detailed architecture document, and custom architecture document settings.
+TOML configuration files for generating structured documents like README and architecture documents.
 
 
 ## Files
-- **[adi_driver_readme.toml](adi_driver_readme.toml.md)**: The `adi_driver_readme.toml` file in the `python-backend` codebase outlines the configuration for generating a structured README for a driver in the `no-OS` codebase by ADI, detailing sections such as Supported Devices, Overview, Applications, Operation Modes, Device Configuration, and Driver Initialization Example.
+- **[adi_driver_readme.toml](adi_driver_readme.toml.md)**: The `adi_driver_readme.toml` file in the `python-backend` codebase outlines the configuration for generating a structured README for a driver in the `no-OS` codebase by ADI, detailing the sections, instructions, and models used for content creation.
 - **[architecture_modal.toml](architecture_modal.toml.md)**: The `architecture_modal.toml` file in the `python-backend` codebase defines the configuration for generating a detailed architecture document, specifying models, document goals, and structured sections with instructions for content creation.
-- **[custom_config.toml](custom_config.toml.md)**: The `custom_config.toml` file in the `python-backend` codebase specifies configuration settings for generating an architecture document, including model tags, document goals, and section details.
+- **[custom_config.toml](custom_config.toml.md)**: The `custom_config.toml` file in the `python-backend` codebase specifies configuration settings for generating an architecture document, including model tags, document goals, formatting, and section details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

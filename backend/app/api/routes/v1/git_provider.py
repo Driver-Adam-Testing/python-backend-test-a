@@ -17,7 +17,6 @@ from database.models_v2 import PrimaryAsset
 from database.models_v2_enums import PrimaryAssetKind
 from fastapi import (
     APIRouter,
-    Body,
     Depends,
     HTTPException,
     Query,
@@ -36,7 +35,6 @@ from app.api.auth import (
 )
 from app.api.session import CurrentSession
 from app.core.config import settings
-from app.schemas.git_provider_schema import AccessTokenData
 from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
 )
@@ -48,6 +46,7 @@ from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
 from app.schemas.git_provider_schema import (
+    AccessTokenData,
     CreateGitProviderAppRequest,
     GitRepository,
     WebhookInfo,
@@ -556,19 +555,6 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             return JSONResponse(
                 status_code=status.HTTP_202_ACCEPTED,
                 content={"message": "Push event ignored (not driver branch)"},
-            )
-    elif org_name == "driver-ai" and repo_name == "diff-tests":
-        if pushed_ref != "refs/heads/adi_test":
-            logger.info(
-                "ADI event ignored: Not the adi_test branch of diff-tests. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-                org_name,
-                repo_name,
-                pushed_ref,
-                installation_id,
-            )
-            return JSONResponse(
-                status_code=status.HTTP_202_ACCEPTED,
-                content={"message": "Push event ignored (not adi_test branch)"},
             )
     elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(

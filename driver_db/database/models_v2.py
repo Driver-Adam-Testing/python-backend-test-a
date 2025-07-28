@@ -193,6 +193,7 @@ class Version(SQLModel, table=True):  # type: ignore
             VersionStatus.GENERATING,
             VersionStatus.GENERATION_ERROR,
             VersionStatus.GENERATION_COMPLETE,
+            VersionStatus.INSUFFICIENT_BALANCE,
         }
 
 

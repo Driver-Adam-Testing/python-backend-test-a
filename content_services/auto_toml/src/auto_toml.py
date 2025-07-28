@@ -128,7 +128,9 @@ class AutoToml:
         generated_toml_sections = await self.llm.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
-        output = f'[document]\ngoal = "{document_goal}"\n\n' + generated_toml_sections
+        output = (
+            f'[document]\ngoal = """{document_goal}"""\n\n' + generated_toml_sections
+        )
 
         logger.debug(f"{output}")
 

@@ -13,7 +13,7 @@ def has_guard_duty_tag(bucket: str, key: str) -> bool:
 
     s3_client = boto3.client(
         "s3",
-        region_name="us-east-1",
+        region_name=os.environ.get("AWS_REGION"),
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )

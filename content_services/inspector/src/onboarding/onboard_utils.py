@@ -558,7 +558,7 @@ def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> st
 
     s3_client = boto3.client(
         "s3",
-        region_name="us-east-1",
+        region_name=os.environ.get("AWS_REGION"),
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )
@@ -599,7 +599,7 @@ def has_guard_duty_tag(bucket: str, key: str) -> bool:
 
     s3_client = boto3.client(
         "s3",
-        region_name="us-east-1",
+        region_name=os.environ.get("AWS_REGION"),
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )
@@ -661,7 +661,7 @@ def delete_file_from_s3(bucket: str, key: str) -> None:
 
     s3_client = boto3.client(
         "s3",
-        region_name="us-east-1",
+        region_name=os.environ.get("AWS_REGION"),
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )

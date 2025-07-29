@@ -48,9 +48,11 @@ class AutoDocLog:
                         }
                     ]
                 },
-                "Sources": {"rich_text": [{"text": {"content": self.sources}}]},
+                "Sources": {
+                    "rich_text": self._split_into_rich_text_array(self.sources)
+                },
                 "User Context": {
-                    "rich_text": [{"text": {"content": self.user_context}}]
+                    "rich_text": self._split_into_rich_text_array(self.user_context)
                 },
                 "Environment": {
                     "rich_text": [

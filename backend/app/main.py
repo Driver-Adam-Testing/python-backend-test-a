@@ -142,5 +142,5 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
     logging.error("Unhandled exception", exc_info=exc)
     return JSONResponse(
         status_code=500,
-        content="Something went wrong! This error has been logged and the team will be investigating.",
+        content="Something went wrong. This error has been logged and the team will be investigating.",
     )

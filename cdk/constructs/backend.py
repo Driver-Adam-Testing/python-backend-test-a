@@ -31,12 +31,16 @@ class BackendParams:
         environment: str,
         use_legacy_dropzone: bool,
         metrics_bus: aws_events.EventBus,
+        aws_region: str,
+        aws_account: str
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
         self.use_legacy_dropzone = use_legacy_dropzone
         self.metrics_bus = metrics_bus
+        self.aws_region = aws_region
+        self.aws_account = aws_account
 
 
 class Backend(Construct):
@@ -152,6 +156,7 @@ class Backend(Construct):
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "AWS_REGION": params.aws_region
         }
 
         container_secrets = {

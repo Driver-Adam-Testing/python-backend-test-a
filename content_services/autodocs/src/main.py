@@ -5,6 +5,7 @@ from typing import Any
 
 import modal
 from auto_toml import AutoToml
+from autodoc_log import AutoDocLog, write_autodoc_log
 from autodocs_prototype import (
     AutoDocCfg,
     AutoDocInitState,
@@ -59,6 +60,7 @@ image = inspection_image = (
         "database",
         "shared",
         "utils",
+        "autodoc_log",
         copy=True,
         ignore=lambda p: False,
     )
@@ -93,7 +95,7 @@ async def run_autodoc(
     import boto3
     from database.db import get_session
     from database.models_v1 import DerivedContent, DocumentSource
-    from database.models_v2 import Node, Version
+    from database.models_v2 import Node, UserCache, Version, VersionCreator
     from database.models_v2_enums import (
         AutoDocConfigKind,
         AutoDocStatusMessageKind,
@@ -103,6 +105,8 @@ async def run_autodoc(
     )
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
+
+    toml_content = ""
 
     if config_kind == AutoDocConfigKind.FROM_DOCUMENT_GOAL and not document_goal:
         raise ValueError(
@@ -182,6 +186,9 @@ async def run_autodoc(
                     config = AutoDocCfg.from_file(
                         "/autodocs_configs/custom_config.toml"
                     )
+                    with open("/autodocs_configs/custom_config.toml") as f:
+                        toml_content = f.read()
+
             case AutoDocConfigKind.FROM_DOCUMENT_GOAL:
                 toml_file = "config.toml"
                 auto_toml = AutoToml.from_page_id(
@@ -235,11 +242,46 @@ async def run_autodoc(
             node = session.exec(
                 select(Node)
                 .where(Node.id == page_node_id)
-                .options(selectinload(Node.version))
+                .options(selectinload(Node.version).selectinload(Version.primary_asset))
             ).one()
 
             node.version.status = VersionStatus.GENERATION_COMPLETE
             session.add(node.version)
+
+            user_cache = session.exec(
+                select(UserCache)
+                .join(VersionCreator, UserCache.id == VersionCreator.user_id)
+                .where(VersionCreator.version_id == node.version_id)
+            ).first()
+
+            env = os.environ.get("MODAL_ENVIRONMENT")
+
+            if env in ["prod", "staging"]:
+                print("Writing AutoDoc log to Notion")
+
+                sections = []
+                for section_title, source_list in init_state.section_sources.items():
+                    section = f"{section_title}\n\n" + "\n".join(source_list)
+                    sections.append(section)
+                source_string = "\n\n".join(sections)
+
+                log = AutoDocLog(
+                    title=derived_content.content_name
+                    if derived_content
+                    else "UNKNOWN",
+                    user_email=user_cache.email if user_cache else "UNKNOWN",
+                    organization_id=node.version.primary_asset.organization_id
+                    if node
+                    else "UNKNOWN",
+                    sources=source_string,
+                    toml_content=toml_content if toml_content else "N/A",
+                    autodoc_content=doc,
+                    user_context=user_context,
+                    env=env,
+                    page_id=str(page_node_id),
+                    config_kind=str(config_kind),
+                )
+                write_autodoc_log.spawn(log)
 
         print("Updated derived content for page node:", page_node_id)
     except Exception as e:

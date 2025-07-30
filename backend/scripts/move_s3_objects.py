@@ -37,7 +37,7 @@ def update_s3_keys(primary_asset_id: str, version_id: str, codebase_id: str) -> 
         "s3",
         aws_access_key_id=os.getenv("SRC_AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.getenv("SRC_AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_REGION"),
+        region_name=os.environ['AWS_REGION'],
     )
     organization_id = nodes[0].version.primary_asset.organization_id
     hashed_org_id = hashlib.sha256(organization_id.encode()).hexdigest()[:63]

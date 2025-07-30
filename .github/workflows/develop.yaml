@@ -20,8 +20,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event_name == 'workflow_run')
     name: Deploy to Dev Environment
-    #runs-on: self-hosted
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    #Use if self-hosted no longer is up
+    #runs-on: ubuntu-latest
     environment: development
     steps:
       - uses: actions/checkout@v4

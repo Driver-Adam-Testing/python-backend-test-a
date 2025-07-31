@@ -274,7 +274,7 @@ async def run_autodoc(
                     if node
                     else "UNKNOWN",
                     sources=source_string,
-                    toml_content=toml_content if toml_content else "N/A",
+                    toml_content=toml_content,
                     autodoc_content=doc,
                     user_context=user_context,
                     env=env,

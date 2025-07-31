@@ -61,7 +61,7 @@ source_s3 = boto3.client(
     "s3",
     aws_access_key_id=os.getenv("SRC_AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("SRC_AWS_SECRET_ACCESS_KEY"),
-    region_name="us-east-1",
+    region_name=os.environ['AWS_REGION'],
 )
 
 # Configure target S3 details for local development
@@ -72,7 +72,7 @@ target_s3 = boto3.client(
     aws_secret_access_key=os.getenv(
         "AWS_SECRET_ACCESS_KEY"
     ),  # Minio credentials from .env
-    region_name="us-east-1",  # Default region for LocalStack
+    region_name=os.environ['AWS_REGION'],  # Default region for LocalStack
 )
 try:
     print("Starting to list all buckets in source S3.")

@@ -66,7 +66,7 @@ NO_OS_REPO_NAME = "no-OS"
 NO_OS_GH_ORG = "analogdevicesinc"
 
 aws_config = AWSClientConfig(
-    region_name="us-east-1",
+    region_name=settings.AWS_REGION,
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
 )

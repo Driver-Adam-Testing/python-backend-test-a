@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configurations and helper functions for language models, including Claude and OpenAI implementations.
+Functions for formatting and parsing, document querying and summarization, and LLM configuration management.
 
 ## Folders
-- **[claude](claude/README.md)**: The `claude` folder in the `python-backend` codebase contains a `helpers.py` file that provides functions for handling tool prompts, parsing XML responses, and formatting tool results.
-- **[openai](openai/README.md)**: The `openai` folder in the `python-backend` codebase contains a file, `file_search.py`, which defines a function for querying and summarizing documents using OpenAI's API with tools such as a document summarizer assistant, file search, and code interpreter.
+- **[claude](claude/README.md)**: Functions for formatting tool prompts and results, and parsing tool calls from XML responses.
+- **[openai](openai/README.md)**: Queries and summarizes documents using OpenAI's API with file search and code interpreter tools.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[llm_model_config.toml](llm_model_config.toml.md)**: The `llm_model_config.toml` file in the `python-backend` codebase specifies configuration details for various language models, including their model IDs, providers, context window sizes, maximum output tokens, and system prompts.
-- **[llm_models.py](llm_models.py.md)**: The `llm_models.py` file defines configurations for language model providers and system prompts, and includes a `ModelConfig` class for loading model configurations from a TOML file.
+- **[llm_model_config.toml](llm_model_config.toml.md)**: Configuration for various language models with details on model ID, provider, and token limits.
+- **[llm_models.py](llm_models.py.md)**: Defines model configurations and providers for LLMs with methods to load configurations from a TOML file.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auto_toml_modal.py` file defines a `modal.App` class `AutoTomlModal` that provides asynchronous methods for generating and appending TOML configurations from page or node IDs, utilizing the `AutoToml` class and integrating with various dependencies and secrets.
+Defines a Modal application for generating and appending TOML data using page or node IDs.
 
 # Purpose
-This Python code defines a Modal application named "auto_toml" that leverages the Modal framework to create a cloud-based service for generating and appending TOML documents. The code is structured as a class `AutoTomlModal` that encapsulates several asynchronous methods, each designed to interact with an `AutoToml` object. These methods include [`generate_from_page_id`](<#AutoTomlModalgenerate_from_page_id>), [`generate_from_node_ids`](<#AutoTomlModalgenerate_from_node_ids>), [`append_from_page_id`](<#AutoTomlModalappend_from_page_id>), and [`append_from_node_ids`](<#AutoTomlModalappend_from_node_ids>), which facilitate the generation and modification of TOML documents based on page or node identifiers. The application is configured to run on a Debian Slim image with Python 3.12, and it includes dependencies such as `pydantic`, `sqlmodel`, and `openai`, among others. The code also sets up secrets for database and OpenAI access, and it configures a proxy based on the environment.
+The code defines a `modal.App` named `auto_toml` that uses the `modal` library to create a cloud-based application. The application is configured with a custom Docker image based on `debian_slim` with Python 3.12, and it includes several local directories and Python packages. The application is designed to handle operations related to generating and appending TOML data, as indicated by the class `AutoTomlModal`. This class provides asynchronous methods to generate or append TOML data from either a `page_id` or a list of `node_ids`. These methods utilize the `AutoToml` class, which is imported within each method, to perform the operations.
 
-The primary purpose of this code is to provide a cloud-based service for handling TOML documents, with capabilities for both generating new documents and appending to existing ones. The service is designed to be scalable and is configured to run with specific memory and timeout settings. The `AutoTomlModal` class methods are exposed as public APIs through the `modal.method` decorator, allowing them to be invoked remotely. Additionally, the code includes a local entry point [`main`](<#main>), which demonstrates how to initiate the [`generate_from_page_id`](<#AutoTomlModalgenerate_from_page_id>) method, showcasing the intended use of the service in a local development environment. Overall, this code serves as a specialized component within a larger system, focusing on TOML document management in a cloud environment.
+The `AutoTomlModal` class is decorated with `@app.cls`, which configures it with specific resources such as memory, timeout, and region. It also uses secrets for database and OpenAI integration, and optionally a proxy based on the environment. The class methods are decorated with `@modal.method`, indicating that they are exposed as remote methods in the `modal` application. The [`main`](<#main>) function serves as a local entry point for the application, allowing it to be executed with specific parameters for generating TOML data from a `page_id`. This setup suggests that the code is intended to be part of a larger system that processes and manages TOML configurations in a cloud environment.
 # Imports and Dependencies
 
 ---
@@ -22,112 +22,124 @@ The primary purpose of this code is to provide a cloud-based service for handlin
 
 ---
 ### image
-- **Type**: `modal.Image`
-- **Description**: The `image` variable is an instance of `modal.Image` configured with a Debian Slim base image using Python 3.12. It includes local directories for driver databases and shared packages, installs several Python packages including `pydantic`, `sqlmodel`, and `sqlalchemy`, and adds local Python source files for various modules. This setup is designed to create a containerized environment with specific dependencies and source code for deployment.
-- **Use**: The `image` variable is used to define the environment configuration for the `AutoTomlModal` class within the `modal.App`, ensuring all necessary dependencies and source files are included for execution.
+- **Type**: ``modal.Image``
+- **Description**: Represents a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It includes local directories and Python packages necessary for the application.
+- **Use**: Used to define the environment for the `AutoTomlModal` class in the `modal.App` application.
 
 
 ---
 ### app
-- **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'auto_toml'. This instance represents the application configuration and serves as the main entry point for defining and managing the application's lifecycle and resources within the Modal framework.
-- **Use**: The `app` variable is used to define and manage the application's configuration, including its classes, methods, secrets, proxy settings, and other resources.
+- **Type**: ``modal.App``
+- **Description**: Represents an instance of a `modal.App` with the name 'auto_toml'. This instance is used to define and manage the deployment of the `AutoTomlModal` class and its methods as a service.
+- **Use**: Used to configure and deploy the `AutoTomlModal` class with specified settings such as image, secrets, proxy, memory, timeout, region, and retries.
 
 
 # Classes
 
 ---
 ### AutoTomlModal<!-- {{#class:python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal}} -->
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_modal.py#L32>)
+
 - **Decorators**: `@app.cls`
-- **Description**: The `AutoTomlModal` class is a Modal application class that provides asynchronous methods for generating and appending TOML data based on page IDs or node IDs. It leverages the `AutoToml` class to perform operations such as generating TOML content from a given page or node and appending user-provided TOML data. The class is configured with specific resources and settings, such as memory allocation, timeout, and region, and it uses secrets for database and OpenAI integration. The class is designed to operate in different environments, with optional proxy settings based on the environment.
+- **Description**: Defines a class that uses the `modal` framework to perform operations related to generating and appending TOML data from page or node identifiers. It uses secrets and a proxy configuration for secure operations and is configured with specific resources like memory and timeout settings. The class provides asynchronous methods to generate or append TOML data based on page IDs or node IDs, with options for auto-scaling and user context.
 - **Methods**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.generate_from_page_id`](<#AutoTomlModalgenerate_from_page_id>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.generate_from_node_ids`](<#AutoTomlModalgenerate_from_node_ids>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.append_from_page_id`](<#AutoTomlModalappend_from_page_id>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.append_from_node_ids`](<#AutoTomlModalappend_from_node_ids>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.generate_from_page_id`](<#autotomlmodalgenerate_from_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.generate_from_node_ids`](<#autotomlmodalgenerate_from_node_ids>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.append_from_page_id`](<#autotomlmodalappend_from_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.append_from_node_ids`](<#autotomlmodalappend_from_node_ids>)
 
 **Methods**
 
 ---
 #### AutoTomlModal\.generate\_from\_page\_id<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.generate_from_page_id}} -->
-The `generate_from_page_id` method asynchronously generates a document based on a given page ID using the AutoToml class.
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_modal.py#L47>)
+
+Generates a document based on a page ID using the `AutoToml` class.
 - **Decorators**: `@modal.method`
 - **Inputs**:
-    - `page_id`: A string representing the unique identifier of the page from which to generate the document.
-    - `enable_auto_scaling`: A boolean indicating whether auto-scaling should be enabled during the document generation process.
-    - `document_goal`: A string describing the goal or purpose of the document to be generated.
-    - `user_context`: An optional string providing additional context or information from the user, defaulting to an empty string.
-- **Control Flow**:
-    - The method begins by converting the `page_id` string into a UUID object.
-    - It then creates an instance of the `AutoToml` class using the [`from_page_id`](<auto_toml.py.md#AutoTomlfrom_page_id>) method, passing the UUID and `enable_auto_scaling` as arguments.
-    - The method calls the [`generate`](<auto_toml.py.md#AutoTomlgenerate>) method on the `AutoToml` instance, passing `document_goal` and `user_context` as arguments.
-    - The result of the [`generate`](<auto_toml.py.md#AutoTomlgenerate>) method, which is a string, is awaited and returned.
-- **Output**: The method returns a string that represents the generated document.
+    - `page_id`: A string representing the unique identifier of the page.
+    - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling.
+    - `document_goal`: A string describing the goal of the document to generate.
+    - `user_context`: An optional string providing additional context for the user, defaulting to an empty string.
+- **Logic and Control Flow**:
+    - Imports the `AutoToml` class from the `auto_toml` module.
+    - Creates an `AutoToml` instance using the [`from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>) method with the given `page_id` and `enable_auto_scaling` flag.
+    - Calls the [`generate`](<auto_toml.py.md#autotomlgenerate>) method on the `AutoToml` instance with `document_goal` and `user_context` as arguments.
+    - Returns the result of the [`generate`](<auto_toml.py.md#autotomlgenerate>) method call.
+- **Output**: A string that is the result of the [`generate`](<auto_toml.py.md#autotomlgenerate>) method from the `AutoToml` instance.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#AutoTomlfrom_page_id>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<auto_toml.py.md#AutoTomlgenerate>)
-- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#AutoTomlModal>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<auto_toml.py.md#autotomlgenerate>)
+- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#autotomlmodal>)  (Base Class)
 
 
 ---
 #### AutoTomlModal\.generate\_from\_node\_ids<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.generate_from_node_ids}} -->
-The `generate_from_node_ids` method asynchronously generates a document based on a list of node IDs using the AutoToml class.
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_modal.py#L64>)
+
+Generates a document based on a list of node IDs using the `AutoToml` class.
 - **Decorators**: `@modal.method`
 - **Inputs**:
-    - `node_ids`: A list of strings representing node IDs to be used for generating the document.
-    - `enable_auto_scaling`: A boolean indicating whether auto-scaling should be enabled during the document generation process.
-    - `document_goal`: A string specifying the goal or purpose of the document to be generated.
-    - `user_context`: An optional string providing additional context from the user, defaulting to an empty string.
-- **Control Flow**:
-    - The method begins by creating an instance of the AutoToml class using the [`from_node_ids`](<auto_toml.py.md#AutoTomlfrom_node_ids>) method, passing the `node_ids` and `enable_auto_scaling` parameters.
-    - It then calls the [`generate`](<auto_toml.py.md#AutoTomlgenerate>) method on the AutoToml instance, passing the `document_goal` and `user_context` parameters.
-    - The method awaits the result of the [`generate`](<auto_toml.py.md#AutoTomlgenerate>) method and returns it as a string.
-- **Output**: The method returns a string that is the result of the document generation process.
+    - `node_ids`: A list of strings representing node IDs.
+    - `enable_auto_scaling`: A boolean indicating whether to enable auto-scaling.
+    - `document_goal`: A string specifying the goal of the document to generate.
+    - `user_context`: An optional string providing additional user context, defaulting to an empty string.
+- **Logic and Control Flow**:
+    - Imports the `AutoToml` class from the `auto_toml` module.
+    - Creates an instance of `AutoToml` using the [`from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>) method with `node_ids` and `enable_auto_scaling` as arguments.
+    - Calls the [`generate`](<auto_toml.py.md#autotomlgenerate>) method on the `AutoToml` instance with `document_goal` and `user_context` as arguments.
+    - Returns the result of the [`generate`](<auto_toml.py.md#autotomlgenerate>) method call.
+- **Output**: A string result from the [`generate`](<auto_toml.py.md#autotomlgenerate>) method of the `AutoToml` instance.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#AutoTomlfrom_node_ids>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<auto_toml.py.md#AutoTomlgenerate>)
-- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#AutoTomlModal>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<auto_toml.py.md#autotomlgenerate>)
+- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#autotomlmodal>)  (Base Class)
 
 
 ---
 #### AutoTomlModal\.append\_from\_page\_id<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.append_from_page_id}} -->
-The `append_from_page_id` method appends user-provided TOML data to an existing configuration identified by a page ID, with optional auto-scaling and user context.
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_modal.py#L81>)
+
+Appends user-provided TOML data to an existing configuration identified by a page ID.
 - **Decorators**: `@modal.method`
 - **Inputs**:
-    - `page_id`: A string representing the unique identifier of the page from which to retrieve the existing configuration.
-    - `enable_auto_scaling`: A boolean indicating whether auto-scaling should be enabled for the operation.
-    - `user_toml`: A string containing the TOML data provided by the user to be appended to the existing configuration.
+    - `page_id`: A string representing the unique identifier of the page to which the TOML data will be appended.
+    - `enable_auto_scaling`: A boolean indicating whether auto-scaling should be enabled during the operation.
+    - `user_toml`: A string containing the TOML data provided by the user to append to the existing configuration.
     - `user_context`: An optional string providing additional context for the user, defaulting to an empty string.
-- **Control Flow**:
-    - Convert the `page_id` string to a UUID object.
-    - Create an `AutoToml` instance using the [`from_page_id`](<auto_toml.py.md#AutoTomlfrom_page_id>) method with the UUID and `enable_auto_scaling` flag.
-    - Call the [`append`](<auto_toml.py.md#AutoTomlappend>) method on the `AutoToml` instance, passing `user_toml` and `user_context` as arguments.
-    - Return the result of the [`append`](<auto_toml.py.md#AutoTomlappend>) method call.
-- **Output**: A string result from the [`append`](<auto_toml.py.md#AutoTomlappend>) method of the `AutoToml` instance, indicating the outcome of the append operation.
+- **Logic and Control Flow**:
+    - Imports the `AutoToml` class from the `auto_toml` module.
+    - Creates an `AutoToml` instance using the [`from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>) method with the given `page_id` and `enable_auto_scaling` parameters.
+    - Calls the [`append`](<auto_toml.py.md#autotomlappend>) method on the `AutoToml` instance, passing `user_toml` and `user_context` as arguments.
+    - Returns the result of the [`append`](<auto_toml.py.md#autotomlappend>) method call.
+- **Output**: A string result from the [`append`](<auto_toml.py.md#autotomlappend>) method of the `AutoToml` instance.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#AutoTomlfrom_page_id>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<auto_toml.py.md#AutoTomlappend>)
-- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#AutoTomlModal>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<auto_toml.py.md#autotomlappend>)
+- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#autotomlmodal>)  (Base Class)
 
 
 ---
 #### AutoTomlModal\.append\_from\_node\_ids<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal.append_from_node_ids}} -->
-The `append_from_node_ids` method appends user-provided TOML data to an AutoToml instance created from a list of node IDs, with optional auto-scaling and user context.
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_modal.py#L96>)
+
+Appends data to an existing TOML configuration using node IDs and optional user context.
 - **Decorators**: `@modal.method`
 - **Inputs**:
-    - `node_ids`: A list of strings representing node IDs used to create the AutoToml instance.
-    - `enable_auto_scaling`: A boolean indicating whether auto-scaling should be enabled for the AutoToml instance.
-    - `user_toml`: A string containing the user-provided TOML data to be appended.
-    - `user_context`: An optional string providing additional context for the user, defaulting to an empty string.
-- **Control Flow**:
-    - The method begins by creating an AutoToml instance using the [`from_node_ids`](<auto_toml.py.md#AutoTomlfrom_node_ids>) class method, passing in the `node_ids` and `enable_auto_scaling` parameters.
-    - It then calls the [`append`](<auto_toml.py.md#AutoTomlappend>) method on the AutoToml instance, passing the `user_toml` and `user_context` parameters.
-    - The method returns the result of the [`append`](<auto_toml.py.md#AutoTomlappend>) method call, which is awaited asynchronously.
-- **Output**: The method returns a string, which is the result of the [`append`](<auto_toml.py.md#AutoTomlappend>) operation on the AutoToml instance.
+    - `node_ids`: A list of strings representing node IDs to use for the operation.
+    - `enable_auto_scaling`: A boolean flag to enable or disable auto-scaling.
+    - `user_toml`: A string containing the user's TOML configuration to append.
+    - `user_context`: An optional string providing additional user context, defaulting to an empty string.
+- **Logic and Control Flow**:
+    - Imports the `AutoToml` class from the `auto_toml` module.
+    - Creates an `AutoToml` instance using the [`from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>) method with `node_ids` and `enable_auto_scaling` as arguments.
+    - Calls the [`append`](<auto_toml.py.md#autotomlappend>) method on the `AutoToml` instance with `user_toml` and `user_context` as arguments.
+    - Returns the result of the [`append`](<auto_toml.py.md#autotomlappend>) method call.
+- **Output**: A string result from the [`append`](<auto_toml.py.md#autotomlappend>) method of the `AutoToml` instance.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#AutoTomlfrom_node_ids>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<auto_toml.py.md#AutoTomlappend>)
-- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#AutoTomlModal>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<auto_toml.py.md#autotomlappend>)
+- **See also**: [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#autotomlmodal>)  (Base Class)
 
 
 
@@ -135,17 +147,19 @@ The `append_from_node_ids` method appends user-provided TOML data to an AutoToml
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_modal.main}} -->
-The `main` function serves as a local entry point to asynchronously trigger the `generate_from_page_id` method of the [`AutoTomlModal`](<#AutoTomlModal>) class, using a given page ID and document goal.
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_modal.py#L112>)
+
+Initiates the generation of a document from a page ID using the [`AutoTomlModal`](<#autotomlmodal>) class.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**:
-    - `page_id`: A string representing the unique identifier of the page from which to generate the TOML document.
-    - `document_goal`: A string specifying the goal or purpose of the document to be generated.
-- **Control Flow**:
-    - An instance of the [`AutoTomlModal`](<#AutoTomlModal>) class is created.
-    - The `generate_from_page_id` method of the [`AutoTomlModal`](<#AutoTomlModal>) instance is called asynchronously using the `remote` method, with `page_id`, `enable_auto_scaling` set to `True`, and `document_goal` as arguments.
-- **Output**: The function does not return any value as its return type is `None`.
+    - `page_id`: A string representing the unique identifier of the page from which to generate the document.
+    - `document_goal`: A string describing the goal or purpose of the document to be generated.
+- **Logic and Control Flow**:
+    - Creates an instance of the [`AutoTomlModal`](<#autotomlmodal>) class.
+    - Calls the `generate_from_page_id` method on the [`AutoTomlModal`](<#autotomlmodal>) instance with `page_id`, `enable_auto_scaling` set to `True`, and `document_goal` as arguments.
+- **Output**: Does not return any value.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#AutoTomlModal>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<#autotomlmodal>)
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `export_utils.py` file contains utility functions for extracting and replacing markdown-style hyperlinks in text, specifically handling file paths and anchor tags for compatibility with GitHub Flavored Markdown.
+Utilities for extracting and replacing markdown links in text, with support for file path adjustments.
 
 # Purpose
-This Python code file is designed to process and manipulate markdown-style hyperlinks within text, specifically focusing on converting and updating these links to be compatible with a specific documentation format, likely GitHub Flavored Markdown (GFM). The file contains two primary functions: [`extract_markdown_links`](<#extract_markdown_links>) and [`replace_driver_compatible_links_with_markdown_links`](<#replace_driver_compatible_links_with_markdown_links>). The [`extract_markdown_links`](<#extract_markdown_links>) function is responsible for extracting URLs from markdown-style links in a given text, returning a list of these URLs. The [`replace_driver_compatible_links_with_markdown_links`](<#replace_driver_compatible_links_with_markdown_links>) function is more complex, aiming to replace the URL part of markdown-style hyperlinks with a new URL that is compatible with a specific documentation structure. This involves handling file paths, anchor tags, and ensuring that links are correctly formatted for GFM, taking into account special characters and file extensions.
+The code provides functionality for processing and modifying markdown-style hyperlinks within text. It includes two main functions: [`extract_markdown_links`](<#extract_markdown_links>) and [`replace_driver_compatible_links_with_markdown_links`](<#replace_driver_compatible_links_with_markdown_links>). The [`extract_markdown_links`](<#extract_markdown_links>) function identifies and extracts URLs from markdown links formatted as `[text](url)`. It uses a regular expression to find these patterns and returns a list of URLs. The [`replace_driver_compatible_links_with_markdown_links`](<#replace_driver_compatible_links_with_markdown_links>) function modifies markdown links by replacing their URLs with new URLs that are compatible with a specific documentation structure. This function takes into account the file extension, source path, and a mapping of node paths to their kinds to construct the new URLs. It also handles special cases such as links to line numbers and adjusts paths to be relative to the source path.
 
-The code is structured to handle a variety of file extensions and their corresponding delimiters, which are used to construct fully qualified names (FQNs) for links. It also accounts for unsupported characters in GFM anchors, ensuring that links are correctly formatted. The code is likely part of a larger documentation generation or conversion tool, as it includes logic for navigating file paths and converting them into relative paths suitable for documentation. The presence of comments and error handling suggests that the code is designed to be robust and adaptable to different documentation scenarios, making it a valuable component in a documentation processing pipeline.
+The code defines constants such as `EXTENSION_TO_DELIMITER` and `UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS` to assist in processing links. `EXTENSION_TO_DELIMITER` maps file extensions to delimiters used in fully qualified names (FQNs), while `UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS` lists characters that are not supported in GitHub Flavored Markdown (GFM) anchor tags. The code is structured to handle different programming languages and file types, making it adaptable for various documentation needs. It is intended to be used as part of a larger system for generating or modifying technical documentation, particularly in environments that use GitHub Flavored Markdown.
 # Imports and Dependencies
 
 ---
@@ -21,52 +21,57 @@ The code is structured to handle a variety of file extensions and their correspo
 
 ---
 ### EXTENSION\_TO\_DELIMITER
-- **Type**: `dictionary`
-- **Description**: The `EXTENSION_TO_DELIMITER` variable is a dictionary that maps file extensions to their respective delimiter strings. It is used to determine the appropriate delimiter for fully qualified names (FQNs) in different programming languages, such as '::' for C++ and '.' for Python and Java.
-- **Use**: This variable is used to select the correct delimiter when constructing or parsing fully qualified names based on the file extension.
+- **Type**: ``dict``
+- **Description**: Maps file extensions to their respective delimiter strings used in fully qualified names (FQNs). The keys are file extensions, and the values are delimiters such as '::' for C++ files and '.' for Python and JavaScript files.
+- **Use**: Used to determine the delimiter for constructing FQNs based on the file extension.
 
 
 ---
 ### UNSUPPORTED\_CHARACTERS\_IN\_GFM\_ANCHORS
-- **Type**: `list`
-- **Description**: The variable `UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS` is a list containing characters that are not supported in GitHub Flavored Markdown (GFM) anchor tags. These characters include symbols such as `~`, `=`, `!`, `(`, `)`, `&`, `|`, and `+`. The presence of these characters in anchor tags can cause issues with link generation and navigation in GFM.
-- **Use**: This variable is used to strip unsupported characters from anchor tags when generating links in GitHub Flavored Markdown.
+- **Type**: ``list``
+- **Description**: Contains a list of characters that are not supported in GitHub Flavored Markdown (GFM) anchor tags. These characters include `~`, `=`, `!`, `(`, `)`, `&`, `|`, and `+`. The list is used to identify and remove unsupported characters from anchor tags.
+- **Use**: Used to strip unsupported characters from anchor tags in GitHub Flavored Markdown.
 
 
 # Functions
 
 ---
 ### extract\_markdown\_links<!-- {{#callable:python-backend/content_services/inspector/src/utils/export_utils.extract_markdown_links}} -->
-The function `extract_markdown_links` extracts URLs from markdown-style hyperlinks in a given text.
+[View Source →](<../../../../../../content_services/inspector/src/utils/export_utils.py#L25>)
+
+Extracts URLs from markdown-style hyperlinks in the input text.
 - **Inputs**:
-    - `text`: The input text from which URLs in markdown-style hyperlinks are to be extracted.
-- **Control Flow**:
-    - Define a regex pattern to match markdown-style hyperlinks with URLs.
-    - Use `re.findall` to search for all matches of the pattern in the input text.
-    - Return the list of URLs extracted from the matches.
-- **Output**: A list of strings, each representing a URL extracted from the markdown-style hyperlinks in the input text.
+    - `text`: The input text containing markdown-style hyperlinks.
+- **Logic and Control Flow**:
+    - Defines a regular expression pattern to match markdown-style hyperlinks.
+    - Uses `re.findall` to extract all URLs that match the pattern from the input text.
+- **Output**: A list of extracted URLs from the input text.
 
 
 ---
 ### replace\_driver\_compatible\_links\_with\_markdown\_links<!-- {{#callable:python-backend/content_services/inspector/src/utils/export_utils.replace_driver_compatible_links_with_markdown_links}} -->
-The function replaces markdown-style hyperlinks in a text with new URLs based on the provided source path and file extension, while preserving the link text.
+[View Source →](<../../../../../../content_services/inspector/src/utils/export_utils.py#L40>)
+
+Replaces URLs in markdown-style hyperlinks with new URLs based on specified rules, while preserving the link text.
 - **Inputs**:
     - `text`: The input string containing markdown links.
     - `source_path`: The source path to which the links should be relative.
-    - `file_extension`: The file extension used to determine the delimiter for constructing new URLs.
-    - `node_path_to_kind`: A dictionary mapping file paths to their corresponding node kinds, used to determine how to convert links.
-- **Control Flow**:
-    - Extracts markdown links from the input text using a regular expression.
-    - If no links are found, returns the original text.
-    - Iterates over each extracted link and splits it to separate the path and anchor tag.
-    - Determines the node kind of the link using the node_path_to_kind dictionary.
-    - For links with line anchors, constructs a new URL using relative path navigation and updates the text.
-    - For links to codebase files, converts the file path to a markdown file path and constructs a new URL relative to the source path.
-    - Handles special cases for .github paths and constructs new URLs accordingly.
-    - Processes anchor tags to construct appropriate link names, stripping unsupported characters and adjusting for file extensions.
-    - Replaces the original link in the text with the newly constructed URL.
-    - Handles ValueError and KeyError exceptions by printing error messages and continuing processing.
-- **Output**: The function returns the modified text with updated hyperlinks.
+    - `file_extension`: The file extension used to determine the delimiter for fully qualified names.
+    - `node_path_to_kind`: A dictionary mapping file paths to their node kinds, used to determine how to convert links.
+- **Logic and Control Flow**:
+    - Define a regex pattern to extract markdown-style links from the input text.
+    - Find all matches of the pattern in the input text and store them in a list.
+    - If no links are found, return the original text.
+    - For each extracted link, split the link to separate the path and anchor tag.
+    - Determine the node kind of the link using the `node_path_to_kind` dictionary.
+    - If the link has an anchor tag starting with 'L', calculate the relative path to the source file and update the URL.
+    - If the node kind is 'CODEBASE_FILE', append '.md' to the file path; otherwise, append 'README.md' or 'README_.md' based on the file path name.
+    - Calculate the relative path from the converted file path to the source path and update the URL.
+    - If an anchor tag exists, process it to create a valid GitHub Flavored Markdown anchor tag.
+    - Replace unsupported characters in the anchor tag and update the URL.
+    - Replace the original link in the text with the new URL.
+    - Handle `ValueError` and `KeyError` exceptions by printing an error message and continuing to the next link.
+- **Output**: The modified text with updated hyperlinks.
 
 
 

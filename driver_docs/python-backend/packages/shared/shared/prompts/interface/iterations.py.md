@@ -3,52 +3,52 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `iterations.py` file defines prompt messages for different stages of an iterative process, guiding the execution of tools and the formulation of responses based on retrieved context.
+Defines prompts and messages for different stages of tool execution iterations.
 
 # Purpose
-This code is a collection of configuration variables, specifically designed as a set of predefined prompts for different stages of an iterative process. It provides narrow functionality by defining three distinct messages, each associated with a specific iteration phase: the first, middle, and final iterations. Each prompt is stored as a string and is paired with a dictionary that assigns a "role" and "content" to the message, indicating its intended use in a user interaction context. The prompts guide the execution of tools and the decision-making process at each stage, ensuring that the user follows a structured approach to retrieve and utilize context effectively. The use of placeholders like `{remaining_iterations}` suggests that these prompts are dynamically updated based on the current state of the iteration process.
+This code defines a set of string templates and corresponding message dictionaries for different stages of an iterative process. The templates `PROMPT_FIRST_ITERATION`, `PROMPT_MIDDLE_ITERATION`, and `PROMPT_FINAL_ITERATION` contain instructions for executing tools, reviewing source code, and returning a response, respectively. Each template includes a placeholder `{remaining_iterations}` to dynamically insert the number of iterations left. The dictionaries `MESSAGE_FIRST_ITERATION`, `MESSAGE_MIDDLE_ITERATION`, and `MESSAGE_FINAL_ITERATION` associate these templates with a user role, indicating that these messages are intended for user interaction. This code provides narrow functionality, specifically for managing and formatting messages in a multi-step process.
 # Global Variables
 
 ---
 ### PROMPT\_FIRST\_ITERATION
-- **Type**: `string`
-- **Description**: PROMPT_FIRST_ITERATION is a string variable that contains a template message for the first iteration of a process where tools need to be executed to gather initial context. It includes a placeholder for the number of remaining iterations, allowing dynamic updates based on the current state of the process.
-- **Use**: This variable is used to provide a formatted message to the user during the first iteration of a tool execution process, indicating the necessity to execute tools and the number of remaining iterations.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for the first iteration of a process where tools must be executed to retrieve initial context. It includes a placeholder `{remaining_iterations}` to indicate the number of remaining opportunities to execute tools.
+- **Use**: Used as the content for the `MESSAGE_FIRST_ITERATION` dictionary to communicate instructions to the user during the first iteration.
 
 
 ---
 ### MESSAGE\_FIRST\_ITERATION
-- **Type**: `dict`
-- **Description**: `MESSAGE_FIRST_ITERATION` is a dictionary that contains two key-value pairs: 'role' with the value 'user', and 'content' with the value of the string stored in `PROMPT_FIRST_ITERATION`. This string provides instructions for executing tools during the first iteration of a process, emphasizing the need to retrieve initial context and indicating the number of remaining opportunities to execute tools.
-- **Use**: This variable is used to store and convey the initial instructions and context for a user role during the first iteration of a tool execution process.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a value of `user`, and the `content` key holds the string from `PROMPT_FIRST_ITERATION`, which provides instructions for the first iteration of a process.
+- **Use**: Used to store and convey the initial message and role for the first iteration of a tool execution process.
 
 
 ---
 ### PROMPT\_MIDDLE\_ITERATION
-- **Type**: `str`
-- **Description**: PROMPT_MIDDLE_ITERATION is a multi-line string variable that provides instructions for reviewing source code and executing tools during the middle iterations of a process. It includes conditions for when to execute the SearchTool in hybrid mode and emphasizes the need for source code results before returning a response.
-- **Use**: This variable is used to guide the execution flow and decision-making process during the middle iterations of a tool-based review or analysis.
+- **Type**: ``str``
+- **Description**: A multi-line string template that provides instructions for reviewing source code and executing tools during the middle iteration of a process. It includes conditions for when to execute the `SearchTool` in hybrid mode and specifies the number of remaining opportunities to execute tools using the `{remaining_iterations}` placeholder.
+- **Use**: Used to guide the process of reviewing source code and executing tools during the middle iteration of a task.
 
 
 ---
 ### MESSAGE\_MIDDLE\_ITERATION
-- **Type**: `dict`
-- **Description**: The variable `MESSAGE_MIDDLE_ITERATION` is a dictionary that contains two key-value pairs: 'role' with the value 'user', and 'content' with the value of the string `PROMPT_MIDDLE_ITERATION`. This string provides instructions for reviewing source code and executing tools during the middle iteration of a process.
-- **Use**: This variable is used to store and convey instructions to a user during the middle iteration of a tool execution process.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with a 'role' key set to 'user' and a 'content' key set to the value of `PROMPT_MIDDLE_ITERATION`. The `PROMPT_MIDDLE_ITERATION` is a string that provides instructions for reviewing source code and executing tools during the middle iteration of a process.
+- **Use**: Used to store and provide structured message content for the middle iteration of a process.
 
 
 ---
 ### PROMPT\_FINAL\_ITERATION
-- **Type**: `str`
-- **Description**: PROMPT_FINAL_ITERATION is a string variable that contains a multi-line message template. This template is used to instruct a system or user to return a response during the final iteration of a process, ensuring that any code or diagrams included are syntactically correct and based on source code results from tools.
-- **Use**: This variable is used to provide a predefined message for the final iteration of a process, guiding the user or system to produce a final response.
+- **Type**: ``str``
+- **Description**: Contains a multi-line string that instructs the system to return a response during the final iteration of a process. It emphasizes the need to use only references from the source code results obtained from tools and to ensure the syntactical correctness of any code or mermaid diagrams included in the response.
+- **Use**: Used to define the content of `MESSAGE_FINAL_ITERATION`, which is likely used in a system to guide the final step of a process.
 
 
 ---
 ### MESSAGE\_FINAL\_ITERATION
-- **Type**: `dict`
-- **Description**: The variable `MESSAGE_FINAL_ITERATION` is a dictionary that contains two key-value pairs: 'role' with the value 'user', and 'content' with the value of the string `PROMPT_FINAL_ITERATION`. This string provides instructions for the final iteration of a process, emphasizing the need to return a response and ensure correctness in any code or diagrams included.
-- **Use**: This variable is used to store and convey the final set of instructions to a user, indicating the completion of a process and the necessity to return a response.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `user`, and the `content` key is assigned the value of `PROMPT_FINAL_ITERATION`, which is a string prompt for the final iteration of a process.
+- **Use**: Used to store and provide the final iteration message for a user role in a process.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `api_router.py` file configures and includes various API route modules such as search, migrated studio endpoints, user, and ping into a FastAPI router.
+Configures API routes for search, user, ping, and migrated studio endpoints using FastAPI.
 
 # Purpose
-This code is a configuration file for setting up API routes using FastAPI, a modern web framework for building APIs with Python. It defines an `APIRouter` instance named `api_router` and includes several route modules, each associated with a specific URL prefix and tag. The routes included are `search`, `migrated_studio_endpoints`, `user`, and `ping`, each serving different functionalities under their respective prefixes like `/search`, `/tmp`, `/user`, and `/ping`. This file provides a narrow functionality focused on organizing and managing API endpoints, making it easier to maintain and extend the API structure in a modular fashion.
+This code defines an API router using FastAPI's `APIRouter` to organize and manage different API endpoints. It imports several route modules: `migrated_studio_endpoints`, `ping`, `search`, and `user` from the `app.api.routes.api` package. Each of these modules is included in the main `api_router` with specific URL prefixes and tags, which help categorize the endpoints. The `search` routes are accessible under the `/search` prefix, `migrated_studio_endpoints` under `/tmp`, `user` under `/user`, and `ping` under `/ping`. This setup allows for modular and organized routing of API requests within the application.
 # Imports and Dependencies
 
 ---
@@ -21,9 +21,9 @@ This code is a configuration file for setting up API routes using FastAPI, a mod
 
 ---
 ### api\_router
-- **Type**: `APIRouter`
-- **Description**: The `api_router` is an instance of FastAPI's `APIRouter` class, which is used to create a modular and organized structure for routing in a FastAPI application. It serves as a central router that aggregates multiple sub-routers, each handling different API endpoints, such as search, user, and ping functionalities.
-- **Use**: This variable is used to include and organize different API endpoint routers with specific prefixes and tags, facilitating a clean and maintainable API structure.
+- **Type**: ``APIRouter``
+- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to manage and organize the routing of API endpoints in the application.
+- **Use**: Used to include and organize different API route modules with specific prefixes and tags.
 
 
 

@@ -3,24 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_config.toml` file in the `python-backend` codebase specifies configuration settings for various language models, including their model IDs, providers, context windows, output tokens, and API kinds.
+Configuration settings for various language models from OpenAI and Anthropic, detailing model IDs, providers, context windows, and API types.
 
 # Purpose
-This file is a configuration file that defines various settings for different language models (LLMs) used within a software application. It provides narrow functionality by specifying parameters for each model, such as the model ID, provider, maximum and optimal context windows, maximum output tokens, and API kind. The file is organized into sections, each representing a different model configuration, with a common theme of configuring LLMs from providers like OpenAI and Anthropic. The relevance of this file to the codebase is significant, as it allows the application to dynamically select and configure the appropriate language model based on the specified parameters, ensuring that the application can leverage the capabilities of different models effectively.
+This configuration file defines settings for various language models used in a software application. Each section specifies a model with parameters such as `llm_model_id`, `provider`, `max_context_window`, `optimal_context_window`, `max_output_tokens`, and `api_kind`. These parameters configure the model's identity, the service provider (e.g., OpenAI or Anthropic), and operational limits like context window sizes and token output limits. The `api_kind` parameter indicates the type of API interaction, such as `openai_strict` or `openai_chat_with_tools`. This file is essential for managing and optimizing the use of different language models within the application, ensuring that each model operates within its defined constraints and capabilities.
 # Content Summary
-The provided configuration file defines a set of language models (LLMs) from two providers, OpenAI and Anthropic, each with specific parameters that dictate their operational characteristics. The file is structured in sections, each representing a different model configuration under the `[llms]` namespace.
+This configuration file defines various language model settings for different models provided by OpenAI and Anthropic. Each section in the file specifies a unique model configuration, identified by a label such as `[llms.default]`, `[llms.gpt_4o]`, or `[llms.claude_sonnet_3_5]`.
 
-For OpenAI models, several configurations are specified, including `gpt-4o`, `gpt-4.1`, and `o1`, among others. Each model configuration includes the following key parameters:
-- `llm_model_id`: A unique identifier for the model, such as "gpt-4o" or "o1-mini".
-- `provider`: The service provider, which is "openai" for these models.
-- `max_context_window`: The maximum number of tokens that can be processed in a single input context.
-- `optimal_context_window`: The recommended number of tokens for optimal performance.
-- `max_output_tokens`: The maximum number of tokens that the model can generate in a single output.
-- `api_kind`: The type of API interaction, which varies between "openai_strict", "openai_chat_with_tools", and "openai_o1", indicating different levels of API strictness or capabilities, such as chat functionalities.
+Key parameters for each model include:
 
-Anthropic models, such as `claude_sonnet_3_5` and `claude_haiku_3_5`, follow a similar structure but are identified by different `llm_model_id` values and have a different `api_kind` labeled as "claude". These models also have a `max_context_window` and `optimal_context_window` of 200,000 and 100,000 tokens, respectively, with varying `max_output_tokens`.
+- `llm_model_id`: This is the identifier for the language model, such as "gpt-4o" or "claude-3-5-sonnet-20241022".
+- `provider`: This indicates the service provider of the model, either "openai" or "anthropic".
+- `max_context_window`: This defines the maximum number of tokens that the model can process in a single input context.
+- `optimal_context_window`: This suggests the optimal number of tokens for efficient processing within the context window.
+- `max_output_tokens`: This specifies the maximum number of tokens that the model can generate in its output.
+- `api_kind`: This indicates the type of API interaction, such as "openai_strict", "openai_chat_with_tools", or "claude".
 
-This configuration file is crucial for developers as it provides the necessary parameters to correctly initialize and utilize different LLMs within their applications. Understanding these parameters allows developers to select the appropriate model based on their specific requirements, such as context size and output length, and to ensure compatibility with the intended API interaction type.
+The file includes configurations for different versions and variations of models, such as "gpt-4o", "gpt-4.1", "o1", "o3-mini", and "claude" models. Each configuration is tailored with specific context window sizes and output token limits, which are crucial for developers to understand the capabilities and limitations of each model when integrating them into applications.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

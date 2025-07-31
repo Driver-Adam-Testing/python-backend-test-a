@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mermaid_messages.py` file defines a system message class for reviewing and correcting mermaid code blocks to ensure proper rendering by avoiding syntax errors and forbidden characters.
+Defines a system message for reviewing and correcting mermaid.js code blocks to ensure proper rendering.
 
 # Purpose
-This Python code defines a class `MermaidSyntaxSystemMessage` that extends the `LlmMessage` class, providing a specialized system message for handling Mermaid.js syntax. The primary purpose of this class is to encapsulate a detailed instructional message aimed at ensuring the correct rendering of Mermaid.js diagrams by addressing common syntax errors and providing guidelines for proper formatting. The message content includes specific instructions to avoid forbidden characters, correct list syntax, and prevent rendering issues such as cycles or improper subgraph naming. This code offers narrow functionality, focusing specifically on the validation and correction of Mermaid.js code blocks, and is structured as a class definition with attributes for content and message kind.
+The code defines a class `MermaidSyntaxSystemMessage` that extends the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. The primary purpose of this class is to provide a system message that contains instructions for reviewing and correcting Mermaid code blocks within a document. The `content` attribute of the class is a string that outlines specific guidelines for ensuring that Mermaid diagrams render correctly. These guidelines include avoiding forbidden characters such as parentheses and double hyphens in element labels, using the correct syntax for lists within Mermaid blocks, and ensuring that subgraph names do not contain spaces. The message also emphasizes the importance of not creating cycles by setting an element as a parent of itself.
+
+The `message_kind` attribute is set to `MessageKind.SYSTEM`, indicating that this message is intended for system-level communication. The class is part of a broader system that likely involves processing or generating Mermaid diagrams, and it provides a standardized way to communicate the necessary syntax corrections and best practices for rendering these diagrams accurately. This code is likely part of a library or framework that deals with document processing or diagram generation, and it defines a specific type of message that can be used within that context.
 # Imports and Dependencies
 
 ---
@@ -18,12 +20,14 @@ This Python code defines a class `MermaidSyntaxSystemMessage` that extends the `
 
 ---
 ### MermaidSyntaxSystemMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/mermaid_messages.MermaidSyntaxSystemMessage}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/mermaid_messages.py#L4>)
+
 - **Members**:
-    - `content`: A string containing detailed instructions for reviewing and correcting mermaid code blocks.
-    - `message_kind`: An instance of MessageKind set to SYSTEM, indicating the type of message.
-- **Description**: The MermaidSyntaxSystemMessage class extends LlmMessage and is designed to provide specific instructions for reviewing and correcting mermaid.js code blocks. It ensures that the code blocks are free from rendering errors by avoiding forbidden characters, correcting syntax for lists, and removing unnecessary spaces and parentheses. The class also emphasizes the importance of not creating cycles in diagrams and provides guidance on how to properly format and render mermaid diagrams.
+    - `content`: Contains instructions for reviewing and correcting mermaid code blocks.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
+- **Description**: Facilitates the review and correction of mermaid code blocks by providing guidelines to ensure proper rendering and syntax adherence.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
 
 

@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `software_engineer.py` file defines a voice prompt for a system role, characterizing an expert software engineer who writes code and documentation based on recent data without instructing others or speculating.
+Defines a system message for a software engineer voice prompt with specific guidelines.
 
 # Purpose
-This code defines a simple configuration setup for a system message in a software application. It consists of a multi-line string, `VOICE_PROMPT`, which outlines specific instructions or guidelines for a software engineer's role, emphasizing expertise, documentation, and factual writing. The `MESSAGE` dictionary then encapsulates this prompt with a key-value pair, where the key is `"role"` and the value is `"system"`, associating the content with a system-level message. This code provides narrow functionality, primarily serving as a configuration or setup for a messaging or prompt system within a larger application.
+The code defines two global variables, `VOICE_PROMPT` and `MESSAGE`. The `VOICE_PROMPT` variable is a multi-line string that contains a set of instructions or guidelines for a software engineer's role and responsibilities. The `MESSAGE` variable is a dictionary with two keys: `role`, which is set to the string "system", and `content`, which is set to the value of the `VOICE_PROMPT` string. This code is likely used to configure or initialize a system message with specific content and role attributes.
 # Global Variables
 
 ---
 ### VOICE\_PROMPT
-- **Type**: `str`
-- **Description**: The `VOICE_PROMPT` variable is a multi-line string that serves as a predefined prompt or instruction set for a software engineer. It outlines the expected behavior and guidelines for the engineer, emphasizing truthfulness and reliance on recent data.
-- **Use**: This variable is used to define the content of a system message, likely for a conversational AI or similar system, as seen in its assignment to the 'content' key in the MESSAGE dictionary.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides a detailed description of a role or persona for a software engineer. It includes specific instructions on how the engineer should behave and what they should focus on.
+- **Use**: Used as a prompt or guideline for defining the behavior and responsibilities of a software engineer in a system.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `VOICE_PROMPT` variable, which is a multi-line string describing the characteristics of an expert software engineer.
-- **Use**: This variable is used to encapsulate a predefined message structure, likely for communication or configuration purposes within a system.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has the value `'system'`, and the `content` key holds the value of the `VOICE_PROMPT` variable.
+- **Use**: Used to store system role information and a predefined voice prompt message.
 
 
 

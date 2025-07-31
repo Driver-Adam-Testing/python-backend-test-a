@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `run_symbol_table.py` file in the `python-backend` codebase provides functionality to build and display a symbol table for a given project directory, with options to specify the visibility algorithm and display detailed timing information.
+Builds and displays a symbol table for a project using a specified visibility algorithm.
 
 # Purpose
-This Python script is designed to build and display a symbol table for a given project directory. It is a command-line utility that leverages the `argparse` module to parse command-line arguments, allowing users to specify the path to the project directory, choose a visibility algorithm, and optionally display detailed timing information. The script imports necessary components from a `utils.symbol_table` package, including `VisibilityAlgorithm` for selecting the algorithm and `TimingInfo` for handling timing data. The core functionality is encapsulated in the [`run_and_print_sym_table`](<#run_and_print_sym_table>) function, which constructs the symbol table using the specified algorithm and optionally prints timing details if requested.
+This code is a script designed to build and display a symbol table for a given project directory. It uses the `argparse` module to parse command-line arguments, allowing users to specify the path to the project directory, choose a visibility algorithm, and decide whether to display detailed timing information. The script imports necessary components from a utility module, including `TimingInfo` and `VisibilityAlgorithm`, to facilitate the symbol table construction and timing analysis.
 
-The script is structured to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](<#main>) function. The [`main`](<#main>) function orchestrates the argument parsing and invokes [`run_and_print_sym_table`](<#run_and_print_sym_table>) with the appropriate parameters. The script's primary purpose is to facilitate the analysis of a project's symbol table, providing insights into the parsing, visibility, linking, and reification processes, along with their respective timing metrics. This makes it a valuable tool for developers looking to understand the internal structure and performance characteristics of their codebase.
+The main functionality is encapsulated in the [`run_and_print_sym_table`](<#run_and_print_sym_table>) function, which collects all files in the specified project directory and builds a symbol table using the selected visibility algorithm. If the user opts to display timing information, the script prints detailed timing results for different phases of the symbol table construction, such as parsing, visibility, linking, and reification. The [`main`](<#main>) function orchestrates the argument parsing and calls [`run_and_print_sym_table`](<#run_and_print_sym_table>) with the appropriate parameters. This script is intended to be executed directly and provides a command-line interface for users to interact with the symbol table generation process.
 # Imports and Dependencies
 
 ---
@@ -24,55 +24,65 @@ The script is structured to be executed as a standalone program, as indicated by
 
 ---
 ### run\_and\_print\_sym\_table<!-- {{#callable:python-backend/content_services/inspector/src/run_symbol_table.run_and_print_sym_table}} -->
-The function `run_and_print_sym_table` builds and prints a symbol table for a given project directory, optionally displaying timing information for the process.
+[View Source →](<../../../../../content_services/inspector/src/run_symbol_table.py#L8>)
+
+Builds a symbol table for a given project directory and optionally prints timing information.
 - **Inputs**:
-    - `project_abspath`: A `Path` object representing the absolute path to the project directory.
-    - `algorithm`: An instance of `VisibilityAlgorithm` specifying the algorithm to use for building the symbol table, defaulting to `VisibilityAlgorithm.SCC`.
-    - `show_timing`: A boolean indicating whether to display timing information, defaulting to `True`.
-- **Control Flow**:
-    - Import the `build_symbol_table` and `print_summary` functions from `utils.symbol_table`.
-    - Retrieve all files in the `project_abspath` directory recursively and filter to include only files.
-    - Print a message indicating the start of the symbol table building process with the specified algorithm.
-    - If `show_timing` is `True`, call `build_symbol_table` with `return_timing=True` to get both the symbol table and timing information, then call [`print_timing_info`](<#print_timing_info>) to display the timing.
+    - `project_abspath`: The absolute path to the project directory as a `Path` object.
+    - `algorithm`: The visibility algorithm to use, defaulting to `VisibilityAlgorithm.SCC`.
+    - `show_timing`: A boolean indicating whether to print timing information, defaulting to `True`.
+- **Logic and Control Flow**:
+    - Import `build_symbol_table` and `print_summary` from `utils.symbol_table`.
+    - Get all files in the `project_abspath` directory recursively.
+    - Filter the list to include only files.
+    - Print a message indicating the start of the symbol table building process with the selected algorithm.
+    - If `show_timing` is `True`, call `build_symbol_table` with `return_timing=True` to get the symbol table and timing information, then call [`print_timing_info`](<#print_timing_info>) to display the timing.
     - If `show_timing` is `False`, call `build_symbol_table` without timing information.
-    - Call `print_summary` to display the summary of the built symbol table.
-- **Output**: The function does not return any value; it prints the symbol table summary and optionally timing information to the console.
+    - Call `print_summary` to display the symbol table summary.
+- **Output**: No return value; outputs are printed to the console.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/run_symbol_table.print_timing_info`](<#print_timing_info>)
 
 
 ---
 ### print\_timing\_info<!-- {{#callable:python-backend/content_services/inspector/src/run_symbol_table.print_timing_info}} -->
-The `print_timing_info` function prints formatted timing information for different stages of a process using ANSI color codes for enhanced readability.
+[View Source →](<../../../../../content_services/inspector/src/run_symbol_table.py#L31>)
+
+Prints formatted timing information for a given algorithm's execution stages.
 - **Inputs**:
-    - `timing`: An instance of `TimingInfo` containing timing data for various stages such as parsing, visibility, linking, and reification.
-    - `algorithm`: A string representing the name of the algorithm for which the timing information is being printed.
-- **Control Flow**:
-    - Define ANSI color codes for blue, cyan, bold, and reset to format the output text.
-    - Print a header line with the algorithm name in uppercase, formatted with bold and blue color codes.
-    - Print a separator line consisting of 40 dashes.
-    - Print the timing for parsing, visibility, linking, and reification stages, each formatted with cyan color codes and rounded to three decimal places.
-    - Print another separator line consisting of 40 dashes.
-    - Print the total timing, formatted with bold and cyan color codes, rounded to three decimal places.
-- **Output**: The function does not return any value; it outputs formatted timing information to the console.
+    - `timing`: An instance of `TimingInfo` containing timing data for different stages of the algorithm.
+    - `algorithm`: A string representing the name of the algorithm for which timing information is printed.
+- **Logic and Control Flow**:
+    - Define ANSI escape codes for text formatting (colors and bold).
+    - Print the algorithm name in uppercase with a timing results header.
+    - Print a separator line of dashes.
+    - Print the parsing time with cyan color formatting.
+    - Print the visibility time with cyan color formatting.
+    - Print the linking time with cyan color formatting.
+    - Print the reification time with cyan color formatting.
+    - Print another separator line of dashes.
+    - Print the total time with bold and cyan color formatting.
+- **Output**: No return value; outputs formatted timing information to the console.
 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/inspector/src/run_symbol_table.main}} -->
-The `main` function parses command-line arguments to build and display a symbol table for a specified project directory using a chosen visibility algorithm, optionally showing timing information.
+[View Source →](<../../../../../content_services/inspector/src/run_symbol_table.py#L48>)
+
+Parses command-line arguments and executes the symbol table building and display process.
 - **Inputs**: None
-- **Control Flow**:
-    - An `ArgumentParser` is created to handle command-line arguments with a description of the program's purpose.
-    - The `project_path` argument is added to the parser, with a default path and a help description.
-    - The `--algorithm` argument is added, allowing the user to specify a visibility algorithm from a set of choices, with a default value and help description.
-    - The `--timing` argument is added as a flag to indicate whether detailed timing information should be shown.
-    - The parsed arguments are stored in the `args` variable.
-    - The `project_path` is resolved to an absolute path using `Path.resolve()`.
-    - The `algorithm` is set by converting the parsed algorithm argument to a [`VisibilityAlgorithm`](<utils/symbol_table/core.py.md#VisibilityAlgorithm>) enum.
-    - The [`run_and_print_sym_table`](<#run_and_print_sym_table>) function is called with the resolved project path, selected algorithm, and timing flag.
-- **Output**: The function does not return any value; it performs actions based on the command-line arguments.
+- **Logic and Control Flow**:
+    - Creates an `ArgumentParser` object to handle command-line arguments.
+    - Defines a positional argument `project_path` with a default value and help description.
+    - Defines an optional argument `--algorithm` with choices from [`VisibilityAlgorithm`](<utils/symbol_table/core.py.md#visibilityalgorithm>) and a default value.
+    - Defines an optional argument `--timing` as a boolean flag to show timing information.
+    - Parses the command-line arguments into the `args` variable.
+    - Resolves the absolute path of the `project_path` argument.
+    - Converts the `algorithm` argument to a [`VisibilityAlgorithm`](<utils/symbol_table/core.py.md#visibilityalgorithm>) object.
+    - Calls [`run_and_print_sym_table`](<#run_and_print_sym_table>) with the resolved project path, selected algorithm, and timing flag.
+- **Output**: No output is returned as the function's return type is `None`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.VisibilityAlgorithm`](<utils/symbol_table/core.py.md#VisibilityAlgorithm>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.VisibilityAlgorithm`](<utils/symbol_table/core.py.md#visibilityalgorithm>)
     - [`python-backend/content_services/inspector/src/run_symbol_table.run_and_print_sym_table`](<#run_and_print_sym_table>)
 
 

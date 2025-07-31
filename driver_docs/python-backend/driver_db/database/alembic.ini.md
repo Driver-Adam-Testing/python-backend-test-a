@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `alembic.ini` file in the `python-backend` codebase provides configuration settings for Alembic, including migration script locations, file templates, and logging configurations.
+Configuration for Alembic database migrations and logging settings.
 
 # Purpose
-The provided configuration file is for Alembic, a database migration tool used in Python applications. It specifies settings for managing and generating database migration scripts, including the location of migration scripts (`script_location`) and the template for naming migration files (`file_template`). The file also includes optional settings for timezone handling, slug length truncation, and the detection of sourceless Python files as revisions. Additionally, it configures logging for Alembic and related components, defining loggers, handlers, and formatters to control the output and format of log messages. This configuration ensures that database migrations are organized, timestamped, and logged appropriately, facilitating version control and debugging.
+The configuration file defines settings for Alembic, a database migration tool for SQLAlchemy. It specifies the location of migration scripts with `script_location` and the template for generating migration file names using `file_template`. The file also includes optional settings for timezone, slug length, and revision environment behavior. Logging configurations are defined under sections `[loggers]`, `[handlers]`, and `[formatters]`, specifying log levels and output formats for different components like `root`, `sqlalchemy`, and `alembic`. The `handler_console` section configures a stream handler to output logs to standard error with a specified format.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

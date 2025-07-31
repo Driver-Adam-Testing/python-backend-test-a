@@ -3,18 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `db.py` file in the `python-backend` codebase provides asynchronous database utility functions for managing versions, inspector runs, nodes, and derived content, as well as a function to get usage balance in bytes.
+Async functions for database operations related to versions, nodes, and inspector runs, plus utility functions for usage balance and Git provider installations.
 
 # Purpose
-This Python file provides a set of asynchronous functions designed to interact with a database, specifically focusing on operations related to versions, nodes, and derived content. The code is structured to perform various database operations using SQLModel and SQLAlchemy, such as retrieving, deleting, and creating records. The primary entities involved are `Version`, `InspectorRun`, `Node`, and `DerivedContent`, which are likely part of a version control or content management system. The functions include retrieving a version by its ID, deleting a version, attempting to get a previous version, creating an inspector run, and fetching the latest run associated with a version. Additionally, the code includes functions to get analyzable nodes by version ID and to retrieve derived content based on node ID.
+The code is a collection of asynchronous functions and a few synchronous functions that interact with a database using SQLModel and SQLAlchemy. The primary purpose of this code is to perform various database operations related to version management, inspector runs, and content retrieval. The code includes functions to get, delete, and retrieve previous versions by their unique identifiers (`version_id`). It also provides functionality to create and retrieve inspector runs associated with specific versions, as well as to fetch analyzable nodes and derived content based on node identifiers.
 
-The file appears to be part of a larger application, likely serving as a library module that provides database access functionality. It imports models and enums from other modules, indicating that it is part of a well-structured codebase. The use of asynchronous database sessions suggests that the application is designed to handle concurrent operations efficiently, which is typical in web applications or services that require high performance. The presence of a synchronous function, [`get_usage_balance_in_bytes`](<#get_usage_balance_in_bytes>), indicates that the module also includes functionality for calculating usage metrics, which could be related to resource management or billing. Overall, the file is a cohesive collection of database interaction functions centered around version and content management.
+The code defines both public APIs and internal interfaces for database operations. It uses asynchronous sessions for most database interactions, which suggests that it is designed to be part of an application that handles concurrent operations efficiently. The functions [`get_usage_balance_in_bytes`](<#get_usage_balance_in_bytes>) and [`git_provider_app_installation_by_id`](<#git_provider_app_installation_by_id>) are synchronous and interact with the database to retrieve usage balance and Git provider app installation details, respectively. The code is structured to be imported and used as a library within a larger application, providing specific database-related functionalities.
 # Imports and Dependencies
 
 ---
 - `uuid`
 - `database.models_v1.DerivedContent`
 - `database.models_v1.InspectorRun`
+- `database.models_v1.GitProviderAppInstallation`
 - `database.models_v2.Node`
 - `database.models_v2.Version`
 - `database.models_v2_enums.ContentKind`
@@ -37,165 +38,181 @@ The file appears to be part of a larger application, likely serving as a library
 ### get\_version\_by\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.get_version_by_id}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L9>)
 
-The `get_version_by_id` function retrieves a `Version` object from the database using its unique identifier.
+Retrieves a `Version` object from the database using a given `version_id`.
 - **Inputs**:
-    - `version_id`: A UUID representing the unique identifier of the `Version` to be retrieved.
-- **Control Flow**:
-    - Import necessary modules and classes for database interaction and query construction.
-    - Establish an asynchronous session with the database using `AsyncSession` and `async_engine`.
-    - Construct a SQL query to select a `Version` object where the `id` matches the provided `version_id`.
+    - `version_id`: A UUID that uniquely identifies the `Version` to retrieve.
+- **Logic and Control Flow**:
+    - Import necessary modules and classes for database operations and query construction.
+    - Create an asynchronous session with the database using `AsyncSession` and `async_engine`.
+    - Construct a SQL query to select a `Version` where the `id` matches the provided `version_id`.
     - Use `selectinload` to eagerly load related `primary_asset` and `root_node` attributes of the `Version`.
-    - Execute the query asynchronously and retrieve the single `Version` object that matches the criteria.
-- **Output**: The function returns a `Version` object that matches the provided `version_id`.
+    - Execute the query asynchronously and return the single `Version` object that matches the criteria.
+- **Output**: A `Version` object that matches the given `version_id`.
 
 
 ---
 ### delete\_version\_by\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.delete_version_by_id}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L25>)
 
-The `delete_version_by_id` function asynchronously deletes a version from the database using its unique identifier.
+Deletes a `Version` record from the database by its `version_id`.
 - **Inputs**:
-    - `version_id`: A UUID representing the unique identifier of the version to be deleted.
-- **Control Flow**:
-    - Import necessary modules and classes such as `async_engine` and `select`.
+    - `version_id`: A UUID that identifies the `Version` to delete.
+- **Logic and Control Flow**:
+    - Import `async_engine` from `database.db` and `select` from `sqlmodel` to facilitate database operations.
     - Create an asynchronous session with the database using `AsyncSession` and `async_engine`.
-    - Construct a SQL statement to select the `Version` object where the `id` matches the provided `version_id`.
-    - Execute the SQL statement to retrieve the specific `Version` object from the database.
+    - Construct a SQL `select` statement to find the `Version` with the specified `version_id`.
+    - Execute the statement to retrieve the `Version` object from the database.
     - Delete the retrieved `Version` object from the session.
-    - Commit the transaction to persist the deletion in the database.
-- **Output**: The function does not return any value (returns `None`).
+    - Commit the transaction to apply the deletion to the database.
+- **Output**: No output is returned as the function's return type is `None`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositorydelete>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.delete`](<../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositorydelete>)
 
 
 ---
 ### try\_get\_prev\_version<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.try_get_prev_version}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L36>)
 
-The function `try_get_prev_version` attempts to retrieve the previous version of a given version if it exists and meets certain criteria.
+Attempts to retrieve the previous version of a given version if it exists and meets specific criteria.
 - **Inputs**:
-    - `version_id`: A UUID representing the unique identifier of the version for which the previous version is being queried.
-- **Control Flow**:
-    - Import necessary modules and classes for database operations and query building.
-    - Establish an asynchronous session with the database using `AsyncSession`.
+    - `version_id`: A UUID representing the ID of the version for which to find the previous version.
+- **Logic and Control Flow**:
+    - Import necessary modules and classes for database operations and query construction.
+    - Create an asynchronous session with the database using `AsyncSession` and `async_engine`.
     - Construct a SQL query to select the `Version` object with the given `version_id`.
     - Execute the query to retrieve the current version object.
-    - Construct another SQL query to select the previous version of the current version, ensuring it has a status of `GENERATION_COMPLETE` and preloading its primary asset.
-    - Execute the query to retrieve the previous version object, if it exists.
+    - Construct a second SQL query to select the previous version of the current version, ensuring it has a status of `GENERATION_COMPLETE` and includes the `primary_asset` relationship.
+    - Execute the second query to retrieve the previous version object, if it exists.
     - Return the previous version object or `None` if no such version exists.
-- **Output**: The function returns a `Version` object representing the previous version if it exists and meets the criteria, otherwise it returns `None`.
+- **Output**: Returns a `Version` object representing the previous version if it exists and meets the criteria, otherwise returns `None`.
 
 
 ---
 ### create\_inspector\_run<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.create_inspector_run}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L54>)
 
-The `create_inspector_run` function asynchronously creates a new [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>) record in the database and returns its unique identifier.
+Creates a new [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#inspectorrun>) record in the database and returns its unique identifier.
 - **Inputs**:
-    - `version_id`: A UUID representing the version ID for which the inspector run is being created.
-- **Control Flow**:
-    - Import necessary modules and functions, including `modal` and `async_engine`.
+    - `version_id`: A UUID representing the version identifier for which the inspector run is created.
+- **Logic and Control Flow**:
+    - Import the `modal` module and `async_engine` from the database.
     - Retrieve the current function call ID using `modal.current_function_call_id()`.
-    - Open an asynchronous session with the database using `AsyncSession` and `async_engine`.
-    - Create a new [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>) object with `inspection_version_id` set to `None`, `version_id` set to the provided `version_id`, and `call_id` set to the retrieved `modal_call_id`.
-    - Add the [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>) object to the session and commit the transaction to save it to the database.
-    - Refresh the session to update the [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>) object with the latest data from the database, including its generated ID.
-    - Retrieve the `id` of the newly created [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>) object and store it in `run_id`.
-    - Return the `run_id` as the result of the function.
-- **Output**: The function returns a UUID representing the ID of the newly created [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>) record.
+    - Create an asynchronous session with the database using `AsyncSession`.
+    - Instantiate an [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#inspectorrun>) object with `inspection_version_id` set to `None`, `version_id` set to the input `version_id`, and `call_id` set to the retrieved `modal_call_id`.
+    - Add the `inspector_run` object to the session.
+    - Commit the session to save the changes to the database.
+    - Refresh the `inspector_run` object to get the updated state from the database.
+    - Retrieve the `id` of the `inspector_run` object and store it in `run_id`.
+- **Output**: Returns the UUID of the newly created [`InspectorRun`](<../../../../driver_db/database/models_v1.py.md#inspectorrun>) record.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.InspectorRun`](<../../../../driver_db/database/models_v1.py.md#InspectorRun>)
+    - [`python-backend/driver_db/database/models_v1.InspectorRun`](<../../../../driver_db/database/models_v1.py.md#inspectorrun>)
 
 
 ---
 ### try\_get\_latest\_run\_from\_version\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.try_get_latest_run_from_version_id}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L74>)
 
-The function attempts to retrieve the latest InspectorRun ID associated with a given version ID from the database.
+Attempts to retrieve the latest `InspectorRun` ID associated with a given `version_id`.
 - **Inputs**:
-    - `version_id`: A UUID representing the version ID for which the latest InspectorRun is to be retrieved.
-- **Control Flow**:
-    - Import necessary modules and classes for database interaction and query execution.
-    - Establish an asynchronous session with the database using AsyncSession and async_engine.
-    - Construct a SQL query to select InspectorRun records where the version_id matches the provided version_id, ordering the results by the created_at timestamp in descending order.
-    - Execute the query asynchronously and retrieve the first result, which represents the latest run for the given version ID.
-    - Check if the result is None, indicating no runs exist for the version, and return None in such a case.
-    - If a result is found, return the ID of the latest InspectorRun.
-- **Output**: The function returns the UUID of the latest InspectorRun associated with the given version ID, or None if no such run exists.
+    - `version_id`: A UUID representing the version ID to query for the latest `InspectorRun`.
+- **Logic and Control Flow**:
+    - Import necessary modules and classes such as `async_engine` and `select`.
+    - Create an asynchronous session with the database using `AsyncSession`.
+    - Construct a SQL query to select `InspectorRun` entries where `version_id` matches the input `version_id`, ordering the results by `created_at` in descending order.
+    - Execute the query and retrieve the first result, which represents the latest run.
+    - Check if the result is `None`, indicating no runs exist for the given `version_id`, and return `None` if true.
+    - If a result exists, return the `id` of the `InspectorRun`.
+- **Output**: Returns the UUID of the latest `InspectorRun` associated with the given `version_id`, or `None` if no such run exists.
 
 
 ---
 ### get\_analyzable\_nodes\_by\_version\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.get_analyzable_nodes_by_version_id}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L96>)
 
-The function retrieves a list of analyzable nodes for a given version ID and set of content types from the database.
-- **Decorators**: `@asyncio.coroutine`
+Retrieves a list of analyzable nodes for a given version ID and set of content types.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `version_id`: A UUID representing the version ID to filter nodes by.
-    - `content_types`: A set of NodeKind values representing the types of content to filter nodes by.
-- **Control Flow**:
-    - Import necessary modules and classes for database interaction.
-    - Create an asynchronous session with the database using AsyncSession.
-    - Construct a SQL query to select nodes where the version_id matches the provided version_id and the node kind is within the specified content_types.
-    - Execute the query asynchronously and retrieve the results.
-    - Initialize an empty list to store the analyzable nodes.
-    - Iterate over the results, checking if each node is a directory or an analyzable file.
-    - Append nodes that are directories or analyzable files to the result list.
-    - Return the list of analyzable nodes.
-- **Output**: A list of Node objects that are either directories or analyzable files, filtered by the given version ID and content types.
+    - `version_id`: A UUID representing the version ID to filter nodes.
+    - `content_types`: A set of NodeKind values representing the types of content to filter nodes.
+- **Logic and Control Flow**:
+    - Import the necessary modules and classes from the database and SQLModel.
+    - Create an asynchronous session with the database using `AsyncSession`.
+    - Construct a SQL statement to select nodes where the `version_id` matches the given `version_id` and the node's kind is in the provided `content_types`.
+    - Execute the SQL statement asynchronously to retrieve the results.
+    - Initialize an empty list `res_list` to store the analyzable nodes.
+    - Iterate over each result in the retrieved results.
+    - For each result, check if the node is a file or directory.
+    - If the node is a directory or an analyzable file (determined by checking the `misc_metadata`), append it to `res_list`.
+    - Return the `res_list` containing the analyzable nodes.
+- **Output**: A list of `Node` objects that are analyzable based on the given criteria.
 
 
 ---
 ### get\_source\_code\_derived\_content<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.get_source_code_derived_content}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L120>)
 
-The function retrieves a single DerivedContent record from the database based on a given node_id and content kind of CODEBASE_FILE.
+Retrieves a `DerivedContent` object associated with a given `node_id` if it is of type `CODEBASE_FILE`.
 - **Decorators**: `@async`
 - **Inputs**:
-    - `node_id`: A UUID representing the unique identifier of the node for which the derived content is to be retrieved.
-- **Control Flow**:
-    - Import necessary modules and classes for database interaction and query execution.
-    - Establish an asynchronous session with the database using AsyncSession and async_engine.
-    - Construct a SQL query using the select function to retrieve a DerivedContent record where the node_id matches the provided node_id and the content_kind is CODEBASE_FILE.
-    - Execute the query asynchronously and return the first matching record using the session.exec method.
-- **Output**: The function returns a single DerivedContent object that matches the specified node_id and content kind criteria.
+    - `node_id`: A UUID that identifies the node for which to retrieve the derived content.
+- **Logic and Control Flow**:
+    - Import `async_engine` from `database.db` and `select` from `sqlmodel`.
+    - Create an asynchronous session with the database using `AsyncSession` and `async_engine`.
+    - Construct a SQL statement to select `DerivedContent` where `node_id` matches the input and `content_kind` is `CODEBASE_FILE`.
+    - Execute the SQL statement asynchronously and return the first result using `one()`.
+- **Output**: A `DerivedContent` object that matches the specified `node_id` and has a `content_kind` of `CODEBASE_FILE`.
 
 
 ---
 ### get\_all\_derived\_content\_by\_node\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.get_all_derived_content_by_node_id}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L132>)
 
-The function retrieves all derived content records associated with a specific node ID from the database asynchronously.
-- **Decorators**: `@async`
+Retrieves all derived content associated with a given node ID from the database.
 - **Inputs**:
-    - `node_id`: A UUID representing the unique identifier of the node for which derived content is to be retrieved.
-- **Control Flow**:
-    - Import the necessary modules and classes, including the async database engine and SQLModel's select function.
-    - Establish an asynchronous session with the database using AsyncSession and the async_engine.
-    - Construct a SQL select statement to query the DerivedContent table where the node_id matches the provided node_id argument.
+    - `node_id`: A UUID that identifies the node for which to retrieve derived content.
+- **Logic and Control Flow**:
+    - Import the necessary modules and classes, including `async_engine` and `select`.
+    - Create an asynchronous session with the database using `AsyncSession` and `async_engine`.
+    - Construct a SQL statement to select all `DerivedContent` entries where the `node_id` matches the provided `node_id`.
     - Execute the SQL statement asynchronously and retrieve all matching records.
-    - Return the list of DerivedContent objects obtained from the query.
-- **Output**: A list of DerivedContent objects that are associated with the specified node_id.
+    - Return the list of `DerivedContent` objects.
+- **Output**: A list of `DerivedContent` objects that are associated with the specified `node_id`.
 
 
 ---
 ### get\_usage\_balance\_in\_bytes<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.get_usage_balance_in_bytes}} -->
 [View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L145>)
 
-The function `get_usage_balance_in_bytes` retrieves and converts the usage balance for a given organization ID from SLOC to bytes.
+Calculates the usage balance for an organization in bytes.
 - **Inputs**:
-    - `org_id`: A string representing the organization ID for which the usage balance is to be retrieved.
-- **Control Flow**:
-    - Import necessary modules and classes such as `engine`, `UsageMetricUnitType`, [`UsageService`](<../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>), and `Session`.
-    - Establish a session with the database using `Session(engine)`.
-    - Create an instance of [`UsageService`](<../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>) with the session and call [`get_usage_balance`](<../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance>) with `org_id` to retrieve the usage balance in SLOC.
-    - Convert the retrieved usage balance from SLOC to bytes using the [`convert_to`](<../../../../packages/shared/shared/interfaces/usage/usage_schema.py.md#UsageBalanceconvert_to>) method with `UsageMetricUnitType.BYTES`.
-    - Return the converted usage balance in bytes.
-- **Output**: An integer representing the usage balance in bytes for the specified organization ID.
+    - `org_id`: A string that identifies the organization for which to calculate the usage balance.
+- **Logic and Control Flow**:
+    - Import necessary modules and classes such as `engine`, `UsageMetricUnitType`, [`UsageService`](<../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>), and `Session`.
+    - Create a session with the database engine using `Session(engine)`.
+    - Instantiate [`UsageService`](<../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) with the session and call [`get_usage_balance`](<../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_balance>) with `org_id` to get the usage balance in SLOC.
+    - Convert the usage balance from SLOC to bytes using `convert_to(UsageMetricUnitType.BYTES)`.
+    - Return the `balance` attribute of the converted usage balance.
+- **Output**: An integer representing the usage balance in bytes for the specified organization.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../packages/shared/shared/usage/usage_service.py.md#UsageService>)
-    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](<../../../../packages/shared/shared/usage/usage_service.py.md#UsageServiceget_usage_balance>)
-    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.convert_to`](<../../../../packages/shared/shared/interfaces/usage/usage_schema.py.md#UsageBalanceconvert_to>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>)
+    - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](<../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_balance>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.convert_to`](<../../../../packages/shared/shared/interfaces/usage/usage_schema.py.md#usagebalanceconvert_to>)
+
+
+---
+### git\_provider\_app\_installation\_by\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/db.git_provider_app_installation_by_id}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/db.py#L163>)
+
+Retrieves a `GitProviderAppInstallation` object from the database using its ID.
+- **Inputs**:
+    - `installation_id`: A string representing the ID of the `GitProviderAppInstallation` to retrieve.
+- **Logic and Control Flow**:
+    - Import necessary modules and classes from `database.db`, `sqlmodel`, and `sqlalchemy.orm`.
+    - Create a new `Session` object using the `engine` from the database module.
+    - Construct a `select` query to find a `GitProviderAppInstallation` where the `id` matches `installation_id`.
+    - Use `selectinload` to eagerly load the related `git_provider_app` attribute of the `GitProviderAppInstallation`.
+    - Execute the query using the session and return the single result using `one()`.
+- **Output**: A `GitProviderAppInstallation` object corresponding to the given `installation_id`.
 
 
 

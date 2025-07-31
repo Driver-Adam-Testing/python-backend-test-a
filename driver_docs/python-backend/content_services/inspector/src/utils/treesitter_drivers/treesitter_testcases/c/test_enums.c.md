@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_enums.c` file demonstrates various ways to define and use enumerations in C, including named and unnamed enums, typedefs, and combined definition and declaration of enums with variables.
+Demonstrates various enumeration types and their usage in C, including named, unnamed, and typedef enums.
 
 # Purpose
-This C source code file demonstrates various ways to define and use enumerations in C, showcasing both named and unnamed enums, as well as typedefs for creating more readable code. It includes examples of named enumerations with and without typedefs, unnamed enumerations with typedefs, and global scope enumerations, illustrating how to declare and initialize variables of these types. The [`main`](<#main>) function assigns values to these enumerated types and prints their integer representations, highlighting the flexibility and utility of enums in organizing and managing related constants. This file serves as an educational example for understanding different enumeration techniques and their practical applications in C programming.
+This C source code file demonstrates the use of enumerations in various forms. It includes examples of named enumerations with and without `typedef`, unnamed enumerations, and combined enumeration definitions with variable declarations. The code defines several enumerations such as `Color`, `Weekday`, and `Direction`, and uses them to declare and initialize variables. The [`main`](<#main>) function assigns values to these variables and prints their integer representations using `printf`. This file serves as an educational example to illustrate different ways to define and use enumerations in C programming.
 # Imports and Dependencies
 
 ---
@@ -17,87 +17,90 @@ This C source code file demonstrates various ways to define and use enumerations
 
 ---
 ### globalEnum
-- **Type**: `enum`
-- **Description**: The `globalEnum` is a global variable of an unnamed enumeration type, which can take one of two values: `XX` or `YY`. This enumeration is defined at the file scope, making `globalEnum` accessible throughout the file.
-- **Use**: `globalEnum` is used to store and represent one of the two possible states, `XX` or `YY`, within the program.
+- **Type**: ``enum``
+- **Description**: An unnamed enumeration at the global scope that defines two constants, `XX` and `YY`, and declares a variable `globalEnum` of this unnamed enum type.
+- **Use**: Used to store one of the two possible values, `XX` or `YY`, at the global scope.
 
 
 ---
 ### dir1
-- **Type**: `enum Direction`
-- **Description**: The variable `dir1` is a global variable of the enumeration type `Direction`, which represents the four cardinal directions: NORTH, SOUTH, EAST, and WEST. It is declared alongside another variable `dir2`, which is initialized to EAST.
-- **Use**: `dir1` is used to store a direction value from the `Direction` enum, and it is set to NORTH in the `main` function.
+- **Type**: ``enum Direction``
+- **Description**: Represents a direction with possible values `NORTH`, `SOUTH`, `EAST`, and `WEST`. It is declared as a global variable of the `enum Direction` type.
+- **Use**: Used to store a direction value, initially set to `NORTH` in the `main` function.
 
 
 ---
 ### dir2
-- **Type**: `enum Direction`
-- **Description**: The variable `dir2` is a global variable of type `enum Direction`, which is an enumeration that defines four possible values: NORTH, SOUTH, EAST, and WEST. It is initialized to the value EAST.
-- **Use**: `dir2` is used to represent a direction, initialized to EAST, and can be accessed and modified throughout the program.
+- **Type**: ``enum Direction``
+- **Description**: Represents a direction with possible values `NORTH`, `SOUTH`, `EAST`, and `WEST`. The variable `dir2` is initialized to `EAST`.
+- **Use**: Used to store and manipulate directional values in the program.
 
 
 # Data Structures
 
 ---
 ### Color
-- **Type**: `enum`
+- **Type**: ``enum``
 - **Members**:
-    - `RED`: Represents the color red in the enumeration.
-    - `GREEN`: Represents the color green in the enumeration.
-    - `BLUE`: Represents the color blue in the enumeration.
-- **Description**: The `Color` enumeration defines a set of named integer constants representing three basic colors: red, green, and blue. This enumeration is useful for categorizing or identifying colors in a program where these three options are needed, providing a clear and readable way to handle color values.
+    - `RED`: Represents the color red.
+    - `GREEN`: Represents the color green.
+    - `BLUE`: Represents the color blue.
+- **Description**: Defines a set of named integer constants representing colors, which can be used to improve code readability and maintainability by using descriptive names instead of numeric values.
 
 
 ---
 ### Weekday
-- **Type**: `enum`
+- **Type**: ``enum``
 - **Members**:
-    - `MON`: Represents Monday in the Weekday enumeration.
-    - `TUE`: Represents Tuesday in the Weekday enumeration.
-    - `WED`: Represents Wednesday in the Weekday enumeration.
-    - `THU`: Represents Thursday in the Weekday enumeration.
-    - `FRI`: Represents Friday in the Weekday enumeration.
-- **Description**: The `Weekday` data structure is an enumeration type that defines constants for the weekdays from Monday to Friday. It is a typedef of an enum, allowing the use of `Weekday` as a type name in the code, which enhances readability and type safety when working with variables that represent days of the week.
+    - ``MON``: Represents Monday.
+    - ``TUE``: Represents Tuesday.
+    - ``WED``: Represents Wednesday.
+    - ``THU``: Represents Thursday.
+    - ``FRI``: Represents Friday.
+- **Description**: Defines an enumeration for the weekdays, providing symbolic names for the days from Monday to Friday.
 
 
 ---
 ### MyAnonEnum
-- **Type**: `typedef enum`
+- **Type**: ``typedef enum``
 - **Members**:
-    - `ALPHA`: Represents the first enumerator in the MyAnonEnum enumeration.
-    - `BETA`: Represents the second enumerator in the MyAnonEnum enumeration.
-    - `GAMMA`: Represents the third enumerator in the MyAnonEnum enumeration.
-- **Description**: MyAnonEnum is a typedef for an unnamed enumeration that consists of three enumerators: ALPHA, BETA, and GAMMA. This enumeration is used to define a set of named integer constants, which can be used to represent discrete values in a program. By using typedef, the enumeration can be referred to as MyAnonEnum, simplifying its usage in the code.
+    - ``ALPHA``: Represents the first enumerator in the `MyAnonEnum` enumeration.
+    - ``BETA``: Represents the second enumerator in the `MyAnonEnum` enumeration.
+    - ``GAMMA``: Represents the third enumerator in the `MyAnonEnum` enumeration.
+- **Description**: Defines an unnamed enumeration type with three enumerators: `ALPHA`, `BETA`, and `GAMMA`, and assigns it the type name `MyAnonEnum` using `typedef`.
 
 
 ---
 ### Direction
-- **Type**: `enum`
+- **Type**: ``enum``
 - **Members**:
     - `NORTH`: Represents the north direction.
     - `SOUTH`: Represents the south direction.
     - `EAST`: Represents the east direction.
     - `WEST`: Represents the west direction.
-- **Description**: The `Direction` enum is a simple enumeration that defines four possible values representing the cardinal directions: NORTH, SOUTH, EAST, and WEST. It is used to declare variables `dir1` and `dir2`, with `dir2` being initialized to EAST. This enum is useful for managing directional data in a program, providing a clear and readable way to handle direction-related logic.
+- **Description**: Defines a set of named integer constants representing the four cardinal directions: north, south, east, and west. This enumeration is used to declare variables `dir1` and `dir2`, with `dir2` initialized to `EAST`.
 
 
 ---
 ### Kind
-- **Type**: `enum`
+- **Type**: ``enum``
 - **Members**:
-    - `ALPHA`: Represents the first enumerated value in the Kind enumeration.
-    - `BETA`: Represents the second enumerated value in the Kind enumeration.
-    - `GAMMA`: Represents the third enumerated value in the Kind enumeration.
-- **Description**: The 'Kind' data structure is an enumeration type that defines a set of named integer constants: ALPHA, BETA, and GAMMA. It is used to represent a specific set of values, and the typedef also provides a pointer type 'KindPtr' for referencing these enumerated values. This allows for easy manipulation and comparison of these constants within the program.
+    - `ALPHA`: Represents the first enumerator in the `Kind` enumeration.
+    - `BETA`: Represents the second enumerator in the `Kind` enumeration.
+    - `GAMMA`: Represents the third enumerator in the `Kind` enumeration.
+    - `KindPtr`: Defines a pointer type to the `Kind` enumeration.
+- **Description**: Defines an unnamed enumeration with three enumerators: `ALPHA`, `BETA`, and `GAMMA`, and provides a typedef for the enumeration as `Kind` and a pointer to it as `KindPtr`.
 
 
 # Functions
 
 ---
 ### main<!-- {{#callable:main}} -->
-The `main` function demonstrates the use of various enumerations and prints their integer values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_enums.c#L50>)
+
+Initializes and assigns values to various enumerated types and prints their integer representations.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Declare and initialize a variable `c` of type `enum Color` with the value `GREEN`.
     - Declare and initialize a variable `w` of type `Weekday` with the value `WED`.
     - Declare and initialize a variable `e` of type `MyAnonEnum` with the value `BETA`.
@@ -105,7 +108,7 @@ The `main` function demonstrates the use of various enumerations and prints thei
     - Assign the value `NORTH` to the variable `dir1`.
     - Print the integer values of `c`, `w`, `e`, `globalEnum`, `dir1`, and `dir2` using `printf`.
     - Return 0 to indicate successful execution.
-- **Output**: The function returns an integer value of 0, indicating successful execution.
+- **Output**: Returns an integer value `0` to indicate successful execution.
 
 
 

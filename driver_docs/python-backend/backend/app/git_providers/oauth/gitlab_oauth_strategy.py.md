@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `gitlab_oauth_strategy.py` file implements the GitLab OAuth strategy for handling authorization, token exchange, and token validation within the `python-backend` codebase.
+Implements GitLab OAuth strategy for token management and user authentication.
 
 # Purpose
-This Python file defines a class `GitLabOAuthStrategy` that provides a comprehensive implementation of the OAuth 2.0 authentication flow specifically for GitLab. The class is designed to handle various aspects of OAuth, including generating authorization URLs, exchanging authorization codes for access tokens, refreshing access tokens, and validating tokens. It leverages the `httpx` library for making HTTP requests and uses a configuration object, `GitProviderConfig`, to manage endpoint URLs and client credentials. The class also includes error handling mechanisms, such as raising a custom `GitProviderAppRevokeError` when a token is revoked or expired, ensuring robust management of authentication states.
+The `GitLabOAuthStrategy` class provides functionality for handling OAuth authentication with GitLab. It is designed to manage the OAuth flow, including generating authorization URLs, exchanging authorization codes for access tokens, refreshing access tokens, and validating tokens. The class uses the `httpx` library to make HTTP requests to GitLab's API endpoints, which are configured through the `GitProviderConfig` object passed during initialization.
 
-The code is structured as a library file intended to be imported and used within a larger application, likely one that interacts with GitLab's API. It encapsulates the OAuth logic within a single class, making it reusable and easy to integrate. The class methods provide a clear API for managing OAuth tokens, which can be used by other components of the application to authenticate users and access GitLab resources securely. The use of logging and exception handling further enhances the reliability and maintainability of the code, making it suitable for production environments where robust error management is crucial.
+Key methods in the class include [`generate_authorization_url`](<#gitlaboauthstrategygenerate_authorization_url>), which constructs the URL for user authorization; [`exchange_code_for_token`](<#gitlaboauthstrategyexchange_code_for_token>), which exchanges an authorization code for an access token; and [`refresh_access_token`](<#gitlaboauthstrategyrefresh_access_token>), which refreshes an expired access token. The class also includes methods to validate tokens and retrieve user information associated with a token. Error handling is implemented to manage HTTP errors, and specific exceptions are raised for revoked or expired tokens using the `GitProviderAppRevokeError`. The class is intended to be used as part of a larger application that requires GitLab OAuth integration.
 # Imports and Dependencies
 
 ---
@@ -23,148 +23,168 @@ The code is structured as a library file intended to be imported and used within
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the name of the current module (`__name__`) as its logger name, which helps in identifying the source of log messages.
-- **Use**: This variable is used to log error messages, particularly when access tokens are revoked or expired, aiding in debugging and monitoring the application's behavior.
+- **Type**: ``logging.Logger``
+- **Description**: The `logger` variable is an instance of the `logging.Logger` class. It is initialized using the `getLogger` method with the current module's name as the argument.
+- **Use**: Used to log messages for the module, particularly for error handling in the `refresh_access_token` method.
 
 
 # Classes
 
 ---
 ### GitLabOAuthStrategy<!-- {{#class:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy}} -->
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L11>)
+
 - **Members**:
-    - `config`: Holds the configuration settings for the GitLab OAuth process.
-- **Description**: The `GitLabOAuthStrategy` class is responsible for handling the OAuth authentication flow with GitLab. It manages the generation of authorization URLs, exchanges authorization codes for access tokens, refreshes access tokens, and validates tokens. The class utilizes the `httpx` library to make HTTP requests to GitLab's API endpoints, and it relies on a configuration object, `GitProviderConfig`, to provide necessary settings such as client ID, client secret, and endpoint URLs. Additionally, it handles exceptions related to token revocation or expiration, raising a custom error when necessary.
+    - `config`: Stores the configuration for the Git provider.
+- **Description**: Implements the OAuth strategy for GitLab, handling authorization, token exchange, and token validation. It uses the `httpx` library to make HTTP requests to GitLab's API endpoints. The class provides methods to generate authorization URLs, exchange authorization codes for access tokens, refresh access tokens, and validate tokens. It also handles exceptions related to HTTP status errors and logs errors when access tokens are revoked or expired.
 - **Methods**:
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.__init__`](<#GitLabOAuthStrategy__init__>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request`](<#GitLabOAuthStrategy_make_post_request>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._token_info`](<#GitLabOAuthStrategy_token_info>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.token_user`](<#GitLabOAuthStrategytoken_user>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.generate_authorization_url`](<#GitLabOAuthStrategygenerate_authorization_url>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.exchange_code_for_token`](<#GitLabOAuthStrategyexchange_code_for_token>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.refresh_access_token`](<#GitLabOAuthStrategyrefresh_access_token>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.is_token_valid`](<#GitLabOAuthStrategyis_token_valid>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.__init__`](<#gitlaboauthstrategy__init__>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request`](<#gitlaboauthstrategy_make_post_request>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._token_info`](<#gitlaboauthstrategy_token_info>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.token_user`](<#gitlaboauthstrategytoken_user>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.generate_authorization_url`](<#gitlaboauthstrategygenerate_authorization_url>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.exchange_code_for_token`](<#gitlaboauthstrategyexchange_code_for_token>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.refresh_access_token`](<#gitlaboauthstrategyrefresh_access_token>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.is_token_valid`](<#gitlaboauthstrategyis_token_valid>)
 
 **Methods**
 
 ---
 #### GitLabOAuthStrategy\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.__init__}} -->
-The `__init__` method initializes an instance of the `GitLabOAuthStrategy` class with a given configuration.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L12>)
+
+Initializes an instance of the `GitLabOAuthStrategy` class with a given configuration.
 - **Inputs**:
     - `config`: An instance of `GitProviderConfig` that contains configuration details for the GitLab OAuth strategy.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Assigns the provided `config` to the instance variable `self.config`.
-- **Output**: This method does not return any value.
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+- **Output**: No output is returned as this is a constructor method.
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.\_make\_post\_request<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request}} -->
-The `_make_post_request` method sends a POST request to a specified URL with a given payload and returns the JSON response.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L15>)
+
+Sends a POST request to a specified URL with a given payload and returns the JSON response.
 - **Inputs**:
-    - `url`: A string representing the URL to which the POST request will be sent.
-    - `payload`: A dictionary containing the data to be sent in the body of the POST request.
-- **Control Flow**:
-    - A new HTTP client is created using `httpx.Client()` within a context manager to ensure proper resource management.
-    - A POST request is made to the specified URL with the provided payload using the `client.post()` method.
-    - The `response.raise_for_status()` method is called to raise an exception if the HTTP response status code indicates an error.
-    - The JSON content of the response is returned using `response.json()`.
+    - `url`: The URL to which the POST request is sent.
+    - `payload`: A dictionary containing the data to be sent in the POST request.
+- **Logic and Control Flow**:
+    - Creates an HTTP client using `httpx.Client()` within a context manager to ensure proper resource management.
+    - Sends a POST request to the specified `url` with the `payload` as the data.
+    - Calls `response.raise_for_status()` to raise an exception if the HTTP response status is not successful.
+    - Returns the JSON content of the response using `response.json()`.
 - **Output**: A dictionary representing the JSON response from the POST request.
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.\_token\_info<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._token_info}} -->
-The `_token_info` method retrieves and returns information about a given token by making an HTTP GET request to a specified endpoint.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L21>)
+
+Retrieves token information from a specified endpoint using an HTTP GET request.
 - **Inputs**:
-    - `token`: A string representing the token for which information is to be retrieved.
-- **Control Flow**:
+    - `token`: A string representing the authorization token to include in the request header.
+- **Logic and Control Flow**:
     - Constructs the URL for the token information endpoint using the base URL and token info endpoint from the configuration.
-    - Sets up the headers for the HTTP request, including an Authorization header with the provided token.
-    - Creates an HTTP client using `httpx.Client()` and makes a GET request to the constructed URL with the specified headers.
-    - Checks the response status and raises an exception if the status is not successful using `response.raise_for_status()`.
-    - Returns the JSON content of the response using `response.json()`.
-- **Output**: A dictionary containing the JSON response from the token information endpoint, which includes details about the token.
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+    - Sets the authorization header with the provided token.
+    - Creates an HTTP client using `httpx.Client()` and sends a GET request to the constructed URL with the authorization header.
+    - Checks the response status and raises an exception if the status is not successful.
+    - Returns the JSON content of the response.
+- **Output**: A dictionary containing the token information retrieved from the endpoint.
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.token\_user<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.token_user}} -->
-The `token_user` method retrieves user information from a GitLab server using an OAuth token.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L29>)
+
+Retrieves user information from a GitLab server using an OAuth token.
 - **Inputs**:
     - `token`: A string representing the OAuth token used for authentication.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Constructs the URL for the user endpoint using the base URL and user endpoint from the configuration.
     - Sets the HTTP headers to include the Authorization header with the Bearer token.
-    - Creates an HTTP client using `httpx.Client()` to manage the request.
-    - Sends a GET request to the constructed URL with the specified headers.
-    - Checks the response status and raises an exception if the status is not successful.
-    - Returns the JSON content of the response.
-- **Output**: A dictionary containing the JSON response from the user endpoint, which includes user information.
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+    - Creates an HTTP client using `httpx.Client()` and sends a GET request to the constructed URL with the headers.
+    - Checks the HTTP response status and raises an exception if the status is not successful.
+    - Parses and returns the JSON response from the server.
+- **Output**: A dictionary containing the user information retrieved from the server.
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.generate\_authorization\_url<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.generate_authorization_url}} -->
-The `generate_authorization_url` method constructs and returns an authorization URL with query parameters for OAuth authentication.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L37>)
+
+Generates an authorization URL with query parameters for OAuth authentication.
 - **Inputs**:
-    - `state`: A string representing the state parameter to be included in the authorization URL, used to maintain state between the request and callback.
-- **Control Flow**:
-    - A dictionary `query_params` is created with keys 'client_id', 'redirect_uri', 'response_type', 'scope', and 'state', populated with values from the instance's configuration and the provided `state` argument.
-    - The `urlencode` function is used to convert the `query_params` dictionary into a URL-encoded query string.
-    - The method returns a formatted string that combines the `authorize_url` from the configuration with the URL-encoded query string.
-- **Output**: A string representing the complete authorization URL with the necessary query parameters for OAuth authentication.
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+    - `state`: A string that represents the state parameter to include in the authorization URL for security purposes.
+- **Logic and Control Flow**:
+    - Creates a dictionary `query_params` with keys `client_id`, `redirect_uri`, `response_type`, `scope`, and `state`, using values from the `config` attribute and the `state` parameter.
+    - Uses the `urlencode` function to convert the `query_params` dictionary into a URL-encoded query string.
+    - Concatenates the `authorize_url` from the `config` attribute with the URL-encoded query string to form the complete authorization URL.
+    - Returns the complete authorization URL as a string.
+- **Output**: A string representing the complete authorization URL with query parameters.
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.exchange\_code\_for\_token<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.exchange_code_for_token}} -->
-The `exchange_code_for_token` method exchanges an authorization code for an access token by making a POST request to the configured access token URL.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L47>)
+
+Exchanges an authorization code for an access token using the OAuth 2.0 protocol.
 - **Inputs**:
-    - `code`: A string representing the authorization code obtained from the OAuth authorization process.
-- **Control Flow**:
-    - Constructs a payload dictionary containing the client ID, client secret, authorization code, grant type, and redirect URI.
-    - Calls the [`_make_post_request`](<#GitLabOAuthStrategy_make_post_request>) method with the access token URL and the constructed payload to perform the POST request.
-- **Output**: A dictionary containing the response from the access token URL, typically including the access token and other related information.
+    - `code`: The authorization code received from the OAuth 2.0 authorization server.
+- **Logic and Control Flow**:
+    - Creates a payload dictionary with keys 'client_id', 'client_secret', 'code', 'grant_type', and 'redirect_uri' using values from the configuration and the provided 'code'.
+    - Calls the '_make_post_request' method with the access token URL and the payload to perform the token exchange.
+- **Output**: A dictionary containing the access token and related information returned by the OAuth 2.0 authorization server.
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request`](<#GitLabOAuthStrategy_make_post_request>)
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request`](<#gitlaboauthstrategy_make_post_request>)
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.refresh\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.refresh_access_token}} -->
-The `refresh_access_token` method attempts to refresh an OAuth access token using a provided refresh token and handles potential errors during the process.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L57>)
+
+Refreshes an access token using a given refresh token and handles potential errors.
 - **Inputs**:
     - `refresh_token`: A string representing the refresh token used to obtain a new access token.
-- **Control Flow**:
-    - Constructs a payload dictionary with the grant type set to 'refresh_token', the provided refresh token, and client credentials from the configuration.
-    - Calls the [`_make_post_request`](<#GitLabOAuthStrategy_make_post_request>) method with the access token URL and the constructed payload to attempt to refresh the access token.
-    - Catches `httpx.HTTPStatusError` exceptions that may occur during the HTTP request.
-    - Checks if the exception is due to a 400 status code with an 'invalid_grant' error, logs an error message, and raises a [`GitProviderAppRevokeError`](<../utils/errors.py.md#GitProviderAppRevokeError>) to indicate that the token was revoked or expired.
-    - Re-raises any other exceptions that occur during the HTTP request.
-- **Output**: Returns a dictionary containing the response from the token refresh request, or raises an exception if an error occurs.
+- **Logic and Control Flow**:
+    - Creates a payload dictionary with the grant type set to 'refresh_token', the provided refresh token, and client credentials from the configuration.
+    - Calls the [`_make_post_request`](<#gitlaboauthstrategy_make_post_request>) method with the access token URL and the payload to request a new access token.
+    - Catches `httpx.HTTPStatusError` exceptions to handle HTTP errors during the request.
+    - Checks if the error status code is 400 and the error message is 'invalid_grant', indicating the token is revoked or expired.
+    - Logs an error message and raises a [`GitProviderAppRevokeError`](<../utils/errors.py.md#gitproviderapprevokeerror>) if the token is revoked or expired.
+    - Reraises any other exceptions that occur.
+- **Output**: A dictionary containing the response from the access token refresh request.
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request`](<#GitLabOAuthStrategy_make_post_request>)
-    - [`python-backend/backend/app/git_providers/utils/errors.GitProviderAppRevokeError`](<../utils/errors.py.md#GitProviderAppRevokeError>)
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._make_post_request`](<#gitlaboauthstrategy_make_post_request>)
+    - [`python-backend/backend/app/git_providers/utils/errors.GitProviderAppRevokeError`](<../utils/errors.py.md#gitproviderapprevokeerror>)
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 ---
 #### GitLabOAuthStrategy\.is\_token\_valid<!-- {{#callable:python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.is_token_valid}} -->
-The `is_token_valid` method checks if a given OAuth token is still valid by verifying its expiration status.
+[View Source →](<../../../../../../backend/app/git_providers/oauth/gitlab_oauth_strategy.py#L77>)
+
+Checks if a given token is valid by verifying its expiration status.
 - **Inputs**:
-    - `token`: A string representing the OAuth token to be validated.
-- **Control Flow**:
-    - The method attempts to retrieve token information by calling the [`_token_info`](<#GitLabOAuthStrategy_token_info>) method with the provided token.
-    - It extracts the `expires_in` field from the token information to determine the remaining validity period of the token.
-    - If `expires_in` is greater than 0, the token is considered valid, and the method returns `True`.
-    - If an `httpx.HTTPStatusError` is raised during the token information retrieval, the method checks if the error is due to an invalid token (HTTP status code 401 and error message 'invalid_token').
-    - If the token is invalid, the method returns `False`, indicating the token is not valid but may be refreshable.
-    - For any other HTTP errors, the method re-raises the exception.
+    - `token`: A string representing the token to validate.
+- **Logic and Control Flow**:
+    - Calls the [`_token_info`](<#gitlaboauthstrategy_token_info>) method to retrieve token information.
+    - Extracts the `expires_in` value from the token information.
+    - Returns `True` if `expires_in` is greater than 0, indicating the token is valid.
+    - Catches `httpx.HTTPStatusError` exceptions during the token information retrieval.
+    - Checks if the exception is due to a 401 status code with an 'invalid_token' error.
+    - Returns `False` if the token is invalid and can potentially be refreshed.
+    - Re-raises the exception if it is not due to an invalid token.
 - **Output**: A boolean value indicating whether the token is valid (`True`) or not (`False`).
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._token_info`](<#GitLabOAuthStrategy_token_info>)
-- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#GitLabOAuthStrategy>)  (Base Class)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy._token_info`](<#gitlaboauthstrategy_token_info>)
+- **See also**: [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<#gitlaboauthstrategy>)  (Base Class)
 
 
 

@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Processing PDF files with dependency management and project configuration, including `src`, `.gitignore`, `poetry.lock`, `pyproject.toml`, and an empty `README.md`.
+PDF preprocessing and embedding functions with exception handling, database persistence, and Poetry configuration.
 
 ## Folders
-- **[src](src/README.md)**: The `src` folder in the `python-backend` codebase contains the `main.py` file, which is responsible for processing PDF files, including downloading, sanitizing, embedding summaries, persisting results to a database, and handling exceptions with notification emails.
+- **[src](src/README.md)**: Implements PDF preprocessing and embedding functions with exception handling and database persistence.
 
 ## Files
-- **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies that all files within the `metadata` and `pdfs` directories should be ignored by Git.
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for the `pdf-preprocessing` project using Poetry, specifying dependencies and build settings.
+- **[.gitignore](.gitignore.md)**: Specifies ignored directories for metadata and PDFs in version control.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project using Poetry to ensure consistent environments.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the `pdf-preprocessing` package using Poetry, specifying dependencies and build settings.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).
 
 ---

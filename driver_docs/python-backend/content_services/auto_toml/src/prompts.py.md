@@ -3,144 +3,235 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prompts.py` file in the `python-backend` codebase provides templates and functions for generating system and user prompts to assist in creating and extending TOML configuration files for technical documentation based on user-defined goals and source material.
+Functions and components for generating and appending prompts for creating technical documentation from TOML files.
 
 # Purpose
-This Python code file provides a set of functions and string templates designed to facilitate the generation of technical documentation using a TOML configuration file. The code includes detailed system and user prompts for different stages of the documentation process, such as summarizing source material, generating a new TOML configuration, and appending to an existing configuration. Each function returns a formatted string based on the provided inputs, ensuring that the output aligns with the specified document goals and user context. The functionality is narrow, focusing specifically on creating structured prompts for a documentation tool, and it is implemented as a collection of global string constants and functions that format these strings.
+The code defines a set of functions and components for generating prompts used in a documentation tool. It imports `Component` and `Prompt` from a shared module and uses them to create structured prompts for different tasks, such as summarizing source material, generating a TOML configuration file, and appending sections to an existing TOML file. The code includes several string templates and guidelines that dictate how to format and structure the prompts. These prompts are designed to guide a language model in creating technical documentation based on user-defined goals and source material. The code provides narrow functionality focused on generating and managing prompts for a specific documentation generation process.
+# Imports and Dependencies
+
+---
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
+
+
 # Global Variables
 
 ---
 ### \_BASE\_SYSTEM\_PROMPT
-- **Type**: `string`
-- **Description**: _BASE_SYSTEM_PROMPT is a multi-line string variable that contains a detailed template and guidelines for generating technical documentation using a TOML configuration file. It includes instructions on how to specify sections, titles, levels, instructions, and content structures within the TOML file, along with examples and guidelines for valid and invalid syntax.
-- **Use**: This variable is used as a foundational prompt for generating system prompts that guide the creation of structured technical documentation.
+- **Type**: ``Component``
+- **Description**: Defines a `Component` instance that contains a multi-line string. This string provides detailed instructions and guidelines for creating technical documentation using a TOML configuration file. The string includes templates, examples, and guidelines for specifying keys like 'title', 'level', 'instruction', and 'content_structure' in the TOML file.
+- **Use**: Used to provide a structured prompt for generating technical documentation from a TOML configuration file.
+
+
+---
+### \_GUIDANCE\_ON\_CONTENT\_TO\_AVOID
+- **Type**: ``Component``
+- **Description**: A `Component` instance that contains a string with guidelines on avoiding speculative or suggestive content in documentation. It advises against including sections on future enhancements or unnecessary summaries and conclusions unless explicitly required.
+- **Use**: Used to provide guidance on content to avoid in documentation.
 
 
 ---
 ### NO\_CONTENT\_FOUND\_RESPONSE
-- **Type**: `string`
-- **Description**: The variable `NO_CONTENT_FOUND_RESPONSE` is a global string constant that holds the value "NO CONTENT FOUND". It is used as a standardized response when no relevant content is found in the source material during document generation or analysis.
-- **Use**: This variable is used to provide a consistent message indicating the absence of content in specific contexts.
+- **Type**: ``str``
+- **Description**: A string variable that holds the text 'NO CONTENT FOUND'. This string is used as a response when no relevant content is found in the source material.
+- **Use**: Used to indicate the absence of relevant content in the source material.
 
 
 ---
 ### \_SUMMARY\_SYSTEM\_PROMPT
-- **Type**: `string`
-- **Description**: The `_SUMMARY_SYSTEM_PROMPT` is a formatted string that provides detailed instructions for generating a summary of source material relevant to a user's document goal. It emphasizes the importance of technical detail, accuracy, and relevance, and includes critical instructions to ensure the summary is concise and easy for a language model to consume.
-- **Use**: This variable is used to guide the creation of summaries that extract relevant information from source material for document generation purposes.
+- **Type**: ``Component``
+- **Description**: The `_SUMMARY_SYSTEM_PROMPT` is an instance of the `Component` class. It contains a formatted string that provides instructions for generating a summary of source material relevant to a user's document goal. The string includes critical instructions to ensure the summary is concise, accurate, and easy for a language model to consume.
+- **Use**: Used to define the system prompt for summarizing source material in a form suitable for language model consumption.
 
 
 ---
 ### \_SUMMARY\_USER\_PROMPT\_TEMPLATE
 - **Type**: `str`
-- **Description**: The `_SUMMARY_USER_PROMPT_TEMPLATE` is a string template used to format a prompt for summarizing user-defined document goals, user context, and source material. It includes placeholders for `document_goal`, `user_context`, and `source_material`, which are dynamically filled with the respective content when the template is used.
-- **Use**: This variable is used to generate a formatted prompt string that guides the summarization process by providing structured input to the summarization function.
+- **Description**: The `_SUMMARY_USER_PROMPT_TEMPLATE` is a string template used to format a user-defined document description, user context, and source material into a structured prompt.
+- **Use**: Used to create a formatted prompt for summarizing source material based on user input.
 
 
 ---
 ### \_GENERATE\_SYSTEM\_PROMPT
-- **Type**: `str`
-- **Description**: The `_GENERATE_SYSTEM_PROMPT` is a string variable that contains a detailed template and set of instructions for generating a TOML configuration file. This configuration file is intended to align with a user's document goal by analyzing a summary of source material and any additional user context.
-- **Use**: This variable is used to provide a structured prompt for generating a TOML configuration file that ensures the final document is cohesive and follows user instructions.
+- **Type**: ``Component``
+- **Description**: Defines a `Component` instance with a multi-line string that provides instructions for generating a TOML configuration file based on a user's document goal and context. The string includes critical instructions for ensuring the document is well-structured and cohesive.
+- **Use**: Used to provide a system prompt for generating a TOML configuration file that aligns with a user's document goal.
 
 
 ---
 ### \_GENERATE\_USER\_PROMPT\_TEMPLATE
-- **Type**: `string`
-- **Description**: _GENERATE_USER_PROMPT_TEMPLATE is a string template used to format a user prompt for generating a technical document. It includes placeholders for the document goal, user context, and a summary of the source material, which are filled in to create a complete prompt for the user.
-- **Use**: This variable is used to create a formatted prompt that guides the user in generating a technical document by providing context and a summary of relevant information.
+- **Type**: `str`
+- **Description**: A string template used to generate a user prompt for a document creation task. The template includes placeholders for `document_goal`, `user_context`, and `source_summary`, which are filled with specific content when creating the prompt.
+- **Use**: Used to format and generate a user prompt by inserting specific document goal, user context, and source summary into the template.
 
 
 ---
 ### \_APPEND\_SYSTEM\_PROMPT
-- **Type**: `str`
-- **Description**: The `_APPEND_SYSTEM_PROMPT` is a multi-line string that provides detailed instructions for a system tasked with appending sections to a TOML configuration file. It outlines the process of analyzing source material and determining missing sections based on a document goal, ensuring the final document is cohesive and logically structured.
-- **Use**: This variable is used to guide the system in appending new sections to a TOML configuration file, ensuring alignment with the user's document goal and adherence to specified instructions.
+- **Type**: ``Component``
+- **Description**: Defines a `Component` object with a string attribute that contains detailed instructions for appending sections to a TOML configuration file. The instructions guide the user on how to analyze source material and define additional sections to align with a document goal.
+- **Use**: Used to provide structured guidance for appending new sections to a TOML configuration file based on a document goal and source material analysis.
 
 
 ---
 ### \_APPEND\_USER\_PROMPT\_TEMPLATE
-- **Type**: `str`
-- **Description**: `_APPEND_USER_PROMPT_TEMPLATE` is a string template used to format a prompt for appending sections to a TOML configuration file. It includes placeholders for the document goal, user context, source summary, and the existing user TOML configuration file.
-- **Use**: This variable is used to generate a formatted prompt by filling in the placeholders with specific user and document information.
+- **Type**: ``str``
+- **Description**: A multi-line string template that defines the structure for appending user-specific information to a document. It includes placeholders for `document_goal`, `user_context`, `source_summary`, and `user_toml`, which are intended to be filled with user-provided data.
+- **Use**: Used to format and append user-specific information to a document by replacing placeholders with actual data.
 
 
 ---
 ### \_NO\_USER\_CONTEXT
-- **Type**: `str`
-- **Description**: The variable `_NO_USER_CONTEXT` is a string that holds the message 'No user context provided'. It is used as a default value to indicate the absence of user context information.
-- **Use**: This variable is used to provide a default message when no user context is available or provided in the application.
+- **Type**: ``str``
+- **Description**: A string variable that holds the message 'No user context provided'. This message indicates that no specific user context is available or has been supplied.
+- **Use**: Used to represent a default message when user context is absent.
+
+
+---
+### \_USER\_CONTEXT\_SIZE\_SHORT
+- **Type**: ``Component``
+- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file. The instructions emphasize creating a concise and well-structured document, ideally around one page in length, by carefully crafting sections to fit the document goal and source material.
+- **Use**: Used to provide guidelines for creating a short and cohesive TOML configuration file.
+
+
+---
+### \_USER\_CONTEXT\_SIZE\_MEDIUM
+- **Type**: ``Component``
+- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file to produce a medium-length document. The instructions emphasize the importance of a cohesive and well-structured configuration, allowing for a mix of longer and shorter sections as needed to meet the document goal.
+- **Use**: Used to guide the creation of a TOML configuration file that results in a medium-length document.
+
+
+---
+### \_USER\_CONTEXT\_SIZE\_LONG
+- **Type**: ``Component``
+- **Description**: Defines a `Component` object that contains critical instructions for structuring a TOML configuration file intended to produce a long document, ideally 5+ pages. The instructions emphasize the importance of section length and content structure to achieve a comprehensive and well-structured final document.
+- **Use**: Used to provide guidelines for creating a TOML configuration that results in a long, detailed document.
+
+
+---
+### USER\_CONTEXT\_BASE
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a string attribute that specifies a requirement for the final TOML configuration file. The string indicates that the configuration file must include the minimum number of sections necessary to fulfill the document goal.
+- **Use**: Used to define a base requirement for the TOML configuration file in the context of generating technical documentation.
+
+
+---
+### \_USER\_CONTEXT\_SIZE\_MAP
+- **Type**: `dict`
+- **Description**: Maps user context size identifiers ('SHORT', 'MEDIUM', 'LONG') to their corresponding `Component` instances (`_USER_CONTEXT_SIZE_SHORT`, `_USER_CONTEXT_SIZE_MEDIUM`, `_USER_CONTEXT_SIZE_LONG`).
+- **Use**: Used to retrieve the appropriate `Component` based on the specified user context size.
 
 
 # Functions
 
 ---
 ### summary\_system\_prompt<!-- {{#callable:python-backend/content_services/auto_toml/src/prompts.summary_system_prompt}} -->
-The function `summary_system_prompt` returns a predefined string constant used as a system prompt for summarizing source material.
+[View Source →](<../../../../../content_services/auto_toml/src/prompts.py#L258>)
+
+Generates a string representation of the summary system prompt.
 - **Inputs**: None
-- **Control Flow**:
-    - The function directly returns the value of the constant `_SUMMARY_SYSTEM_PROMPT`.
-- **Output**: A string containing the system prompt for summarizing source material.
+- **Logic and Control Flow**:
+    - Calls `Prompt.empty()` to create an empty `Prompt` object.
+    - Appends the `_SUMMARY_SYSTEM_PROMPT` component to the empty `Prompt` object.
+    - Converts the `Prompt` object into a string using `into_str()` method.
+    - Returns the resulting string.
+- **Output**: A string that represents the summary system prompt.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
 
 
 ---
 ### summary\_user\_prompt<!-- {{#callable:python-backend/content_services/auto_toml/src/prompts.summary_user_prompt}} -->
-The function formats a user prompt template with a document goal, user context, and source content for generating a summary.
+[View Source →](<../../../../../content_services/auto_toml/src/prompts.py#L262>)
+
+Formats a user prompt for summarizing source material based on a document goal and user context.
 - **Inputs**:
-    - `document_goal`: A string representing the goal or purpose of the document the user wants to create.
-    - `user_context`: A string providing additional context or instructions from the user, which may be empty or None.
-    - `source_content`: A string containing the source material that may be relevant to the document goal.
-- **Control Flow**:
-    - The function uses the _SUMMARY_USER_PROMPT_TEMPLATE string, which contains placeholders for document_goal, user_context, and source_material.
-    - It formats this template by replacing the placeholders with the provided arguments: document_goal, user_context (or a default message if None), and source_content.
-    - The formatted string is then returned as the output.
-- **Output**: A formatted string that incorporates the document goal, user context, and source content into a predefined template.
+    - `document_goal`: A string that specifies the goal of the document the user wants to create.
+    - `user_context`: A string that provides additional instructions or guidance from the user, or a default message if not provided.
+    - `source_content`: A string containing the source material to be summarized.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object.
+    - Format the `_SUMMARY_USER_PROMPT_TEMPLATE` string with `document_goal`, `user_context`, and `source_content`.
+    - Create a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) object with the formatted string.
+    - Append the [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt`.
+    - Convert the `Prompt` to a string and return it.
+- **Output**: A string that represents the formatted user prompt for summarizing the source material.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
 
 
 ---
 ### generate\_system\_prompt<!-- {{#callable:python-backend/content_services/auto_toml/src/prompts.generate_system_prompt}} -->
-The `generate_system_prompt` function concatenates two predefined string constants to create a system prompt for generating technical documentation.
+[View Source →](<../../../../../content_services/auto_toml/src/prompts.py#L280>)
+
+Generates a system prompt by combining several predefined components into a single string.
 - **Inputs**: None
-- **Control Flow**:
-    - The function directly returns the concatenation of `_BASE_SYSTEM_PROMPT` and `_GENERATE_SYSTEM_PROMPT`.
-- **Output**: A string that is the result of concatenating `_BASE_SYSTEM_PROMPT` and `_GENERATE_SYSTEM_PROMPT`.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object using `Prompt.empty()`.
+    - Appends the `_BASE_SYSTEM_PROMPT` component to the `Prompt` object.
+    - Appends the `_GUIDANCE_ON_CONTENT_TO_AVOID` component to the `Prompt` object.
+    - Appends the `_GENERATE_SYSTEM_PROMPT` component to the `Prompt` object.
+    - Converts the `Prompt` object into a string using `into_str()` and returns it.
+- **Output**: A string that represents the combined system prompt.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
 
 
 ---
 ### generate\_user\_prompt<!-- {{#callable:python-backend/content_services/auto_toml/src/prompts.generate_user_prompt}} -->
-The `generate_user_prompt` function formats a user prompt string using a predefined template with provided document goal, user context, and source summary.
+[View Source →](<../../../../../content_services/auto_toml/src/prompts.py#L290>)
+
+Formats a user prompt using a predefined template with provided document goal, user context, and source summary.
 - **Inputs**:
-    - `document_goal`: A string representing the goal of the document the user wants to create.
-    - `user_context`: A string providing additional context or instructions from the user, which defaults to a predefined message if not provided.
-    - `source_summary`: A string summarizing the source material relevant to the document goal.
-- **Control Flow**:
-    - The function uses the `_GENERATE_USER_PROMPT_TEMPLATE` to format a string.
-    - It substitutes placeholders in the template with the `document_goal`, `user_context`, and `source_summary` values.
-    - If `user_context` is not provided, it defaults to `_NO_USER_CONTEXT`.
-- **Output**: A formatted string that serves as a user prompt, incorporating the document goal, user context, and source summary.
+    - `document_goal`: A string that specifies the goal of the document.
+    - `user_context`: A string that provides additional context or instructions from the user.
+    - `source_summary`: A string that contains a summary of the source material relevant to the document.
+- **Logic and Control Flow**:
+    - Uses the `_GENERATE_USER_PROMPT_TEMPLATE` to format the user prompt.
+    - Substitutes placeholders in the template with the provided `document_goal`, `user_context`, and `source_summary`.
+    - If `user_context` is not provided, substitutes it with `_NO_USER_CONTEXT`.
+- **Output**: Returns a formatted string that represents the user prompt.
 
 
 ---
 ### append\_system\_prompt<!-- {{#callable:python-backend/content_services/auto_toml/src/prompts.append_system_prompt}} -->
-The `append_system_prompt` function concatenates two predefined string constants to form a complete system prompt for appending sections to a TOML configuration file.
+[View Source →](<../../../../../content_services/auto_toml/src/prompts.py#L300>)
+
+Appends predefined system prompts to an empty prompt and converts it to a string.
 - **Inputs**: None
-- **Control Flow**:
-    - The function directly returns the concatenation of two string constants: `_BASE_SYSTEM_PROMPT` and `_APPEND_SYSTEM_PROMPT`.
-- **Output**: A string that is the result of concatenating `_BASE_SYSTEM_PROMPT` and `_APPEND_SYSTEM_PROMPT`.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object using `Prompt.empty()`.
+    - Appends `_BASE_SYSTEM_PROMPT` to the empty prompt.
+    - Appends `_APPEND_SYSTEM_PROMPT` to the prompt.
+    - Converts the final prompt into a string using `into_str()`.
+- **Output**: A string that represents the combined system prompts.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
 
 
 ---
 ### append\_user\_prompt<!-- {{#callable:python-backend/content_services/auto_toml/src/prompts.append_user_prompt}} -->
-The `append_user_prompt` function formats a template string with provided document goal, user context, source summary, and user TOML configuration to create a user prompt for appending sections to a TOML file.
+[View Source →](<../../../../../content_services/auto_toml/src/prompts.py#L309>)
+
+Formats a user prompt by filling a template with provided document goal, user context, source summary, and user TOML.
 - **Inputs**:
-    - `document_goal`: A string representing the goal of the document the user wants to create.
-    - `user_context`: A string providing additional context or instructions from the user, or a default message if not provided.
-    - `source_summary`: A string summarizing the source material relevant to the document goal.
-    - `user_toml`: A string representing the user's existing TOML configuration file to be extended.
-- **Control Flow**:
-    - The function uses the `_APPEND_USER_PROMPT_TEMPLATE` to format a string with the provided arguments.
-    - If `user_context` is not provided, it defaults to `_NO_USER_CONTEXT`.
-- **Output**: Returns a formatted string that serves as a user prompt for appending sections to a TOML configuration file.
+    - `document_goal`: A string representing the goal of the document.
+    - `user_context`: A string providing additional context or instructions from the user.
+    - `source_summary`: A string summarizing the source material relevant to the document.
+    - `user_toml`: A string containing the user's TOML configuration file to extend.
+- **Logic and Control Flow**:
+    - Uses the `_APPEND_USER_PROMPT_TEMPLATE` to format the user prompt.
+    - Substitutes placeholders in the template with the provided `document_goal`, `user_context`, `source_summary`, and `user_toml`.
+    - If `user_context` is not provided, defaults to `_NO_USER_CONTEXT`.
+- **Output**: Returns a formatted string that represents the user prompt.
 
 
 

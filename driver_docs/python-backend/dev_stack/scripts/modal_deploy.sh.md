@@ -3,15 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `modal_deploy.sh` file is a bash script used to deploy various content services to a specified environment using Poetry and the `modal` command.
+Bash script for deploying services to a specified environment using Poetry and Modal.
 
 # Purpose
-This Bash script is designed to automate the deployment process for multiple components of a software system, specifically targeting different environments as specified by a command-line argument. It provides a narrow functionality focused on deploying services within a project structure, as indicated by its use of `poetry` for dependency management and `modal deploy` for deployment tasks. The script navigates through various directories within a `content_services` structure, installing necessary dependencies and deploying each service's main Python script (`src/main.py`) to the specified environment. This script is not an executable or a library but rather a utility script intended to streamline the deployment workflow for developers or system administrators managing this particular software project.
+This script is a Bash executable designed to automate the deployment of multiple services within a project. It requires an environment argument to specify the target deployment environment. The script navigates through different directories, each corresponding to a service, and uses `poetry` to install dependencies and deploy the service using the `modal` command. The services include `inspector`, `agent`, `pdf_preprocessing`, and `autodocs`, each of which is deployed by executing the `src/main.py` file in the specified environment. The script ensures that the deployment process stops if any command fails, as indicated by the `set -eo pipefail` directive.
 # Imports and Dependencies
 
 ---
 - `poetry`
 - `modal`
+
+
+# Global Variables
+
+---
+### environment
+- **Type**: ``string``
+- **Description**: The `environment` variable is a string that stores the environment argument provided by the user through the command line. It is used to specify the deployment environment for the script.
+- **Use**: The script uses the `environment` variable to pass the specified environment to the `modal deploy` command for deploying services.
 
 
 

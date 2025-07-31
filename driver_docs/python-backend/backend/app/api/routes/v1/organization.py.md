@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `organization.py` file defines API routes for managing organization roles, members, and invitations using FastAPI, with operations such as listing, modifying, and deleting entities, while handling permissions and exceptions.
+API routes for managing organization roles, members, and invitations with Auth0 integration.
 
 # Purpose
-This Python file is a FastAPI router module that defines a set of API endpoints for managing organizational roles, users, and invitations within an application. The module is structured to handle HTTP requests related to listing roles, listing and deleting users, modifying user roles, and managing invitations. Each endpoint is protected by an `OrgManagerPermission` dependency, ensuring that only authorized users can perform these actions. The endpoints interact with an `Auth0Service` to perform the necessary operations, such as listing roles or members, modifying user roles, and managing invitations, which suggests that the application integrates with Auth0 for authentication and authorization services.
+The code defines a FastAPI router that manages organization-related operations, specifically focusing on roles, users, and invitations within an organization. It imports necessary components from FastAPI, such as `APIRouter`, `Header`, and `HTTPException`, and integrates with an external authentication service through the `Auth0Service` class. The router includes several endpoints, each protected by the `OrgManagerPermission` dependency, ensuring that only authorized users can perform these operations.
 
-The file is designed to be part of a larger application, likely serving as a backend component that provides specific functionalities related to user and role management. It includes error handling to manage exceptions and return appropriate HTTP responses, such as 403 for insufficient permissions and 500 for server errors. The use of logging throughout the module helps in tracking operations and diagnosing issues. This module is intended to be imported and used within a FastAPI application, providing a clear and organized set of endpoints for managing organizational entities and their permissions.
+The endpoints provided include listing roles, listing and deleting users, changing user roles, listing and creating invitations, and revoking invitations. Each endpoint logs the operation being performed and handles exceptions by logging errors and raising appropriate HTTP exceptions. The endpoints interact with the `Auth0Service` to perform the actual operations, such as listing roles or modifying user roles, and return the results to the client. The code is structured to handle common errors like permission issues and general exceptions, providing clear HTTP responses for each case.
 # Imports and Dependencies
 
 ---
@@ -29,149 +29,169 @@ The file is designed to be part of a larger application, likely serving as a bac
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a set of routes for the application, allowing for modular and organized route management. This instance is configured with various HTTP methods and paths to handle requests related to roles, users, and invitations within an organization.
-- **Use**: The `router` is used to register and manage API endpoints for handling organizational roles, users, and invitations, with specific permissions and error handling.
+- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage the routing of HTTP requests to specific endpoints in the application.
+- **Use**: Used to register and handle HTTP routes for the application, associating them with specific functions that process requests.
 
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the module's name as its logger name, which helps in identifying the source of log messages.
-- **Use**: This variable is used to log error messages throughout the application, particularly in exception handling blocks, to provide insights into errors that occur during API operations.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
+- **Use**: Used to log error messages when exceptions occur in the API endpoints.
 
 
 # Functions
 
 ---
 ### list\_roles<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.list_roles}} -->
-The [`list_roles`](<../../../services/auth0_service.py.md#Auth0Servicelist_roles>) function retrieves a paginated list of roles from an organization using the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L18>)
+
+Retrieves a list of roles from the Auth0 service for a specified organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
+    - `user`: A `UserToken` object representing the authenticated user, which includes the organization ID.
     - `page`: An integer specifying the page number for pagination, defaulting to 0.
-    - `per_page`: An integer specifying the number of roles to return per page, defaulting to 100.
-- **Control Flow**:
-    - Logs the action of listing roles for the user's organization using the `logging` module.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) and call its [`list_roles`](<../../../services/auth0_service.py.md#Auth0Servicelist_roles>) method with the provided `page` and `per_page` arguments.
-    - If an exception occurs during the call to [`list_roles`](<../../../services/auth0_service.py.md#Auth0Servicelist_roles>), logs the error and raises an `HTTPException` with a 500 status code and an error message.
-- **Output**: Returns the result of `auth0_service.list_roles`, which is expected to be a list of roles for the specified page and per_page parameters.
+    - `per_page`: An integer specifying the number of roles per page, defaulting to 100.
+- **Logic and Control Flow**:
+    - Logs the action of listing roles for the user's organization using the `organization_id` from the `user` object.
+    - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Calls the [`list_roles`](<../../../services/auth0_service.py.md#auth0servicelist_roles>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) with `page` and `per_page` as arguments to retrieve the roles.
+    - If an exception occurs, logs the error and raises an `HTTPException` with a 500 status code and an error message.
+- **Output**: Returns the result of the [`list_roles`](<../../../services/auth0_service.py.md#auth0servicelist_roles>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>), which is a list of roles.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_roles`](<../../../services/auth0_service.py.md#Auth0Servicelist_roles>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_roles`](<../../../services/auth0_service.py.md#auth0servicelist_roles>)
 
 
 ---
 ### list\_members<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.list_members}} -->
-The [`list_members`](<../../../services/auth0_service.py.md#Auth0Servicelist_members>) function retrieves a paginated list of members from an organization using the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L33>)
+
+Retrieves a list of members from an organization using the Auth0 service.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user, which includes the organization ID.
-    - `page`: An integer representing the page number for pagination, defaulting to 0.
-    - `per_page`: An integer representing the number of members to retrieve per page, defaulting to 100.
-- **Control Flow**:
-    - Logs the action of listing members for the specified organization ID from the `user` token.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) and call its [`list_members`](<../../../services/auth0_service.py.md#Auth0Servicelist_members>) method with the provided `user`, `page`, and `per_page` parameters.
-    - If a `PermissionError` is raised, an HTTP 403 exception is raised indicating insufficient permissions.
-    - If any other exception occurs, it logs the error and raises an HTTP 500 exception indicating an inability to list organization members.
-- **Output**: Returns the result of the [`list_members`](<../../../services/auth0_service.py.md#Auth0Servicelist_members>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>), which is expected to be a list of organization members.
+    - `page`: An integer representing the page number for pagination, default is 0.
+    - `per_page`: An integer representing the number of members to retrieve per page, default is 100.
+- **Logic and Control Flow**:
+    - Logs the action of listing members for the specified organization ID from the `user` object.
+    - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Attempts to call [`list_members`](<../../../services/auth0_service.py.md#auth0servicelist_members>) on the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) instance with the provided `user`, `page`, and `per_page` parameters.
+    - If a `PermissionError` occurs, raises an `HTTPException` with status code 403 indicating insufficient permissions.
+    - If any other exception occurs, logs the error and raises an `HTTPException` with status code 500 indicating an inability to list organization members.
+- **Output**: Returns the result of the [`list_members`](<../../../services/auth0_service.py.md#auth0servicelist_members>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>), which is a list of organization members.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](<../../../services/auth0_service.py.md#Auth0Servicelist_members>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](<../../../services/auth0_service.py.md#auth0servicelist_members>)
 
 
 ---
 ### delete\_member<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.delete_member}} -->
-The `delete_member` function removes a user from an organization using the Auth0 service, handling permission and general errors.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L50>)
+
+Deletes a user from an organization using the Auth0 service.
 - **Decorators**: `@router.delete`
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `user_id`: A string representing the ID of the user to be deleted from the organization.
-- **Control Flow**:
+    - `user_id`: A string representing the ID of the user to delete from the organization.
+- **Logic and Control Flow**:
     - Logs the deletion attempt with the user ID and organization ID.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>).
-    - Calls [`delete_user_from_organization`](<../../../services/auth0_service.py.md#Auth0Servicedelete_user_from_organization>) method on the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) instance with `user` and `user_id` as arguments.
-    - Catches `PermissionError` and raises an HTTP 403 exception if the user lacks sufficient permissions.
-    - Catches any other exceptions, logs the error, and raises an HTTP 500 exception indicating failure to remove the member.
-- **Output**: Returns the result of `auth0_service.delete_user_from_organization` if successful, otherwise raises an HTTPException.
+    - Initializes an [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) instance to handle the deletion.
+    - Attempts to delete the user from the organization using `auth0_service.delete_user_from_organization`.
+    - Catches `PermissionError` and raises an `HTTPException` with status code 403 if the user has insufficient permissions.
+    - Catches any other exceptions, logs the error, and raises an `HTTPException` with status code 500.
+- **Output**: Returns the result of `auth0_service.delete_user_from_organization` if successful, or raises an `HTTPException` on failure.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](<../../../services/auth0_service.py.md#Auth0Servicedelete_user_from_organization>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](<../../../services/auth0_service.py.md#auth0servicedelete_user_from_organization>)
 
 
 ---
 ### change\_user\_roles<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.change_user_roles}} -->
-The `change_user_roles` function modifies the roles of a specified user within an organization using the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L63>)
+
+Modifies the roles of a specified user within an organization.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
+    - `user`: A `UserToken` object representing the user making the request.
     - `modified_user_id`: A string representing the ID of the user whose roles are to be modified.
-    - `new_roles`: A `ModifyUserRolesInput` object containing the new roles to be assigned to the user.
-- **Control Flow**:
-    - Logs an informational message indicating the modification of roles for the specified user in the organization.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) and call its [`modify_user_roles`](<../../../services/auth0_service.py.md#Auth0Servicemodify_user_roles>) method with the provided user, modified user ID, and new roles.
-    - If a `PermissionError` is raised, an HTTP 403 error is returned indicating insufficient permissions.
-    - If any other exception occurs, logs the error and raises an HTTP 500 error indicating the inability to modify member roles.
-- **Output**: Returns a `ModifyUserRolesResponse` object if the roles are successfully modified.
+    - `new_roles`: A `ModifyUserRolesInput` object containing the new roles to assign to the user.
+- **Logic and Control Flow**:
+    - Logs the action of modifying roles for the specified user ID within the user's organization.
+    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) to handle the role modification.
+    - Calls the [`modify_user_roles`](<../../../services/auth0_service.py.md#auth0servicemodify_user_roles>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) with the provided user, modified user ID, and new roles.
+    - Catches `PermissionError` and raises an `HTTPException` with status code 403 if the user lacks sufficient permissions.
+    - Catches any other exceptions, logs the error, and raises an `HTTPException` with status code 500 indicating failure to modify roles.
+- **Output**: Returns a `ModifyUserRolesResponse` object indicating the result of the role modification operation.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](<../../../services/auth0_service.py.md#Auth0Servicemodify_user_roles>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](<../../../services/auth0_service.py.md#auth0servicemodify_user_roles>)
 
 
 ---
 ### list\_invitations<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.list_invitations}} -->
-The [`list_invitations`](<../../../services/auth0_service.py.md#Auth0Servicelist_invitations>) function retrieves a paginated list of invitations for a user's organization using the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L84>)
+
+Retrieves a list of invitations for an organization using the Auth0 service.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user, which includes the user's organization ID.
-    - `page`: An integer representing the page number for pagination, defaulting to 0.
-    - `per_page`: An integer representing the number of invitations to retrieve per page, defaulting to 100.
-- **Control Flow**:
-    - Logs the action of listing members of the user's organization using the organization ID from the `user` object.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) and call its [`list_invitations`](<../../../services/auth0_service.py.md#Auth0Servicelist_invitations>) method with the `user`, `page`, and `per_page` parameters.
-    - If a `PermissionError` is raised, an HTTP 403 exception is raised indicating insufficient permissions.
-    - If any other exception occurs, logs the error and raises an HTTP 500 exception indicating an inability to list organization invitations.
-- **Output**: Returns the result of the [`list_invitations`](<../../../services/auth0_service.py.md#Auth0Servicelist_invitations>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>), which is expected to be a list of invitations.
+    - `user`: A `UserToken` object representing the authenticated user, which includes the organization ID.
+    - `page`: An integer representing the page number for pagination, default is 0.
+    - `per_page`: An integer representing the number of invitations per page, default is 100.
+- **Logic and Control Flow**:
+    - Logs the action of listing members of the organization using the `organization_id` from the `user` token.
+    - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Calls the [`list_invitations`](<../../../services/auth0_service.py.md#auth0servicelist_invitations>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) with the `user`, `page`, and `per_page` parameters.
+    - Catches `PermissionError` and raises an `HTTPException` with status code 403 if the user has insufficient permissions.
+    - Catches any other exceptions, logs the error, and raises an `HTTPException` with status code 500.
+- **Output**: Returns a list of invitations from the Auth0 service or raises an `HTTPException` in case of errors.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](<../../../services/auth0_service.py.md#Auth0Servicelist_invitations>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](<../../../services/auth0_service.py.md#auth0servicelist_invitations>)
 
 
 ---
 ### create\_invitation<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.create_invitation}} -->
-The [`create_invitation`](<../../../services/auth0_service.py.md#Auth0Servicecreate_invitation>) function handles the creation of invitations for an organization using the Auth0 service, ensuring proper authorization and error handling.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L104>)
+
+Creates an invitation for a user to join an organization using Auth0 services.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `invitations`: A `CreateInvitationInput` object containing the details of the invitations to be created.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `invitations`: A `CreateInvitationInput` object containing the details of the invitations to create.
     - `authorization`: An optional string from the request header containing the authorization token, defaulting to `None`.
-- **Control Flow**:
-    - Logs the action of listing members of the organization using the user's organization ID.
+- **Logic and Control Flow**:
+    - Logs the organization ID of the user making the request.
     - Extracts the access token from the `authorization` header by removing the 'Bearer ' prefix.
-    - Attempts to create invitations using the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) with the provided user, access token, and invitation details.
-    - Catches `PermissionError` and raises an HTTP 403 exception if the user lacks sufficient permissions.
-    - Catches any other exceptions, logs the error, and raises an HTTP 500 exception indicating a failure to create invitations.
-- **Output**: Returns the result of the [`create_invitation`](<../../../services/auth0_service.py.md#Auth0Servicecreate_invitation>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>), or raises an HTTP exception in case of errors.
+    - Initializes an [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) instance to handle the invitation creation.
+    - Attempts to create the invitation using the [`create_invitation`](<../../../services/auth0_service.py.md#auth0servicecreate_invitation>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Raises an `HTTPException` with status code 403 if a `PermissionError` occurs, indicating insufficient permissions.
+    - Logs an error and raises an `HTTPException` with status code 500 if any other exception occurs, indicating a failure to create the invitation.
+- **Output**: Returns the result of the [`create_invitation`](<../../../services/auth0_service.py.md#auth0servicecreate_invitation>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](<../../../services/auth0_service.py.md#Auth0Servicecreate_invitation>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](<../../../services/auth0_service.py.md#auth0servicecreate_invitation>)
 
 
 ---
 ### revoke\_invitation<!-- {{#callable:python-backend/backend/app/api/routes/v1/organization.revoke_invitation}} -->
-The `revoke_invitation` function deletes an invitation for a user in an organization using the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/organization.py#L124>)
+
+Revokes an invitation for a user in an organization.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the user making the request, which includes the user's organization ID.
-    - `invitation_id`: A string representing the ID of the invitation to be revoked.
-- **Control Flow**:
+    - `user`: A `UserToken` object representing the user making the request.
+    - `invitation_id`: A string representing the ID of the invitation to revoke.
+- **Logic and Control Flow**:
     - Logs the action of revoking an invitation with the invitation ID and the user's organization ID.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) and calls its [`delete_invitation`](<../../../services/auth0_service.py.md#Auth0Servicedelete_invitation>) method with the user and invitation ID.
-    - If a `PermissionError` is raised, an HTTP 403 error is returned indicating insufficient permissions.
-    - If any other exception occurs, logs the error and raises an HTTP 500 error indicating the inability to revoke the invitation.
-- **Output**: Returns the result of the [`delete_invitation`](<../../../services/auth0_service.py.md#Auth0Servicedelete_invitation>) method from the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>), or raises an HTTPException if an error occurs.
+    - Creates an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Attempts to delete the invitation using the [`delete_invitation`](<../../../services/auth0_service.py.md#auth0servicedelete_invitation>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - If a `PermissionError` occurs, raises an `HTTPException` with status code 403 and a message indicating insufficient permissions.
+    - If any other exception occurs, logs the error and raises an `HTTPException` with status code 500 and a message indicating the inability to revoke the invitation.
+- **Output**: Returns the result of the [`delete_invitation`](<../../../services/auth0_service.py.md#auth0servicedelete_invitation>) method from [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>), or raises an `HTTPException` if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](<../../../services/auth0_service.py.md#Auth0Servicedelete_invitation>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](<../../../services/auth0_service.py.md#auth0servicedelete_invitation>)
 
 
 

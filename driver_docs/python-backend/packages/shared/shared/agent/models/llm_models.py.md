@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_models.py` file defines configurations for language model providers and system prompts, and includes a `ModelConfig` class for loading model configurations from a TOML file.
+Defines model configurations and providers for LLMs with methods to load configurations from a TOML file.
 
 # Purpose
-This Python code defines a configuration management module for machine learning models, specifically focusing on language models. It provides a structured way to handle model configurations using the `pydantic` library, which ensures data validation and management through the `ModelConfig` class. The module includes enumerations for model providers (`ModelProvider`) and system prompt configurations (`SystemPromptConfig`), which help standardize the options available for these configurations. The `ModelConfig` class is the core component, encapsulating attributes such as `model_name`, `model_id`, `provider`, `context_window_size`, `max_output_tokens`, and `system_prompts`. It also includes class methods like [`default`](<#ModelConfigdefault>) and [`from_name`](<#ModelConfigfrom_name>) to facilitate loading configurations from a TOML file, allowing for easy retrieval and instantiation of model configurations based on a given model name.
+The code defines a configuration management system for language models. It uses the `pydantic` library to create a `ModelConfig` class, which represents the configuration of a language model. This class includes attributes such as `model_name`, `model_id`, `provider`, `context_window_size`, `max_output_tokens`, and `system_prompts`. The `ModelConfig` class provides class methods [`default`](<#modelconfigdefault>) and [`from_name`](<#modelconfigfrom_name>) to load model configurations from a TOML file named `llm_model_config.toml`. The [`from_name`](<#modelconfigfrom_name>) method retrieves the configuration details based on the model's name or ID and raises a `ValueError` if the specified model configuration is not found.
 
-The code is designed to be part of a larger system, likely serving as a library module that can be imported and used by other components to manage and retrieve model configurations. It does not define a public API in the traditional sense but provides a clear interface for accessing model configurations through its class methods. The use of a TOML file for configuration storage suggests a focus on flexibility and ease of configuration management, allowing users to define and modify model settings without altering the codebase. This module is essential for applications that require dynamic loading and management of different language models, ensuring that configurations are consistent and easily accessible.
+The code also defines two enumerations, `ModelProvider` and `SystemPromptConfig`, which specify possible values for the model provider and system prompt configuration, respectively. The `ModelProvider` enum includes options such as `OPENAI`, `ANTHROPIC`, and `GOOGLE`, while the `SystemPromptConfig` enum includes options like `NONE`, `ONE`, and `MANY`. These enums help ensure that the configuration values are restricted to predefined options. The code is intended to be part of a larger system where it can be imported and used to manage and validate model configurations.
 # Imports and Dependencies
 
 ---
@@ -22,11 +22,9 @@ The code is designed to be part of a larger system, likely serving as a library 
 
 ---
 ### ModelProvider<!-- {{#class:python-backend/packages/shared/shared/agent/models/llm_models.ModelProvider}} -->
-- **Members**:
-    - `OPENAI`: Represents the 'openai' model provider.
-    - `ANTHROPIC`: Represents the 'anthropic' model provider.
-    - `GOOGLE`: Represents the 'google' model provider.
-- **Description**: The ModelProvider class is an enumeration that defines constants for different model providers, specifically 'openai', 'anthropic', and 'google'. It inherits from both str and Enum, allowing each member to be treated as a string while also being part of an enumeration. This class is useful for standardizing the representation of model providers across the application.
+[View Source →](<../../../../../../../packages/shared/shared/agent/models/llm_models.py#L8>)
+
+- **Description**: Defines a set of constants representing different model providers, such as 'openai', 'anthropic', and 'google', using the `Enum` class.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -34,7 +32,13 @@ The code is designed to be part of a larger system, likely serving as a library 
 
 ---
 ### SystemPromptConfig<!-- {{#class:python-backend/packages/shared/shared/agent/models/llm_models.SystemPromptConfig}} -->
-- **Description**: The `SystemPromptConfig` class is an enumeration that inherits from both `str` and `Enum`, defining three possible string values: 'none', 'one', and 'many'. These values likely represent different configurations or states for system prompts within a larger application context.
+[View Source →](<../../../../../../../packages/shared/shared/agent/models/llm_models.py#L14>)
+
+- **Members**:
+    - `NONE`: Represents the string value 'none'.
+    - `ONE`: Represents the string value 'one'.
+    - `MANY`: Represents the string value 'many'.
+- **Description**: Defines an enumeration for system prompt configurations with three possible string values: 'none', 'one', and 'many'.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -42,17 +46,19 @@ The code is designed to be part of a larger system, likely serving as a library 
 
 ---
 ### ModelConfig<!-- {{#class:python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig}} -->
+[View Source →](<../../../../../../../packages/shared/shared/agent/models/llm_models.py#L20>)
+
 - **Members**:
-    - `model_name`: The name of the model.
-    - `model_id`: The unique identifier for the model.
-    - `provider`: The provider of the model, such as OpenAI or Google.
-    - `context_window_size`: The size of the context window for the model.
-    - `max_output_tokens`: The maximum number of output tokens the model can generate.
-    - `system_prompts`: The system prompts configuration for the model.
-- **Description**: The ModelConfig class is a configuration model that extends BaseModel and is used to define and manage the settings for a language model, including its name, ID, provider, context window size, maximum output tokens, and system prompts. It provides class methods to load default configurations or configurations by name from a TOML file, ensuring that the model settings are easily retrievable and manageable.
+    - `model_name`: Stores the name of the model.
+    - `model_id`: Stores the unique identifier of the model.
+    - `provider`: Indicates the provider of the model.
+    - `context_window_size`: Specifies the size of the context window for the model.
+    - `max_output_tokens`: Defines the maximum number of output tokens the model can generate.
+    - `system_prompts`: Contains the system prompts configuration for the model.
+- **Description**: Defines the configuration for a model, including its name, identifier, provider, context window size, maximum output tokens, and system prompts. It provides class methods to retrieve default configurations or configurations based on a model name from a TOML file.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<#ModelConfigdefault>)
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<#ModelConfigfrom_name>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<#modelconfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<#modelconfigfrom_name>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -60,34 +66,36 @@ The code is designed to be part of a larger system, likely serving as a library 
 
 ---
 #### ModelConfig\.default<!-- {{#callable:python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default}} -->
-The `default` class method returns a `ModelConfig` instance using the default model configuration.
+[View Source →](<../../../../../../../packages/shared/shared/agent/models/llm_models.py#L28>)
+
+Returns a default `ModelConfig` instance using the 'default' model name.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with the argument 'default'.
-    - The [`from_name`](<#ModelConfigfrom_name>) method attempts to load the model configuration from a TOML file and match it with the provided model name.
-    - If a matching model configuration is found, it returns a `ModelConfig` instance with the corresponding details.
-    - If no matching configuration is found, a `ValueError` is raised.
-- **Output**: A `ModelConfig` instance initialized with the default model configuration.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#modelconfigfrom_name>) method with the argument 'default'.
+    - Returns the result of the [`from_name`](<#modelconfigfrom_name>) method call.
+- **Output**: A `ModelConfig` instance with the default configuration.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<#ModelConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig`](<#ModelConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<#modelconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig`](<#modelconfig>)  (Base Class)
 
 
 ---
 #### ModelConfig\.from\_name<!-- {{#callable:python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name}} -->
-The `from_name` class method retrieves a model configuration from a TOML file based on the provided model name and returns an instance of `ModelConfig`.
+[View Source →](<../../../../../../../packages/shared/shared/agent/models/llm_models.py#L32>)
+
+Creates a `ModelConfig` instance from a given model name by loading configuration details from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `model_name`: A string representing the name or ID of the model to retrieve, defaulting to 'default'.
-- **Control Flow**:
+    - `model_name`: A string representing the name or ID of the model to load configuration for, defaulting to 'default'.
+- **Logic and Control Flow**:
     - Constructs the path to the 'llm_model_config.toml' file located in the same directory as the script.
     - Loads the model configuration data from the TOML file.
-    - Iterates over the models in the configuration file to find a match for the provided model name or ID.
-    - If a match is found, creates and returns an instance of `ModelConfig` with the corresponding details.
-    - If no match is found, raises a `ValueError` indicating the model configuration was not found.
-- **Output**: Returns an instance of `ModelConfig` initialized with the details of the specified model if found, otherwise raises a `ValueError`.
-- **See also**: [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig`](<#ModelConfig>)  (Base Class)
+    - Iterates over the models in the configuration to find a match for the given `model_name` or `model_id`.
+    - If a match is found, returns a new `ModelConfig` instance with the corresponding configuration details.
+    - Raises a `ValueError` if no matching model configuration is found.
+- **Output**: A `ModelConfig` instance with the configuration details for the specified model.
+- **See also**: [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig`](<#modelconfig>)  (Base Class)
 
 
 

@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A collection of C# test case files covering classes, enums, interfaces, method invocations, methods, namespaces, structs, and using directives.
+Test cases for C# class, enum, interface, method, namespace, struct definitions, invocations, and using directives.
 
 
 ## Files
-- **[test_classes.cs](test_classes.cs.md)**: The `test_classes.cs` file contains various C# class definitions, including examples of simple, abstract, generic, partial, static, sealed, and record classes, as well as classes with attributes and interface implementations.
-- **[test_enums.cs](test_enums.cs.md)**: The `test_enums.cs` file contains various test cases for C# enum definitions, demonstrating different enum types, usage examples, and extension methods within the `Com.Example.Enums` namespace.
-- **[test_interfaces.cs](test_interfaces.cs.md)**: The `test_interfaces.cs` file contains a comprehensive set of test cases for various C# interface definitions, including examples of simple, generic, inherited, and nested interfaces, as well as implementations demonstrating their usage.
-- **[test_invocations.cs](test_invocations.cs.md)**: The `test_invocations.cs` file contains comprehensive test cases for various C# method invocation scenarios, including constructor, static, instance, generic, async, and interface method calls, as well as operator, delegate, event, and LINQ invocations.
-- **[test_methods.cs](test_methods.cs.md)**: The `test_methods.cs` file contains a variety of C# method definitions and examples, including constructors, properties, static and instance methods, generics, async methods, operator overloading, events, and extension methods, within the `Com.Example.Methods` namespace.
-- **[test_namespaces.cs](test_namespaces.cs.md)**: The `test_namespaces.cs` file contains test cases for various C# namespace definitions, including global, traditional, nested, and file-scoped namespaces, demonstrating different class, interface, enum, struct, and record implementations.
-- **[test_structs.cs](test_structs.cs.md)**: The `test_structs.cs` file contains various test cases for C# struct definitions, demonstrating different struct types, properties, methods, and usage examples.
-- **[test_usings.cs](test_usings.cs.md)**: The `test_usings.cs` file contains test cases for various C# using directives, including standard, alias, static, global, and file-scoped namespace usages.
+- **[test_classes.cs](test_classes.cs.md)**: Test cases for various C# class definitions, including simple, abstract, generic, and record classes.
+- **[test_enums.cs](test_enums.cs.md)**: Test cases for various C# enum definitions, including usage examples and extension methods.
+- **[test_interfaces.cs](test_interfaces.cs.md)**: Test cases for various C# interface definitions, including inheritance, generics, and default implementations.
+- **[test_invocations.cs](test_invocations.cs.md)**: Test cases for various C# method invocation types, including constructors, static, instance, and async methods.
+- **[test_methods.cs](test_methods.cs.md)**: Test cases for various C# method definitions, including constructors, properties, and operators.
+- **[test_namespaces.cs](test_namespaces.cs.md)**: Test cases for C# namespace definitions, including global, traditional, and file-scoped styles.
+- **[test_structs.cs](test_structs.cs.md)**: Test cases for various C# struct definitions, including simple, readonly, ref, generic, and record structs.
+- **[test_usings.cs](test_usings.cs.md)**: Test cases for C# using directives, including aliases, static, global, and file-scoped namespaces.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

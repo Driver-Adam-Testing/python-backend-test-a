@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `helpers.py` file in the `python-backend` codebase provides functions for formatting tool prompts, parsing tool calls from XML responses, and formatting tool results, utilizing XML structures to manage tool descriptions and interactions.
+Functions for formatting tool prompts and results, and parsing tool calls from XML responses.
 
 # Purpose
-This Python code file is designed to facilitate the interaction with a set of tools by formatting and parsing XML-based tool descriptions and function calls. The primary functionality is encapsulated in three main components: [`format_tool_prompt`](<#format_tool_prompt>), [`parse_tool_calls_from_response`](<#parse_tool_calls_from_response>), and [`format_tool_results`](<#format_tool_results>). The [`format_tool_prompt`](<#format_tool_prompt>) function generates an XML-formatted string that describes the available tools, including their names, descriptions, and parameters, which can be used to guide users in invoking these tools. The [`parse_tool_calls_from_response`](<#parse_tool_calls_from_response>) function extracts and parses tool invocation details from a given XML response, creating instances of `Function` and `ToolCall` classes to represent the tool calls. Finally, the [`format_tool_results`](<#format_tool_results>) function formats the results of tool executions into an XML structure, providing a standardized way to present the output of tool invocations.
+The code provides functionality for formatting and parsing tool-related data in an XML-like structure. It includes functions to format tool prompts, parse tool calls from a response, and format tool results. The [`format_tool_prompt`](<#format_tool_prompt>) function generates a structured prompt that describes available tools, their names, descriptions, and parameters. This prompt is intended for environments where tools can be invoked programmatically. The [`parse_tool_calls_from_response`](<#parse_tool_calls_from_response>) function extracts tool call information from a given response string, which is expected to contain XML-like blocks. It identifies tool invocations and their parameters, creating instances of the `Function` and `ToolCall` classes to represent them. The [`format_tool_results`](<#format_tool_results>) function formats the results of tool executions, associating tool names with their respective arguments and outputs.
 
-The code is structured to be part of a larger system where tools are dynamically described and invoked based on user interactions. It is not a standalone script but rather a library component intended to be integrated into a broader application that manages tool execution and response handling. The use of XML for both input and output formatting suggests a focus on interoperability and structured data exchange, making it suitable for environments where tools need to be described, invoked, and their results processed in a consistent and machine-readable format. The code does not define public APIs or external interfaces directly but provides utility functions that can be used by other parts of the system to manage tool-related operations.
+The code defines two classes, `Function` and `ToolCall`, which are used to encapsulate information about tool functions and their invocations. The `Function` class stores the name and arguments of a tool function, while the `ToolCall` class associates a `Function` instance with an optional identifier. The code is structured to be part of a larger system where tools are dynamically described, invoked, and their results processed. It does not define a public API or external interfaces but provides utility functions and classes for handling tool-related data in a structured format.
 # Imports and Dependencies
 
 ---
@@ -21,50 +21,58 @@ The code is structured to be part of a larger system where tools are dynamically
 
 ---
 ### Function<!-- {{#class:python-backend/packages/shared/shared/agent/models/claude/helpers.Function}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L54>)
+
 - **Members**:
     - `name`: Stores the name of the function.
-    - `arguments`: Holds the arguments associated with the function.
-- **Description**: The `Function` class is a simple data structure designed to encapsulate a function's name and its associated arguments, providing a straightforward way to represent and manage function calls within the context of tool invocation.
+    - `arguments`: Holds the arguments for the function.
+- **Description**: Represents a function with a name and a set of arguments.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function.__init__`](<#Function__init__>)
+    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function.__init__`](<#function__init__>)
 
 **Methods**
 
 ---
 #### Function\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/models/claude/helpers.Function.__init__}} -->
-The `__init__` method initializes a `Function` object with a name and a set of arguments.
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L55>)
+
+Initializes a `Function` object with a name and arguments.
 - **Inputs**:
-    - `name`: The name of the function, which is a string representing the function's identifier.
-    - `arguments`: A dictionary or similar data structure containing the arguments for the function, where keys are argument names and values are argument values.
-- **Control Flow**:
-    - Assigns the provided `name` to the instance variable `self.name`.
-    - Assigns the provided `arguments` to the instance variable `self.arguments`.
-- **Output**: There is no return value as this is a constructor method for initializing an object.
-- **See also**: [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function`](<#Function>)  (Base Class)
+    - `name`: The name of the function, which is a string.
+    - `arguments`: The arguments of the function, which is a dictionary or similar data structure.
+- **Logic and Control Flow**:
+    - Assigns the input `name` to the instance variable `self.name`.
+    - Assigns the input `arguments` to the instance variable `self.arguments`.
+- **Output**: None, as this is a constructor method for initializing an object.
+- **See also**: [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function`](<#function>)  (Base Class)
 
 
 
 ---
 ### ToolCall<!-- {{#class:python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L60>)
+
 - **Members**:
-    - `function`: Holds the function associated with the tool call.
-    - `id`: Stores an identifier for the tool call, initially set to None.
-- **Description**: The ToolCall class is designed to encapsulate a function call within a tool, storing the function itself and an optional identifier. It is used in the context of parsing and managing tool calls extracted from XML responses, allowing for structured handling of tool invocation data.
+    - `function`: Stores the function associated with the tool call.
+    - `id`: Holds an identifier for the tool call, initially set to None.
+- **Description**: Represents a call to a tool, encapsulating a function and an optional identifier.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall.__init__`](<#ToolCall__init__>)
+    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall.__init__`](<#toolcall__init__>)
 
 **Methods**
 
 ---
 #### ToolCall\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall.__init__}} -->
-The `__init__` method initializes a `ToolCall` object with a given function and sets its ID to `None`.
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L61>)
+
+Initializes a `ToolCall` object with a given function and sets its `id` attribute to `None`.
 - **Inputs**:
-    - `function`: The function to be associated with the `ToolCall` object.
-- **Control Flow**:
+    - `function`: A function object that the `ToolCall` will use.
+- **Logic and Control Flow**:
     - Assigns the input `function` to the instance variable `self.function`.
     - Sets the instance variable `self.id` to `None`.
-- **Output**: This method does not return any value; it initializes the instance variables of the `ToolCall` object.
-- **See also**: [`python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall`](<#ToolCall>)  (Base Class)
+- **Output**: No output is returned as this is a constructor method.
+- **See also**: [`python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall`](<#toolcall>)  (Base Class)
 
 
 
@@ -72,57 +80,63 @@ The `__init__` method initializes a `ToolCall` object with a given function and 
 
 ---
 ### format\_tool\_prompt<!-- {{#callable:python-backend/packages/shared/shared/agent/models/claude/helpers.format_tool_prompt}} -->
-The `format_tool_prompt` function generates a formatted XML-like string that describes a set of tools and their parameters for use in a specific environment.
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L5>)
+
+Formats a prompt string that describes available tools and their parameters for use in a specific environment.
 - **Inputs**:
-    - `tools`: A list of tool objects, each having a `name`, `description`, and a `function` with parameters.
-- **Control Flow**:
-    - Initialize an empty list `tool_descriptions` to store descriptions of each tool.
-    - Iterate over each tool in the `tools` list.
-    - For each tool, create a string `tool_description` that includes the tool's name and description.
-    - Use the `inspect.signature` function to get the signature of the tool's function.
-    - Iterate over the parameters of the function, excluding 'agent_context', and append parameter details to `tool_description`.
-    - Append the completed `tool_description` to the `tool_descriptions` list.
-    - Concatenate all tool descriptions into a single string and format it into the `CLAUDE_TOOL_PROMPT` template.
+    - `tools`: A list of tool objects, each containing a `name`, `description`, and `function` with parameters.
+- **Logic and Control Flow**:
+    - Initialize an empty list `tool_descriptions` to store formatted tool descriptions.
+    - Iterate over each `tool` in the `tools` list.
+    - For each `tool`, create a string `tool_description` that includes the tool's name and description.
+    - Use the `signature` function from the `inspect` module to get the parameters of the tool's function.
+    - Iterate over the parameters of the tool's function, excluding the parameter named `agent_context`.
+    - For each parameter, append its name and type (always 'string') to the `tool_description`.
+    - Close the `parameters` and `tool_description` tags and append the `tool_description` to `tool_descriptions`.
+    - Create a string `CLAUDE_TOOL_PROMPT` that includes instructions and the concatenated `tool_descriptions`.
     - Return the `CLAUDE_TOOL_PROMPT` string.
-- **Output**: A formatted string that includes descriptions of all tools and their parameters, structured in an XML-like format.
+- **Output**: A formatted string (`CLAUDE_TOOL_PROMPT`) that describes the available tools and their parameters in a structured format.
 
 
 ---
 ### parse\_tool\_calls\_from\_response<!-- {{#callable:python-backend/packages/shared/shared/agent/models/claude/helpers.parse_tool_calls_from_response}} -->
-The function `parse_tool_calls_from_response` extracts and parses tool call information from an XML-formatted response string.
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L66>)
+
+Extracts and constructs [`ToolCall`](<#toolcall>) objects from XML-formatted function call data in a response string.
 - **Inputs**:
-    - `response`: A string containing XML-formatted data with tool call information enclosed within <function_calls> tags.
-- **Control Flow**:
-    - Initialize an empty list `tool_calls` to store parsed tool call objects.
-    - Use a regular expression to find all XML blocks enclosed within <function_calls> tags in the `response`.
-    - Iterate over each `xml_block` found in the previous step.
-    - Parse each `xml_block` into an XML tree structure using `ElementTree.fromstring`.
-    - Find all <invoke> elements within the XML tree, which represent individual tool calls.
-    - For each <invoke> element, extract the tool name from the <tool_name> child element.
-    - Extract parameters from the <parameters> child element, storing them in a dictionary with parameter tags as keys and their text as values.
-    - Create a [`Function`](<#Function>) object using the extracted tool name and parameters.
-    - Create a [`ToolCall`](<#ToolCall>) object using the [`Function`](<#Function>) object and append it to the `tool_calls` list.
-    - Return the `tool_calls` list containing all parsed tool call objects.
-- **Output**: A list of [`ToolCall`](<#ToolCall>) objects, each representing a parsed tool call with its associated function name and parameters.
+    - `response`: A string containing XML-formatted data with function call information.
+- **Logic and Control Flow**:
+    - Initialize an empty list `tool_calls` to store [`ToolCall`](<#toolcall>) objects.
+    - Use a regular expression to find all XML blocks enclosed by `<function_calls>` tags in the `response`.
+    - Iterate over each `xml_block` found.
+    - Parse each `xml_block` into an XML tree structure using `ET.fromstring`.
+    - Find all `<invoke>` elements within the XML tree.
+    - For each `function_call` element, extract the `tool_name` and parameters.
+    - Create a [`Function`](<#function>) object with the extracted `tool_name` and parameters.
+    - Create a [`ToolCall`](<#toolcall>) object with the [`Function`](<#function>) object.
+    - Append the [`ToolCall`](<#toolcall>) object to the `tool_calls` list.
+    - Return the `tool_calls` list.
+- **Output**: A list of [`ToolCall`](<#toolcall>) objects, each representing a parsed function call from the response.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function`](<#Function>)
-    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall`](<#ToolCall>)
+    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.Function`](<#function>)
+    - [`python-backend/packages/shared/shared/agent/models/claude/helpers.ToolCall`](<#toolcall>)
 
 
 ---
 ### format\_tool\_results<!-- {{#callable:python-backend/packages/shared/shared/agent/models/claude/helpers.format_tool_results}} -->
-The `format_tool_results` function formats the results of tool executions into an XML-like string structure.
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/claude/helpers.py#L86>)
+
+Formats the results of tool executions into an XML-like string structure.
 - **Inputs**:
     - `tool_names`: A list of tool names corresponding to each result.
-    - `args`: A list of arguments that were passed to each tool.
-    - `results`: A list of results returned by each tool.
-- **Control Flow**:
-    - Initialize an empty string `formatted_results` to accumulate the formatted output.
-    - Iterate over the `tool_names`, `args`, and `results` lists simultaneously using `zip`, allowing for different lengths with `strict=False`.
-    - For each tuple of `tool_name`, `arg`, and `result`, append a formatted XML-like string to `formatted_results` that includes the tool name and the concatenated argument and result within a `<stdout>` tag.
-    - After the loop, wrap the accumulated `formatted_results` in a `<function_results>` tag to form the final XML-like structure.
-    - Return the complete formatted XML-like string as `FORMAT_TOOL_RESULTS`.
-- **Output**: A string containing the formatted results in an XML-like structure, with each tool's name and its corresponding argument and result.
+    - `args`: A list of arguments used for each tool execution.
+    - `results`: A list of results obtained from each tool execution.
+- **Logic and Control Flow**:
+    - Initialize an empty string `formatted_results` to accumulate formatted result entries.
+    - Iterate over `tool_names`, `args`, and `results` simultaneously using `zip`, allowing for different lengths with `strict=False`.
+    - For each tool name, argument, and result, append a formatted XML-like string to `formatted_results`.
+    - Wrap the accumulated `formatted_results` in a `<function_results>` tag to form the final output string.
+- **Output**: A string containing the formatted results in an XML-like structure, encapsulated within `<function_results>` tags.
 
 
 

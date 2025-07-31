@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `migrate_pdfs.py` file contains a SQL migration script that processes and migrates PDF records from a legacy system to a new database schema, involving steps to gather, distinctify, insert, bridge, and update records across multiple tables.
+SQL script for migrating PDF data by creating and linking new asset, version, and node records.
 
 # Purpose
-The provided SQL script is designed to migrate and transform data related to PDF documents from an existing database schema to a new schema. The script is structured as a series of Common Table Expressions (CTEs) that systematically process and insert data into new tables while maintaining relationships between the old and new data structures. The primary focus is on handling records where the `content_kind` is 'supplemental-document', and it involves creating new entries in tables such as `v2_primary_asset`, `v2_version`, and `v2_node`, while ensuring that each document version is uniquely identified and linked back to its original data.
+The code is a SQL script designed to migrate and transform data related to PDF documents from an existing database schema to a new schema. It uses a series of Common Table Expressions (CTEs) to process and insert data into new tables while maintaining relationships between the old and new data structures. The script begins by selecting rows from the `derived_contents` table where the `content_kind` is 'supplemental-document'. It assigns a unique version number to each document and generates a `row_key` for identification.
 
-The script begins by selecting relevant records from the `derived_contents` table, assigning version numbers, and generating unique row keys. It then identifies distinct documents to be used as primary assets in the new schema. Subsequent steps involve inserting these assets into the `v2_primary_asset` table, creating versions in the `v2_version` table, and linking these versions to nodes in the `v2_node` table. Each step includes a bridging process to maintain the integrity of relationships between the old and new data. Finally, the script updates the `derived_contents` table to reflect the new node associations, ensuring that the migration process is complete and consistent. This script is a comprehensive data migration tool that ensures data integrity and continuity across schema changes.
+The script then selects distinct documents to determine a "chosen_id" for each group of documents, which is used to insert records into the `v2_primary_asset` table. It continues by linking these primary assets back to the original documents and inserting all versions into the `v2_version` table. The script further bridges these versions to the original data, inserts corresponding nodes into the `v2_node` table, and finally updates the `derived_contents` table with the new node IDs. The process ensures that each document and its versions are correctly migrated and linked in the new schema.
 # Global Variables
 
 ---
 ### MIGRATE\_PDFS
 - **Type**: `str`
-- **Description**: The `MIGRATE_PDFS` variable is a multi-line string containing a SQL script. This script is designed to migrate PDF-related data from a legacy system to a new system by creating a series of Common Table Expressions (CTEs) and performing various operations such as selecting, inserting, and updating data across multiple tables.
-- **Use**: This variable is used to store and execute a complex SQL migration script for PDF data transformation and insertion into a new database schema.
+- **Description**: Defines a SQL script as a string that performs a series of operations to migrate PDF data from a source table to a new schema. The script uses Common Table Expressions (CTEs) to gather, process, and insert data into new tables, ensuring each PDF document is uniquely identified and linked to its new version and node.
+- **Use**: Used to execute a series of SQL operations for migrating PDF data in a database.
 
 
 

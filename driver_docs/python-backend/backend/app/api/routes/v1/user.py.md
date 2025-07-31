@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `user.py` file defines API routes for changing a user's password and retrieving a list of organizations associated with the user, utilizing FastAPI and Auth0 services.
+API routes for changing user passwords and retrieving user organizations using FastAPI and Auth0.
 
 # Purpose
-This Python file is a FastAPI router module that provides API endpoints for user-related operations, specifically focusing on password management and organization retrieval. The code defines two main endpoints: one for changing a user's password (`/password`) and another for retrieving a list of organizations associated with a user (`/organizations`). The endpoints are implemented as functions decorated with FastAPI's routing decorators (`@router.put` and `@router.get`), which specify the HTTP method and path for each endpoint. The module uses the `Auth0Service` class to interact with an external authentication service, Auth0, to perform these operations. The `UserToken` class is used to represent the authenticated user, and the `MessageResponse` schema is used to structure the response for the password change operation.
+This code defines a FastAPI router that provides endpoints for user-related operations, specifically for changing a user's password and retrieving a list of organizations associated with a user. The router is created using FastAPI's `APIRouter` and includes two main endpoints: a `PUT` endpoint at `/password` for changing a user's password and a `GET` endpoint at `/organizations` for fetching the user's organizations. Both endpoints require a `UserToken` object, which likely contains user authentication information, and they utilize the `Auth0Service` to interact with an external authentication service.
 
-The code is designed to be part of a larger application, likely a backend service, where it serves as a component for handling user authentication and authorization tasks. It includes error handling to log issues and raise HTTP exceptions when operations fail, ensuring that clients receive appropriate feedback. The use of logging provides insight into the operations being performed, which is crucial for monitoring and debugging. This module is intended to be imported and used within a FastAPI application, contributing to the broader functionality of user management within the system.
+The [`change_password`](<#change_password>) function handles password reset requests by extracting the access token from the `Authorization` header and calling the `change_self_password` method of the `Auth0Service`. The [`get_organizations`](<#get_organizations>) function retrieves the organizations associated with the user by calling the `list_organizations` method of the `Auth0Service`. Both functions include error handling to log errors and raise HTTP exceptions if operations fail. The code uses logging to record significant events, such as user requests and errors, which aids in monitoring and debugging.
 # Imports and Dependencies
 
 ---
@@ -25,54 +25,58 @@ The code is designed to be part of a larger application, likely a backend servic
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a group of related API endpoints, allowing for modular and organized route management within the application.
-- **Use**: This variable is used to register and manage API routes for password change and organization retrieval functionalities.
+- **Type**: ``APIRouter``
+- **Description**: Creates an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage API routes for the application.
+- **Use**: Used to register and handle HTTP routes such as `PUT /password` and `GET /organizations` in the application.
 
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the module's `__name__` as its name, which helps in identifying the source of log messages.
-- **Use**: This variable is used to log error messages within the API routes, providing information about exceptions that occur during execution.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
+- **Use**: Used to log error messages when exceptions occur in the `change_password` and `get_organizations` functions.
 
 
 # Functions
 
 ---
 ### change\_password<!-- {{#callable:python-backend/backend/app/api/routes/v1/user.change_password}} -->
-The `change_password` function handles a password reset request for a user by interacting with the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L14>)
+
+Handles a password change request for a user by interacting with the Auth0 service.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user requesting the password change.
+    - `user`: An instance of `UserToken` representing the authenticated user requesting the password change.
     - `authorization`: An optional string from the request header containing the Bearer token for authorization.
-- **Control Flow**:
-    - Log the password reset request with the user's subject information.
-    - Extract the access token from the authorization header by removing the 'Bearer ' prefix.
-    - Instantiate the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) to handle the password change operation.
-    - Attempt to change the user's password using the [`change_self_password`](<../../../services/auth0_service.py.md#Auth0Servicechange_self_password>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>), passing the user and access token.
-    - If successful, return a message response indicating the password change.
-    - If an exception occurs, log the error and raise an HTTP 500 exception with an error message.
-- **Output**: A `MessageResponse` dictionary containing a message about the password change operation.
+- **Logic and Control Flow**:
+    - Logs the password reset request with the user's subject information.
+    - Extracts the access token from the `authorization` header by removing the 'Bearer ' prefix.
+    - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Attempts to change the user's password using the [`change_self_password`](<../../../services/auth0_service.py.md#auth0servicechange_self_password>) method of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) with the user and access token as arguments.
+    - Returns a dictionary with a success message if the password change is successful.
+    - Catches any exceptions, logs an error message, and raises an `HTTPException` with a 500 status code if an error occurs.
+- **Output**: A `MessageResponse` object containing a message about the password change operation.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](<../../../services/auth0_service.py.md#Auth0Servicechange_self_password>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](<../../../services/auth0_service.py.md#auth0servicechange_self_password>)
 
 
 ---
 ### get\_organizations<!-- {{#callable:python-backend/backend/app/api/routes/v1/user.get_organizations}} -->
-The `get_organizations` function retrieves a list of organizations associated with a user from the Auth0 service.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/user.py#L36>)
+
+Fetches a list of organizations associated with the authenticated user.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-- **Control Flow**:
-    - Logs an informational message indicating a user request for password reset, although this seems to be a misnomer in the context of fetching organizations.
-    - Attempts to create an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>).
-    - Calls the `list_organizations` method on the [`Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>) instance, passing the `user` as an argument, and returns the result.
-    - Catches any exceptions that occur during the process, logs an error message, and raises an `HTTPException` with a 500 status code indicating failure to fetch organizations.
-- **Output**: Returns a list of organizations associated with the user, fetched from the Auth0 service, or raises an HTTPException if an error occurs.
+    - `user`: An instance of `UserToken` representing the authenticated user making the request.
+- **Logic and Control Flow**:
+    - Logs an informational message indicating a user-requested password reset from the user's subject.
+    - Initializes an instance of [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>).
+    - Attempts to call `list_organizations` on the [`Auth0Service`](<../../../services/auth0_service.py.md#auth0service>) instance with the `user` as an argument.
+    - If an exception occurs, logs an error message and raises an `HTTPException` with a 500 status code and an error message.
+- **Output**: Returns the result of `auth0_service.list_organizations(user)`, which is expected to be a list of organizations.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<../../../services/auth0_service.py.md#auth0service>)
 
 
 

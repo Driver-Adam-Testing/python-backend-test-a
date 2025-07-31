@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Unit tests for the onboarding event handler, focusing on the lambda handler function with a mock SNS event.
+Tests for the onboarding event handler using a mock SNS event and pytest.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[test_main.py](test_main.py.md)**: The `test_main.py` file contains unit tests for the onboarding event handler, specifically testing the lambda handler function using a mock SNS event.
+- **[test_main.py](test_main.py.md)**: Tests for the onboarding event handler using a mock SNS event and pytest.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

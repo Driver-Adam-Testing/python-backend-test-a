@@ -3,30 +3,31 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utility modules and subfolders for code analysis, symbol management, database operations, task execution, and more, with tools for handling programming languages, file trees, and OpenAI API interactions.
+Utilities for code analysis, symbol mapping, task management, database operations, and language model integration.
 
 ## Folders
-- **[git_diff_testcases](git_diff_testcases/README.md)**: Python files focused on recursive Fibonacci implementations, with two files being empty.
-- **[lang_specialization](lang_specialization/README.md)**: Utilities for analyzing and documenting code across multiple programming languages using static analysis and language models.
-- **[symbol_table](symbol_table/README.md)**: Modules and utilities for parsing, resolving, and managing symbols across various programming languages.
-- **[treesitter_drivers](treesitter_drivers/README.md)**: Tree-sitter language drivers and test suites for parsing and extracting code elements from C, C++, C#, Java, Python, and TypeScript.
+- **[git_diff_testcases](git_diff_testcases/README.md)**: Calculates and prints Fibonacci numbers using recursive functions.
+- **[lang_specialization](lang_specialization/README.md)**: Classes, functions, and utilities for extracting and documenting code symbols across multiple programming languages.
+- **[symbol_table](symbol_table/README.md)**: Import resolvers, language providers, symbol parsers, and utilities for symbol table construction and management.
+- **[tags](tags/README.md)**: Scoring classes, entry point identification, and abstract base class for scoring tags in a codebase.
+- **[treesitter_drivers](treesitter_drivers/README.md)**: Tree-sitter language drivers and tests for C, C++, C#, Java, Python, and TypeScript code analysis.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[codemap_ctags.py](codemap_ctags.py.md)**: The `codemap_ctags.py` file in the `python-backend` codebase is a utility module for generating a symbol map from a source file using universal ctags, with a command-line interface for symbol detection.
-- **[dag.py](dag.py.md)**: The `dag.py` file in the `python-backend` codebase provides a utility for managing a directed acyclic graph (DAG) representing a file tree, including functionality for adding, removing, and modifying nodes, as well as computing differences between file tree states.
-- **[dag_test.py](dag_test.py.md)**: The `dag_test.py` file contains a suite of unit tests for the `FileTreeDag` and `Node` classes, verifying their functionality in managing and manipulating a directed acyclic graph (DAG) structure for file systems, including operations like adding, removing, and modifying nodes, as well as computing differences between DAGs.
-- **[db.py](db.py.md)**: The `db.py` file in the `python-backend` codebase provides asynchronous database utility functions for managing versions, inspector runs, nodes, and derived content, as well as a function to get usage balance in bytes.
-- **[export_utils.py](export_utils.py.md)**: The `export_utils.py` file contains utility functions for extracting and replacing markdown-style hyperlinks in text, specifically handling file paths and anchor tags for compatibility with GitHub Flavored Markdown.
-- **[git_diff.py](git_diff.py.md)**: The `git_diff.py` file in the `python-backend` codebase provides functionality to compute the size of code differences in bytes between file versions, log usage metrics, and update metadata, while handling potential errors such as insufficient balance for processing updates.
-- **[git_diff_test.py](git_diff_test.py.md)**: The `git_diff_test.py` file contains a series of test functions to verify the behavior of the `git_diff_size_bytes_per_file` function by comparing the byte size differences between various test files.
-- **[io.py](io.py.md)**: The `io.py` file in the `python-backend` codebase provides utility functions for reading prompt templates from files and downloading source files from an S3 bucket, including a method for parallel downloads using a thread pool.
-- **[llm.py](llm.py.md)**: The `llm.py` file contains utility functions for handling string chunking and estimating the number of tokens used by messages in OpenAI's chat completions API, specifically for various GPT models.
-- **[models.py](models.py.md)**: The `models.py` file defines configurations for output formats and a `ChatOpenAI` class to interact with OpenAI's API, including methods for generating responses with retry logic and handling different output configurations.
-- **[task.py](task.py.md)**: The `task.py` file in the `python-backend` codebase provides a framework for managing and executing tasks with dependencies, including progress tracking, result serialization, and persistence to local disk or S3 storage.
-- **[task_test.py](task_test.py.md)**: The `task_test.py` file contains unit tests for testing the persistence of task results on local disk and S3, as well as the functionality of a `TaskManager` and `SleepTask` class, including task dependencies and post-run IO operations.
-- **[templates.py](templates.py.md)**: The `templates.py` file in the `python-backend` codebase provides a framework for generating and processing template-based outputs using various prompt and conditional constructs, leveraging language models and handling different output configurations.
-- **[threadpool.py](threadpool.py.md)**: The `threadpool.py` file defines a `FastShutdownThreadPoolExecutor` class that extends `ThreadPoolExecutor` to allow immediate shutdown on error without waiting for all threads to complete.
+- **[codemap_ctags.py](codemap_ctags.py.md)**: Generates a symbol map from a source file using ctags and provides a CLI for symbol detection.
+- **[dag.py](dag.py.md)**: Implements a directed acyclic graph (DAG) for managing file trees, supporting node operations and topological sorting.
+- **[dag_test.py](dag_test.py.md)**: Unit tests for the `FileTreeDag` and `Node` classes, verifying node addition, removal, traversal, and status changes.
+- **[db.py](db.py.md)**: Async functions for database operations related to versions, nodes, and inspector runs, plus utility functions for usage balance and Git provider installations.
+- **[export_utils.py](export_utils.py.md)**: Utilities for extracting and replacing markdown links in text, with support for file path adjustments.
+- **[git_diff.py](git_diff.py.md)**: Functions and classes for computing and logging the size of code differences in bytes using Git.
+- **[git_diff_test.py](git_diff_test.py.md)**: Tests for calculating byte size differences between files using `git_diff_size_bytes_per_file`.
+- **[io.py](io.py.md)**: Functions for reading a prompt template and downloading files from S3, including parallel downloads.
+- **[llm.py](llm.py.md)**: Functions for chunking strings and estimating token counts for OpenAI chat models.
+- **[models.py](models.py.md)**: Defines data structures and functions for configuring and generating OpenAI chat responses.
+- **[task.py](task.py.md)**: Defines classes and methods for task management, including task execution, progress tracking, and result persistence using local disk or S3 storage.
+- **[task_test.py](task_test.py.md)**: Tests for task result persistence on local disk and S3, and task management with dependencies.
+- **[templates.py](templates.py.md)**: Implements a template system for generating structured outputs using language models with conditional logic.
+- **[threadpool.py](threadpool.py.md)**: A ThreadPoolExecutor subclass with a modified __exit__ method for immediate shutdown on error.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

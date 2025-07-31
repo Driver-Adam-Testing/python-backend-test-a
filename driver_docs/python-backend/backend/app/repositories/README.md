@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Repository classes and functions for managing database operations related to SQLModel models and Git apps.
+Generic repository class for SQLModel, Git provider app management, and GithubAppInstallation handling.
 
 
 ## Files
-- **[base_repository.py](base_repository.py.md)**: The `base_repository.py` file defines a generic `BaseRepository` class that provides common database operations such as create, read, update, delete, and query functionalities for SQLModel-based models.
-- **[git_provider_repository.py](git_provider_repository.py.md)**: The `git_provider_repository.py` file contains functions for performing database operations related to Git provider applications and their installations, such as retrieving, deleting, and querying by organization, app, or user ID.
-- **[github_app_installations_repository.py](github_app_installations_repository.py.md)**: The `github_app_installations_repository.py` file defines a repository class for managing GitHub app installations, including methods to list installations by organization or installation ID and to check for the existence of a specific installation.
+- **[base_repository.py](base_repository.py.md)**: A generic repository class for SQLModel with CRUD operations and query capabilities.
+- **[git_provider_repository.py](git_provider_repository.py.md)**: Database operations for managing Git provider apps and installations by organization, app, and user IDs.
+- **[github_app_installations_repository.py](github_app_installations_repository.py.md)**: Repository for managing GithubAppInstallation entities with methods to list and check existence by IDs.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

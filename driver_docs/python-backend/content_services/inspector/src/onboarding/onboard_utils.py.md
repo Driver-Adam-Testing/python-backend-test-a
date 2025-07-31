@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `onboard_utils.py` file in the `python-backend` codebase provides a comprehensive set of utilities for handling file operations, including downloading, uploading, and processing files with S3, managing file encodings, analyzing file types and sizes, and calculating directory statistics.
+Utilities for handling file operations, S3 interactions, and codebase analysis, including file type detection and encoding management.
 
 # Purpose
-This Python code file provides a comprehensive set of utilities for handling file operations, particularly in the context of managing codebases stored in archives and interacting with Amazon S3 for storage and retrieval. The file includes functions for unpacking archives, cleaning extracted files, and determining file types based on extensions and filenames. It also provides functionality for uploading and downloading files to and from S3, including creating buckets if they do not exist and handling presigned URLs for secure access. Additionally, the code includes mechanisms for evaluating file characteristics, such as determining if a file is binary or text, and re-encoding files to UTF-8 when necessary.
+The code is a comprehensive module designed to handle various operations related to file processing, storage, and analysis, particularly in the context of cloud storage using Amazon S3. It includes functions for managing S3 buckets and files, such as creating buckets, uploading and downloading files, and generating presigned URLs for secure access. The module also provides utilities for processing and analyzing files, including determining file types based on extensions or filenames, evaluating file size and binary status, and re-encoding files to UTF-8. Additionally, it includes functionality for unpacking archives, cleaning extracted files, and calculating directory statistics, which are useful for understanding the contents and characteristics of codebases.
 
-The code is structured as a library intended to be imported and used in other parts of a software system, rather than as a standalone script. It defines several public functions that serve as APIs for interacting with file systems and S3, such as [`upload_file_to_s3`](<#upload_file_to_s3>), [`download_file_from_s3`](<#download_file_from_s3>), and [`unpack_archive_to_finalized_path`](<#unpack_archive_to_finalized_path>). The file also includes error handling for common issues, such as missing S3 buckets or encoding errors, and uses caching to optimize repeated operations, like loading file extension mappings. The presence of exception classes, such as `AccessTokenError` and `RunInProgressError`, suggests that the code is designed to be robust and handle specific error conditions gracefully. Overall, this file provides a broad range of functionalities centered around file management and cloud storage integration, making it a versatile component in a larger software ecosystem.
+The module defines several custom exceptions and uses a variety of Python standard libraries and third-party packages like `boto3`, `requests`, and `chardet` to perform its tasks. It also includes functions for parallel processing of files using `ThreadPoolExecutor`, which enhances performance when dealing with large datasets. The code is structured to support integration with a database, as seen in the [`set_codebase_status`](<#set_codebase_status>) function, which updates the status of a codebase version in a database session. Overall, the module serves as a utility library for managing and analyzing files in a cloud-based environment, with a focus on codebase processing and storage.
 # Imports and Dependencies
 
 ---
@@ -40,18 +40,31 @@ The code is structured as a library intended to be imported and used in other pa
 - `shared.usage.utils.bytes_to_sloc`
 
 
+# Global Variables
+
+---
+### TOP\_LANGUAGE\_BLACKLIST
+- **Type**: ``list``
+- **Description**: Contains a list of language names that are considered blacklisted for certain operations. These languages are typically markup or configuration languages, such as `TOML`, `YAML`, `JSON`, and others.
+- **Use**: Used to filter out blacklisted languages from being considered in certain processing tasks.
+
+
 # Classes
 
 ---
 ### AccessTokenError<!-- {{#class:python-backend/content_services/inspector/src/onboarding/onboard_utils.AccessTokenError}} -->
-- **Description**: The `AccessTokenError` class is a custom exception that inherits from Python's built-in `Exception` class. It is used to represent errors related to access tokens, providing a specific exception type that can be caught and handled separately from other exceptions.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L38>)
+
+- **Description**: Defines a custom exception for errors related to access tokens.
 - **Inherits From**:
     - `Exception`
 
 
 ---
 ### RunInProgressError<!-- {{#class:python-backend/content_services/inspector/src/onboarding/onboard_utils.RunInProgressError}} -->
-- **Description**: The `RunInProgressError` class is a custom exception that inherits from Python's built-in `Exception` class. It is used to signal that a particular operation cannot be completed because a run is currently in progress. This class does not define any additional attributes or methods beyond those provided by the base `Exception` class.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L41>)
+
+- **Description**: Defines a custom exception to indicate that a run is currently in progress.
 - **Inherits From**:
     - `Exception`
 
@@ -60,163 +73,186 @@ The code is structured as a library intended to be imported and used in other pa
 
 ---
 ### set\_codebase\_status<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.set_codebase_status}} -->
-The `set_codebase_status` function updates the status of a codebase version in the database using a given version ID and status.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L45>)
+
+Updates the status of a codebase version in the database.
 - **Inputs**:
-    - `version_id`: A UUID representing the unique identifier of the codebase version to be updated.
-    - `status`: An Enum value representing the new status to be set for the codebase version.
-- **Control Flow**:
-    - Import the database engine from the `database.db` module.
-    - Open a session with the database using the imported engine.
-    - Retrieve the `Version` object from the database using the provided `version_id`.
-    - Update the `status` attribute of the retrieved `Version` object with the provided `status`.
-    - Add the updated `Version` object back to the session to persist the changes.
-- **Output**: The function does not return any value; it performs an update operation in the database.
+    - `version_id`: A UUID that uniquely identifies the version of the codebase to update.
+    - `status`: An Enum value representing the new status to set for the codebase version.
+- **Logic and Control Flow**:
+    - Imports the `engine` from the `database.db` module.
+    - Creates a new session with the database using `Session(engine)` and begins a transaction.
+    - Retrieves the `Version` object from the database using the provided `version_id`.
+    - Sets the `status` attribute of the retrieved `Version` object to the provided `status`.
+    - Adds the updated `Version` object back to the session to mark it for update.
+- **Output**: Does not return any value (returns `None`).
 
 
 ---
 ### load\_extension\_and\_name\_mapping<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.load_extension_and_name_mapping}} -->
-The `load_extension_and_name_mapping` function loads language extension and filename mappings from a YAML file into two dictionaries.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L54>)
+
+Loads language extension and filename mappings from a YAML file into two dictionaries.
 - **Decorators**: `@cache`
 - **Inputs**: None
-- **Control Flow**:
-    - The function imports `defaultdict` from `collections` and `yaml` for YAML file processing.
-    - It opens the `/linguist/languages.yml` file and loads its content into `language_dict` using `yaml.safe_load`.
-    - Two `defaultdict` objects, `extension_map` and `name_map`, are initialized to store lists of languages for each extension and filename, respectively.
-    - The function iterates over each language in `language_dict`.
-    - For each language, it checks if there are any extensions and adds them to `extension_map` with the language as a value.
-    - Similarly, it checks for filenames and adds them to `name_map` with the language as a value.
-    - Finally, the function returns the `extension_map` and `name_map` dictionaries.
-- **Output**: The function returns a tuple containing two dictionaries: `extension_map` and `name_map`, which map file extensions and filenames to their respective languages.
+- **Logic and Control Flow**:
+    - Imports the `defaultdict` class from the `collections` module and the `yaml` module.
+    - Opens the file located at `/linguist/languages.yml` and loads its content using `yaml.safe_load`.
+    - Initializes two `defaultdict` objects, `extension_map` and `name_map`, with lists as default values.
+    - Iterates over each language in the loaded YAML data.
+    - For each language, checks if it has extensions and adds them to `extension_map` with the language as the value.
+    - For each language, checks if it has filenames and adds them to `name_map` with the language as the value.
+    - Returns the `extension_map` and `name_map` dictionaries.
+- **Output**: A tuple containing two dictionaries: `extension_map` and `name_map`, mapping file extensions and filenames to their respective languages.
 
 
 ---
 ### get\_file\_type\_from\_extension<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.get_file_type_from_extension}} -->
-The function `get_file_type_from_extension` determines the file type based on a given file extension using a predefined mapping.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L74>)
+
+Determines the file type based on a given file extension.
 - **Inputs**:
-    - `extension`: A string representing the file extension for which the file type is to be determined.
-- **Control Flow**:
-    - Load the extension-to-name mapping using the [`load_extension_and_name_mapping`](<#load_extension_and_name_mapping>) function.
-    - Retrieve the file type associated with the given extension from the mapping.
-    - Check if the extension is ".h" and return "Header" if true.
-    - If a file type is found and it is a single entry, return that file type.
-    - Return `None` if no specific file type is determined.
-- **Output**: Returns a string representing the file type if determined, or `None` if the file type cannot be determined.
+    - `extension`: A string representing the file extension to check.
+- **Logic and Control Flow**:
+    - Loads the extension-to-name mapping using the [`load_extension_and_name_mapping`](<#load_extension_and_name_mapping>) function.
+    - Retrieves the file type associated with the given extension from the `extension_map`.
+    - Checks if the extension is '.h' and returns 'Header' if true.
+    - If the file type is found and its length is 1, returns the single file type.
+    - Returns `None` if no specific file type is found.
+- **Output**: Returns a string representing the file type if found, or `None` if no type is associated with the extension.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.load_extension_and_name_mapping`](<#load_extension_and_name_mapping>)
 
 
 ---
 ### get\_file\_type\_from\_filename<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.get_file_type_from_filename}} -->
-The function `get_file_type_from_filename` retrieves the file type associated with a given filename using a predefined mapping.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L85>)
+
+Retrieves the file type associated with a given filename using a predefined mapping.
 - **Inputs**:
-    - `filename`: A string representing the name of the file for which the file type is to be determined.
-- **Control Flow**:
-    - The function calls `load_extension_and_name_mapping()` to retrieve the name mapping dictionary.
-    - It attempts to get the file type from the `name_map` using the provided `filename` as the key.
-    - If a file type is found and it is the only one in the list, it returns that file type.
-    - If no file type is found or there are multiple file types, it returns `None`.
-- **Output**: The function returns a string representing the file type if exactly one type is found, otherwise it returns `None`.
+    - `filename`: A string representing the name of the file for which to determine the file type.
+- **Logic and Control Flow**:
+    - Calls the [`load_extension_and_name_mapping`](<#load_extension_and_name_mapping>) function to obtain the `name_map` dictionary, which maps filenames to file types.
+    - Attempts to retrieve the file type from the `name_map` using the provided `filename` as the key.
+    - Checks if the retrieved `file_type` is not `None` and contains exactly one element.
+    - If the conditions are met, returns the single file type from the list; otherwise, returns `None`.
+- **Output**: Returns a string representing the file type if found and unique, otherwise returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.load_extension_and_name_mapping`](<#load_extension_and_name_mapping>)
 
 
 ---
 ### create\_base\_storage\_url<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.create_base_storage_url}} -->
-The function `create_base_storage_url` generates a base URL for an S3 storage bucket using a hashed version of the organization ID.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L94>)
+
+Generates a base URL for S3 storage using a hashed organization ID.
 - **Inputs**:
-    - `org_id`: A string representing the organization ID, which will be hashed to create a unique part of the URL.
-- **Control Flow**:
-    - The function takes an organization ID as input and encodes it to bytes.
-    - It then computes the SHA-256 hash of the encoded organization ID.
-    - The hash is converted to a hexadecimal string and truncated to the first 63 characters.
-    - A formatted string is returned, which includes the truncated hash as part of the URL pointing to an S3 bucket.
-- **Output**: A string representing the base URL for an S3 storage bucket, which includes a hashed version of the organization ID.
+    - `org_id`: A string representing the organization ID to hash and use in the URL.
+- **Logic and Control Flow**:
+    - Hashes the input `org_id` using SHA-256 and encodes it to a hexadecimal string.
+    - Truncates the hashed string to the first 63 characters.
+    - Formats and returns a URL string using the truncated hash as the subdomain.
+- **Output**: A string representing the base URL for S3 storage with the hashed organization ID as the subdomain.
 
 
 ---
 ### create\_bucket\_if\_dne<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.create_bucket_if_dne}} -->
-The `create_bucket_if_dne` function checks if an S3 bucket exists and creates it if it does not.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L99>)
+
+Checks if an S3 bucket exists and creates it if it does not.
 - **Inputs**:
-    - `bucket_name`: A string representing the name of the S3 bucket to check and potentially create.
-- **Control Flow**:
-    - The function attempts to access the S3 bucket using the `head_bucket` method to check if it exists.
-    - If a `ClientError` is raised, indicating the bucket does not exist, the function creates the bucket using the `create_bucket` method.
-    - A message is printed to the console indicating that the bucket has been created.
-- **Output**: The function does not return any value; it performs actions to ensure the bucket exists.
+    - `bucket_name`: The name of the S3 bucket to check and potentially create.
+- **Logic and Control Flow**:
+    - Attempts to access the specified S3 bucket using the `head_bucket` method.
+    - If a `ClientError` exception occurs, it indicates the bucket does not exist.
+    - Creates the bucket using the `create_bucket` method if it does not exist.
+    - Prints a message indicating the bucket was created.
+- **Output**: No output is returned, but a message is printed if a bucket is created.
 
 
 ---
 ### download\_file\_from\_s3<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.download_file_from_s3}} -->
-The `download_file_from_s3` function downloads a file from an S3 bucket to a specified local destination.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L111>)
+
+Downloads a file from an S3 bucket to a specified local destination.
 - **Inputs**:
-    - `bucket_name`: The name of the S3 bucket from which the file will be downloaded.
+    - `bucket_name`: The name of the S3 bucket from which to download the file.
     - `org_id`: The organization ID used as part of the S3 file path.
-    - `file_name`: The name of the file to be downloaded from the S3 bucket.
-    - `download_destination`: The local path where the downloaded file will be saved.
-- **Control Flow**:
+    - `file_name`: The name of the file to download from S3.
+    - `download_destination`: The local path where the file will be downloaded.
+- **Logic and Control Flow**:
     - Set the S3 file prefix to 'codebases'.
     - Create an S3 resource using the endpoint URL from the environment variable 'AWS_S3_ENDPOINT_URL'.
-    - Access the specified S3 bucket using the provided bucket name.
-    - Construct the S3 path to the file using the prefix, organization ID, and file name.
-    - Set the download destination to the local path specified by the file name.
-    - Attempt to download the file from the S3 bucket to the local destination.
-    - If an exception occurs during the download, raise the exception.
-- **Output**: The function does not return any value; it performs the side effect of downloading a file to the local file system.
+    - Get the S3 bucket object using the provided 'bucket_name'.
+    - Construct the S3 path to the file using the prefix, 'org_id', and 'file_name'.
+    - Set the 'download_destination' to the local path of 'file_name'.
+    - Attempt to download the file from the S3 bucket to the local destination using 'download_file'.
+    - If an exception occurs during download, re-raise the exception.
+- **Output**: None
 
 
 ---
 ### download\_file\_from\_presigned\_url<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.download_file_from_presigned_url}} -->
-The function downloads a file from a given presigned URL and saves it to a specified local path.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L127>)
+
+Downloads a file from a given presigned URL and saves it to a specified local path.
 - **Inputs**:
-    - `presigned_url`: A string representing the presigned URL from which the file will be downloaded.
-    - `download_destination`: A Path object representing the local file path where the downloaded file will be saved.
-- **Control Flow**:
-    - The function initiates a GET request to the provided presigned URL with streaming enabled.
-    - It checks the response status and raises an exception if the request was unsuccessful.
-    - The function opens the specified download destination file in binary write mode.
-    - It iterates over the content of the response in chunks of 8192 bytes and writes each chunk to the file.
-- **Output**: The function does not return any value; it performs the side effect of downloading and saving a file.
+    - `presigned_url`: A string representing the presigned URL from which to download the file.
+    - `download_destination`: A `Path` object representing the local file path where the downloaded file will be saved.
+- **Logic and Control Flow**:
+    - Uses `requests.get` to send a GET request to the `presigned_url` with streaming enabled.
+    - Raises an HTTP error if the request fails using `raise_for_status`.
+    - Opens the `download_destination` file in binary write mode.
+    - Iterates over the content of the response in chunks of 8192 bytes.
+    - Writes each chunk to the `download_destination` file.
+- **Output**: None
 
 
 ---
 ### get\_root\_nodes\_in\_archive<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.get_root_nodes_in_archive}} -->
-The function `get_root_nodes_in_archive` extracts the root-level nodes from a ZIP archive, excluding any entries from the `__MACOSX` directory.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L137>)
+
+Extracts the root nodes from a ZIP archive, excluding certain directories.
 - **Inputs**:
-    - `zip_file`: A `zipfile.ZipFile` object representing the ZIP archive to be processed.
-- **Control Flow**:
-    - Iterates over each file information object in the ZIP archive using `zip_file.infolist()`.
-    - For each file, it checks if the file path parts are non-empty and the first part is not `__MACOSX`.
-    - It also checks if the file path has exactly one part, indicating it is a root-level node.
-    - For each valid root-level node, it creates a tuple containing the node name and a boolean indicating if it is a directory.
-    - Collects all such tuples into a list and returns it.
-- **Output**: A list of tuples, where each tuple contains a string representing the root node's name and a boolean indicating whether it is a directory.
+    - `zip_file`: A `zipfile.ZipFile` object representing the ZIP archive to process.
+- **Logic and Control Flow**:
+    - Iterates over each file in the ZIP archive using `zip_file.infolist()`.
+    - For each file, extracts the path parts using `Path(info.filename).parts`.
+    - Checks if the first part of the path is not '__MACOSX' and if the path has only one part.
+    - If both conditions are true, adds a tuple of the first part and a boolean indicating if it is a directory to the result list.
+- **Output**: A list of tuples, each containing a string (the root node name) and a boolean indicating if it is a directory.
 
 
 ---
 ### \_wanted\_members<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils._wanted_members}} -->
-The function `_wanted_members` filters out unwanted members from a zip file, specifically excluding those that start with `__MACOSX`.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L147>)
+
+Filters out unwanted members from a zip file's namelist, specifically excluding entries that start with '__MACOSX'.
 - **Inputs**:
-    - `zf`: A `zipfile.ZipFile` object representing the zip file from which members are to be filtered.
-- **Control Flow**:
-    - The function uses a list comprehension to iterate over all members of the zip file obtained via `zf.namelist()`.
-    - For each member, it checks if the member's name does not start with `__MACOSX`.
-    - Only members that do not start with `__MACOSX` are included in the resulting list.
-- **Output**: A list of strings, each representing a member of the zip file that does not start with `__MACOSX`.
+    - `zf`: A `zipfile.ZipFile` object representing the zip file to process.
+- **Logic and Control Flow**:
+    - Retrieve the list of all member names in the zip file using `zf.namelist()`.
+    - Filter the list to exclude any member names that start with the string '__MACOSX'.
+    - Return the filtered list of member names.
+- **Output**: A list of strings representing the names of the zip file members that do not start with '__MACOSX'.
 
 
 ---
 ### unpack\_archive<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.unpack_archive}} -->
-The `unpack_archive` function extracts the contents of a zip archive to a specified directory, handling cases where the archive contains a single root directory differently from those with multiple root nodes.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L151>)
+
+Unpacks a ZIP archive to a specified extraction root directory and returns the path to the extracted directory.
 - **Inputs**:
-    - `archive_path`: A `Path` object representing the file path to the zip archive to be unpacked.
-    - `extraction_root`: A `Path` object representing the directory where the archive contents should be extracted.
-- **Control Flow**:
-    - Open the zip archive located at `archive_path` using `zipfile.ZipFile`.
-    - Retrieve the root nodes of the archive using [`get_root_nodes_in_archive`](<#get_root_nodes_in_archive>).
+    - `archive_path`: A `Path` object representing the file path to the ZIP archive to unpack.
+    - `extraction_root`: A `Path` object representing the directory where the archive contents will be extracted.
+- **Logic and Control Flow**:
+    - Open the ZIP archive specified by `archive_path` using `zipfile.ZipFile`.
+    - Call [`get_root_nodes_in_archive`](<#get_root_nodes_in_archive>) to get the root nodes of the archive.
     - Check if the archive contains a single root directory by evaluating the length of `root_nodes` and the directory status of the first node.
-    - If there is a single root directory, set `target_dir` to the path of this directory within `extraction_root` and extract all members except those starting with `__MACOSX` to `extraction_root`.
-    - If there are multiple root nodes, create a new directory named after the archive's stem within `extraction_root`, set `target_dir` to this new directory, and extract all members except those starting with `__MACOSX` to `target_dir`.
-- **Output**: Returns a `Path` object representing the directory where the archive contents were extracted.
+    - If there is a single root directory, set `target_dir` to the path of this directory within `extraction_root` and extract all members of the archive to `extraction_root`.
+    - If there is not a single root directory, create a new directory named after the archive's stem within `extraction_root`, set `target_dir` to this new directory, and extract all members of the archive to `target_dir`.
+    - Return the `target_dir` path.
+- **Output**: A `Path` object representing the directory where the archive contents have been extracted.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.get_root_nodes_in_archive`](<#get_root_nodes_in_archive>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils._wanted_members`](<#_wanted_members>)
@@ -224,48 +260,54 @@ The `unpack_archive` function extracts the contents of a zip archive to a specif
 
 ---
 ### clean\_extracted\_codebase<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.clean_extracted_codebase}} -->
-The `clean_extracted_codebase` function removes unwanted files and directories from a specified codebase directory based on predefined and optional filter patterns.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L167>)
+
+Removes unwanted files and directories from a codebase directory.
 - **Inputs**:
-    - `codebase_root`: A `Path` object representing the root directory of the codebase to be cleaned.
-    - `extra_filters`: An optional iterable of strings representing additional glob patterns to filter out unwanted files or directories.
-- **Control Flow**:
-    - Initialize a list of default patterns to filter out, specifically targeting macOS system files like `__MACOSX` and `.DS_Store`.
-    - Check if `extra_filters` is provided, and if so, extend the default patterns list with these additional filters.
-    - Iterate over each pattern in the combined list of patterns.
-    - For each pattern, use `codebase_root.glob(pattern)` to find matching paths within the codebase.
+    - `codebase_root`: The root directory of the codebase to clean, represented as a `Path` object.
+    - `extra_filters`: An optional iterable of string patterns to specify additional files or directories to remove.
+- **Logic and Control Flow**:
+    - Initialize a list `patterns` with default patterns to match unwanted files and directories.
+    - If `extra_filters` is provided, extend `patterns` with these additional filters.
+    - Iterate over each pattern in `patterns`.
+    - For each pattern, use `codebase_root.glob(pattern)` to find matching paths.
     - For each path found, check if it is a directory using `path.is_dir()`.
     - If the path is a directory, remove it using `shutil.rmtree(path)`.
-    - If the path is a file, remove it using `path.unlink(missing_ok=True)`, allowing for the possibility that the file might not exist.
-- **Output**: The function does not return any value; it performs in-place cleaning of the specified codebase directory.
+    - If the path is a file, remove it using `path.unlink(missing_ok=True)`.
+- **Output**: The function does not return any value; it performs file and directory deletions in place.
 
 
 ---
 ### finalize\_codebase\_path<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.finalize_codebase_path}} -->
-The `finalize_codebase_path` function renames a given directory path if an override name is provided, otherwise it returns the original path.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L183>)
+
+Renames the extracted codebase path if an override name is provided, otherwise returns the original path.
 - **Inputs**:
-    - `extracted_path`: A `Path` object representing the directory path that may be renamed.
-    - `override_name`: An optional string that specifies the new name for the directory; if not provided, the directory is not renamed.
-- **Control Flow**:
-    - Check if `override_name` is provided.
-    - If `override_name` is provided, construct a new path by combining the parent directory of `extracted_path` with `override_name`.
-    - Rename the directory at `extracted_path` to the new path using `os.rename`.
-    - Return the new path if renamed, otherwise return the original `extracted_path`.
-- **Output**: A `Path` object representing the final directory path, which is either the renamed path or the original path if no renaming occurred.
+    - `extracted_path`: The original path of the extracted codebase as a `Path` object.
+    - `override_name`: An optional string to rename the extracted path; defaults to `None`.
+- **Logic and Control Flow**:
+    - Checks if `override_name` is provided.
+    - If `override_name` is provided, constructs a new path by combining the parent directory of `extracted_path` with `override_name`.
+    - Renames the `extracted_path` to the new path using `os.rename`.
+    - Returns the new path if renamed, otherwise returns the original `extracted_path`.
+- **Output**: Returns a `Path` object representing the final path of the codebase, either renamed or original.
 
 
 ---
 ### unpack\_archive\_to\_finalized\_path<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.unpack_archive_to_finalized_path}} -->
-The function unpacks an archive, cleans unwanted files, optionally renames the directory, and returns the final directory path.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L194>)
+
+Unpacks an archive, cleans unwanted files, optionally renames the directory, and returns the final directory path.
 - **Inputs**:
-    - `archive_path`: The path to the archive file that needs to be unpacked.
+    - `archive_path`: The path to the archive file to unpack.
     - `extraction_root`: The root directory where the archive will be extracted.
-    - `override_codebase_name`: An optional string to rename the extracted directory.
-    - `extra_filters`: An optional iterable of strings specifying additional file patterns to remove during cleaning.
-- **Control Flow**:
-    - Call unpack_archive to extract the archive at archive_path into extraction_root, returning the path to the extracted directory.
-    - Call clean_extracted_codebase to remove unwanted files from the extracted directory, using extra_filters if provided.
-    - Call finalize_codebase_path to optionally rename the extracted directory using override_codebase_name, and return the final directory path.
-- **Output**: The function returns a Path object representing the final directory on disk after extraction and cleaning.
+    - `override_codebase_name`: An optional new name for the extracted directory.
+    - `extra_filters`: An optional iterable of additional file patterns to remove from the extracted directory.
+- **Logic and Control Flow**:
+    - Call [`unpack_archive`](<#unpack_archive>) to extract the archive at `archive_path` into `extraction_root`, returning the path to the extracted directory.
+    - Call [`clean_extracted_codebase`](<#clean_extracted_codebase>) to remove unwanted files from the extracted directory, using `extra_filters` if provided.
+    - Call [`finalize_codebase_path`](<#finalize_codebase_path>) to optionally rename the extracted directory if `override_codebase_name` is provided, and return the final directory path.
+- **Output**: The final path of the extracted and processed directory.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.unpack_archive`](<#unpack_archive>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.clean_extracted_codebase`](<#clean_extracted_codebase>)
@@ -274,29 +316,33 @@ The function unpacks an archive, cleans unwanted files, optionally renames the d
 
 ---
 ### upload\_file\_to\_s3<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.upload_file_to_s3}} -->
-The `upload_file_to_s3` function uploads a local file to a specified S3 bucket and returns the S3 destination path.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L209>)
+
+Uploads a local file to an S3 bucket and returns the S3 destination path.
 - **Inputs**:
     - `bucket_name`: The name of the S3 bucket where the file will be uploaded.
     - `destination_root`: The root path in the S3 bucket where the file will be stored.
     - `local_path`: The local file path of the file to be uploaded.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an S3 resource using the endpoint URL from the environment variable `AWS_S3_ENDPOINT_URL`.
-    - Retrieve the S3 bucket object using the provided `bucket_name`.
-    - Check if the `local_path` exists on the local filesystem.
-    - If the file exists, construct the S3 destination path by combining `destination_root` and `local_path`.
-    - Upload the file from `local_path` to the constructed S3 destination path using the `upload_file` method of the S3 bucket object.
-- **Output**: Returns the S3 destination path where the file was uploaded.
+    - Get the S3 bucket object using the provided `bucket_name`.
+    - Check if the `local_path` exists.
+    - If the `local_path` exists, calculate the `s3_destination_path` by combining `destination_root` and `local_path`.
+    - Upload the file from `local_path` to the calculated `s3_destination_path` in the S3 bucket.
+- **Output**: Returns the `Path` object representing the destination path in the S3 bucket where the file is uploaded.
 
 
 ---
 ### evaluate\_file\_size\_processable<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.evaluate_file_size_processable}} -->
-The function `evaluate_file_size_processable` checks if a file's size is within a specified range to determine if it is processable.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L221>)
+
+Determines if a file's size is within a specified range to be considered processable.
 - **Inputs**:
-    - `filepath`: A `Path` object representing the file path of the file to be evaluated.
-- **Control Flow**:
-    - Initialize a boolean variable `is_proc` to `True`.
-    - Retrieve the file size using `os.path.getsize(filepath)`.
-    - Define `min_size` as 0 and `max_size` as 1,000,000,000 bytes.
+    - `filepath`: A `Path` object representing the path to the file to evaluate.
+- **Logic and Control Flow**:
+    - Initialize `is_proc` to `True` to assume the file is processable by default.
+    - Get the file size using `os.path.getsize(filepath)`.
+    - Set `min_size` to 0 and `max_size` to 1,000,000,000 bytes (1 GB).
     - Check if the file size is less than `min_size` or greater than `max_size`.
     - If the file size is outside the specified range, set `is_proc` to `False`.
 - **Output**: Returns a boolean value `True` if the file size is within the specified range, otherwise `False`.
@@ -304,182 +350,206 @@ The function `evaluate_file_size_processable` checks if a file's size is within 
 
 ---
 ### get\_non\_ascii\_file\_encoding<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.get_non_ascii_file_encoding}} -->
-The function `get_non_ascii_file_encoding` attempts to detect and return the encoding of a byte sequence that is not ASCII, using the `chardet` library.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L233>)
+
+Detects the encoding of a non-ASCII file from its byte content.
 - **Inputs**:
-    - `file_bytes`: A byte sequence representing the contents of a file to be analyzed for encoding.
-- **Control Flow**:
-    - The function imports the `chardet` library for encoding detection.
-    - It initializes constants for chunk size, number of chunks, and minimum confidence level for encoding detection.
-    - The byte sequence is divided into chunks of a specified size, and only a limited number of chunks are considered.
-    - For each chunk, the `chardet.detect` method is used to predict the encoding and confidence level.
-    - If a predicted encoding is found that is not ASCII and has a confidence level above the threshold, the function attempts to decode the entire byte sequence with this encoding.
-    - If decoding is successful, the encoding is stored and the loop breaks; otherwise, an error message is printed.
-    - The function returns the detected encoding if successful, or `None` if no suitable encoding is found.
-- **Output**: The function returns a string representing the detected non-ASCII encoding of the byte sequence, or `None` if no suitable encoding is found.
+    - `file_bytes`: A byte sequence representing the content of a file.
+- **Logic and Control Flow**:
+    - Import the `chardet` library to detect file encoding.
+    - Define constants: `chunk_size` as 2500 bytes, `num_chunks` as 40, and `min_confidence` as 0.7.
+    - Initialize `found_encoding` to `None`.
+    - Divide `file_bytes` into chunks of size `chunk_size`, limiting to `num_chunks`.
+    - Iterate over each chunk to detect its encoding using `chardet.detect`.
+    - Check if the detected encoding is not `None`, not `ascii`, and has a confidence greater than `min_confidence`.
+    - Attempt to decode `file_bytes` using the detected encoding to verify it.
+    - If decoding is successful, set `found_encoding` to the detected encoding and break the loop.
+    - If a `UnicodeDecodeError` occurs, print a message indicating the failure of the predicted encoding.
+    - Return `found_encoding` as the result.
+- **Output**: A string representing the detected encoding of the file, or `None` if no suitable encoding is found.
 
 
 ---
 ### evaluate\_file\_binary<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.evaluate_file_binary}} -->
-The `evaluate_file_binary` function determines if a given file is binary by analyzing its byte content and encoding.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L260>)
+
+Determines if a file is binary by analyzing its byte content and encoding.
 - **Inputs**:
-    - `filepath`: A `Path` object representing the path to the file to be evaluated.
-- **Control Flow**:
-    - Initialize variables `is_binary`, `chunk_size`, and `min_confidence` for processing.
+    - `filepath`: A `Path` object representing the path to the file to evaluate.
+- **Logic and Control Flow**:
+    - Initialize `is_binary` to `False`, `chunk_size` to 2500, and `min_confidence` to 0.7.
     - Define a list of `disallowed_bytes` representing ASCII control codes that indicate binary content.
-    - Open the file in binary read mode and read its contents into `file_bytes`.
+    - Open the file at `filepath` in binary read mode and read its contents into `file_bytes`.
     - Check if any `disallowed_bytes` are present in `file_bytes`.
     - If `disallowed_bytes` are found, attempt to decode `file_bytes` as UTF-16 (both little-endian and big-endian).
-    - If UTF-16 decoding is successful, use `chardet` to detect encoding and confidence; set `is_binary` based on the results.
-    - If UTF-16 decoding fails, set `is_binary` to True.
-    - If no `disallowed_bytes` are found, attempt to decode `file_bytes` as UTF-8.
-    - If UTF-8 decoding is successful, set `is_binary` to False.
-    - If UTF-8 decoding fails, use [`get_non_ascii_file_encoding`](<#get_non_ascii_file_encoding>) to determine encoding; set `is_binary` based on the result.
-- **Output**: A boolean value indicating whether the file is binary (`True`) or not (`False`).
+    - If UTF-16 decoding is successful, use `chardet` to detect encoding and confidence of the first `chunk_size` bytes.
+    - Set `is_binary` to `True` if the detected encoding is not UTF-16 or confidence is below `min_confidence`.
+    - If `disallowed_bytes` are not found, attempt to decode `file_bytes` as UTF-8.
+    - Set `is_binary` to `False` if UTF-8 decoding is successful.
+    - If UTF-8 decoding fails, use [`get_non_ascii_file_encoding`](<#get_non_ascii_file_encoding>) to detect encoding and set `is_binary` to `True` if no encoding is found.
+- **Output**: Returns `True` if the file is binary, otherwise `False`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.get_non_ascii_file_encoding`](<#get_non_ascii_file_encoding>)
 
 
 ---
 ### evaluate\_file\_hex<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.evaluate_file_hex}} -->
-The `evaluate_file_hex` function checks if a file contains predominantly hexadecimal characters.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L346>)
+
+Determines if a file contains mostly hexadecimal characters.
 - **Inputs**:
-    - `filepath`: A `Path` object representing the path to the file to be evaluated.
-- **Control Flow**:
-    - Set a threshold for the percentage of hexadecimal characters required to consider the file as hex (0.99).
-    - Define a regular expression to match hexadecimal characters and whitespace.
-    - Initialize a boolean variable `is_hex` to `False`.
-    - Open the file at the given `filepath` and read its contents into `file_str`.
-    - If `file_str` is not empty, count the number of characters in `file_str` that match the hexadecimal regular expression.
-    - Calculate the ratio of hexadecimal characters to the total number of characters in `file_str`.
-    - If this ratio exceeds the threshold, set `is_hex` to `True`.
-- **Output**: Returns a boolean value indicating whether the file is predominantly hexadecimal (True) or not (False).
+    - `filepath`: A `Path` object representing the path to the file to evaluate.
+- **Logic and Control Flow**:
+    - Set `hex_perc_threshold` to 0.99 and `regex_test_str` to a regular expression matching hexadecimal characters, newlines, and spaces.
+    - Initialize `is_hex` to `False`.
+    - Open the file at `filepath` and read its contents into `file_str`.
+    - If `file_str` is not empty, count the number of characters in `file_str` that match `regex_test_str` and store in `hex_char_count`.
+    - Calculate the ratio of `hex_char_count` to the total length of `file_str`.
+    - If this ratio is greater than `hex_perc_threshold`, set `is_hex` to `True`.
+- **Output**: Returns `True` if the file contains more than 99% hexadecimal characters, otherwise `False`.
 
 
 ---
 ### is\_on\_blacklist<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.is_on_blacklist}} -->
-The `is_on_blacklist` function checks if a given file path is blacklisted based on directory names, file extensions, or file names.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L360>)
+
+Checks if a given file path is on a predefined blacklist of directories, file extensions, or file names.
 - **Inputs**:
-    - `filepath`: A `Path` object representing the file path to be checked against the blacklist.
-- **Control Flow**:
-    - Initialize a list of blacklisted directory names, file extensions, and file names.
-    - Set a boolean variable `is_blacklisted` to `False`.
-    - Check if any part of the file path is in the list of blacklisted directories; if so, set `is_blacklisted` to `True`.
-    - Check if the file path is a file and its extension is in the list of blacklisted file extensions; if so, set `is_blacklisted` to `True`.
-    - Check if the file path is a file and its name is in the list of blacklisted file names; if so, set `is_blacklisted` to `True`.
-    - Return the value of `is_blacklisted`.
-- **Output**: A boolean value indicating whether the file path is blacklisted (`True`) or not (`False`).
+    - `filepath`: A `Path` object representing the file path to check against the blacklist.
+- **Logic and Control Flow**:
+    - Initializes three lists: `blacklist_dirs`, `blacklist_file_exts`, and `blacklist_file_names` with predefined values.
+    - Sets `is_blacklisted` to `False` initially.
+    - Checks if any directory in `blacklist_dirs` is part of the `filepath` parts; if so, sets `is_blacklisted` to `True`.
+    - Checks if `filepath` is a file and its suffix is in `blacklist_file_exts`; if so, sets `is_blacklisted` to `True`.
+    - Checks if `filepath` is a file and its name is in `blacklist_file_names`; if so, sets `is_blacklisted` to `True`.
+    - Returns the value of `is_blacklisted`.
+- **Output**: Returns a boolean value indicating whether the file path is blacklisted.
 
 
 ---
 ### reencode\_file<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.reencode_file}} -->
-The `reencode_file` function attempts to re-encode a file to UTF-8 if it is not already in that encoding.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L400>)
+
+Reencodes a file to UTF-8 if it is not already in UTF-8 encoding.
 - **Inputs**:
-    - `filepath`: A Path object representing the file path of the file to be re-encoded.
-- **Control Flow**:
-    - Initialize `is_utf8` to False and `decoded_str` to None.
+    - `filepath`: A `Path` object representing the path to the file to be reencoded.
+- **Logic and Control Flow**:
+    - Initialize `is_utf8` to `False` and `decoded_str` to `None`.
     - Open the file in binary read mode and read its contents into `file_bytes`.
-    - Attempt to decode `file_bytes` using UTF-8; if successful, set `is_utf8` to True.
-    - If the file is not UTF-8 encoded, use [`get_non_ascii_file_encoding`](<#get_non_ascii_file_encoding>) to predict the file's encoding.
-    - If a file encoding is predicted, attempt to decode `file_bytes` using this encoding and store the result in `decoded_str`.
-    - If decoding fails, print an error message with the exception and predicted encoding.
-    - If `decoded_str` is not None, open the file in write mode with UTF-8 encoding and write `decoded_str` back to the file.
+    - Attempt to decode `file_bytes` using UTF-8; if successful, set `is_utf8` to `True`.
+    - If the file is not UTF-8, determine its encoding using [`get_non_ascii_file_encoding`](<#get_non_ascii_file_encoding>).
+    - If a valid encoding is found, attempt to decode `file_bytes` using this encoding and store the result in `decoded_str`.
+    - If decoding fails, print an error message with the exception details and the predicted encoding.
+    - If `decoded_str` is not `None`, open the file in write mode with UTF-8 encoding and write `decoded_str` back to the file.
     - Print a message indicating the file has been updated to UTF-8.
-- **Output**: The function does not return any value; it performs file re-encoding as a side effect.
+- **Output**: None; the function performs file operations and prints messages to the console.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.get_non_ascii_file_encoding`](<#get_non_ascii_file_encoding>)
 
 
 ---
 ### process\_and\_upload\_file<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.process_and_upload_file}} -->
-The `process_and_upload_file` function processes a local file by re-encoding it if necessary and uploads it to an S3 bucket if the file's path is in a specified set of database node paths.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L433>)
+
+Processes a file by re-encoding it if necessary and uploads it to an S3 bucket if it is listed in the database node paths.
 - **Inputs**:
     - `s3_client`: An S3 client object used to interact with the S3 service.
-    - `org_hashed_id`: A string representing the hashed ID of the organization, used as the S3 bucket name.
-    - `primary_asset_id`: A string representing the primary asset ID, used as part of the S3 key.
-    - `version_id`: A string representing the version ID, used as part of the S3 key.
-    - `local_path`: A Path object representing the local file path to be processed and uploaded.
-    - `download_dir`: A Path object representing the directory from which the local path is relative.
-    - `db_node_paths`: A set of strings representing paths that are stored in the database and should be processed.
-- **Control Flow**:
-    - Calculate the relative path of the local file with respect to the download directory.
+    - `org_hashed_id`: A string representing the hashed ID of the organization.
+    - `primary_asset_id`: A string representing the primary asset ID.
+    - `version_id`: A string representing the version ID.
+    - `local_path`: A `Path` object representing the local file path to process and upload.
+    - `download_dir`: A `Path` object representing the directory from which the file was downloaded.
+    - `db_node_paths`: A set of strings representing paths that are stored in the database.
+- **Logic and Control Flow**:
+    - Calculate the relative path of the file by removing the download directory path from the local path.
     - Check if the relative path is in the set of database node paths.
-    - If the path is in the set, re-encode the file to UTF-8 if necessary.
-    - Construct the S3 key using the primary asset ID, version ID, and the relative path.
+    - If the path is in the database node paths, re-encode the file using the [`reencode_file`](<#reencode_file>) function.
+    - Construct the S3 key using the primary asset ID, version ID, and the trimmed path.
     - Upload the file to the S3 bucket using the S3 client and the constructed S3 key.
     - Print a message indicating the file upload to S3.
-    - Return the local path if the file was uploaded, otherwise return None.
-- **Output**: Returns the local path of the file if it was uploaded to S3, otherwise returns None.
+    - Return the local path if the file is uploaded, otherwise return `None`.
+- **Output**: Returns the local path of the file if it is uploaded to S3, otherwise returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.reencode_file`](<#reencode_file>)
 
 
 ---
 ### process\_and\_upload\_all\_files\_in\_parallel<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.process_and_upload_all_files_in_parallel}} -->
-This function processes and uploads all files from a specified directory to an S3 bucket in parallel using a thread pool.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L452>)
+
+Processes and uploads all files from a specified directory to S3 in parallel using a thread pool.
 - **Inputs**:
     - `s3_client`: An S3 client object used to interact with the S3 service.
-    - `org_hashed_id`: A string representing the hashed ID of the organization, used as part of the S3 key.
-    - `primary_asset_id`: A string representing the primary asset ID, used as part of the S3 key.
-    - `version_id`: A string representing the version ID, used as part of the S3 key.
-    - `extracted_path`: A Path object representing the directory containing files to be processed and uploaded.
-    - `download_dir`: A Path object representing the directory where files are downloaded.
-    - `db_node_paths`: A set of strings representing paths of files that are already in the database.
-    - `max_workers`: An integer specifying the maximum number of threads to use for parallel processing, defaulting to 8.
-- **Control Flow**:
-    - Initialize empty lists for file paths and files to process.
-    - Traverse the directory specified by 'extracted_path' to collect all file paths.
-    - Create a ThreadPoolExecutor with a specified number of workers.
-    - Submit tasks to the executor for each file to process and upload using 'process_and_upload_file'.
-    - Collect results from the futures as they complete and append successful file paths to the result list.
-- **Output**: A list of Path objects representing the files that were successfully processed and uploaded.
+    - `org_hashed_id`: A string representing the hashed ID of the organization.
+    - `primary_asset_id`: A string representing the primary asset ID.
+    - `version_id`: A string representing the version ID.
+    - `extracted_path`: A `Path` object representing the directory path where files are extracted.
+    - `download_dir`: A `Path` object representing the directory path where files are downloaded.
+    - `db_node_paths`: A set of strings representing database node paths.
+    - `max_workers`: An integer specifying the maximum number of worker threads to use for parallel processing, defaulting to 8.
+- **Logic and Control Flow**:
+    - Initialize empty lists `file_paths` and `files_to_process` to store processed file paths and files to process, respectively.
+    - Use `os.walk` to iterate through the directory specified by `extracted_path`, appending each file path to `files_to_process`.
+    - Create a `ThreadPoolExecutor` with a maximum of `max_workers` threads to handle parallel processing.
+    - Submit a task to the executor for each file in `files_to_process`, calling `process_and_upload_file` with the necessary arguments.
+    - Collect the results of each future as they complete using `as_completed`, appending non-None results to `file_paths`.
+    - Return the list `file_paths` containing paths of successfully processed and uploaded files.
+- **Output**: A list of `Path` objects representing the paths of files that were successfully processed and uploaded.
 
 
 ---
 ### analyze\_text\_file<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.analyze_text_file}} -->
-The `analyze_text_file` function analyzes a text file to determine its size, source lines of code (SLOC), file extension, and whether it is a hexadecimal file.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L493>)
+
+Analyzes a text file to determine its size, source lines of code (SLOC), file extension, and whether it is a hex file.
 - **Inputs**:
-    - `filepath`: A `Path` object representing the path to the text file to be analyzed.
-- **Control Flow**:
-    - The function calls [`evaluate_file_hex`](<#evaluate_file_hex>) to determine if the file is a hexadecimal file.
-    - The file is opened and the number of lines (SLOC) is counted using a generator expression.
-    - The function constructs a dictionary with the file's size, SLOC, extension, binary status, and hexadecimal status.
-    - The dictionary is returned as the output.
-- **Output**: A dictionary containing the file's size, SLOC, extension, binary status (always False), and hexadecimal status.
+    - `filepath`: A `Path` object representing the path to the text file to analyze.
+- **Logic and Control Flow**:
+    - Calls [`evaluate_file_hex`](<#evaluate_file_hex>) to check if the file is a hex file and stores the result in `is_hex`.
+    - Opens the file and calculates the number of lines (SLOC) by iterating over each line and summing them.
+    - Creates a dictionary with the file's size, SLOC, extension, binary status (always `False`), and hex status (`is_hex`).
+- **Output**: A dictionary containing the file's size, SLOC, extension, binary status, and hex status.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.evaluate_file_hex`](<#evaluate_file_hex>)
 
 
 ---
 ### analyze\_binary\_file<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.analyze_binary_file}} -->
-The `analyze_binary_file` function analyzes a binary file and returns a dictionary with its size, extension, and binary status.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L506>)
+
+Analyzes a binary file and returns its metadata.
 - **Inputs**:
-    - `filepath`: A `Path` object representing the path to the binary file to be analyzed.
-- **Control Flow**:
-    - The function retrieves the size of the file using `os.path.getsize(filepath)`.
-    - It sets the source lines of code (`sloc`) to 0, as binary files do not have lines of code in the traditional sense.
-    - The file extension is extracted using `filepath.suffix`.
-    - The function sets `is_binary` to `True` to indicate that the file is binary.
-    - It sets `is_hex` to `False`, assuming the file is not a hexadecimal file.
-- **Output**: A dictionary containing the file's size, source lines of code (sloc), extension, binary status (`is_binary`), and hexadecimal status (`is_hex`).
+    - `filepath`: A `Path` object representing the path to the binary file to analyze.
+- **Logic and Control Flow**:
+    - Uses `os.path.getsize` to get the size of the file at `filepath`.
+    - Sets the source lines of code (`sloc`) to 0, as it is a binary file.
+    - Retrieves the file extension using `filepath.suffix`.
+    - Sets `is_binary` to `True` to indicate the file is binary.
+    - Sets `is_hex` to `False` as the function does not check for hexadecimal content.
+- **Output**: A dictionary containing the file's size, source lines of code (sloc), extension, and flags indicating if it is binary and if it is hex.
 
 
 ---
 ### run\_file\_stats\_and\_reencode<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.run_file_stats_and_reencode}} -->
-The `run_file_stats_and_reencode` function analyzes a file's processability, reencodes it if necessary, and returns a dictionary of file statistics.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L516>)
+
+Analyzes a file to determine its processability, reencodes it if necessary, and returns its statistics.
 - **Inputs**:
-    - `local_path`: A Path object representing the local file path to be analyzed and potentially reencoded.
-    - `codebase_root`: A Path object representing the root directory of the codebase, though it is not directly used in the function.
-- **Control Flow**:
-    - Evaluate if the file size is processable using [`evaluate_file_size_processable`](<#evaluate_file_size_processable>) function.
-    - Determine if the file is binary using [`evaluate_file_binary`](<#evaluate_file_binary>) function.
-    - Check if the file is on a blacklist using [`is_on_blacklist`](<#is_on_blacklist>) function.
+    - `local_path`: The path to the local file to analyze and reencode.
+    - `codebase_root`: The root path of the codebase, though it is not used in the function.
+- **Logic and Control Flow**:
+    - Evaluate if the file size is processable using [`evaluate_file_size_processable`](<#evaluate_file_size_processable>).
+    - Determine if the file is binary using [`evaluate_file_binary`](<#evaluate_file_binary>).
+    - Check if the file is on a blacklist using [`is_on_blacklist`](<#is_on_blacklist>).
     - Initialize an empty dictionary `file_stats` to store file statistics.
     - If the file is not binary, reencode it using [`reencode_file`](<#reencode_file>) and analyze it with [`analyze_text_file`](<#analyze_text_file>).
-    - Set `default_process_state` to True if the file is not hex, is processable, and not blacklisted, then update `file_stats['is_analyzable']`.
-    - If the file is binary, analyze it with [`analyze_binary_file`](<#analyze_binary_file>) and set `file_stats['is_analyzable']` to False.
-    - Update `file_stats` with blacklist and ignore status.
-    - If the file is analyzable, determine its language using [`get_file_type_from_extension`](<#get_file_type_from_extension>) or [`get_file_type_from_filename`](<#get_file_type_from_filename>), otherwise set language to 'N/A'.
-- **Output**: A dictionary containing file statistics such as size, sloc, extension, binary status, hex status, analyzability, blacklist status, ignore status, and language.
+    - Set `is_analyzable` to `True` if the file is not hex, processable by size, and not blacklisted; otherwise, set it to `False`.
+    - If the file is binary, analyze it with [`analyze_binary_file`](<#analyze_binary_file>) and set `is_analyzable` to `False`.
+    - Set `is_blacklisted` in `file_stats` to the result of the blacklist check.
+    - Set `is_ignored` in `file_stats` to `False`.
+    - If `is_analyzable` is `True`, determine the file type using [`get_file_type_from_extension`](<#get_file_type_from_extension>) or [`get_file_type_from_filename`](<#get_file_type_from_filename>), and set `language` in `file_stats`.
+    - If `is_analyzable` is `False`, set `language` in `file_stats` to `N/A`.
+- **Output**: A dictionary containing the file's statistics, including size, line count, extension, binary status, hex status, analyzability, blacklist status, ignore status, and language type.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.evaluate_file_size_processable`](<#evaluate_file_size_processable>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.evaluate_file_binary`](<#evaluate_file_binary>)
@@ -493,115 +563,133 @@ The `run_file_stats_and_reencode` function analyzes a file's processability, ree
 
 ---
 ### generate\_get\_presigned\_url<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.generate_get_presigned_url}} -->
-The `generate_get_presigned_url` function generates a presigned URL for accessing an S3 object with a specified expiration time.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L556>)
+
+Generates a presigned URL for accessing an S3 object with a specified expiration time.
 - **Inputs**:
     - `bucket`: The name of the S3 bucket where the object is stored.
     - `key`: The key (path) of the object within the S3 bucket.
     - `expires`: The time in seconds for which the presigned URL is valid, defaulting to 3600 seconds (1 hour).
-- **Control Flow**:
-    - Import the boto3 library to interact with AWS services.
-    - Create an S3 client using boto3 with credentials and region specified from environment variables.
-    - Call the `generate_presigned_url` method on the S3 client to create a presigned URL for the specified bucket and key, with the given expiration time.
+- **Logic and Control Flow**:
+    - Imports the `boto3` library to interact with AWS services.
+    - Creates an S3 client using `boto3.client` with credentials and region information from environment variables.
+    - Calls `generate_presigned_url` on the S3 client to create a presigned URL for the specified bucket and key, with the given expiration time.
 - **Output**: A string representing the presigned URL for accessing the specified S3 object.
 
 
 ---
 ### parse\_presigned\_url<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.parse_presigned_url}} -->
-The `parse_presigned_url` function extracts the S3 bucket name and object key from a given presigned URL.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L575>)
+
+Parses a presigned S3 URL to extract the bucket name and object key.
 - **Inputs**:
-    - `url`: A string representing the presigned URL to be parsed.
-- **Control Flow**:
-    - The function imports `unquote_plus` from `urllib.parse` to handle URL decoding.
-    - It uses `urlparse` to parse the input URL and extract the host and path components.
-    - The function checks if the host contains '.s3.' to determine if the URL is domain-style and extracts the bucket name accordingly.
-    - If the host starts with 's3-' or 's3.', it is considered path-style, and the bucket name is extracted from the path.
-    - If neither condition is met, a `ValueError` is raised indicating an invalid S3 URL format.
-    - The path is decoded using `unquote_plus` to handle any URL-encoded characters.
-    - Finally, the function returns a tuple containing the bucket name and the decoded key.
-- **Output**: A tuple containing the bucket name and the decoded key extracted from the presigned URL.
+    - `url`: A string representing the presigned S3 URL to parse.
+- **Logic and Control Flow**:
+    - Import the `unquote_plus` function from `urllib.parse` to decode URL-encoded characters.
+    - Parse the input URL using `urlparse` to extract components such as host and path.
+    - Remove the leading slash from the path component of the URL.
+    - Check if the host contains '.s3.' to determine if the URL is domain-style and extract the bucket name from the host.
+    - If the host starts with 's3-' or 's3.', determine if the URL is path-style and extract the bucket name from the path.
+    - If the URL does not match either domain-style or path-style, raise a `ValueError` indicating an invalid S3 URL format.
+    - Decode the path component using `unquote_plus` to get the object key.
+    - Return the bucket name and object key as a tuple.
+- **Output**: A tuple containing the bucket name and the object key extracted from the URL.
 
 
 ---
 ### has\_guard\_duty\_tag<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.has_guard_duty_tag}} -->
-The function checks if an S3 object has a specific tag indicating its malware scan status.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L594>)
+
+Checks if an S3 object has the 'GuardDutyMalwareScanStatus' tag with a value of 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
 - **Inputs**:
     - `bucket`: The name of the S3 bucket where the object is stored.
-    - `key`: The key (or path) of the S3 object within the bucket.
-- **Control Flow**:
-    - Initialize a boto3 S3 client with credentials and region information.
-    - Retrieve the tags associated with the specified S3 object using the get_object_tagging method.
-    - Define a list of supported tag values: 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
-    - Iterate over the tags to check if any tag has the key 'GuardDutyMalwareScanStatus' and a value in the supported tags list.
-    - Return True if exactly one such tag is found, otherwise return False.
-- **Output**: A boolean value indicating whether the S3 object has the 'GuardDutyMalwareScanStatus' tag with a supported value.
+    - `key`: The key (path) of the S3 object within the bucket.
+- **Logic and Control Flow**:
+    - Imports the boto3 library to interact with AWS S3.
+    - Creates an S3 client using boto3 with credentials and region from environment variables.
+    - Retrieves the tags of the specified S3 object using the `get_object_tagging` method.
+    - Defines a list of supported tags: 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
+    - Iterates over the tags of the S3 object to check if any tag has the key 'GuardDutyMalwareScanStatus' and a value in the supported tags list.
+    - Returns True if exactly one tag matches the criteria, otherwise returns False.
+- **Output**: Returns a boolean indicating whether the S3 object has the specified tag with a supported value.
 
 
 ---
 ### wait\_for\_guard\_duty\_tag<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.wait_for_guard_duty_tag}} -->
-The function polls an S3 object for a specific tag indicating malware scan status until the tag is found or a timeout occurs.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L628>)
+
+Polls an S3 object for a specific tag until it is found or a timeout occurs.
 - **Inputs**:
-    - `bucket`: The name of the S3 bucket containing the object to be checked.
-    - `key`: The key (path) of the S3 object within the bucket to be checked.
-    - `timeout`: The maximum time in seconds to wait for the tag to be found, defaulting to 60 seconds.
-    - `interval`: The time in seconds between each check for the tag, defaulting to 5 seconds.
-- **Control Flow**:
-    - Record the current time as the start time for the polling process.
-    - Print a message indicating the start of polling, including the object key, bucket, timeout, and interval.
-    - Enter a loop that continues until the elapsed time since the start time exceeds the specified timeout.
-    - Within the loop, check if the S3 object has the desired 'GuardDutyMalwareScanStatus' tag using the [`has_guard_duty_tag`](<#has_guard_duty_tag>) function.
-    - If the tag is found, print a success message and return True.
-    - If the tag is not found, print a message indicating the wait and sleep for the specified interval before retrying.
-    - If the loop exits due to timeout, print a timeout message and return False.
-- **Output**: Returns a boolean indicating whether the desired tag was found before the timeout.
+    - `bucket`: The name of the S3 bucket where the object is located.
+    - `key`: The key (path) of the S3 object to check for the tag.
+    - `timeout`: The maximum time in seconds to wait for the tag to be found (default is 60 seconds).
+    - `interval`: The time in seconds to wait between each check (default is 5 seconds).
+- **Logic and Control Flow**:
+    - Record the start time using `time.time()`.
+    - Print a message indicating the start of polling with the specified timeout and interval.
+    - Enter a loop that continues until the elapsed time exceeds the specified timeout.
+    - In each iteration, call `has_guard_duty_tag(bucket, key)` to check if the tag is present.
+    - If the tag is found, print a success message and return `True`.
+    - If the tag is not found, print a message indicating a wait and then sleep for the specified interval.
+    - If the loop exits due to timeout, print a timeout message and return `False`.
+- **Output**: Returns `True` if the tag is found within the timeout period, otherwise returns `False`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.has_guard_duty_tag`](<#has_guard_duty_tag>)
 
 
 ---
 ### delete\_file\_from\_s3<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.delete_file_from_s3}} -->
-The `delete_file_from_s3` function deletes a specified file from an Amazon S3 bucket using the boto3 client.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L655>)
+
+Deletes a file from an S3 bucket using the specified bucket name and key.
 - **Inputs**:
-    - `bucket`: A string representing the name of the S3 bucket from which the file will be deleted.
-    - `key`: A string representing the key (path) of the file to be deleted within the S3 bucket.
-- **Control Flow**:
-    - Import the boto3 library to interact with AWS services.
-    - Instantiate an S3 client using boto3 with specified region and credentials from environment variables.
-    - Call the `delete_object` method on the S3 client, passing the bucket name and key to delete the specified file.
-- **Output**: The function does not return any value; it performs the deletion operation on the specified S3 object.
+    - `bucket`: The name of the S3 bucket from which to delete the file.
+    - `key`: The key (path) of the file to delete within the S3 bucket.
+- **Logic and Control Flow**:
+    - Imports the `boto3` library to interact with AWS S3.
+    - Creates an S3 client using `boto3.client` with AWS credentials and region obtained from environment variables.
+    - Calls the `delete_object` method on the S3 client to delete the specified file from the bucket.
+- **Output**: No output is returned as the function's return type is `None`.
 
 
 ---
 ### upload\_to\_s3\_with\_metadata<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.upload_to_s3_with_metadata}} -->
-The function uploads a zip file to an S3 bucket with specified metadata and returns a boolean indicating success.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L671>)
+
+Uploads a zip file to an S3 bucket with specified metadata.
 - **Inputs**:
-    - `zip_content`: A bytes object representing the content of the zip file to be uploaded.
-    - `metadata`: A dictionary containing metadata to be associated with the uploaded file.
-    - `upload_key`: A string representing the key under which the file will be stored in the S3 bucket.
-- **Control Flow**:
-    - Import the boto3 library to interact with AWS S3.
-    - Create an S3 client using boto3.
-    - Attempt to upload the zip content to the S3 bucket using the put_object method, specifying the bucket name, key, body, content type, and metadata.
-    - If an exception occurs during the upload, print the exception and raise a new exception with a message indicating the failure of the upload, including the version ID from the metadata.
-- **Output**: The function returns a boolean indicating whether the upload was successful, but the return statement is missing, so it implicitly returns None.
+    - `zip_content`: The binary content of the zip file to upload.
+    - `metadata`: A dictionary containing metadata to associate with the uploaded file.
+    - `upload_key`: The key under which to store the uploaded file in the S3 bucket.
+- **Logic and Control Flow**:
+    - Imports the `boto3` library to interact with AWS S3.
+    - Creates an S3 client using `boto3.client('s3')`.
+    - Attempts to upload the zip content to the S3 bucket specified by the environment variable `DROPZONE_BUCKET_NAME` using the provided `upload_key`, `zip_content`, and `metadata`.
+    - If an exception occurs during the upload, prints the exception and raises a new exception with a message indicating the failure to upload the codebase version.
+- **Output**: Returns `True` if the upload is successful, otherwise raises an exception.
 
 
 ---
 ### calculate\_directory\_stats<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard_utils.calculate_directory_stats}} -->
-The `calculate_directory_stats` function computes and returns statistics for a list of directories based on provided codebase statistics, excluding blacklisted directories.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard_utils.py#L692>)
+
+Calculates statistics for directories based on file analysis data.
 - **Inputs**:
-    - `all_directories`: A list of Path objects representing all directories to be analyzed.
-    - `codebase_stats`: A dictionary where keys are Path objects representing file paths and values are dictionaries containing file statistics.
-    - `temp_dir`: A Path object representing the temporary directory to be excluded from parent directory calculations.
-- **Control Flow**:
-    - Import necessary modules and functions, including `defaultdict` and [`bytes_to_sloc`](<../../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>).
-    - Filter out blacklisted directories from `all_directories` to create `valid_dirs`.
-    - Define a helper function `create_empty_stats` to initialize a dictionary for directory statistics.
-    - Initialize `dir_stats` with empty statistics for each valid directory.
-    - Iterate over `codebase_stats` to update statistics for each file's parent directories, excluding the temporary directory.
-    - For each file, update total and analyzable statistics if the file is analyzable, not blacklisted, and not ignored.
-    - Convert the collected statistics into the expected output format, including converting bytes to SLOC using [`bytes_to_sloc`](<../../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>).
-    - Return a list of tuples containing the final statistics and relative paths for each directory.
-- **Output**: A list of tuples, each containing a dictionary of directory statistics and a string representing the relative path of the directory, or (None, None) if the directory is not valid.
+    - `all_directories`: A list of `Path` objects representing all directories to analyze.
+    - `codebase_stats`: A dictionary mapping `Path` objects to dictionaries containing file statistics.
+    - `temp_dir`: A `Path` object representing the temporary directory to exclude from analysis.
+- **Logic and Control Flow**:
+    - Import necessary modules and functions.
+    - Filter out directories that are on the blacklist using a list comprehension.
+    - Define a helper function `create_empty_stats` to initialize statistics for directories.
+    - Initialize `dir_stats` dictionary with empty statistics for each valid directory.
+    - Iterate over `codebase_stats` to update statistics for each file's parent directories.
+    - For each file, check if it is analyzable and not blacklisted or ignored, then update statistics accordingly.
+    - Convert the collected statistics into the expected output format by iterating over `all_directories`.
+    - For each directory, calculate the top language by analyzable bytes, excluding blacklisted languages.
+    - Append the final statistics and relative path to the `results` list.
+    - Return the `results` list containing tuples of directory statistics and relative paths.
+- **Output**: A list of tuples, each containing a dictionary of directory statistics and a string representing the relative path.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.is_on_blacklist`](<#is_on_blacklist>)
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>)

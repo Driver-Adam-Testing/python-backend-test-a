@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Unit tests for repository CRUD operations and utility functions for authentication token retrieval.
+Tests for CRUD operations in BaseRepository and utility to fetch Auth0 access token.
 
 ## Folders
-- **[repositories](repositories/README.md)**: Unit tests for the `BaseRepository` class, focusing on CRUD operations with a mock SQLModel and session.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains a utility file, `auth.py`, which provides a function to obtain an Auth0 token using client credentials for authentication.
+- **[repositories](repositories/README.md)**: Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
+- **[utils](utils/README.md)**: Fetches an Auth0 access token using client credentials.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

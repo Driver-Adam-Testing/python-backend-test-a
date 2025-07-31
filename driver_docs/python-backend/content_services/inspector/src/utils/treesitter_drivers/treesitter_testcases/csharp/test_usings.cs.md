@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_usings.cs` file contains test cases for various C# using directives, including standard, alias, static, global, and file-scoped namespace usages.
+Test cases for C# using directives, including aliases, static, global, and file-scoped namespaces.
 
 # Purpose
-This C# code demonstrates various ways to use the `using` directive to import namespaces and types, showcasing both traditional and modern C# features. It provides narrow functionality focused on illustrating different import techniques, such as using aliases, static imports, global imports, and file-scoped namespaces. The code is part of a class `UsingExamples` within the `Com.Example.Usings` namespace, and it is intended to be part of a larger application or library rather than a standalone executable. The [`UseImports`](<#UsingExamplesUseImports>) method exemplifies how these imports can be utilized in practice, making it a useful reference for developers looking to understand and implement efficient namespace management in C#.
+The code demonstrates various ways to use `using` directives in C#. It includes examples of standard `using` directives, aliasing, static imports, and global `using` directives, which are available from C# 10 onwards. The `UsingExamples` class contains a method [`UseImports`](<#usingexamplesuseimports>) that illustrates the practical application of these directives by creating instances of types and calling methods from the imported namespaces. This code is part of a C# file intended to show how to manage namespace imports effectively, and it is not an executable on its own. The use of aliases and global namespace references helps to avoid naming conflicts and improve code readability.
 # Imports and Dependencies
 
 ---
@@ -14,8 +14,6 @@ This C# code demonstrates various ways to use the `using` directive to import na
 - `System.Collections.Generic`
 - `System.Linq`
 - `System.Text`
-- `System.Math`
-- `System.Console`
 - `System.Threading.Tasks`
 - `System.Collections.Concurrent`
 - `System.Text.Json`
@@ -25,32 +23,36 @@ This C# code demonstrates various ways to use the `using` directive to import na
 
 ---
 ### UsingExamples<!-- {{#class:Com.Example.Usings.UsingExamples}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_usings.cs#L27>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `UsingExamples` class is designed to demonstrate various ways of utilizing C# using directives, including standard imports, aliases, static imports, global imports, and file-scoped namespace imports. The class contains a single method, `UseImports`, which showcases the practical application of these directives by creating instances of different types and calling static methods. This class serves as an educational example to illustrate how using directives can simplify code and manage namespace conflicts effectively.
+- **Description**: Demonstrates the use of various C# `using` directives, including standard imports, aliases, static imports, and global imports. The `UseImports` method shows how to declare and use different types and methods from the `System` namespace and other namespaces, utilizing aliases and static methods for concise code.
 - **Methods**:
-    - [`Com.Example.Usings.UsingExamples.UseImports`](<#UsingExamplesUseImports>)
+    - [`Com.Example.Usings.UsingExamples.UseImports`](<#usingexamplesuseimports>)
 
 **Methods**
 
 ---
 #### UsingExamples\.UseImports<!-- {{#callable:Com.Example.Usings.UsingExamples.UseImports}} -->
-The `UseImports` method demonstrates the usage of various C# using directives, including system types, aliases, static methods, global usings, and global namespace references.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_usings.cs#L29>)
+
+Demonstrates the use of various C# import directives and aliases within a method.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Instantiate a `List<string>` and assign it to `list`.
-    - Get the current date and time using `DateTime.Now` and assign it to `date`.
-    - Create a `Dictionary<string, object>` using the alias `Dict` and assign it to `dict`.
-    - Instantiate a `StringBuilder` using the alias and assign it to `sb`.
-    - Calculate the square root of 16 using the static method `Sqrt` and assign the result to `result`.
-    - Print 'Hello World' to the console using the static method `WriteLine`.
-    - Assign `Task.CompletedTask` to `task` using the global using directive.
-    - Create a `ConcurrentDictionary<string, int>` using the alias `MyAlias` and assign it to `concurrent`.
-    - Instantiate `JsonSerializerOptions` and assign it to `jsonOptions`.
-    - Serialize an anonymous object to JSON using `JsonSerializer.Serialize` and assign the result to `json`.
-- **Output**: The method does not return any value as it is a `void` method.
-- **See also**: [`Com.Example.Usings.UsingExamples`](<#UsingExamples>)  (Base Class)
+    - Creates a list of strings using `List<string>`.
+    - Gets the current date and time using `DateTime.Now`.
+    - Creates a dictionary using the alias `Dict` for `Dictionary<string, object>`.
+    - Creates a `StringBuilder` instance using the alias `StringBuilder`.
+    - Calculates the square root of 16 using the static method `Sqrt` from `System.Math`.
+    - Writes 'Hello World' to the console using the static method `WriteLine` from `System.Console`.
+    - Creates a completed task using `Task.CompletedTask` from the global using directive.
+    - Creates a concurrent dictionary using the alias `MyAlias` for `ConcurrentDictionary<string, int>`.
+    - Creates a `JsonSerializerOptions` instance using the global namespace reference `global::System.Text.Json`.
+    - Serializes an anonymous object to JSON using the alias `JsonSerializer` for `global::System.Text.Json.JsonSerializer`.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`Com.Example.Usings.UsingExamples`](<#usingexamples>)  (Base Class)
 
 
 

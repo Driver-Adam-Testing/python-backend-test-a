@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Initialization and module import files, specifically `__init__.py` for package marking and `think.py` for importing a `think` module and defining an empty `PROMPT` variable.
+Initialization file for the shared prompts tools package and defines an empty string constant named PROMPT.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase at `__init__.py.md` is likely used to mark the directory as a Python package and has flake8 linting disabled.
-- **[think.py](think.py.md)**: The `think.py` file in the `python-backend` codebase imports a module named `think` and defines an empty string variable `PROMPT`.
+- **[__init__.py](__init__.py.md)**: Initialization file for the shared prompts tools package.
+- **[think.py](think.py.md)**: Defines an empty string constant named PROMPT.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders for implementing clients to interact with language model APIs and managing configuration files.
+LLM client implementations for Anthropic and OpenAI models, and configuration management with Pydantic and TOML.
 
 ## Folders
-- **[clients](clients/README.md)**: Defines and implements clients for interacting with Anthropic and OpenAI language model APIs.
-- **[config](config/README.md)**: Configuration files for large language models, including `llm_config.py` and `llm_config.toml`.
+- **[clients](clients/README.md)**: LLM client implementations for Anthropic's Claude and OpenAI's Chat and O-Series models.
+- **[config](config/README.md)**: Configuration management and settings for large language models using Pydantic and TOML.
 
 
 ---

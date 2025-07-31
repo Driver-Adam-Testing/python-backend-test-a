@@ -3,26 +3,27 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-FastAPI-based API endpoint definitions and utility functions for managing entities like API keys, autodocs, chat, content, document sources, nodes, primary assets, tags, and versions, with query utilities and schema definitions.
+API routes and utilities for managing keys, autodocs, chat, codebase cards, content, documents, nodes, assets, tags, and versions using FastAPI.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[api_key.py](api_key.py.md)**: The `api_key.py` file defines API endpoints for creating, retrieving, and deleting API keys, utilizing FastAPI and SQLModel for database interactions.
-- **[autodocs.py](autodocs.py.md)**: The `autodocs.py` file defines API routes for generating, checking the status of, and canceling autodoc page generation using FastAPI, with integration to a database for managing document sources and status histories.
-- **[chat.py](chat.py.md)**: The `chat.py` file defines an API endpoint using FastAPI to handle streaming chat requests, processing user prompts and related data through a chat pipeline.
-- **[contents.py](contents.py.md)**: The `contents.py` file in the `python-backend` codebase defines API endpoints for listing and creating derived content, including query filtering, sorting, and user authorization checks.
-- **[convenience_endpoints.py](convenience_endpoints.py.md)**: The `convenience_endpoints.py` file defines FastAPI endpoints for editing pages, creating new pages, and creating new templates, handling operations related to derived content and primary assets within a user's organization.
-- **[document_sources.py](document_sources.py.md)**: The `document_sources.py` file in the `python-backend` codebase defines API endpoints for listing, creating, and deleting document sources, including batch operations, using FastAPI and SQLAlchemy.
-- **[generate.py](generate.py.md)**: The `generate.py` file in the `python-backend` codebase defines API routes for performing inline editing and content generation using various pipeline kinds, with support for both local and remote execution, and streaming responses.
-- **[nodes.py](nodes.py.md)**: The `nodes.py` file in the `python-backend` codebase defines API endpoints for listing, creating, and updating nodes, ensuring that operations are authorized based on the user's organization.
-- **[primary_asset_tags.py](primary_asset_tags.py.md)**: The `primary_asset_tags.py` file defines API endpoints for creating and deleting primary asset tags using FastAPI within the `python-backend` codebase.
-- **[primary_assets.py](primary_assets.py.md)**: The `primary_assets.py` file defines API endpoints for listing, creating, updating, and deleting primary assets in the `python-backend` codebase, utilizing FastAPI and SQLAlchemy for database interactions and AWS S3 for storage management.
-- **[query_utils.py](query_utils.py.md)**: The `query_utils.py` file in the `python-backend` codebase provides utility functions for applying filters, sorting, and pagination to SQLAlchemy/SQLModel queries, supporting complex operations like JSONB column indexing and relationship handling.
-- **[router.py](router.py.md)**: The `router.py` file initializes an API router using FastAPI's `APIRouter` for the application.
-- **[schemas.py](schemas.py.md)**: The `schemas.py` file in the `python-backend` codebase defines various Pydantic models for reading, creating, and updating data related to primary assets, versions, nodes, tags, and content, including both flat and detailed schemas.
-- **[tags.py](tags.py.md)**: The `tags.py` file in the `python-backend` codebase defines API endpoints for listing, updating, and creating tags, utilizing FastAPI and SQLModel for database interactions.
-- **[versions.py](versions.py.md)**: The `versions.py` file in the `python-backend` codebase defines API endpoints for listing, creating, and updating version entities, ensuring they are associated with the user's organization.
+- **[api_key.py](api_key.py.md)**: API routes for creating, retrieving, and deleting API keys with user authentication and query utilities.
+- **[autodocs.py](autodocs.py.md)**: API routes for generating, checking the status of, and canceling autodoc generation using FastAPI.
+- **[chat.py](chat.py.md)**: Defines a FastAPI route for streaming chat responses using a POST request with user and session data.
+- **[codebase_card.py](codebase_card.py.md)**: Defines API routes and data models for managing and retrieving codebase card information.
+- **[contents.py](contents.py.md)**: API endpoints for listing and creating derived content with authorization and query utilities.
+- **[convenience_endpoints.py](convenience_endpoints.py.md)**: Defines FastAPI endpoints for editing pages, creating new pages, and creating new templates.
+- **[document_sources.py](document_sources.py.md)**: API endpoints for listing, creating, and deleting document sources with pagination and filtering.
+- **[generate.py](generate.py.md)**: API routes for inline editing and content generation with support for remote and local execution.
+- **[nodes.py](nodes.py.md)**: API endpoints for listing, creating, and updating nodes with authorization and query utilities.
+- **[primary_asset_tags.py](primary_asset_tags.py.md)**: API endpoints for creating and deleting primary asset tags with authorization checks.
+- **[primary_assets.py](primary_assets.py.md)**: API endpoints for listing, creating, updating, and deleting primary assets with database and AWS S3 interactions.
+- **[query_utils.py](query_utils.py.md)**: Utilities for applying filters, sorting, and pagination to SQLAlchemy/SQLModel queries.
+- **[router.py](router.py.md)**: Defines an API router using FastAPI's APIRouter.
+- **[schemas.py](schemas.py.md)**: Defines Pydantic schemas for reading, creating, and updating various entities like assets, nodes, and tags.
+- **[tags.py](tags.py.md)**: API endpoints for listing, updating, and creating tags with authentication and query utilities.
+- **[versions.py](versions.py.md)**: API endpoints for listing and updating version data with filtering, sorting, and pagination.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

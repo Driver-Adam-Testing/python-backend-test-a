@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `secret_management` folder in the `python-backend` codebase contains the `aws_secret_management.py` file, which provides functionality for managing secrets in AWS Secrets Manager, including operations like creating, updating, reading, and deleting secrets.
+Manages AWS Secrets Manager operations including writing, reading, and deleting secrets.
 
 
 ## Files
-- **[aws_secret_management.py](aws_secret_management.py.md)**: The `aws_secret_management.py` file implements a strategy for managing AWS Secrets Manager secrets, including creating, updating, reading, and deleting secrets, as well as formatting secret names.
+- **[aws_secret_management.py](aws_secret_management.py.md)**: Manages AWS Secrets Manager operations including writing, reading, and deleting secrets.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

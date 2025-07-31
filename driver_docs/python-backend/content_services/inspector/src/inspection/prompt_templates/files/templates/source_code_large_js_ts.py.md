@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_js_ts.py` file defines a template for inspecting and structuring JavaScript and TypeScript source code, focusing on elements like imports, global variables, classes, interfaces, types, and functions.
+Templates for generating structured prompts and analyzing JavaScript/TypeScript code components.
 
 # Purpose
-This Python code file is designed to facilitate the structured analysis and documentation of JavaScript and TypeScript source code. It imports various components and utilities from shared and specialized modules, indicating its role as a library file intended for use in a larger system. The primary functionality revolves around defining templates and instructions for generating structured prompts and extracting information from JavaScript and TypeScript code. The file defines a template, `SOURCE_CODE_LARGE_TEMPLATE_JS_TS`, which outlines a series of steps to document different aspects of the source code, such as imports, global variables, classes, interfaces, types, and functions. Each step involves using static analysis and language model (LLM) outputs to gather and format the necessary information.
+The code defines a template for generating structured prompts and instructions for analyzing JavaScript and TypeScript source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.js_ts`, to facilitate the creation of prompts and the extraction of code elements like classes, interfaces, types, and functions. The template, `SOURCE_CODE_LARGE_TEMPLATE_JS_TS`, is a list of tuples, each specifying a section of the analysis, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", "Interfaces", "Types", and "Functions". Each section uses specific collections and methods to gather and process information from the source code.
 
-The code is organized into a collection of components that work together to provide a comprehensive analysis of JavaScript and TypeScript codebases. It leverages specialized collections and prompts to extract and format data, ensuring that the documentation generated is both detailed and structured. The use of components like `Prompt` and `Component` suggests a modular approach to building documentation, allowing for flexibility and reuse across different contexts. This file does not define public APIs or external interfaces directly but rather serves as an internal utility to support the documentation process within a larger system.
+The template is designed to be used in a context where JavaScript and TypeScript code needs to be analyzed and documented. It provides a structured approach to extract and organize information about the code's components, such as imports, global variables, and various code constructs. The use of `Prompt` and `Component` objects allows for the dynamic construction of prompt text, which can be used to guide the analysis process. The template does not define public APIs or external interfaces directly but serves as a tool for generating documentation and insights about JavaScript and TypeScript codebases.
 # Imports and Dependencies
 
 ---
@@ -39,8 +39,8 @@ The code is organized into a collection of components that work together to prov
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_JS_TS` is a list of tuples, each representing a different section of a JavaScript/TypeScript code analysis template. Each tuple contains a section identifier, a section title, and a combination of static analysis and LLM-based methods to extract and process code elements such as imports, global variables, classes, interfaces, types, and functions.
-- **Use**: This variable is used to define a structured template for analyzing and documenting various components of JavaScript/TypeScript source code.
+- **Description**: Contains a list of tuples, each representing a section of a structured prompt template for JavaScript and TypeScript code analysis. Each tuple includes a section identifier, a section title, and a combination of static analysis and LLM-based processing functions or instructions.
+- **Use**: Used to define and organize the structure of prompts for analyzing JavaScript and TypeScript code.
 
 
 

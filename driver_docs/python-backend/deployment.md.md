@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `deployment.md` file provides instructions for setting up environment variables and generating secret keys for deploying a FastAPI project on AWS, with a note that most of the previous deployment instructions are irrelevant.
+Instructions for setting environment variables and generating secret keys for deploying a FastAPI project.
 
 # Purpose
-The provided content is a documentation snippet for configuring environment variables necessary for deploying a FastAPI project. It outlines the essential environment variables that need to be set for different deployment environments, such as `ENVIRONMENT` and `DOMAIN`, which are crucial for distinguishing between development, staging, and production setups. The document also lists several other configuration variables, including `BACKEND_CORS_ORIGINS`, `SECRET_KEY`, and database connection details like `POSTGRES_SERVER` and `POSTGRES_DB`, which are vital for application security, email functionality, and database connectivity. Additionally, it provides instructions for generating secure secret keys using Python, emphasizing the importance of replacing default placeholder values with secure, randomly generated keys to ensure the application's security. This documentation is intended to guide developers in preparing their FastAPI application for deployment, particularly when using AWS infrastructure.
+The document provides instructions for configuring environment variables necessary for deploying a FastAPI project. It specifies the need to set the `ENVIRONMENT` variable, which defaults to `local` for development but should be set to `staging` or `production` for server deployment. The `DOMAIN` variable should also be configured, defaulting to `localhost` but requiring a custom domain for deployment. Additional environment variables include `BACKEND_CORS_ORIGINS`, `SECRET_KEY`, `USERS_OPEN_REGISTRATION`, and SMTP-related settings for email functionality. Database connection details such as `POSTGRES_SERVER`, `POSTGRES_PORT`, `POSTGRES_PASSWORD`, `POSTGRES_USER`, and `POSTGRES_DB` are also outlined, with defaults provided for local development. The document advises generating secure secret keys for certain variables using a Python command, ensuring the security of the deployment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

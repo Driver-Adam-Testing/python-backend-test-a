@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_07_31_1157-fe4618de915c_added_tags_and_many_to_many_mappings.py` file is an Alembic migration script that adds a `tags` table and a many-to-many relationship between tags and contents in the `python-backend` codebase.
+Alembic migration script to add "tags" and "tags_contents" tables with many-to-many mappings.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding new tables and establishing many-to-many relationships. The primary functionality of this script is to create a new table named "tags" and another table named "tags_contents" to facilitate the association between tags and content. The "tags" table includes columns for storing tag identifiers, names, colors, and metadata such as creation and update timestamps, along with constraints to ensure unique tag names within an organization. The "tags_contents" table is used to map tags to content items, establishing a many-to-many relationship through foreign key constraints linking to the "tags" and "derived_contents" tables.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates two new tables: `tags` and `tags_contents`. The `tags` table includes columns for `id`, `name`, `hex_color`, `organization_id`, `created_at`, `created_by`, `updated_at`, and `updated_by`. It also enforces a unique constraint on the combination of `name` and `organization_id`. The `tags_contents` table establishes a many-to-many relationship between tags and contents, with foreign key constraints linking `tag_id` to the `tags` table and `content_id` to the `derived_contents` table.
 
-The script is structured to be used with Alembic, a database migration tool for SQLAlchemy, and includes both an [`upgrade`](<#upgrade>) function to apply the changes and a [`downgrade`](<#downgrade>) function to revert them. The [`upgrade`](<#upgrade>) function creates the necessary tables and constraints, while the [`downgrade`](<#downgrade>) function removes them, ensuring that the database schema can be rolled back to its previous state if needed. This script is part of a broader database migration process, indicated by the presence of revision identifiers, which help track the sequence of migrations applied to the database.
+The [`downgrade`](<#downgrade>) function reverses these changes by dropping the `tags_contents` and `tags` tables. It also removes specific indexes from the `derived_contents` table. This script is part of a version-controlled database schema, allowing developers to apply or revert schema changes systematically. The revision identifiers `revision` and `down_revision` are used by Alembic to track the order of migrations.
 # Imports and Dependencies
 
 ---
@@ -21,58 +21,61 @@ The script is structured to be used with Alembic, a database migration tool for 
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema that this script applies.
-- **Use**: This variable is used by Alembic to identify and apply the specific migration script to the database schema.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Indicates the immediate predecessor revision in the Alembic migration chain.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration, such as branching in the migration history.
-- **Use**: This variable is used to indicate that there are no specific branch labels associated with this migration script.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts. In this case, it indicates that there are no dependencies for this migration script.
-- **Use**: This variable is used to define the dependency relationship of the current Alembic migration script, indicating that it does not depend on any other migration.
+- **Type**: ``NoneType``
+- **Description**: Represents a global variable that is set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_31_1157-fe4618de915c_added_tags_and_many_to_many_mappings.upgrade}} -->
-The `upgrade` function creates two new database tables, `tags` and `tags_contents`, with specified columns and constraints using Alembic migration operations.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_31_1157-fe4618de915c_added_tags_and_many_to_many_mappings.py#L19>)
+
+Creates the 'tags' and 'tags_contents' tables with specified columns and constraints in the database schema.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by creating a table named `tags` with columns for `id`, `name`, `hex_color`, `organization_id`, `created_at`, `created_by`, `updated_at`, and `updated_by`.
-    - Each column in the `tags` table is defined with specific data types and constraints, such as `UUID` for `id` with a default value generated by `uuid_generate_v4()`, and `String` for `name` and `hex_color`.
-    - The `tags` table includes a primary key constraint on the `id` column and a unique constraint on the combination of `name` and `organization_id`.
-    - Next, the function creates a table named `tags_contents` with columns `tag_id` and `content_id`, both of which are of type `UUID`.
-    - The `tags_contents` table includes foreign key constraints linking `content_id` to `derived_contents.id` and `tag_id` to `tags.id`, establishing relationships between these tables.
-    - A primary key constraint is applied to the combination of `tag_id` and `content_id` in the `tags_contents` table.
-- **Output**: The function does not return any value; it performs database schema modifications as part of a migration process.
+- **Logic and Control Flow**:
+    - Calls `op.create_table` to create a table named 'tags' with columns 'id', 'name', 'hex_color', 'organization_id', 'created_at', 'created_by', 'updated_at', and 'updated_by'.
+    - Sets 'id' as the primary key and enforces a unique constraint on the combination of 'name' and 'organization_id'.
+    - Calls `op.create_table` to create a table named 'tags_contents' with columns 'tag_id' and 'content_id'.
+    - Establishes foreign key constraints linking 'content_id' to 'derived_contents.id' and 'tag_id' to 'tags.id'.
+    - Sets a composite primary key on 'tag_id' and 'content_id'.
+- **Output**: No return value; modifies the database schema by creating tables and constraints.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_31_1157-fe4618de915c_added_tags_and_many_to_many_mappings.downgrade}} -->
-The `downgrade` function reverses database schema changes by dropping specific indexes and tables.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_31_1157-fe4618de915c_added_tags_and_many_to_many_mappings.py#L70>)
+
+Reverts database schema changes by dropping specific tables and indexes.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by dropping an index named 'ix_derived_contents_workspace_id' from the 'derived_contents' table.
-    - It then drops another index named 'ix_derived_contents_codebase_id' from the same 'derived_contents' table.
-    - Next, it drops the 'tags_contents' table from the database.
-    - Finally, it drops the 'tags' table from the database.
-- **Output**: The function does not return any value; it performs schema changes directly on the database.
+- **Logic and Control Flow**:
+    - Drops the index `ix_derived_contents_workspace_id` from the `derived_contents` table.
+    - Drops the index `ix_derived_contents_codebase_id` from the `derived_contents` table.
+    - Drops the `tags_contents` table.
+    - Drops the `tags` table.
+- **Output**: No output is returned.
 
 
 

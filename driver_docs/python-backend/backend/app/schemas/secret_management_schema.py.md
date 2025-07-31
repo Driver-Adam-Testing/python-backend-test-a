@@ -3,31 +3,38 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `secret_management_schema.py` file defines constants for secret name prefixes related to Git provider applications and installations.
+Defines secret name prefixes for Git provider applications.
 
 # Purpose
-This code is a collection of global configuration variables, specifically string constants, that define prefixes for secret names related to a Git provider application. The constants `APP_SECRET_NAME_PREFIX`, `APP_INSTALL_SECRET_NAME_PREFIX`, and `APP_INSTALL_GAT_NAME_PREFIX` are likely used to standardize and manage the naming conventions for different types of secrets, such as application secrets, installation secrets, and GAT (possibly Git Access Token) installation secrets. This setup provides narrow functionality, focusing on the consistent handling of secret names within a larger application or system that interacts with a Git provider. The use of prefixes helps in organizing and retrieving secrets efficiently, ensuring that they are easily identifiable and manageable within the application's configuration or secret management system.
+The code defines a set of global configuration variables that store prefix strings for secret names related to a Git provider. These variables include `APP_SECRET_NAME_PREFIX`, `APP_INSTALL_SECRET_NAME_PREFIX`, `APP_INSTALL_GAT_NAME_PREFIX`, and `APP_INSTALL_WAT_NAME_PREFIX`. Each variable holds a string that serves as a prefix for different types of secrets, such as application secrets and installation secrets, which are likely used in a broader system to manage and access secure information related to Git provider applications and installations.
 # Global Variables
 
 ---
 ### APP\_SECRET\_NAME\_PREFIX
-- **Type**: `str`
-- **Description**: `APP_SECRET_NAME_PREFIX` is a string variable that holds the prefix used for naming application secrets related to a Git provider. This prefix is likely used to standardize or identify secrets associated with applications in a consistent manner.
-- **Use**: This variable is used to prefix secret names for applications, ensuring they are easily identifiable and organized.
+- **Type**: ``str``
+- **Description**: A string that serves as a prefix for application secret names related to a Git provider. It is used to identify and categorize secrets associated with applications.
+- **Use**: Used as a prefix to standardize and identify application secret names in a Git provider context.
 
 
 ---
 ### APP\_INSTALL\_SECRET\_NAME\_PREFIX
-- **Type**: `str`
-- **Description**: `APP_INSTALL_SECRET_NAME_PREFIX` is a string variable that holds the prefix for naming secrets related to application installations in a Git provider context. This prefix is used to standardize and identify secrets associated with app installations.
-- **Use**: This variable is used to prefix secret names for application installations, ensuring consistent naming conventions across the application.
+- **Type**: ``str``
+- **Description**: A string that holds the prefix for application installation secret names related to a Git provider. This prefix is used to identify and categorize secrets specifically associated with application installations.
+- **Use**: Used to prefix secret names for application installations in a Git provider context.
 
 
 ---
 ### APP\_INSTALL\_GAT\_NAME\_PREFIX
-- **Type**: `string`
-- **Description**: The variable `APP_INSTALL_GAT_NAME_PREFIX` is a string that holds the prefix 'GIT_PROVIDER_GAT_INSTALL_SECRET'. This prefix is likely used as a naming convention for secrets related to GAT (Git Application Token) installations within the application.
-- **Use**: This variable is used to standardize the naming of GAT installation secrets, ensuring consistency across the application.
+- **Type**: ``str``
+- **Description**: A string that holds the prefix for GAT install secrets related to a Git provider. This prefix is used to identify and categorize secrets specific to GAT installations.
+- **Use**: Used to define and manage the naming convention for GAT install secrets in the application.
+
+
+---
+### APP\_INSTALL\_WAT\_NAME\_PREFIX
+- **Type**: ``str``
+- **Description**: A string that holds the prefix for a specific type of installation secret related to a Git provider. The prefix is used to identify secrets associated with the 'WAT' installation type.
+- **Use**: Used to prefix secret names for 'WAT' installations in a Git provider context.
 
 
 

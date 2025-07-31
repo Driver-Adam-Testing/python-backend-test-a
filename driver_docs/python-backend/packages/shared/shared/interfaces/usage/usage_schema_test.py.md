@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `usage_schema_test.py` file contains a suite of tests for validating the functionality of usage balance and event summary conversions between SLOC and bytes, as well as testing the usage event range within the `python-backend` codebase.
+Tests for usage schema conversions and balance computations using pytest fixtures.
 
 # Purpose
-This Python file is a test suite using the `pytest` framework to validate the functionality of a usage tracking system, specifically focusing on the conversion and computation of usage metrics in different units (SLOC and BYTES). The code defines several `pytest` fixtures to set up initial conditions for `UsageBalance` and `UsageEventSummary` objects, which are then used in various test functions. These tests check the correctness of conversion functions (`sloc_to_bytes` and `bytes_to_sloc`), balance computations, and unit conversions for both usage balances and event summaries. Additionally, the code tests the `UsageEventRange` class for proper date handling and validation. Overall, this file provides narrow functionality focused on ensuring the accuracy and reliability of usage metric calculations and conversions within the system.
+This code is a test suite for validating the functionality of usage-related components in a software system. It uses the `pytest` framework to define a series of test cases that verify the behavior of classes and functions related to usage metrics, such as `UsageBalance`, `UsageEventSummary`, and `UsageEventRange`. The tests focus on operations like converting between different units of measurement (e.g., SLOC to bytes and vice versa), computing balances, and ensuring the integrity of date ranges.
+
+The test suite includes several `pytest` fixtures that provide predefined instances of `UsageBalance` and `UsageEventSummary` with various configurations. These fixtures are used in the test functions to check the correctness of conversion methods and balance calculations. The tests also ensure that the conversion methods maintain the original values and correctly transform them into the desired units. Additionally, the suite tests the validation of date ranges in `UsageEventRange`, ensuring that invalid date ranges raise appropriate exceptions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

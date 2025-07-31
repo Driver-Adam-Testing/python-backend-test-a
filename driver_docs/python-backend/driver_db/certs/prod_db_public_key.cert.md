@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prod_db_public_key.cert` file contains a public key certificate used for secure database connections in the `python-backend` codebase.
+Public key certificate for the production database in the Python backend.
 
 # Purpose
-The content provided is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. This certificate is used to establish a secure connection between a client and a server by verifying the server's identity. It contains information such as the certificate's issuer, the entity it is issued to, and the public key associated with the entity. The certificate is part of a Public Key Infrastructure (PKI) system, which is essential for enabling encrypted communications and ensuring data integrity and authenticity over networks. This particular certificate is likely used in a software system to facilitate secure communications, such as HTTPS, by providing the necessary credentials for encryption and authentication.
+The content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. This certificate is used to establish a secure connection between a client and a server by verifying the server's identity. It contains information such as the issuer's name, the subject's name, and the public key. The certificate also includes validity dates, indicating the time period during which the certificate is considered valid. This certificate is part of the Secure Sockets Layer (SSL) or Transport Layer Security (TLS) protocols, which are used to encrypt data transmitted over the internet.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

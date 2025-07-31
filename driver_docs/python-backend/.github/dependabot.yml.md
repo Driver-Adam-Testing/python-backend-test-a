@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dependabot.yml` file in the `python-backend` codebase configures Dependabot to automatically check for updates to GitHub Actions and Python packages on a weekly schedule every Wednesday at 09:00 AM in the America/Los_Angeles timezone.
+Configures Dependabot to update GitHub Actions and pip packages weekly on Wednesdays at 09:00 PT.
 
 # Purpose
-The provided YAML configuration file is designed for a dependency management tool, likely Dependabot, which automates the process of keeping dependencies up to date. The file specifies a series of update configurations for different package ecosystems and directories within a codebase. Each entry defines the package ecosystem (such as "github-actions" or "pip"), the directory where the dependencies are located, and a schedule for when updates should be checked and applied. The updates are set to occur weekly on Wednesdays at 09:00 AM in the America/Los_Angeles timezone. Additionally, each update will have a commit message prefixed with an upward arrow (⬆) to indicate an update. This setup helps maintain the software's dependencies efficiently, ensuring they are current and secure.
+The configuration file defines a schedule for automated updates of dependencies in a software project. It specifies that updates for both `github-actions` and `pip` package ecosystems occur weekly on Wednesdays at 09:00 AM in the `America/Los_Angeles` timezone. The updates apply to various directories, including the root directory `/`, `/backend`, `/content_services/onboarding_event_handler`, `/driver_db`, `/content_services/inspector`, and `/packages/shared`. Each update operation includes a commit message with the prefix `⬆` to indicate an upgrade. This setup ensures that dependencies are regularly checked and updated to maintain the software's functionality and security.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

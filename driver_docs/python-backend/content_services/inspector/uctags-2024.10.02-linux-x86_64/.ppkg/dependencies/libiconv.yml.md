@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libiconv.yml` file in the `python-backend` codebase specifies the configuration and installation details for the libiconv charset conversion library, including its source URL, license information, and build instructions.
+Configuration for installing and tweaking the libiconv charset conversion library.
 
 # Purpose
-The provided content is a configuration file for the libiconv library, which is a charset conversion library. This file includes metadata such as the library's summary, URLs for the Git repository, website, and source tarball, as well as the SHA-256 checksum for verifying the source file's integrity. It specifies the licenses under which the library is distributed, namely GPL-3.0-or-later and LGPL-2.0-or-later. The file also contains installation instructions, indicating that the library should be configured with extra encodings enabled. Additionally, it includes a script section labeled "dotweak," which generates pkg-config files for the library components, setting up necessary paths and flags for compiling and linking against the library.
+The metadata content describes the configuration and installation details for the `libiconv` library, which is a charset conversion library. It includes URLs for the Git repository, the official website, and the source tarball, along with the SHA-256 checksum for verifying the source file's integrity. The library is licensed under GPL-3.0-or-later and LGPL-2.0-or-later. The installation command specifies enabling extra encodings during configuration. The `dotweak` section contains a script that generates `pkg-config` files for the `iconv` and `charset` components, setting paths for library and include directories, and defining necessary flags for linking and compiling.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,36 +3,64 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `release-notes.md` file in the `python-backend` codebase documents the changes, features, fixes, refactors, upgrades, and internal updates for various versions of the project, highlighting the latest version 0.6.0 with significant updates like adopting SQLModel, a new frontend setup, and CI/CD improvements.
+Release notes detailing updates, features, fixes, refactors, upgrades, documentation, and internal changes for version 0.6.0.
 
 # Purpose
-This document is a release notes file, typically used in software development to track and communicate changes, updates, and improvements made to a software project over time. It provides a detailed log of new features, bug fixes, refactors, upgrades, and documentation updates for each version of the software. The file is organized by version numbers, with each section detailing specific changes made in that release, including pull request references and contributors. The release notes serve a broad functionality by offering a comprehensive overview of the project's evolution, helping developers, users, and stakeholders understand the progress and current state of the software. This file is crucial for maintaining transparency and facilitating collaboration within the codebase, as it allows team members and users to quickly identify what has changed, what issues have been resolved, and what new features have been added.
+The release notes document provides a detailed log of changes, updates, and fixes made to the software project over various versions. It includes sections for the latest changes, features, fixes, refactors, upgrades, documentation updates, and internal changes. Each entry typically includes a brief description of the change, the pull request number, and the contributor's GitHub handle. The document serves as a historical record of the project's development, helping developers and users understand the evolution of the software, track improvements, and identify when specific features or fixes were introduced. It is essential for maintaining transparency and facilitating collaboration among contributors.
 # Content Summary
-The provided content is a comprehensive set of release notes for a software project, specifically the "Full Stack FastAPI Template." These notes detail the changes, features, fixes, refactors, upgrades, documentation updates, and internal modifications across multiple versions, with a focus on version 0.6.0.
+The provided content is a detailed release notes document for a software project, specifically the "Full Stack FastAPI Template." This document outlines the changes, features, fixes, refactors, upgrades, documentation updates, and internal modifications made across various versions of the project.
 
-### Key Features and Changes in Version 0.6.0:
-- **Backend Enhancements**: The project has integrated the latest versions of FastAPI, Pydantic, and SQLModel, which are crucial for building and managing the API and data models. SQLModel is now used for creating models, simplifying logic, and enhancing dependencies.
-- **Frontend Overhaul**: A new frontend has been developed using React, TypeScript, Vite, Chakra UI, and TanStack Query/Router. This includes a generated client/SDK, improving the user interface and interaction.
-- **CI/CD Improvements**: Continuous integration and deployment processes have been enhanced using GitHub Actions, ensuring automated testing and deployment.
-- **Testing and Coverage**: Test coverage has been increased to over 90%, ensuring robust testing of the application.
-- **Database and Configuration**: Migration from pgAdmin to Adminer and added support for setting `POSTGRES_PORT` for database configuration.
-- **Development Tools**: Introduction of Prettier and ESLint for code formatting and linting, along with pre-commit hooks to maintain code quality.
-- **Routing and State Management**: Migration to TanStack Query and Router for state management and routing in the frontend.
-- **User Experience**: New features like password reset functionality, private/public routing, and a `Not Found` page have been added to enhance user experience.
+### Key Functional Details:
 
-### Fixes and Refactors:
-- **Bug Fixes**: Several bugs have been addressed, including issues with user email updates, positional argument bugs, and Docker build problems.
-- **Code Refactoring**: Significant refactoring has been done to improve code structure, including the removal of unused components, restructuring of folders, and simplification of backend file structures.
+1. **Version 0.6.0:**
+   - **Features:** 
+     - Integration of SQLModel for database models and FastAPI for API development.
+     - A new frontend built with React, TypeScript, Vite, Chakra UI, and TanStack Query/Router.
+     - Continuous Integration/Continuous Deployment (CI/CD) using GitHub Actions.
+     - Test coverage exceeds 90%.
+     - Migration from pgAdmin to Adminer for database management.
+     - Support for setting `POSTGRES_PORT`.
+     - Various frontend enhancements including new pages, components, and themes.
+     - Addition of password reset functionality and private/public routing.
+     - Docker configuration for the new frontend.
+     - NodeJS version management and instructions.
+   - **Fixes:** 
+     - Bug fixes related to user email updates, sidebar items, and database initialization.
+     - Removal of unnecessary validations and unused components.
+   - **Refactors:** 
+     - Codebase restructuring for improved organization and efficiency.
+     - Refactoring of CRUD utilities, email logic, and Docker Compose files.
+     - Removal of unused schemas and old frontend components.
+   - **Upgrades:** 
+     - Updates to dependencies including FastAPI, Pydantic, and SQLModel.
+     - Python version and package upgrades.
+   - **Documentation:** 
+     - Updates to README files and deployment documentation.
+     - Addition of dark mode to documentation and new screenshots.
+   - **Internal Changes:** 
+     - Enhancements to GitHub Actions and pre-commit configurations.
+     - Addition of scripts for ESLint and Prettier configuration.
 
-### Upgrades and Documentation:
-- **Dependency Upgrades**: Various dependencies have been upgraded, including Python, FastAPI, and frontend libraries like Vite.
-- **Documentation**: The documentation has been updated to reflect the latest changes, including updates to README files and deployment instructions.
+2. **Previous Versions (0.5.0, 0.4.0, 0.3.0, 0.2.2, 0.2.1, 0.2.0, 0.1.2, 0.1.1):**
+   - **Version 0.5.0:** 
+     - Transition to PostgreSQL 12 and use of Poetry for package management.
+     - Fixes for Windows line endings and Vue CLI upgrade.
+   - **Version 0.4.0:** 
+     - Security improvements for password reset functionality.
+     - Fixes for SQLAlchemy operations and script locations.
+   - **Version 0.3.0:** 
+     - Updates to CRUD utilities and Pydantic model simplifications.
+     - Python upgrade to version 3.7.
+   - **Version 0.2.2:** 
+     - Fixes for frontend and documentation issues.
+   - **Version 0.2.1:** 
+     - Documentation updates and development script enhancements.
+   - **Version 0.2.0:** 
+     - Backend and frontend code simplifications and improvements.
+   - **Version 0.1.2 and 0.1.1:** 
+     - Initial bug fixes and improvements post-publication.
 
-### Internal and Miscellaneous:
-- **Internal Enhancements**: Internal processes have been improved with the addition of linting in GitHub Actions, dependabot for dependency management, and other automation scripts.
-- **Version Management**: NodeJS version management and instructions have been added to ensure consistency across development environments.
-
-Overall, these release notes provide a detailed overview of the project's evolution, highlighting significant improvements in functionality, user experience, and development processes. Developers working with this project should be aware of these changes to effectively utilize the new features and maintain the codebase.
+This document serves as a comprehensive guide for developers to understand the evolution of the project, the introduction of new features, and the resolution of previous issues. It provides links to specific pull requests for detailed information on each change.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

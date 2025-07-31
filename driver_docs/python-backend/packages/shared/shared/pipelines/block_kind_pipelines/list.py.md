@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `list.py` file in the `python-backend` codebase defines a function to execute a list block agent that utilizes prompt augmentation and smart instruction steps to generate a comprehensive list as output.
+Executes a list block agent to generate a single list output using prompt augmentation and smart instruction steps.
 
 # Purpose
-This Python code defines a function [`execute_list_block_agent`](<#execute_list_block_agent>) that orchestrates a multi-step pipeline process for generating a comprehensive list based on a given input. The function is designed to be part of a larger system, likely a library or service, that deals with processing and augmenting prompts using language models. It imports several components from shared interfaces and pipelines, indicating that it relies on a modular architecture where different functionalities are encapsulated in separate modules. The function primarily uses two main steps: prompt augmentation and smart instruction execution, leveraging external agents `run_agent_prompt_augmentation` and `run_agent_default` to perform these tasks. The purpose of these steps is to enhance the input prompt with additional context and then execute a series of instructions to generate a final, exhaustive list as the output.
+The code defines a function [`execute_list_block_agent`](<#execute_list_block_agent>) that orchestrates a pipeline for processing input data through a series of steps involving prompt augmentation and smart instruction execution. It imports several components from shared interfaces and pipelines, indicating that it is part of a larger system. The function takes a `PipelineInput` object and returns a `PipelineResponse` object. It uses `LLMUsageSession` to manage a session for logging usage metadata, which includes details like organization and user IDs.
 
-The function is structured to handle input and output through well-defined interfaces, such as `PipelineInput` and `PipelineResponse`, which suggests that it is intended to be part of a broader API or service framework. It also utilizes a session management system (`LLMUsageSession`) to track usage metadata, which is crucial for maintaining context and possibly for analytics or billing purposes. The code is not a standalone script but rather a component meant to be integrated into a larger system, providing a specific functionality related to prompt processing and augmentation. The use of tools and system prompts within the `default_agent_input` configuration indicates a sophisticated setup for handling complex tasks, likely aimed at enhancing the capabilities of language models in generating structured outputs.
+The function first configures a prompt augmentation step using `PipelineStepConfiguration` and executes it with `run_agent_prompt_augmentation`. This step appends a suffix to the input prompt to guide the generation of an exhaustive list. It then configures a default agent step with additional tools and system prompts, executing it with `run_agent_default`. The results from both steps are combined into a `PipelineResponse`, which includes the final result from the default agent. This code is likely intended to be part of a larger application where it is called to process specific tasks related to list generation and augmentation.
 # Imports and Dependencies
 
 ---
@@ -28,36 +28,38 @@ The function is structured to handle input and output through well-defined inter
 
 ---
 ### PROMPT\_AUG\_PROMPT\_SUFFIX
-- **Type**: `str`
-- **Description**: `PROMPT_AUG_PROMPT_SUFFIX` is a string variable that contains a specific prompt suffix used in the context of prompt augmentation. It is designed to guide the generation process towards producing a comprehensive single list as the final output.
-- **Use**: This variable is appended to the input prompt within the `execute_list_block_agent` function to influence the behavior of the prompt augmentation step.
+- **Type**: ``str``
+- **Description**: A string that contains a prompt suffix used in the prompt augmentation process. It specifies the desired output format for the prompt augmentation step.
+- **Use**: Appends to the input prompt to guide the generation of an exhaustive single list as the output.
 
 
 # Functions
 
 ---
 ### execute\_list\_block\_agent<!-- {{#callable:python-backend/packages/shared/shared/pipelines/block_kind_pipelines/list.execute_list_block_agent}} -->
-The `execute_list_block_agent` function orchestrates the execution of a list block agent by augmenting a prompt and running a default agent to generate a pipeline response.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py#L20>)
+
+Executes a list block agent by augmenting a prompt and running a default agent to generate a pipeline response.
 - **Inputs**:
     - `input`: An instance of `PipelineInput` containing the prompt, context, and scope information for the pipeline execution.
-- **Control Flow**:
-    - Initialize [`UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#UsageSessionMetadata>) with content type and ID.
-    - Start a [`LLMUsageSession`](<../../usage/llm_session.py.md#LLMUsageSession>) using organization and user IDs from the input scope and the session metadata.
-    - Create a [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration>) for prompt augmentation with the input prompt and context, appending a suffix to the prompt.
-    - Run the [`run_agent_prompt_augmentation`](<../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>) function with the prompt augmentation configuration and session.
-    - Create a [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration>) for the default agent with the augmented prompt, context, and additional configuration such as tool names and system prompts.
-    - Run the [`run_agent_default`](<../agents/agent_default.py.md#run_agent_default>) function with the default agent configuration and session.
-    - Construct a [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>) with the responses from the prompt augmentation and default agent steps, setting the final result to the default agent's result.
-    - Return the constructed [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>).
-- **Output**: A [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>) object containing the responses from the prompt augmentation and default agent steps, with the final result set to the default agent's result.
+- **Logic and Control Flow**:
+    - Create [`UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#usagesessionmetadata>) with content type 'page' and a placeholder content ID.
+    - Start an [`LLMUsageSession`](<../../usage/llm_session.py.md#llmusagesession>) using the organization ID, user ID, and session metadata from the input scope.
+    - Configure [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepconfiguration>) for prompt augmentation with the input prompt and context, appending a suffix to the prompt.
+    - Run the prompt augmentation agent using the configured step and session, storing the response.
+    - Configure [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepconfiguration>) for the default agent with the augmented prompt, context, and additional tools and system prompts.
+    - Run the default agent using the configured step and session, storing the default response.
+    - Create a [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>) with the responses from the prompt augmentation and default agent, setting the final result to the default agent's result.
+    - Return the [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>).
+- **Output**: An instance of [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>) containing the responses from the prompt augmentation and default agent, with the final result set to the default agent's result.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#UsageSessionMetadata>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<../../usage/llm_session.py.md#LLMUsageSession>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../interfaces/agents/prompt.py.md#PromptWithContext>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#usagesessionmetadata>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<../../usage/llm_session.py.md#llmusagesession>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepconfiguration>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../interfaces/agents/prompt.py.md#promptwithcontext>)
     - [`python-backend/packages/shared/shared/pipelines/agents/agent_prompt_augmentation.run_agent_prompt_augmentation`](<../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>)
     - [`python-backend/packages/shared/shared/pipelines/agents/agent_default.run_agent_default`](<../agents/agent_default.py.md#run_agent_default>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelineresponse>)
 
 
 

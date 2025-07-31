@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dependabot.yml` file in the `python-backend` codebase configures a GitHub Actions workflow to automatically update and commit changes to interdependent packages and lock files when Dependabot opens or synchronizes a pull request.
+GitHub Actions workflow for automatically updating interdependent packages with Dependabot.
 
 # Purpose
-The provided content is a GitHub Actions workflow configuration file written in YAML. This workflow, named "Dependabot Auto Update," is designed to automate the process of updating downstream packages whenever Dependabot updates a dependency. It triggers on pull requests that are either opened or synchronized, as well as manually via `workflow_dispatch`. The workflow runs a job called `update_lock_files` on the latest Ubuntu environment, but only if the actor is Dependabot. The job includes several steps: checking out the code, setting up Python 3.12, installing the Poetry package manager, installing the `toml` Python package, running a script to update interdependent packages, and finally committing and pushing any changes back to the repository. This automation helps maintain the consistency and compatibility of dependencies across the codebase.
+The configuration file defines a GitHub Actions workflow named `Dependabot Auto Update`. This workflow automates the process of updating downstream packages when Dependabot updates a dependency. It triggers on pull requests that are opened or synchronized, and can also be manually triggered via `workflow_dispatch`. The workflow runs on the `ubuntu-latest` environment and includes several steps: checking out the code, setting up Python version 3.12, installing Poetry, installing required Python packages, updating interdependent packages using a Python script, and committing and pushing any changes back to the repository. The workflow uses the `GITHUB_TOKEN` secret to authenticate the commit and push operations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

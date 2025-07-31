@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tags.py` file defines API routes for creating, reading, updating, and deleting tags, as well as listing tag contents, using FastAPI and integrating with a tag service in the `python-backend` codebase.
+API routes for creating, reading, updating, and deleting tags with permission checks.
 
 # Purpose
-This Python file is a FastAPI router module that defines a set of RESTful API endpoints for managing tags within an application. The primary functionality provided by this code is the creation, retrieval, updating, and deletion of tags, as well as listing the contents associated with a specific tag. The module imports several components, including models, schemas, and services, which are used to handle the business logic and data manipulation related to tags. The endpoints are protected by permissions, ensuring that only users with the appropriate roles can perform certain actions, such as editing or deleting tags.
+This code defines a FastAPI router for managing tags within an application. It provides a set of API endpoints for creating, reading, updating, and deleting tags, as well as retrieving content associated with specific tags. The endpoints are secured with permissions, requiring either `ContentEditorPermission` or `ContentReadonlyPermission` for access, depending on the operation. The router uses a `TagService` to perform operations on tags, which interacts with the database through a session.
 
-The code defines five main API endpoints: [`new_tag`](<#new_tag>), [`read_tags`](<#read_tags>), [`update_tag`](<#update_tag>), [`read_tag_contents`](<#read_tag_contents>), and [`delete_tag`](<#delete_tag>). Each endpoint corresponds to a specific HTTP method (POST, GET, PUT, DELETE) and is associated with a URL path. The endpoints utilize a `TagService` class to perform operations on the tag data, which is likely defined elsewhere in the application. The use of dependency injection for session management and user authentication tokens ensures that the endpoints are secure and operate within the context of the current user session. The module is designed to be part of a larger application, serving as a dedicated component for tag management, and it does not define a standalone script or application.
+The key components of this code include the [`new_tag`](<#new_tag>), [`read_tags`](<#read_tags>), [`update_tag`](<#update_tag>), [`read_tag_contents`](<#read_tag_contents>), and [`delete_tag`](<#delete_tag>) functions, each corresponding to a specific HTTP method and endpoint. These functions handle requests and responses, utilizing input and output schemas such as `NewTagInput`, `EditTagInput`, `ListTagsInput`, and `ListTagContentsResults` to ensure data consistency and validation. The code also includes error handling for database integrity issues, raising HTTP exceptions when necessary. This module is intended to be part of a larger application, providing a structured interface for tag management.
 # Imports and Dependencies
 
 ---
@@ -38,125 +38,135 @@ The code defines five main API endpoints: [`new_tag`](<#new_tag>), [`read_tags`]
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a group of related API endpoints, allowing for modular and organized route management within the application.
-- **Use**: This variable is used to register and manage API routes for tag-related operations, such as creating, reading, updating, and deleting tags.
+- **Type**: ``APIRouter``
+- **Description**: Provides a routing mechanism for defining API endpoints in a FastAPI application. It allows the organization of routes and their associated request methods, dependencies, and response models.
+- **Use**: Used to define and manage API routes for creating, reading, updating, and deleting tags.
 
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a Logger object obtained from the Python logging module. It is configured to use the module's name as its logger name, which is typically the module's `__name__` attribute. This allows for logging messages that are specific to this module, aiding in debugging and monitoring the application's behavior.
-- **Use**: The `logger` is used to log informational messages and errors throughout the module, providing a mechanism for tracking the execution flow and diagnosing issues.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name.
+- **Use**: Used to log messages within the module, facilitating tracking and debugging of operations.
 
 
 # Functions
 
 ---
 ### new\_tag<!-- {{#callable:python-backend/backend/app/api/routes/v1/tags.new_tag}} -->
-The `new_tag` function creates a new tag using the provided session, user, and tag input data.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/tags.py#L31>)
+
+Creates a new tag using the provided session, user, and tag input data.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `new_tag`: An instance of `NewTagInput` containing the data for the new tag to be created.
-- **Control Flow**:
+    - `session`: The current database session used to interact with the database.
+    - `user`: The user token representing the authenticated user making the request.
+    - `new_tag`: The input data for the new tag to be created, encapsulated in a `NewTagInput` object.
+- **Logic and Control Flow**:
     - Logs the action of creating a new tag.
-    - Initializes a [`TagService`](<../../../services/tag_service.py.md#TagService>) object with the current session.
-    - Calls the [`create_tag`](<../../../services/tag_service.py.md#TagServicecreate_tag>) method of [`TagService`](<../../../services/tag_service.py.md#TagService>) with the user and new tag input to create the tag.
-- **Output**: Returns an instance of `Tag` representing the newly created tag.
+    - Initializes a [`TagService`](<../../../services/tag_service.py.md#tagservice>) object with the provided session.
+    - Calls the [`create_tag`](<../../../services/tag_service.py.md#tagservicecreate_tag>) method of the [`TagService`](<../../../services/tag_service.py.md#tagservice>) object, passing the user and new tag input data.
+- **Output**: Returns a `Tag` object representing the newly created tag.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#TagService>)
-    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<../../../services/tag_service.py.md#TagServicecreate_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#tagservice>)
+    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<../../../services/tag_service.py.md#tagservicecreate_tag>)
 
 
 ---
 ### read\_tags<!-- {{#callable:python-backend/backend/app/api/routes/v1/tags.read_tags}} -->
-The `read_tags` function retrieves a list of tags based on specified criteria such as limit, offset, name, and type.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/tags.py#L46>)
+
+Retrieves a list of tags based on specified criteria.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of CurrentSession, representing the current database session.
-    - `user`: An instance of UserToken, representing the authenticated user making the request.
-    - `limit`: An optional integer specifying the maximum number of tags to return, defaulting to 20.
-    - `offset`: An optional integer specifying the number of tags to skip before starting to collect the result set, defaulting to 0.
-    - `name`: An optional string to filter tags by name.
-    - `type`: An optional TagType to filter tags by type.
-- **Control Flow**:
-    - A TagService instance is created using the provided session.
-    - The list_tags method of the TagService instance is called with the user and a ListTagsInput object containing the limit, offset, name, and type parameters.
-    - The result of the list_tags method is returned.
-- **Output**: Returns a ListTagsResults object containing the list of tags that match the specified criteria.
+    - `session`: The current database session used for operations.
+    - `user`: The user token representing the authenticated user.
+    - `limit`: The maximum number of tags to return; defaults to 20.
+    - `offset`: The number of tags to skip before starting to collect the result set; defaults to 0.
+    - `name`: An optional filter to match tags by name.
+    - `type`: An optional filter to match tags by type, specified as `TagType`.
+- **Logic and Control Flow**:
+    - Creates an instance of [`TagService`](<../../../services/tag_service.py.md#tagservice>) using the provided `session`.
+    - Calls the [`list_tags`](<../../../services/tag_service.py.md#tagservicelist_tags>) method of [`TagService`](<../../../services/tag_service.py.md#tagservice>) with the `user` and a [`ListTagsInput`](<../../../schemas/tag_schema.py.md#listtagsinput>) object containing the `limit`, `offset`, `name`, and `type` parameters.
+    - Returns the result from the [`list_tags`](<../../../services/tag_service.py.md#tagservicelist_tags>) method.
+- **Output**: Returns a `ListTagsResults` object containing the list of tags that match the specified criteria.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#TagService>)
-    - [`python-backend/backend/app/services/tag_service.TagService.list_tags`](<../../../services/tag_service.py.md#TagServicelist_tags>)
-    - [`python-backend/backend/app/schemas/tag_schema.ListTagsInput`](<../../../schemas/tag_schema.py.md#ListTagsInput>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#tagservice>)
+    - [`python-backend/backend/app/services/tag_service.TagService.list_tags`](<../../../services/tag_service.py.md#tagservicelist_tags>)
+    - [`python-backend/backend/app/schemas/tag_schema.ListTagsInput`](<../../../schemas/tag_schema.py.md#listtagsinput>)
 
 
 ---
 ### update\_tag<!-- {{#callable:python-backend/backend/app/api/routes/v1/tags.update_tag}} -->
-The `update_tag` function updates an existing tag in the organization using the provided tag ID and updated tag information.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/tags.py#L62>)
+
+Updates a tag in the organization using the provided tag ID and updated tag data.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: An instance of CurrentSession, representing the current database session.
-    - `user`: An instance of UserToken, representing the authenticated user making the request.
-    - `tag_id`: A string representing the unique identifier of the tag to be updated.
-    - `updated_tag`: An instance of EditTagInput, containing the new data for the tag.
-- **Control Flow**:
-    - A TagService instance is created using the provided session.
-    - The edit_tag method of the TagService instance is called with the user, tag_id, and updated_tag as arguments.
-- **Output**: Returns an updated Tag object after the tag has been successfully edited.
+    - `session`: The current database session used for operations.
+    - `user`: The user token representing the authenticated user making the request.
+    - `tag_id`: The string identifier of the tag to update.
+    - `updated_tag`: The input data containing the updated tag information.
+- **Logic and Control Flow**:
+    - Creates an instance of [`TagService`](<../../../services/tag_service.py.md#tagservice>) using the provided `session`.
+    - Calls the [`edit_tag`](<../../../services/tag_service.py.md#tagserviceedit_tag>) method of [`TagService`](<../../../services/tag_service.py.md#tagservice>) with `user`, `tag_id`, and `updated_tag` to perform the update operation.
+- **Output**: Returns the updated `Tag` object after the edit operation is complete.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#TagService>)
-    - [`python-backend/backend/app/services/tag_service.TagService.edit_tag`](<../../../services/tag_service.py.md#TagServiceedit_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#tagservice>)
+    - [`python-backend/backend/app/services/tag_service.TagService.edit_tag`](<../../../services/tag_service.py.md#tagserviceedit_tag>)
 
 
 ---
 ### read\_tag\_contents<!-- {{#callable:python-backend/backend/app/api/routes/v1/tags.read_tag_contents}} -->
-The `read_tag_contents` function retrieves a list of contents associated with a specific tag, applying various filters and sorting options.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/tags.py#L77>)
+
+Retrieves a list of contents associated with a specific tag, with optional filtering and sorting parameters.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of CurrentSession, representing the current database session.
-    - `user`: An instance of UserToken, representing the authenticated user making the request.
-    - `tag_id`: A string representing the unique identifier of the tag whose contents are to be retrieved.
-    - `content_type_name`: An optional list of strings, provided via query parameters, specifying the content types to filter by.
-    - `sort_by`: An optional string specifying the field by which to sort the results.
-    - `sort_direction`: An optional string specifying the direction of sorting, either 'ASC' or 'DESC', defaulting to 'ASC'.
-    - `status`: An optional string to filter contents by their status.
-    - `text`: An optional string to filter contents by matching text.
-    - `limit`: An optional integer specifying the maximum number of results to return, defaulting to 20.
-    - `offset`: An optional integer specifying the number of results to skip before starting to collect the result set, defaulting to 0.
-    - `latest_version_only`: A boolean indicating whether to retrieve only the latest version of each content, defaulting to False.
-- **Control Flow**:
-    - A TagService instance is created using the provided session.
-    - The list_tag_contents method of the TagService instance is called with the user, tag_id, and a ListContentInput object containing all the filtering and sorting parameters.
-    - The result from list_tag_contents is returned as the output of the function.
-- **Output**: The function returns an instance of ListTagContentsResults, which contains the filtered and sorted list of contents associated with the specified tag.
+    - `session`: The current database session, used to interact with the database.
+    - `user`: The user token, representing the authenticated user making the request.
+    - `tag_id`: The identifier of the tag for which contents are to be retrieved.
+    - `content_type_name`: An optional list of content type names to filter the contents.
+    - `sort_by`: An optional parameter to specify the field by which to sort the contents.
+    - `sort_direction`: An optional parameter to specify the direction of sorting, defaulting to 'ASC'.
+    - `status`: An optional parameter to filter contents by their status.
+    - `text`: An optional parameter to filter contents by a text search.
+    - `limit`: An optional parameter to limit the number of contents returned, defaulting to 20.
+    - `offset`: An optional parameter to specify the starting point for content retrieval, defaulting to 0.
+    - `latest_version_only`: A boolean flag indicating whether to retrieve only the latest version of contents, defaulting to False.
+- **Logic and Control Flow**:
+    - Creates an instance of [`TagService`](<../../../services/tag_service.py.md#tagservice>) using the provided `session`.
+    - Calls the [`list_tag_contents`](<../../../services/tag_service.py.md#tagservicelist_tag_contents>) method of [`TagService`](<../../../services/tag_service.py.md#tagservice>), passing the `user`, `tag_id`, and a [`ListContentInput`](<../../../schemas/content_schema.py.md#listcontentinput>) object with the provided parameters.
+    - Returns the result of the [`list_tag_contents`](<../../../services/tag_service.py.md#tagservicelist_tag_contents>) method call.
+- **Output**: A `ListTagContentsResults` object containing the list of contents associated with the specified tag, filtered and sorted according to the provided parameters.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#TagService>)
-    - [`python-backend/backend/app/services/tag_service.TagService.list_tag_contents`](<../../../services/tag_service.py.md#TagServicelist_tag_contents>)
-    - [`python-backend/backend/app/schemas/content_schema.ListContentInput`](<../../../schemas/content_schema.py.md#ListContentInput>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#tagservice>)
+    - [`python-backend/backend/app/services/tag_service.TagService.list_tag_contents`](<../../../services/tag_service.py.md#tagservicelist_tag_contents>)
+    - [`python-backend/backend/app/schemas/content_schema.ListContentInput`](<../../../schemas/content_schema.py.md#listcontentinput>)
 
 
 ---
 ### delete\_tag<!-- {{#callable:python-backend/backend/app/api/routes/v1/tags.delete_tag}} -->
-The [`delete_tag`](<../../../services/tag_service.py.md#TagServicedelete_tag>) function deletes a tag identified by its ID, handling potential integrity errors.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/tags.py#L108>)
+
+Deletes a tag identified by its UUID.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: An instance of CurrentSession, representing the current database session.
-    - `user`: An instance of UserToken, representing the authenticated user making the request.
-    - `tag_id`: A UUID representing the unique identifier of the tag to be deleted.
-- **Control Flow**:
-    - Initialize a TagService instance with the current session.
-    - Attempt to delete the tag using the TagService's delete_tag method, passing the user and tag_id.
-    - If the deletion is successful, return immediately as no content is required for a 204 status code.
-    - If an IntegrityError occurs, raise an HTTPException with a 400 status code and the error details.
-- **Output**: The function returns None, as it is designed to return no content upon successful deletion (HTTP 204).
+    - `session`: The current database session used to interact with the database.
+    - `user`: The user token representing the authenticated user making the request.
+    - `tag_id`: The UUID of the tag to delete.
+- **Logic and Control Flow**:
+    - Create an instance of [`TagService`](<../../../services/tag_service.py.md#tagservice>) using the provided `session`.
+    - Attempt to delete the tag by calling [`delete_tag`](<../../../services/tag_service.py.md#tagservicedelete_tag>) on the `tag_service` with `user` and `tag_id`.
+    - If the deletion is successful, return without content as per the 204 status code.
+    - If an `IntegrityError` occurs, raise an `HTTPException` with a 400 status code and the error details.
+- **Output**: No content is returned, as indicated by the 204 status code.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#BaseRepositorydelete>)
-    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#TagService>)
-    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<../../../services/tag_service.py.md#TagServicedelete_tag>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#baserepositorydelete>)
+    - [`python-backend/backend/app/services/tag_service.TagService`](<../../../services/tag_service.py.md#tagservice>)
+    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<../../../services/tag_service.py.md#tagservicedelete_tag>)
 
 
 

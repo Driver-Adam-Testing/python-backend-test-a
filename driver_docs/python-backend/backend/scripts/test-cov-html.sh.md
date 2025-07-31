@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test-cov-html.sh` file is a bash script in the `python-backend` codebase that runs tests with an HTML coverage report using the `test.sh` script.
+A script to run tests with HTML coverage report using `test.sh`.
 
 # Purpose
-This Bash script is a narrow-purpose executable designed to automate the testing process of a software project. It sets the script to exit immediately if any command fails (`set -e`) and to print each command before executing it (`set -x`), which aids in debugging. The script then calls another script, `scripts/test.sh`, passing any additional arguments it receives, and specifies that the test coverage report should be generated in HTML format. This script is likely part of a larger build or continuous integration system, where it ensures that tests are run consistently and coverage reports are generated for further analysis.
+The script is a Bash executable that automates the execution of a test suite. It sets the script to exit immediately if any command fails (`set -e`) and enables debugging output (`set -x`) to display each command before execution. The script runs the `test.sh` script located in the `scripts` directory with a coverage report output in HTML format. It also passes any additional arguments provided to the script to the `test.sh` script.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `custom_config.toml` file in the `python-backend` codebase specifies configuration settings for generating an architecture document, including model tags, document goals, formatting, and section details.
+Configuration file for LLM models and document structure in the architecture documentation process.
 
 # Purpose
-The provided file is a configuration file that defines settings for generating a detailed architecture document for a software codebase. It specifies different language models to be used for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing, indicating a sophisticated approach to document generation using AI models like "gpt-4o" and "o3-mini". The document section outlines the goal of creating an architecture document with a specific format and tagging enabled, under a custom configuration named "Architecture Custom" with version "[V1]". Additionally, it defines a section titled "Overview" with specific instructions and structure, emphasizing its importance by marking it as required and detailing the method for its creation. This configuration file is crucial for automating and standardizing the documentation process within the codebase.
+The configuration file defines settings for a document generation process. In the `[llm]` section, it specifies different language models for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing, using models like `gpt-4o` and `o3-mini`. The `[document]` section outlines the goal of creating a detailed architecture document for the codebase, with a specified format of `defined_sections` and tagging enabled. It also includes metadata such as the configuration name "Architecture Custom" and version "[V1]". The `[[sections]]` array defines individual document sections, such as an "Overview" with a level of 1, marked as required, and provides instructions for content structure and creation method.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

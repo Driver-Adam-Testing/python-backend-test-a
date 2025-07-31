@@ -3,40 +3,44 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils.py` file contains utility functions for converting between bytes and source lines of code (SLOC) using a defined conversion factor.
+Functions to convert between bytes and source lines of code (SLOC) using a conversion factor.
 
 # Purpose
-This code provides a narrow functionality focused on converting between two units: bytes and source lines of code (SLOC). It consists of a constant, `CONVERSION_FACTOR`, set to 50, and two functions: [`bytes_to_sloc`](<#bytes_to_sloc>) and [`sloc_to_bytes`](<#sloc_to_bytes>). The [`bytes_to_sloc`](<#bytes_to_sloc>) function takes an integer representing bytes and converts it to SLOC by dividing the absolute value of bytes by the conversion factor, ensuring the result is always non-negative. Conversely, the [`sloc_to_bytes`](<#sloc_to_bytes>) function converts SLOC back to bytes by multiplying the SLOC value by the conversion factor. This code is a utility script that could be used in contexts where estimating or converting between code size in bytes and SLOC is necessary.
+The code provides a narrow functionality for converting between bytes and source lines of code (SLOC). It defines a constant `CONVERSION_FACTOR` with a value of 50, which is used in two functions. The [`bytes_to_sloc`](<#bytes_to_sloc>) function takes an integer `bytes` as input and returns the equivalent SLOC by dividing the absolute value of `bytes` by `CONVERSION_FACTOR`. The [`sloc_to_bytes`](<#sloc_to_bytes>) function takes an integer `sloc` as input and returns the equivalent number of bytes by multiplying `sloc` by `CONVERSION_FACTOR`.
 # Global Variables
 
 ---
 ### CONVERSION\_FACTOR
-- **Type**: `int`
-- **Description**: `CONVERSION_FACTOR` is an integer constant set to the value 50. It is used as a conversion rate between bytes and source lines of code (SLOC).
-- **Use**: This variable is used to convert between bytes and SLOC in the functions `bytes_to_sloc` and `sloc_to_bytes`.
+- **Type**: ``int``
+- **Description**: A constant integer value that represents the factor used to convert between bytes and source lines of code (SLOC).
+- **Use**: Used in conversion calculations between bytes and SLOC in the `bytes_to_sloc` and `sloc_to_bytes` functions.
 
 
 # Functions
 
 ---
 ### bytes\_to\_sloc<!-- {{#callable:python-backend/packages/shared/shared/usage/utils.bytes_to_sloc}} -->
-The function `bytes_to_sloc` converts a given number of bytes into source lines of code (SLOC) using a predefined conversion factor.
+[View Source →](<../../../../../../packages/shared/shared/usage/utils.py#L4>)
+
+Converts a given number of bytes to source lines of code (SLOC) using a predefined conversion factor.
 - **Inputs**:
-    - `bytes`: An integer representing the number of bytes to be converted to SLOC.
-- **Control Flow**:
-    - The function takes the absolute value of the input `bytes` to ensure it is non-negative.
-    - It then performs integer division of the absolute byte value by the constant `CONVERSION_FACTOR` to calculate the equivalent SLOC.
-- **Output**: An integer representing the number of source lines of code (SLOC) equivalent to the given bytes.
+    - `bytes`: An integer representing the number of bytes to convert to SLOC.
+- **Logic and Control Flow**:
+    - Calculate the absolute value of the input `bytes`.
+    - Divide the absolute value by the constant `CONVERSION_FACTOR` using integer division.
+- **Output**: An integer representing the equivalent number of source lines of code (SLOC).
 
 
 ---
 ### sloc\_to\_bytes<!-- {{#callable:python-backend/packages/shared/shared/usage/utils.sloc_to_bytes}} -->
-The function `sloc_to_bytes` converts a given number of source lines of code (SLOC) into an equivalent number of bytes using a predefined conversion factor.
+[View Source →](<../../../../../../packages/shared/shared/usage/utils.py#L8>)
+
+Converts source lines of code (SLOC) to bytes using a conversion factor.
 - **Inputs**:
-    - `sloc`: An integer representing the number of source lines of code to be converted into bytes.
-- **Control Flow**:
-    - The function multiplies the input `sloc` by the constant `CONVERSION_FACTOR`.
-- **Output**: The function returns an integer representing the equivalent number of bytes for the given SLOC.
+    - `sloc`: The number of source lines of code to convert to bytes.
+- **Logic and Control Flow**:
+    - Multiply the input `sloc` by the constant `CONVERSION_FACTOR`.
+- **Output**: The function returns the equivalent number of bytes as an integer.
 
 
 

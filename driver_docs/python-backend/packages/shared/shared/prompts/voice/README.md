@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Initialization and prompt files for roles and instructions in technical copy editing and content creation.
+Imports and system message prompts for copy editor and software engineer roles, and pipeline configuration.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `voice` package by importing the `copy_editor` and `software_engineer` modules.
-- **[copy_editor.py](copy_editor.py.md)**: The `copy_editor.py` file contains a prompt for a technical copy editor, outlining detailed instructions for editing technical documents to ensure clarity, conciseness, and relevance.
-- **[operator.py](operator.py.md)**: The `operator.py` file outlines a series of questions and options to define a pipeline for content creation, including roles such as content creator agent, critic, and copy editor, as well as presets like entrypoint analysis and online docs page.
-- **[software_engineer.py](software_engineer.py.md)**: The `software_engineer.py` file defines a voice prompt for a system role, characterizing an expert software engineer who writes code and documentation based on recent data without instructing others or speculating.
+- **[__init__.py](__init__.py.md)**: Imports the `copy_editor` and `software_engineer` modules.
+- **[copy_editor.py](copy_editor.py.md)**: A system message prompt for a technical copy editor to refine technical documents by removing unnecessary content.
+- **[operator.py](operator.py.md)**: Defines questions and options to configure a content creation pipeline with roles like operator, content creator, critic, and copy editor.
+- **[software_engineer.py](software_engineer.py.md)**: Defines a system message for a software engineer voice prompt with specific guidelines.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

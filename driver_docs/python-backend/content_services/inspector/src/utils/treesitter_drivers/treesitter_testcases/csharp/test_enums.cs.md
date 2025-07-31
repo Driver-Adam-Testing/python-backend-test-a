@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_enums.cs` file contains various test cases for C# enum definitions, demonstrating different enum types, usage examples, and extension methods within the `Com.Example.Enums` namespace.
+Test cases for various C# enum definitions, including usage examples and extension methods.
 
 # Purpose
-This C# source code file is a comprehensive demonstration of various enum definitions and their usage within the `Com.Example.Enums` namespace. It provides a broad range of examples showcasing different types of enums, including simple enums, enums with explicit values, flags enums, and enums with different underlying types. The file also illustrates more complex scenarios such as enums with calculated values, enums with long values, and enums implementing interfaces. Additionally, it includes a class `EnumExamples` that demonstrates practical usage of these enums, such as parsing, converting enums to strings, iterating over enum values, and using enums in switch statements.
+The code defines a collection of C# enumerations (`enum`) within the `Com.Example.Enums` namespace. These enumerations serve various purposes, such as representing colors, statuses, priorities, file access permissions, log levels, days of the week, HTTP status codes, and permissions. Each `enum` is designed to encapsulate a set of named constants, with some having explicit underlying values or types, such as `byte` or `long`. The `FileAccess` enumeration uses the `[Flags]` attribute to allow bitwise operations, enabling combinations of its values. Additionally, the `DayOfWeek` enumeration is extended with methods to determine if a day is a weekend or a weekday.
 
-The file also contains extension methods for the `DayOfWeek` enum, enhancing its functionality by adding methods to determine if a day is a weekend or a weekday. This code serves as both a reference and a practical guide for developers looking to understand and implement enums in C#. It does not define public APIs or external interfaces but rather focuses on internal usage and demonstration of enum capabilities within the C# language. The inclusion of extension methods and an enum implementing an interface further enriches the educational value of this file, making it a valuable resource for learning about enums in C#.
+The code also includes a class `EnumExamples` that demonstrates the usage of these enumerations. This class contains methods to parse `enum` values from strings, convert `enum` values to strings, iterate over `enum` values, and use `enum` values in switch statements. The `DayOfWeekExtensions` class provides extension methods for the `DayOfWeek` enumeration, enhancing its functionality. Furthermore, the `Operation` enumeration implements the `IComparable<Operation>` interface, allowing for comparison operations. Overall, the code provides a comprehensive set of examples and utilities for working with enumerations in C#.
 # Imports and Dependencies
 
 ---
@@ -19,86 +19,97 @@ The file also contains extension methods for the `DayOfWeek` enum, enhancing its
 
 ---
 ### EnumExamples<!-- {{#class:Com.Example.Enums.EnumExamples}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L108>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `EnumExamples` class serves as a demonstration of various operations and usages of enums in C#. It includes a nested enum `SecurityLevel` with multiple access modifiers, showcasing how enums can be defined within a class. The class provides a method `UseEnums` that illustrates different enum operations such as simple enum assignment, flags enum usage, parsing strings to enums, converting enums to strings, iterating over enum values, and using enums in switch statements. This class is a practical example for understanding how to work with enums in C#.
+- **Description**: Provides examples of how to use enums in C#. Includes a nested enum `SecurityLevel` with multiple access modifiers, and demonstrates various operations with enums such as simple usage, flags, parsing, conversion to string, retrieving all values, and using enums in switch statements. The `UseEnums` method showcases these operations, while the `GetStatusMessage` method returns a message based on the `Status` enum value.
 - **Methods**:
-    - [`Com.Example.Enums.EnumExamples.UseEnums`](<#EnumExamplesUseEnums>)
-    - [`Com.Example.Enums.EnumExamples.GetStatusMessage`](<#EnumExamplesGetStatusMessage>)
+    - [`Com.Example.Enums.EnumExamples.UseEnums`](<#enumexamplesuseenums>)
+    - [`Com.Example.Enums.EnumExamples.GetStatusMessage`](<#enumexamplesgetstatusmessage>)
 
 **Methods**
 
 ---
 #### EnumExamples\.UseEnums<!-- {{#callable:Com.Example.Enums.EnumExamples.UseEnums}} -->
-The `UseEnums` method demonstrates various operations and usages of enums in C# including simple assignment, flags, parsing, conversion to string, iteration, and switch statements.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L120>)
+
+Demonstrates various operations with enums, including usage, parsing, conversion, iteration, and conditional logic.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Assigns a simple enum value `Color.Blue` to `favoriteColor`.
-    - Combines `FileAccess.Read` and `FileAccess.Write` using bitwise OR to create a `FileAccess` flags enum and checks if `Read` access is included.
-    - Parses a string "InProgress" to a `Status` enum using `Enum.TryParse` and prints the parsed status if successful.
-    - Converts the `Status.Completed` enum to its string representation and assigns it to `statusName`.
-    - Iterates over all values of the `Priority` enum using `Enum.GetValues` and prints each priority with its byte value.
-    - Calls [`GetStatusMessage`](<#EnumExamplesGetStatusMessage>) with `Status.InProgress` and prints the returned message.
-- **Output**: The method does not return a value; it performs operations and prints results to the console.
+    - Assigns `Color.Blue` to `favoriteColor`.
+    - Combines `FileAccess.Read` and `FileAccess.Write` using bitwise OR and checks if `access` includes `FileAccess.Read`.
+    - Parses the string "InProgress" to a `Status` enum and outputs the parsed status if successful.
+    - Converts `Status.Completed` to a string and assigns it to `statusName`.
+    - Iterates over all values of the `Priority` enum and outputs each value and its byte representation.
+    - Calls [`GetStatusMessage`](<#enumexamplesgetstatusmessage>) with `Status.InProgress` and outputs the returned message.
+- **Output**: No return value; outputs are printed to the console.
 - **Methods Called**:
-    - [`Com.Example.Enums.EnumExamples.GetStatusMessage`](<#EnumExamplesGetStatusMessage>)
-- **See also**: [`Com.Example.Enums.EnumExamples`](<#EnumExamples>)  (Base Class)
+    - [`Com.Example.Enums.EnumExamples.GetStatusMessage`](<#enumexamplesgetstatusmessage>)
+- **See also**: [`Com.Example.Enums.EnumExamples`](<#enumexamples>)  (Base Class)
 
 
 ---
 #### EnumExamples\.GetStatusMessage<!-- {{#callable:Com.Example.Enums.EnumExamples.GetStatusMessage}} -->
-The GetStatusMessage method returns a string message corresponding to a given Status enum value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L149>)
+
+Returns a status message string based on the provided `Status` enum value.
 - **Modifiers**: `private`
 - **Inputs**:
-    - `status`: An input of type Status, which is an enum representing different states such as Pending, InProgress, Completed, Failed, and Cancelled.
+    - `status`: An enum value of type `Status` that represents the current status of a task.
 - **Control Flow**:
-    - The method uses a switch expression to match the input status with predefined Status enum values.
-    - For each Status value (Pending, InProgress, Completed, Failed, Cancelled), a corresponding string message is returned.
-    - If the status does not match any predefined values, a default message 'Unknown status' is returned.
-- **Output**: A string message that describes the current status based on the input Status enum value.
-- **See also**: [`Com.Example.Enums.EnumExamples`](<#EnumExamples>)  (Base Class)
+    - Uses a switch expression to match the `status` argument against predefined `Status` enum values.
+    - Returns a specific string message for each `Status` value: 'Pending', 'InProgress', 'Completed', 'Failed', and 'Cancelled'.
+    - Returns 'Unknown status' if the `status` does not match any predefined `Status` values.
+- **Output**: A string that describes the task status based on the `Status` enum value.
+- **See also**: [`Com.Example.Enums.EnumExamples`](<#enumexamples>)  (Base Class)
 
 
 
 ---
 ### DayOfWeekExtensions<!-- {{#class:Com.Example.Enums.DayOfWeekExtensions}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L164>)
+
 - **Type**: `class`
 - **Modifiers**: `public`, `static`
-- **Description**: The `DayOfWeekExtensions` class is a static class that provides extension methods for the `DayOfWeek` enum, allowing for easy determination of whether a given day is a weekend or a weekday. It includes two methods: `IsWeekend`, which returns true if the day is Saturday or Sunday, and `IsWeekday`, which returns true if the day is not a weekend. These methods enhance the functionality of the `DayOfWeek` enum by providing intuitive checks for common calendar operations.
+- **Description**: Provides extension methods for the `DayOfWeek` enum to determine if a given day is a weekend or a weekday. The `IsWeekend` method returns true if the day is Saturday or Sunday, while the `IsWeekday` method returns true if the day is not a weekend.
 - **Methods**:
-    - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekend`](<#DayOfWeekExtensionsIsWeekend>)
-    - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekday`](<#DayOfWeekExtensionsIsWeekday>)
+    - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekend`](<#dayofweekextensionsisweekend>)
+    - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekday`](<#dayofweekextensionsisweekday>)
 
 **Methods**
 
 ---
 #### DayOfWeekExtensions\.IsWeekend<!-- {{#callable:Com.Example.Enums.DayOfWeekExtensions.IsWeekend}} -->
-The `IsWeekend` method determines if a given `DayOfWeek` value represents a weekend day.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L166>)
+
+Determines if a given `DayOfWeek` value represents a weekend day.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `day`: A `DayOfWeek` enum value representing a day of the week.
+    - `day`: A `DayOfWeek` enum value to check if it is a weekend day.
 - **Control Flow**:
-    - The method checks if the input `day` is equal to `DayOfWeek.Saturday` or `DayOfWeek.Sunday`.
-    - If either condition is true, the method returns `true`, indicating the day is a weekend.
-    - If neither condition is true, the method returns `false`, indicating the day is not a weekend.
-- **Output**: A boolean value indicating whether the specified day is a weekend (true) or not (false).
-- **See also**: [`Com.Example.Enums.DayOfWeekExtensions`](<#DayOfWeekExtensions>)  (Base Class)
+    - Check if `day` is equal to `DayOfWeek.Saturday` or `DayOfWeek.Sunday`.
+    - Return `true` if `day` is a weekend day, otherwise return `false`.
+- **Output**: A boolean value indicating whether the specified `DayOfWeek` is a weekend day (`true`) or not (`false`).
+- **See also**: [`Com.Example.Enums.DayOfWeekExtensions`](<#dayofweekextensions>)  (Base Class)
 
 
 ---
 #### DayOfWeekExtensions\.IsWeekday<!-- {{#callable:Com.Example.Enums.DayOfWeekExtensions.IsWeekday}} -->
-The `IsWeekday` method determines if a given `DayOfWeek` value represents a weekday.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L171>)
+
+Determines if a given `DayOfWeek` value represents a weekday.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `day`: An instance of the `DayOfWeek` enum representing a specific day of the week.
+    - `day`: A `DayOfWeek` enum value representing a day of the week.
 - **Control Flow**:
-    - The method calls the [`IsWeekend`](<#DayOfWeekExtensionsIsWeekend>) extension method on the `day` parameter.
-    - It returns the negation of the result from [`IsWeekend`](<#DayOfWeekExtensionsIsWeekend>), indicating whether the day is not a weekend.
-- **Output**: A boolean value indicating whether the specified day is a weekday (true) or not (false).
+    - Calls the [`IsWeekend`](<#dayofweekextensionsisweekend>) extension method on the `day` parameter.
+    - Returns the negation of the result from [`IsWeekend`](<#dayofweekextensionsisweekend>), indicating if the day is a weekday.
+- **Output**: A boolean value: `true` if the `day` is a weekday, `false` otherwise.
 - **Methods Called**:
-    - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekend`](<#DayOfWeekExtensionsIsWeekend>)
-- **See also**: [`Com.Example.Enums.DayOfWeekExtensions`](<#DayOfWeekExtensions>)  (Base Class)
+    - [`Com.Example.Enums.DayOfWeekExtensions.IsWeekend`](<#dayofweekextensionsisweekend>)
+- **See also**: [`Com.Example.Enums.DayOfWeekExtensions`](<#dayofweekextensions>)  (Base Class)
 
 
 
@@ -106,72 +117,92 @@ The `IsWeekday` method determines if a given `DayOfWeek` value represents a week
 
 ---
 ### Color<!-- {{#data_structure:Com.Example.Enums.Color}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L7>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `Color` enum is a simple enumeration that defines three basic color constants: Red, Green, and Blue. It is used to represent these primary colors in a type-safe manner within the code, allowing for easy reference and comparison of color values.
+- **Description**: Represents a simple enumeration of colors with three possible values: `Red`, `Green`, and `Blue`. This enum is used to define a set of named constants for colors, which can be used in various parts of a program to represent color choices or settings.
 
 
 ---
 ### Status<!-- {{#data_structure:Com.Example.Enums.Status}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L15>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `Status` enum is a simple enumeration that represents the various states a task or process can be in. It includes five distinct values: `Pending`, `InProgress`, `Completed`, `Failed`, and `Cancelled`, each associated with an explicit integer value starting from 0. This enum is useful for tracking the progress or outcome of operations in a program, allowing for clear and concise status management.
+- **Description**: Represents the status of a task or process with explicit integer values. The possible statuses are `Pending` (0), `InProgress` (1), `Completed` (2), `Failed` (3), and `Cancelled` (4).
 
 
 ---
 ### Priority<!-- {{#data_structure:Com.Example.Enums.Priority}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L25>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `Priority` enum is a simple enumeration that defines four levels of priority: Low, Medium, High, and Critical, each associated with a specific byte value ranging from 1 to 4. This enum is designed to categorize tasks or items based on their importance or urgency, allowing for easy comparison and sorting of priorities in applications that require task management or prioritization.
+- **Description**: Represents different levels of priority with explicit byte values. The `Priority` enum defines four levels: `Low`, `Medium`, `High`, and `Critical`, each associated with a specific byte value ranging from 1 to 4. This enum is useful for categorizing tasks or items based on their importance or urgency.
 
 
 ---
 ### FileAccess<!-- {{#data_structure:Com.Example.Enums.FileAccess}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L34>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `FileAccess` enum is a flags enumeration that defines a set of bitwise combinable constants representing different levels of file access permissions. It includes options for `None`, `Read`, `Write`, and `Execute` permissions, as well as combinations such as `ReadWrite` (combining `Read` and `Write`) and `All` (combining `Read`, `Write`, and `Execute`). This enum is marked with the `[Flags]` attribute, allowing for bitwise operations to combine multiple values, making it suitable for scenarios where multiple permissions need to be represented simultaneously.
+- **Description**: Represents a set of file access permissions using the `Flags` attribute, allowing bitwise operations to combine multiple permissions. The `FileAccess` enum defines specific permissions such as `None`, `Read`, `Write`, `Execute`, `ReadWrite`, and `All`, where `ReadWrite` is a combination of `Read` and `Write`, and `All` includes `Read`, `Write`, and `Execute`.
 
 
 ---
 ### LogLevel<!-- {{#data_structure:Com.Example.Enums.LogLevel}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L46>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `LogLevel` enum is a simple enumeration that defines a set of named constants representing different levels of logging severity. These levels include `Trace`, `Debug`, `Information`, `Warning`, `Error`, and `Critical`, which are commonly used in logging frameworks to categorize and filter log messages based on their importance or severity. This enum does not implement any interfaces and does not have any additional modifiers, making it a straightforward representation of logging levels.
+- **Description**: Represents different levels of logging severity, ranging from `Trace` for detailed information to `Critical` for severe error events.
 
 
 ---
 ### DayOfWeek<!-- {{#data_structure:Com.Example.Enums.DayOfWeek}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L57>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `DayOfWeek` enum represents the days of the week, assigning each day a unique integer value starting from 1 for Monday to 7 for Sunday. This enum is useful for applications that need to handle or manipulate days of the week in a structured manner, such as scheduling or calendar applications. It provides a clear and type-safe way to work with days, and can be extended with methods, as shown in the `DayOfWeekExtensions` class, which adds functionality to determine if a day is a weekend or a weekday.
+- **Description**: Represents the days of the week, with each day assigned an explicit integer value starting from 1 for Monday to 7 for Sunday. This enum is used to categorize and identify days in a week.
 
 
 ---
 ### HttpStatusCode<!-- {{#data_structure:Com.Example.Enums.HttpStatusCode}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L69>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `HttpStatusCode` enum represents the set of standard HTTP status codes as defined by the Internet Engineering Task Force (IETF). These codes are used to indicate the result of an HTTP request, categorized into different classes such as informational responses (1xx), successful responses (2xx), client error responses (4xx), and server error responses (5xx). Each status code is associated with a specific integer value, which is used in HTTP responses to convey the outcome of the request to the client. This enum provides a convenient way to work with these status codes in a type-safe manner within C# applications.
+- **Description**: Represents HTTP status codes as defined in the HTTP/1.1 standard. Each member of the `HttpStatusCode` enum corresponds to a specific HTTP status code, categorized into information responses (e.g., `Continue`), success responses (e.g., `OK`), client error responses (e.g., `BadRequest`), and server error responses (e.g., `InternalServerError`). These codes are used to indicate the result of an HTTP request.
 
 
 ---
 ### Permission<!-- {{#data_structure:Com.Example.Enums.Permission}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L94>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `Permission` enum is a complex enumeration that defines various levels of access permissions using a `long` as its underlying type. It includes individual permissions such as `ReadData`, `WriteData`, `ExecuteFile`, `Delete`, `ReadPermissions`, `ChangePermissions`, and `TakeOwnership`, each represented by a distinct long value that is a power of two. This allows for bitwise operations to combine multiple permissions. The `FullControl` permission is a composite value that combines all the individual permissions, providing complete access control. This enum is designed to facilitate the management of access rights in a system, allowing for flexible and granular permission settings.
+- **Description**: Represents a set of permissions using a `long` underlying type, where each permission is assigned a unique bit value. This allows for bitwise operations to combine multiple permissions. The `Permission` enum includes values such as `None`, `ReadData`, `WriteData`, `ExecuteFile`, `Delete`, `ReadPermissions`, `ChangePermissions`, `TakeOwnership`, and `FullControl`, which is a combination of all other permissions.
 
 
 ---
 ### SecurityLevel<!-- {{#data_structure:Com.Example.Enums.EnumExamples.SecurityLevel}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L111>)
+
 - **Type**: `enum`
 - **Modifiers**: `protected`, `internal`
-- **Description**: The `SecurityLevel` enum is a protected internal enumeration defined within the `EnumExamples` class, representing different levels of security. It provides a simple way to categorize security levels with integer values, ranging from `None` (0) to `Critical` (4). This enum can be used to specify or check the security level required or assigned to a particular operation or entity within the application.
+- **Description**: Defines different levels of security, ranging from `None` to `Critical`, with integer values assigned to each level. This enum is used to categorize the severity or importance of security measures within a system.
 
 
 ---
 ### Operation<!-- {{#data_structure:Com.Example.Enums.Operation}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_enums.cs#L178>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `Operation` enum is a simple enumeration that represents basic arithmetic operations, including addition, subtraction, multiplication, and division. Each operation is assigned an explicit integer value, starting from 1 for `Add` and incrementing by 1 for each subsequent operation. This enum implements the `IComparable<Operation>` interface, allowing instances of `Operation` to be compared with each other, which can be useful for sorting or ordering operations based on their defined values.
+- **Description**: Defines a set of arithmetic operations with explicit integer values, implementing the `IComparable<Operation>` interface to allow comparison between different operations.
 - **Inherits From**:
     - `IComparable`
 

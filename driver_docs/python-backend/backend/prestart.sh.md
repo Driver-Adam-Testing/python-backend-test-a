@@ -3,17 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prestart.sh` file is a shell script that initializes the database by starting it, running migrations, and creating initial data.
+A shell script to start the database, run migrations, and create initial data.
 
 # Purpose
-This Bash script is an executable file designed to automate the initialization and setup of a database environment for an application. It provides narrow functionality focused on preparing the database by executing a series of predefined steps. First, it runs a Python script (`backend_pre_start.py`) to perform any necessary pre-start configurations. Then, it navigates to the database directory and applies database migrations using Alembic, ensuring the database schema is up-to-date. Finally, it populates the database with initial data by executing another Python script (`initial_data.py`). This script is typically used during the deployment or setup phase of an application to ensure the database is correctly configured and ready for use.
-# Imports and Dependencies
-
----
-- `python`
-- `alembic`
-
-
+The script is a Bash executable that automates the initialization process for a database-driven application. It first executes a Python script located at `/app/app/backend_pre_start.py` to perform any necessary pre-start operations for the database. Next, it changes the directory to `/driver_db/database` and runs the `alembic upgrade head` command to apply database migrations, ensuring the database schema is up to date. Finally, it runs another Python script, `/app/app/initial_data.py`, to populate the database with initial data. This script is intended to be executed as part of the application's startup routine.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

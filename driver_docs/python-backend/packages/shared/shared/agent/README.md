@@ -3,19 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Classes and configurations for managing language model agents, including Anthropic and OpenAI implementations.
+Agent classes for Anthropic and OpenAI, chat interfaces, agent factory, and tools for codebase management.
 
 ## Folders
-- **[models](models/README.md)**: Configurations and helper functions for language models, including Claude and OpenAI implementations.
-- **[tools](tools/README.md)**: Various Python files that define and register tools for summarizing codebase folders, opening files, and searching within content repositories, along with an abstract base class for strict tool implementation.
+- **[models](models/README.md)**: Functions for formatting and parsing, document querying and summarization, and LLM configuration management.
+- **[tools](tools/README.md)**: Tools for codebase folder summary, file opening, searching, and tool registration in a registry.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[agent_anthropic_strict.py](agent_anthropic_strict.py.md)**: The `agent_anthropic_strict.py` file defines the `AnthropicStrictAgent` class, which extends `AgentBase` to handle tool calls and create message completions using the Anthropic client, with optional response formatting.
-- **[agent_base.py](agent_base.py.md)**: The `agent_base.py` file defines an abstract base class `AgentBase` for managing agent instances, including logging, message handling, and iteration control, with abstract methods for generating responses and executing iterations.
-- **[agent_factory.py](agent_factory.py.md)**: The `agent_factory.py` file defines a function to create and return either an `OpenAIStrictAgent` or an `AnthropicStrictAgent` based on the specified model configuration and provider.
-- **[agent_openai_strict.py](agent_openai_strict.py.md)**: The `agent_openai_strict.py` file defines the `OpenAIStrictAgent` class, which extends `AgentBase` to interact with OpenAI's API, manage tool calls, and generate responses with optional usage tracking.
-- **[chat_openai.py](chat_openai.py.md)**: The `chat_openai.py` file defines a `ChatOpenAI` class for generating responses using OpenAI's API, with support for different output configurations and error handling through retry mechanisms.
+- **[agent_anthropic_strict.py](agent_anthropic_strict.py.md)**: Implements the AnthropicStrictAgent class for executing tool calls and creating message completions.
+- **[agent_base.py](agent_base.py.md)**: Abstract base class for an agent with logging, message handling, and iteration capabilities.
+- **[agent_factory.py](agent_factory.py.md)**: Factory function to create agents based on model provider, supporting OpenAI and Anthropic agents.
+- **[agent_openai_strict.py](agent_openai_strict.py.md)**: Implements an OpenAI agent with strict tool handling and response generation capabilities.
+- **[chat_openai.py](chat_openai.py.md)**: Implements a chat interface with OpenAI, supporting different output configurations and retry logic.
+- **[chat_openai_async.py](chat_openai_async.py.md)**: Asynchronous OpenAI chat client with configurable output formats and retry logic.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

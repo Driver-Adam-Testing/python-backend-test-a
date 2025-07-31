@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README.md` file in the `python-backend/driver_data` directory provides instructions for copying database and S3 records for a specific organization and codebase ID to a local destination, including example commands and environment configuration details.
+Instructions for copying database and S3 records to a local destination with example commands.
 
 # Purpose
-The provided content is a documentation snippet for a data migration utility within a software codebase. It describes a process for copying database and S3 records from a source to a destination, specifically for a given organization and codebase ID. The utility is currently limited to using localhost as the target due to AWS cross-account permissions issues. The document includes command examples for executing the data copy operation using the Poetry package manager and Python script, with options to skip downloading either database or S3 records. Additionally, it provides an example of a `.env` configuration file, detailing environment variables necessary for the operation, such as AWS credentials, database URLs, and logging levels, which need to be updated according to the user's environment.
+The document describes a process for copying database and S3 records for a specific organization and codebase ID to a local destination. It includes instructions for using a Python script, `copy_data.py`, with the `poetry` tool to execute the data copying operation. The document provides examples of command-line usage, including options to skip downloading database or S3 records. Additionally, it outlines an example `.env` configuration file that specifies environment variables such as `LOG_LEVEL`, AWS credentials, and database URLs, which are necessary for the script to function correctly. The script currently supports only localhost as a target due to AWS cross-account permissions limitations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

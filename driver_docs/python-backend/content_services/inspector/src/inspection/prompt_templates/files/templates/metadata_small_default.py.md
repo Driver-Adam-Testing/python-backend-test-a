@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `metadata_small_default.py` file defines a template for small metadata prompts using various components and style instructions.
+Defines a metadata template with prompts and style instructions for small system purposes.
 
 # Purpose
-This Python code defines a configuration template for generating metadata prompts, specifically tailored for small systems. It imports various components and instructions from shared and utility modules, indicating that it leverages existing structures to build its functionality. The code constructs a list, `METADATA_SMALL_TEMPLATE`, which contains tuples that define the structure and content of prompts, using a combination of predefined components and style instructions. This setup suggests that the code provides narrow functionality, focusing on creating structured prompts for metadata purposes, likely within a larger system that requires consistent and formatted metadata generation.
+The code defines a configuration for a metadata template named `METADATA_SMALL_TEMPLATE`. It imports several components and prompts from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.metadata`. The template is a list containing a tuple that specifies a single prompt text with a header `# Purpose`. It uses the `Prompt` class to create and append components and instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to form structured prompt strings. This setup is likely used to generate or manage metadata with specific style and formatting instructions.
 # Imports and Dependencies
 
 ---
@@ -24,9 +24,9 @@ This Python code defines a configuration template for generating metadata prompt
 
 ---
 ### METADATA\_SMALL\_TEMPLATE
-- **Type**: `list`
-- **Description**: `METADATA_SMALL_TEMPLATE` is a list containing a single tuple that defines a structured prompt template for metadata purposes. The tuple includes a prompt type identifier, a section header, and two formatted prompt strings created using the `Prompt` class and various components and instructions. This template is used to generate consistent and structured metadata prompts by appending specific components and style instructions to the prompt strings.
-- **Use**: This variable is used to define a structured template for generating metadata prompts with specific formatting and style instructions.
+- **Type**: ``list``
+- **Description**: A list containing a single tuple that defines a structured prompt template. The tuple includes a prompt type, a section header, and two formatted prompt strings created using the `Prompt` class and `Component` instances. These strings are constructed by appending various components and instructions, and then converting them into strings using the `into_str()` method.
+- **Use**: Used to define a structured prompt template for metadata with specific style instructions.
 
 
 

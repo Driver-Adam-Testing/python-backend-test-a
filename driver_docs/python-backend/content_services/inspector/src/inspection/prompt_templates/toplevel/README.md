@@ -3,22 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various text files with guidelines for summarizing software modules and a `templates` folder with a guide template.
+Templates for a getting started guide and instructions for summarizing and describing codebases.
 
 ## Folders
-- **[templates](templates/README.md)**: The `templates` folder in the `python-backend` codebase contains a file, `getting_started_guide.py`, which provides a template for creating a detailed guide to assist users in understanding and using the codebase.
+- **[templates](templates/README.md)**: Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
 
 ## Files
-- **[chunk_description.txt](chunk_description.txt.md)**: The `chunk_description.txt` file provides guidelines for summarizing content descriptions of modules within a codebase, focusing on their purpose, business logic, and critical APIs.
-- **[compress_chunks.txt](compress_chunks.txt.md)**: The `compress_chunks.txt` file in the `python-backend` codebase is likely a template or configuration file used within the `content_services` module, specifically under the `inspector` service. This file is located in the `prompt_templates/toplevel` directory, suggesting its role in defining or managing templates for compressing data chunks at a high level within the inspection process. The main business logic associated with this file would involve the efficient handling and processing of data chunks, possibly for the purpose of optimizing storage or transmission within the system. While the file itself does not contain executable code, it likely plays a critical role in guiding how data is compressed and managed by the system's backend services.
-- **[long_from_chunk_descriptions.txt](long_from_chunk_descriptions.txt.md)**: The `long_from_chunk_descriptions.txt` file provides instructions for combining multiple detailed descriptions of software modules into a comprehensive description of the entire codebase.
-- **[long_from_long_descriptions.txt](long_from_long_descriptions.txt.md)**: The `long_from_long_descriptions.txt` file in the `python-backend` codebase provides instructions for writing a detailed description of a software codebase, focusing on its purpose, business logic, and critical APIs.
-- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for writing a single paragraph description of a software codebase by summarizing slightly overlapping descriptions of its subcomponents.
-- **[single_paragraph_from_long_descriptions.txt](single_paragraph_from_long_descriptions.txt.md)**: The `single_paragraph_from_long_descriptions.txt` file provides instructions for summarizing a software codebase into a concise paragraph using detailed descriptions of its modules.
-- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: The `single_sentence_from_chunk_descriptions.txt` file provides instructions for creating a single sentence summary of a codebase by synthesizing slightly overlapping descriptions of its subcomponents.
-- **[single_sentence_from_long_descriptions.txt](single_sentence_from_long_descriptions.txt.md)**: The `single_sentence_from_long_descriptions.txt` file outlines a process for creating a concise, single-sentence summary of a codebase by utilizing detailed descriptions of its modules.
-- **[terse_sentence_from_chunk_descriptions.txt](terse_sentence_from_chunk_descriptions.txt.md)**: The `terse_sentence_from_chunk_descriptions.txt` file provides guidance on creating concise, high-level descriptions of a codebase from overlapping subcomponent descriptions.
-- **[terse_sentence_from_long_descriptions.txt](terse_sentence_from_long_descriptions.txt.md)**: The `terse_sentence_from_long_descriptions.txt` file provides instructions for creating concise, high-level descriptions of a codebase from detailed module descriptions.
+- **[chunk_description.txt](chunk_description.txt.md)**: Instructions for summarizing module descriptions in the `python-backend` codebase.
+- **[compress_chunks.txt](compress_chunks.txt.md)**: Template for summarizing codebase contents and identifying business logic and APIs.
+- **[long_from_chunk_descriptions.txt](long_from_chunk_descriptions.txt.md)**: Instructions for writing a detailed description of a software codebase by combining module subset descriptions.
+- **[long_from_long_descriptions.txt](long_from_long_descriptions.txt.md)**: Instructions for writing detailed descriptions of a software codebase, including purpose, logic, and APIs.
+- **[single_paragraph_from_chunk_descriptions.txt](single_paragraph_from_chunk_descriptions.txt.md)**: Instructions for writing a concise paragraph summarizing a software codebase from module descriptions.
+- **[single_paragraph_from_long_descriptions.txt](single_paragraph_from_long_descriptions.txt.md)**: Instructions for writing a concise paragraph describing a software codebase using detailed module descriptions.
+- **[single_sentence_from_chunk_descriptions.txt](single_sentence_from_chunk_descriptions.txt.md)**: Instructions for writing a single sentence description of a codebase using overlapping subcomponent descriptions.
+- **[single_sentence_from_long_descriptions.txt](single_sentence_from_long_descriptions.txt.md)**: Instructions for writing a single sentence description of a codebase using detailed module descriptions.
+- **[terse_sentence_from_chunk_descriptions.txt](terse_sentence_from_chunk_descriptions.txt.md)**: A guide for writing concise descriptions of codebases based on overlapping subcomponent descriptions.
+- **[terse_sentence_from_long_descriptions.txt](terse_sentence_from_long_descriptions.txt.md)**: Generates concise descriptions for codebases from detailed module information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

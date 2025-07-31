@@ -3,20 +3,36 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to production upon pushes to the main branch, including setting up Node.js and Python environments, configuring AWS credentials, and deploying various content services using Poetry and Modal.
+GitHub Actions workflow for deploying the backend to the production environment.
 
 # Purpose
-The provided file is a GitHub Actions workflow configuration file, written in YAML, which automates the deployment process for a backend production environment. This file is triggered by a push event to the "main" branch, ensuring that the deployment process is initiated only when changes are committed to the main codebase. It defines a series of jobs that run on the latest Ubuntu environment, setting up necessary programming environments such as Node.js and Python, and installing dependencies using Poetry. The workflow configures AWS credentials for deployment and uses the AWS CDK to deploy infrastructure without requiring manual approval. Additionally, it deploys several components of the application, such as Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation, using the Modal platform. This file is crucial for maintaining a consistent and automated deployment pipeline, reducing manual intervention and potential errors in the production deployment process.
+This file is a GitHub Actions workflow configuration for deploying a backend application to a production environment. It triggers on pushes to the `main` branch and uses concurrency control to manage workflow execution. The workflow grants specific permissions, such as writing `id-token` and reading `contents`. It defines a job that runs on the `ubuntu-latest` environment and includes several steps: checking out the code, setting up Node.js and Python environments, installing dependencies with Poetry, configuring AWS credentials, and deploying various services using the AWS CDK and Modal. Each deployment step is associated with a specific service directory and uses environment variables for configuration, ensuring that deployments are consistent and secure.
 # Content Summary
-The provided file is a GitHub Actions workflow configuration designed for deploying a backend application to a production environment. The workflow is triggered by a push event to the "main" branch, ensuring that deployments occur only when changes are merged into the main codebase. 
+This configuration file is a GitHub Actions workflow for deploying a backend application to a production environment. The workflow is triggered by a push event to the "main" branch. It uses concurrency control to ensure that only one deployment runs at a time, canceling any in-progress deployments if a new one starts.
 
-Key technical details include the use of concurrency controls to manage workflow execution, with a unique group identifier based on the workflow and reference, and the ability to cancel in-progress runs to prevent overlapping deployments. The workflow grants specific permissions, allowing write access to the id-token and read access to the repository contents, which are necessary for secure operations and accessing the codebase.
+The workflow requires specific permissions, allowing write access to the id-token and read access to the contents. It defines a single job named "main" that runs on the latest Ubuntu environment and targets the production environment.
 
-The deployment process is executed on an `ubuntu-latest` runner and involves several steps. Initially, the code is checked out using the `actions/checkout@v4` action. Node.js version 20.x is set up with caching for npm dependencies, followed by the installation of project dependencies using npm and Poetry, a Python dependency manager. The workflow also configures AWS credentials using the `aws-actions/configure-aws-credentials@v4` action, assuming a specified role for deployment in the `us-east-1` region.
+The job consists of several steps:
 
-The deployment is divided into multiple jobs, each targeting different components of the application. These components include the Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation services. Each service is deployed using Poetry and the Modal platform, with environment variables and secrets managed through GitHub's secrets and variables. The deployment commands utilize the `modal deploy` command, tagging each deployment with a shortened GitHub SHA for version tracking.
+1. **Checkout Code**: Uses the `actions/checkout@v4` action to check out the repository code.
 
-Overall, this configuration automates the deployment of a complex backend system, ensuring that all necessary dependencies are installed and that each service is deployed in a consistent and secure manner.
+2. **Setup Node.js**: Configures Node.js version 20.x using `actions/setup-node@v4`, with npm caching enabled.
+
+3. **Install Node.js Dependencies**: Runs `npm ci` to install Node.js dependencies.
+
+4. **Setup Python**: Configures Python version 3.12 using `actions/setup-python@v5`.
+
+5. **Install Poetry**: Uses `snok/install-poetry@v1` to install Poetry, a Python dependency manager.
+
+6. **Install Python Dependencies**: Installs dependencies using Poetry without creating a virtual environment.
+
+7. **Configure AWS Credentials**: Uses `aws-actions/configure-aws-credentials@v4` to set up AWS credentials for the deployment, assuming a role specified by the `AWS_CICD_ROLE` variable.
+
+8. **CDK Deployment**: Deploys infrastructure using AWS CDK with the command `poetry run npx cdk deploy`, bypassing approval prompts.
+
+9. **Deploy Services**: Deploys several services (Inspector, PDF Preprocessing, Agent, Mermaid Validator, Autodocs, and Generation) using the `modal deploy` command. Each service is deployed from its respective directory under `content_services`. The deployment uses environment variables for authentication and environment configuration, including `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, and `MODAL_ENV`.
+
+Each deployment step uses Poetry to install dependencies and execute the deployment script, tagging the deployment with the first eight characters of the current Git commit SHA.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

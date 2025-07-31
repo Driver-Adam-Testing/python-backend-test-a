@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `content_service.py` file implements the `ContentService` class, which provides methods for managing and retrieving content-related data, including listing content, fetching content by ID, generating download URLs, retrieving content tags, and converting markdown to reStructuredText.
+A service for managing content operations, including retrieval, filtering, and conversion, using SQLAlchemy and FastAPI.
 
 # Purpose
-The provided Python code defines a `ContentService` class, which is part of a larger application likely dealing with content management. This class is designed to interact with a database to perform various operations related to content retrieval, filtering, sorting, and metadata management. It uses SQLAlchemy and SQLModel for database interactions, and FastAPI for handling HTTP exceptions. The class includes methods to list content, fetch content by ID, generate download URLs for content stored in AWS S3, and retrieve tags associated with content. Additionally, it provides a utility function to convert markdown content to reStructuredText using the `pypandoc` library.
+The `ContentService` class provides a set of methods for managing and retrieving content-related data from a database. It is designed to interact with content entities such as `DerivedContent`, `Node`, `Version`, and `PrimaryAsset`. The class uses SQL queries to fetch, filter, and sort content data based on various criteria, such as organization ID, search input, and content attributes. The methods include [`get_list_content`](<#contentserviceget_list_content>), which retrieves a list of content items, and [`get_content_by_id`](<#contentserviceget_content_by_id>), which fetches a specific content item by its ID. The class also provides functionality to generate presigned URLs for downloading content from AWS S3 and to convert markdown content to reStructuredText (RST) format.
 
-The `ContentService` class is a comprehensive service layer component that encapsulates the logic for querying and manipulating content-related data. It leverages a repository pattern to abstract database operations and includes detailed logging for monitoring operations. The class is designed to be used within a web application, likely as part of an API, given its use of FastAPI's HTTPException for error handling. The code also includes a utility function to generate a bucket name from an organization ID, which is used in conjunction with AWS S3 operations. Overall, this file provides a focused set of functionalities centered around content management within an organizational context, making it a critical part of a content management system or similar application.
+The code defines several private methods to build and modify SQL queries, such as [`_build_base_query`](<#contentservice_build_base_query>), [`_apply_sorting`](<#contentservice_apply_sorting>), and [`_apply_filters`](<#contentservice_apply_filters>). These methods help construct complex queries that join multiple tables and apply various conditions. The `ContentService` class also includes methods for retrieving content tags and generating organization-specific bucket names using SHA-256 hashing. The class is intended to be used within a FastAPI application, as indicated by the use of `HTTPException` for error handling and logging for tracking operations.
 # Imports and Dependencies
 
 ---
@@ -51,214 +51,237 @@ The `ContentService` class is a comprehensive service layer component that encap
 
 ---
 ### ContentService<!-- {{#class:python-backend/backend/app/services/content_service.ContentService}} -->
+[View Source →](<../../../../../backend/app/services/content_service.py#L36>)
+
 - **Members**:
-    - `session`: Holds the database session for executing queries.
-    - `content_repository`: Manages database operations for DerivedContent entities.
-    - `document_source_repository`: Handles database operations for DocumentSource entities.
-    - `node_repository`: Facilitates database operations for Node entities.
-- **Description**: The ContentService class is responsible for managing content-related operations within an organization, utilizing a database session to interact with various repositories. It provides methods to retrieve lists of content, fetch content by ID, generate download URLs, and obtain content tags. The class also includes functionality to convert markdown content to reStructuredText (rst) format. It leverages SQL queries to filter, sort, and join data from multiple tables, ensuring efficient data retrieval and manipulation.
+    - `session`: Stores the database session for executing queries.
+    - `content_repository`: Manages `DerivedContent` entities in the database.
+    - `document_source_repository`: Manages `DocumentSource` entities in the database.
+    - `node_repository`: Manages `Node` entities in the database.
+- **Description**: Manages content-related operations, including retrieving, filtering, and sorting content data from the database. It uses repositories to interact with different content-related entities and provides methods to fetch content lists, individual content by ID, download URLs, and content tags. It also includes functionality to convert markdown content to reStructuredText (rst).
 - **Methods**:
-    - [`python-backend/backend/app/services/content_service.ContentService.__init__`](<#ContentService__init__>)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_list_content`](<#ContentServiceget_list_content>)
-    - [`python-backend/backend/app/services/content_service.ContentService._get_list_content`](<#ContentService_get_list_content>)
-    - [`python-backend/backend/app/services/content_service.ContentService._build_base_query`](<#ContentService_build_base_query>)
-    - [`python-backend/backend/app/services/content_service.ContentService._apply_sorting`](<#ContentService_apply_sorting>)
-    - [`python-backend/backend/app/services/content_service.ContentService._apply_filters`](<#ContentService_apply_filters>)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_content_by_id`](<#ContentServiceget_content_by_id>)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_content_download_url`](<#ContentServiceget_content_download_url>)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_content_tags`](<#ContentServiceget_content_tags>)
-    - [`python-backend/backend/app/services/content_service.ContentService.convert_markdown_to_rst`](<#ContentServiceconvert_markdown_to_rst>)
+    - [`python-backend/backend/app/services/content_service.ContentService.__init__`](<#contentservice__init__>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_list_content`](<#contentserviceget_list_content>)
+    - [`python-backend/backend/app/services/content_service.ContentService._get_list_content`](<#contentservice_get_list_content>)
+    - [`python-backend/backend/app/services/content_service.ContentService._build_base_query`](<#contentservice_build_base_query>)
+    - [`python-backend/backend/app/services/content_service.ContentService._apply_sorting`](<#contentservice_apply_sorting>)
+    - [`python-backend/backend/app/services/content_service.ContentService._apply_filters`](<#contentservice_apply_filters>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_content_by_id`](<#contentserviceget_content_by_id>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_content_download_url`](<#contentserviceget_content_download_url>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_content_tags`](<#contentserviceget_content_tags>)
+    - [`python-backend/backend/app/services/content_service.ContentService.convert_markdown_to_rst`](<#contentserviceconvert_markdown_to_rst>)
 
 **Methods**
 
 ---
 #### ContentService\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService.__init__}} -->
-The `__init__` method initializes a `ContentService` instance by setting up repositories for content, document sources, and nodes using a provided database session.
+[View Source →](<../../../../../backend/app/services/content_service.py#L37>)
+
+Initializes the `ContentService` class with a session and sets up repositories for content, document sources, and nodes.
 - **Inputs**:
-    - `self`: Refers to the instance of the `ContentService` class being initialized.
-    - `session`: A `Session` object used for database operations, which is passed to the repositories for managing database interactions.
-- **Control Flow**:
-    - Assigns the provided `session` to the instance variable `self.session`.
-    - Initializes `self.content_repository` with a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `DerivedContent` using the provided `session`.
-    - Initializes `self.document_source_repository` with a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `DocumentSource` using the provided `session`.
-    - Initializes `self.node_repository` with a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `Node` using the provided `session`.
-- **Output**: This method does not return any value; it initializes the instance variables for the `ContentService` object.
+    - `self`: The instance of the `ContentService` class being initialized.
+    - `session`: A `Session` object used for database operations.
+- **Logic and Control Flow**:
+    - Assigns the `session` parameter to the `self.session` attribute.
+    - Creates a [`BaseRepository`](<../repositories/base_repository.py.md#baserepository>) for `DerivedContent` and assigns it to `self.content_repository`.
+    - Creates a [`BaseRepository`](<../repositories/base_repository.py.md#baserepository>) for `DocumentSource` and assigns it to `self.document_source_repository`.
+    - Creates a [`BaseRepository`](<../repositories/base_repository.py.md#baserepository>) for `Node` and assigns it to `self.node_repository`.
+- **Output**: No output, as this is a constructor method.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>)
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<../repositories/base_repository.py.md#baserepository>)
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.get\_list\_content<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService.get_list_content}} -->
-The `get_list_content` method retrieves a list of content for a specified organization based on search criteria and returns the results along with pagination details.
+[View Source →](<../../../../../backend/app/services/content_service.py#L43>)
+
+Retrieves a list of content for a specified organization based on search criteria and returns the results with pagination details.
 - **Inputs**:
-    - `self`: Refers to the instance of the ContentService class.
-    - `organization_id`: A string representing the unique identifier of the organization for which content is being retrieved.
-    - `search_input`: An instance of ListContentInput containing search criteria such as filters, sorting, and pagination options.
-- **Control Flow**:
+    - `self`: The instance of the `ContentService` class.
+    - `organization_id`: A string representing the unique identifier of the organization for which to retrieve content.
+    - `search_input`: An instance of `ListContentInput` containing search criteria such as offset, limit, and filters for the content retrieval.
+- **Logic and Control Flow**:
     - Logs the start of the content retrieval process for the specified organization and search input.
-    - Attempts to retrieve content and total count using the private method [`_get_list_content`](<#ContentService_get_list_content>).
-    - Catches a `ValueError` exception, logs the error, and raises an HTTP 400 Bad Request exception if an error occurs during content retrieval.
+    - Attempts to retrieve content and total count by calling the [`_get_list_content`](<#contentservice_get_list_content>) method with the organization ID and search input.
+    - Catches `ValueError` exceptions, logs the error, and raises an `HTTPException` with a 400 status code if an error occurs during content retrieval.
     - Initializes an empty list `content_results` to store the formatted content results.
-    - Iterates over the retrieved `results`, creating [`ListContentResult`](<../schemas/content_schema.py.md#ListContentResult>) objects for each derived content and appending them to `content_results`.
+    - Iterates over the retrieved `results` and appends each `DerivedContent` object to `content_results` as a [`ListContentResult`](<../schemas/content_schema.py.md#listcontentresult>) with various attributes set.
     - Logs the successful retrieval of the content list for the organization.
-    - Returns a [`ListContentResults`](<../schemas/content_schema.py.md#ListContentResults>) object containing the list of content results, along with pagination details such as offset, limit, and total count.
-- **Output**: Returns a [`ListContentResults`](<../schemas/content_schema.py.md#ListContentResults>) object containing the list of content results and pagination details (offset, limit, and total count).
+    - Returns a [`ListContentResults`](<../schemas/content_schema.py.md#listcontentresults>) object containing the list of content results, offset, limit, and total count.
+- **Output**: Returns a [`ListContentResults`](<../schemas/content_schema.py.md#listcontentresults>) object containing the list of content results, offset, limit, and total count.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/content_service.ContentService._get_list_content`](<#ContentService_get_list_content>)
-    - [`python-backend/backend/app/schemas/content_schema.ListContentResult`](<../schemas/content_schema.py.md#ListContentResult>)
-    - [`python-backend/backend/app/schemas/content_schema.ListContentResults`](<../schemas/content_schema.py.md#ListContentResults>)
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - [`python-backend/backend/app/services/content_service.ContentService._get_list_content`](<#contentservice_get_list_content>)
+    - [`python-backend/backend/app/schemas/content_schema.ListContentResult`](<../schemas/content_schema.py.md#listcontentresult>)
+    - [`python-backend/backend/app/schemas/content_schema.ListContentResults`](<../schemas/content_schema.py.md#listcontentresults>)
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.\_get\_list\_content<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService._get_list_content}} -->
-The `_get_list_content` method retrieves a list of `DerivedContent` objects and their total count from the database, applying filters, sorting, and pagination based on the provided search input.
+[View Source →](<../../../../../backend/app/services/content_service.py#L91>)
+
+Fetches a list of derived content and the total count from the database based on the given organization ID and search input.
 - **Inputs**:
-    - `self`: An instance of the `ContentService` class.
-    - `organization_id`: A string representing the ID of the organization for which content is being retrieved.
-    - `search_input`: An instance of `ListContentInput` containing search parameters such as filters, sorting options, and pagination details.
-- **Control Flow**:
-    - Builds a base SQL query using [`_build_base_query`](<#ContentService_build_base_query>) with the provided `organization_id`.
-    - Applies filters to the query using [`_apply_filters`](<#ContentService_apply_filters>) based on the `search_input` parameters.
-    - Executes a subquery to count the total number of results that match the filters using `select(func.count()).select_from(query.subquery())`.
-    - Applies sorting to the query using [`_apply_sorting`](<#ContentService_apply_sorting>) based on the `search_input` parameters.
-    - Configures the query to pre-fetch related `DerivedContent.node` entities using `selectinload` to optimize attribute access.
-    - Executes the final query with pagination (offset and limit) to retrieve the list of `DerivedContent` objects.
-    - Returns the list of `DerivedContent` objects and the total count as a tuple.
-- **Output**: A tuple containing a list of `DerivedContent` objects and an integer representing the total count of matching content.
+    - `self`: The instance of the `ContentService` class.
+    - `organization_id`: A string representing the ID of the organization for which to fetch content.
+    - `search_input`: An instance of `ListContentInput` containing search parameters such as filters, sorting, and pagination options.
+- **Logic and Control Flow**:
+    - Builds a base query using [`_build_base_query`](<#contentservice_build_base_query>) with the given `organization_id`.
+    - Applies filters to the query using [`_apply_filters`](<#contentservice_apply_filters>) based on the `search_input`.
+    - Executes a count query to determine the total number of results matching the filters.
+    - Applies sorting to the query using [`_apply_sorting`](<#contentservice_apply_sorting>) based on the `search_input`.
+    - Configures the query to pre-fetch related entities using `selectinload` to optimize attribute access.
+    - Executes the query with pagination using `offset` and `limit` from `search_input` to fetch the results.
+    - Returns a tuple containing the list of `DerivedContent` objects and the total count of matching records.
+- **Output**: A tuple containing a list of `DerivedContent` objects and an integer representing the total count of matching records.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/content_service.ContentService._build_base_query`](<#ContentService_build_base_query>)
-    - [`python-backend/backend/app/services/content_service.ContentService._apply_filters`](<#ContentService_apply_filters>)
-    - [`python-backend/backend/app/services/content_service.ContentService._apply_sorting`](<#ContentService_apply_sorting>)
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - [`python-backend/backend/app/services/content_service.ContentService._build_base_query`](<#contentservice_build_base_query>)
+    - [`python-backend/backend/app/services/content_service.ContentService._apply_filters`](<#contentservice_apply_filters>)
+    - [`python-backend/backend/app/services/content_service.ContentService._apply_sorting`](<#contentservice_apply_sorting>)
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.\_build\_base\_query<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService._build_base_query}} -->
-The `_build_base_query` method constructs a foundational SQL query to retrieve content-related data from multiple tables, filtered by a specific organization ID.
+[View Source →](<../../../../../backend/app/services/content_service.py#L113>)
+
+Constructs a base SQL query to retrieve content-related data from the database for a specific organization.
 - **Inputs**:
-    - `self`: Refers to the instance of the `ContentService` class.
-    - `organization_id`: A string representing the ID of the organization to filter the query results by.
-- **Control Flow**:
-    - The method begins by selecting data from the `DerivedContent` table.
-    - It performs a series of joins: first with the `Node` table, then with the `Version` table, and finally with the `PrimaryAsset` table.
-    - The query is filtered to include only those entries where the `organization_id` in the `PrimaryAsset` table matches the provided `organization_id` parameter.
-- **Output**: The method returns a `Select` object representing the constructed SQL query.
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - `organization_id`: A string representing the ID of the organization for which to retrieve content-related data.
+- **Logic and Control Flow**:
+    - Selects data from the `DerivedContent` table.
+    - Joins the `Node`, `Version`, and `PrimaryAsset` tables to the `DerivedContent` table.
+    - Applies a filter to include only entries where the `organization_id` in `PrimaryAsset` matches the provided `organization_id`.
+- **Output**: A `Select` object representing the constructed SQL query.
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.\_apply\_sorting<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService._apply_sorting}} -->
-The `_apply_sorting` method applies sorting to a SQLAlchemy `Select` statement based on the specified sort field and direction from the `search_input`.
+[View Source →](<../../../../../backend/app/services/content_service.py#L140>)
+
+Applies sorting to a SQLAlchemy `Select` statement based on user input.
 - **Inputs**:
     - `self`: An instance of the `ContentService` class.
-    - `statement`: A SQLAlchemy `Select` statement that represents the current query to be modified.
+    - `statement`: A SQLAlchemy `Select` statement to which sorting will be applied.
     - `search_input`: An instance of `ListContentInput` containing sorting criteria such as `sort_by` and `sort_direction`.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Check if `search_input.sort_by` is provided.
-    - Verify if the `sort_by` field exists in the model associated with `content_repository`; raise `ValueError` if not.
-    - Construct the field name using the model's table name and the `sort_by` field.
-    - Check the `sort_direction` in `search_input` and apply the appropriate sorting using `asc` or `desc` functions.
-    - Raise `ValueError` if the `sort_direction` is neither 'ASC' nor 'DESC'.
-- **Output**: Returns the modified `Select` statement with the applied sorting.
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - Verify if the `sort_by` attribute exists in the model of `self.content_repository`.
+    - Raise a `ValueError` if the `sort_by` attribute does not exist in the model.
+    - Construct the `field_name` using the model's table name and the `sort_by` attribute.
+    - Check the `sort_direction` in `search_input` and apply ascending or descending order to the `statement` using `asc` or `desc` functions.
+    - Raise a `ValueError` if the `sort_direction` is not 'ASC' or 'DESC'.
+- **Output**: A SQLAlchemy `Select` statement with the applied sorting.
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.\_apply\_filters<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService._apply_filters}} -->
-The `_apply_filters` method applies various filtering criteria to a SQLAlchemy `Select` statement based on the attributes of a `ListContentInput` object.
+[View Source →](<../../../../../backend/app/services/content_service.py#L164>)
+
+Applies various filters to a SQL `Select` statement based on the provided `ListContentInput`.
 - **Inputs**:
-    - `self`: Refers to the instance of the `ContentService` class.
-    - `statement`: A SQLAlchemy `Select` object representing the initial query to which filters will be applied.
-    - `search_input`: An instance of `ListContentInput` containing the filtering criteria such as text, order, status, version_id, content_type_name, tags, and tag_ids.
-- **Control Flow**:
-    - Check if `search_input.text` is provided and apply a filter to match `Node.relative_path` or `PrimaryAsset.display_name` with the text using `icontains`.
-    - Check if `search_input.order` is provided and apply a filter to match `DerivedContent.order`.
-    - Check if `search_input.status` is provided, validate it against `Enum_Derived_Content_Status`, and apply a filter to match `Version.status`. If the status is invalid, log an error and raise an `HTTPException`.
-    - Check if `search_input.version_id` is provided and apply a filter to match `Version.id`.
-    - Check if `search_input.content_type_name` is provided, log the filtering action, and apply a filter to match `DerivedContent.content_kind`.
-    - Check if `search_input.tags` or `search_input.tag_ids` are provided, join `PrimaryAssetTag` and `Tag` tables if necessary, and apply filters to match `Tag.name` or `Tag.id` respectively.
-- **Output**: Returns a modified SQLAlchemy `Select` object with the applied filters.
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - `self`: The instance of the `ContentService` class.
+    - `statement`: A SQL `Select` statement to which filters will be applied.
+    - `search_input`: An instance of `ListContentInput` containing filter criteria.
+- **Logic and Control Flow**:
+    - Checks if `search_input.text` is provided and applies a filter to match `Node.relative_path` or `PrimaryAsset.display_name` with the text.
+    - Checks if `search_input.order` is provided and applies a filter to match `DerivedContent.order`.
+    - Validates `search_input.status` against `Enum_Derived_Content_Status` and applies a filter to match `Version.status` if valid, otherwise raises an `HTTPException`.
+    - Checks if `search_input.version_id` is provided and applies a filter to match `Version.id`.
+    - Checks if `search_input.content_type_name` is provided and applies a filter to match `DerivedContent.content_kind`.
+    - Checks if `search_input.tags` or `search_input.tag_ids` are provided, joins `PrimaryAssetTag` and `Tag` tables if necessary, and applies filters to match `Tag.name` or `Tag.id`.
+- **Output**: A modified SQL `Select` statement with the applied filters.
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.get\_content\_by\_id<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService.get_content_by_id}} -->
-The `get_content_by_id` method retrieves a specific content item by its ID and verifies its association with a given organization ID.
+[View Source →](<../../../../../backend/app/services/content_service.py#L225>)
+
+Fetches content by its ID and verifies its association with a given organization.
 - **Inputs**:
-    - `self`: Refers to the instance of the ContentService class.
-    - `content_id`: A UUID representing the unique identifier of the content to be retrieved.
-    - `organization_id`: A string representing the unique identifier of the organization to which the content should belong.
-- **Control Flow**:
-    - Logs an informational message indicating the start of the content fetching process by ID.
-    - Attempts to retrieve the content from the content repository using the provided content_id.
-    - Checks if the retrieved content is None or if its associated organization ID does not match the provided organization_id.
-    - If the content is not found or the organization ID does not match, logs an error message and raises an HTTPException with a 404 status code indicating 'Content not found'.
-    - If the content is found and the organization ID matches, returns the content.
-- **Output**: Returns a DerivedContent object if the content is found and belongs to the specified organization; otherwise, raises an HTTPException with a 404 status code.
+    - `self`: The instance of the `ContentService` class.
+    - `content_id`: The unique identifier of the content to fetch.
+    - `organization_id`: The identifier of the organization to verify against the content's organization.
+- **Logic and Control Flow**:
+    - Logs the action of fetching content by ID.
+    - Retrieves the content from the `content_repository` using the `content_id`.
+    - Checks if the content exists and if its `organization_id` matches the provided `organization_id`.
+    - Logs an error and raises an `HTTPException` with a 404 status if the content is not found or the organization ID does not match.
+    - Returns the content if it is found and the organization ID matches.
+- **Output**: A `DerivedContent` object if the content is found and the organization ID matches; otherwise, raises an `HTTPException`.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../repositories/base_repository.py.md#BaseRepositoryget>)
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../repositories/base_repository.py.md#baserepositoryget>)
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.get\_content\_download\_url<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService.get_content_download_url}} -->
-The `get_content_download_url` method retrieves a presigned URL for downloading content from S3 based on a given node ID and organization ID.
+[View Source →](<../../../../../backend/app/services/content_service.py#L242>)
+
+Generates a presigned URL for downloading content from S3 based on the given node and organization IDs.
 - **Inputs**:
-    - `node_id`: A UUID representing the unique identifier of the content node to be downloaded.
-    - `organization_id`: A string representing the unique identifier of the organization to which the content belongs.
-- **Control Flow**:
+    - `node_id`: A UUID representing the unique identifier of the content node.
+    - `organization_id`: A string representing the unique identifier of the organization.
+- **Logic and Control Flow**:
     - Logs the attempt to fetch content by the given node ID.
-    - Retrieves the node from the repository using the node ID and organization ID as conditions.
-    - Checks if the node exists and if its organization ID matches the provided organization ID; if not, logs an error and raises an HTTP 404 exception.
-    - Constructs a download key using the node's version and relative path information.
+    - Retrieves the node from the repository using the node ID and organization ID conditions.
+    - Checks if the node exists and if its organization ID matches the provided organization ID.
+    - If the node does not exist or the organization ID does not match, logs an error and raises an HTTP 404 exception.
+    - Constructs a download key using the node's version and primary asset information.
     - Logs the constructed download key.
     - Attempts to check if the object exists in the organization's S3 bucket using the download key.
-    - If the object exists, generates a presigned URL for downloading the content and returns a [`DownloadContentResponse`](<../schemas/content_schema.py.md#DownloadContentResponse>) with the URL, content name, and status.
-    - If a `ClientError` occurs, logs the exception and raises an HTTP 404 exception indicating the content is not found or not downloadable.
-- **Output**: Returns a [`DownloadContentResponse`](<../schemas/content_schema.py.md#DownloadContentResponse>) object containing the presigned download URL, content name, and status if successful; otherwise, raises an HTTP 404 exception if the content is not found or not downloadable.
+    - If the object exists, generates a presigned URL for downloading the content and returns a [`DownloadContentResponse`](<../schemas/content_schema.py.md#downloadcontentresponse>) with the URL, content name, and status.
+    - If a `ClientError` occurs, logs the exception and raises an HTTP 404 exception.
+- **Output**: Returns a [`DownloadContentResponse`](<../schemas/content_schema.py.md#downloadcontentresponse>) object containing the presigned download URL, content name, and status.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#BaseRepositoryget_by_conditions>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#baserepositoryget_by_conditions>)
     - [`python-backend/backend/app/utils/aws_s3.head_org_object`](<../utils/aws_s3.py.md#head_org_object>)
-    - [`python-backend/backend/app/schemas/content_schema.DownloadContentResponse`](<../schemas/content_schema.py.md#DownloadContentResponse>)
+    - [`python-backend/backend/app/schemas/content_schema.DownloadContentResponse`](<../schemas/content_schema.py.md#downloadcontentresponse>)
     - [`python-backend/backend/app/utils/aws_s3.generate_org_get_presigned_url`](<../utils/aws_s3.py.md#generate_org_get_presigned_url>)
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.get\_content\_tags<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService.get_content_tags}} -->
-The `get_content_tags` method retrieves and returns the tags associated with a specific content item for a given organization.
+[View Source →](<../../../../../backend/app/services/content_service.py#L286>)
+
+Fetches and returns tags associated with a specific content item for a given organization.
 - **Inputs**:
-    - `self`: Refers to the instance of the ContentService class.
-    - `content_id`: A UUID representing the unique identifier of the content whose tags are to be fetched.
-    - `organization_id`: A string representing the unique identifier of the organization to which the content belongs.
-- **Control Flow**:
-    - Logs an informational message indicating the start of the tag fetching process for the specified content ID.
-    - Executes a SQL query to select the PrimaryAsset associated with the given content ID and organization ID, including pre-loading of related tags.
-    - Checks if the primary asset is found; if not, logs an error and raises an HTTP 404 exception indicating the primary asset is not found.
-    - Iterates over the tags of the primary asset to create a list of TagResult objects, each containing details of a tag.
-    - Logs an informational message indicating successful retrieval of tags.
-    - Returns a ContentTagsResponse object containing the list of TagResult objects.
-- **Output**: Returns a ContentTagsResponse object containing a list of TagResult objects, each representing a tag associated with the specified content.
+    - `self`: The instance of the `ContentService` class.
+    - `content_id`: The unique identifier (UUID) of the content for which to fetch tags.
+    - `organization_id`: The identifier of the organization to which the content belongs.
+- **Logic and Control Flow**:
+    - Logs the start of the tag fetching process for the specified content ID.
+    - Executes a database query to select the `PrimaryAsset` associated with the given `content_id` and `organization_id`, including its tags.
+    - Checks if the `primary_asset` is found; if not, logs an error and raises an `HTTPException` with a 404 status code indicating the primary asset is not found.
+    - Iterates over the tags of the `primary_asset` to create a list of [`TagResult`](<../schemas/content_schema.py.md#tagresult>) objects, each containing tag details such as ID, name, color, and timestamps.
+    - Logs the successful retrieval of tags for the specified content ID.
+    - Returns a [`ContentTagsResponse`](<../schemas/content_schema.py.md#contenttagsresponse>) object containing the list of [`TagResult`](<../schemas/content_schema.py.md#tagresult>) objects.
+- **Output**: A [`ContentTagsResponse`](<../schemas/content_schema.py.md#contenttagsresponse>) object containing a list of [`TagResult`](<../schemas/content_schema.py.md#tagresult>) objects, each representing a tag associated with the specified content.
 - **Functions Called**:
-    - [`python-backend/backend/app/schemas/content_schema.TagResult`](<../schemas/content_schema.py.md#TagResult>)
-    - [`python-backend/backend/app/schemas/content_schema.ContentTagsResponse`](<../schemas/content_schema.py.md#ContentTagsResponse>)
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - [`python-backend/backend/app/schemas/content_schema.TagResult`](<../schemas/content_schema.py.md#tagresult>)
+    - [`python-backend/backend/app/schemas/content_schema.ContentTagsResponse`](<../schemas/content_schema.py.md#contenttagsresponse>)
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 ---
 #### ContentService\.convert\_markdown\_to\_rst<!-- {{#callable:python-backend/backend/app/services/content_service.ContentService.convert_markdown_to_rst}} -->
-The `convert_markdown_to_rst` method converts a given markdown string to reStructuredText (rst) format using the pypandoc library.
+[View Source →](<../../../../../backend/app/services/content_service.py#L325>)
+
+Converts Markdown content to reStructuredText (reST) format.
 - **Inputs**:
-    - `content`: A string containing markdown content that needs to be converted to reStructuredText format.
-- **Control Flow**:
-    - Logs the start of the conversion process using the logger.
-    - Attempts to convert the markdown content to rst using the `pypandoc.convert_text` function.
-    - If the conversion is successful, it returns the converted rst content.
-    - If a `RuntimeError` occurs during conversion, it raises an `HTTPException` with a 500 status code indicating a conversion error.
-- **Output**: A string containing the converted content in reStructuredText format, or raises an HTTPException if conversion fails.
-- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#ContentService>)  (Base Class)
+    - `content`: A string containing the Markdown content to convert.
+- **Logic and Control Flow**:
+    - Logs the start of the conversion process.
+    - Attempts to convert the Markdown content to reST using `pypandoc.convert_text`.
+    - If the conversion is successful, returns the converted reST content.
+    - If a `RuntimeError` occurs during conversion, raises an `HTTPException` with a 500 status code and a 'Conversion error' message.
+- **Output**: A string containing the converted reST content.
+- **See also**: [`python-backend/backend/app/services/content_service.ContentService`](<#contentservice>)  (Base Class)
 
 
 
@@ -266,15 +289,17 @@ The `convert_markdown_to_rst` method converts a given markdown string to reStruc
 
 ---
 ### organization\_bucket\_from\_organization\_id<!-- {{#callable:python-backend/backend/app/services/content_service.organization_bucket_from_organization_id}} -->
-Generate a unique organization bucket name using a SHA-256 hash of the organization ID.
+[View Source →](<../../../../../backend/app/services/content_service.py#L334>)
+
+Generates a unique bucket name for an organization using its ID.
 - **Inputs**:
     - `organization_id`: A string representing the unique identifier of the organization.
-- **Control Flow**:
-    - The function encodes the input organization_id as a byte string.
-    - It computes the SHA-256 hash of the encoded organization_id.
-    - The resulting hash is converted to a hexadecimal string representation.
-    - The function returns the first 63 characters of the hexadecimal hash string.
-- **Output**: A string representing the first 63 characters of the SHA-256 hash of the organization ID, used as a unique bucket name.
+- **Logic and Control Flow**:
+    - Encodes the `organization_id` as a byte string.
+    - Computes the SHA-256 hash of the encoded `organization_id`.
+    - Converts the hash to a hexadecimal string representation.
+    - Truncates the hexadecimal string to a maximum of 63 characters.
+- **Output**: A string representing the truncated SHA-256 hash of the `organization_id`, used as a bucket name.
 
 
 

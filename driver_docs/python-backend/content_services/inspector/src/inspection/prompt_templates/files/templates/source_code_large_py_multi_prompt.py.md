@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_py_multi_prompt.py` file defines a template for generating structured prompts related to Python source code, including sections for purpose, imports, global variables, classes, and functions.
+Defines a template for generating multi-prompt text for large Python source code analysis.
 
 # Purpose
-This Python code defines a structured template for generating multi-prompt text specifically tailored for analyzing and documenting the purpose and structure of large Python source code files. The file is organized around a series of tuples, each representing a different aspect of the code analysis, such as purpose, imports and dependencies, global variables, classes, and functions. Each tuple contains a specific template identifier, a descriptive comment, and a series of components or functions that are used to extract and format the relevant information. The code leverages various utility modules and classes, such as `Component`, `Prompt`, and collections for Python classes, functions, and variables, to facilitate the extraction and organization of code elements.
+The code is a configuration for a multi-prompt template system in Python. It defines a structured approach to generate prompts for analyzing and documenting Python source code. The template is organized into several components, each responsible for extracting and processing different aspects of the source code, such as imports, global variables, classes, and functions. The code uses a combination of static analysis and language model processing to collect and format this information.
 
-The primary purpose of this file is to provide a comprehensive framework for analyzing Python code and generating structured documentation. It is designed to be part of a larger system, likely a documentation or code analysis tool, where it can be imported and used to automate the process of understanding and documenting codebases. The file does not define public APIs or external interfaces directly but rather serves as a backend component that supports the generation of detailed and organized code documentation. The use of static analysis and language model (LLM) components suggests an integration of automated code analysis techniques to enhance the accuracy and depth of the generated documentation.
+The main components include `Prompt` and `Component` classes, which are used to build and format the prompts. The code imports various utilities and collections from different modules, such as `PyClassCollection`, `PyFnCollection`, and `PyVariableCollection`, to handle specific elements of the source code. The template is designed to be flexible and extendable, allowing for the integration of different instructions and processing methods to generate comprehensive documentation for Python code.
 # Imports and Dependencies
 
 ---
@@ -36,8 +36,8 @@ The primary purpose of this file is to provide a comprehensive framework for ana
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_PY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY` is a list of tuples, each containing structured data for generating prompts related to different aspects of Python source code analysis. Each tuple includes a type identifier, a description, and various components or functions that are used to construct or process the prompts.
-- **Use**: This variable is used to define a template for generating multi-part prompts that facilitate the analysis and documentation of Python source code, including its purpose, imports, global variables, classes, and functions.
+- **Description**: Contains a list of tuples, each representing a different section of a structured prompt template. Each tuple includes a section identifier, a description, and a series of components or functions that define the content or processing logic for that section.
+- **Use**: Used to define and organize different sections of a structured prompt template for code analysis and generation.
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `codebase_folder_summary_tool.py` file defines the `CodebaseFolderSummaryTool` class, which is designed to summarize the content of a codebase folder at a specified directory path by querying a database for relevant descriptions.
+A tool to summarize the content of a codebase folder at a specified directory path.
 
 # Purpose
-The provided Python code defines a class `CodebaseFolderSummaryTool`, which is a specialized tool designed to summarize the content of a codebase folder at a specified directory path. This class inherits from `ToolStrict`, indicating that it is part of a framework or system that enforces strict tool behavior. The primary functionality of this tool is to interact with a database to retrieve and summarize long descriptions of codebase content, specifically targeting folders or codebases that serve as the root of a project. The tool is intended to be used when there is no prior search history available, providing a summarized context of the codebase.
+The `CodebaseFolderSummaryTool` class is a specialized tool designed to summarize the content of a codebase folder at a specified directory path. It extends the `ToolStrict` class and is intended for use when a summarized context of a whole folder or codebase is needed, particularly when the folder is the root of the codebase. The tool is useful in scenarios where the assistant's history does not include searches, making it suitable for codebase analysis. The primary attribute of this class is `codebase_directory_path`, which stores the path to the directory that needs summarization.
 
-The [`execute`](<#CodebaseFolderSummaryToolexecute>) method is the core component of this class, where it establishes a session with the database to perform a query that joins `DerivedContent` and `Node` models. It filters the results based on specific content kinds, such as `LONG_DESCRIPTION` and `TOP_LEVEL_LONG_DESCRIPTION`. The method then formats the retrieved content into XML-like strings and creates `SearchResult` objects, which are aggregated into `SearchResults` and added to an `AgentBase` instance. This tool is part of a larger system, as indicated by its integration with shared components like `AgentBase` and `SearchResults`, and it is designed to be used programmatically rather than as a standalone script.
+The [`execute`](<#codebasefoldersummarytoolexecute>) method is the core function of the `CodebaseFolderSummaryTool`. It interacts with a database to retrieve content descriptions associated with the specified directory path. The method uses SQL queries to select `DerivedContent` entries that match specific content kinds, such as `LONG_DESCRIPTION` or `TOP_LEVEL_LONG_DESCRIPTION`. If no matching content is found, it returns a message indicating that no content was found for the given path. Otherwise, it formats the results into XML-like strings and creates `SearchResult` objects, which are then added to the agent's search results. The class also includes a [`system_prompt`](<#codebasefoldersummarytoolsystem_prompt>) class method that provides guidance on when to use the tool, specifically suggesting its use on the first iteration if top or second-level codebase folders are present in the searchable paths.
 # Imports and Dependencies
 
 ---
@@ -27,52 +27,59 @@ The [`execute`](<#CodebaseFolderSummaryToolexecute>) method is the core componen
 
 ---
 ### CodebaseFolderSummaryTool<!-- {{#class:python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool}} -->
+[View Source →](<../../../../../../../packages/shared/shared/agent/tools/codebase_folder_summary_tool.py#L11>)
+
 - **Members**:
     - `codebase_directory_path`: The path to the directory.
-- **Description**: The CodebaseFolderSummaryTool class is designed to provide a summary of the contents of a codebase folder located at a specified directory path. It is particularly useful for gaining a summarized context of an entire folder or codebase, especially when the folder serves as the root of the codebase. The class includes functionality to execute a search for long descriptions within the codebase and return formatted results, which can be added to an agent's search results. This tool is intended to be used when the assistant's history does not include previous searches, making it a valuable resource for initial codebase exploration.
+- **Description**: Summarizes the content of a codebase folder at a specified directory path, providing context for the entire folder or codebase if it is the root. It is used when assistant history lacks searches, particularly for codebases.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool.execute`](<#CodebaseFolderSummaryToolexecute>)
-    - [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool.system_prompt`](<#CodebaseFolderSummaryToolsystem_prompt>)
+    - [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool.execute`](<#codebasefoldersummarytoolexecute>)
+    - [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool.system_prompt`](<#codebasefoldersummarytoolsystem_prompt>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](<tool_strict.py.md#ToolStrict>)
+    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict`](<tool_strict.py.md#toolstrict>)
 
 **Methods**
 
 ---
 #### CodebaseFolderSummaryTool\.execute<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool.execute}} -->
-The `execute` method retrieves and formats long description content from a codebase directory and adds the results to an agent.
+[View Source →](<../../../../../../../packages/shared/shared/agent/tools/codebase_folder_summary_tool.py#L24>)
+
+Executes a query to retrieve and format long description content from a codebase directory and adds the results to an agent.
 - **Inputs**:
-    - `agent`: An instance of AgentBase, which provides the scope and receives the search results.
-- **Control Flow**:
-    - The method begins by creating a child data scope for the agent using the codebase directory path.
-    - A database session is initiated using `get_session()`.
-    - A SQL query is constructed to select `DerivedContent` joined with `Node` where the node ID matches the first node ID in the scope and the content kind is either `LONG_DESCRIPTION` or `TOP_LEVEL_LONG_DESCRIPTION`.
-    - The query is executed to fetch all matching rows of derived content.
-    - If no derived content is found, a message indicating no content is returned.
-    - For each derived content found, a formatted result string is created and added to a list of formatted results.
-    - A [`SearchResult`](<../../interfaces/search.py.md#SearchResult>) object is created for each derived content and added to a list of search results.
-    - The aggregated search results are added to the agent using [`add_search_results`](<../agent_base.py.md#AgentBaseadd_search_results>).
-    - Finally, the method returns a string of joined formatted results.
-- **Output**: A string containing formatted results of long description content, or a message indicating no content was found.
+    - `agent`: An instance of `AgentBase` that provides the scope and receives the search results.
+- **Logic and Control Flow**:
+    - Creates a child data scope from the agent's scope using the codebase directory path.
+    - Opens a database session using `get_session()`.
+    - Constructs a SQL query to select `DerivedContent` joined with `Node` where the node ID matches the first node ID in the scope and the content kind is either `LONG_DESCRIPTION` or `TOP_LEVEL_LONG_DESCRIPTION`.
+    - Executes the query and retrieves all matching rows as `derived_contents`.
+    - Checks if `derived_contents` is empty and returns a 'not found' message if true.
+    - Initializes empty lists for `search_results` and `formatted_results`.
+    - Iterates over each `content` in `derived_contents`, formats the content into a result string, and appends it to `formatted_results`.
+    - Creates a [`SearchResult`](<../../interfaces/search.py.md#searchresult>) object for each content and appends it to `search_results`.
+    - Adds the aggregated `search_results` to the agent using [`add_search_results`](<../agent_base.py.md#agentbaseadd_search_results>).
+    - Returns the joined `formatted_results` as a string.
+- **Output**: A string containing formatted results of long description content from the codebase directory.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<../../interfaces/agents/data_scope.py.md#DataScopeto_child_datascope>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<../../interfaces/agents/data_scope.py.md#datascopeto_child_datascope>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../../interfaces/search.py.md#SearchResult>)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](<../agent_base.py.md#AgentBaseadd_search_results>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../../interfaces/search.py.md#SearchResults>)
-- **See also**: [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool`](<#CodebaseFolderSummaryTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../../interfaces/search.py.md#searchresult>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](<../agent_base.py.md#agentbaseadd_search_results>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../../interfaces/search.py.md#searchresults>)
+- **See also**: [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool`](<#codebasefoldersummarytool>)  (Base Class)
 
 
 ---
 #### CodebaseFolderSummaryTool\.system\_prompt<!-- {{#callable:python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool.system_prompt}} -->
-The `system_prompt` class method provides a guideline for using the `CodebaseFolderSummaryTool` when top or second level codebase folders are present in searchable paths.
+[View Source →](<../../../../../../../packages/shared/shared/agent/tools/codebase_folder_summary_tool.py#L82>)
+
+Provides a system prompt for using the `CodebaseFolderSummaryTool` on the first iteration if top or second level codebase folders exist in the searchable paths.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, which means it is called on the class itself rather than an instance of the class.
-    - The method returns a static string that serves as a prompt or guideline for using the `CodebaseFolderSummaryTool`.
-- **Output**: A string that instructs to use `CodebaseFolderSummaryTool` on the first iteration if there are top or second level codebase folders in the searchable paths.
-- **See also**: [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool`](<#CodebaseFolderSummaryTool>)  (Base Class)
+- **Inputs**:
+    - `cls`: Represents the class itself, `CodebaseFolderSummaryTool`, and is used to call the class method.
+- **Logic and Control Flow**:
+    - Returns a predefined string that instructs to use `CodebaseFolderSummaryTool` on the first iteration if there are top or second level codebase folders in the searchable paths.
+- **Output**: A string containing the system prompt message.
+- **See also**: [`python-backend/packages/shared/shared/agent/tools/codebase_folder_summary_tool.CodebaseFolderSummaryTool`](<#codebasefoldersummarytool>)  (Base Class)
 
 
 

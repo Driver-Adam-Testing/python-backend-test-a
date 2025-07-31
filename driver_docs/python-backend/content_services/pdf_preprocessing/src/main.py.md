@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.py` file in the `python-backend` codebase is responsible for processing PDF files by downloading, sanitizing, embedding summaries, and persisting the results to a database, while also handling exceptions by sending notification emails.
+Implements PDF preprocessing and embedding functions, including exception handling and database persistence.
 
 # Purpose
-This Python code is designed to function as a backend service for processing PDF files, specifically for creating and embedding summaries of these files. It leverages the Modal framework to define and manage functions that are executed in a cloud environment. The code is structured around two main functions: [`send_exception_email`](<#send_exception_email>) and [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>). The [`send_exception_email`](<#send_exception_email>) function is responsible for sending email notifications using the SendGrid API when exceptions occur, ensuring that errors are promptly communicated. The [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>) function is the core of the service, handling the downloading, sanitizing, processing, and embedding of PDF content. It utilizes AWS S3 for file storage and retrieval, processes the PDF content to generate embeddings, and persists the results to a database using SQLAlchemy.
+The code defines a Modal application for processing PDF files, specifically for creating and embedding summaries. It uses the `modal` library to configure and deploy functions in a cloud environment. The application is configured with a custom Docker image and various secrets for accessing external services. The primary function, [`create_and_embed_pdf_summaries`](<#create_and_embed_pdf_summaries>), downloads a PDF from a presigned URL, sanitizes it using Ghostscript, and uploads both sanitized and unsanitized versions to an S3 bucket. It then processes the PDF to extract content, splits the text for embedding, and stores the results in a database. The function uses concurrent processing to handle multiple tasks efficiently, such as embedding text and persisting data to the database.
 
-The code is highly modular, with a focus on integrating various components such as AWS S3 for file handling, SQLAlchemy for database interactions, and concurrent futures for parallel processing. It also includes a utility function, [`sanitize_pdf_with_ghostscript`](<#sanitize_pdf_with_ghostscript>), which uses Ghostscript to sanitize PDF files. The service is configured to handle secrets and environment-specific configurations, making it adaptable to different deployment environments. The use of Modal's app and function decorators indicates that this code is intended to be deployed as a cloud-based service, providing a robust and scalable solution for PDF content processing and embedding.
+Additionally, the code includes a function [`send_exception_email`](<#send_exception_email>) to notify support via email if an exception occurs during the PDF processing. This function uses the SendGrid API to send emails, and it is configured with specific secrets for authentication. The code also defines a helper function [`sanitize_pdf_with_ghostscript`](<#sanitize_pdf_with_ghostscript>) to sanitize PDF files using the Ghostscript command-line tool. The overall purpose of the code is to automate the processing and embedding of PDF content, with error handling and notification mechanisms in place to ensure reliability.
 # Imports and Dependencies
 
 ---
@@ -48,91 +48,98 @@ The code is highly modular, with a focus on integrating various components such 
 
 ---
 ### app
-- **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'pdf-summary-embedding'. This instance represents a Modal application that can be configured with various functions and settings for processing PDF files and embedding summaries.
-- **Use**: This variable is used to define and manage the lifecycle of the Modal application, including the registration of functions and configuration of resources needed for PDF processing and embedding tasks.
+- **Type**: ``modal.App``
+- **Description**: Represents an instance of a `modal.App` with the name 'pdf-summary-embedding'. This instance is used to define and manage functions and configurations related to the application.
+- **Use**: Used to create and manage the application context for defining functions and configurations in the Modal framework.
 
 
 ---
 ### image\_jve
-- **Type**: `modal.Image`
-- **Description**: The `image_jve` variable is an instance of a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It includes additional local directories, installs dependencies from a `pyproject.toml` file, and installs specific system packages like `default-jre` and `ghostscript`. This setup is likely intended for a containerized environment where these dependencies are required for processing tasks.
-- **Use**: This variable is used as a base image configuration for a Modal application, providing the necessary environment and dependencies for executing functions within the app.
+- **Type**: ``modal.Image``
+- **Description**: Represents a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It includes local directories added to specific remote paths, installs dependencies from a `pyproject.toml` file, and installs additional packages using `apt`.
+- **Use**: Used to configure the environment for the `pdf_preprocessing_modal_config` and other functions that require this specific image setup.
 
 
 ---
 ### pdf\_preprocessing\_modal\_config
-- **Type**: `dictionary`
-- **Description**: The `pdf_preprocessing_modal_config` is a dictionary that configures the environment for a PDF preprocessing task. It includes an image configuration, a list of secrets for accessing various APIs and services, a proxy setting that is conditionally applied based on the environment, and a limit on the maximum number of containers that can be used.
-- **Use**: This variable is used to configure the `create_and_embed_pdf_summaries` function, providing necessary settings and credentials for processing PDF files.
+- **Type**: ``dict``
+- **Description**: Contains configuration settings for the PDF preprocessing modal. It includes an image configuration, a list of secrets, a proxy setting based on the environment, and a maximum number of containers.
+- **Use**: Used to configure the `create_and_embed_pdf_summaries` function with necessary resources and settings for processing PDFs.
 
 
 # Functions
 
 ---
 ### send\_exception\_email<!-- {{#callable:python-backend/content_services/pdf_preprocessing/src/main.send_exception_email}} -->
-The `send_exception_email` function sends an email notification about an exception using the SendGrid API.
+[View Source →](<../../../../../content_services/pdf_preprocessing/src/main.py#L36>)
+
+Sends an email with exception details using the SendGrid API.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `exception_details`: A string containing details about the exception that occurred.
-- **Control Flow**:
-    - Import necessary modules from SendGrid for sending emails.
-    - Retrieve environment variables for the environment name and SendGrid API key.
-    - Initialize the SendGrid API client using the API key.
-    - Set up the email details including sender, recipient, subject, and content using the provided exception details.
-    - Attempt to send the email using the SendGrid client and print the response status code if successful.
-    - Catch any exceptions that occur during the email sending process and print an error message.
-- **Output**: The function does not return any value; it performs side effects by sending an email and printing status messages.
+- **Logic and Control Flow**:
+    - Imports necessary modules and classes from the SendGrid library.
+    - Retrieves environment variables `ENV_NAME` and `SENDGRID_API_KEY` to configure the email client.
+    - Initializes the SendGrid API client with the retrieved API key.
+    - Sets up the email details including sender, recipient, subject, and content using the provided exception details.
+    - Attempts to send the email using the SendGrid client and prints the response status code if successful.
+    - Catches any exceptions during the email sending process and prints an error message.
+- **Output**: Does not return any value.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<../../../packages/shared/shared/agent/models/llm_models.py.md#ModelConfigfrom_name>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<../../../packages/shared/shared/agent/models/llm_models.py.md#modelconfigfrom_name>)
 
 
 ---
 ### create\_and\_embed\_pdf\_summaries<!-- {{#callable:python-backend/content_services/pdf_preprocessing/src/main.create_and_embed_pdf_summaries}} -->
-The `create_and_embed_pdf_summaries` function processes a PDF from a presigned URL, sanitizes it, embeds its content, and stores the results in a database while handling exceptions.
+[View Source →](<../../../../../content_services/pdf_preprocessing/src/main.py#L64>)
+
+Processes a PDF file from a presigned URL, sanitizes it, embeds its content, and updates the database with the results.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `presigned_url`: A string representing the presigned URL to download the PDF file.
     - `version_id`: A string representing the version ID of the asset.
     - `asset_name`: A string representing the name of the asset.
     - `org_id`: A string representing the organization ID.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Hash the organization ID to create a unique bucket name.
-    - Open a database session to retrieve the primary asset ID using the version ID.
-    - Download the PDF from the presigned URL to a temporary file.
-    - Sanitize the PDF using Ghostscript and upload both sanitized and unsanitized versions to S3.
+    - Open a database session to retrieve the version and primary asset ID using the provided version ID.
+    - Download the PDF file from the presigned URL to a temporary file.
+    - Sanitize the PDF file using Ghostscript and upload both sanitized and unsanitized versions to S3.
     - Update the version status to 'GENERATING' and create a new node in the database.
-    - Read the PDF content and process it to extract text and metadata.
-    - Use a thread pool to embed the text content in parallel, handling any exceptions during embedding.
-    - Persist the processed content and embeddings to the database using another thread pool.
+    - Read the PDF file content and process it to extract text and metadata.
+    - Use a thread pool to embed the text content in parallel, handling any exceptions that occur.
+    - Persist the processed content and embeddings to the database using a thread pool.
     - Update the version status to 'GENERATION_COMPLETE' after successful processing.
     - Handle exceptions by logging details, sending an email notification, and updating the version status to 'GENERATION_ERROR'.
-- **Output**: The function does not return any value; it performs operations and updates the database.
+- **Output**: Returns the results of the PDF processing and embedding operations.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/aws_client_config.AWSClientConfig`](<../../../packages/shared/shared/interfaces/aws_client_config.py.md#AWSClientConfig>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Client>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.download_file_from_presigned_url`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Clientdownload_file_from_presigned_url>)
+    - [`python-backend/packages/shared/shared/interfaces/aws_client_config.AWSClientConfig`](<../../../packages/shared/shared/interfaces/aws_client_config.py.md#awsclientconfig>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#awss3client>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.download_file_from_presigned_url`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#awss3clientdownload_file_from_presigned_url>)
     - [`python-backend/content_services/pdf_preprocessing/src/main.sanitize_pdf_with_ghostscript`](<#sanitize_pdf_with_ghostscript>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_file_to_s3`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Clientupload_file_to_s3>)
-    - [`python-backend/driver_db/database/models_v2.Node`](<../../../driver_db/database/models_v2.py.md#Node>)
+    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_file_to_s3`](<../../../packages/shared/shared/file_storage/aws_s3_client.py.md#awss3clientupload_file_to_s3>)
+    - [`python-backend/driver_db/database/models_v2.Node`](<../../../driver_db/database/models_v2.py.md#node>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.run_process_pdf`](<../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py.md#run_process_pdf>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#DerivedContent>)
-    - [`python-backend/driver_db/database/models_v1.ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#ChunkAndEmbedding>)
+    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../driver_db/database/models_v1.py.md#derivedcontent>)
+    - [`python-backend/driver_db/database/models_v1.ChunkAndEmbedding`](<../../../driver_db/database/models_v1.py.md#chunkandembedding>)
 
 
 ---
 ### sanitize\_pdf\_with\_ghostscript<!-- {{#callable:python-backend/content_services/pdf_preprocessing/src/main.sanitize_pdf_with_ghostscript}} -->
-The function `sanitize_pdf_with_ghostscript` uses Ghostscript to sanitize a PDF file by processing it and saving the output to a specified destination path.
+[View Source →](<../../../../../content_services/pdf_preprocessing/src/main.py#L267>)
+
+Executes a Ghostscript command to sanitize a PDF file by writing it to a specified destination path.
 - **Inputs**:
-    - `file_path`: A `Path` object representing the path to the input PDF file that needs to be sanitized.
-    - `destination_path`: A `Path` object representing the path where the sanitized PDF file will be saved.
-- **Control Flow**:
-    - The function constructs a command list to run Ghostscript with specific options to process the PDF file.
-    - It attempts to execute the command using `subprocess.run`, capturing output and checking for errors.
-    - If the command execution fails, it catches the `subprocess.CalledProcessError` exception, prints error details including return code, stdout, and stderr, and re-raises the exception.
-    - If the command executes successfully, it prints a success message.
-- **Output**: The function does not return any value; it performs its operation as a side effect by creating a sanitized PDF file at the specified destination path.
+    - `file_path`: The path to the input PDF file that needs sanitization.
+    - `destination_path`: The path where the sanitized PDF file will be saved.
+- **Logic and Control Flow**:
+    - Imports the `subprocess` module to execute system commands.
+    - Defines a command list for Ghostscript with options to process the PDF file.
+    - Attempts to run the Ghostscript command using `subprocess.run` with error checking and output capture.
+    - Catches `subprocess.CalledProcessError` if the command fails, prints error details, and raises the exception.
+    - Prints a success message if the command executes without errors.
+- **Output**: Does not return a value; performs its operation as a side effect by writing the sanitized PDF to the specified destination path.
 
 
 

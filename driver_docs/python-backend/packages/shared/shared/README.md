@@ -3,22 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders and files for managing language model agents, billing, text chunking, embeddings, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and application logic, with an empty `__init__.py` file.
+Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and performance testing tools.
 
 ## Folders
-- **[agent](agent/README.md)**: Classes and configurations for managing language model agents, including Anthropic and OpenAI implementations.
-- **[billing](billing/README.md)**: Implements a billing service for managing subscription operations and defines pricing tiers for consumption and seat pricing.
-- **[chunking](chunking/README.md)**: The `chunking` folder in the `python-backend` codebase contains a file, `text_splitter.py`, which is responsible for splitting text into chunks using tokenization and counting tokens for a specified model.
-- **[embedding](embedding/README.md)**: Utilities for generating text embeddings, including functions for downloading content and embedding text.
-- **[file_storage](file_storage/README.md)**: Python files for interacting with AWS S3, including bucket creation and presigned URL generation.
-- **[interfaces](interfaces/README.md)**: Various subfolders and files that define models, configurations, and utilities for managing agent operations, billing, file content, usage metrics, AWS client configuration, driver requests and responses, and search operations.
-- **[pipelines](pipelines/README.md)**: Python scripts and modules for agent-based pipelines, block kind pipelines, file processing, and search.
-- **[prompts](prompts/README.md)**: Python scripts and modules for generating and managing content prompts for diverse audiences and tasks.
-- **[repositories](repositories/README.md)**: Defines repository classes for CRUD operations and managing data types in a SQLModel-based database.
-- **[secret_management](secret_management/README.md)**: The `secret_management` folder in the `python-backend` codebase contains the `aws_secret_management.py` file, which provides functionality for managing secrets in AWS Secrets Manager, including operations like creating, updating, reading, and deleting secrets.
-- **[usage](usage/README.md)**: Manages language model usage sessions, handles usage credits and balances, and provides code conversion utilities.
-- **[utils](utils/README.md)**: Utility scripts and configurations, including text styling, function decorators, Mermaid rendering, OpenAI file upload, and Puppeteer settings.
-- **[v3](v3/README.md)**: Subfolders for application logic, global constants, interfaces, language model clients, testing, and utilities, with an `__init__.py` file to initialize and expose these components for LLM operations.
+- **[agent](agent/README.md)**: Agent classes for Anthropic and OpenAI, chat interfaces, agent factory, and tools for codebase management.
+- **[billing](billing/README.md)**: Manages subscription services and defines pricing tiers for consumption and seats.
+- **[chunking](chunking/README.md)**: Splits text into chunks and counts tokens using a specified model and tokenization method.
+- **[embedding](embedding/README.md)**: Functions for S3 file download, text embedding, and error handling using OpenAI models.
+- **[file_storage](file_storage/README.md)**: AWS S3 client and functions for creating buckets, presigned URLs, and file operations.
+- **[interfaces](interfaces/README.md)**: Agent and billing models, file content processing, usage metrics, AWS config, and request/response models.
+- **[pipelines](pipelines/README.md)**: Agents for code extraction, editing, execution, file processing, and search using OpenAI models.
+- **[prompts](prompts/README.md)**: Prompt templates, Pydantic models, system message prompts, task modules, and structured text prompt management.
+- **[repositories](repositories/README.md)**: Generic SQLModel repository for CRUD and querying; usage event repository for categorization.
+- **[secret_management](secret_management/README.md)**: Manages AWS Secrets Manager operations including writing, reading, and deleting secrets.
+- **[usage](usage/README.md)**: Manages LLM sessions, usage events, credits, balances, and provides byte-to-SLOC conversion functions.
+- **[utils](utils/README.md)**: Classes for text styling, decorators for caching and logging, Mermaid rendering, OpenAI file upload, and Puppeteer configuration.
+- **[v3](v3/README.md)**: Performance testing, LLM pipelines, JSON parsing, LLM clients, tests, utilities, and package initialization.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

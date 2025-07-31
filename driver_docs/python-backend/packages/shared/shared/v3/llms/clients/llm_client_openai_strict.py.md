@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_client_openai_strict.py` file implements a client for interacting with OpenAI's API in strict mode, providing both synchronous and asynchronous methods for generating and streaming language model messages with support for tool integration.
+Implements a strict-mode OpenAI client for generating and streaming LLM messages with tool integration.
 
 # Purpose
-The provided Python code defines a class `OpenAiStrictWithSystemClient`, which extends the `LlmClient` class. This class is designed to interact with OpenAI's API, specifically for generating and streaming chat completions in a strict mode. The class utilizes both synchronous and asynchronous clients from the OpenAI library to handle chat completions. The primary functionality of this class is encapsulated in two methods: [`_generate`](<#OpenAiStrictWithSystemClient_generate>) and [`_generate_stream`](<#OpenAiStrictWithSystemClient_generate_stream>). The [`_generate`](<#OpenAiStrictWithSystemClient_generate>) method is responsible for generating a single chat completion based on a given message history, response type, and optional tool types. It constructs the necessary parameters and invokes the OpenAI API to obtain a parsed chat completion message, which is then converted into an `LlmMessage` and added to the message history.
+The code defines a class `OpenAiStrictWithSystemClient`, which extends the `LlmClient` class. This class is designed to interact with the OpenAI API, specifically for generating and streaming chat completions in a strict mode. The class uses both synchronous and asynchronous clients from the OpenAI library to handle chat completions. The primary methods [`_generate`](<#openaistrictwithsystemclient_generate>) and [`_generate_stream`](<#openaistrictwithsystemclient_generate_stream>) are responsible for generating chat responses based on a given message history, response type, and optional tool types. These methods construct the necessary parameters for the OpenAI API calls and handle the responses, either returning a single `LlmMessage` or streaming message content and tool call requests.
 
-The [`_generate_stream`](<#OpenAiStrictWithSystemClient_generate_stream>) method provides similar functionality but is designed to handle streaming of chat completions. It yields token deltas and tool-call requests as they are received from the OpenAI API, allowing for real-time processing of the chat completion. This method also includes error handling to manage exceptions during streaming, with a mechanism to rewind the message history and retry the request if necessary. The class integrates with several interfaces and configurations, such as `LlmMessage`, `LlmMessageHistory`, `LlmTool`, and `LlmConfig`, indicating its role as part of a larger system for managing language model interactions. The code is structured as a library component, intended to be imported and used within a broader application that requires interaction with OpenAI's language models.
+The [`_generate`](<#openaistrictwithsystemclient_generate>) method performs a synchronous chat completion request, while [`_generate_stream`](<#openaistrictwithsystemclient_generate_stream>) handles asynchronous streaming of chat completions. The streaming method yields token deltas and processes tool-call requests, allowing for real-time interaction with the API. The code also includes error handling to manage exceptions during API calls, with a mechanism to rewind the message history and retry the request if necessary. The class integrates with other components such as `LlmMessage`, `LlmMessageHistory`, and `LlmTool`, which are part of a shared interface, indicating that this code is part of a larger system for managing language model interactions.
 # Imports and Dependencies
 
 ---
@@ -29,86 +29,93 @@ The [`_generate_stream`](<#OpenAiStrictWithSystemClient_generate_stream>) method
 
 ---
 ### OpenAiStrictWithSystemClient<!-- {{#class:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_strict.py#L18>)
+
 - **Members**:
     - `client`: An instance of the OpenAI client for synchronous operations.
     - `async_client`: An instance of the OpenAI client for asynchronous operations.
-- **Description**: The OpenAiStrictWithSystemClient class extends the LlmClient to provide functionality for generating and streaming responses using OpenAI's API in strict mode. It manages both synchronous and asynchronous interactions with the OpenAI API, allowing for the generation of chat completions and handling tool-call requests. The class is designed to work with a specified language model and can process message histories and tool types to produce structured responses.
+- **Description**: Implements a client for interacting with OpenAI's API in strict mode, supporting both synchronous and asynchronous message generation. It processes message histories and tool types to generate responses or stream tokens, handling tool-call requests and assistant messages. The class extends `LlmClient` and uses OpenAI's API to parse and create chat completions.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient.__init__`](<#OpenAiStrictWithSystemClient__init__>)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate`](<#OpenAiStrictWithSystemClient_generate>)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate_stream`](<#OpenAiStrictWithSystemClient_generate_stream>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient.__init__`](<#openaistrictwithsystemclient__init__>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate`](<#openaistrictwithsystemclient_generate>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate_stream`](<#openaistrictwithsystemclient_generate_stream>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<llm_client.py.md#LlmClient>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<llm_client.py.md#llmclient>)
 
 **Methods**
 
 ---
 #### OpenAiStrictWithSystemClient\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient.__init__}} -->
-The [`__init__`](<llm_client.py.md#LlmClient__init__>) method initializes an instance of the `OpenAiStrictWithSystemClient` class by setting up synchronous and asynchronous OpenAI clients.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_strict.py#L19>)
+
+Initializes an instance of the `OpenAiStrictWithSystemClient` class with a given configuration and sets up OpenAI clients.
 - **Inputs**:
     - `config`: An instance of `LlmConfig` that provides configuration settings for the client.
-- **Control Flow**:
-    - Calls the parent class's [`__init__`](<llm_client.py.md#LlmClient__init__>) method with the provided `config` argument.
+- **Logic and Control Flow**:
+    - Calls the [`__init__`](<llm_client.py.md#llmclient__init__>) method of the parent class `LlmClient` with the `config` parameter.
     - Initializes `self.client` with an instance of `openai.OpenAI`.
     - Initializes `self.async_client` with an instance of `openai.AsyncOpenAI`.
-- **Output**: This method does not return any value; it initializes the instance attributes.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.__init__`](<llm_client.py.md#LlmClient__init__>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<#OpenAiStrictWithSystemClient>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.__init__`](<llm_client.py.md#llmclient__init__>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<#openaistrictwithsystemclient>)  (Base Class)
 
 
 ---
 #### OpenAiStrictWithSystemClient\.\_generate<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate}} -->
-The `_generate` method constructs and sends a request to the OpenAI API to generate a chat completion message based on the provided message history, response type, and tool types, and then returns the resulting message.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_strict.py#L24>)
+
+Generates a language model message using specified message history, response type, and tool types.
 - **Inputs**:
-    - `message_history`: An instance of `LlmMessageHistory` that contains the history of messages to be used in generating the completion.
-    - `response_type`: An optional type that specifies the format of the response message.
-    - `tool_types`: An optional list of types of `LlmTool` that may be used in the completion process.
-- **Control Flow**:
-    - Initialize `completion_kwargs` with the model ID and message history converted to OpenAI's strict format.
-    - Check if `tool_types` is provided; if so, process each tool type using `openai.pydantic_function_tool` and add them to `completion_kwargs` with a tool choice set to 'auto'.
-    - Check if `response_type` is provided; if so, add it to `completion_kwargs` as the response format.
-    - Call the OpenAI API's `parse` method with `completion_kwargs` to generate a chat completion message.
-    - Extract the first choice's message from the API response.
-    - Convert the parsed chat completion message into an `LlmMessage` object.
-    - Add the resulting `LlmMessage` to the `message_history`.
-    - Return the resulting `LlmMessage`.
-- **Output**: Returns an `LlmMessage` object that represents the generated chat completion message.
+    - `message_history`: An instance of `LlmMessageHistory` that contains the history of messages to be used for generating the response.
+    - `response_type`: An optional type that specifies the format of the response.
+    - `tool_types`: An optional list of `LlmTool` types that may be used in the generation process.
+- **Logic and Control Flow**:
+    - Initialize `completion_kwargs` with the model ID and message history converted to OpenAI strict format.
+    - Check if `tool_types` is provided; if so, process each tool using `openai.pydantic_function_tool` and add them to `completion_kwargs` with `tool_choice` set to 'auto'.
+    - Check if `response_type` is provided; if so, add it to `completion_kwargs` as `response_format`.
+    - Call the `parse` method on `self.client.beta.chat.completions` with `completion_kwargs` to get a `ParsedChatCompletionMessage`.
+    - Convert the parsed response to an `LlmMessage` using `LlmMessage.from_openai_parsed_chat_completion_message`.
+    - Add the generated `LlmMessage` to `message_history`.
+    - Return the generated `LlmMessage`.
+- **Output**: An `LlmMessage` object that represents the generated message based on the input parameters.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryto_openai_strict>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_parsed_chat_completion_message`](<../../interfaces/llm_message.py.md#LlmMessagefrom_openai_parsed_chat_completion_message>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryadd_message>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<#OpenAiStrictWithSystemClient>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryto_openai_strict>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_parsed_chat_completion_message`](<../../interfaces/llm_message.py.md#llmmessagefrom_openai_parsed_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryadd_message>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<#openaistrictwithsystemclient>)  (Base Class)
 
 
 ---
 #### OpenAiStrictWithSystemClient\.\_generate\_stream<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient._generate_stream}} -->
-The `_generate_stream` method asynchronously streams tokens and tool-call requests from a strict-mode completion, yielding raw string deltas and eventually a tool-call request or final LlmMessage.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_strict.py#L55>)
+
+Streams tokens and tool-call or assistant messages from a strict-mode completion, yielding raw string deltas and final messages.
 - **Decorators**: `@async`
 - **Inputs**:
-    - `message_history`: An instance of `LlmMessageHistory` that contains the message history to be used for generating the stream.
-    - `response_type`: An optional type that specifies the format of the response, if any.
-    - `tool_types`: An optional list of `LlmTool` types that may be used during the generation process.
-- **Control Flow**:
-    - Initialize `completion_kwargs` with model ID and message history converted to OpenAI strict format.
-    - If `tool_types` is provided, process each tool type and add them to `completion_kwargs` with auto tool choice.
-    - If `response_type` is provided, add it to `completion_kwargs` as the response format.
-    - Attempt to create a stream using the async client's chat completions with the specified `completion_kwargs`.
-    - If an exception occurs, rewind the message history past the last tool call request and retry creating the stream.
-    - Initialize `tool_calls` as an empty list and `final_content` as an empty string.
-    - Iterate asynchronously over each chunk in the stream.
-    - For each chunk, if it contains content, append it to `final_content` and yield the content.
-    - If the chunk contains tool calls, update or append the tool call information to `tool_calls`.
-    - After streaming, if `tool_calls` is not empty, yield a [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) with tool call requests.
-    - If no tool calls are present, yield a final [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) with the assistant message kind and parsed content if `response_type` is provided.
-- **Output**: An asynchronous generator that yields either strings representing token deltas or [`LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>) objects representing tool-call requests or assistant messages.
+    - `message_history`: An instance of `LlmMessageHistory` that contains the message history to be used in the completion.
+    - `response_type`: An optional type that specifies the format of the response.
+    - `tool_types`: An optional list of `LlmTool` types that may be used in the completion.
+- **Logic and Control Flow**:
+    - Builds `completion_kwargs` dictionary with model ID and message history converted to OpenAI strict format.
+    - Checks if `tool_types` is provided, processes them, and adds to `completion_kwargs`.
+    - Checks if `response_type` is provided and adds it to `completion_kwargs`.
+    - Attempts to create a streaming completion using `async_client`.
+    - If an exception occurs, rewinds the message history and retries the streaming completion.
+    - Initializes `tool_calls` list and `final_content` string to store tool call data and final content respectively.
+    - Iterates over the stream asynchronously, processing each chunk to extract token deltas and tool-call deltas.
+    - Appends content from token deltas to `final_content` and yields it.
+    - Processes tool-call deltas, updating or appending to `tool_calls`.
+    - After streaming, checks if `tool_calls` is not empty and yields a [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) with tool call requests.
+    - If no tool calls, yields a [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) with the final content as an assistant message.
+- **Output**: Yields either raw string deltas during streaming or a [`LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>) containing tool call requests or an assistant message at the end.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryto_openai_strict>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.rewind_past_last_tool_call_request`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryrewind_past_last_tool_call_request>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../content_services/auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<../../interfaces/llm_message.py.md#LlmMessage.ToolCallRequest>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<#OpenAiStrictWithSystemClient>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_strict`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryto_openai_strict>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.rewind_past_last_tool_call_request`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryrewind_past_last_tool_call_request>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../content_services/auto_toml/src/auto_toml.py.md#autotomlappend>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallRequest`](<../../interfaces/llm_message.py.md#toolcallrequest>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_strict.OpenAiStrictWithSystemClient`](<#openaistrictwithsystemclient>)  (Base Class)
 
 
 

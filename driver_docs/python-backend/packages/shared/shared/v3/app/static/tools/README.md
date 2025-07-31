@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files that implement utility classes for generating folder summaries, performing hybrid searches, and opening files with content retrieval and formatting capabilities.
+Tools for generating folder summaries, hybrid search, and opening files with large text handling.
 
 
 ## Files
-- **[folder_summary.py](folder_summary.py.md)**: The `folder_summary.py` file implements the `FolderSummaryTool` class, which generates long description summaries for a specified folder in a codebase, allowing these summaries to be referenced later.
-- **[hybrid_search.py](hybrid_search.py.md)**: The `hybrid_search.py` file implements the `HybridSearchTool` class, which performs a hybrid search combining keyword and semantic search within a content repository of code and technical documentation.
-- **[open_file.py](open_file.py.md)**: The `open_file.py` file defines the `OpenFileTool` class, which is an `LlmTool` designed to open a file at a specified path and display its content as a single reference, handling content retrieval and formatting from a database.
+- **[folder_summary.py](folder_summary.py.md)**: A tool for generating and returning long description summaries of folders in a codebase.
+- **[hybrid_search.py](hybrid_search.py.md)**: HybridSearchTool performs a hybrid search combining keyword and semantic search in a content repository.
+- **[open_file.py](open_file.py.md)**: An LlmTool for opening a file, displaying its content as a reference, and handling large text.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

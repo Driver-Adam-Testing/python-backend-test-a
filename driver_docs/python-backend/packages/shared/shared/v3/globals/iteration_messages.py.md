@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `iteration_messages.py` file defines classes for handling multi-iteration context messages and iteration-specific messages within a task, emphasizing the execution of tools and the conditions for returning final responses.
+Defines classes for managing multi-iteration context and iteration messages in a task resolution process.
 
 # Purpose
-This Python code defines two classes, `MultiShotIterationContextMessage` and `IterationMessage`, both of which extend the `LlmMessage` class. The primary purpose of these classes is to facilitate communication in a multi-iteration process, likely within a larger system that involves iterative tasks and tool executions. The `MultiShotIterationContextMessage` class provides a template for messages that inform the user about the multi-iteration mode, emphasizing the importance of iterating until the task is resolved with high quality and specifying that the final response should be in markdown format, not a tool call. The `IterationMessage` class, on the other hand, is designed to generate messages based on the current iteration and total iterations, guiding the user on whether to execute tools or return a response based on the completeness of the context.
-
-The code is structured to be part of a broader system, as indicated by the imports from shared modules, suggesting it is likely a component of a larger library or application. The classes define specific message types using the `MessageKind` enumeration, which categorizes the messages as iteration-related. The `IterationMessage` class includes a class method [`from_context`](<#IterationMessagefrom_context>) that dynamically generates messages based on the iteration state, providing instructions on tool execution and response conditions. This code is not a standalone script but rather a module intended to be integrated into a larger system, providing a structured way to handle iteration-based messaging within that context.
+The code defines two classes, `MultiShotIterationContextMessage` and `IterationMessage`, which extend the `LlmMessage` class. These classes are part of a system that manages multi-iteration processes, likely in a conversational AI or chatbot context. The `MultiShotIterationContextMessage` class provides a predefined message content that instructs the AI to operate in a multi-iteration mode, emphasizing the importance of returning a markdown response rather than a tool call. The `IterationMessage` class includes a class method [`from_context`](<#iterationmessagefrom_context>) that generates messages based on the current iteration and total iterations, guiding the AI on whether to execute tools or return a response. Both classes use the `MessageKind.ITERATION` to categorize the type of message they represent.
 # Imports and Dependencies
 
 ---
@@ -21,40 +19,47 @@ The code is structured to be part of a broader system, as indicated by the impor
 
 ---
 ### MultiShotIterationContextMessage<!-- {{#class:python-backend/packages/shared/shared/v3/globals/iteration_messages.MultiShotIterationContextMessage}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/globals/iteration_messages.py#L6>)
+
 - **Members**:
-    - `message_kind`: Specifies the type of message as an iteration message.
-    - `content`: Contains the instructional message for operating in multi-iteration mode.
-- **Description**: The `MultiShotIterationContextMessage` class extends the `LlmMessage` class and is designed to handle messages in a multi-iteration context. It defines a specific type of message, `message_kind`, which is set to `MessageKind.ITERATION`, indicating that it is used for iteration processes. The `content` attribute provides detailed instructions for operating in a multi-iteration mode, emphasizing the need for high-quality task resolution and the proper format for final responses. This class is part of a system that manages iterative interactions, ensuring that tasks are completed with the necessary quality and context.
+    - `message_kind`: Specifies the type of message as `MessageKind.ITERATION`.
+    - `content`: Contains a predefined message for multi-iteration mode operation.
+- **Description**: Defines a message used in a multi-iteration context, instructing the user to iterate until the task is resolved to the highest quality. It provides guidelines on how to handle iterations, tool executions, and final responses, emphasizing that the final response should be in markdown format and not a tool call.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
 
 ---
 ### IterationMessage<!-- {{#class:python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/globals/iteration_messages.py#L18>)
+
 - **Members**:
-    - `message_kind`: Specifies the kind of message, set to MessageKind.ITERATION.
-- **Description**: The IterationMessage class, inheriting from LlmMessage, is designed to handle messages related to iterative processes. It provides a class method, from_context, which generates an IterationMessage based on the current iteration and total iterations, guiding the execution of tools and responses according to the iteration stage.
+    - `message_kind`: Specifies the type of message as `MessageKind.ITERATION`.
+- **Description**: Represents a message used in an iterative process, providing instructions based on the current iteration and total iterations. The `from_context` class method generates a message content that guides tool execution and response formulation depending on the iteration stage.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage.from_context`](<#IterationMessagefrom_context>)
+    - [`python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage.from_context`](<#iterationmessagefrom_context>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
 **Methods**
 
 ---
 #### IterationMessage\.from\_context<!-- {{#callable:python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage.from_context}} -->
-The `from_context` method creates an `IterationMessage` instance with content based on the current iteration and total iterations.
+[View Source →](<../../../../../../../packages/shared/shared/v3/globals/iteration_messages.py#L21>)
+
+Creates an `IterationMessage` instance with content based on the current iteration and total iterations.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `iteration`: The current iteration number, an integer.
-    - `total_iterations`: The total number of iterations, an integer.
-- **Control Flow**:
-    - Calculate the remaining iterations by subtracting the current iteration from the total iterations.
-    - If the current iteration is the first one, set the content to a message indicating the need to execute tools and the number of remaining executions.
-    - If the current iteration is less than the total iterations but not the first, set the content to a message about returning a response only with complete context and the number of remaining executions.
-    - If the current iteration is the last one, set the content to a message indicating it is the final iteration and a response should be returned.
-- **Output**: Returns an instance of `IterationMessage` with the content set based on the iteration logic.
-- **See also**: [`python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage`](<#IterationMessage>)  (Base Class)
+    - `iteration`: The current iteration number.
+    - `total_iterations`: The total number of iterations allowed.
+- **Logic and Control Flow**:
+    - Calculate the remaining iterations by subtracting `iteration` from `total_iterations`.
+    - If `iteration` is 1, set `content` to a message indicating the first iteration and instructions for tool execution unless the request is irrelevant.
+    - If `iteration` is less than `total_iterations`, set `content` to a message about returning a response only with complete context and instructions for further tool execution if needed.
+    - If `iteration` equals `total_iterations`, set `content` to a message indicating the final iteration and to return a response.
+    - Return a new instance of `IterationMessage` with the constructed `content`.
+- **Output**: An instance of `IterationMessage` with a message content appropriate for the given iteration.
+- **See also**: [`python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage`](<#iterationmessage>)  (Base Class)
 
 
 

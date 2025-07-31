@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `common.py` file initializes a Modal application named "inspector-v2".
+Initializes a Modal app named "inspector-v2".
 
 # Purpose
-This code is a short script that initializes a Modal application named "inspector-v2" using the Modal library. The script provides narrow functionality, specifically focusing on setting up an application instance within the Modal framework. The `modal.App` function is used to create and configure the application, which is likely intended for further development or deployment within the Modal ecosystem. This setup is typically a preliminary step in a larger application development process, where additional components and logic would be added to build out the application's full functionality.
+The code initializes a `modal.App` object with the name `inspector-v2`. This indicates that the code is setting up an application using the `modal` library, which is likely used for creating and managing cloud-based applications or services. The `app` object represents the application instance and can be used to configure and deploy the application within the Modal framework. This code provides narrow functionality, specifically for initializing and naming an application within the Modal environment.
 # Imports and Dependencies
 
 ---
@@ -17,9 +17,9 @@ This code is a short script that initializes a Modal application named "inspecto
 
 ---
 ### app
-- **Type**: `modal.App`
-- **Description**: The variable `app` is an instance of the `App` class from the `modal` module, initialized with the name 'inspector-v2'. This suggests that `app` is likely used to represent an application or service within the Modal framework, which is a platform for building and deploying applications.
-- **Use**: This variable is used to configure and manage the lifecycle of an application named 'inspector-v2' within the Modal framework.
+- **Type**: ``modal.App``
+- **Description**: Represents an instance of a `modal.App` with the name 'inspector-v2'. This instance is created using the `modal` library, which is typically used for building and deploying applications in a cloud environment.
+- **Use**: Used to define and manage the application named 'inspector-v2' within the `modal` framework.
 
 
 

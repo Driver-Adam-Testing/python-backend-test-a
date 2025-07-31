@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README.md` file provides setup instructions for configuring and running a GitLab-ee:17.3.5 instance using Docker in the `python-backend` codebase.
+Instructions for setting up and configuring GitLab-ee:17.3.5 using Docker and ngrok.
 
 # Purpose
-The provided content is a step-by-step setup guide for deploying GitLab-ee version 17.3.5 using Docker. It outlines the process of creating a directory for GitLab's Docker configuration, setting up environment variables, and configuring the `docker-compose.yml` file with a root password. The instructions guide the user through starting the GitLab container, modifying the `gitlab.rb` configuration file to set the external URL and disable certain features like Let's Encrypt and HTTP to HTTPS redirection. The guide also includes steps for reconfiguring GitLab within the Docker container and, if using ngrok, setting up a tunnel to expose the local server to the internet. Finally, it instructs the user to access the GitLab instance via a web browser using the configured domain and login credentials.
+The instructions provided are for setting up GitLab-ee version 17.3.5 using Docker. The setup process begins by creating a directory for GitLab Docker configurations and setting the `GITLAB_HOME` environment variable to this directory. Users must edit the `docker-compose.yml` file to set the `GITLAB_ROOT_PASSWORD` to a desired password before starting the GitLab container with `docker-compose up -d`. After the container starts, users need to configure the `external_url` in the `gitlab.rb` file to match their domain and disable Let's Encrypt and HTTP to HTTPS redirection if necessary. The setup concludes with reconfiguring GitLab using `gitlab-ctl reconfigure` and accessing the GitLab instance through a web browser using the specified domain and login credentials.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

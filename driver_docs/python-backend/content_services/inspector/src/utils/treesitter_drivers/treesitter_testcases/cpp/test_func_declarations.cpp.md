@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_func_declarations.cpp` file in the `python-backend` codebase contains a comprehensive set of C++ function declarations and definitions, including basic, template, constexpr, noexcept, and virtual functions, as well as class member functions, operator overloads, and various C++20 features.
+A comprehensive set of C++ function and class member declarations, including templates, operators, and various C++ features.
 
 # Purpose
-This C++ source code file serves as a comprehensive demonstration of various function and class declarations, showcasing a wide array of C++ features and capabilities. It includes basic function declarations, template functions, constexpr functions, inline functions, noexcept functions, and functions with default parameters. The file also explores advanced C++ concepts such as rvalue references, variadic templates, and function templates with specialization. Additionally, it defines a `Calculator` class with a rich set of member functions, operator overloads, and static functions, illustrating object-oriented programming principles. The `Container` template class further exemplifies the use of templates in class design, while the `Point` class demonstrates the use of friend functions for operator overloading.
+The code is a comprehensive C++ source file that includes a wide range of function and class declarations, demonstrating various features of the C++ language. It covers basic function declarations, template functions, constexpr functions, inline functions, noexcept functions, and functions with default parameters. The file also includes namespace function declarations, class member functions, template class member functions, friend functions, virtual functions, and operator overloads. Additionally, it demonstrates advanced C++ features such as rvalue references, function templates with multiple parameters, function pointer and `std::function` usage, variadic templates, and C++20 features like coroutines, concepts, and attributes.
 
-The file also delves into modern C++ features, including C++11, C++14, C++17, and C++20 enhancements, such as lambda expressions, thread-local storage, coroutines, and concept-constrained functions. It includes namespace usage with the `Math` namespace and its nested `Advanced` namespace, providing mathematical function declarations. The file concludes with a minimal [`main`](<#main>) function that tests some of the declared functions, ensuring that the code is executable. This file is not intended to be a standalone application but rather a rich library of function and class declarations that can be used as a reference or integrated into other C++ projects.
+The file defines several classes, including `Calculator`, `Container`, `Point`, and `Shape`, each with a set of member functions and operator overloads. The `Calculator` class, for example, includes constructors, destructors, assignment operators, and various arithmetic and comparison operators. The `Shape` class demonstrates the use of virtual functions, including pure virtual functions for area and perimeter calculations. The file also includes global operator overloads and function declarations with external "C" linkage. The [`main`](<#main>) function provides minimal definitions and tests some of the declared functions, such as [`add`](<#add>), [`multiply`](<#multiply>), and [`printMessage`](<#printmessage>), and demonstrates the use of the `Calculator` class.
 # Imports and Dependencies
 
 ---
@@ -23,132 +23,160 @@ The file also delves into modern C++ features, including C++11, C++14, C++17, an
 
 ---
 ### global\_lambda
-- **Type**: ``const auto` (lambda function)`
-- **Description**: `global_lambda` is a global constant lambda function that takes two integer parameters, `x` and `y`, and returns their sum. It is defined using the `auto` keyword, which allows the compiler to deduce the type of the lambda function.
-- **Use**: This lambda function is used to perform addition of two integers and can be invoked wherever a function that adds two integers is needed.
+- **Type**: ``const auto``
+- **Description**: A global lambda function that takes two integer parameters, `x` and `y`, and returns their sum.
+- **Use**: Used to perform addition of two integers.
 
 
 ---
 ### global\_function\_object
 - **Type**: `std::function<int(int, int)>`
-- **Description**: `global_function_object` is a global variable of type `std::function<int(int, int)>`, which is a function object capable of storing, copying, and invoking any callable target that matches the signature of a function taking two `int` parameters and returning an `int`. This allows for flexible assignment and invocation of different functions or callable objects that conform to this signature.
-- **Use**: This variable is used to store a callable object that can be invoked with two integer arguments to produce an integer result.
+- **Description**: A global variable that is a function object capable of storing and invoking any callable entity that matches the signature of taking two integers as input and returning an integer.
+- **Use**: Used to store a callable entity that can be invoked with two integer arguments to produce an integer result.
 
 
 # Data Structures
 
 ---
 ### Calculator<!-- {{#data_structure:Calculator}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L69>)
+
+- **Type**: ``class``
 - **Members**:
-    - `value`: A private member variable that stores the current value of the calculator.
-- **Description**: The `Calculator` class is a comprehensive data structure designed to perform arithmetic operations and manage a numeric value. It encapsulates a single private member, `value`, which holds the current state of the calculator. The class provides a variety of constructors for initialization, including default, copy, and move constructors. It supports assignment operations, both copy and move, and includes a destructor. The class offers numerous member functions to manipulate and retrieve the value, such as `getValue`, `setValue`, and `reset`. It also includes const member functions for checking the state of the value, like `isZero` and `isPositive`, and provides a string representation through `toString`. Static member functions allow for the creation of `Calculator` instances from specific conditions or strings. The class overloads a wide range of operators to facilitate arithmetic operations, comparisons, and conversions, making it versatile for mathematical computations. Additionally, it includes conversion operators to transform the `Calculator` object into primitive types like `double`, `bool`, and `int`. Overall, the `Calculator` class is a robust tool for handling numeric calculations in a C++ program.
+    - ``value``: Stores the current value of the calculator as a `double`.
+- **Description**: Represents a calculator that can perform arithmetic operations and manage its state. It includes constructors, a destructor, assignment operators, and various member functions to manipulate and retrieve the calculator's value. The class also provides operator overloads for arithmetic operations, comparison, and conversion, as well as static functions to create calculator instances. The `value` member variable holds the current numeric value of the calculator.
 
 
 ---
 ### Container<!-- {{#data_structure:Container}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L137>)
+
+- **Type**: ``class``
 - **Members**:
-    - `data`: A private member variable of type T that stores the data within the Container.
-- **Description**: The `Container` class is a template class designed to encapsulate a single data element of any type `T`. It provides a variety of constructors for initialization, including default, copy, and move constructors. The class offers member functions to get and set the data, check if the container is empty, and determine its size. Additionally, it includes template methods for converting the contained data to and from other types, applying functions to the data, and checking predicates. The class supports assignment operations and ensures exception safety with `noexcept` specifications for move operations.
+    - ``data``: Holds the data of type `T`.
+- **Description**: Represents a generic container that can store and manage an object of any type `T`. It provides constructors for initialization, copy, and move semantics, as well as a destructor. The class includes methods to get and set the data, check if the container is empty, and determine the size. It also supports conversion between different types and applying functions or predicates to the stored data.
 
 
 ---
 ### Point<!-- {{#data_structure:Point}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L175>)
+
+- **Type**: ``class``
 - **Members**:
-    - `x`: Represents the x-coordinate of the point.
-    - `y`: Represents the y-coordinate of the point.
-- **Description**: The `Point` class represents a point in a 2D Cartesian coordinate system with private member variables `x` and `y` to store the coordinates. It provides a constructor for initializing these coordinates and declares several friend functions for performing arithmetic operations (addition, subtraction, and scalar multiplication) and comparisons (equality and inequality) between points. Additionally, it includes friend functions for input/output stream operations and utility functions to calculate the distance and midpoint between two points.
+    - ``x``: Represents the x-coordinate of the point.
+    - ``y``: Represents the y-coordinate of the point.
+- **Description**: Represents a point in a 2D space with `x` and `y` coordinates. The class provides friend functions for arithmetic operations, comparison, input/output streaming, and utility functions like calculating distance and midpoint between two points.
 
 
 ---
 ### Shape<!-- {{#data_structure:Shape}} -->
-- **Type**: `class`
-- **Description**: The `Shape` class is an abstract base class designed to represent geometric shapes. It defines a common interface for all derived shape classes, requiring them to implement methods for calculating area (`getArea`) and perimeter (`getPerimeter`), both of which are pure virtual functions. Additionally, it provides a virtual method `draw` with a default implementation, and a virtual method `getType` to return the type of shape as a string. The class also includes virtual operator overloads for equality comparison and a clone method, which must be implemented by derived classes to support polymorphic copying. The `Shape` class serves as a foundation for creating specific shape types like circles, rectangles, etc., ensuring they adhere to a consistent interface.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L199>)
+
+- **Type**: ``class``
+- **Description**: Represents an abstract base class for geometric shapes, providing a common interface for derived classes to implement specific shape behaviors. It includes pure virtual functions `getArea`, `getPerimeter`, and `clone` that must be implemented by derived classes, and virtual functions `draw`, `getType`, and `operator==` that can be overridden. The class also includes a default destructor and a constructor.
+- **Member Functions**:
+    - [`Shape::~Shape`](<test_func_defs.cpp.md#shapeshape>)
+    - [`Shape::draw`](<test_func_defs.cpp.md#shapedraw>)
+    - [`Shape::~Shape`](<#shapeshape>)
 
 **Methods**
 
 ---
 #### Shape::\~Shape<!-- {{#callable:Shape::~Shape}} -->
-The `~Shape` function is a virtual destructor for the `Shape` class, ensuring proper cleanup of derived class objects.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L202>)
+
+Defines a virtual destructor for the `Shape` class.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is declared as a virtual destructor, which means it is intended to be overridden by derived classes if necessary.
-    - The `= default` specifier indicates that the compiler should generate the default implementation of the destructor.
-    - Being virtual, it ensures that the destructor of the derived class is called when an object is deleted through a base class pointer.
-- **Output**: The function does not return any value as it is a destructor.
-- **See also**: [`Shape`](<test_func_defs.cpp.md#Shape>)  (Data Structure)
+- **Logic and Control Flow**:
+    - The destructor is declared as `virtual` to ensure that the destructor of the derived class is called when an object is deleted through a pointer to the base class `Shape`.
+    - The destructor is defined as `default`, indicating that the compiler should generate the default implementation.
+- **Output**: No output is produced by the destructor itself; it ensures proper cleanup of derived class objects.
+- **See also**: [`Shape`](<#shape>)  (Data Structure)
 
 
 
 ---
 ### Circle<!-- {{#data_structure:Circle}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L214>)
+
+- **Type**: ``class``
 - **Members**:
-    - `radius`: Stores the radius of the circle.
-    - `val`: An additional double value associated with the circle.
-- **Description**: The `Circle` class is a specialized type of `Shape` that represents a geometric circle. It encapsulates the properties and behaviors specific to a circle, such as calculating its area and perimeter, drawing the circle, and managing its radius. The class includes a private member `radius` to store the circle's radius and a public member `val` for additional data. It provides methods to get and set the radius, and overrides several virtual functions from the `Shape` base class to provide circle-specific implementations.
+    - ``radius``: Stores the radius of the circle.
+    - ``val``: An additional double value specific to the `Circle` class.
+- **Description**: Inherits from the `Shape` class and represents a circle with a specific radius. It provides methods to calculate the area and perimeter, draw the circle, and get the type of shape. The class also includes functionality to compare circles and clone them. The `Circle` class has a private member `radius` to store the circle's radius and a public member `val` for additional circle-specific data.
+- **Member Functions**:
+    - [`Circle::Circle`](<test_func_defs.cpp.md#circlecircle>)
+    - [`Circle::calculateArea`](<test_func_defs.cpp.md#circlecalculatearea>)
+    - [`Circle::draw`](<test_func_defs.cpp.md#circledraw>)
+    - [`Circle::Circle`](<test_classes.cpp.md#circlecircle>)
+    - [`Circle::getArea`](<test_classes.cpp.md#circlegetarea>)
+    - [`Circle::getPerimeter`](<test_classes.cpp.md#circlegetperimeter>)
+    - [`Circle::print`](<test_classes.cpp.md#circleprint>)
 - **Inherits From**:
-    - [`Shape`](<#Shape>)
+    - [`Shape`](<#shape>)
 
 
 # Functions
 
 ---
 ### add<!-- {{#callable:add}} -->
-The `add` function takes two integers as input and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L326>)
+
+Calculates the sum of two integers.
 - **Inputs**:
-    - `a`: An integer representing the first addend.
-    - `b`: An integer representing the second addend.
-- **Control Flow**:
-    - The function receives two integer parameters, `a` and `b`.
-    - It calculates the sum of `a` and `b`.
-    - The result of the addition is returned.
-- **Output**: An integer representing the sum of the two input integers.
+    - `a`: The first integer to add.
+    - `b`: The second integer to add.
+- **Logic and Control Flow**:
+    - Receive two integer inputs, `a` and `b`.
+    - Compute the sum of `a` and `b`.
+    - Return the computed sum.
+- **Output**: The sum of the two input integers.
 
 
 ---
 ### multiply<!-- {{#callable:multiply}} -->
-The `multiply` function takes two double precision floating-point numbers as input and returns their product.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L327>)
+
+Calculates the product of two double precision floating-point numbers.
 - **Inputs**:
-    - `a`: A double precision floating-point number representing the first factor in the multiplication.
-    - `b`: A double precision floating-point number representing the second factor in the multiplication.
-- **Control Flow**:
-    - The function receives two double precision floating-point numbers as parameters.
-    - It calculates the product of these two numbers using the multiplication operator `*`.
-    - The result of the multiplication is returned immediately.
-- **Output**: A double precision floating-point number representing the product of the two input numbers.
+    - `a`: The first double precision floating-point number to multiply.
+    - `b`: The second double precision floating-point number to multiply.
+- **Logic and Control Flow**:
+    - Multiply `a` and `b` together.
+- **Output**: Returns the result of the multiplication as a double precision floating-point number.
 
 
 ---
 ### printMessage<!-- {{#callable:printMessage}} -->
-The `printMessage` function outputs a given string message to the standard output stream followed by a newline.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L328>)
+
+Outputs a given message to the standard output stream followed by a newline.
 - **Inputs**:
-    - `message`: A constant reference to a `std::string` that contains the message to be printed.
-- **Control Flow**:
-    - The function takes a single input parameter, `message`, which is a constant reference to a `std::string`.
-    - It uses `std::cout` to print the `message` to the standard output stream.
-    - The function appends `std::endl` to the output, which inserts a newline character and flushes the output buffer.
-- **Output**: This function does not return any value; it performs an output operation.
+    - ``message``: A constant reference to a `std::string` that contains the message to print.
+- **Logic and Control Flow**:
+    - Uses `std::cout` to output the `message` to the standard output stream.
+    - Appends a newline character to the output using `std::endl`.
+- **Output**: No return value (void function).
 
 
 ---
 ### main<!-- {{#callable:main}} -->
-The `main` function tests several declared functions and a class by performing basic arithmetic operations, printing a message, and interacting with a `Calculator` object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_declarations.cpp#L332>)
+
+Executes a series of function calls and object instantiations to demonstrate basic operations.
 - **Inputs**: None
-- **Control Flow**:
-    - Call the [`add`](<#add>) function with arguments 5 and 3, and store the result in the variable `result`.
-    - Call the [`multiply`](<#multiply>) function with arguments 2.5 and 4.0, and store the result in the variable `product`.
-    - Call the [`printMessage`](<#printMessage>) function with the string "Testing function declarations" to print a message to the console.
-    - Create a `Calculator` object `calc` initialized with the value 10.0.
-    - Output the value of the `Calculator` object `calc` using its `getValue` method and print it to the console.
-    - Return 0 to indicate successful execution.
-- **Output**: The function returns an integer value of 0, indicating successful execution of the program.
+- **Logic and Control Flow**:
+    - Calls the [`add`](<#add>) function with arguments `5` and `3`, and stores the result in the `result` variable.
+    - Calls the [`multiply`](<#multiply>) function with arguments `2.5` and `4.0`, and stores the result in the `product` variable.
+    - Calls the [`printMessage`](<#printmessage>) function with the string "Testing function declarations".
+    - Instantiates a `Calculator` object `calc` with an initial value of `10.0`.
+    - Outputs the value of the `Calculator` object using `std::cout` and the `getValue` method.
+    - Returns `0` to indicate successful execution.
+- **Output**: Returns an integer `0` to indicate successful program termination.
 - **Functions Called**:
     - [`add`](<#add>)
     - [`multiply`](<#multiply>)
-    - [`printMessage`](<#printMessage>)
+    - [`printMessage`](<#printmessage>)
 
 
 

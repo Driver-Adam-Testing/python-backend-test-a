@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various subfolders and files that define models, configurations, and utilities for managing agent operations, billing, file content, usage metrics, AWS client configuration, driver requests and responses, and search operations.
+Agent and billing models, file content processing, usage metrics, AWS config, and request/response models.
 
 ## Folders
-- **[agents](agents/README.md)**: Python files that define classes and configurations for managing agent operations, including agent configuration, block types and responses, data scope management, pipeline configuration, and user prompts with context.
-- **[billing](billing/README.md)**: Files related to subscription data models, including an empty `__init__.py` and `subscription_schema.py`.
-- **[file_content](file_content/README.md)**: Defines models and classes for handling processed file content, with specific support for PDF files.
-- **[usage](usage/README.md)**: Defines data models and utilities for usage metrics and events, with tests for their functionality.
+- **[agents](agents/README.md)**: Agent configuration models, block kind enumerations, abstract classes, data scope management, pipeline configuration, and prompt models.
+- **[billing](billing/README.md)**: Pydantic models for subscription records and creation requests with computed date fields.
+- **[file_content](file_content/README.md)**: Pydantic model for file content and enums with a class for PDF content processing.
+- **[usage](usage/README.md)**: Data models for usage and event metrics, conversion utilities, and tests for schema and balance.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[aws_client_config.py](aws_client_config.py.md)**: The `aws_client_config.py` file defines a Pydantic model for AWS client configuration, including region name, access key ID, and secret access key.
-- **[request.py](request.py.md)**: The `request.py` file defines data models for driver requests using Pydantic, including `DriverRequest`, `DriverModalRequest` with a `call_id`, and `DriverModalBatchRequest` with a list of `call_ids`.
-- **[response.py](response.py.md)**: The `response.py` file defines a Pydantic model `DriverResponse` and a subclass `DriverModalResponse` that includes a `call_id` attribute.
-- **[search.py](search.py.md)**: The `search.py` file defines classes and enumerations for handling search operations, including input parameters and results, within the `python-backend` codebase.
+- **[aws_client_config.py](aws_client_config.py.md)**: Defines an AWS client configuration model with region, access key ID, and secret access key.
+- **[request.py](request.py.md)**: Defines request models for drivers, including modal and batch requests, using Pydantic.
+- **[response.py](response.py.md)**: Defines `DriverResponse` and `DriverModalResponse` classes using Pydantic for data validation.
+- **[search.py](search.py.md)**: Defines search-related classes including algorithms, input parameters, and result structures.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

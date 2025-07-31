@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `csharp_driver_test.py` file contains a suite of pytest tests for the `CSharpDriverTree` class, verifying its ability to accurately extract and validate C# code elements such as namespaces, using imports, interfaces, classes, methods, enums, structs, and function calls from test C# source files.
+Tests for extracting C# namespaces, using imports, interfaces, classes, methods, enums, structs, and invocations using the `CSharpDriverTree`.
 
 # Purpose
-This Python file is a comprehensive test suite using the `pytest` framework to validate the functionality of a C# code analysis tool, specifically focusing on the extraction of various C# code elements such as namespaces, using directives, interfaces, classes, methods, enums, structs, and function invocations. The file defines multiple `pytest` fixtures to load test C# code from files and several test functions to assert the correctness of the extraction methods provided by the `CSharpDriverTree` class. Each test function checks for the presence and accuracy of extracted elements, ensuring no false positives and verifying specific attributes like names, line ranges, modifiers, and other properties. This code provides narrow functionality, focusing solely on testing the extraction capabilities of the C# driver, and is structured as a collection of test cases rather than a standalone script or application.
+This code is a test suite for a Python module that uses the `pytest` framework to validate the functionality of a `CSharpDriverTree` class. The tests focus on extracting various C# code elements such as namespaces, using directives, interfaces, classes, methods, enums, structs, and function calls from C# source files. Each test case reads a specific C# test file, processes it using the `CSharpDriverTree` class, and asserts that the extracted elements match expected values. The tests use `pytest` fixtures to manage the setup of test data and `pytest.mark.parametrize` to run multiple test scenarios with different expected outcomes. The code provides narrow functionality, specifically targeting the validation of C# code parsing and extraction capabilities.
 # Imports and Dependencies
 
 ---
@@ -19,454 +19,520 @@ This Python file is a comprehensive test suite using the `pytest` framework to v
 
 ---
 ### namespace\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.namespace_test_code}} -->
-The `namespace_test_code` function is a pytest fixture that reads and returns the content of a C# test file for namespace declarations.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L8>)
+
+Reads and returns the content of a C# test file for namespaces as a string.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_namespaces.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: A string containing the content of the 'test_namespaces.cs' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the C# test file `test_namespaces.cs` located in the `treesitter_testcases/csharp` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file into a string.
+    - Returns the string containing the file content.
+- **Output**: A string containing the content of the `test_namespaces.cs` file.
 
 
 ---
 ### test\_extract\_namespace\_decls\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_namespace_decls_no_false_positives}} -->
-The function `test_extract_namespace_decls_no_false_positives` tests that the extraction of namespace declarations from C# code does not produce false positives by asserting the expected number of namespaces.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L20>)
+
+Tests that the [`extract_namespace_declarations`](<csharp_driver.py.md#csharpdrivertreeextract_namespace_declarations>) method of `CSharpDriverTree` correctly identifies exactly five namespace declarations from the given C# code without false positives.
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `namespace_test_code`: A string containing C# code to be tested for namespace declarations.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object from the provided C# code string using the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - Extract namespace declarations from the `CSharpDriverTree` object using the [`extract_namespace_declarations`](<csharp_driver.py.md#CSharpDriverTreeextract_namespace_declarations>) method.
-    - Assert that the number of extracted namespaces is exactly 5.
-- **Output**: The function does not return any value; it raises an assertion error if the number of extracted namespaces is not 5.
+    - `namespace_test_code`: A string containing C# code to test for namespace declarations.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object using the [`from_code`](<base.py.md#drivertreefrom_code>) method with `namespace_test_code` and a placeholder filename.
+    - Call [`extract_namespace_declarations`](<csharp_driver.py.md#csharpdrivertreeextract_namespace_declarations>) on the `driver_tree` object to get the list of namespace declarations.
+    - Assert that the length of the `namespaces` list is exactly 5.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_namespace_declarations`](<csharp_driver.py.md#CSharpDriverTreeextract_namespace_declarations>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_namespace_declarations`](<csharp_driver.py.md#csharpdrivertreeextract_namespace_declarations>)
 
 
 ---
 ### test\_extract\_namespaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_namespaces}} -->
-The `test_extract_namespaces` function tests the extraction of namespace declarations from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L26>)
+
+Tests if the extracted namespace declarations from C# code match the expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `namespace_test_code`: A string containing the C# code to be tested for namespace extraction.
-    - `expected_namespace_name`: The expected name of the namespace to be found in the extracted data.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the namespace declaration.
+    - `namespace_test_code`: A string containing C# code to test for namespace extraction.
+    - `expected_namespace_name`: The expected name of the namespace to be extracted.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the namespace declaration.
     - `expected_kind`: The expected kind of namespace declaration, such as 'namespace_block_scope_declaration' or 'namespace_file_scope_declaration'.
-- **Control Flow**:
-    - The function uses `CSharpDriverTree.from_code` to parse the provided C# code and create a driver tree.
-    - It calls [`extract_namespace_declarations`](<csharp_driver.py.md#CSharpDriverTreeextract_namespace_declarations>) on the driver tree to get a list of namespace declarations.
-    - The function then constructs a list of tuples from the extracted namespaces, each containing the namespace name, line range, and scoping kind.
-    - An assertion checks if the expected namespace details are present in the extracted list, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected namespace is not found in the extracted data.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided C# code string.
+    - Extract namespace declarations from the `CSharpDriverTree` object.
+    - Create a list of tuples containing the name, line range, and scoping kind of each extracted namespace.
+    - Check if the expected namespace details are present in the extracted list.
+    - If the expected namespace is not found, raise an assertion error with a detailed message.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_namespace_declarations`](<csharp_driver.py.md#CSharpDriverTreeextract_namespace_declarations>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_namespace_declarations`](<csharp_driver.py.md#csharpdrivertreeextract_namespace_declarations>)
 
 
 ---
 ### using\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.using_test_code}} -->
-The `using_test_code` function is a pytest fixture that reads and returns the content of a C# test file named 'test_usings.cs' located in a specific directory.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L63>)
+
+Reads and returns the content of a C# test file named `test_usings.cs` located in the `treesitter_testcases/csharp` directory.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path by navigating to the 'treesitter_testcases/csharp/test_usings.cs' file relative to the current file's directory.
-    - It opens the file at the constructed path with UTF-8 encoding.
-    - The function reads the entire content of the file and returns it as a string.
-- **Output**: A string containing the content of the 'test_usings.cs' file.
+- **Logic and Control Flow**:
+    - Constructs the file path for `test_usings.cs` using the current file's directory.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the read content as a string.
+- **Output**: A string containing the content of the `test_usings.cs` file.
 
 
 ---
 ### test\_extract\_using\_imports\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_using_imports_no_false_positives}} -->
-The function `test_extract_using_imports_no_false_positives` tests that the [`extract_using_imports`](<csharp_driver.py.md#CSharpDriverTreeextract_using_imports>) method of `CSharpDriverTree` correctly identifies 12 using imports from a given C# code string without false positives.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L75>)
+
+Verifies that the [`extract_using_imports`](<csharp_driver.py.md#csharpdrivertreeextract_using_imports>) method of `CSharpDriverTree` correctly identifies 12 `using` imports from the provided C# code without false positives.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `using_test_code`: A string containing C# code to be analyzed for using imports.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object using the provided C# code string and a placeholder filename.
-    - Call the [`extract_using_imports`](<csharp_driver.py.md#CSharpDriverTreeextract_using_imports>) method on the `CSharpDriverTree` object to retrieve the list of using imports.
-    - Assert that the length of the retrieved imports list is exactly 12, ensuring no false positives are present.
-- **Output**: The function does not return any value; it raises an assertion error if the number of imports is not 12.
+    - `using_test_code`: A string containing C# code to test for `using` imports.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the `using_test_code` string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Call the [`extract_using_imports`](<csharp_driver.py.md#csharpdrivertreeextract_using_imports>) method on the `driver_tree` object to get the list of `using` imports.
+    - Assert that the length of the `imports` list is 12.
+- **Output**: No output is returned; the function raises an assertion error if the number of `using` imports is not 12.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_using_imports`](<csharp_driver.py.md#CSharpDriverTreeextract_using_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_using_imports`](<csharp_driver.py.md#csharpdrivertreeextract_using_imports>)
 
 
 ---
 ### test\_extract\_using\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_using_imports}} -->
-The `test_extract_using_imports` function tests the extraction of 'using' imports from C# code using the `CSharpDriverTree` class and verifies that the extracted imports match expected values.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L81>)
+
+Tests the extraction of `using` imports from C# code and verifies them against expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `using_test_code`: A string containing C# code to be tested for 'using' imports.
-    - `expected_using_name`: The expected name of the 'using' import to be verified.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the 'using' import.
-    - `expected_kind`: The expected kind of the 'using' import, such as 'local_using' or 'global_using'.
-    - `expected_alias_name`: The expected alias name for the 'using' import, if any, otherwise None.
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object from the provided `using_test_code` string.
-    - It then calls the [`extract_using_imports`](<csharp_driver.py.md#CSharpDriverTreeextract_using_imports>) method on the `driver_tree` object to retrieve a list of 'using' imports.
-    - The function constructs a list of tuples, `extracted`, containing the name, line range, scoping kind, and alias name of each import.
-    - An assertion checks if the expected import details are present in the `extracted` list, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected 'using' import is not found in the extracted imports.
+    - `using_test_code`: A string containing the C# code to test for `using` imports.
+    - `expected_using_name`: The expected name of the `using` import.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the `using` import.
+    - `expected_kind`: The expected kind of the `using` import, such as 'local_using' or 'global_using'.
+    - `expected_alias_name`: The expected alias name for the `using` import, or `None` if there is no alias.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the `using_test_code` string.
+    - Call [`extract_using_imports`](<csharp_driver.py.md#csharpdrivertreeextract_using_imports>) on the `driver_tree` to get a list of `using` imports.
+    - Transform each `using` import into a tuple containing its name, line range, scoping kind, and alias name.
+    - Check if the expected tuple (name, line range, kind, alias) is in the list of extracted tuples.
+    - If the expected tuple is not found, raise an assertion error with a detailed message.
+- **Output**: None, but raises an assertion error if the expected `using` import is not found in the extracted imports.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_using_imports`](<csharp_driver.py.md#CSharpDriverTreeextract_using_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_using_imports`](<csharp_driver.py.md#csharpdrivertreeextract_using_imports>)
 
 
 ---
 ### interface\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.interface_test_code}} -->
-The `interface_test_code` function is a pytest fixture that reads and returns the contents of a C# test file for interfaces.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L138>)
+
+Reads and returns the content of a C# test file for interfaces.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_interfaces.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The contents of the file are read and returned as a string.
-- **Output**: A string containing the contents of the 'test_interfaces.cs' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the 'test_interfaces.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the read content as a string.
+- **Output**: A string containing the content of the 'test_interfaces.cs' file.
 
 
 ---
 ### test\_extract\_interfaces\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_interfaces_no_false_positives}} -->
-The function `test_extract_interfaces_no_false_positives` verifies that the [`extract_interfaces`](<csharp_driver.py.md#CSharpDriverTreeextract_interfaces>) method of `CSharpDriverTree` correctly identifies exactly 25 interfaces from the provided C# code without any false positives.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L150>)
+
+Verifies that the [`extract_interfaces`](<csharp_driver.py.md#csharpdrivertreeextract_interfaces>) method of `CSharpDriverTree` correctly identifies 25 interfaces from the provided C# code without false positives.
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `interface_test_code`: A string containing C# code that is expected to define interfaces.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object by parsing the `interface_test_code` string using the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - Call the [`extract_interfaces`](<csharp_driver.py.md#CSharpDriverTreeextract_interfaces>) method on the `driver_tree` object to retrieve a list of interfaces.
-    - Assert that the length of the `interfaces` list is exactly 25, ensuring no false positives are present.
-- **Output**: The function does not return any value; it raises an assertion error if the number of extracted interfaces is not 25.
+    - `interface_test_code`: A string containing C# code to test for interface extraction.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object using the [`from_code`](<base.py.md#drivertreefrom_code>) method with `interface_test_code` and a placeholder filename.
+    - Call the [`extract_interfaces`](<csharp_driver.py.md#csharpdrivertreeextract_interfaces>) method on the `driver_tree` object to get the list of interfaces.
+    - Assert that the length of the extracted interfaces list is exactly 25.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_interfaces`](<csharp_driver.py.md#CSharpDriverTreeextract_interfaces>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_interfaces`](<csharp_driver.py.md#csharpdrivertreeextract_interfaces>)
 
 
 ---
 ### test\_extract\_interfaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_interfaces}} -->
-The `test_extract_interfaces` function tests the extraction of interface definitions from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L156>)
+
+Validates that the [`extract_interfaces`](<csharp_driver.py.md#csharpdrivertreeextract_interfaces>) method correctly identifies and extracts interface definitions from C# code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `interface_test_code`: A string containing the C# code to be tested for interface extraction.
+    - `interface_test_code`: A string containing C# code to test interface extraction.
     - `expected_interface_name`: The expected name of the interface to be extracted.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the interface in the code.
     - `expected_modifiers`: A set of expected access modifiers for the interface.
     - `expected_type_params`: A set of expected type parameters for the interface.
     - `expected_base_names`: A set of expected base interface names that the interface extends or implements.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` instance from the provided C# code.
-    - Extract interfaces from the `driver_tree` using the [`extract_interfaces`](<csharp_driver.py.md#CSharpDriverTreeextract_interfaces>) method.
-    - Iterate over the extracted interfaces and collect their details such as name, line range, modifiers, type parameters, and base names into a list called `extracted`.
-    - Assert that the expected interface details are present in the `extracted` list, raising an assertion error with a detailed message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected interface details are not found in the extracted interfaces.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided `interface_test_code`.
+    - Call the [`extract_interfaces`](<csharp_driver.py.md#csharpdrivertreeextract_interfaces>) method on the `driver_tree` to get a list of interfaces.
+    - Iterate over the extracted interfaces and collect their names, line ranges, modifiers, type parameters, and base names into a list called `extracted`.
+    - Use an `assert` statement to check if the expected interface details are present in the `extracted` list.
+- **Output**: None, but raises an assertion error if the expected interface is not found in the extracted interfaces.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_interfaces`](<csharp_driver.py.md#CSharpDriverTreeextract_interfaces>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_interfaces`](<csharp_driver.py.md#csharpdrivertreeextract_interfaces>)
 
 
 ---
 ### class\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.class_test_code}} -->
-The `class_test_code` function is a pytest fixture that reads and returns the contents of a C# test classes file as a string.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L223>)
+
+Reads and returns the content of a C# test class file as a string.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_classes.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The contents of the file are read and returned as a string.
-- **Output**: A string containing the contents of the 'test_classes.cs' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the C# test class file using `pathlib.Path` and the current file's directory.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file and returns it as a string.
+- **Output**: A string containing the content of the C# test class file.
 
 
 ---
 ### test\_extract\_classes\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_classes_no_false_positives}} -->
-The function `test_extract_classes_no_false_positives` tests that the [`extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>) method of `CSharpDriverTree` correctly identifies exactly 11 class definitions from the provided C# code without any false positives.
-- **Decorators**: `@pytest.fixture`
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L235>)
+
+Verifies that the [`extract_class_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_class_definitions>) method of `CSharpDriverTree` correctly identifies 11 class definitions from the given C# code without false positives.
 - **Inputs**:
-    - `class_test_code`: A string containing C# code to be analyzed for class definitions.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object using the provided C# code and a placeholder filename.
-    - Call the [`extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>) method on the `CSharpDriverTree` object to retrieve class definitions.
-    - Assert that the number of extracted class definitions is exactly 11.
-- **Output**: The function does not return any value; it raises an assertion error if the number of class definitions is not 11.
+    - `class_test_code`: A string containing C# code to test for class definitions.
+- **Logic and Control Flow**:
+    - Creates a `CSharpDriverTree` object from the provided `class_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Calls the [`extract_class_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_class_definitions>) method on the `driver_tree` object to retrieve class definitions.
+    - Asserts that the number of extracted class definitions is exactly 11.
+- **Output**: No output is returned as the function is a test case that raises an assertion error if the condition is not met.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_class_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_class_definitions>)
 
 
 ---
 ### test\_extract\_classes<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_classes}} -->
-The `test_extract_classes` function tests the extraction of class definitions from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L241>)
+
+Tests the extraction of class definitions from C# code and verifies them against expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `class_test_code`: A string containing the C# code to be tested for class extraction.
+    - `class_test_code`: A string containing C# code to test class extraction.
     - `expected_class_name`: The expected name of the class to be extracted.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the class definition.
+    - `expected_line_range`: A tuple indicating the expected start and end lines of the class definition.
     - `expected_modifiers`: A set of expected modifiers (e.g., 'public', 'static') for the class.
     - `expected_kind`: The expected kind of class (e.g., 'standard', 'record').
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object from the provided `class_test_code` string.
-    - It calls [`extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>) on the `driver_tree` to get a list of class definitions.
-    - An empty list `extracted` is initialized to store the extracted class details.
-    - The function iterates over each class in `klasses`, extracting the class name, line range, modifiers, and kind, and appends these details as a tuple to the `extracted` list.
-    - An assertion checks if the expected class details are present in the `extracted` list, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected class details are not found in the extracted data.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided C# code.
+    - Extract class definitions using the [`extract_class_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_class_definitions>) method.
+    - Iterate over the extracted classes and collect their names, line ranges, modifiers, and kinds.
+    - Check if the expected class details are present in the extracted data using an assertion.
+- **Output**: No output is returned; the function asserts the presence of expected class details in the extracted data.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_class_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_class_definitions>)
 
 
 ---
 ### test\_extract\_base\_classes\_and\_interfaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_base_classes_and_interfaces}} -->
-The function `test_extract_base_classes_and_interfaces` verifies that the extracted base classes and interfaces from a given C# class code match the expected values.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L285>)
+
+Tests if the extracted base classes and interfaces from C# class definitions match the expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `class_test_code`: A string containing the C# class code to be tested.
-    - `expected_class_name`: The name of the class for which the base classes and interfaces are expected.
-    - `expected_bases`: A list of expected base class and interface names for the specified class.
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object from the provided `class_test_code` string.
-    - It then extracts class definitions from the `driver_tree` using the [`extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>) method.
-    - The extracted class definitions are transformed into a list of tuples containing class names and their base class names.
-    - An assertion checks if the tuple of `expected_class_name` and `expected_bases` is present in the extracted list, raising an error with a detailed message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected base classes and interfaces are not found in the extracted data.
+    - `class_test_code`: A string containing C# class code to test.
+    - `expected_class_name`: The name of the class expected to be found.
+    - `expected_bases`: A list of expected base class names and interfaces for the class.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided `class_test_code`.
+    - Extract class definitions from the `CSharpDriverTree` object.
+    - Create a list of tuples containing class names and their base class names from the extracted class definitions.
+    - Assert that the tuple of `expected_class_name` and `expected_bases` is in the list of extracted tuples.
+    - If the assertion fails, raise an error with a message indicating the expected and extracted values.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_class_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_class_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_class_definitions>)
 
 
 ---
 ### method\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.method_test_code}} -->
-The `method_test_code` function is a pytest fixture that reads and returns the content of a C# test methods file as a string.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L305>)
+
+Reads and returns the content of a C# test methods file as a string.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_methods.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
+- **Logic and Control Flow**:
+    - Constructs the file path to the 'test_methods.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the read content as a string.
 - **Output**: A string containing the content of the 'test_methods.cs' file.
 
 
 ---
 ### test\_extract\_method\_likes\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_method_likes_no_false_positives}} -->
-The function `test_extract_method_likes_no_false_positives` verifies that the method-like definitions extracted from C# code do not include any false positives by asserting the expected count.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L317>)
+
+Verifies that the method-like definitions extracted from C# code match the expected count of 31.
 - **Inputs**:
-    - `method_test_code`: A string containing C# code to be analyzed for method-like definitions.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object from the provided C# code string using the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - Extract method-like definitions from the `CSharpDriverTree` object using the [`extract_method_like_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_method_like_definitions>) method.
-    - Assert that the number of extracted method-like definitions is exactly 31.
-- **Output**: The function does not return any value; it raises an assertion error if the number of method-like definitions is not 31.
+    - `method_test_code`: A string containing C# code to test for method-like definitions.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided `method_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Call [`extract_method_like_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_method_like_definitions>) on the `driver_tree` object to get method-like definitions.
+    - Assert that the length of the extracted method-like definitions is equal to 31.
+- **Output**: No output is returned as the function is a test and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_method_like_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_method_like_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_method_like_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_method_like_definitions>)
 
 
 ---
 ### test\_extract\_method\_likes<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_method_likes}} -->
-The `test_extract_method_likes` function tests the extraction of method-like definitions from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L323>)
+
+Tests the extraction of method-like definitions from C# code using the `CSharpDriverTree` class.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `method_test_code`: A string containing C# code to be tested for method-like definitions.
-    - `expected_method_name`: The expected name of the method-like definition to be extracted.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the method-like definition.
-    - `expected_kind`: The expected kind of the method-like definition (e.g., 'method', 'constructor').
-    - `expected_modifiers`: A set of expected modifiers (e.g., 'public', 'static') for the method-like definition.
-    - `expected_return_ty`: The expected return type of the method-like definition, or None if not applicable.
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object from the provided C# code.
-    - It extracts method-like definitions using the [`extract_method_like_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_method_like_definitions>) method of the `CSharpDriverTree` class.
-    - An empty list `extracted` is initialized to store extracted method-like details.
-    - The function iterates over each method-like definition extracted, retrieving its name, line range, kind, modifiers, and return type.
-    - These details are appended as a tuple to the `extracted` list.
-    - An assertion checks if the expected method-like details are present in the `extracted` list, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected method-like definition is not found in the extracted data.
+    - `method_test_code`: A string containing the C# code to test.
+    - `expected_method_name`: The expected name of the method-like entity.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the method-like entity.
+    - `expected_kind`: The expected kind of the method-like entity, such as 'method', 'constructor', or 'property'.
+    - `expected_modifiers`: A set of expected modifiers for the method-like entity, such as 'public' or 'static'.
+    - `expected_return_ty`: The expected return type of the method-like entity, or None if not applicable.
+- **Logic and Control Flow**:
+    - Creates a `CSharpDriverTree` object from the provided C# code.
+    - Extracts method-like definitions using the [`extract_method_like_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_method_like_definitions>) method of `CSharpDriverTree`.
+    - Iterates over the extracted method-like definitions to collect their names, line ranges, kinds, modifiers, and return types.
+    - Asserts that the expected method-like entity is present in the extracted list, raising an error if not.
+- **Output**: None, but raises an assertion error if the expected method-like entity is not found in the extracted list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_method_like_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_method_like_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_method_like_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_method_like_definitions>)
 
 
 ---
 ### enum\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.enum_test_code}} -->
-The `enum_test_code` function is a pytest fixture that reads and returns the content of a C# test file for enums.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L414>)
+
+Reads and returns the content of a C# test file for enums as a string.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_enums.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: A string containing the content of the 'test_enums.cs' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the C# test file `test_enums.cs` located in the `treesitter_testcases/csharp` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the read content as a string.
+- **Output**: A string containing the content of the `test_enums.cs` file.
 
 
 ---
 ### test\_extract\_enums\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_enums_no_false_positives}} -->
-The function `test_extract_enums_no_false_positives` tests that the [`extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>) method of `CSharpDriverTree` correctly identifies exactly 10 enum definitions from the provided C# code without any false positives.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L426>)
+
+Tests the extraction of enum definitions from C# code without false positives.
 - **Inputs**:
-    - `enum_test_code`: A string containing C# code that is expected to have exactly 10 enum definitions.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object by parsing the provided `enum_test_code` string.
-    - Call the [`extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>) method on the `CSharpDriverTree` object to retrieve the list of enums.
-    - Assert that the length of the extracted enums list is exactly 10.
-- **Output**: The function does not return any value; it raises an assertion error if the number of extracted enums is not 10.
+    - `enum_test_code`: A string containing C# code to test for enum definitions.
+- **Logic and Control Flow**:
+    - Creates a `CSharpDriverTree` object from the provided `enum_test_code` string.
+    - Calls the [`extract_enum_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_enum_definitions>) method on the `driver_tree` object to extract enum definitions.
+    - Asserts that the number of extracted enums is exactly 10.
+- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_enum_definitions>)
 
 
 ---
 ### test\_extract\_enums<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_enums}} -->
-The `test_extract_enums` function tests the extraction of enum definitions from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L432>)
+
+Validates that the extracted enum definitions from C# code match the expected attributes such as name, line range, modifiers, and underlying type.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `enum_test_code`: A string containing the C# code to be tested for enum extraction.
+    - `enum_test_code`: A string containing the C# code to test for enum extraction.
     - `expected_enum_name`: The expected name of the enum to be extracted.
-    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the enum in the code.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the enum definition.
     - `expected_modifiers`: A set of expected access modifiers for the enum.
     - `expected_underlying_ty`: The expected underlying type of the enum.
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object from the provided C# code string.
-    - It then extracts enum definitions from the driver tree using the [`extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>) method.
-    - An empty list `extracted` is initialized to store the extracted enum details.
-    - The function iterates over each extracted enum, retrieving its name, line range, modifiers, and underlying type, and appends these details as a tuple to the `extracted` list.
-    - An assertion checks if the expected enum details are present in the `extracted` list, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected enum is not found in the extracted data.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided C# code string.
+    - Extract enum definitions from the `CSharpDriverTree` object.
+    - Iterate over the extracted enums and collect their attributes such as name, line range, modifiers, and underlying type.
+    - Check if the expected enum attributes are present in the extracted enums.
+    - Raise an assertion error with a detailed message if the expected enum is not found in the extracted list.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_enum_definitions>)
 
 
 ---
 ### test\_extract\_enum\_interfaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_enum_interfaces}} -->
-The `test_extract_enum_interfaces` function tests if a specific enum definition with expected interfaces is correctly extracted from C# code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L475>)
+
+Tests if the extracted enum interfaces match the expected values for a given C# code snippet.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `enum_test_code`: A string containing C# code to be tested for enum extraction.
-    - `expected_line_range`: A tuple of two integers representing the expected start and end line numbers of the enum definition.
-    - `expected_enum_name`: A string representing the expected name of the enum to be extracted.
-    - `expected_interfaces`: A list of strings representing the expected interfaces that the enum should implement.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object from the provided C# code string.
-    - Extract enum definitions from the driver tree using [`extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>).
+    - `enum_test_code`: A string containing the C# code to test.
+    - `expected_line_range`: A tuple of two integers representing the expected start and end line numbers of the enum.
+    - `expected_enum_name`: A string representing the expected name of the enum.
+    - `expected_interfaces`: A list of strings representing the expected interfaces implemented by the enum.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the `enum_test_code` string.
+    - Extract enum definitions from the `driver_tree` object.
     - Create a list of tuples containing the name, line range, and base class names for each extracted enum.
-    - Assert that the expected enum name, line range, and interfaces are present in the extracted list, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected enum interfaces are not found in the extracted data.
+    - Check if the tuple of expected enum name, line range, and interfaces is in the list of extracted enums.
+    - If the expected tuple is not found, raise an assertion error with a message indicating the missing expected interfaces.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_enum_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_enum_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_enum_definitions>)
 
 
 ---
 ### struct\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.struct_test_code}} -->
-The `struct_test_code` function is a pytest fixture that reads and returns the content of a C# test file for structs.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L503>)
+
+Reads and returns the content of a C# test file for structs as a string.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_structs.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: A string containing the content of the 'test_structs.cs' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the C# test file `test_structs.cs` located in the `treesitter_testcases/csharp` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file into a string.
+    - Returns the string containing the file content.
+- **Output**: A string containing the content of the `test_structs.cs` file.
 
 
 ---
 ### test\_extract\_structs\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_structs_no_false_positives}} -->
-The function `test_extract_structs_no_false_positives` verifies that the extraction of struct definitions from C# code does not produce any false positives by asserting the expected number of structs.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L515>)
+
+Verifies that the [`extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>) method of `CSharpDriverTree` correctly identifies 12 struct definitions from the provided C# code without false positives.
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `struct_test_code`: A string containing C# code that is expected to include struct definitions.
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object using the provided C# code string and a placeholder filename.
-    - It then calls the [`extract_struct_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_struct_definitions>) method on the `driver_tree` object to retrieve the struct definitions from the code.
-    - Finally, it asserts that the number of extracted structs is exactly 12, ensuring no false positives are present.
-- **Output**: The function does not return any value; it raises an assertion error if the number of structs is not 12.
+    - `struct_test_code`: A string containing C# code to test for struct definitions.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object using the [`from_code`](<base.py.md#drivertreefrom_code>) method with `struct_test_code` and a placeholder filename.
+    - Call the [`extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>) method on the `driver_tree` object to get the list of struct definitions.
+    - Use an `assert` statement to check that the number of extracted structs is exactly 12.
+- **Output**: No output is returned; the function raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_struct_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_struct_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>)
 
 
 ---
 ### test\_extract\_structs<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_structs}} -->
-The `test_extract_structs` function tests the extraction of struct definitions from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L521>)
+
+Tests the extraction of struct definitions from C# code and verifies them against expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `struct_test_code`: A string containing C# code to be tested for struct extraction.
-    - `expected_struct_name`: The name of the struct expected to be found in the code.
-    - `expected_line_range`: A tuple indicating the start and end line numbers where the struct is expected to be found.
-    - `expected_modifiers`: A set of strings representing the expected modifiers (e.g., 'public', 'readonly') of the struct.
-    - `expected_kind`: A string indicating the expected kind of the struct, such as 'struct' or 'record_struct'.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` instance from the provided C# code.
-    - Extract struct definitions using the [`extract_struct_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_struct_definitions>) method of `CSharpDriverTree`.
-    - Iterate over the extracted structs to collect their names, line ranges, modifiers, and kinds into a list.
-    - Assert that the expected struct details are present in the extracted list, raising an error if not.
-- **Output**: The function does not return a value but asserts that the expected struct details are found in the extracted data, raising an error if the assertion fails.
+    - `struct_test_code`: A string containing the C# code to test for struct extraction.
+    - `expected_struct_name`: The expected name of the struct to be extracted.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the struct in the code.
+    - `expected_modifiers`: A set of expected modifiers (e.g., 'public', 'readonly') for the struct.
+    - `expected_kind`: The expected kind of the struct, such as 'struct' or 'record_struct'.
+- **Logic and Control Flow**:
+    - Creates a `CSharpDriverTree` object from the provided `struct_test_code`.
+    - Calls [`extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>) on the `driver_tree` to get a list of struct definitions.
+    - Iterates over the extracted structs to collect their names, line ranges, modifiers, and kinds into a list called `extracted`.
+    - Asserts that the tuple of expected struct details is present in the `extracted` list.
+    - If the assertion fails, raises an error with a message indicating the expected struct details and the actual extracted structs.
+- **Output**: Does not return a value; raises an assertion error if the expected struct is not found in the extracted structs.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_struct_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_struct_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>)
 
 
 ---
 ### test\_extract\_struct\_interfaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_struct_interfaces}} -->
-The `test_extract_struct_interfaces` function tests if a given C# struct definition correctly implements expected interfaces by comparing extracted data from the code with expected values.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L571>)
+
+Validates that the extracted struct interfaces from the given C# code match the expected values.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `struct_test_code`: A string containing the C# code to be tested for struct definitions.
-    - `expected_line_range`: A tuple of two integers representing the expected start and end line numbers of the struct in the code.
+    - `struct_test_code`: A string containing the C# code to test.
+    - `expected_line_range`: A tuple of two integers representing the expected start and end line numbers of the struct.
     - `expected_struct_name`: A string representing the expected name of the struct.
-    - `expected_interfaces`: A list of strings representing the expected interfaces that the struct should implement.
-- **Control Flow**:
-    - The function begins by creating a `CSharpDriverTree` object from the provided C# code string.
-    - It extracts struct definitions from the driver tree using the [`extract_struct_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_struct_definitions>) method.
-    - The extracted structs are processed into a list of tuples, each containing the struct's name, line range, and base class names (interfaces).
-    - An assertion checks if the expected struct name, line range, and interfaces are present in the extracted data.
-    - If the assertion fails, an error message is generated indicating the expected and actual extracted data.
-- **Output**: The function does not return any value; it raises an assertion error if the expected struct interfaces are not found in the extracted data.
+    - `expected_interfaces`: A list of strings representing the expected interfaces implemented by the struct.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the `struct_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract struct definitions from the `driver_tree` using the [`extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>) method.
+    - Create a list of tuples containing the struct name, line range, and base class names for each extracted struct.
+    - Check if the tuple of `expected_struct_name`, `expected_line_range`, and `expected_interfaces` is in the list of extracted structs.
+    - If the expected tuple is not found, raise an assertion error with a message indicating the missing expected interfaces and struct.
+- **Output**: None, but raises an assertion error if the expected struct interfaces are not found in the extracted data.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_struct_definitions`](<csharp_driver.py.md#CSharpDriverTreeextract_struct_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_struct_definitions`](<csharp_driver.py.md#csharpdrivertreeextract_struct_definitions>)
 
 
 ---
 ### invocation\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.invocation_test_code}} -->
-The `invocation_test_code` function is a pytest fixture that reads and returns the content of a C# test file for invocation tests.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L599>)
+
+Reads and returns the content of a C# test file for invocation tests.
 - **Decorators**: `@pytest.fixture`
-- **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_invocations.cs' file located in the 'treesitter_testcases/csharp' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: A string containing the content of the 'test_invocations.cs' file.
+- **Inputs**:
+    - `None`: This function does not take any input arguments.
+- **Logic and Control Flow**:
+    - Constructs the file path to the C# test file `test_invocations.cs` located in the `treesitter_testcases/csharp` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the read content as a string.
+- **Output**: A string containing the content of the `test_invocations.cs` file.
 
 
 ---
 ### test\_extract\_invocations\_no\_false\_positives<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_invocations_no_false_positives}} -->
-The function `test_extract_invocations_no_false_positives` tests the extraction of function calls from C# code without expecting any false positives.
-- **Decorators**: `@pytest.fixture`
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L611>)
+
+Tests the extraction of function calls from C# code without false positives.
+- **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `invocation_test_code`: A string containing C# code to be tested for function call extraction.
-- **Control Flow**:
-    - Create a `CSharpDriverTree` object from the provided C# code string using the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - Extract function calls from the `driver_tree` using the [`extract_function_calls`](<csharp_driver.py.md#CSharpDriverTreeextract_function_calls>) method.
-    - Perform an assertion that always passes (assert True).
-- **Output**: The function does not return any output; it is a test function that performs assertions.
+    - `invocation_test_code`: A string containing C# code to test for function call extraction.
+- **Logic and Control Flow**:
+    - Create a `CSharpDriverTree` object from the provided C# code string.
+    - Call the [`extract_function_calls`](<csharp_driver.py.md#csharpdrivertreeextract_function_calls>) method on the `driver_tree` object to extract function calls.
+    - Assert that the test passes by using `assert True`.
+- **Output**: No output is returned as the function is a test case and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_function_calls`](<csharp_driver.py.md#CSharpDriverTreeextract_function_calls>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_function_calls`](<csharp_driver.py.md#csharpdrivertreeextract_function_calls>)
 
 
 ---
 ### test\_extract\_invocations<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.test_extract_invocations}} -->
-The `test_extract_invocations` function tests if specific function calls with expected names, line ranges, arguments, and type parameters are correctly extracted from C# code using the `CSharpDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/csharp_driver_test.py#L618>)
+
+Tests if the function [`extract_function_calls`](<csharp_driver.py.md#csharpdrivertreeextract_function_calls>) correctly identifies and extracts function invocations from C# code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `invocation_test_code`: A string representing the C# code to be tested for function call extraction.
-    - `expected_invocation_name`: The expected name of the function call to be extracted.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the function call in the code.
-    - `expected_args`: A tuple of strings representing the expected arguments of the function call.
-    - `expected_type_params`: A tuple of strings representing the expected type parameters of the function call.
-- **Control Flow**:
+    - `invocation_test_code`: A string containing C# code to test for function invocations.
+    - `expected_invocation_name`: The expected name of the function invocation to be extracted.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the function invocation.
+    - `expected_args`: A tuple of expected arguments for the function invocation.
+    - `expected_type_params`: A tuple of expected type parameters for the function invocation.
+- **Logic and Control Flow**:
     - Create a `CSharpDriverTree` object from the provided C# code string.
-    - Extract function calls from the `CSharpDriverTree` object using the [`extract_function_calls`](<csharp_driver.py.md#CSharpDriverTreeextract_function_calls>) method.
-    - Iterate over the extracted function calls and collect their names, line ranges, arguments, and type parameters into a list.
-    - Assert that the expected function call details (name, line range, arguments, type parameters) are present in the extracted list.
-- **Output**: The function does not return any value; it raises an assertion error if the expected function call details are not found in the extracted list.
+    - Call [`extract_function_calls`](<csharp_driver.py.md#csharpdrivertreeextract_function_calls>) on the `CSharpDriverTree` object to get a list of function invocations.
+    - Iterate over the extracted invocations and collect their names, line ranges, arguments, and type parameters into a list.
+    - Assert that the expected invocation details are present in the extracted list, raising an error if not.
+- **Output**: No output is returned; the function raises an assertion error if the expected invocation is not found.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_function_calls`](<csharp_driver.py.md#CSharpDriverTreeextract_function_calls>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/csharp_driver.CSharpDriverTree.extract_function_calls`](<csharp_driver.py.md#csharpdrivertreeextract_function_calls>)
 
 
 

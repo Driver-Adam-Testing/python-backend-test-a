@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `config.py` file defines a Pydantic model for configuring Git provider settings, including endpoints and credentials, within the `python-backend` codebase.
+Defines a Pydantic model for Git provider configuration with computed URLs for authorization and access.
 
 # Purpose
-This code defines a Pydantic model named `GitProviderConfig`, which is used to represent and validate configuration data for a Git provider's OAuth integration. The model includes fields for various configuration parameters such as `application_id`, `name`, `provider_kind`, and several endpoint URLs, some of which are optional. The class also includes computed properties that dynamically construct full URLs for authorization, access token, and user information endpoints based on the base URL and specific endpoint paths. This code provides narrow functionality, focusing specifically on encapsulating and managing configuration details for Git provider integrations, making it suitable for use in applications that need to interact with different Git service providers through OAuth.
+The code defines a data model for configuring a Git provider using the `pydantic` library. The `GitProviderConfig` class inherits from `BaseModel` and represents the configuration details necessary to interact with a Git provider. It includes fields such as `application_id`, `name`, `provider_kind`, `base_url`, and optional fields like `client_id`, `client_secret`, `redirect_uri`, `token_endpoint`, `user_endpoint`, `authorize_endpoint`, `token_info_endpoint`, and `scope`. These fields store information required for OAuth authentication and API interaction with a Git provider.
+
+The class also defines computed properties using the `@computed_field` decorator. These properties, [`authorize_url`](<#gitproviderconfigauthorize_url>), [`access_token_url`](<#gitproviderconfigaccess_token_url>), and [`user_info_url`](<#gitproviderconfiguser_info_url>), construct URLs by combining the `base_url` with respective endpoints if they are provided. This functionality allows for dynamic generation of URLs needed for authorization, token access, and user information retrieval. The use of `UUID` for `application_id` and `GitProviderKind` for `provider_kind` indicates that these fields are expected to be of specific types, ensuring data integrity and consistency.
 # Imports and Dependencies
 
 ---
@@ -20,24 +22,26 @@ This code defines a Pydantic model named `GitProviderConfig`, which is used to r
 
 ---
 ### GitProviderConfig<!-- {{#class:python-backend/backend/app/git_providers/core/config.GitProviderConfig}} -->
+[View Source →](<../../../../../../backend/app/git_providers/core/config.py#L7>)
+
 - **Members**:
-    - `application_id`: A unique identifier for the application.
-    - `name`: The name of the Git provider configuration.
-    - `provider_kind`: The kind of Git provider, represented by the GitProviderKind enum.
-    - `base_url`: The base URL for the Git provider's API.
-    - `client_id`: The client ID for OAuth authentication, optional.
-    - `client_secret`: The client secret for OAuth authentication, optional.
-    - `redirect_uri`: The redirect URI for OAuth authentication, optional.
-    - `token_endpoint`: The endpoint for obtaining access tokens.
-    - `user_endpoint`: The endpoint for obtaining user information.
-    - `authorize_endpoint`: The endpoint for authorizing the application.
-    - `token_info_endpoint`: The endpoint for obtaining token information, optional.
-    - `scope`: The scope of access requested, optional.
-- **Description**: The GitProviderConfig class is a Pydantic model that defines the configuration for a Git provider, including essential OAuth details such as client ID, client secret, and various API endpoints. It provides computed properties to construct full URLs for authorization, access token, and user information endpoints based on the base URL and specific endpoint paths.
+    - `application_id`: Stores a unique identifier for the application.
+    - `name`: Holds the name of the Git provider configuration.
+    - `provider_kind`: Specifies the kind of Git provider.
+    - `base_url`: Contains the base URL for the Git provider.
+    - `client_id`: Stores the client ID for authentication, if available.
+    - `client_secret`: Holds the client secret for authentication, if available.
+    - `redirect_uri`: Specifies the redirect URI for OAuth flows, if available.
+    - `token_endpoint`: Contains the endpoint for token retrieval, if available.
+    - `user_endpoint`: Holds the endpoint for user information retrieval, if available.
+    - `authorize_endpoint`: Specifies the endpoint for authorization, if available.
+    - `token_info_endpoint`: Contains the endpoint for token information, if available.
+    - `scope`: Defines the scope of access, if available.
+- **Description**: Defines the configuration for a Git provider, including authentication and endpoint details. It uses the `BaseModel` from Pydantic to enforce data validation and type checking. The class includes properties to construct URLs for authorization, access token, and user information based on the base URL and specific endpoints.
 - **Methods**:
-    - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig.authorize_url`](<#GitProviderConfigauthorize_url>)
-    - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig.access_token_url`](<#GitProviderConfigaccess_token_url>)
-    - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig.user_info_url`](<#GitProviderConfiguser_info_url>)
+    - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig.authorize_url`](<#gitproviderconfigauthorize_url>)
+    - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig.access_token_url`](<#gitproviderconfigaccess_token_url>)
+    - [`python-backend/backend/app/git_providers/core/config.GitProviderConfig.user_info_url`](<#gitproviderconfiguser_info_url>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -45,35 +49,47 @@ This code defines a Pydantic model named `GitProviderConfig`, which is used to r
 
 ---
 #### GitProviderConfig\.authorize\_url<!-- {{#callable:python-backend/backend/app/git_providers/core/config.GitProviderConfig.authorize_url}} -->
-The `authorize_url` method constructs and returns the full authorization URL by combining the base URL with the authorization endpoint.
+[View Source →](<../../../../../../backend/app/git_providers/core/config.py#L21>)
+
+Generates the authorization URL by combining the base URL and the authorization endpoint.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs a string by concatenating the `base_url` and `authorize_endpoint` attributes of the `GitProviderConfig` instance, separated by a slash ('/').
-- **Output**: A string representing the full authorization URL.
-- **See also**: [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<#GitProviderConfig>)  (Base Class)
+- **Logic and Control Flow**:
+    - Check if `self.base_url` and `self.authorize_endpoint` are not None.
+    - If both are present, return a formatted string combining `self.base_url` and `self.authorize_endpoint`.
+    - If either is missing, return None.
+- **Output**: A string representing the authorization URL or None if the base URL or authorization endpoint is missing.
+- **See also**: [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<#gitproviderconfig>)  (Base Class)
 
 
 ---
 #### GitProviderConfig\.access\_token\_url<!-- {{#callable:python-backend/backend/app/git_providers/core/config.GitProviderConfig.access_token_url}} -->
-The `access_token_url` method constructs and returns the full URL for accessing the token endpoint by combining the base URL with the token endpoint path.
+[View Source →](<../../../../../../backend/app/git_providers/core/config.py#L28>)
+
+Generates the access token URL by combining the base URL with the token endpoint.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs a URL by concatenating the `base_url` attribute with the `token_endpoint` attribute, separated by a slash ('/').
-- **Output**: A string representing the full URL for the access token endpoint.
-- **See also**: [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<#GitProviderConfig>)  (Base Class)
+- **Logic and Control Flow**:
+    - Check if `self.base_url` and `self.token_endpoint` are not None.
+    - If both are present, return a formatted string combining `self.base_url` and `self.token_endpoint`.
+    - If either is missing, return None.
+- **Output**: A string representing the access token URL or None if the base URL or token endpoint is not set.
+- **See also**: [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<#gitproviderconfig>)  (Base Class)
 
 
 ---
 #### GitProviderConfig\.user\_info\_url<!-- {{#callable:python-backend/backend/app/git_providers/core/config.GitProviderConfig.user_info_url}} -->
-The `user_info_url` method constructs and returns the full URL for accessing user information by combining the base URL with the user endpoint.
+[View Source →](<../../../../../../backend/app/git_providers/core/config.py#L35>)
+
+Constructs a URL for user information by combining `base_url` and `user_endpoint` if both are available.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs a URL by concatenating the `base_url` and `user_endpoint` attributes of the `GitProviderConfig` class instance.
-- **Output**: A string representing the full URL for the user information endpoint.
-- **See also**: [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<#GitProviderConfig>)  (Base Class)
+- **Logic and Control Flow**:
+    - Checks if both `base_url` and `user_endpoint` are not `None`.
+    - If both are available, returns a formatted string combining `base_url` and `user_endpoint` with a slash ('/') separator.
+    - If either `base_url` or `user_endpoint` is `None`, returns `None`.
+- **Output**: A string representing the user information URL or `None` if the URL cannot be constructed.
+- **See also**: [`python-backend/backend/app/git_providers/core/config.GitProviderConfig`](<#gitproviderconfig>)  (Base Class)
 
 
 

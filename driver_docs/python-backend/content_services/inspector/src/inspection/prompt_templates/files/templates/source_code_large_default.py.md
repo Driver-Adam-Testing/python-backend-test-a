@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_default.py` file defines a template for inspecting and structuring large source code files, focusing on purpose, imports, global variables, data structures, and functions.
+Defines a template for generating structured prompts for source code inspection with specific style instructions.
 
 # Purpose
-This Python code defines a structured template for generating documentation or structured prompts related to source code analysis. It imports various components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`, which provide instructions and data structure collections necessary for creating detailed documentation. The primary purpose of this file is to establish a framework for generating sections of documentation, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions," using predefined templates and instructions. Each section is associated with specific components and functions that facilitate the extraction and presentation of relevant information from the source code.
+The code defines a template for generating structured documentation for source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`. These imports include instructions and collections that help in creating prompts and organizing information about the source code, such as style instructions and data structure collections.
 
-The code is organized as a collection of tuples within the `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` list, where each tuple represents a section of the documentation. These tuples contain identifiers, section headers, and functions or instructions for processing and formatting the content. The file is designed to be part of a larger system that automates the generation of structured documentation, making it easier to understand and analyze Python codebases. It does not define public APIs or external interfaces directly but rather serves as a backend utility for documentation generation.
+The `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` is a list of tuples that specify different sections of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section is associated with specific components or functions that help in extracting and formatting the relevant information. The template uses prompts and components to ensure that the documentation adheres to specific style instructions, such as using backticks for code references and following Simplified Technical English guidelines. This code is intended to be part of a larger system that automates the generation of technical documentation for Python source code files.
 # Imports and Dependencies
 
 ---
@@ -33,9 +33,9 @@ The code is organized as a collection of tuples within the `SOURCE_CODE_LARGE_TE
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_DEFAULT
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_DEFAULT` is a list of tuples, each representing a different section of a structured code template. Each tuple contains a section identifier, a section title, and various components or functions related to that section, such as prompts, instructions, or collection methods for symbols and functions.
-- **Use**: This variable is used to define a comprehensive template for generating structured code documentation, covering aspects like purpose, imports, global variables, data structures, and functions.
+- **Type**: ``list``
+- **Description**: Contains a list of tuples, each representing a section of a structured prompt template. Each tuple includes a section identifier, a section title, and various components or functions related to that section. The list is used to define the structure and content of a large source code template.
+- **Use**: Defines the structure and content of a large source code template by organizing sections and their related components.
 
 
 

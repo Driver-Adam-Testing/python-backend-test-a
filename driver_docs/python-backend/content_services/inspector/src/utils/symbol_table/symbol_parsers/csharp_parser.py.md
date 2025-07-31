@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `csharp_parser.py` file defines a `CSharpParser` class for parsing C# code using a tree-sitter driver.
+A C# symbol parser using CSharpDriverTree and inheriting from SymbolParser.
 
 # Purpose
-This code defines a class `CSharpParser` that extends the `SymbolParser` class, providing specialized functionality for parsing C# code. It is a narrow-focused piece of code, primarily serving as a configuration or setup for a C# symbol parser by specifying the language as "csharp", using a period as the fully qualified name (FQN) delimiter, and associating it with a `CSharpDriverTree` for tree-sitter parsing. The code is part of a larger system, likely a code analysis or language processing tool, where it integrates with other components to handle C# language-specific parsing tasks.
+The code defines a class `CSharpParser` that extends the `SymbolParser` class. It is designed to parse C# code by setting the `language` attribute to "csharp" and using a fully qualified name (FQN) delimiter of `.`. The `tree` attribute is assigned the `CSharpDriverTree` class, which is imported from the `utils.treesitter_drivers.csharp_driver` module. This code provides narrow functionality, specifically for parsing C# symbols, and is part of a larger framework for language parsing.
 # Imports and Dependencies
 
 ---
@@ -18,13 +18,15 @@ This code defines a class `CSharpParser` that extends the `SymbolParser` class, 
 
 ---
 ### CSharpParser<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/csharp_parser.CSharpParser}} -->
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/symbol_parsers/csharp_parser.py#L6>)
+
 - **Members**:
     - `language`: Specifies the programming language as 'csharp'.
     - `fqn_delimiter`: Defines the delimiter for fully qualified names as a period ('.').
-    - `tree`: References the CSharpDriverTree for parsing C# code.
-- **Description**: The CSharpParser class is a specialized parser for C# code, inheriting from the SymbolParser base class. It is configured to recognize C# as the target language, using a period as the delimiter for fully qualified names, and utilizes the CSharpDriverTree for its parsing operations. This class is part of a larger framework for parsing and analyzing code, specifically tailored to handle the syntax and structure of C# programming language.
+    - `tree`: References the `CSharpDriverTree` for parsing operations.
+- **Description**: Parses C# code by extending the `SymbolParser` class and setting language-specific attributes.
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#SymbolParser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#symbolparser>)
 
 
 

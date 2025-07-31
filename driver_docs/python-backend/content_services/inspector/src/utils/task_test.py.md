@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `task_test.py` file contains unit tests for testing the persistence of task results on local disk and S3, as well as the functionality of a `TaskManager` and `SleepTask` class, including task dependencies and post-run IO operations.
+Tests for task result persistence on local disk and S3, and task management with dependencies.
 
 # Purpose
-This Python code file is a comprehensive test suite designed to validate the functionality of task result persistence and task management within a task execution framework. The file is structured into several test classes, each focusing on different aspects of the system. The `TestLocalDiskTaskResultPersistence` and `TestS3TaskResultPersistence` classes test the ability to save and load task results using local disk storage and Amazon S3, respectively. These tests ensure that task results can be serialized and deserialized correctly using JSON and Pickle formats, and they verify the behavior when attempting to load non-existent task results.
+The code is a test suite for validating the functionality of task result persistence and task management in a distributed task execution environment. It uses the `pytest` framework to define and execute tests for two main components: `LocalDiskTaskResultPersistence` and `S3TaskResultPersistence`. These components are responsible for saving and loading task results to and from local disk storage and Amazon S3, respectively. The tests ensure that task results can be serialized and deserialized correctly using JSON and Pickle formats, and they verify the behavior when attempting to load non-existent task results.
 
-Additionally, the file defines a `SleepTask` class, which is a specialized task that simulates work by sleeping for a specified duration. This class is used in the `TestTaskManager` class to test task dependency management and execution order. The `TestTaskManager` class includes tests that verify the correct execution order of tasks based on their dependencies and ensure that tasks can run concurrently when possible. It also tests the [`post_run_io`](<#SleepTaskpost_run_io>) method to confirm that input/output results from dependencies are correctly injected into tasks after they run. Overall, this file serves as a critical component of the testing framework, ensuring the robustness and reliability of task execution and result persistence mechanisms.
+Additionally, the code defines a `SleepTask` class, which simulates a task that sleeps for a specified duration. This class is used in conjunction with the `TaskManager` to test task dependencies and execution order. The `TestTaskManager` class includes tests that verify the correct execution of tasks with dependencies, ensuring that tasks run in the correct order and that concurrent execution is handled properly. The tests also check the functionality of the [`post_run_io`](<#sleeptaskpost_run_io>) method, which captures and validates input/output results from task dependencies. The code is structured to be executed as a script using `pytest` and is not intended to be imported as a library.
 # Imports and Dependencies
 
 ---
@@ -34,340 +34,385 @@ Additionally, the file defines a `SleepTask` class, which is a specialized task 
 
 ---
 ### TestLocalDiskTaskResultPersistence<!-- {{#class:python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L22>)
+
 - **Decorators**: `@pytest.fixture`
-- **Description**: The `TestLocalDiskTaskResultPersistence` class is a test suite designed to verify the functionality of the `LocalDiskTaskResultPersistence` class, which handles saving and loading task results to and from the local disk. It includes tests for saving and loading task results using JSON and Pickle serialization methods, as well as a test for attempting to load a non-existent task result. The class uses a temporary directory fixture to ensure that tests are isolated and do not affect the actual file system.
+- **Description**: Tests the `LocalDiskTaskResultPersistence` class by verifying the save and load functionality of task results using JSON and PICKLE serialization methods, and checks the behavior when attempting to load a nonexistent task result.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.temp_dir`](<#TestLocalDiskTaskResultPersistencetemp_dir>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_save_and_load_task_result_json`](<#TestLocalDiskTaskResultPersistencetest_save_and_load_task_result_json>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_save_and_load_task_result_pickle`](<#TestLocalDiskTaskResultPersistencetest_save_and_load_task_result_pickle>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_load_nonexistent_task_result`](<#TestLocalDiskTaskResultPersistencetest_load_nonexistent_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.temp_dir`](<#testlocaldisktaskresultpersistencetemp_dir>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_save_and_load_task_result_json`](<#testlocaldisktaskresultpersistencetest_save_and_load_task_result_json>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_save_and_load_task_result_pickle`](<#testlocaldisktaskresultpersistencetest_save_and_load_task_result_pickle>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_load_nonexistent_task_result`](<#testlocaldisktaskresultpersistencetest_load_nonexistent_task_result>)
 
 **Methods**
 
 ---
 #### TestLocalDiskTaskResultPersistence\.temp\_dir<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.temp_dir}} -->
-The `temp_dir` method is a pytest fixture that provides a temporary directory path for use in tests.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L23>)
+
+Provides a temporary directory for use in tests.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The method uses a `with` statement to create a `TemporaryDirectory`, ensuring it is cleaned up after use.
-    - It yields a `Path` object pointing to the temporary directory, allowing tests to use this directory path.
-- **Output**: The method outputs a `Path` object representing the temporary directory.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#TestLocalDiskTaskResultPersistence>)  (Base Class)
+- **Logic and Control Flow**:
+    - Creates a temporary directory using `TemporaryDirectory()`.
+    - Yields the path of the temporary directory as a `Path` object.
+- **Output**: A `Path` object representing the temporary directory.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#testlocaldisktaskresultpersistence>)  (Base Class)
 
 
 ---
 #### TestLocalDiskTaskResultPersistence\.test\_save\_and\_load\_task\_result\_json<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_save_and_load_task_result_json}} -->
-The `test_save_and_load_task_result_json` method tests the saving and loading of a task result using JSON serialization on a local disk.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L28>)
+
+Tests the saving and loading of a task result using JSON serialization on a local disk.
 - **Inputs**:
-    - `self`: Refers to the instance of the `TestLocalDiskTaskResultPersistence` class.
-    - `temp_dir`: A temporary directory path provided by the pytest fixture for storing task results.
-- **Control Flow**:
-    - Initialize a [`LocalDiskTaskResultPersistence`](<task.py.md#LocalDiskTaskResultPersistence>) object with `temp_dir` as the base directory.
+    - `self`: Represents the instance of the class `TestLocalDiskTaskResultPersistence`.
+    - `temp_dir`: A `Path` object representing a temporary directory used as the base directory for storing task results.
+- **Logic and Control Flow**:
+    - Create an instance of [`LocalDiskTaskResultPersistence`](<task.py.md#localdisktaskresultpersistence>) with `temp_dir` as the base directory.
     - Define `run_id` and `task_id` as identifiers for the task result.
-    - Create a [`TaskResult`](<task.py.md#TaskResult>) object with data `{"key": "value"}` and JSON serialization method.
-    - Call [`save_task_result`](<task.py.md#LocalDiskTaskResultPersistencesave_task_result>) on the persistence object to save the task result using the specified `run_id` and `task_id`.
-    - Call [`load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>) on the persistence object to load the task result using the same `run_id` and `task_id`.
+    - Create a [`TaskResult`](<task.py.md#taskresult>) object with data `{"key": "value"}` and JSON serialization method.
+    - Call [`save_task_result`](<task.py.md#localdisktaskresultpersistencesave_task_result>) on the `persistence` object to save the [`TaskResult`](<task.py.md#taskresult>).
+    - Call [`load_task_result`](<task.py.md#taskresultpersistenceload_task_result>) on the `persistence` object to load the saved [`TaskResult`](<task.py.md#taskresult>).
     - Assert that the loaded result is not `None`.
-    - Assert that the data in the loaded result matches the data in the original result.
-- **Output**: The method does not return any value, but it asserts that the task result is correctly saved and loaded with JSON serialization.
+    - Assert that the data in the loaded result matches the original [`TaskResult`](<task.py.md#taskresult>) data.
+- **Output**: No output is returned, but assertions validate that the task result is saved and loaded correctly.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<task.py.md#LocalDiskTaskResultPersistence>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#TaskResult>)
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.save_task_result`](<task.py.md#LocalDiskTaskResultPersistencesave_task_result>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#TestLocalDiskTaskResultPersistence>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<task.py.md#localdisktaskresultpersistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#taskresult>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.save_task_result`](<task.py.md#localdisktaskresultpersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<task.py.md#taskresultpersistenceload_task_result>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#testlocaldisktaskresultpersistence>)  (Base Class)
 
 
 ---
 #### TestLocalDiskTaskResultPersistence\.test\_save\_and\_load\_task\_result\_pickle<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_save_and_load_task_result_pickle}} -->
-The `test_save_and_load_task_result_pickle` method tests the functionality of saving and loading a task result using pickle serialization with local disk persistence.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L42>)
+
+Tests the saving and loading of a task result using pickle serialization on a local disk.
 - **Inputs**:
-    - `self`: Refers to the instance of the `TestLocalDiskTaskResultPersistence` class.
-    - `temp_dir`: A temporary directory path provided by the pytest fixture for storing task results.
-- **Control Flow**:
-    - Initialize a [`LocalDiskTaskResultPersistence`](<task.py.md#LocalDiskTaskResultPersistence>) object with `temp_dir` as the base directory.
+    - `temp_dir`: A temporary directory path used as the base directory for storing task results.
+- **Logic and Control Flow**:
+    - Create an instance of [`LocalDiskTaskResultPersistence`](<task.py.md#localdisktaskresultpersistence>) with `temp_dir` as the base directory.
     - Define `run_id` and `task_id` as identifiers for the task result.
-    - Create a [`TaskResult`](<task.py.md#TaskResult>) object with data `{"key": "value"}` and specify `SerializationMethod.PICKLE` for serialization.
-    - Call [`save_task_result`](<task.py.md#TaskResultPersistencesave_task_result>) on the persistence object to save the task result using the specified `run_id` and `task_id`.
-    - Load the saved task result using [`load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>) with the same `run_id` and `task_id`.
-    - Assert that the loaded result is not `None` and that its data matches the original task result data.
-- **Output**: The method does not return any value, but it asserts that the task result is correctly saved and loaded using pickle serialization.
+    - Create a [`TaskResult`](<task.py.md#taskresult>) object with data `{"key": "value"}` and serialization method `PICKLE`.
+    - Save the [`TaskResult`](<task.py.md#taskresult>) using `persistence.save_task_result` with `run_id`, `task_id`, and `result`.
+    - Load the task result using `persistence.load_task_result` with `run_id` and `task_id`.
+    - Assert that the loaded result is not `None`.
+    - Assert that the data in the loaded result matches the data in the original [`TaskResult`](<task.py.md#taskresult>).
+- **Output**: No output is returned; the function uses assertions to validate the test.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<task.py.md#LocalDiskTaskResultPersistence>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#TaskResult>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.save_task_result`](<task.py.md#TaskResultPersistencesave_task_result>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#TestLocalDiskTaskResultPersistence>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<task.py.md#localdisktaskresultpersistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#taskresult>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.save_task_result`](<task.py.md#taskresultpersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<task.py.md#taskresultpersistenceload_task_result>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#testlocaldisktaskresultpersistence>)  (Base Class)
 
 
 ---
 #### TestLocalDiskTaskResultPersistence\.test\_load\_nonexistent\_task\_result<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence.test_load_nonexistent_task_result}} -->
-The `test_load_nonexistent_task_result` method verifies that attempting to load a task result for a nonexistent task returns `None`.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L56>)
+
+Tests that loading a nonexistent task result returns `None`.
 - **Inputs**:
-    - `self`: Refers to the instance of the `TestLocalDiskTaskResultPersistence` class.
-    - `temp_dir`: A temporary directory path provided by the `temp_dir` fixture, used as the base directory for task result persistence.
-- **Control Flow**:
-    - Initialize a [`LocalDiskTaskResultPersistence`](<task.py.md#LocalDiskTaskResultPersistence>) object with `temp_dir` as the base directory.
+    - `self`: Represents the instance of the class `TestLocalDiskTaskResultPersistence`.
+    - `temp_dir`: A `Path` object representing a temporary directory used as the base directory for task result persistence.
+- **Logic and Control Flow**:
+    - Create an instance of [`LocalDiskTaskResultPersistence`](<task.py.md#localdisktaskresultpersistence>) with `temp_dir` as the base directory.
     - Set `run_id` to 'test_run' and `task_id` to 'nonexistent_task'.
-    - Call [`load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>) on the `persistence` object with `run_id` and `task_id`.
-    - Assert that the result of the [`load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>) call is `None`.
-- **Output**: The method does not return any value, but it asserts that the result of loading a nonexistent task is `None`.
+    - Call [`load_task_result`](<task.py.md#taskresultpersistenceload_task_result>) on the `persistence` object with `run_id` and `task_id`.
+    - Assert that the result of [`load_task_result`](<task.py.md#taskresultpersistenceload_task_result>) is `None`.
+- **Output**: Returns `None` if the task result does not exist.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<task.py.md#LocalDiskTaskResultPersistence>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<task.py.md#TaskResultPersistenceload_task_result>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#TestLocalDiskTaskResultPersistence>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<task.py.md#localdisktaskresultpersistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<task.py.md#taskresultpersistenceload_task_result>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestLocalDiskTaskResultPersistence`](<#testlocaldisktaskresultpersistence>)  (Base Class)
 
 
 
 ---
 ### TestS3TaskResultPersistence<!-- {{#class:python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence}} -->
-- **Decorators**: `@pytest.fixture`
-- **Description**: The `TestS3TaskResultPersistence` class is a test suite designed to verify the functionality of the `S3TaskResultPersistence` class, which handles saving and loading task results to and from an S3 bucket. It includes tests for saving and loading task results in both JSON and PICKLE serialization formats, as well as a test for attempting to load a non-existent task result. The class uses the `pytest` framework and the `moto` library to mock AWS S3 interactions, ensuring that the tests can run without actual AWS resources.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L66>)
+
+- **Description**: Tests the `S3TaskResultPersistence` class for saving and loading task results to and from an S3 bucket using different serialization methods. It includes tests for JSON and PICKLE serialization, as well as handling of nonexistent task results.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.s3_bucket`](<#TestS3TaskResultPersistences3_bucket>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_save_and_load_task_result_json`](<#TestS3TaskResultPersistencetest_save_and_load_task_result_json>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_save_and_load_task_result_pickle`](<#TestS3TaskResultPersistencetest_save_and_load_task_result_pickle>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_load_nonexistent_task_result`](<#TestS3TaskResultPersistencetest_load_nonexistent_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.s3_bucket`](<#tests3taskresultpersistences3_bucket>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_save_and_load_task_result_json`](<#tests3taskresultpersistencetest_save_and_load_task_result_json>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_save_and_load_task_result_pickle`](<#tests3taskresultpersistencetest_save_and_load_task_result_pickle>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_load_nonexistent_task_result`](<#tests3taskresultpersistencetest_load_nonexistent_task_result>)
 
 **Methods**
 
 ---
 #### TestS3TaskResultPersistence\.s3\_bucket<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.s3_bucket}} -->
-The `s3_bucket` method is a pytest fixture that sets up a mock AWS S3 environment and creates a test bucket for use in tests.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L67>)
+
+Creates a mock S3 bucket for testing purposes and yields its name.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The method uses the `mock_aws` context manager to simulate an AWS environment.
-    - Within the `mock_aws` context, it creates an S3 client using `boto3.client('s3')`.
-    - A bucket named 'test-bucket' is created using the `create_bucket` method of the S3 client.
-    - The method yields the bucket name 'test-bucket' for use in tests.
-- **Output**: The method yields a string representing the name of the created S3 bucket, 'test-bucket'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#TestS3TaskResultPersistence>)  (Base Class)
+- **Logic and Control Flow**:
+    - Uses the `mock_aws` context manager to simulate AWS services.
+    - Creates an S3 client using `boto3.client`.
+    - Defines a bucket name as `test-bucket`.
+    - Creates the S3 bucket with the specified name using `s3_client.create_bucket`.
+    - Yields the bucket name for use in tests.
+- **Output**: Yields the name of the created mock S3 bucket as a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#tests3taskresultpersistence>)  (Base Class)
 
 
 ---
 #### TestS3TaskResultPersistence\.test\_save\_and\_load\_task\_result\_json<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_save_and_load_task_result_json}} -->
-The `test_save_and_load_task_result_json` method tests the functionality of saving and loading a task result in JSON format using S3 as the storage backend.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L75>)
+
+Tests the saving and loading of a task result in JSON format using S3 for persistence.
 - **Inputs**:
-    - `self`: Refers to the instance of the `TestS3TaskResultPersistence` class.
-    - `s3_bucket`: A string representing the name of the S3 bucket used for storing task results.
-- **Control Flow**:
-    - An instance of [`S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>) is created with the provided S3 bucket name.
-    - A [`TaskResult`](<task.py.md#TaskResult>) object is instantiated with data `{"key": "value"}` and JSON serialization method.
-    - The [`save_task_result`](<task.py.md#S3TaskResultPersistencesave_task_result>) method of the [`S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>) instance is called to save the task result using the specified `run_id` and `task_id`.
-    - The [`load_task_result`](<task.py.md#S3TaskResultPersistenceload_task_result>) method is called to retrieve the task result using the same `run_id` and `task_id`.
-    - Assertions are made to ensure that the loaded result is not `None` and that its data matches the original result's data.
-- **Output**: The method does not return any value, but it asserts that the task result is correctly saved and loaded from S3.
+    - `s3_bucket`: A string representing the name of the S3 bucket used for storing the task result.
+- **Logic and Control Flow**:
+    - Create an instance of [`S3TaskResultPersistence`](<task.py.md#s3taskresultpersistence>) with the provided `s3_bucket` name.
+    - Define `run_id` and `task_id` as identifiers for the task result.
+    - Create a [`TaskResult`](<task.py.md#taskresult>) object with data and specify JSON as the serialization method.
+    - Call [`save_task_result`](<task.py.md#s3taskresultpersistencesave_task_result>) on the `persistence` object to save the task result to S3.
+    - Call [`load_task_result`](<task.py.md#s3taskresultpersistenceload_task_result>) on the `persistence` object to load the task result from S3.
+    - Assert that the loaded result is not `None`.
+    - Assert that the data in the loaded result matches the original result data.
+- **Output**: No output is returned as the function is a test method that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#TaskResult>)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result`](<task.py.md#S3TaskResultPersistencesave_task_result>)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<task.py.md#S3TaskResultPersistenceload_task_result>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#TestS3TaskResultPersistence>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<task.py.md#s3taskresultpersistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#taskresult>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result`](<task.py.md#s3taskresultpersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<task.py.md#s3taskresultpersistenceload_task_result>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#tests3taskresultpersistence>)  (Base Class)
 
 
 ---
 #### TestS3TaskResultPersistence\.test\_save\_and\_load\_task\_result\_pickle<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_save_and_load_task_result_pickle}} -->
-The `test_save_and_load_task_result_pickle` method tests the functionality of saving and loading a task result using pickle serialization in an S3 bucket.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L92>)
+
+Tests the saving and loading of a task result using pickle serialization in an S3 bucket.
 - **Inputs**:
-    - `self`: Refers to the instance of the TestS3TaskResultPersistence class.
-    - `s3_bucket`: A string representing the name of the S3 bucket used for storing task results.
-- **Control Flow**:
-    - An instance of S3TaskResultPersistence is created with the provided S3 bucket name.
-    - A run ID and task ID are defined as 'test_run' and 'test_task', respectively.
-    - A TaskResult object is created with data containing a dictionary {'key': 'value'} and serialization method set to PICKLE.
-    - The task result is saved to the S3 bucket using the save_task_result method of the persistence instance.
-    - The task result is then loaded from the S3 bucket using the load_task_result method of the persistence instance.
-    - Assertions are made to ensure the loaded result is not None and that its data matches the original result's data.
-- **Output**: The method does not return any value, but it asserts that the task result is correctly saved and loaded using pickle serialization.
+    - `s3_bucket`: A string representing the name of the S3 bucket to use for storing and retrieving the task result.
+- **Logic and Control Flow**:
+    - Create an instance of [`S3TaskResultPersistence`](<task.py.md#s3taskresultpersistence>) with the provided `s3_bucket`.
+    - Define `run_id` and `task_id` as 'test_run' and 'test_task', respectively.
+    - Create a [`TaskResult`](<task.py.md#taskresult>) object with data `{'key': 'value'}` and serialization method `SerializationMethod.PICKLE`.
+    - Call [`save_task_result`](<task.py.md#s3taskresultpersistencesave_task_result>) on the `persistence` object to save the [`TaskResult`](<task.py.md#taskresult>) to the S3 bucket.
+    - Call [`load_task_result`](<task.py.md#s3taskresultpersistenceload_task_result>) on the `persistence` object to load the [`TaskResult`](<task.py.md#taskresult>) from the S3 bucket.
+    - Assert that the loaded result is not `None`.
+    - Assert that the data in the loaded result matches the data in the original [`TaskResult`](<task.py.md#taskresult>).
+- **Output**: No output is returned as the function is a test method that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#TaskResult>)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result`](<task.py.md#S3TaskResultPersistencesave_task_result>)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<task.py.md#S3TaskResultPersistenceload_task_result>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#TestS3TaskResultPersistence>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<task.py.md#s3taskresultpersistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#taskresult>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result`](<task.py.md#s3taskresultpersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<task.py.md#s3taskresultpersistenceload_task_result>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#tests3taskresultpersistence>)  (Base Class)
 
 
 ---
 #### TestS3TaskResultPersistence\.test\_load\_nonexistent\_task\_result<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence.test_load_nonexistent_task_result}} -->
-The `test_load_nonexistent_task_result` method tests that attempting to load a task result for a nonexistent task from an S3 bucket returns `None`.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L109>)
+
+Tests that loading a nonexistent task result from S3 returns `None`.
 - **Inputs**:
-    - `self`: Refers to the instance of the `TestS3TaskResultPersistence` class.
-    - `s3_bucket`: A string representing the name of the S3 bucket used for testing, provided by the `s3_bucket` fixture.
-- **Control Flow**:
-    - An instance of [`S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>) is created with the provided `s3_bucket` name.
-    - A `run_id` and `task_id` are defined, with `task_id` set to 'nonexistent_task'.
-    - The [`load_task_result`](<task.py.md#S3TaskResultPersistenceload_task_result>) method of [`S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>) is called with `run_id` and `task_id`.
-    - The result of the [`load_task_result`](<task.py.md#S3TaskResultPersistenceload_task_result>) call is asserted to be `None`.
-- **Output**: The method does not return any value, but it asserts that the result of loading a nonexistent task is `None`.
+    - `self`: Represents the instance of the class `TestS3TaskResultPersistence`.
+    - `s3_bucket`: A string representing the name of the S3 bucket used for testing.
+- **Logic and Control Flow**:
+    - Create an instance of [`S3TaskResultPersistence`](<task.py.md#s3taskresultpersistence>) with the given `s3_bucket` name.
+    - Set `run_id` to 'test_run' and `task_id` to 'nonexistent_task'.
+    - Call [`load_task_result`](<task.py.md#s3taskresultpersistenceload_task_result>) on the `persistence` object with `run_id` and `task_id`.
+    - Assert that the result is `None`.
+- **Output**: None, but asserts that the result of loading a nonexistent task is `None`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<task.py.md#S3TaskResultPersistence>)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<task.py.md#S3TaskResultPersistenceload_task_result>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#TestS3TaskResultPersistence>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<task.py.md#s3taskresultpersistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<task.py.md#s3taskresultpersistenceload_task_result>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestS3TaskResultPersistence`](<#tests3taskresultpersistence>)  (Base Class)
 
 
 
 ---
 ### SleepTask<!-- {{#class:python-backend/content_services/inspector/src/utils/task_test.SleepTask}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L119>)
+
 - **Members**:
-    - `sleep_time`: The duration in seconds for which the task will sleep during execution.
-    - `_work_units`: The number of work units associated with the task.
-    - `captured_io_results`: Stores the IO results from dependencies for validation purposes.
-- **Description**: The SleepTask class is a specialized Task that simulates a delay in execution by sleeping for a specified amount of time. It inherits from the Task class and is designed to handle dependencies, allowing it to be part of a task dependency graph. The class captures IO results from its dependencies for validation and testing purposes, and it provides a property to access the number of work units associated with the task.
+    - `sleep_time`: Stores the duration for which the task will sleep.
+    - `_work_units`: Stores the number of work units for the task.
+    - `captured_io_results`: Captures the IO results from dependencies for validation.
+- **Description**: Implements a task that sleeps for a specified duration and manages dependencies. It inherits from the `Task` class and overrides methods to handle task execution and post-run IO operations. The class also manages work units and captures IO results from dependencies for validation purposes.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.__init__`](<#SleepTask__init__>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.run_implementation`](<#SleepTaskrun_implementation>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.recoverable_errors`](<#SleepTaskrecoverable_errors>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.post_run_io`](<#SleepTaskpost_run_io>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.work_units`](<#SleepTaskwork_units>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.__init__`](<#sleeptask__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.run_implementation`](<#sleeptaskrun_implementation>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.recoverable_errors`](<#sleeptaskrecoverable_errors>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.post_run_io`](<#sleeptaskpost_run_io>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask.work_units`](<#sleeptaskwork_units>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/task.Task`](<task.py.md#Task>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task`](<task.py.md#task>)
 
 **Methods**
 
 ---
 #### SleepTask\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.SleepTask.__init__}} -->
-The `__init__` method initializes a `SleepTask` instance with a task name, sleep time, optional dependencies, and work units, setting up necessary attributes and calling the superclass initializer.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L120>)
+
+Initializes a `SleepTask` instance with task name, sleep time, dependencies, and work units.
 - **Inputs**:
     - `task_name`: A string representing the name of the task.
-    - `sleep_time`: A float indicating the amount of time the task should sleep during execution.
+    - `sleep_time`: A float indicating the time in seconds the task should sleep.
     - `dependencies`: An optional tuple of `Task` objects that this task depends on; defaults to an empty tuple if not provided.
     - `work_units`: An integer representing the number of work units for the task, defaulting to 1.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - If `dependencies` is not provided, it defaults to an empty tuple.
-    - The method calls the superclass `__init__` with the task name, a [`LiteNode`](<dag.py.md#LiteNode>) object, and the dependencies.
-    - The `sleep_time` and `_work_units` attributes are set to the provided values.
-    - The `captured_io_results` attribute is initialized to `None` for later use in capturing IO results.
-- **Output**: This method does not return any value; it initializes the instance attributes.
+    - Calls the parent class `Task`'s `__init__` method with `task_name`, a [`LiteNode`](<dag.py.md#litenode>) object, and `dependencies`.
+    - Sets the `sleep_time` attribute to the provided `sleep_time` value.
+    - Sets the `_work_units` attribute to the provided `work_units` value.
+    - Initializes `captured_io_results` to `None` for capturing IO results in `post_run_io`.
+- **Output**: None, as it is a constructor method for initializing an object.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<dag.py.md#LiteNode>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#SleepTask>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<dag.py.md#litenode>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#sleeptask>)  (Base Class)
 
 
 ---
 #### SleepTask\.run\_implementation<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.SleepTask.run_implementation}} -->
-The `run_implementation` method asynchronously executes a task by sleeping for a specified duration and returns a [`TaskResult`](<task.py.md#TaskResult>) with the start and end times of the task execution.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L142>)
+
+Executes an asynchronous task that waits for a specified duration and returns a [`TaskResult`](<task.py.md#taskresult>) with start and end times.
 - **Decorators**: `@asyncio`
 - **Inputs**:
     - `self`: Refers to the instance of the `SleepTask` class.
-    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<task.py.md#TaskResult>) objects, representing the results of tasks that this task depends on.
-- **Control Flow**:
+    - `dependent_results`: A dictionary mapping `Task` objects to their corresponding [`TaskResult`](<task.py.md#taskresult>) objects, representing the results of tasks that this task depends on.
+- **Logic and Control Flow**:
     - Record the current time as `start_time`.
     - Pause execution asynchronously for the duration specified by `self.sleep_time`.
-    - Record the current time as `end_time` after the sleep period.
-    - Create and return a [`TaskResult`](<task.py.md#TaskResult>) object containing the `start_time` and `end_time`, serialized using the JSON method.
-- **Output**: Returns a [`TaskResult`](<task.py.md#TaskResult>) object containing the start and end times of the task execution, serialized in JSON format.
+    - Record the current time as `end_time` after the pause.
+    - Create a [`TaskResult`](<task.py.md#taskresult>) object with `start_time` and `end_time` in its data, using JSON serialization.
+    - Return the [`TaskResult`](<task.py.md#taskresult>) object.
+- **Output**: A [`TaskResult`](<task.py.md#taskresult>) object containing the start and end times of the task execution, serialized using JSON.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#TaskResult>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#SleepTask>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<task.py.md#taskresult>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#sleeptask>)  (Base Class)
 
 
 ---
 #### SleepTask\.recoverable\_errors<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.SleepTask.recoverable_errors}} -->
-The `recoverable_errors` method returns an empty set indicating no recoverable errors for the `SleepTask` class.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L153>)
+
+Returns an empty set of exception types that are considered recoverable.
 - **Inputs**: None
-- **Control Flow**:
-    - The method simply returns an empty set without any conditions or iterations.
-- **Output**: An empty set of type `set[type[Exception]]`, indicating no recoverable errors are defined.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#SleepTask>)  (Base Class)
+- **Logic and Control Flow**:
+    - Returns an empty set, indicating no recoverable errors are defined.
+- **Output**: An empty set of type `set[type[Exception]]`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#sleeptask>)  (Base Class)
 
 
 ---
 #### SleepTask\.post\_run\_io<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.SleepTask.post_run_io}} -->
-The `post_run_io` method captures and stores the IO results from dependent tasks for validation purposes.
-- **Decorators**: `@asyncio`
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L156>)
+
+Stores dependent IO results for validation and returns a completion status.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `task_result`: An instance of `TaskResult` representing the result of the current task.
-    - `dependent_io_results`: A dictionary mapping each dependent `Task` to its corresponding IO results, represented as a dictionary of string keys to any type of values.
-- **Control Flow**:
-    - The method assigns the `dependent_io_results` to the instance variable `captured_io_results` for later validation or testing purposes.
-    - The method returns a dictionary indicating that IO operations have been completed.
+    - `task_result`: The result of the task execution, represented as a `TaskResult` object.
+    - `dependent_io_results`: A dictionary mapping `Task` objects to their respective IO results, which are dictionaries with string keys and any type of values.
+- **Logic and Control Flow**:
+    - Assigns the `dependent_io_results` to the `captured_io_results` attribute of the instance for later validation.
+    - Returns a dictionary indicating that IO operations have completed with a key-value pair `{"io_completed": True}`.
 - **Output**: A dictionary with a single key-value pair `{"io_completed": True}` indicating the completion of IO operations.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#SleepTask>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#sleeptask>)  (Base Class)
 
 
 ---
 #### SleepTask\.work\_units<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.SleepTask.work_units}} -->
-The `work_units` method is a property that returns the number of work units assigned to a `SleepTask` instance.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L165>)
+
+Retrieves the number of work units assigned to the task.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method simply returns the value of the private attribute `_work_units`.
-- **Output**: The output is an integer representing the number of work units for the task.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#SleepTask>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the private attribute `_work_units`.
+    - Returns the value of `_work_units`.
+- **Output**: An integer representing the number of work units.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#sleeptask>)  (Base Class)
 
 
 
 ---
 ### TestTaskManager<!-- {{#class:python-backend/content_services/inspector/src/utils/task_test.TestTaskManager}} -->
-- **Description**: The `TestTaskManager` class is a test suite designed to validate the functionality of a task management system using the `pytest` framework. It includes fixtures and asynchronous test methods to ensure that tasks are executed with correct dependencies and that post-run input/output operations are handled properly. The class sets up a series of `SleepTask` instances with specified dependencies and verifies their execution order and IO result injection, ensuring that tasks run concurrently where appropriate and that dependencies are respected.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L170>)
+
+- **Description**: Defines test cases for the `TaskManager` class, focusing on task dependencies and post-run I/O injection. Uses `pytest` fixtures and asynchronous test methods to set up tasks and validate their execution order and I/O results. Ensures that tasks with dependencies execute in the correct sequence and that I/O results are correctly captured and injected after task completion.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.setup_tasks`](<#TestTaskManagersetup_tasks>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.test_task_dependency_basic`](<#TestTaskManagertest_task_dependency_basic>)
-    - [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.test_post_run_io_injection`](<#TestTaskManagertest_post_run_io_injection>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.setup_tasks`](<#testtaskmanagersetup_tasks>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.test_task_dependency_basic`](<#testtaskmanagertest_task_dependency_basic>)
+    - [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.test_post_run_io_injection`](<#testtaskmanagertest_post_run_io_injection>)
 
 **Methods**
 
 ---
 #### TestTaskManager\.setup\_tasks<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.setup_tasks}} -->
-The `setup_tasks` method is a pytest fixture that initializes and returns a [`TaskManager`](<task.py.md#TaskManager>) along with three [`SleepTask`](<#SleepTask>) instances with specified dependencies and sleep times.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L171>)
+
+Creates and returns a [`TaskManager`](<task.py.md#taskmanager>) instance and three [`SleepTask`](<#sleeptask>) instances with specified dependencies.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - Create a [`SleepTask`](<#SleepTask>) instance `task1` with a sleep time of 1 second and no dependencies.
-    - Create a [`SleepTask`](<#SleepTask>) instance `task2` with a sleep time of 1.5 seconds and a dependency on `task1`.
-    - Create a [`SleepTask`](<#SleepTask>) instance `task3` with a sleep time of 1 second and a dependency on `task1`.
-    - Store the three tasks in a list named `tasks`.
-    - Instantiate a [`TaskManager`](<task.py.md#TaskManager>) with the `tasks` list, setting `serial_exe` to `False` and `persistence` to `None`.
-    - Return a tuple containing the [`TaskManager`](<task.py.md#TaskManager>) instance and the three [`SleepTask`](<#SleepTask>) instances (`task1`, `task2`, `task3`).
-- **Output**: A tuple containing a [`TaskManager`](<task.py.md#TaskManager>) instance and three [`SleepTask`](<#SleepTask>) instances (`task1`, `task2`, `task3`).
+- **Logic and Control Flow**:
+    - Creates a [`SleepTask`](<#sleeptask>) instance named `task1` with a sleep time of 1 second.
+    - Creates a [`SleepTask`](<#sleeptask>) instance named `task2` with a sleep time of 1.5 seconds and a dependency on `task1`.
+    - Creates a [`SleepTask`](<#sleeptask>) instance named `task3` with a sleep time of 1 second and a dependency on `task1`.
+    - Stores the three tasks in a list named `tasks`.
+    - Initializes a [`TaskManager`](<task.py.md#taskmanager>) with the `tasks` list, `serial_exe` set to `False`, and `persistence` set to `None`.
+    - Returns a tuple containing the [`TaskManager`](<task.py.md#taskmanager>) instance and the three [`SleepTask`](<#sleeptask>) instances.
+- **Output**: A tuple containing a [`TaskManager`](<task.py.md#taskmanager>) instance and three [`SleepTask`](<#sleeptask>) instances.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#SleepTask>)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<task.py.md#TaskManager>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager`](<#TestTaskManager>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task_test.SleepTask`](<#sleeptask>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<task.py.md#taskmanager>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager`](<#testtaskmanager>)  (Base Class)
 
 
 ---
 #### TestTaskManager\.test\_task\_dependency\_basic<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.test_task_dependency_basic}} -->
-The `test_task_dependency_basic` method tests the execution order and timing of tasks with dependencies using a TaskManager.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L182>)
+
+Tests the basic task dependency execution and timing constraints in an asynchronous task manager.
 - **Decorators**: `@pytest.mark.asyncio`
 - **Inputs**:
-    - `setup_tasks`: A tuple containing a TaskManager and three Task instances, used to set up the test environment.
-- **Control Flow**:
-    - Unpack the setup_tasks tuple into task_manager, task1, task2, and task3.
-    - Record the global start time using time.time().
-    - Run the tasks using task_manager.run_tasks with a specific run_id.
-    - Retrieve the start and completion times for each task from task_manager.task_results.
-    - Assert that task1 starts after the global start time and completes at least 1 second after it starts.
-    - Assert that task2 starts after task1 completes and completes at least 1.5 seconds after it starts.
-    - Assert that task3 starts after task1 completes and completes at least 1 second after it starts.
-    - Assert that task3 starts concurrently with task2 by checking the time difference is less than 0.1 seconds.
-    - Print the start and completion times for each task.
-    - Assert that task2 and task3 complete at least 2 seconds after the global start time.
-- **Output**: The method does not return any value; it uses assertions to validate task execution order and timing.
+    - `setup_tasks`: A tuple containing a `TaskManager` and three `Task` objects, which are used to set up the test environment.
+- **Logic and Control Flow**:
+    - Unpack `setup_tasks` into `task_manager`, `task1`, `task2`, and `task3`.
+    - Record the `global_start_time` using `time.time()`.
+    - Run tasks asynchronously using `task_manager.run_tasks` with a `run_id` of 'test_run'.
+    - Retrieve task results for `task1`, `task2`, and `task3` from `task_manager.task_results`.
+    - Extract start and completion times for each task from their respective results.
+    - Assert that `task1` starts after `global_start_time` and completes at least 1 second after it starts.
+    - Assert that `task2` starts after `task1` completes and completes at least 1.5 seconds after it starts.
+    - Assert that `task3` starts after `task1` completes and completes at least 1 second after it starts.
+    - Assert that `task3` starts concurrently with `task2` by checking the time difference is less than 0.1 seconds.
+    - Print the start and completion times for `task1`, `task2`, and `task3`.
+    - Assert that both `task2` and `task3` complete at least 2 seconds after `global_start_time`.
+- **Output**: None, as it is a test function that uses assertions to validate task execution.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks`](<task.py.md#TaskManagerrun_tasks>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager`](<#TestTaskManager>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks`](<task.py.md#taskmanagerrun_tasks>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager`](<#testtaskmanager>)  (Base Class)
 
 
 ---
 #### TestTaskManager\.test\_post\_run\_io\_injection<!-- {{#callable:python-backend/content_services/inspector/src/utils/task_test.TestTaskManager.test_post_run_io_injection}} -->
-The `test_post_run_io_injection` method verifies that the `post_run_io` method is called and that IO results are correctly injected from completed dependencies for a set of tasks managed by a `TaskManager`.
+[View Source →](<../../../../../../content_services/inspector/src/utils/task_test.py#L222>)
+
+Tests that `post_run_io` is called and IO results are injected correctly from any dependencies that have completed.
 - **Decorators**: `@pytest.mark.asyncio`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestTaskManager` to which this method belongs.
-    - `setup_tasks`: A tuple containing a `TaskManager` and three `Task` instances, which are set up as part of a pytest fixture.
-- **Control Flow**:
-    - Unpack the `setup_tasks` tuple into `task_manager`, `task1`, `task2`, and `task3`.
-    - Invoke `task_manager.run_tasks` asynchronously with a `run_id` of 'test_run_io' to execute the tasks and trigger the `post_run_io` method.
-    - Print the captured IO results for `task1`, `task2`, and `task3`.
-    - Assert that `task1` has no captured IO results since it has no dependencies.
-    - Assert that `task2` and `task3` have captured IO results indicating that `task1` has completed its IO, verifying that `post_run_io` was called and results were injected correctly.
-- **Output**: The method does not return any value; it performs assertions to validate the behavior of the `post_run_io` method and prints the IO results for debugging purposes.
+    - `self`: Represents the instance of the class `TestTaskManager`.
+    - `setup_tasks`: A tuple containing a `TaskManager` and three `Task` objects, used to set up the test environment.
+- **Logic and Control Flow**:
+    - Unpacks `setup_tasks` into `task_manager`, `task1`, `task2`, and `task3`.
+    - Calls [`run_tasks`](<task.py.md#taskmanagerrun_tasks>) on `task_manager` with `run_id` set to 'test_run_io' to execute the tasks.
+    - Prints the IO results captured by `task1`, `task2`, and `task3`.
+    - Asserts that `task1` has no captured IO results because it has no dependencies.
+    - Asserts that `task2` and `task3` have captured IO results indicating that `task1` has completed its IO.
+- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks`](<task.py.md#TaskManagerrun_tasks>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager`](<#TestTaskManager>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks`](<task.py.md#taskmanagerrun_tasks>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task_test.TestTaskManager`](<#testtaskmanager>)  (Base Class)
 
 
 

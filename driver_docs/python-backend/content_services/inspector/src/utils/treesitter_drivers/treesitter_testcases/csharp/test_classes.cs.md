@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_classes.cs` file contains various C# class definitions, including examples of simple, abstract, generic, partial, static, sealed, and record classes, as well as classes with attributes and interface implementations.
+Test cases for various C# class definitions, including simple, abstract, generic, and record classes.
 
 # Purpose
-This C# source code file defines a comprehensive collection of class types and structures, showcasing a variety of object-oriented programming concepts and features available in C#. The file is organized under the namespace `Com.Example.Classes` and includes several class definitions, each demonstrating different aspects of C# programming. The classes range from simple to complex, including a [`SimpleClass`](<#SimpleClassSimpleClass>) with basic properties and methods, an `AbstractClass` with abstract and virtual methods, and a `ConcreteClass` that implements an interface and extends the abstract class. The file also includes a [`GenericClass`](<#GenericClassGenericClass>) demonstrating the use of generics, a `PartialClass` illustrating partial class definitions, and a `StaticUtilities` class for static methods.
+The code defines a collection of C# class definitions within the `Com.Example.Classes` namespace. It demonstrates various object-oriented programming concepts, including class inheritance, interface implementation, and the use of generics. The [`SimpleClass`](<#simpleclasssimpleclass>) provides basic functionality with methods to get and set a private integer value and includes a nested static class [`InnerClass`](<#innerclassinnerclass>). The `AbstractClass` serves as a base class with an abstract method [`DoSomething`](<#abstractclassdosomething>) and a virtual method [`VirtualMethod`](<#abstractclassvirtualmethod>), which are overridden in the `ConcreteClass`. The `ConcreteClass` also implements the `IComparable` interface.
 
-Additionally, the file contains a `SealedClass` that prevents further inheritance, and two record types, `PersonRecord` and `PersonRecordWithProps`, which leverage C# 9+ features for immutable data structures. The `AttributedClass` is particularly notable for its use of attributes, such as `[Serializable]`, `[Obsolete]`, and various data annotations, which provide metadata and validation rules. This class also includes a method with attributes for web API routing and authorization, indicating its potential use in a web application context. Overall, this file serves as a rich demonstration of C# class design, encapsulating a wide range of functionalities and design patterns.
+The code includes a [`GenericClass`](<#genericclassgenericclass>) that demonstrates the use of generics with constraints on type parameters. A `PartialClass` is defined, indicating that its implementation may be split across multiple files. The `StaticUtilities` class provides a static method [`DoStaticWork`](<#staticutilitiesdostaticwork>). The `SealedClass` is a sealed implementation of `AbstractClass`, preventing further inheritance. The code also includes record types, `PersonRecord` and `PersonRecordWithProps`, which are immutable data structures introduced in C# 9. The `AttributedClass` demonstrates the use of attributes for serialization, validation, and API endpoint definition, with attributes like `[Serializable]`, `[Obsolete]`, and `[HttpGet]`. This class is marked as deprecated, suggesting the use of an alternative class.
 # Imports and Dependencies
 
 ---
@@ -30,375 +30,432 @@ Additionally, the file contains a `SealedClass` that prevents further inheritanc
 
 ---
 ### SimpleClass<!-- {{#class:Com.Example.Classes.SimpleClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L8>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `SimpleClass` is a basic C# class that encapsulates an integer value and provides methods to get and set this value. It also contains a static readonly string constant. The class includes a nested static class `InnerClass`, which holds a string name and provides a constructor to initialize it. This class serves as a straightforward example of encapsulation and class nesting in C#.
+- **Description**: Encapsulates an integer value and provides methods to get and set this value. Contains a static nested class `InnerClass` that holds a string name. The class has a private integer field `value` and a static readonly string `CONSTANT`. The constructor initializes the `value` field. The `GetValue` method returns the current value, and the `SetValue` method updates the value. The `InnerClass` has a private string field `name` and a constructor to initialize it.
 - **Methods**:
-    - [`Com.Example.Classes.SimpleClass.SimpleClass`](<#SimpleClassSimpleClass>)
-    - [`Com.Example.Classes.SimpleClass.GetValue`](<#SimpleClassGetValue>)
-    - [`Com.Example.Classes.SimpleClass.SetValue`](<#SimpleClassSetValue>)
+    - [`Com.Example.Classes.SimpleClass.SimpleClass`](<#simpleclasssimpleclass>)
+    - [`Com.Example.Classes.SimpleClass.GetValue`](<#simpleclassgetvalue>)
+    - [`Com.Example.Classes.SimpleClass.SetValue`](<#simpleclasssetvalue>)
 
 **Methods**
 
 ---
 #### SimpleClass\.SimpleClass<!-- {{#callable:Com.Example.Classes.SimpleClass.SimpleClass}} -->
-The `SimpleClass` constructor initializes a new instance of the `SimpleClass` by setting its `value` field to the provided integer argument.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L13>)
+
+Initializes a new instance of the `SimpleClass` class with a specified integer value; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `value`: An integer that is used to initialize the private field `value` of the `SimpleClass` instance.
+    - `value`: An integer that sets the initial value of the `value` field in the `SimpleClass` instance.
 - **Control Flow**:
-    - The constructor takes an integer parameter `value`.
-    - The constructor assigns the provided `value` to the private field `this.value` of the `SimpleClass` instance.
-- **Output**: This is a constructor and does not return a value; it initializes the state of a new `SimpleClass` object.
-- **See also**: [`Com.Example.Classes.SimpleClass`](<#SimpleClass>)  (Base Class)
+    - Assigns the input parameter `value` to the private field `this.value`.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Classes.SimpleClass`](<#simpleclass>)  (Base Class)
 
 
 ---
 #### SimpleClass\.GetValue<!-- {{#callable:Com.Example.Classes.SimpleClass.GetValue}} -->
-The `GetValue` method returns the current value of the private integer field `value` in the `SimpleClass`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L18>)
+
+Returns the value of the private field `value`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private field `value`.
-- **Output**: The method returns an integer, which is the current value of the `value` field.
-- **See also**: [`Com.Example.Classes.SimpleClass`](<#SimpleClass>)  (Base Class)
+    - Return the value of the private field `value`.
+- **Output**: The method returns an integer, which is the current value of the private field `value`.
+- **See also**: [`Com.Example.Classes.SimpleClass`](<#simpleclass>)  (Base Class)
 
 
 ---
 #### SimpleClass\.SetValue<!-- {{#callable:Com.Example.Classes.SimpleClass.SetValue}} -->
-The `SetValue` method assigns a new integer value to the private field `value` of the `SimpleClass` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L23>)
+
+Sets the private field `value` to the specified integer value.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `value`: An integer that will be assigned to the private field `value` of the `SimpleClass` instance.
+    - `value`: An integer value to assign to the private field `value`.
 - **Control Flow**:
-    - The method takes an integer parameter named `value`.
-    - It assigns the provided `value` to the instance's private field `value`.
-- **Output**: This method does not return any value as its return type is `void`.
-- **See also**: [`Com.Example.Classes.SimpleClass`](<#SimpleClass>)  (Base Class)
+    - Assign the input parameter `value` to the private field `value`.
+- **Output**: No output, as the method is of type `void`.
+- **See also**: [`Com.Example.Classes.SimpleClass`](<#simpleclass>)  (Base Class)
 
 
 
 ---
 ### InnerClass<!-- {{#class:Com.Example.Classes.SimpleClass.InnerClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L29>)
+
 - **Type**: `class`
 - **Modifiers**: `public`, `static`
-- **Description**: The `InnerClass` is a static nested class within the `SimpleClass` that encapsulates a private string field named `name`. It provides a constructor that initializes this field with a given string value. As a static class, it cannot be instantiated or contain instance members, but it can contain static members and methods. However, in this implementation, it only contains a private field and a constructor.
+- **Description**: Defines a static nested class within `SimpleClass` that holds a private string field `name`. The constructor initializes this field with a given string value.
 - **Methods**:
-    - [`Com.Example.Classes.SimpleClass.InnerClass.InnerClass`](<#InnerClassInnerClass>)
+    - [`Com.Example.Classes.SimpleClass.InnerClass.InnerClass`](<#innerclassinnerclass>)
 
 **Methods**
 
 ---
 #### InnerClass\.InnerClass<!-- {{#callable:Com.Example.Classes.SimpleClass.InnerClass.InnerClass}} -->
-The `InnerClass` constructor initializes a new instance of the `InnerClass` with a specified name.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L33>)
+
+Initializes a new instance of the `InnerClass` class with a specified name; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `name`: A string representing the name to be assigned to the `InnerClass` instance.
+    - `name`: A string that sets the `name` field of the `InnerClass` instance.
 - **Control Flow**:
-    - Assigns the input parameter `name` to the private field `name` of the `InnerClass`.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the `InnerClass`.
-- **See also**: [`Com.Example.Classes.SimpleClass.InnerClass`](<#SimpleClass.InnerClass>)  (Base Class)
+    - Assigns the input parameter `name` to the private field `name` of the `InnerClass` instance.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Classes.SimpleClass.InnerClass`](<#innerclass>)  (Base Class)
 
 
 
 ---
 ### AbstractClass<!-- {{#class:Com.Example.Classes.AbstractClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L41>)
+
 - **Type**: `class`
 - **Modifiers**: `public`, `abstract`
-- **Description**: The `AbstractClass` is an abstract class that serves as a base class for other classes to inherit from. It defines a protected abstract method `DoSomething`, which must be implemented by any non-abstract derived class, ensuring that subclasses provide specific behavior for this method. Additionally, it includes a public virtual method `VirtualMethod`, which provides a default implementation that can be optionally overridden by derived classes. This class is designed to provide a common interface and shared functionality for its subclasses, while allowing them to define specific behaviors.
+- **Description**: Defines an abstract class with a protected abstract method `DoSomething` that must be implemented by derived classes. It also includes a virtual method `VirtualMethod` that can be overridden by subclasses to provide specific behavior.
 - **Methods**:
-    - [`Com.Example.Classes.AbstractClass.DoSomething`](<#AbstractClassDoSomething>)
-    - [`Com.Example.Classes.AbstractClass.VirtualMethod`](<#AbstractClassVirtualMethod>)
+    - [`Com.Example.Classes.AbstractClass.DoSomething`](<#abstractclassdosomething>)
+    - [`Com.Example.Classes.AbstractClass.VirtualMethod`](<#abstractclassvirtualmethod>)
 
 **Methods**
 
 ---
 #### AbstractClass\.DoSomething<!-- {{#callable:Com.Example.Classes.AbstractClass.DoSomething}} -->
-The `DoSomething` method is an abstract method intended to be implemented by derived classes to perform a specific action.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L43>)
+
+Defines an abstract method `DoSomething` that must be implemented by derived classes.
 - **Modifiers**: `protected`, `abstract`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is declared as `protected`, meaning it can only be accessed within its class and by derived class instances.
+    - The method is declared as `protected`, meaning it is accessible within its class and by derived class instances.
     - The method is `abstract`, indicating that it does not have an implementation in the base class and must be overridden in any non-abstract derived class.
-    - The method does not take any parameters, as indicated by the empty parentheses.
-    - The method does not have a body, as it is meant to be implemented by subclasses.
-- **Output**: The method does not produce any output directly, as it is abstract and its behavior is defined by the implementing subclass.
-- **See also**: [`Com.Example.Classes.AbstractClass`](<#AbstractClass>)  (Base Class)
+- **Output**: There is no output as the method is abstract and does not have an implementation.
+- **See also**: [`Com.Example.Classes.AbstractClass`](<#abstractclass>)  (Base Class)
 
 
 ---
 #### AbstractClass\.VirtualMethod<!-- {{#callable:Com.Example.Classes.AbstractClass.VirtualMethod}} -->
-The `VirtualMethod` is a virtual method that outputs a message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L45>)
+
+Writes a message to the console indicating that a virtual method is called.
 - **Modifiers**: `public`, `virtual`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as `virtual`, allowing derived classes to override it.
-    - The method writes the string 'Virtual method' to the console using `Console.WriteLine`.
-- **Output**: The method does not return any value; it performs a console output operation.
-- **See also**: [`Com.Example.Classes.AbstractClass`](<#AbstractClass>)  (Base Class)
+    - Calls `Console.WriteLine` to output the string 'Virtual method' to the console.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`Com.Example.Classes.AbstractClass`](<#abstractclass>)  (Base Class)
 
 
 
 ---
 ### ConcreteClass<!-- {{#class:Com.Example.Classes.ConcreteClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L52>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `ConcreteClass` is a concrete implementation of the `AbstractClass` and also implements the `IComparable<ConcreteClass>` interface. It provides specific implementations for the abstract method `DoSomething` and the virtual method `VirtualMethod` from its parent class, `AbstractClass`. The `DoSomething` method outputs a message indicating an action is being performed, while the `VirtualMethod` outputs a message indicating it has been overridden. Additionally, the class implements the `CompareTo` method from the `IComparable` interface, which currently returns a constant value of 0, indicating that all instances of `ConcreteClass` are considered equal in terms of sorting or comparison.
+- **Description**: Implements the `AbstractClass` and the `IComparable<ConcreteClass>` interface. Overrides the `DoSomething` and `VirtualMethod` methods from the `AbstractClass` to provide specific functionality. The `DoSomething` method outputs "Doing something" to the console, while the `VirtualMethod` outputs "Overridden virtual method". Implements the `CompareTo` method from the `IComparable<ConcreteClass>` interface, which currently returns 0, indicating equality with any other `ConcreteClass` instance.
 - **Methods**:
-    - [`Com.Example.Classes.ConcreteClass.DoSomething`](<#ConcreteClassDoSomething>)
-    - [`Com.Example.Classes.ConcreteClass.VirtualMethod`](<#ConcreteClassVirtualMethod>)
-    - [`Com.Example.Classes.ConcreteClass.CompareTo`](<#ConcreteClassCompareTo>)
+    - [`Com.Example.Classes.ConcreteClass.DoSomething`](<#concreteclassdosomething>)
+    - [`Com.Example.Classes.ConcreteClass.VirtualMethod`](<#concreteclassvirtualmethod>)
+    - [`Com.Example.Classes.ConcreteClass.CompareTo`](<#concreteclasscompareto>)
 - **Inherits From**:
-    - [`Com.Example.Classes.AbstractClass`](<#AbstractClass>)
+    - [`Com.Example.Classes.AbstractClass`](<#abstractclass>)
 
 **Methods**
 
 ---
 #### ConcreteClass\.DoSomething<!-- {{#callable:Com.Example.Classes.ConcreteClass.DoSomething}} -->
-The `DoSomething` method outputs a message to the console indicating an action is being performed.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L54>)
+
+Writes a message to the console.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - The method overrides a base class method named `DoSomething`.
-    - It writes the string "Doing something" to the console.
-- **Output**: The method does not return any value; it performs a console output operation.
-- **See also**: [`Com.Example.Classes.ConcreteClass`](<#ConcreteClass>)  (Base Class)
+    - Calls `Console.WriteLine` with the string "Doing something".
+- **Output**: No output is returned.
+- **See also**: [`Com.Example.Classes.ConcreteClass`](<#concreteclass>)  (Base Class)
 
 
 ---
 #### ConcreteClass\.VirtualMethod<!-- {{#callable:Com.Example.Classes.ConcreteClass.VirtualMethod}} -->
-The `VirtualMethod` is an overridden method that outputs a specific message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L59>)
+
+Overrides a virtual method to print a message to the console.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - The method overrides a base class virtual method.
-    - It executes a single statement that writes a message to the console.
-- **Output**: The method does not return any value; it performs a console output operation.
-- **See also**: [`Com.Example.Classes.ConcreteClass`](<#ConcreteClass>)  (Base Class)
+    - Calls `Console.WriteLine` to print the message 'Overridden virtual method' to the console.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`Com.Example.Classes.ConcreteClass`](<#concreteclass>)  (Base Class)
 
 
 ---
 #### ConcreteClass\.CompareTo<!-- {{#callable:Com.Example.Classes.ConcreteClass.CompareTo}} -->
-The `CompareTo` method in the `ConcreteClass` always returns 0, indicating equality with any other `ConcreteClass` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L64>)
+
+Implements the `IComparable<ConcreteClass>` interface by providing a comparison method that always returns 0.
 - **Modifiers**: `public`
 - **Inputs**:
     - `other`: An instance of `ConcreteClass` to compare with the current instance.
 - **Control Flow**:
-    - The method takes a single parameter `other` of type `ConcreteClass`.
-    - It directly returns the integer value 0 without performing any comparison logic.
-- **Output**: The method returns an integer value of 0, indicating that the current instance is considered equal to the `other` instance.
-- **See also**: [`Com.Example.Classes.ConcreteClass`](<#ConcreteClass>)  (Base Class)
+    - The method takes a parameter `other` of type `ConcreteClass`.
+    - It returns the integer value 0, indicating that all instances of `ConcreteClass` are considered equal in this comparison.
+- **Output**: An integer value 0, indicating equality between the current instance and the `other` instance.
+- **See also**: [`Com.Example.Classes.ConcreteClass`](<#concreteclass>)  (Base Class)
 
 
 
 ---
 ### GenericClass<!-- {{#class:Com.Example.Classes.GenericClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L71>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `GenericClass<T, U>` is a generic class designed to handle two types of data, where `T` is constrained to be a reference type with a parameterless constructor, and `U` is constrained to be a value type. This class encapsulates two private fields, `item1` of type `T` and `item2` of type `U`, and provides a constructor to initialize these fields. It also offers two public methods, `GetItem1` and `GetItem2`, which return the values of `item1` and `item2`, respectively. This class is useful for scenarios where you need to work with a pair of related data items of different types, ensuring type safety and flexibility through the use of generics.
+- **Description**: Defines a generic class with two type parameters, `T` and `U`. The type parameter `T` must be a reference type with a parameterless constructor, while `U` must be a value type. The class contains two private fields, `item1` of type `T` and `item2` of type `U`, which are initialized through the constructor. Provides methods `GetItem1` and `GetItem2` to retrieve the values of `item1` and `item2`, respectively.
 - **Methods**:
-    - [`Com.Example.Classes.GenericClass.GenericClass`](<#GenericClassGenericClass>)
-    - [`Com.Example.Classes.GenericClass.GetItem1`](<#GenericClassGetItem1>)
-    - [`Com.Example.Classes.GenericClass.GetItem2`](<#GenericClassGetItem2>)
+    - [`Com.Example.Classes.GenericClass.GenericClass`](<#genericclassgenericclass>)
+    - [`Com.Example.Classes.GenericClass.GetItem1`](<#genericclassgetitem1>)
+    - [`Com.Example.Classes.GenericClass.GetItem2`](<#genericclassgetitem2>)
 
 **Methods**
 
 ---
 #### GenericClass\.GenericClass<!-- {{#callable:Com.Example.Classes.GenericClass.GenericClass}} -->
-This is a constructor for the GenericClass that initializes its two generic type parameters, item1 and item2.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L76>)
+
+Initializes a new instance of the `GenericClass` with specified values for `item1` and `item2`, noting that this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `item1`: The first parameter of generic type T, which must be a class and have a parameterless constructor.
-    - `item2`: The second parameter of generic type U, which must be a value type (struct).
+    - `item1`: An object of type `T` which must be a class with a parameterless constructor.
+    - `item2`: A value of type `U` which must be a value type (struct).
 - **Control Flow**:
-    - Assigns the input parameter item1 to the private field item1 of the class.
-    - Assigns the input parameter item2 to the private field item2 of the class.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the GenericClass.
-- **See also**: [`Com.Example.Classes.GenericClass`](<#GenericClass>)  (Base Class)
+    - Assigns the input parameter `item1` to the private field `this.item1`.
+    - Assigns the input parameter `item2` to the private field `this.item2`.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Classes.GenericClass`](<#genericclass>)  (Base Class)
 
 
 ---
 #### GenericClass\.GetItem1<!-- {{#callable:Com.Example.Classes.GenericClass.GetItem1}} -->
-The `GetItem1` method returns the value of the private field `item1` from a `GenericClass` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L82>)
+
+Returns the value of the private field `item1` of type `T` from the `GenericClass`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private field `item1`.
-- **Output**: The method returns an instance of type `T`, which is the type parameter of the `GenericClass`.
-- **See also**: [`Com.Example.Classes.GenericClass`](<#GenericClass>)  (Base Class)
+    - Accesses the private field `item1`.
+    - Returns the value of `item1`.
+- **Output**: The method returns an object of type `T`, which is the type of the private field `item1`.
+- **See also**: [`Com.Example.Classes.GenericClass`](<#genericclass>)  (Base Class)
 
 
 ---
 #### GenericClass\.GetItem2<!-- {{#callable:Com.Example.Classes.GenericClass.GetItem2}} -->
-The `GetItem2` method returns the value of the private field `item2` from a `GenericClass` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L83>)
+
+Returns the value of the private field `item2`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private field `item2`.
-- **Output**: The method returns a value of type `U`, which is a struct type parameter of the `GenericClass`.
-- **See also**: [`Com.Example.Classes.GenericClass`](<#GenericClass>)  (Base Class)
+    - Accesses the private field `item2`.
+    - Returns the value of `item2`.
+- **Output**: The method returns a value of type `U`, which is the type of the private field `item2`.
+- **See also**: [`Com.Example.Classes.GenericClass`](<#genericclass>)  (Base Class)
 
 
 
 ---
 ### PartialClass<!-- {{#class:Com.Example.Classes.PartialClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L87>)
+
 - **Type**: `class`
 - **Modifiers**: `public`, `partial`
-- **Description**: The `PartialClass` is a partial class that allows its definition to be split across multiple files. In this specific part of the class, it contains a private field `name` and a public property `Name` that provides access to this field. The property uses a simple getter and setter to retrieve and assign the value of `name`, respectively. This class is designed to be extended with additional members in other parts of its definition, which can be located in different files.
+- **Description**: Defines a partial class with a private field `name` and a public property `Name` to get or set the value of `name`. This class can be split across multiple files, allowing for modular development.
 - **Methods**:
-    - [`Com.Example.Classes.PartialClass.Name`](<#PartialClassName>)
+    - [`Com.Example.Classes.PartialClass.Name`](<#partialclassname>)
 
 **Methods**
 
 ---
 #### PartialClass\.Name<!-- {{#callable:Com.Example.Classes.PartialClass.Name}} -->
-The `Name` property in the `PartialClass` allows getting and setting the private `name` field.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L91>)
+
+Provides access to the `name` field in the `PartialClass` as a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The getter (`get => name;`) returns the current value of the private field `name`.
-    - The setter (`set => name = value;`) assigns a new value to the private field `name`.
-- **Output**: The output is the value of the `name` field when accessed via the getter, and there is no output when setting a value.
-- **See also**: [`Com.Example.Classes.PartialClass`](<#PartialClass>)  (Base Class)
+    - The `get` accessor returns the value of the private field `name`.
+    - The `set` accessor assigns a new value to the private field `name`.
+- **Output**: The output is the value of the `name` field when accessed through the `get` accessor.
+- **See also**: [`Com.Example.Classes.PartialClass`](<#partialclass>)  (Base Class)
 
 
 
 ---
 ### StaticUtilities<!-- {{#class:Com.Example.Classes.StaticUtilities}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L99>)
+
 - **Type**: `class`
 - **Modifiers**: `public`, `static`
-- **Description**: The `StaticUtilities` class is a static class that provides utility methods that can be accessed without instantiating the class. It contains a single static method, `DoStaticWork`, which outputs a message to the console. This class is designed to group static methods that perform operations not tied to a specific instance of a class.
+- **Description**: Provides a static utility class with a single method `DoStaticWork` that writes "Static work" to the console.
 - **Methods**:
-    - [`Com.Example.Classes.StaticUtilities.DoStaticWork`](<#StaticUtilitiesDoStaticWork>)
+    - [`Com.Example.Classes.StaticUtilities.DoStaticWork`](<#staticutilitiesdostaticwork>)
 
 **Methods**
 
 ---
 #### StaticUtilities\.DoStaticWork<!-- {{#callable:Com.Example.Classes.StaticUtilities.DoStaticWork}} -->
-The `DoStaticWork` method outputs a static message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L101>)
+
+Writes the string 'Static work' to the console.
 - **Modifiers**: `public`, `static`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called without any parameters.
-    - It executes a single line of code that writes the string "Static work" to the console.
-- **Output**: The method does not return any value; it performs a console output operation.
-- **See also**: [`Com.Example.Classes.StaticUtilities`](<#StaticUtilities>)  (Base Class)
+    - Calls `Console.WriteLine` with the argument 'Static work'.
+- **Output**: No return value; the method performs a console output operation.
+- **See also**: [`Com.Example.Classes.StaticUtilities`](<#staticutilities>)  (Base Class)
 
 
 
 ---
 ### SealedClass<!-- {{#class:Com.Example.Classes.SealedClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L108>)
+
 - **Type**: `class`
 - **Modifiers**: `public`, `sealed`
-- **Description**: The `SealedClass` is a sealed class that extends the `AbstractClass`. It provides a concrete implementation of the abstract method `DoSomething`, which outputs "Sealed implementation" to the console. Being sealed, this class cannot be further inherited, ensuring that its behavior remains unchanged in any derived classes.
+- **Description**: Represents a sealed class that extends the `AbstractClass`. It provides a specific implementation of the `DoSomething` method, which outputs "Sealed implementation" to the console. Being sealed, it cannot be further inherited.
 - **Methods**:
-    - [`Com.Example.Classes.SealedClass.DoSomething`](<#SealedClassDoSomething>)
+    - [`Com.Example.Classes.SealedClass.DoSomething`](<#sealedclassdosomething>)
 - **Inherits From**:
-    - [`Com.Example.Classes.AbstractClass`](<#AbstractClass>)
+    - [`Com.Example.Classes.AbstractClass`](<#abstractclass>)
 
 **Methods**
 
 ---
 #### SealedClass\.DoSomething<!-- {{#callable:Com.Example.Classes.SealedClass.DoSomething}} -->
-The `DoSomething` method is a protected override that outputs a specific message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L110>)
+
+Overrides a method to print a specific message to the console.
 - **Modifiers**: `protected`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - The method overrides a base class method, indicating it provides a specific implementation for a method defined in a base class.
-    - It writes the string 'Sealed implementation' to the console using `Console.WriteLine`.
-- **Output**: The method does not return any value; it performs a console output operation.
-- **See also**: [`Com.Example.Classes.SealedClass`](<#SealedClass>)  (Base Class)
+    - Overrides the `DoSomething` method.
+    - Executes `Console.WriteLine` to print the message 'Sealed implementation' to the console.
+- **Output**: No output is returned as the method is `void`.
+- **See also**: [`Com.Example.Classes.SealedClass`](<#sealedclass>)  (Base Class)
 
 
 
 ---
 ### PersonRecord<!-- {{#class:Com.Example.Classes.PersonRecord}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L117>)
+
 - **Type**: `record`
 - **Modifiers**: `public`
-- **Description**: The `PersonRecord` class is a simple record type introduced in C# 9.0, designed to encapsulate immutable data with built-in value equality. It defines two positional parameters, `FirstName` and `LastName`, which are automatically implemented as read-only properties. This record is ideal for representing a person with a first and last name, providing concise syntax for data storage and comparison.
+- **Description**: Represents a record type that encapsulates a person's first and last name. This record provides a concise syntax for defining immutable data objects with value-based equality.
 
 
 ---
 ### PersonRecordWithProps<!-- {{#class:Com.Example.Classes.PersonRecordWithProps}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L120>)
+
 - **Type**: `record`
 - **Modifiers**: `public`
-- **Description**: The `PersonRecordWithProps` class is a record type in C# that represents a person with three properties: `FirstName`, `LastName`, and `Age`. The `FirstName` and `LastName` properties are immutable after initialization, as indicated by the `init` accessor, while the `Age` property is mutable, allowing it to be changed after the object is created. This class leverages the record type's built-in functionality for value-based equality and immutability, making it suitable for scenarios where the identity of the object is determined by its data rather than its reference.
+- **Description**: Defines a record with properties for a person's first name, last name, and age. The `FirstName` and `LastName` properties are immutable after initialization, while the `Age` property is mutable.
 
 
 ---
 ### AttributedClass<!-- {{#class:Com.Example.Classes.AttributedClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L128>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `AttributedClass` is a C# class that is marked as deprecated and is suggested to be replaced by `NewAttributedClass`. It is decorated with several attributes that influence its serialization and validation behavior. The class is marked as `[Serializable]` and `[Obsolete]`, indicating that it can be serialized and is outdated. It contains properties such as `UserName`, `Description`, `Priority`, and `InternalData`, each with specific attributes like `[JsonPropertyName]`, `[Required]`, `[StringLength]`, `[Range]`, and `[JsonIgnore]` to control JSON serialization and validation constraints. Additionally, it includes a method `GetUser` that is decorated with `[HttpGet]` and `[Authorize]` attributes, indicating it is an HTTP GET endpoint requiring admin role authorization.
+- **Description**: Represents a class that is marked as deprecated and is intended to be replaced by `NewAttributedClass`. It includes several properties with data annotations for validation and serialization purposes. The `UserName` property is serialized with the name "user_name". The `Description` property must be between 1 and 100 characters. The `Priority` property must be between 1 and 100. The `InternalData` property is ignored during JSON serialization. The class also includes a method `GetUser` that is decorated with HTTP and authorization attributes, allowing it to be accessed via an HTTP GET request by users with the "Admin" role.
 - **Methods**:
-    - [`Com.Example.Classes.AttributedClass.UserName`](<#AttributedClassUserName>)
-    - [`Com.Example.Classes.AttributedClass.Description`](<#AttributedClassDescription>)
-    - [`Com.Example.Classes.AttributedClass.Priority`](<#AttributedClassPriority>)
-    - [`Com.Example.Classes.AttributedClass.InternalData`](<#AttributedClassInternalData>)
-    - [`Com.Example.Classes.AttributedClass.GetUser`](<#AttributedClassGetUser>)
+    - [`Com.Example.Classes.AttributedClass.UserName`](<#attributedclassusername>)
+    - [`Com.Example.Classes.AttributedClass.Description`](<#attributedclassdescription>)
+    - [`Com.Example.Classes.AttributedClass.Priority`](<#attributedclasspriority>)
+    - [`Com.Example.Classes.AttributedClass.InternalData`](<#attributedclassinternaldata>)
+    - [`Com.Example.Classes.AttributedClass.GetUser`](<#attributedclassgetuser>)
 
 **Methods**
 
 ---
 #### AttributedClass\.UserName<!-- {{#callable:Com.Example.Classes.AttributedClass.UserName}} -->
-The `UserName` property is a public string property in the `AttributedClass` that is serialized with the JSON property name "user_name".
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L132>)
+
+Represents a property for getting or setting the `UserName` with a JSON serialization attribute.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `UserName` property is defined with a `JsonPropertyName` attribute, which specifies that when the property is serialized to JSON, it should use the key "user_name".
-    - The property is a standard auto-implemented property with a public getter and setter, allowing it to be read and modified from outside the class.
-- **Output**: The output is a string value representing the user's name, which can be serialized to JSON with the key "user_name".
-- **See also**: [`Com.Example.Classes.AttributedClass`](<#AttributedClass>)  (Base Class)
+    - The `UserName` property is defined with a `JsonPropertyName` attribute, which specifies that the JSON key for this property is `user_name`.
+    - The property is of type `string` and has both a getter and a setter, allowing for reading and writing the `UserName` value.
+- **Output**: A `string` value representing the user's name, which can be serialized to or deserialized from JSON using the key `user_name`.
+- **See also**: [`Com.Example.Classes.AttributedClass`](<#attributedclass>)  (Base Class)
 
 
 ---
 #### AttributedClass\.Description<!-- {{#callable:Com.Example.Classes.AttributedClass.Description}} -->
-The `Description` property is a string attribute of the `AttributedClass` that must be between 1 and 100 characters in length.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L135>)
+
+Represents a property that stores a string description with validation attributes for required presence and length constraints.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Description` property is decorated with the `[Required]` attribute, indicating that it must have a value assigned.
-    - The `[StringLength(100, MinimumLength = 1)]` attribute enforces that the string length must be between 1 and 100 characters.
-- **Output**: The output is a string value representing the description, which adheres to the specified length constraints.
-- **See also**: [`Com.Example.Classes.AttributedClass`](<#AttributedClass>)  (Base Class)
+    - The `Description` property is decorated with the `[Required]` attribute, which enforces that a value must be provided for this property.
+    - The `[StringLength(100, MinimumLength = 1)]` attribute specifies that the string value must be between 1 and 100 characters in length.
+- **Output**: A string value representing the description, subject to validation constraints.
+- **See also**: [`Com.Example.Classes.AttributedClass`](<#attributedclass>)  (Base Class)
 
 
 ---
 #### AttributedClass\.Priority<!-- {{#callable:Com.Example.Classes.AttributedClass.Priority}} -->
-The `Priority` property is an integer property with a range constraint between 1 and 100.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L139>)
+
+Represents a property that holds an integer value constrained to a range between 1 and 100.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Priority` property is defined with a `[Range(1, 100)]` attribute, which enforces that any value assigned to it must be between 1 and 100 inclusive.
-    - The property is auto-implemented, meaning it uses a default backing field provided by the compiler.
-- **Output**: The output is an integer value representing the priority, constrained to be between 1 and 100.
-- **See also**: [`Com.Example.Classes.AttributedClass`](<#AttributedClass>)  (Base Class)
+    - The `Priority` property is defined with a `Range` attribute that limits its value to between 1 and 100.
+    - The property is an integer type and can be both read and set.
+- **Output**: An integer value representing the priority, constrained to be between 1 and 100.
+- **See also**: [`Com.Example.Classes.AttributedClass`](<#attributedclass>)  (Base Class)
 
 
 ---
 #### AttributedClass\.InternalData<!-- {{#callable:Com.Example.Classes.AttributedClass.InternalData}} -->
-The `InternalData` property is a string property in the `AttributedClass` that is ignored during JSON serialization.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L142>)
+
+Represents a property that stores a string value and is ignored during JSON serialization.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property is defined with a `JsonIgnore` attribute, indicating it should be excluded from JSON serialization processes.
-    - The property has both a getter and a setter, allowing for reading and writing of the `InternalData` value.
-- **Output**: The output is the value of the `InternalData` property, which is a string.
-- **See also**: [`Com.Example.Classes.AttributedClass`](<#AttributedClass>)  (Base Class)
+    - The `InternalData` property is defined with the `[JsonIgnore]` attribute, which means it will not be included in JSON serialization or deserialization processes.
+    - The property has both a getter and a setter, allowing for reading and writing of the `string` value.
+- **Output**: A `string` value that can be set or retrieved, but is not serialized to JSON.
+- **See also**: [`Com.Example.Classes.AttributedClass`](<#attributedclass>)  (Base Class)
 
 
 ---
 #### AttributedClass\.GetUser<!-- {{#callable:Com.Example.Classes.AttributedClass.GetUser}} -->
-The `GetUser` method returns a string representation of a user based on the provided user ID, with access restricted to users with the 'Admin' role.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_classes.cs#L145>)
+
+Returns a string representation of a user with a specified ID.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `id`: An integer representing the user ID for which the string representation is requested.
+    - `id`: An integer representing the user's ID.
 - **Control Flow**:
-    - The method is decorated with the `[HttpGet]` attribute, specifying that it handles HTTP GET requests to the endpoint `/api/users/{id}`.
-    - The method is also decorated with the `[Authorize]` attribute, restricting access to users with the 'Admin' role.
-    - The method takes an integer parameter `id` and returns a string formatted as `User {id}`.
-- **Output**: A string in the format `User {id}`, where `{id}` is the integer value passed to the method.
-- **See also**: [`Com.Example.Classes.AttributedClass`](<#AttributedClass>)  (Base Class)
+    - The method is decorated with the `HttpGet` attribute, mapping it to the `/api/users/{id}` endpoint.
+    - The method is also decorated with the `Authorize` attribute, restricting access to users with the 'Admin' role.
+    - The method takes an integer `id` as a parameter.
+    - It returns a string in the format 'User {id}', where `{id}` is the value of the input parameter.
+- **Output**: A string in the format 'User {id}', where `{id}` is the input parameter.
+- **See also**: [`Com.Example.Classes.AttributedClass`](<#attributedclass>)  (Base Class)
 
 
 

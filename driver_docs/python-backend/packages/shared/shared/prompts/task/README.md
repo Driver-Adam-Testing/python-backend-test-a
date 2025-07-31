@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python scripts for task prompts including document planning, writing, code verification, and prompt enhancement.
+Task-related prompts and modules for technical document creation, code verification, and prompt enhancement.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `task` package by importing various modules such as `app_note_section_planner`, `code_snippet_extractor`, and `smart_instruction_run`.
-- **[app_note_section_planner.py](app_note_section_planner.py.md)**: The `app_note_section_planner.py` file contains a prompt for creating sections of a detailed technical document called an app note, emphasizing the need for thorough understanding and analysis of the codebase before drafting each section.
-- **[app_note_section_writer.py](app_note_section_writer.py.md)**: The `app_note_section_writer.py` file contains a prompt for writing a section of a detailed technical document called an app note, emphasizing the need for thorough understanding and analysis of the codebase to provide in-depth insights.
-- **[code_critic_verifier.py](code_critic_verifier.py.md)**: The `code_critic_verifier.py` file contains a prompt outlining a systematic approach for verifying, detecting errors, correcting, and documenting input code snippets to ensure their correctness and functionality.
-- **[code_snippet_extractor.py](code_snippet_extractor.py.md)**: The `code_snippet_extractor.py` file defines a prompt for a system role to identify and extract code examples, CLI commands, source code, and code snippets from a document.
-- **[codeblock_syntax_mermaid.py](codeblock_syntax_mermaid.py.md)**: The `codeblock_syntax_mermaid.py` file contains a prompt for reviewing and correcting mermaid code blocks to ensure proper rendering by removing forbidden characters, correcting syntax, and avoiding cycles.
-- **[edit_document.py](edit_document.py.md)**: The `edit_document.py` file contains a prompt configuration for a technical document editor, specifying when to execute tools for additional context or modify text without context.
-- **[prompt_augmentation.py](prompt_augmentation.py.md)**: The `prompt_augmentation.py` file contains a system message template designed to guide a prompt engineer in enhancing user prompts for better results from a language model, with specific instructions on maintaining desired text length and verbosity.
-- **[selected_text.py](selected_text.py.md)**: The `selected_text.py` file defines a system message prompt for generating replacement or appendable text that is cohesive and readable within a markdown context.
-- **[smart_instruction_run.py](smart_instruction_run.py.md)**: The `smart_instruction_run.py` file defines a prompt template for generating smart instructions, focusing on executing the given prompt while providing context for document generation.
+- **[__init__.py](__init__.py.md)**: Imports modules for task-related functionalities in the shared prompts package.
+- **[app_note_section_planner.py](app_note_section_planner.py.md)**: A prompt for creating sections of a detailed technical document called an app note.
+- **[app_note_section_writer.py](app_note_section_writer.py.md)**: A prompt for writing a detailed technical document section called an app note, requiring in-depth codebase understanding.
+- **[code_critic_verifier.py](code_critic_verifier.py.md)**: A prompt for verifying, detecting errors, correcting, and documenting code snippets.
+- **[code_snippet_extractor.py](code_snippet_extractor.py.md)**: Extracts code examples, CLI commands, and snippets from a document.
+- **[codeblock_syntax_mermaid.py](codeblock_syntax_mermaid.py.md)**: A prompt for reviewing and correcting mermaid.js code blocks to ensure proper rendering and syntax.
+- **[edit_document.py](edit_document.py.md)**: A prompt for a technical document editor to execute tools for context or modify language as needed.
+- **[prompt_augmentation.py](prompt_augmentation.py.md)**: Defines a system message for enhancing user prompts to improve LLM responses in technical documentation.
+- **[selected_text.py](selected_text.py.md)**: Defines a system message prompt for generating markdown-compatible replacement or appendable text.
+- **[smart_instruction_run.py](smart_instruction_run.py.md)**: Defines a system message prompt template for generating smart instructions in a document.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

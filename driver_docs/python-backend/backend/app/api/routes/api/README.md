@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines API routes for health checks, chat handling, asset management, search, and user profile access.
+FastAPI endpoints for health checks, chat streaming, assets, ping, search, and user info.
 
 
 ## Files
-- **[healthcheck.py](healthcheck.py.md)**: The `healthcheck.py` file defines API routes for checking the health status of the application and retrieving user information using FastAPI.
-- **[migrated_studio_endpoints.py](migrated_studio_endpoints.py.md)**: The `migrated_studio_endpoints.py` file defines several API endpoints for handling chat requests, retrieving primary assets, contents, codebase trees, and document sets within the `python-backend` codebase.
-- **[ping.py](ping.py.md)**: The `ping.py` file defines an API route that returns the user ID of the caller authenticated via an API key token.
-- **[search.py](search.py.md)**: The `search.py` file defines an API endpoint for performing a search using a hybrid search tool, which requires either node IDs or relative paths as input parameters.
-- **[user.py](user.py.md)**: The `user.py` file defines API routes for retrieving user profile and organization information using Auth0 authentication.
+- **[healthcheck.py](healthcheck.py.md)**: Defines health check and user info endpoints using FastAPI.
+- **[migrated_studio_endpoints.py](migrated_studio_endpoints.py.md)**: Defines FastAPI endpoints for chat streaming, primary assets, contents, codebase tree, and document sets.
+- **[ping.py](ping.py.md)**: Defines a FastAPI route for a ping endpoint that returns the user ID from an API key token.
+- **[search.py](search.py.md)**: Defines an API endpoint for executing a hybrid search using node IDs or relative paths.
+- **[user.py](user.py.md)**: Defines API routes for retrieving user profile and organization information using Auth0.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

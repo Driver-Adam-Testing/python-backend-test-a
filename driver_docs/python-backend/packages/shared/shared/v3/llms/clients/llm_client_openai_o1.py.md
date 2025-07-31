@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_client_openai_o1.py` file implements the `OpenAiO1SeriesClient`, a specialized LLM client for interacting with OpenAI's O-Series models, focusing on JSON strictness and flexible tool integration.
+Specialized LLM client for interacting with OpenAI's O-Series models, enforcing JSON strictness.
 
 # Purpose
-The provided Python code defines a specialized client class, `OpenAiO1SeriesClient`, which is designed to interact with OpenAI's O-Series language models. This class extends the `LlmClient` base class and is part of a larger framework that deals with language model interactions. The primary purpose of this client is to facilitate communication with OpenAI's models by generating responses based on a given message history, response type, and optional tool types. The class enforces strict JSON output to ensure valid responses and allows for flexible integration of tools, which are executed as optional single instances.
+The `OpenAiO1SeriesClient` class is a specialized client for interacting with OpenAI's O-Series language models. It extends the `LlmClient` class and is designed to handle specific requirements when communicating with these models. The class does not use system prompts directly; instead, it converts them into developer messages. It ensures that the output is strictly valid JSON, which is crucial for applications that require structured data. Additionally, the class allows for the integration of tools as optional single instances, providing flexibility in how tools are used during the interaction with the language model.
 
-The `OpenAiO1SeriesClient` class is constructed with a configuration object, `LlmConfig`, which likely contains necessary settings such as the model ID. The core functionality is encapsulated in the [`_generate`](<#OpenAiO1SeriesClient_generate>) method, which processes a message history and generates a response using OpenAI's API. This method ensures that the message history is not mutated by creating a copy and appends additional messages based on the response type and tool types provided. The interaction with the OpenAI API is handled through the `openai` library, specifically using the `chat.completions.create` method to obtain a response. The class is designed to be part of a broader system, as indicated by its reliance on shared interfaces and configurations, and it does not define a public API or external interface beyond its intended use within this system.
+The [`_generate`](<#openaio1seriesclient_generate>) method is a core component of the `OpenAiO1SeriesClient` class. It generates responses from the language model based on a given message history, response type, and optional tool types. The method first creates a copy of the message history to prevent changes to the original data. It then adds parsing description messages for the response type and any specified tools. The method constructs the necessary parameters for the OpenAI API call, including the model ID and the formatted message history. It retrieves a response from the OpenAI API and converts it into an `LlmMessage` object, which is then added to the message history and returned. This method is essential for producing responses that adhere to the specified configurations and requirements.
 # Imports and Dependencies
 
 ---
@@ -27,54 +27,61 @@ The `OpenAiO1SeriesClient` class is constructed with a configuration object, `Ll
 
 ---
 ### OpenAiO1SeriesClient<!-- {{#class:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_o1.py#L15>)
+
 - **Members**:
-    - `client`: An instance of the OpenAI client used to interact with OpenAI's API.
-- **Description**: The OpenAiO1SeriesClient class is a specialized client for interacting with OpenAI's O-Series models, extending the LlmClient class. It is designed to handle message generation by converting system prompts into developer messages and ensuring JSON strictness in the output. The class allows for flexible integration of tools as optional single instances, enhancing its adaptability for various use cases. The primary function of this class is to generate responses from the language model using a given message history, response type, and tool types, while maintaining the integrity of the original message history.
+    - `client`: An instance of the OpenAI client used to interact with OpenAI's O-Series models.
+- **Description**: Interacts with OpenAI's O-Series models by converting system prompts to developer messages, enforcing JSON strictness, and allowing optional single-instance tool execution for flexible integration.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient.__init__`](<#OpenAiO1SeriesClient__init__>)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient._generate`](<#OpenAiO1SeriesClient_generate>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient.__init__`](<#openaio1seriesclient__init__>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient._generate`](<#openaio1seriesclient_generate>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<llm_client.py.md#LlmClient>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient`](<llm_client.py.md#llmclient>)
 
 **Methods**
 
 ---
 #### OpenAiO1SeriesClient\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient.__init__}} -->
-The [`__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>) method initializes an instance of the `OpenAiO1SeriesClient` class by setting up the configuration and creating an OpenAI client.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_o1.py#L25>)
+
+Initializes an instance of the `OpenAiO1SeriesClient` class with a given configuration and sets up the OpenAI client.
 - **Inputs**:
     - `config`: An instance of `LlmConfig` that provides configuration settings for the client.
-- **Control Flow**:
-    - Calls the parent class's [`__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>) method with the provided `config` to initialize the base class.
-    - Initializes the `client` attribute with an instance of `openai.OpenAI`.
-- **Output**: This method does not return any value; it initializes the instance attributes.
+- **Logic and Control Flow**:
+    - Calls the parent class [`__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>) method with the `config` parameter to initialize the base class.
+    - Creates an instance of `openai.OpenAI` and assigns it to the `client` attribute of the class.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient`](<#OpenAiO1SeriesClient>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.ResponseFullStreamResponse.__init__`](<../../interfaces/llm_stream_response.py.md#responsefullstreamresponse__init__>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient`](<#openaio1seriesclient>)  (Base Class)
 
 
 ---
 #### OpenAiO1SeriesClient\.\_generate<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient._generate}} -->
-The `_generate` method generates a response from the LLM using a given message history, optional response type, and tool types.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/clients/llm_client_openai_o1.py#L29>)
+
+Generates a response from the LLM using the provided message history, response type, and tool types.
 - **Inputs**:
-    - `message_history`: An instance of `LlmMessageHistory` representing the message history to use for generating the response.
+    - `message_history`: An instance of `LlmMessageHistory` that contains the message history to use for generating the response.
     - `response_type`: An optional type of `LlmResponseType` that specifies the response type to use for generation.
     - `tool_types`: An optional list of `LlmTool` types that specifies the tool types to use for generation.
-- **Control Flow**:
-    - A copy of the `message_history` is created to avoid mutating the original.
-    - If `response_type` is provided, its parsing description message is added to the copied message history.
-    - For each tool in `tool_types`, if provided, its parsing description message is added to the copied message history.
-    - A dictionary `completion_kwargs` is created with the model ID and the copied message history converted to OpenAI's format.
-    - A chat completion is requested from the OpenAI client using `completion_kwargs`, and the first choice's message is extracted.
-    - The response message is converted to an `LlmMessage` using the [`from_openai_chat_completion_message`](<../../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message>) method, with the response type and tool types as parameters.
-    - The generated `LlmMessage` is added to the original `message_history`.
-- **Output**: The method returns an `LlmMessage` object representing the generated response.
+- **Logic and Control Flow**:
+    - Create a copy of `message_history` to avoid mutating the original.
+    - If `response_type` is provided, add its parsing description message to the copied message history.
+    - Iterate over `tool_types` if provided, and add each tool's parsing description message to the copied message history.
+    - Prepare `completion_kwargs` with the model ID and the copied message history converted to OpenAI's format.
+    - Call the OpenAI client to create a chat completion using `completion_kwargs` and retrieve the first choice's message.
+    - Convert the response message to an `LlmMessage` using `LlmMessage.from_openai_chat_completion_message`.
+    - Add the generated `LlmMessage` to the original `message_history`.
+    - Return the generated `LlmMessage`.
+- **Output**: An `LlmMessage` object representing the generated response.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](<../../interfaces/llm_message_history.py.md#LlmMessageHistorycopy>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryadd_message>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_parsing_description_message`](<../../interfaces/llm_response_type.py.md#LlmResponseTypeto_parsing_description_message>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_o1`](<../../interfaces/llm_message_history.py.md#LlmMessageHistoryto_openai_o1>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient`](<#OpenAiO1SeriesClient>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.copy`](<../../interfaces/llm_message_history.py.md#llmmessagehistorycopy>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.add_message`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryadd_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_parsing_description_message`](<../../interfaces/llm_response_type.py.md#llmresponsetypeto_parsing_description_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.to_openai_o1`](<../../interfaces/llm_message_history.py.md#llmmessagehistoryto_openai_o1>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../../interfaces/llm_message.py.md#llmmessagefrom_openai_chat_completion_message>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_openai_o1.OpenAiO1SeriesClient`](<#openaio1seriesclient>)  (Base Class)
 
 
 

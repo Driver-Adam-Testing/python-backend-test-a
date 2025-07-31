@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_datasource.py` file contains unit tests for the `DataSource` class, specifically testing the creation of a `DataSource` from node IDs and page IDs, as well as checking the scope functionality.
+Tests for the DataSource class methods from_node_ids, from_page_id, and is_in_scope.
 
 # Purpose
-This Python file is a collection of unit tests designed to verify the functionality of the `DataSource` class, specifically focusing on its methods `from_node_ids`, `from_page_id`, and `is_in_scope`. The tests are narrow in scope, targeting specific behaviors of the `DataSource` class, such as creating instances from node IDs and page IDs, and checking if a given path is within the scope of the data source. The code uses the `UUID` class to handle unique identifiers and includes mock data to simulate database interactions, as actual database calls are not tested here. This file is a typical example of a test suite in a software project, ensuring that the `DataSource` class behaves as expected under certain conditions.
+This code is a test suite for the `DataSource` class, which is imported from the `shared.v3.utils.datasource` module. It contains three test functions that verify different functionalities of the `DataSource` class. The [`test_data_source_from_node_ids`](<#test_data_source_from_node_ids>) function checks the creation of a `DataSource` instance using the `from_node_ids` method, ensuring that the `node_ids` and `organization_id` attributes are correctly set. The [`test_data_source_from_page_id`](<#test_data_source_from_page_id>) function tests the `from_page_id` method to confirm that it returns a `DataSource` instance with the correct `organization_id`, although it does not perform actual database calls. The [`test_data_source_is_in_scope`](<#test_data_source_is_in_scope>) function evaluates the `is_in_scope` method by simulating a scenario where a `DataSource` instance checks if a given path is within the scope of its cached nodes, using a mock node with a specific `relative_path`.
 # Imports and Dependencies
 
 ---
@@ -19,56 +19,64 @@ This Python file is a collection of unit tests designed to verify the functional
 
 ---
 ### FakeNode<!-- {{#class:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_is_in_scope.FakeNode}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L43>)
+
 - **Members**:
-    - `relative_path`: A class variable that holds the string 'docs'.
-- **Description**: The `FakeNode` class is a simple mock class used for testing purposes, specifically to simulate a node with a predefined relative path. It contains a single class variable, `relative_path`, which is set to the string 'docs'. This class is used in test scenarios to verify the behavior of the `DataSource` class's `is_in_scope` method by providing a controlled environment where the relative path of nodes can be predetermined.
+    - `relative_path`: Stores the relative path as 'docs'.
+- **Description**: Represents a mock node with a predefined relative path used for testing purposes.
 
 
 # Functions
 
 ---
 ### test\_data\_source\_from\_node\_ids<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_from_node_ids}} -->
-The function tests the creation of a DataSource object using the from_node_ids method with specified node_ids and organization_id.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L7>)
+
+Tests the creation of a `DataSource` object from a list of `node_ids` and an `organization_id`.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize a list of node_ids with a single UUID value.
-    - Set the organization_id to a test string 'test_org'.
-    - Call the DataSource.from_node_ids method with the node_ids and organization_id to create a DataSource object.
-    - Assert that the node_ids attribute of the created DataSource object matches the input node_ids.
-    - Assert that the organization_id attribute of the created DataSource object matches the input organization_id.
-- **Output**: The function does not return any value; it performs assertions to validate the DataSource object creation.
+- **Logic and Control Flow**:
+    - Initializes a list `node_ids` with a single UUID value.
+    - Sets `organization_id` to the string 'test_org'.
+    - Calls `DataSource.from_node_ids` with `node_ids` and `organization_id` to create a `DataSource` object `ds`.
+    - Asserts that `ds.node_ids` is equal to the initialized `node_ids`.
+    - Asserts that `ds.organization_id` is equal to the initialized `organization_id`.
+- **Output**: No output is returned as the function is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../utils/datasource.py.md#DataSourcefrom_node_ids>)
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../utils/datasource.py.md#datasourcefrom_node_ids>)
 
 
 ---
 ### test\_data\_source\_from\_page\_id<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_from_page_id}} -->
-The function tests the DataSource.from_page_id method to ensure it can be called and returns a DataSource instance with the correct organization_id.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L20>)
+
+Tests the `DataSource.from_page_id` method to ensure it can be called and returns a `DataSource` instance.
 - **Inputs**: None
-- **Control Flow**:
-    - A UUID is created for the page_node_id with a fixed value.
-    - An organization_id is set to 'test_org'.
-    - The DataSource.from_page_id method is called with the page_node_id and organization_id.
-    - An assertion checks that the returned DataSource instance has the correct organization_id.
-- **Output**: The function does not return any value; it asserts that the DataSource instance has the expected organization_id.
+- **Logic and Control Flow**:
+    - Initialize `page_node_id` with a UUID value '11111111-1111-1111-1111-111111111111'.
+    - Set `organization_id` to the string 'test_org'.
+    - Call `DataSource.from_page_id` with `page_node_id` and `organization_id` as arguments, and assign the result to `ds`.
+    - Assert that the `organization_id` attribute of `ds` is equal to the `organization_id` variable.
+- **Output**: No output is returned as the function is a test function with assertions.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_page_id`](<../utils/datasource.py.md#DataSourcefrom_page_id>)
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_page_id`](<../utils/datasource.py.md#datasourcefrom_page_id>)
 
 
 ---
 ### test\_data\_source\_is\_in\_scope<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_is_in_scope}} -->
-The function `test_data_source_is_in_scope` tests the `is_in_scope` method of the [`DataSource`](<../utils/datasource.py.md#DataSource>) class to ensure it correctly identifies if a given path is within the scope of cached nodes.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_datasource.py#L35>)
+
+Checks if the `is_in_scope` method returns the expected boolean value based on the prefix of a given path.
 - **Inputs**: None
-- **Control Flow**:
-    - A [`DataSource`](<../utils/datasource.py.md#DataSource>) object `ds` is instantiated with an empty list of `node_ids` and an `organization_id` of 'test_org'.
-    - A [`FakeNode`](<#FakeNode>) class is defined with a `relative_path` attribute set to 'docs'.
-    - The `_cached_nodes` attribute of `ds` is set to a list containing an instance of [`FakeNode`](<#FakeNode>).
-    - The `is_in_scope` method of `ds` is called with the path 'docs/somefile.md', and it is asserted to return `True`.
-    - The `is_in_scope` method of `ds` is called with the path 'another/somefile.md', and it is asserted to return `False`.
-- **Output**: The function does not return any output, but it asserts that the `is_in_scope` method behaves as expected for given inputs.
+- **Logic and Control Flow**:
+    - Create a [`DataSource`](<../utils/datasource.py.md#datasource>) instance with an empty list of `node_ids` and an `organization_id` of 'test_org'.
+    - Define a [`FakeNode`](<#fakenode>) class with a `relative_path` attribute set to 'docs'.
+    - Assign a list containing a [`FakeNode`](<#fakenode>) instance to the `_cached_nodes` attribute of the [`DataSource`](<../utils/datasource.py.md#datasource>) instance.
+    - Call `is_in_scope` with a path starting with 'docs/' and assert that it returns `True`.
+    - Call `is_in_scope` with a path not starting with 'docs/' and assert that it returns `False`.
+- **Output**: No output is returned as this is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<../utils/datasource.py.md#DataSource>)
-    - [`python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_is_in_scope.FakeNode`](<#FakeNode>)
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource`](<../utils/datasource.py.md#datasource>)
+    - [`python-backend/packages/shared/shared/v3/tests/test_datasource.test_data_source_is_in_scope.FakeNode`](<#fakenode>)
 
 
 

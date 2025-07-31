@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `query_utils.py` file in the `python-backend` codebase provides utility functions for applying filters, sorting, and pagination to SQLAlchemy/SQLModel queries, supporting complex operations like JSONB column indexing and relationship handling.
+Utilities for applying filters, sorting, and pagination to SQLAlchemy/SQLModel queries.
 
 # Purpose
-This Python code file is designed to enhance SQLAlchemy/SQLModel queries with advanced filtering, sorting, and pagination capabilities, primarily for use in web applications built with FastAPI. The file defines a `SortDirection` enumeration to specify sorting order and a `PaginationQueryParams` class to encapsulate pagination parameters such as limit, offset, sort field, and sort direction. The [`get_pagination_params`](<#get_pagination_params>) function, along with the `Pagination` type alias, integrates these parameters into FastAPI's dependency injection system, allowing for seamless extraction of pagination details from incoming HTTP requests.
+The code provides functionality for handling pagination, filtering, and sorting of SQL queries using SQLAlchemy and SQLModel. It defines a `SortDirection` enumeration to specify sorting order and a `PaginationQueryParams` class to encapsulate pagination parameters such as `limit`, `offset`, `sort_by`, and `sort_direction`. The [`get_pagination_params`](<#get_pagination_params>) function uses FastAPI's dependency injection to retrieve pagination parameters, and the `Pagination` type alias is defined for convenience.
 
-The core functionality is provided by two functions: [`apply_filters_to_query`](<#apply_filters_to_query>) and [`apply_sorting_to_query`](<#apply_sorting_to_query>). [`apply_filters_to_query`](<#apply_filters_to_query>) allows for dynamic filtering of SQL queries based on a dictionary of filter criteria, supporting complex operations like JSONB column indexing and relationship-based filtering using dot notation. It includes a robust mechanism for handling various SQL operators and validates filter keys against the model's attributes. [`apply_sorting_to_query`](<#apply_sorting_to_query>) adds sorting and pagination to queries, supporting sorting on nested JSONB fields and relationships. Both functions raise HTTP exceptions for invalid operations, ensuring that only valid queries are executed. This file is intended to be part of a larger application, providing a reusable and extensible way to handle query customization in a database-driven FastAPI application.
+The code includes two main functions: [`apply_filters_to_query`](<#apply_filters_to_query>) and [`apply_sorting_to_query`](<#apply_sorting_to_query>). The [`apply_filters_to_query`](<#apply_filters_to_query>) function applies filters to a SQLAlchemy `Select` query based on a dictionary of filter keys and values. It supports various operators and handles both direct column filtering and more complex scenarios involving relationships and JSONB columns. The [`apply_sorting_to_query`](<#apply_sorting_to_query>) function applies sorting and pagination to a query, supporting sorting on JSONB columns using dot notation. It ensures that the specified sort fields and relationships are valid and constructs the appropriate SQL expressions. The code is intended to be used as part of a web application, likely with FastAPI, to facilitate dynamic query construction based on client requests.
 # Imports and Dependencies
 
 ---
@@ -27,19 +27,21 @@ The core functionality is provided by two functions: [`apply_filters_to_query`](
 
 ---
 ### Pagination
-- **Type**: `Annotated`
-- **Description**: The `Pagination` variable is an annotated type that combines `PaginationQueryParams` with a dependency on the `get_pagination_params` function. This setup is used in FastAPI to automatically inject pagination parameters into route handlers.
-- **Use**: This variable is used to define and manage pagination parameters for API endpoints, allowing for automatic dependency injection in FastAPI applications.
+- **Type**: ``Annotated``
+- **Description**: The `Pagination` variable is an `Annotated` type that combines the `PaginationQueryParams` class with a dependency on the `get_pagination_params` function. This setup is used to manage pagination parameters in a FastAPI application.
+- **Use**: Used to define and retrieve pagination parameters for API requests.
 
 
 # Classes
 
 ---
 ### SortDirection<!-- {{#class:python-backend/backend/app/api/routes/v2/query_utils.SortDirection}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/query_utils.py#L14>)
+
 - **Members**:
-    - `ASC`: Represents ascending sort direction.
-    - `DESC`: Represents descending sort direction.
-- **Description**: The `SortDirection` class is an enumeration that defines two possible values for sorting direction: ascending ('ASC') and descending ('DESC'). It inherits from both `str` and `Enum`, allowing it to be used as a string while also providing enumeration capabilities. This class is typically used to specify the direction of sorting operations in database queries or other ordered collections.
+    - `ASC`: Represents the ascending sort direction.
+    - `DESC`: Represents the descending sort direction.
+- **Description**: Defines sorting directions as enumeration values for use in query operations, allowing specification of ascending or descending order.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -47,32 +49,36 @@ The core functionality is provided by two functions: [`apply_filters_to_query`](
 
 ---
 ### PaginationQueryParams<!-- {{#class:python-backend/backend/app/api/routes/v2/query_utils.PaginationQueryParams}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/query_utils.py#L19>)
+
 - **Members**:
-    - `limit`: The maximum number of items to return in a single page.
-    - `offset`: The number of items to skip before starting to collect the result set.
-    - `sort_by`: The field name by which the results should be sorted.
-    - `sort_direction`: The direction in which to sort the results, either ascending or descending.
-- **Description**: The `PaginationQueryParams` class is designed to encapsulate pagination and sorting parameters for database queries. It provides default values for the number of items to return (`limit`), the starting point of the result set (`offset`), the field to sort by (`sort_by`), and the direction of sorting (`sort_direction`). This class is typically used in conjunction with query functions to apply pagination and sorting to SQL queries.
+    - `limit`: Defines the maximum number of items to return.
+    - `offset`: Specifies the starting point for the items to return.
+    - `sort_by`: Indicates the field to sort the results by.
+    - `sort_direction`: Determines the direction of sorting, either ascending or descending.
+- **Description**: Manages pagination and sorting parameters for database queries, allowing control over the number of items returned, the starting point, and the sorting order.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/v2/query_utils.PaginationQueryParams.__init__`](<#PaginationQueryParams__init__>)
+    - [`python-backend/backend/app/api/routes/v2/query_utils.PaginationQueryParams.__init__`](<#paginationqueryparams__init__>)
 
 **Methods**
 
 ---
 #### PaginationQueryParams\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/api/routes/v2/query_utils.PaginationQueryParams.__init__}} -->
-The `__init__` method initializes an instance of the `PaginationQueryParams` class with default or provided pagination and sorting parameters.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/query_utils.py#L20>)
+
+Initializes an instance of the `PaginationQueryParams` class with pagination and sorting parameters.
 - **Inputs**:
-    - `limit`: An integer specifying the maximum number of items to return, defaulting to 10.
-    - `offset`: An integer specifying the number of items to skip before starting to collect the result set, defaulting to 0.
-    - `sort_by`: A string or None indicating the field by which to sort the results, defaulting to None.
-    - `sort_direction`: An instance of `SortDirection` enum indicating the direction of sorting, defaulting to `SortDirection.DESC`.
-- **Control Flow**:
-    - Assigns the provided or default value of `limit` to the instance variable `self.limit`.
-    - Assigns the provided or default value of `offset` to the instance variable `self.offset`.
-    - Assigns the provided or default value of `sort_by` to the instance variable `self.sort_by`.
-    - Assigns the provided or default value of `sort_direction` to the instance variable `self.sort_direction`.
-- **Output**: The method does not return any value; it initializes the instance variables of the class.
-- **See also**: [`python-backend/backend/app/api/routes/v2/query_utils.PaginationQueryParams`](<#PaginationQueryParams>)  (Base Class)
+    - `limit`: An integer that specifies the maximum number of items to return; defaults to 10.
+    - `offset`: An integer that specifies the number of items to skip before starting to collect the result set; defaults to 0.
+    - `sort_by`: A string or None that specifies the field by which to sort the results; defaults to None.
+    - `sort_direction`: An instance of `SortDirection` that specifies the direction of sorting, either ascending or descending; defaults to `SortDirection.DESC`.
+- **Logic and Control Flow**:
+    - Assigns the `limit` parameter to the instance variable `self.limit`.
+    - Assigns the `offset` parameter to the instance variable `self.offset`.
+    - Assigns the `sort_by` parameter to the instance variable `self.sort_by`.
+    - Assigns the `sort_direction` parameter to the instance variable `self.sort_direction`.
+- **Output**: None, as it is an initializer for the class.
+- **See also**: [`python-backend/backend/app/api/routes/v2/query_utils.PaginationQueryParams`](<#paginationqueryparams>)  (Base Class)
 
 
 
@@ -80,51 +86,61 @@ The `__init__` method initializes an instance of the `PaginationQueryParams` cla
 
 ---
 ### get\_pagination\_params<!-- {{#callable:python-backend/backend/app/api/routes/v2/query_utils.get_pagination_params}} -->
-The `get_pagination_params` function retrieves pagination parameters from a dependency injection system.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/query_utils.py#L33>)
+
+Returns the pagination parameters from the dependency injection system.
 - **Decorators**: `@Depends`
 - **Inputs**:
-    - `params`: An instance of `PaginationQueryParams` which is injected using FastAPI's dependency injection system.
-- **Control Flow**:
+    - `params`: An instance of `PaginationQueryParams` provided by FastAPI's dependency injection system.
+- **Logic and Control Flow**:
+    - The function receives `params` as an argument, which is an instance of `PaginationQueryParams`.
     - The function directly returns the `params` argument without any modification.
-- **Output**: Returns the `PaginationQueryParams` instance that was injected.
+- **Output**: An instance of `PaginationQueryParams`.
 
 
 ---
 ### apply\_filters\_to\_query<!-- {{#callable:python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query}} -->
-The `apply_filters_to_query` function applies specified filters to a SQLAlchemy/SQLModel select query based on a dictionary of filter keys and values, supporting various operators and handling relationships and JSONB columns.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/query_utils.py#L42>)
+
+Applies filters to a SQLAlchemy/SQLModel 'select' query based on a dictionary of filter keys and values.
 - **Inputs**:
-    - `query`: A SQLAlchemy/SQLModel Select object representing the initial query to which filters will be applied.
-    - `filters`: A dictionary where keys are filter expressions (potentially using double-underscore syntax for operators) and values are the corresponding filter values.
-    - `model`: An SQLModel class representing the database model on which the query is based.
-- **Control Flow**:
-    - Define a dictionary `OPERATORS` mapping operator names to lambda functions that apply the corresponding SQLAlchemy filter operations.
+    - `query`: A `Select` object representing the SQL query to which filters will be applied.
+    - `filters`: A dictionary where keys are filter expressions and values are the corresponding filter values.
+    - `model`: An instance of `SQLModel` representing the database model to which the query applies.
+- **Logic and Control Flow**:
+    - Define a dictionary `OPERATORS` that maps operator names to lambda functions for SQL operations.
     - Iterate over each key-value pair in the `filters` dictionary.
-    - Split each filter key on '__' to separate the field name and operator, defaulting to 'in' or 'default' if no operator is specified.
-    - Split the field name on '.' to handle potential relationships or JSONB columns.
-    - Check if the operator is valid; if not, raise an HTTPException with a 400 status code.
-    - Convert comma-separated string values to lists for 'in'/'nin' operators.
-    - If the field name has no dot-notation, check if the attribute exists on the model and is not a relationship; apply the filter using the appropriate operator.
-    - If the field name includes dot-notation, recursively apply filters to handle relationships or JSONB columns, raising HTTPExceptions for invalid columns or relationships.
-    - Return the modified query with all applicable filters applied.
-- **Output**: A modified SQLAlchemy/SQLModel Select object with the specified filters applied.
+    - Split each filter key by '__' to separate the field name and operator.
+    - Determine the operator to use, defaulting to 'in' for comma-separated strings or 'default' otherwise.
+    - Split the field name by '.' to handle dot-notation for relationships or JSONB columns.
+    - Check if the operator is valid; if not, raise an `HTTPException`.
+    - Convert comma-separated values to a list for 'in'/'nin' operators.
+    - If the field name has no dot-notation, apply the filter directly to the model's attribute.
+    - If the field name has dot-notation, call `apply_recursive_filter` to handle relationships or JSONB columns.
+    - In `apply_recursive_filter`, apply the operator directly if only one part remains, or recursively handle relationships and JSONB columns.
+    - Return the modified query with the applied filters.
+- **Output**: A `Select` object with the applied filters, ready for execution.
 
 
 ---
 ### apply\_sorting\_to\_query<!-- {{#callable:python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query}} -->
-The function applies sorting and pagination to a SQLAlchemy/SQLModel 'select' query, supporting sorting on JSONB columns using dot notation.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/query_utils.py#L175>)
+
+Applies sorting and pagination to a SQLAlchemy/SQLModel 'select' query, supporting sorting on JSONB columns using dot notation.
 - **Inputs**:
-    - `query`: A SQLAlchemy/SQLModel 'select' query object to which sorting and pagination will be applied.
-    - `pagination`: An instance of PaginationQueryParams containing sorting and pagination parameters such as sort_by, sort_direction, limit, and offset.
-    - `model`: A SQLModel class representing the database model, used to validate and apply sorting fields.
-- **Control Flow**:
-    - Check if pagination.sort_by is provided; if not, skip sorting logic.
-    - Split the sort_by field into parts using dot notation to handle nested fields or JSONB columns.
-    - If the sort field is a single part, verify it exists on the model; otherwise, raise an HTTPException for an invalid sort field.
-    - For multi-part sort fields, iterate through the parts to navigate relationships, joining related models as necessary, and validate each part; raise HTTPException if any part is invalid.
-    - Determine the final sort column based on the last part of the sort field and validate its existence on the current model.
-    - Apply sorting to the query using the determined sort column and sort direction (ASC or DESC), optionally including the model's id for distinct ordering if available.
-    - Apply pagination to the query using the limit and offset from the pagination parameters.
-- **Output**: Returns a modified SQLAlchemy/SQLModel 'select' query with applied sorting and pagination.
+    - `query`: A SQLAlchemy 'select' query object to which sorting and pagination will be applied.
+    - `pagination`: An instance of `PaginationQueryParams` containing sorting and pagination parameters.
+    - `model`: A SQLModel class that represents the database model to be queried.
+- **Logic and Control Flow**:
+    - Check if `pagination.sort_by` is specified; if not, skip sorting logic.
+    - Split the `sort_by` field into parts using dot notation to handle nested fields or relationships.
+    - If the field is a direct attribute of the model, verify its existence and get the corresponding column.
+    - If the field involves relationships, iterate through the parts to navigate through the model's relationships, verifying each step.
+    - Raise an HTTPException if any part of the path is invalid or if the field does not exist.
+    - Determine the sort direction from `pagination.sort_direction` and apply the appropriate ordering to the query.
+    - If the model has an `id` attribute, include it in the ordering to ensure distinct results.
+    - Apply pagination by setting the query's limit and offset based on `pagination.limit` and `pagination.offset`.
+- **Output**: A modified SQLAlchemy 'select' query object with applied sorting and pagination.
 
 
 

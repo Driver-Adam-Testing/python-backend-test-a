@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `migrate_codebases.py` file contains a SQL script for migrating codebase data, including preparing and inserting primary assets and versions, inserting nodes, and updating derived contents in a database.
+SQL script for migrating codebases, including asset preparation, node insertion, and content updates.
 
 # Purpose
-The provided code is a SQL script embedded within a Python string, designed to migrate and transform data related to codebases and their versions within a database. The script is structured into several key sections, each performing specific tasks to prepare and insert primary assets and versions, insert nodes, and update derived contents. Initially, it creates temporary tables to organize and resolve version information, ensuring that each codebase's primary asset and version details are accurately captured and inserted into the `v2_primary_asset` and `v2_version` tables. This process involves resolving version IDs, determining display names, and associating repository and organization information.
+The code is a SQL script designed to migrate a codebase's data into a new schema. It performs several operations to transform and insert data into new tables. The script begins by creating temporary tables to organize and resolve version information for codebase assets. It then inserts primary assets and their versions into the `v2_primary_asset` and `v2_version` tables, respectively. The script uses SQL operations such as `JOIN`, `CASE`, and `ROW_NUMBER` to manage and order data accurately.
 
-Subsequent sections of the script focus on inserting nodes into the `v2_node` table, which represent directories and files within the codebase. The script ensures that each node is uniquely identified and associated with the correct version. It also updates the `derived_contents` table to link child and top-level nodes, adjusting content kinds to reflect their hierarchical status within the codebase. The script concludes with an optional final selection of all nodes, ordered by their creation date, to verify the migration's outcome. Overall, this script provides a comprehensive and structured approach to migrating codebase data, ensuring consistency and accuracy across related database tables.
+The script continues by inserting nodes into the `v2_node` table, which represent directories and files within the codebase. It ensures that each node is unique by using deduplication logic. The script updates the `derived_contents` table to link nodes with their corresponding content and adjusts content kinds to reflect their hierarchical status. Finally, the script includes an optional `SELECT` statement to retrieve all nodes ordered by their creation date. The entire process is wrapped in a transaction to ensure data integrity, using `BEGIN` and `COMMIT` statements.
 # Global Variables
 
 ---
 ### MIGRATE\_CODEBASE
 - **Type**: `str`
-- **Description**: The `MIGRATE_CODEBASE` variable is a multi-line string containing a SQL script. This script is designed to migrate a codebase by preparing and inserting primary assets and versions, inserting nodes, and updating derived contents in a database. It involves creating temporary tables, performing various SQL operations like SELECT, INSERT, and UPDATE, and finally committing the transaction.
-- **Use**: This variable is used to store and execute a SQL script for migrating codebase data within a database.
+- **Description**: Contains a multi-line SQL script that performs a series of database operations to migrate codebase data. The script includes creating temporary tables, inserting data into primary asset and version tables, and updating derived contents with node information.
+- **Use**: Used to execute a sequence of SQL commands for migrating codebase data in a database.
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_c.py` file defines a template for generating structured prompts and analyzing C source code, including sections for imports, global variables, data structures, functions, and function declarations.
+Templates for generating structured prompts and analyzing C code components like functions and data structures.
 
 # Purpose
-This Python code defines a structured template for analyzing and documenting C source code. It is part of a larger system that appears to be designed for generating detailed documentation or analysis reports for C codebases. The file imports various components and utilities from other modules, indicating that it is part of a broader framework. The main functionality revolves around creating a template (`SOURCE_CODE_LARGE_TEMPLATE_C`) that outlines different sections of a C code analysis, such as purpose, imports and dependencies, global variables, data structures, functions, and public API declarations. Each section is associated with specific components and instructions, leveraging both static analysis and language model (LLM) capabilities to extract and format information.
+The code defines a structured template for generating documentation related to C source code. It imports several components and utilities from different modules, which are used to create a template for documenting various aspects of C code. The template includes sections for the purpose of the code, imports and dependencies, global variables, data structures, functions, and function declarations that form the public API. Each section is associated with specific components and instructions that guide the generation of documentation content.
 
-The code is structured to facilitate the generation of comprehensive documentation by combining static analysis results with language model insights. It uses a combination of prompts and components to guide the extraction and presentation of information. The template is designed to be extensible and adaptable, allowing for the integration of various data collection and processing methods. This file is likely intended to be part of a larger documentation generation tool or library, providing a standardized way to document C codebases by breaking down their components and presenting them in a structured format.
+The template uses a combination of static analysis and language model (LLM) outputs to populate the documentation sections. For example, collections such as `CIncludeRawSymbolCollection`, `CVariableRawSymbolCollection`, and `CFunctionRawSymbolCollection` are used to gather information from static analysis, while corresponding collections like `CVariableCollection` and `CFunctionCollection` use LLM outputs to refine the data. The template is designed to ensure that the documentation adheres to specific style instructions, such as using backticks for code references and following Simplified Technical English guidelines.
 # Imports and Dependencies
 
 ---
@@ -37,8 +37,8 @@ The code is structured to facilitate the generation of comprehensive documentati
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_C
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_C` is a list of tuples, each representing a different section of a structured prompt template for analyzing C source code. Each tuple contains a section identifier, a section title, and a combination of static analysis and LLM-based methods to extract and process information related to that section, such as imports, global variables, data structures, functions, and public API declarations.
-- **Use**: This variable is used to define a structured template for generating prompts that guide the analysis and documentation of C source code.
+- **Description**: A list of tuples, where each tuple contains a prompt type, a section header, and a series of components or functions related to C code analysis and documentation. Each tuple is designed to handle a specific aspect of C code, such as purpose, imports, global variables, data structures, functions, and public API declarations.
+- **Use**: Used to define structured prompts and processing logic for analyzing and documenting various components of C source code.
 
 
 

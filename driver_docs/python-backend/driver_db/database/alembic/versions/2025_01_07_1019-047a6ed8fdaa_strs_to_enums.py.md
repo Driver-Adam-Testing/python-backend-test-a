@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_07_1019-047a6ed8fdaa_strs_to_enums.py` file contains an Alembic migration script that converts string columns to enum types in the database, specifically for `primaryassetkind` and `versionstatus`, and includes logic for upgrading and downgrading the schema.
+Database migration script to convert string columns to enum types and update data accordingly.
 
 # Purpose
-This Python script is an Alembic migration file used to modify a database schema by introducing new ENUM types and altering existing table columns to use these ENUMs. The script provides narrow functionality, specifically focusing on database schema evolution. It defines two new ENUM types, `primaryassetkind` and `versionstatus`, and updates the `v2_primary_asset` and `v2_version` tables to use these types for their `kind` and `status` columns, respectively. Additionally, it includes a data update to replace hyphens with underscores in the `status` column of the `v2_version` table, addressing a migration bug. The [`downgrade`](<#downgrade>) function reverses these changes by converting the ENUM columns back to VARCHAR and dropping the ENUM types, except for the data update, which is not reverted.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates two new ENUM types, `primaryassetkind` and `versionstatus`, and updates the `v2_version` table to replace hyphens with underscores in the `status` column. It also alters the `kind` column in the `v2_primary_asset` table and the `status` column in the `v2_version` table to use the newly created ENUM types. The [`downgrade`](<#downgrade>) function reverses these changes by altering the columns back to `VARCHAR` and dropping the ENUM types. This script provides narrow functionality focused on modifying specific database schema elements.
 # Imports and Dependencies
 
 ---
@@ -17,57 +17,61 @@ This Python script is an Alembic migration file used to modify a database schema
 
 ---
 ### revision
-- **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database migration revision. It is used to track the specific state of the database schema at a given point in time.
+- **Use**: Used by Alembic to identify the current migration version in the database schema migration process.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic, a database migration tool for SQLAlchemy, to determine the order of migrations and ensure that they are applied in the correct sequence.
-- **Use**: This variable is used by Alembic to track the dependency of the current migration on a previous migration, ensuring proper migration order.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations. It is used in Alembic migrations to specify the revision that the current migration is based on.
+- **Use**: Indicates the parent revision for the current migration script in Alembic.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to define labels for branching in Alembic migrations, but in this script, it is not utilized and remains set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_07_1019-047a6ed8fdaa_strs_to_enums.upgrade}} -->
-The `upgrade` function performs a database schema migration by creating new ENUM types and updating existing table columns to use these types.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_07_1019-047a6ed8fdaa_strs_to_enums.py#L17>)
+
+Executes database schema changes to create new enum types and update existing data and columns.
 - **Inputs**: None
-- **Control Flow**:
-    - Execute SQL command to create ENUM type 'primaryassetkind' with values 'CODEBASE', 'FILE', 'PAGE', 'PAGE_TEMPLATE'.
-    - Execute SQL command to create ENUM type 'versionstatus' with values 'GENERATING', 'GENERATION_COMPLETE', 'GENERATION_ERROR'.
-    - Execute SQL command to update the 'status' column in 'v2_version' table, replacing '-' with '_'.
-    - Execute SQL command to alter the 'kind' column in 'v2_primary_asset' table to use the 'primaryassetkind' ENUM type, casting existing values.
-    - Execute SQL command to alter the 'status' column in 'v2_version' table to use the 'versionstatus' ENUM type, casting existing values.
-- **Output**: The function does not return any value; it performs database operations to modify the schema.
+- **Logic and Control Flow**:
+    - Execute SQL command to create a new enum type `primaryassetkind` with values 'CODEBASE', 'FILE', 'PAGE', and 'PAGE_TEMPLATE'.
+    - Execute SQL command to create a new enum type `versionstatus` with values 'GENERATING', 'GENERATION_COMPLETE', and 'GENERATION_ERROR'.
+    - Execute SQL command to update the `status` column in the `v2_version` table, replacing '-' with '_'.
+    - Execute SQL command to alter the `kind` column in the `v2_primary_asset` table to use the `primaryassetkind` enum type, casting existing values accordingly.
+    - Execute SQL command to alter the `status` column in the `v2_version` table to use the `versionstatus` enum type, casting existing values accordingly.
+- **Output**: No output is returned as the function returns `None`.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_07_1019-047a6ed8fdaa_strs_to_enums.downgrade}} -->
-The `downgrade` function reverts database schema changes by altering column types from enums back to VARCHAR and dropping the enum types.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_07_1019-047a6ed8fdaa_strs_to_enums.py#L51>)
+
+Reverts database schema changes by altering column types back to VARCHAR and dropping enum types.
 - **Inputs**: None
-- **Control Flow**:
-    - Execute SQL command to alter the 'status' column in 'v2_version' table from enum type to VARCHAR using a cast to TEXT.
-    - Execute SQL command to alter the 'kind' column in 'v2_primary_asset' table from enum type to VARCHAR using a cast to TEXT.
-    - Execute SQL command to drop the 'versionstatus' enum type from the database.
-    - Execute SQL command to drop the 'primaryassetkind' enum type from the database.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Execute SQL command to alter the `status` column in the `v2_version` table to type `VARCHAR` using a cast to `TEXT`.
+    - Execute SQL command to alter the `kind` column in the `v2_primary_asset` table to type `VARCHAR` using a cast to `TEXT`.
+    - Execute SQL command to drop the `versionstatus` enum type.
+    - Execute SQL command to drop the `primaryassetkind` enum type.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

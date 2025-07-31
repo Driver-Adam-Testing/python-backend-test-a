@@ -3,29 +3,30 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `modal_scripts.py` file contains a function to generate a bash script for deploying various content services to a specified environment using modal and poetry.
+Generates a bash script for deploying services to a specified environment using modal and poetry.
 
 # Purpose
-The provided Python function, [`build_modal_deploy_script`](<#build_modal_deploy_script>), generates a Bash script designed to automate the deployment of various services across different environments. This function takes two parameters, `token_id` and `token_secret`, which are used to set authentication tokens for a service called "modal." The generated script is structured to handle deployments for multiple components within a project, specifically targeting directories such as `inspector`, `agent`, `pdf_preprocessing`, and `autodocs` under a `content_services` directory. Each component is deployed using the `poetry` tool to manage dependencies and execute the deployment command `modal deploy` with a specified environment.
+The function [`build_modal_deploy_script`](<#build_modal_deploy_script>) generates a shell script for deploying various services to a specified environment using the `modal` command-line tool. The function takes two parameters: `token_id` and `token_secret`, which are used to set authentication credentials for the `modal` tool. The generated script checks if an environment argument is provided and exits with an error message if it is not. It then sets the `modal` token and activates a profile named `driver-ai`.
 
-The function is intended to be part of a larger system where deployment automation is necessary, likely in a continuous integration/continuous deployment (CI/CD) pipeline. It does not define a public API or external interface but rather serves as a utility to streamline the deployment process by generating a script that can be executed in a Unix-like environment. The script ensures that the correct environment is specified and that the necessary dependencies are installed before deploying each service. This function encapsulates the deployment logic, making it easier to manage and modify deployment procedures across different environments.
+The script navigates through several directories related to different content services, such as `inspector`, `agent`, `pdf_preprocessing`, and `autodocs`. In each directory, it installs dependencies using `poetry` and deploys the service by running `modal deploy` with the specified environment. The function returns the complete shell script as a string, which can be executed to automate the deployment process across multiple services.
 # Functions
 
 ---
 ### build\_modal\_deploy\_script<!-- {{#callable:python-backend/dev_stack/src/modal_scripts.build_modal_deploy_script}} -->
-The function generates a bash script for deploying services to a specified environment using Modal and Poetry.
+[View Source →](<../../../../dev_stack/src/modal_scripts.py#L1>)
+
+Generates a bash script to deploy services to a specified environment using Modal and Poetry.
 - **Inputs**:
-    - `token_id`: A string representing the token ID used for authentication with Modal.
-    - `token_secret`: A string representing the token secret used for authentication with Modal.
-- **Control Flow**:
-    - The function starts by defining a bash script as a multi-line string.
-    - The script sets the shell options to exit on error and pipefail, ensuring robust error handling.
-    - It checks if an environment argument is provided; if not, it prints an error message and exits.
-    - The environment argument is captured from the command line and echoed to the console.
-    - The script sets the Modal token using the provided token ID and secret, and activates the 'driver-ai' profile.
-    - It navigates to various directories (inspector, agent, pdf_preprocessing, autodocs) and installs dependencies using Poetry without installing the root package.
-    - For each directory, it runs a Modal deploy command with the specified environment on 'src/main.py'.
-- **Output**: The function returns a string containing the complete bash script for deployment.
+    - `token_id`: The token ID for authentication with Modal.
+    - `token_secret`: The token secret for authentication with Modal.
+- **Logic and Control Flow**:
+    - Creates a bash script with a shebang line for execution in a bash shell.
+    - Sets the shell options to exit on error and disable filename expansion.
+    - Checks if an environment argument is provided; if not, it prints an error message and exits.
+    - Assigns the first command line argument to the `environment` variable and prints the deployment environment.
+    - Sets the Modal token using the provided `token_id` and `token_secret`, and activates the 'driver-ai' profile.
+    - Navigates to each service directory, installs dependencies using Poetry, and deploys the service using Modal with the specified environment.
+- **Output**: A string containing the bash script for deploying services.
 
 
 

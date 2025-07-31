@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `folder_summary.py` file implements the `FolderSummaryTool` class, which generates long description summaries for a specified folder in a codebase, allowing these summaries to be referenced later.
+A tool for generating and returning long description summaries of folders in a codebase.
 
 # Purpose
-The provided Python code defines a class `FolderSummaryTool`, which is a specialized tool designed to generate summaries for a specified folder, typically at the root of a codebase. This class inherits from `LlmTool`, indicating that it is part of a larger framework or system that deals with language model tools. The primary functionality of this tool is to gather and process content descriptions, specifically `LONG_DESCRIPTION` and `TOP_LEVEL_LONG_DESCRIPTION`, from a database for the specified folder path. It then converts these descriptions into `Reference` objects, which can be cited later by an assistant or another component of the system. The tool is designed to be used in scenarios where no prior searches have been conducted, and a high-level overview of a folder is needed to prime the context for further operations.
+The `FolderSummaryTool` class is a specialized tool designed to generate summaries for a specified folder, typically at the root of a codebase. It extends the `LlmTool` class and is part of a larger system that interacts with a database to retrieve and process content descriptions. The primary function of this tool is to gather content labeled as `LONG_DESCRIPTION` or `TOP_LEVEL_LONG_DESCRIPTION` from a database, convert these into `Reference` objects, and make them available for citation by an assistant. The tool uses SQL queries to filter and select relevant content based on the folder path provided.
 
-The code is structured to interact with a database using SQLModel to retrieve relevant content and transform it into a format suitable for language model processing. It includes methods for executing the main functionality ([`_execute`](<#FolderSummaryTool_execute>)) and for generating a response message ([`to_tool_call_response_message`](<#FolderSummaryToolto_tool_call_response_message>)) that can be used by an assistant to communicate the results. The class also provides a [`status`](<#FolderSummaryToolstatus>) property to report on the readiness of folder summaries. This code is part of a broader system, as indicated by its imports from shared interfaces and utilities, and it is intended to be integrated into a larger application rather than being a standalone script. The tool defines a public API through its methods and properties, allowing it to be used and extended within the system.
+The class includes methods for executing the summary generation process and for formatting the results into a response message. The [`_execute`](<#foldersummarytool_execute>) method retrieves the relevant content from the database and creates `Reference` objects for each piece of content. The [`to_tool_call_response_message`](<#foldersummarytoolto_tool_call_response_message>) method formats these references into a message that can be returned to the user, including handling cases where no summaries are found. The class also provides a [`status`](<#foldersummarytoolstatus>) property to report on the readiness of folder summaries. This tool is intended to be used in environments where folder-level content summaries are needed to provide context or information about a codebase.
 # Imports and Dependencies
 
 ---
@@ -32,67 +32,74 @@ The code is structured to interact with a database using SQLModel to retrieve re
 
 ---
 ### FolderSummaryTool<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/folder_summary.py#L17>)
+
 - **Members**:
-    - `folder_path`: Relative path to the folder you want summarized.
-- **Description**: The FolderSummaryTool class is designed to generate long description summaries for a specified folder, typically at the root of a codebase, within a new architecture. It extends the LlmTool class and utilizes a database session to retrieve and process content related to the folder path provided. The class is capable of converting relevant content into references that can be cited by an assistant, and it provides a mechanism to return these summaries in a formatted response message. Additionally, it offers a status property to indicate the readiness of folder summaries.
+    - `folder_path`: Relative path to the folder to summarize.
+- **Description**: Provides long description summaries for a specified folder, typically the root of a codebase, by gathering and converting relevant content into references for later citation.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool._execute`](<#FolderSummaryTool_execute>)
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.to_tool_call_response_message`](<#FolderSummaryToolto_tool_call_response_message>)
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.status`](<#FolderSummaryToolstatus>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool._execute`](<#foldersummarytool_execute>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.to_tool_call_response_message`](<#foldersummarytoolto_tool_call_response_message>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.status`](<#foldersummarytoolstatus>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../../../interfaces/llm_tool.py.md#LlmTool>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../../../interfaces/llm_tool.py.md#llmtool>)
 
 **Methods**
 
 ---
 #### FolderSummaryTool\.\_execute<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool._execute}} -->
-The `_execute` method retrieves and processes long description content from a specified folder path, converting each match into a [`Reference`](<../../../utils/references.py.md#Reference>) object for later citation.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/folder_summary.py#L38>)
+
+Gathers and converts content from a specified folder into references for citation.
 - **Inputs**: None
-- **Control Flow**:
-    - Establish a session using `get_session()` to interact with the database.
-    - Execute a query to select `DerivedContent` entries that match specific content kinds and node criteria related to the folder path.
-    - If no matching rows are found, the method returns early.
-    - Iterate over each `DerivedContent` row, extracting the associated node information.
-    - Create a [`Reference`](<../../../utils/references.py.md#Reference>) object for each `DerivedContent` entry, populating it with content, metadata, and node details.
-    - Add each [`Reference`](<../../../utils/references.py.md#Reference>) object to the `_references` collection for later use.
-- **Output**: The method does not return any value; it modifies the `_references` attribute by adding [`Reference`](<../../../utils/references.py.md#Reference>) objects.
+- **Logic and Control Flow**:
+    - Opens a session using `get_session()` to interact with the database.
+    - Executes a query to select `DerivedContent` entries that match specific content kinds and node criteria related to the folder path.
+    - Checks if any rows are returned from the query; if not, the method returns early.
+    - Iterates over each `DerivedContent` entry in the result set.
+    - For each entry, retrieves the associated node and determines the version display name.
+    - Creates a [`Reference`](<../../../utils/references.py.md#reference>) object for each entry with relevant metadata and adds it to the `_references` collection.
+- **Output**: Does not return any value; modifies the `_references` collection in place.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<../../../utils/references.py.md#Reference>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<../../../utils/references.py.md#ReferenceSetadd_reference>)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool`](<#FolderSummaryTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<../../../utils/references.py.md#reference>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<../../../utils/references.py.md#referencesetadd_reference>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool`](<#foldersummarytool>)  (Base Class)
 
 
 ---
 #### FolderSummaryTool\.to\_tool\_call\_response\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.to_tool_call_response_message}} -->
-The `to_tool_call_response_message` method constructs a response message for the FolderSummaryTool, either indicating an error or providing a summary of folder contents.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/folder_summary.py#L86>)
+
+Builds a response message for the assistant, wrapping folder summary results or an error message if no summaries are found.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if there are any references in `self._references`.
-    - If no references exist, return an [`LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>) indicating no summaries were found for the specified folder path.
-    - If references exist, serialize each reference's content and path into a compact string format.
-    - Check if the serialized references exceed 75000 characters, and if so, truncate the string and set an error message.
-    - Return an [`LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>) containing the serialized references and indicating the results of the FolderSummaryTool.
-- **Output**: An [`LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>) object representing the tool call response, either with an error message or a list of folder summaries.
+- **Logic and Control Flow**:
+    - Checks if `_references` is empty; if true, returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with an error message indicating no summaries found for the specified folder path.
+    - If `_references` is not empty, serializes each reference into a compact list format, wrapping content and paths with glossary terms.
+    - Truncates the serialized references to 75000 characters if they exceed this length and sets an error message indicating the truncation.
+    - Returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with the serialized references and a tool response indicating the results for the folder path.
+- **Output**: An [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) object containing either an error message or the serialized folder summary results.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
-    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#GlossaryDefinitionwrap>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse`](<../../../interfaces/llm_message.py.md#LlmMessage.ToolCallResponse>)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool`](<#FolderSummaryTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
+    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#glossarydefinitionwrap>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse`](<../../../interfaces/llm_message.py.md#toolcallresponse>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool`](<#foldersummarytool>)  (Base Class)
 
 
 ---
 #### FolderSummaryTool\.status<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.status}} -->
-The `status` method returns a string indicating whether folder summaries are ready or if a folder is currently being summarized.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/folder_summary.py#L123>)
+
+Provides the current status of folder summaries based on available references.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - Check if there are any references in `self._references`.
-    - If references exist, create a set of unique short paths from these references.
+- **Logic and Control Flow**:
+    - Check if `_references` is not empty.
+    - If `_references` is not empty, create a set of unique short paths from `self.references`.
     - Return a string indicating that folder summaries are ready, followed by the list of unique paths.
-    - If no references exist, return a string indicating that the folder at `self.folder_path` is being summarized.
-- **Output**: A string that either lists the ready folder summaries or indicates that a folder is being summarized.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool`](<#FolderSummaryTool>)  (Base Class)
+    - If `_references` is empty, return a string indicating that the folder is being summarized, including the folder path.
+- **Output**: A string indicating the status of folder summaries, either listing ready summaries or indicating ongoing summarization.
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool`](<#foldersummarytool>)  (Base Class)
 
 
 

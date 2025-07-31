@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `logger.py` file sets up a custom logger with color-coded output for different logging levels, using a stream handler to output to standard output.
+Sets up a color-coded logger with customizable name and logging level.
 
 # Purpose
-This Python code provides a narrow functionality focused on setting up a customized logging system. It defines a function [`_setup_logger`](<#_setup_logger>) that configures a logger with a specific name and logging level, defaulting to `INFO`. The logger uses a custom `LogFormatter` class to format log messages with color-coded output based on the log level, enhancing readability in terminal outputs. The script removes any existing handlers from the logger and adds a new `StreamHandler` that outputs to standard output (`sys.stdout`). Finally, it initializes a logger instance with the current file's name and a logging level of `DEBUG`, making it ready for use in logging messages with color-coded severity levels.
+This code defines a function [`_setup_logger`](<#_setup_logger>) that configures a logger with color-coded output for different logging levels. It uses a custom `LogFormatter` class to apply ANSI color codes to log messages based on their severity, such as DEBUG, INFO, WARNING, ERROR, and CRITICAL. The logger is set up to output to the standard output stream (`sys.stdout`) and removes any existing handlers before adding a new `StreamHandler` with the specified logging level. The `logger` variable is initialized using this function, with the logging level set to DEBUG, and is intended for use in logging messages with enhanced readability in a console environment.
 # Imports and Dependencies
 
 ---
@@ -18,18 +18,20 @@ This Python code provides a narrow functionality focused on setting up a customi
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `logging.Logger` class, configured to output log messages to the standard output stream with a custom color-coded format. It is set up to handle log messages at the DEBUG level or higher, using a custom formatter that applies different colors to messages based on their severity level.
-- **Use**: This variable is used to log messages throughout the application, providing a consistent and visually distinct output for different log levels.
+- **Type**: ``logging.Logger``
+- **Description**: Initializes a logger instance using the `_setup_logger` function with the current file name and a logging level of `DEBUG`. The logger is configured to output log messages to the standard output stream with color-coded formatting based on the log level.
+- **Use**: Used to log messages with different severity levels during the execution of the program.
 
 
 # Classes
 
 ---
 ### LogFormatter<!-- {{#class:python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter}} -->
-- **Description**: The `LogFormatter` class is a custom formatter for Python's logging module that extends `logging.Formatter`. It overrides the `format` method to apply ANSI color codes to log messages based on their severity level, enhancing the readability of logs by color-coding different log levels such as DEBUG, INFO, WARNING, ERROR, and CRITICAL.
+[View Source →](<../../../../../content_services/auto_toml/src/logger.py#L6>)
+
+- **Description**: Extends the `logging.Formatter` class to add color formatting to log messages based on their severity level. Uses ANSI escape codes to apply different colors for each log level, such as cyan for DEBUG, green for INFO, yellow for WARNING, red for ERROR, and magenta for CRITICAL. Resets the color after each message to ensure that subsequent text is not affected.
 - **Methods**:
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<#_setup_logger.LogFormatter.format>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<#logformatterformat>)
 - **Inherits From**:
     - `logging.Formatter`
 
@@ -37,17 +39,19 @@ This Python code provides a narrow functionality focused on setting up a customi
 
 ---
 #### LogFormatter\.format<!-- {{#callable:python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format}} -->
-The `format` method formats a log record with color-coded output based on the log level.
+[View Source →](<../../../../../content_services/auto_toml/src/logger.py#L7>)
+
+Formats a log record with color coding based on the log level.
 - **Inputs**:
     - `record`: A `logging.LogRecord` object that contains all the information pertinent to the event being logged.
-- **Control Flow**:
-    - Define a dictionary `COLORS` mapping log levels to their respective ANSI color codes.
-    - Retrieve the log level name from the `record` using `record.levelname`.
-    - Get the corresponding color code from the `COLORS` dictionary using the log level name, defaulting to the reset color if the level name is not found.
-    - Call the superclass's `format` method to format the log message without color.
-    - Return the formatted message wrapped with the appropriate color code and reset code.
-- **Output**: A string representing the formatted log message, color-coded according to the log level.
-- **See also**: [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter`](<#LogFormatter>)  (Base Class)
+- **Logic and Control Flow**:
+    - Defines a dictionary `COLORS` that maps log level names to their corresponding ANSI color codes.
+    - Retrieves the log level name from the `record` using `record.levelname`.
+    - Gets the color code for the log level from the `COLORS` dictionary, defaulting to the reset color if the level name is not found.
+    - Calls the parent class's `format` method to format the log message.
+    - Returns the formatted message with the appropriate color code prepended and the reset color code appended.
+- **Output**: A string that represents the formatted log message with color coding.
+- **See also**: [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter`](<#logformatter>)  (Base Class)
 
 
 
@@ -55,20 +59,23 @@ The `format` method formats a log record with color-coded output based on the lo
 
 ---
 ### \_setup\_logger<!-- {{#callable:python-backend/content_services/auto_toml/src/logger._setup_logger}} -->
-The `_setup_logger` function configures and returns a logger with a custom color-coded formatter for different logging levels.
+[View Source →](<../../../../../content_services/auto_toml/src/logger.py#L5>)
+
+Configures and returns a logger with a custom color-coded formatter for different log levels.
 - **Inputs**:
-    - `name`: An optional string representing the name of the logger; if not provided, the root logger is used.
-    - `level`: An integer representing the logging level, with a default value of `logging.INFO`.
-- **Control Flow**:
-    - Defines a nested class [`LogFormatter`](<#LogFormatter>) that extends `logging.Formatter` to add color codes to log messages based on their level.
-    - Retrieves a logger instance using `logging.getLogger(name)` and sets its logging level to the specified `level`.
-    - Iterates over existing handlers of the logger and removes them to ensure no duplicate handlers are present.
+    - `name`: The name of the logger, which can be a string or None.
+    - `level`: The logging level, specified as an integer, with a default value of logging.INFO.
+- **Logic and Control Flow**:
+    - Defines a nested class [`LogFormatter`](<#logformatter>) that extends `logging.Formatter` to apply color codes to log messages based on their level.
+    - Retrieves a logger instance using `logging.getLogger` with the specified `name`.
+    - Sets the logging level of the logger to the specified `level`.
+    - Removes all existing handlers from the logger to ensure no duplicate handlers are present.
     - Creates a new `StreamHandler` that outputs to `sys.stdout` and sets its level to the specified `level`.
-    - Instantiates the [`LogFormatter`](<#LogFormatter>) with a message format and assigns it to the handler.
+    - Instantiates the [`LogFormatter`](<#logformatter>) with a message format and assigns it to the handler.
     - Adds the configured handler to the logger.
-- **Output**: Returns a `logging.Logger` instance configured with a custom color-coded formatter and a stream handler.
+- **Output**: A `logging.Logger` instance configured with a custom formatter and handler.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter`](<#LogFormatter>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter`](<#logformatter>)
 
 
 

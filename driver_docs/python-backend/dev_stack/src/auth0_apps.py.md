@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth0_apps.py` file in the `python-backend` codebase provides functions to manage Auth0 applications and APIs, including creating and deleting SPA, API, and M2M apps, as well as assigning roles and permissions.
+Functions for creating, deleting, and managing Auth0 applications and APIs, including role permissions.
 
 # Purpose
-This Python script is designed to interact with the Auth0 Management API to manage applications and APIs within an Auth0 tenant. It provides a set of functions to create and delete different types of Auth0 applications, such as Single Page Applications (SPA), Machine-to-Machine (M2M) applications, and APIs. The script also includes functionality to manage roles and permissions, allowing for the assignment of specific permissions to roles for a given API. The script uses the `httpx` library for making HTTP requests and relies on the `auth0` library for interfacing with Auth0's management capabilities.
+The code is a Python module that interacts with the Auth0 Management API to manage applications and APIs. It provides functions to create and delete different types of Auth0 applications, such as Single Page Applications (SPA), Machine-to-Machine (M2M) applications, and APIs. The module uses the `auth0` library to authenticate and perform operations on the Auth0 platform. It retrieves necessary configuration settings from an external `settings` module and uses the `httpx` library for HTTP requests.
 
-The script is structured to be a utility or helper module that can be imported and used in other parts of a larger application. It does not define a public API or external interface but provides a collection of functions that perform specific tasks related to Auth0 management. Key components include the creation of Auth0 clients and resource servers, the assignment of permissions to roles, and the handling of HTTP requests and responses. The script is configured using settings imported from a configuration module, which provides necessary credentials and domain information for accessing the Auth0 Management API.
+Key functions include [`create_spa_web_app`](<#create_spa_web_app>), which creates a SPA and configures its connection settings, [`create_api_app`](<#create_api_app>), which sets up an API with specific scopes and permissions, and [`create_m2m_app`](<#create_m2m_app>), which creates a non-interactive M2M application and authorizes it to access an API. The module also includes functions to delete applications and APIs, retrieve roles by name, and assign permissions to roles for a specific API. The code is designed to be used as part of a larger system that manages Auth0 resources programmatically.
 # Imports and Dependencies
 
 ---
@@ -23,159 +23,176 @@ The script is structured to be a utility or helper module that can be imported a
 
 ---
 ### domain
-- **Type**: `str`
-- **Description**: The `domain` variable is a string that holds the Auth0 domain name, which is retrieved from the application settings. This domain is used to configure and interact with the Auth0 service for authentication and management tasks.
-- **Use**: This variable is used to initialize the Auth0 client and obtain tokens for API requests.
+- **Type**: ``str``
+- **Description**: Represents the domain for the Auth0 service, which is retrieved from the `settings.AUTH0_DOMAIN` configuration.
+- **Use**: Used to initialize the `GetToken` and `Auth0` instances for authentication and management operations.
 
 
 ---
 ### mgmt\_client\_id
 - **Type**: `str`
-- **Description**: The `mgmt_client_id` is a global variable that stores the client ID for the Auth0 Management API. It is retrieved from the application settings, specifically from `settings.AUTH0_MGMT_API_CLIENT_ID`. This client ID is used to authenticate and authorize API requests to the Auth0 Management API.
-- **Use**: This variable is used to initialize the `GetToken` object for obtaining an access token to interact with the Auth0 Management API.
+- **Description**: References the client ID for the Auth0 Management API, which is stored in the `settings` module under `AUTH0_MGMT_API_CLIENT_ID`. This variable is used to authenticate and interact with the Auth0 Management API.
+- **Use**: Used to initialize the `GetToken` instance for obtaining an access token to interact with the Auth0 Management API.
 
 
 ---
 ### mgmt\_client\_secret
 - **Type**: `str`
-- **Description**: The `mgmt_client_secret` is a string variable that stores the client secret for the Auth0 Management API. It is retrieved from the application settings, specifically from `settings.AUTH0_MGMT_API_CLIENT_SECRET`. This secret is used to authenticate and authorize API requests to the Auth0 Management API.
-- **Use**: This variable is used to initialize the `GetToken` object, which is responsible for obtaining an access token for the Auth0 Management API.
+- **Description**: Represents the client secret for the Auth0 Management API. It is assigned the value from `settings.AUTH0_MGMT_API_CLIENT_SECRET`. This variable is used to authenticate and authorize API requests to the Auth0 Management API.
+- **Use**: Used to initialize the `GetToken` instance for obtaining an access token for the Auth0 Management API.
 
 
 ---
 ### mgmt\_api\_audience
-- **Type**: `str`
-- **Description**: The `mgmt_api_audience` variable is a string that holds the audience identifier for the Auth0 Management API. It is retrieved from the application settings, specifically from `settings.AUTH0_MGMT_API_AUDIENCE`. This identifier is used to specify the intended recipient of the token when requesting access tokens from Auth0.
-- **Use**: This variable is used to specify the audience when obtaining a client credentials token for the Auth0 Management API.
+- **Type**: ``str``
+- **Description**: The `mgmt_api_audience` variable is a string that holds the audience identifier for the Auth0 Management API. It is assigned the value from the `AUTH0_MGMT_API_AUDIENCE` attribute in the `settings` module.
+- **Use**: Used to specify the audience when obtaining a client credentials token for the Auth0 Management API.
 
 
 ---
 ### get\_token
-- **Type**: `GetToken`
-- **Description**: The `get_token` variable is an instance of the `GetToken` class, initialized with the domain, management client ID, and management client secret. It is used to handle authentication and obtain tokens for accessing the Auth0 Management API.
-- **Use**: This variable is used to obtain client credentials for authenticating API requests.
+- **Type**: ``GetToken``
+- **Description**: Initializes an instance of the `GetToken` class with the specified `domain`, `mgmt_client_id`, and `mgmt_client_secret`. This instance is used to obtain authentication tokens from the Auth0 service.
+- **Use**: Used to call the `client_credentials` method to retrieve an access token for the management API.
 
 
 ---
 ### token
 - **Type**: `dict`
-- **Description**: The `token` variable is a dictionary that stores the access token obtained through the client credentials flow using the Auth0 GetToken class. It is initialized by calling the `client_credentials` method on the `get_token` object, passing the management API audience as a parameter.
-- **Use**: This variable is used to authenticate API requests to the Auth0 management API by providing the access token in the authorization header.
+- **Description**: Contains the access token obtained from the Auth0 Management API using client credentials. The token is a dictionary with at least an 'access_token' key.
+- **Use**: Used to authenticate requests to the Auth0 Management API by providing the 'access_token' in the authorization header.
 
 
 ---
 ### auth0\_client
 - **Type**: `Auth0`
-- **Description**: The `auth0_client` variable is an instance of the `Auth0` class, initialized with a domain and an access token. This instance is used to interact with the Auth0 Management API, allowing for operations such as creating and deleting applications, managing roles, and assigning permissions.
-- **Use**: This variable is used to perform various management operations on Auth0 resources, such as creating applications and managing roles and permissions.
+- **Description**: An instance of the `Auth0` class initialized with the `domain` and an access token. This instance is used to interact with the Auth0 Management API.
+- **Use**: Used to perform various operations such as creating, deleting, and managing applications and APIs in Auth0.
 
 
 # Functions
 
 ---
 ### create\_spa\_web\_app<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.create_spa_web_app}} -->
-The `create_spa_web_app` function creates a new Single Page Application (SPA) in Auth0 and disables the Google OAuth2 connection for it.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L17>)
+
+Creates a Single Page Application (SPA) in Auth0 and disables the Google OAuth2 connection for it.
 - **Inputs**:
-    - `create_app`: An instance of `Auth0SpaCreateAppRequest` containing the details required to create the SPA.
-- **Control Flow**:
-    - The function begins by creating a new SPA client in Auth0 using the `create_app` parameter and stores the result in `spa_app`.
-    - It searches for the 'google-oauth2' connection among all available connections and retrieves its ID.
-    - A URL is constructed to disable the Google OAuth2 connection for the newly created SPA client.
-    - A payload is prepared with the SPA client's ID and a status set to `False`, indicating the connection should be disabled.
-    - HTTP headers are set up, including an authorization header with a bearer token.
-    - A `try` block is used to send a PATCH request to the constructed URL with the headers and payload using an `httpx.Client`.
-    - If the request is successful, a success message is printed; otherwise, an exception is caught, and an error message is printed with the status code and response text.
-- **Output**: The function returns the dictionary representation of the newly created SPA application.
+    - `create_app`: An instance of `Auth0SpaCreateAppRequest` containing the details for the SPA to be created.
+- **Logic and Control Flow**:
+    - Call `auth0_client.clients.create` with the dumped model of `create_app` to create the SPA and store the result in `spa_app`.
+    - Search for the connection named 'google-oauth2' in all connections and retrieve its ID.
+    - Construct the URL for the connection's clients using the connection ID and Auth0 domain settings.
+    - Prepare the payload with the SPA's client ID and set the status to False to disable the connection.
+    - Set the headers with content type as JSON and authorization using the access token.
+    - Use `httpx.Client` to send a PATCH request to the constructed URL with the headers and payload.
+    - Raise an exception if the HTTP response status is not successful and print a success message if the connection is disabled.
+    - Catch `httpx.HTTPStatusError` exceptions and print the error status code and message.
+- **Output**: A dictionary representing the created SPA application.
 
 
 ---
 ### create\_api\_app<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.create_api_app}} -->
-The `create_api_app` function creates an API application in Auth0 with specified configurations and assigns admin permissions to a role for the API.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L46>)
+
+Creates an API in Auth0 with specified configurations and assigns permissions to a role.
 - **Inputs**:
-    - `name`: The name of the API application to be created.
-    - `identifier`: The unique identifier for the API application.
-- **Control Flow**:
-    - An API payload dictionary is constructed with the provided name and identifier, along with predefined settings such as signing algorithm, token lifetime, and scopes.
-    - The API application is created using the Auth0 client with the constructed payload.
-    - A success message is printed with the created API's name and ID.
-    - The API identifier is set to the provided identifier for further operations.
-    - A list of admin permissions is defined, matching some of the scopes in the API payload.
-    - The [`assign_role_permissions_to_api`](<#assign_role_permissions_to_api>) function is called to assign the defined permissions to the 'Admin' role for the created API.
-    - A success message is printed indicating the assignment of permissions to the role.
-- **Output**: The function returns the created API object as a dictionary.
+    - `name`: The name of the API to create.
+    - `identifier`: The unique identifier for the API.
+- **Logic and Control Flow**:
+    - Creates a dictionary `api_payload` with API configuration details including name, identifier, signing algorithm, token lifetime, and scopes.
+    - Calls `auth0_client.resource_servers.create` with `api_payload` to create the API in Auth0.
+    - Prints a confirmation message with the created API's name and ID.
+    - Defines `api_identifier` as the provided `identifier`.
+    - Defines a list `admin_permissions` with specific permissions to assign to the role.
+    - Defines `admin_role_name` as 'Admin'.
+    - Calls [`assign_role_permissions_to_api`](<#assign_role_permissions_to_api>) with `admin_role_name`, `api_identifier`, and `admin_permissions` to assign permissions to the role.
+    - Prints a confirmation message for the assigned permissions.
+    - Returns the created API object.
+- **Output**: A dictionary representing the created API object.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth0_apps.assign_role_permissions_to_api`](<#assign_role_permissions_to_api>)
 
 
 ---
 ### create\_m2m\_app<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.create_m2m_app}} -->
-The `create_m2m_app` function creates a machine-to-machine (M2M) application in Auth0 and authorizes it to call a specified API with predefined scopes.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L97>)
+
+Creates a machine-to-machine (M2M) application and authorizes it to call a specified API.
 - **Inputs**:
-    - `name`: The name of the M2M application to be created.
-    - `identifier`: The API identifier that the M2M application will be authorized to call.
-- **Control Flow**:
-    - Create a new M2M client using the Auth0 client with the specified name and predefined settings for a non-interactive application.
-    - Print a confirmation message with the client ID of the created M2M application.
-    - Define a list of scopes that the M2M application will be authorized to use when calling the specified API.
-    - Create a client grant in Auth0 to authorize the M2M application to call the API identified by the `identifier` with the specified scopes.
-    - Print a confirmation message indicating successful authorization of the M2M application to call the API.
-- **Output**: Returns a dictionary representing the created M2M application, including its details such as the client ID.
+    - `name`: The name of the M2M application to create.
+    - `identifier`: The API identifier to authorize the M2M application to call.
+- **Logic and Control Flow**:
+    - Create an M2M client using the `auth0_client.clients.create` method with specified parameters including `name`, `app_type`, `grant_types`, and `oidc_conformant`.
+    - Print a confirmation message with the created M2M application's `client_id`.
+    - Define a list of scopes that the M2M application will have access to.
+    - Authorize the M2M application to call the specified API using `auth0_client.client_grants.create` with the `client_id`, `audience`, and `scope`.
+    - Print a confirmation message indicating the M2M application is authorized to call the specified API.
+- **Output**: A dictionary representing the created M2M application.
 
 
 ---
 ### delete\_auth0\_app<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.delete_auth0_app}} -->
-The `delete_auth0_app` function attempts to delete an Auth0 application using its client ID and returns a boolean indicating success or failure.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L127>)
+
+Deletes an Auth0 application using the provided client ID.
 - **Inputs**:
-    - `client_id`: A string representing the client ID of the Auth0 application to be deleted.
-- **Control Flow**:
-    - The function tries to delete the Auth0 application using the provided client ID by calling `auth0_client.clients.delete(client_id)`.
-    - If the deletion is successful, it prints a success message and returns `True`.
-    - If an exception occurs during the deletion process, it catches the exception, prints an error message, and returns `False`.
-- **Output**: A boolean value indicating whether the Auth0 application was successfully deleted (`True`) or if an error occurred (`False`).
+    - `client_id`: The unique identifier of the Auth0 application to delete.
+- **Logic and Control Flow**:
+    - Attempts to delete the Auth0 application with the given `client_id` using the `auth0_client.clients.delete` method.
+    - If the deletion is successful, prints a success message and returns `True`.
+    - If an exception occurs during deletion, prints an error message with the exception details and returns `False`.
+- **Output**: A boolean value indicating whether the deletion was successful (`True`) or not (`False`).
 
 
 ---
 ### delete\_auth0\_api<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.delete_auth0_api}} -->
-The `delete_auth0_api` function attempts to delete an Auth0 API using its API ID and returns a boolean indicating success or failure.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L137>)
+
+Deletes an Auth0 API using the provided API ID.
 - **Inputs**:
-    - `api_id`: A string representing the unique identifier of the Auth0 API to be deleted.
-- **Control Flow**:
-    - The function tries to delete the Auth0 API using the provided `api_id` by calling `auth0_client.resource_servers.delete(api_id)`.
-    - If the deletion is successful, it prints a success message and returns `True`.
-    - If an exception occurs during the deletion process, it catches the exception, prints an error message, and returns `False`.
-- **Output**: A boolean value indicating whether the Auth0 API was successfully deleted (`True`) or if an error occurred (`False`).
+    - `api_id`: A string representing the unique identifier of the Auth0 API to delete.
+- **Logic and Control Flow**:
+    - Attempts to delete the Auth0 API using the `auth0_client.resource_servers.delete` method with the given `api_id`.
+    - If the deletion is successful, prints a success message and returns `True`.
+    - If an exception occurs during the deletion process, prints an error message with the exception details and returns `False`.
+- **Output**: A boolean value indicating whether the deletion was successful (`True`) or not (`False`).
 
 
 ---
 ### get\_role\_by\_name<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.get_role_by_name}} -->
-The `get_role_by_name` function retrieves a role from Auth0 by its name.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L147>)
+
+Retrieves a role by its name from the Auth0 roles list.
 - **Inputs**:
-    - `role_name`: A string representing the name of the role to be retrieved.
-- **Control Flow**:
-    - Attempts to list all roles using the `auth0_client.roles.list()` method.
-    - Iterates over the roles retrieved from the Auth0 client.
-    - Checks if the name of each role matches the provided `role_name`.
+    - `role_name`: The name of the role to find.
+- **Logic and Control Flow**:
+    - Attempts to list all roles using `auth0_client.roles.list()`.
+    - Iterates over the roles in the list obtained from the `roles` key.
+    - Checks if the `name` of each role matches the `role_name` provided.
     - Returns the role if a match is found.
-    - If no match is found, returns `None`.
-    - Catches any exceptions that occur during the process and prints an error message, then returns `None`.
+    - Returns `None` if no matching role is found or if an exception occurs.
+    - Prints an error message if an exception is caught.
 - **Output**: A dictionary representing the role if found, otherwise `None`.
 
 
 ---
 ### assign\_role\_permissions\_to\_api<!-- {{#callable:python-backend/dev_stack/src/auth0_apps.assign_role_permissions_to_api}} -->
-The function assigns specified permissions to a role for a given API in Auth0.
+[View Source →](<../../../../dev_stack/src/auth0_apps.py#L159>)
+
+Assigns specified permissions to a role for a given API.
 - **Inputs**:
     - `role_name`: The name of the role to which permissions will be assigned.
     - `api_identifier`: The identifier of the API for which permissions are being assigned.
-    - `permissions`: A list of permission names to be assigned to the role for the specified API.
-- **Control Flow**:
-    - Attempt to retrieve the role by its name using the [`get_role_by_name`](<#get_role_by_name>) function.
-    - If the role is not found, print an error message and return `False`.
-    - Create a list of permission objects, each containing the API identifier and a permission name from the input list.
-    - Use the `auth0_client.roles.add_permissions` method to add the created permission objects to the role.
-    - Print a success message indicating the permissions have been assigned and return `True`.
-    - If any exception occurs during the process, catch it, print an error message, and return `False`.
-- **Output**: A boolean value indicating whether the permissions were successfully assigned (`True`) or not (`False`).
+    - `permissions`: A list of permission names to assign to the role for the specified API.
+- **Logic and Control Flow**:
+    - Attempts to retrieve the role using the [`get_role_by_name`](<#get_role_by_name>) function.
+    - If the role is not found, prints an error message and returns `False`.
+    - Creates a list of permission objects, each containing the `api_identifier` and a permission name from the `permissions` list.
+    - Calls `auth0_client.roles.add_permissions` to add the permission objects to the role.
+    - If successful, prints a success message and returns `True`.
+    - If an exception occurs, prints an error message and returns `False`.
+- **Output**: Returns `True` if permissions are successfully assigned, otherwise returns `False`.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth0_apps.get_role_by_name`](<#get_role_by_name>)
 

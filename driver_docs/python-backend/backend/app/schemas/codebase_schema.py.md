@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `codebase_schema.py` file defines various Pydantic models for handling requests and responses related to codebase analysis, generation, and onboarding, including metrics calculations for source lines of code (SLOC).
+Defines Pydantic models for codebase analysis, generation, and onboarding requests and responses.
 
 # Purpose
-This Python code defines a set of data models using Pydantic, a library for data validation and settings management using Python type annotations. The file provides narrow functionality, focusing on defining structured data representations for various requests and responses related to codebase analysis and generation processes. The models include `CodebaseAnalysisRequest`, `CodebaseGenerationRequest`, `CodebaseGenerationResponse`, `CodebaseAnalysisResponse`, `ModalFunctionCallResponse`, `CodebaseAnalysisMetrics`, `CodebaseAnalysisResult`, and `CodebaseOnboardRequest`. These models encapsulate the data attributes and types required for handling codebase-related operations, such as tracking analysis metrics, managing request and response data, and ensuring data integrity through type validation. Additionally, the `CodebaseAnalysisMetrics` class includes computed properties to convert byte metrics into source lines of code (SLOC), enhancing the utility of the data models for code analysis tasks.
+This code defines a set of data models using the `pydantic` library to facilitate the handling of requests and responses related to codebase analysis and generation. The models include `CodebaseAnalysisRequest`, `CodebaseGenerationRequest`, `CodebaseGenerationResponse`, `CodebaseAnalysisResponse`, `ModalFunctionCallResponse`, `CodebaseAnalysisMetrics`, `CodebaseAnalysisResult`, and `CodebaseOnboardRequest`. These models define the structure and types of data expected in various operations, such as downloading codebases, generating codebase versions, and analyzing codebase metrics. The `CodebaseAnalysisMetrics` class includes computed fields to convert byte counts into source lines of code (SLOC) using the `bytes_to_sloc` utility function. The use of `Literal` in some models specifies the allowed values for certain fields, ensuring data integrity and validation.
 # Imports and Dependencies
 
 ---
@@ -21,70 +21,82 @@ This Python code defines a set of data models using Pydantic, a library for data
 
 ---
 ### CodebaseAnalysisRequest<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L8>)
+
 - **Members**:
-    - `download_url`: A string representing the URL from which the codebase can be downloaded.
-- **Description**: The CodebaseAnalysisRequest class is a simple data model that represents a request to analyze a codebase, containing only a single attribute, 'download_url', which specifies the URL to download the codebase for analysis.
+    - `download_url`: A string that specifies the URL to download the codebase.
+- **Description**: Represents a request to analyze a codebase, specifying the URL from which to download the codebase for analysis.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseGenerationRequest<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseGenerationRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L12>)
+
 - **Members**:
-    - `version_ids`: A list of UUIDs representing version identifiers for the codebase generation request.
-- **Description**: The CodebaseGenerationRequest class is a data model that represents a request to generate a codebase, containing a list of version identifiers as UUIDs. It extends the BaseModel from Pydantic, ensuring data validation and serialization.
+    - `version_ids`: A list of UUIDs that identify versions.
+- **Description**: Represents a request to generate a codebase, identified by a list of version UUIDs.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseGenerationResponse<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseGenerationResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L16>)
+
 - **Members**:
-    - `call_id`: A string identifier for the call associated with the codebase generation response.
-- **Description**: The `CodebaseGenerationResponse` class is a simple data model that extends `BaseModel` and is used to encapsulate the response of a codebase generation process, primarily identified by a `call_id` string.
+    - `call_id`: A string that identifies the call.
+- **Description**: Represents a response for a codebase generation request, containing a unique identifier for the call.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseAnalysisResponse<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L20>)
+
 - **Members**:
-    - `call_id`: A string identifier for the call associated with the codebase analysis.
-    - `codebase_object_key`: A string key representing the codebase object being analyzed.
-- **Description**: The CodebaseAnalysisResponse class is a Pydantic model that represents the response of a codebase analysis operation, containing identifiers for the call and the codebase object.
+    - `call_id`: Stores the unique identifier for the call.
+    - `codebase_object_key`: Holds the key for the codebase object.
+- **Description**: Represents a response for a codebase analysis operation, containing identifiers for the call and the codebase object.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ModalFunctionCallResponse<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.ModalFunctionCallResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L25>)
+
 - **Members**:
-    - `call_id`: A unique identifier for the function call.
+    - `call_id`: Stores the unique identifier for the function call.
     - `status`: Indicates the current status of the function call, which can be 'pending', 'running', 'completed', 'error', or 'expired'.
-    - `response`: An optional dictionary containing the response data from the function call.
-    - `error`: An optional string describing any error that occurred during the function call.
-- **Description**: The `ModalFunctionCallResponse` class is a data model that represents the response of a modal function call, including its unique identifier, current status, optional response data, and any error message. It extends the `BaseModel` from Pydantic, ensuring data validation and serialization.
+    - `response`: Holds the response data from the function call, if available.
+    - `error`: Contains error information if the function call encounters an error.
+- **Description**: Represents the response of a modal function call, including its unique identifier, status, optional response data, and error information if applicable.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseAnalysisMetrics<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L32>)
+
 - **Members**:
-    - `analyzable_bytes`: The number of bytes in the codebase that can be analyzed.
-    - `total_bytes`: The total number of bytes in the codebase.
-    - `analyzable_files`: The number of files in the codebase that can be analyzed.
-    - `total_files`: The total number of files in the codebase.
-    - `analyzable_files_by_extension`: A dictionary mapping file extensions to the count of analyzable files with that extension.
-    - `analyzable_files_by_type`: A dictionary mapping file types to the count of analyzable files of that type.
-    - `analyzable_bytes_by_extension`: A dictionary mapping file extensions to the number of analyzable bytes for that extension.
-    - `analyzable_bytes_by_type`: A dictionary mapping file types to the number of analyzable bytes for that type.
-- **Description**: The CodebaseAnalysisMetrics class is a data model that encapsulates various metrics related to the analysis of a codebase, including the number of analyzable and total bytes and files, as well as detailed breakdowns by file extension and type. It provides computed properties to convert byte counts into source lines of code (SLOC) for both total and analyzable metrics, facilitating a deeper understanding of the codebase's structure and size. The class is immutable, ensuring that once an instance is created, its data cannot be altered.
+    - `analyzable_bytes`: Stores the number of bytes that can be analyzed.
+    - `total_bytes`: Stores the total number of bytes in the codebase.
+    - `analyzable_files`: Stores the number of files that can be analyzed.
+    - `total_files`: Stores the total number of files in the codebase.
+    - `analyzable_files_by_extension`: Maps file extensions to the number of analyzable files with that extension.
+    - `analyzable_files_by_type`: Maps file types to the number of analyzable files of that type.
+    - `analyzable_bytes_by_extension`: Maps file extensions to the number of analyzable bytes for files with that extension.
+    - `analyzable_bytes_by_type`: Maps file types to the number of analyzable bytes for files of that type.
+- **Description**: Represents metrics for analyzing a codebase, including counts of bytes and files that can be analyzed, both in total and broken down by file extension and type. Provides computed properties to convert byte counts to source lines of code (SLOC) for both total and analyzable metrics.
 - **Methods**:
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc`](<#CodebaseAnalysisMetricsanalyzable_sloc>)
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.total_sloc`](<#CodebaseAnalysisMetricstotal_sloc>)
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc_by_extension`](<#CodebaseAnalysisMetricsanalyzable_sloc_by_extension>)
-    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc_by_type`](<#CodebaseAnalysisMetricsanalyzable_sloc_by_type>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc`](<#codebaseanalysismetricsanalyzable_sloc>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.total_sloc`](<#codebaseanalysismetricstotal_sloc>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc_by_extension`](<#codebaseanalysismetricsanalyzable_sloc_by_extension>)
+    - [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc_by_type`](<#codebaseanalysismetricsanalyzable_sloc_by_type>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -92,93 +104,108 @@ This Python code defines a set of data models using Pydantic, a library for data
 
 ---
 #### CodebaseAnalysisMetrics\.analyzable\_sloc<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc}} -->
-The `analyzable_sloc` method computes the source lines of code (SLOC) from the analyzable bytes in a codebase.
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L42>)
+
+Calculates the source lines of code (SLOC) from the analyzable bytes in the codebase.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method accesses the `analyzable_bytes` attribute of the `CodebaseAnalysisMetrics` instance.
-    - It calls the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function with `self.analyzable_bytes` as the argument.
-    - The result of [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) is returned as the output of the method.
-- **Output**: The method returns an integer representing the source lines of code (SLOC) calculated from the analyzable bytes.
+- **Logic and Control Flow**:
+    - Accesses the `analyzable_bytes` attribute of the `CodebaseAnalysisMetrics` instance.
+    - Calls the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function with `analyzable_bytes` as the argument.
+    - Returns the result of the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function call.
+- **Output**: An integer representing the source lines of code (SLOC) calculated from the analyzable bytes.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>)
-- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#CodebaseAnalysisMetrics>)  (Base Class)
+- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#codebaseanalysismetrics>)  (Base Class)
 
 
 ---
 #### CodebaseAnalysisMetrics\.total\_sloc<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.total_sloc}} -->
-The `total_sloc` method calculates the total source lines of code (SLOC) from the total bytes of code in a codebase.
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L47>)
+
+Calculates the total source lines of code (SLOC) from the total bytes in the codebase.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method accesses the `total_bytes` attribute of the `CodebaseAnalysisMetrics` instance.
-    - It calls the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function with `self.total_bytes` as the argument to convert bytes to SLOC.
-    - The result of the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function is returned as the output of the method.
-- **Output**: The method returns an integer representing the total source lines of code (SLOC) calculated from the total bytes of code.
+- **Logic and Control Flow**:
+    - Accesses the `total_bytes` attribute of the instance.
+    - Calls the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function with `total_bytes` as the argument.
+    - Returns the result of the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function call.
+- **Output**: An integer representing the total source lines of code (SLOC) calculated from the total bytes.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>)
-- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#CodebaseAnalysisMetrics>)  (Base Class)
+- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#codebaseanalysismetrics>)  (Base Class)
 
 
 ---
 #### CodebaseAnalysisMetrics\.analyzable\_sloc\_by\_extension<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc_by_extension}} -->
-The `analyzable_sloc_by_extension` method computes the source lines of code (SLOC) for each file extension based on the analyzable bytes by extension.
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L52>)
+
+Calculates the source lines of code (SLOC) for each file extension from the analyzable bytes.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - Iterates over the `analyzable_bytes_by_extension` dictionary items.
-    - For each key-value pair, it converts the byte count to SLOC using the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function.
-    - Stores the result in a new dictionary with the same keys and the computed SLOC as values.
-    - Returns the new dictionary containing SLOC by file extension.
+- **Logic and Control Flow**:
+    - Accesses `self.analyzable_bytes_by_extension` to get a dictionary of file extensions and their corresponding byte counts.
+    - Uses a dictionary comprehension to iterate over each key-value pair in `self.analyzable_bytes_by_extension`.
+    - For each pair, calls the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function to convert the byte count to SLOC.
+    - Stores the result in a new dictionary `values` with the same keys (file extensions) and the converted SLOC as values.
+    - Returns the `values` dictionary.
 - **Output**: A dictionary mapping file extensions to their corresponding source lines of code (SLOC) as integers.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>)
-- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#CodebaseAnalysisMetrics>)  (Base Class)
+- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#codebaseanalysismetrics>)  (Base Class)
 
 
 ---
 #### CodebaseAnalysisMetrics\.analyzable\_sloc\_by\_type<!-- {{#callable:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.analyzable_sloc_by_type}} -->
-The `analyzable_sloc_by_type` method computes the source lines of code (SLOC) for each type of analyzable bytes in a codebase.
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L60>)
+
+Calculates the source lines of code (SLOC) for each type of analyzable bytes in the codebase.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method accesses `self.analyzable_bytes_by_type`, which is a dictionary mapping types to byte counts.
-    - It iterates over each key-value pair in `self.analyzable_bytes_by_type`.
-    - For each pair, it converts the byte count to SLOC using the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function.
-    - It constructs a new dictionary `values` where each key is a type and each value is the corresponding SLOC.
-    - The method returns the `values` dictionary.
-- **Output**: A dictionary mapping each type to its corresponding source lines of code (SLOC) as computed from the analyzable bytes.
+- **Logic and Control Flow**:
+    - Accesses the `analyzable_bytes_by_type` dictionary from the instance.
+    - Iterates over each key-value pair in the `analyzable_bytes_by_type` dictionary.
+    - Converts each byte value to SLOC using the [`bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>) function.
+    - Stores the converted SLOC values in a new dictionary with the same keys.
+    - Returns the new dictionary containing SLOC values by type.
+- **Output**: A dictionary mapping each type to its corresponding source lines of code (SLOC) value.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../../packages/shared/shared/usage/utils.py.md#bytes_to_sloc>)
-- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#CodebaseAnalysisMetrics>)  (Base Class)
+- **See also**: [`python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics`](<#codebaseanalysismetrics>)  (Base Class)
 
 
 
 ---
 ### Config<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisMetrics.Config}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L66>)
+
 - **Members**:
-    - `frozen`: Indicates that the configuration is immutable.
-- **Description**: The `Config` class is a simple configuration class used to set the `frozen` attribute to `True`, indicating that instances of the class it configures are immutable. This is typically used in conjunction with Pydantic models to enforce immutability of the model instances.
+    - `frozen`: Indicates if the configuration is immutable.
+- **Description**: Defines configuration settings for the `CodebaseAnalysisMetrics` class, specifying that instances are immutable.
 
 
 ---
 ### CodebaseAnalysisResult<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseAnalysisResult}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L70>)
+
 - **Members**:
-    - `call_id`: A unique identifier for the analysis call.
-    - `status`: The current status of the analysis, which can be 'pending', 'running', 'completed', 'error', or 'expired'.
-    - `result`: An optional field containing the metrics of the codebase analysis if available.
-    - `error`: An optional field containing error information if the analysis encountered an issue.
-- **Description**: The CodebaseAnalysisResult class is a data model that represents the outcome of a codebase analysis process. It includes a unique call identifier, the status of the analysis, and optionally, the results of the analysis or any error encountered. This class is used to encapsulate the results of analyzing a codebase, providing a structured way to access the analysis metrics or error details.
+    - `call_id`: Stores the unique identifier for the analysis call.
+    - `status`: Indicates the current status of the analysis process.
+    - `result`: Holds the metrics of the codebase analysis if available.
+    - `error`: Contains error information if the analysis fails.
+- **Description**: Represents the result of a codebase analysis, including the call identifier, status, optional analysis metrics, and error details if applicable.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseOnboardRequest<!-- {{#class:python-backend/backend/app/schemas/codebase_schema.CodebaseOnboardRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/codebase_schema.py#L77>)
+
 - **Members**:
-    - `codebase_object_key`: A string representing the unique key for the codebase object.
-    - `call_id`: A string representing the unique identifier for the call.
-- **Description**: The CodebaseOnboardRequest class is a Pydantic model that represents a request to onboard a codebase, containing essential identifiers such as the codebase object key and the call ID.
+    - `codebase_object_key`: Stores the key for the codebase object.
+    - `call_id`: Stores the identifier for the call.
+- **Description**: Represents a request to onboard a codebase, containing a codebase object key and a call identifier.
 - **Inherits From**:
     - `BaseModel`
 

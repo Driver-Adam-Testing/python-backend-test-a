@@ -3,33 +3,37 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `file_b.py` file contains a recursive implementation of the Fibonacci sequence and a main function that prints the first five Fibonacci numbers.
+Defines a recursive function to compute Fibonacci numbers and a main function to print the first five.
 
 # Purpose
-This Python script provides a narrow functionality focused on calculating and printing the first five numbers of the Fibonacci sequence. It defines a recursive function `fib(n)` that computes the nth Fibonacci number, where `n` is a non-negative integer. The `main()` function iterates over the first five integers, calling `fib(i)` for each and printing the result. The script is designed to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which ensures that `main()` is called only when the script is run directly. The file is marked with a comment indicating it should not be modified, suggesting it may be part of a larger system where this specific functionality is required as-is.
+This script calculates and prints the first five numbers in the Fibonacci sequence. It defines a recursive function [`fib`](<#fib>) that computes the Fibonacci number for a given integer `n`. The [`main`](<#main>) function iterates over the range of numbers from 0 to 4, calling the [`fib`](<#fib>) function for each number and printing the result. The script executes the [`main`](<#main>) function when run as a standalone program.
 # Functions
 
 ---
 ### fib<!-- {{#callable:python-backend/content_services/inspector/src/utils/git_diff_testcases/file_b.fib}} -->
-The `fib` function calculates the nth Fibonacci number using a recursive approach.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/git_diff_testcases/file_b.py#L5>)
+
+Calculates the nth Fibonacci number using recursion.
 - **Inputs**:
-    - `n`: An integer representing the position in the Fibonacci sequence to compute.
-- **Control Flow**:
-    - Check if the input integer n is less than or equal to 1.
-    - If n is less than or equal to 1, return n as the Fibonacci number.
-    - If n is greater than 1, recursively call fib(n - 1) and fib(n - 2) and return their sum.
-- **Output**: The function returns an integer which is the nth Fibonacci number.
+    - `n`: An integer representing the position in the Fibonacci sequence to calculate.
+- **Logic and Control Flow**:
+    - Check if `n` is less than or equal to 1.
+    - If true, return `n` as the Fibonacci number.
+    - If false, recursively call `fib` with `n-1` and `n-2` and return their sum.
+- **Output**: The nth Fibonacci number as an integer.
 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/inspector/src/utils/git_diff_testcases/file_b.main}} -->
-The `main` function calculates and prints the first five Fibonacci numbers.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/git_diff_testcases/file_b.py#L12>)
+
+Calls the [`fib`](<#fib>) function for the first five non-negative integers and prints the results.
 - **Inputs**: None
-- **Control Flow**:
-    - The function iterates over a range of numbers from 0 to 4 using a for loop.
-    - For each iteration, it calls the [`fib`](<#fib>) function with the current loop index `i` as the argument.
-    - The result of the [`fib`](<#fib>) function call is printed to the console.
-- **Output**: The function does not return any value; it outputs the first five Fibonacci numbers to the console.
+- **Logic and Control Flow**:
+    - Iterates over a range of integers from 0 to 4.
+    - Calls the [`fib`](<#fib>) function with the current integer `i` as the argument.
+    - Prints the result of the [`fib`](<#fib>) function call.
+- **Output**: No output is returned as the function is of type `None`, but it prints the Fibonacci numbers for the first five non-negative integers to the console.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/git_diff_testcases/file_b.fib`](<#fib>)
 

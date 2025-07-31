@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various Python files that define and register tools for summarizing codebase folders, opening files, and searching within content repositories, along with an abstract base class for strict tool implementation.
+Tools for codebase folder summary, file opening, searching, and tool registration in a registry.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes a tool registry by importing and registering various tools such as `CodebaseFolderSummaryTool`, `OpenFileTool`, and `SearchTool`.
-- **[codebase_folder_summary_tool.py](codebase_folder_summary_tool.py.md)**: The `codebase_folder_summary_tool.py` file defines the `CodebaseFolderSummaryTool` class, which is designed to summarize the content of a codebase folder at a specified directory path by querying a database for relevant descriptions.
-- **[open_file_tool.py](open_file_tool.py.md)**: The `open_file_tool.py` file defines the `OpenFileTool` class, which is a strict tool designed to open a file at a specified path, retrieve its content from a database, and display it, while handling exceptions and ensuring the file is not too long.
-- **[search_tool.py](search_tool.py.md)**: The `search_tool.py` file defines the `SearchTool` class, which facilitates searching within a content repository of code and technical documentation using various algorithms and content type filters.
-- **[tool_strict.py](tool_strict.py.md)**: The `tool_strict.py` file defines an abstract base class `ToolStrict` that extends `BaseModel` and requires subclasses to implement an `execute` method, while also providing a method to generate a schema based on the subclass's fields.
+- **[__init__.py](__init__.py.md)**: Registers tools for codebase folder summary, file opening, and searching in a tool registry.
+- **[codebase_folder_summary_tool.py](codebase_folder_summary_tool.py.md)**: A tool to summarize the content of a codebase folder at a specified directory path.
+- **[open_file_tool.py](open_file_tool.py.md)**: A strict tool class to open a file at a given path and display its content, excluding PDFs.
+- **[search_tool.py](search_tool.py.md)**: A class for searching within a content repository using various algorithms and content types.
+- **[tool_strict.py](tool_strict.py.md)**: Defines an abstract base class for tools with a method to create a schema based on subclass parameters.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

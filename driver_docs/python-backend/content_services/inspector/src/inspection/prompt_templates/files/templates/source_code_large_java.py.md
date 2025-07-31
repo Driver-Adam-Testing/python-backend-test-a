@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_java.py` file defines a template for processing large Java source code files, including handling prompts for purpose, imports, interfaces, and classes.
+Templates for generating structured prompts and analyzing Java source code, including imports, interfaces, and classes.
 
 # Purpose
-This Python code file is a configuration script that defines a template for processing and analyzing Java source code, specifically focusing on extracting and organizing information about the purpose, imports, interfaces, and classes within large Java codebases. It imports various components and utilities from shared and specialized modules to construct structured prompts and data collections. The template, `SOURCE_CODE_LARGE_TEMPLATE_JAVA`, is a list of tuples, each representing a different aspect of the Java code analysis, such as purpose, imports, interfaces, and classes, using specific instructions and data extraction methods. This code provides narrow functionality, as it is tailored for a specific task of analyzing and structuring information from Java source code, leveraging both static analysis and language model outputs.
+The code is a configuration file that defines a template for processing Java source code. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ir_common`, to facilitate structured prompting and language specialization. The template, `SOURCE_CODE_LARGE_TEMPLATE_JAVA`, is a list of tuples that specify different sections like "Purpose", "Imports and Dependencies", "Interfaces", and "Classes". Each section uses specific prompts and components to extract and format information from Java source code, leveraging static analysis and language model outputs. This setup is used to generate structured documentation or analysis for Java codebases.
 # Imports and Dependencies
 
 ---
@@ -31,8 +31,8 @@ This Python code file is a configuration script that defines a template for proc
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_JAVA
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_JAVA` is a list of tuples, each representing a structured prompt or analysis task related to Java source code. Each tuple contains a prompt type, a description, and a series of components or functions that define how to generate or process the prompt or data. The list is used to facilitate structured prompting and analysis of Java code, including extracting purposes, imports, interfaces, and classes.
-- **Use**: This variable is used to define a series of structured prompts and analysis tasks for processing Java source code.
+- **Description**: Contains a list of tuples, each representing a section of a Java code template. Each tuple includes a section identifier, a section title, and a series of instructions or operations related to that section, such as generating prompts or processing Java code elements like imports, interfaces, and classes.
+- **Use**: Used to define and organize the structure and content of a large Java code template for processing and analysis.
 
 
 

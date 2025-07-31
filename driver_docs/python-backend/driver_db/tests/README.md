@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests` folder in the `python-backend` codebase contains an `__init__.py` file, indicating it is a Python package, but it currently has no analyzable contents.
+Empty `__init__.py` file.
 
 
 ## Files

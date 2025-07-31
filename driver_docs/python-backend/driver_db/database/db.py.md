@@ -3,17 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `db.py` file in the `python-backend` codebase sets up synchronous and asynchronous database engines, manages database sessions, and includes functionality to parse database URLs and handle SSL configurations for asynchronous connections.
+Database connection setup and session management with support for synchronous and asynchronous engines.
 
 # Purpose
-This Python code is designed to manage database connections, providing both synchronous and asynchronous capabilities. It is structured as a library file intended to be imported and used in other parts of an application. The code primarily focuses on setting up SQLAlchemy engines for database interaction, with a synchronous engine created using `create_engine` and an asynchronous engine using `create_async_engine`. The synchronous engine is configured with a connection pool, while the asynchronous engine includes additional configurations to handle SSL connections manually due to limitations in the `asyncpg` library. The [`get_session`](<#get_session>) function is a context manager that provides a session for database operations, ensuring that the session is properly closed after use.
+This code is responsible for setting up database connections for an application, both synchronous and asynchronous, using SQLAlchemy and SQLModel. It imports necessary modules and configurations, including `ssl`, `uuid`, and `urllib.request`, and retrieves the external IP address of the host. The code constructs a synchronous database engine using the `create_engine` function with a connection string derived from the application's settings. It also defines a context manager [`get_session`](<#get_session>) to manage database sessions, ensuring that each session is properly closed after use.
 
-The code also includes a utility function, `parse_db_url`, which extracts the base connection string and connection arguments from a database URL. This function is particularly useful for handling asynchronous database URLs, allowing the code to manually configure SSL settings when necessary. The presence of the [`init_db`](<#init_db>) function, although not implemented, suggests a placeholder for initializing the database schema or performing setup tasks. Overall, this file provides a cohesive set of tools for managing database connections, with a focus on flexibility and compatibility with different database configurations.
+For asynchronous database connections, the code checks if an asynchronous database URL is provided in the settings. It defines a function `parse_db_url` to parse the database URL, extracting the base connection string and connection arguments. The code handles SSL configurations manually due to limitations in the `asyncpg` library, creating an SSL context if necessary. It then creates an asynchronous engine using `create_async_engine`, configuring connection arguments and settings for compatibility with PgBouncer. The code also includes a placeholder function [`init_db`](<#init_db>) for initializing the database, which is intended to be implemented with specific initialization logic.
 # Imports and Dependencies
 
 ---
 - `ssl`
 - `uuid`
+- `urllib.request`
 - `contextlib.contextmanager`
 - `urllib.parse.parse_qs`
 - `urllib.parse.urlparse`
@@ -21,40 +22,66 @@ The code also includes a utility function, `parse_db_url`, which extracts the ba
 - `sqlalchemy.ext.asyncio.create_async_engine`
 - `sqlmodel.Session`
 - `sqlmodel.create_engine`
+- `logging`
 
 
 # Global Variables
 
 ---
+### logger
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the current module's name as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
+- **Use**: Used to log informational messages and exceptions within the module.
+
+
+---
+### external\_ip
+- **Type**: ``str``
+- **Description**: A string variable that initially holds the value 'nopublic'. It attempts to update its value by fetching the public IP address from 'https://ident.me'. If the fetch is successful, it stores the public IP address as a string.
+- **Use**: Stores the public IP address of the machine or 'nopublic' if the IP cannot be resolved.
+
+
+---
+### app\_name
+- **Type**: ``str``
+- **Description**: Concatenates the string 'pback-' with the value of `external_ip`, which is determined by attempting to fetch the public IP address from an external service. If the public IP cannot be resolved, `external_ip` defaults to 'nopublic'.
+- **Use**: Used as the `application_name` in the connection arguments for the SQLAlchemy engine.
+
+
+---
 ### engine
-- **Type**: `sqlalchemy.engine.base.Engine`
-- **Description**: The `engine` variable is an instance of SQLAlchemy's `Engine` class, created using the `create_engine` function. It is configured to connect to a database using the connection string specified in `settings.SQLALCHEMY_DATABASE_URI` and is set with a connection pool size of 10.
-- **Use**: This variable is used to manage database connections and execute SQL statements in a synchronous manner.
+- **Type**: ``Engine``
+- **Description**: Represents a SQLAlchemy engine instance created using the `create_engine` function. It connects to the database specified by `settings.SQLALCHEMY_DATABASE_URI` with a connection pool size of 20 and pre-ping enabled.
+- **Use**: Used to manage database connections and execute SQL statements through the `Session` class.
 
 
 # Functions
 
 ---
 ### get\_session<!-- {{#callable:python-backend/driver_db/database/db.get_session}} -->
-The `get_session` function provides a context manager for creating and managing a SQLAlchemy session, ensuring it is properly closed after use.
+[View Source →](<../../../../driver_db/database/db.py#L26>)
+
+Manages a database session lifecycle using a context manager.
 - **Decorators**: `@contextmanager`
 - **Inputs**: None
-- **Control Flow**:
-    - A new SQLAlchemy `Session` object is created using the global `engine`.
-    - The `session` object is yielded to the context block where `get_session` is used.
-    - After the context block execution, the `finally` block ensures that the `session` is closed, releasing any resources.
-- **Output**: The function yields a `Session` object for use within a context manager block.
+- **Logic and Control Flow**:
+    - Create a new `Session` object using the `engine`.
+    - Enter a `try` block and yield the `session` object to the caller.
+    - In the `finally` block, close the `session` to ensure resources are released.
+- **Output**: A `Session` object that is used to interact with the database within a context manager.
 
 
 ---
 ### init\_db<!-- {{#callable:python-backend/driver_db/database/db.init_db}} -->
-The `init_db` function initializes the database using the provided SQLAlchemy session.
+[View Source →](<../../../../driver_db/database/db.py#L91>)
+
+Initializes the database using the provided SQLAlchemy session.
 - **Inputs**:
-    - `session`: An instance of `Session` from SQLAlchemy, representing the database session to be initialized.
-- **Control Flow**:
-    - The function is defined to take a `Session` object as an argument, which is intended to be used for database operations.
-    - The function body is currently not implemented, indicated by the ellipsis (`...`).
-- **Output**: The function does not return any value, as indicated by the return type `None`.
+    - `session`: An instance of `Session` from SQLAlchemy, used to interact with the database.
+- **Logic and Control Flow**:
+    - The function is defined to take a `Session` object as an input parameter.
+    - The function body is not implemented, indicated by the ellipsis (`...`).
+- **Output**: No output is returned as the function is defined to return `None`.
 
 
 

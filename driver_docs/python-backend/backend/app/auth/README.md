@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Middleware and model definitions for API key validation, JWT verification, and permission management using Auth0.
+Middleware for API key and JWT validation, Pydantic models for authentication, and permission strings.
 
 
 ## Files
-- **[api_key_middleware.py](api_key_middleware.py.md)**: The `api_key_middleware.py` file implements middleware for validating API keys, including checking user organization membership via Auth0 and returning a JWT-like payload for authenticated requests.
-- **[jwt_middleware.py](jwt_middleware.py.md)**: The `jwt_middleware.py` file implements middleware for verifying Auth0 RS256 JWTs in a FastAPI application, including functions to fetch JWKS, verify tokens, and enforce JWT authentication for user and machine-to-machine requests.
-- **[models.py](models.py.md)**: The `models.py` file defines Pydantic models for `User` and `M2M` entities, including fields for authentication and authorization attributes with specified aliases.
-- **[permissions.py](permissions.py.md)**: The `permissions.py` file defines a set of permission strings used in JWTs for managing various roles such as organization management, content editing, and subscription management.
+- **[api_key_middleware.py](api_key_middleware.py.md)**: Middleware for API key validation and organization membership verification using Auth0 and FastAPI.
+- **[jwt_middleware.py](jwt_middleware.py.md)**: Middleware for verifying Auth0 RS256 JWTs and enforcing token-based authentication in FastAPI.
+- **[models.py](models.py.md)**: Defines Pydantic models for user and machine-to-machine authentication data.
+- **[permissions.py](permissions.py.md)**: Defines permission strings for embedding in JWTs.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `python.py` file in the `python-backend` codebase provides classes and methods for extracting and documenting Python code symbols, such as variables, functions, classes, and imports, using static analysis and structured prompts.
+Classes and functions for extracting and documenting Python symbols, including variables, functions, classes, and imports, using static analysis.
 
 # Purpose
-This Python source code file is designed to facilitate the extraction and documentation of various Python code components, such as variables, functions, classes, and imports, using static analysis. The file defines several classes that represent collections of these components, each tailored to handle a specific type of symbol (e.g., `PyVariableRawSymbolCollection`, `PyFnRawSymbolCollection`, `PyClassRawSymbolCollection`, and `PyImportRawSymbolCollection`). These classes utilize a static analysis tool, `PyDriverTree`, to parse Python code and extract relevant symbols, which are then encapsulated in `RawSymbolData` objects. The file also includes classes like `PyVariableData`, `PyFnData`, and `PyClassData`, which are responsible for generating prompts and handling the transformation of raw symbol data into intermediate representations (IR) for further processing or documentation.
-
-The code is structured to support a modular and extensible approach to code analysis and documentation, with a focus on generating detailed and structured documentation for Python code components. It leverages the `pydantic` library for data validation and management, and it defines a series of JSON schemas for documenting classes, methods, functions, and variables. The file is intended to be part of a larger system that automates the generation of technical documentation, providing a robust framework for analyzing Python codebases and extracting meaningful information about their structure and functionality.
+The code defines a set of classes and functions for extracting and processing Python symbols, such as variables, functions, and classes, from source code files. It uses static analysis to identify these symbols and organizes them into collections. The primary components include `PyVariableData`, `PyFnData`, and `PyClassData`, which represent individual symbols, and their corresponding collection classes, `PyVariableCollection`, `PyFnCollection`, and `PyClassCollection`, which manage groups of these symbols. The code also includes classes for handling raw symbol data, such as `PyVariableRawSymbolCollection`, `PyFnRawSymbolCollection`, and `PyClassRawSymbolCollection`, which extract symbols using a tree-sitter-based driver. The extracted symbols are then used to generate structured prompts for documentation purposes, adhering to a specific JSON schema. The code is intended to be part of a larger system that automates the generation of technical documentation for Python codebases.
 # Imports and Dependencies
 
 ---
@@ -47,135 +45,135 @@ The code is structured to support a modular and extensible approach to code anal
 
 ---
 ### PY\_CLASS
-- **Type**: `set`
-- **Description**: `PY_CLASS` is a global variable defined as a set containing a single string element, 'class'. This variable is likely used to represent or categorize Python class entities in a broader context, possibly for parsing or documentation purposes.
-- **Use**: This variable is used to identify or categorize Python class entities.
+- **Type**: ``set``
+- **Description**: Contains a single string element, 'class'. This set is likely used to categorize or identify Python class-related elements.
+- **Use**: Used to represent or store the concept of a Python class.
 
 
 ---
 ### PY\_FUNCTIONS
-- **Type**: `set`
-- **Description**: `PY_FUNCTIONS` is a global variable defined as a set containing a single string element, 'function'. This set is likely used to categorize or identify Python functions within a larger system or framework.
-- **Use**: This variable is used to represent or store identifiers for Python functions.
+- **Type**: ``set``
+- **Description**: Contains a single string element 'function'. This set is likely used to categorize or identify Python functions.
+- **Use**: Used to store and identify Python functions.
 
 
 ---
 ### PY\_METHODS
-- **Type**: `set`
-- **Description**: `PY_METHODS` is a global variable defined as a set containing a single string element, 'member'. This set is likely used to categorize or identify Python methods within a larger system or framework.
-- **Use**: This variable is used to represent or categorize Python methods in the codebase.
+- **Type**: ``set``
+- **Description**: Contains a single string element, 'member'. This set is likely used to categorize or identify Python methods.
+- **Use**: Used to store and identify Python methods as 'member'.
 
 
 ---
 ### PY\_VARIABLES
-- **Type**: `set`
-- **Description**: `PY_VARIABLES` is a global variable defined as a set containing a single string element, 'variable'. This set is likely used to categorize or identify Python variables within a larger system or framework.
-- **Use**: This variable is used to represent or categorize Python variables in the context of the code.
+- **Type**: ``set``
+- **Description**: Contains a single string element, 'variable'. This set is likely used to categorize or identify Python variables in a broader context.
+- **Use**: Used to represent a collection of Python variable identifiers.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_PY
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY` is a multi-line string that serves as a prompt for a system designed to generate detailed documentation for Python code. It emphasizes the expertise of the user in Python programming and software engineering documentation, focusing on explaining technical details and key conceptual components of software.
-- **Use**: This variable is used as a prompt template for generating documentation for large Python systems.
+- **Description**: This variable is a multi-line string that provides a system prompt for a large source code documentation task. It instructs the user to write detailed documentation for Python code, focusing on technical details and key conceptual components.
+- **Use**: Used as a system prompt for generating documentation for large Python source code files.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_PY
 - **Type**: `str`
-- **Description**: This variable is a multi-line string that serves as a system prompt for a Python programmer and documentation expert. It emphasizes the user's expertise in explaining small and simple source code files with clarity and conciseness.
-- **Use**: This variable is used as a prompt to guide the user in documenting small and simple Python source code files.
+- **Description**: This variable is a string that contains a prompt for a Python programmer and software engineering documentation expert. It instructs the expert to write detailed documentation for small and short source code files, emphasizing clarity and brevity.
+- **Use**: Used to provide a specific prompt for documenting small and simple source code files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string variable that contains a detailed prompt for explaining the purpose of a large source code file. The prompt guides the user to provide a comprehensive explanation of the file's purpose, focusing on its functionality, technical components, and overall theme without using speculative language.
-- **Use**: This variable is used to instruct users on how to describe the purpose of large source code files in a structured and detailed manner.
+- **Description**: A string variable that contains a user prompt for explaining the purpose of a source code file. It provides guidance on how to write a description of the file's purpose, including considerations such as the scope of functionality and the nature of the code.
+- **Use**: Used to instruct users on how to describe the purpose of a source code file.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string variable that contains a template for a user prompt. This prompt is designed to guide users in explaining the purpose of a source code file in a concise manner. It includes questions to consider, such as the scope of functionality and the type of code.
-- **Use**: This variable is used to provide a structured prompt for users to describe the purpose of a small source code file.
+- **Description**: The `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` variable is a string that contains a prompt for explaining the purpose of a small source code file. It instructs the user to provide a single paragraph explanation, focusing on the scope and type of functionality provided by the code.
+- **Use**: Used to guide users in summarizing the purpose of small source code files.
 
 
 ---
 ### TECHNICAL\_CONCEPTS
-- **Type**: `str`
-- **Description**: TECHNICAL_CONCEPTS is a multi-line string variable that provides instructions for describing the important technical features and their interactions in a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific classes, functions, or variables. This variable serves as a guideline for generating comprehensive technical documentation.
-- **Use**: This variable is used as a template or guideline for writing technical descriptions of source code files.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for describing the important technical features and their interactions in a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific classes, functions, or variables.
+- **Use**: Used to guide the writing of technical descriptions for source code files.
 
 
 ---
 ### CLASSES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The `CLASSES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating JSON documentation for Python classes. It provides detailed instructions on how to document classes, focusing on instance and class variables, and decorators, while excluding methods. The template ensures that the documentation is structured in a specific JSON format, guiding the user to provide a comprehensive description of the class.
-- **Use**: This variable is used as a template for generating structured JSON documentation for Python classes.
+- **Description**: A multi-line string that provides instructions for documenting Python classes. It includes guidelines on how to list class members and decorators, and specifies the format for the JSON schema to be used in the documentation.
+- **Use**: Used as a template or guideline for generating JSON documentation for Python classes.
 
 
 ---
 ### CLASSES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `CLASSES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing classes in Python code. It instructs the user to provide a detailed description of a class, with the level of detail matching the complexity of the class.
-- **Use**: This variable is used as a template prompt for generating documentation or summaries of Python classes.
+- **Description**: This is a multi-line string that provides instructions for summarizing a class in a given code. It includes guidelines on how to describe classes based on their complexity.
+- **Use**: Used as a prompt for users to summarize classes in code.
 
 
 ---
 ### METHODS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The `METHODS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string variable that contains a detailed system prompt for documenting Python class methods. It instructs the user to provide a JSON schema-based description of a class method, including a single sentence summary, inputs, control flow, and output. This prompt is designed to guide users in creating comprehensive and structured documentation for Python class methods.
-- **Use**: This variable is used as a template for generating documentation prompts for Python class methods.
+- **Description**: This variable is a multi-line string that provides a system prompt for documenting Python class methods. It instructs the user to describe a class method using a specific JSON schema, including details about inputs, control flow, and output.
+- **Use**: Used as a template for generating documentation for Python class methods.
 
 
 ---
 ### METHODS\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: `METHODS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing class methods in Python code. It instructs the user to describe the inputs, control flow, logic, and output of a class method, with the level of detail matching the complexity of the method.
-- **Use**: This variable is used as a template for generating user prompts to document class methods in Python code.
+- **Type**: ``str``
+- **Description**: This is a multi-line string that provides a template for summarizing class methods in Python code. It includes instructions for describing the inputs, control flow, logic, and output of a class method.
+- **Use**: Used as a prompt template for generating documentation of class methods.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating documentation for data structures, typically classes, in Python. It provides a JSON schema that outlines how to describe a data structure, including its type, members, and a detailed description. This template is designed to ensure consistent and comprehensive documentation of Python data structures.
-- **Use**: This variable is used as a system prompt template for generating structured documentation of Python data structures.
+- **Description**: A multi-line string that provides instructions for documenting data structures in Python. It includes a JSON schema that specifies how to describe the type, members, and description of a data structure.
+- **Use**: Used as a system prompt to guide the documentation of data structures in Python.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing data structures in a given code. It specifies that data structures are custom or compound types like structs, classes, or enums, and emphasizes the importance of providing detailed descriptions based on the complexity of the data structure.
-- **Use**: This variable is used to prompt users to summarize data structures in code, guiding them on how to provide detailed documentation.
+- **Type**: ``str``
+- **Description**: This variable is a multi-line string that provides instructions for summarizing a data structure in a given code. It specifies that a data structure is a custom or compound type, such as structs, classes, or enums, and not functions, methods, or variables.
+- **Use**: Used to prompt users to summarize data structures in code.
 
 
 ---
 ### FUNCTIONS\_OR\_METHODS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating documentation for Python functions and methods. It provides a detailed structure for describing functions or methods, including their decorators, inputs, logic, control flow, and output, using a specific JSON schema.
-- **Use**: This variable is used as a system prompt template for generating structured documentation of Python functions and methods.
+- **Description**: A multi-line string that provides instructions for documenting functions or methods in Python. It includes guidelines for identifying decorators, describing inputs, control flow, and outputs, and specifies the JSON schema to use for documentation.
+- **Use**: Used as a template or guideline for generating documentation for functions or methods.
 
 
 ---
 ### FUNCTIONS\_OR\_METHODS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `FUNCTIONS_OR_METHODS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for summarizing functions or methods in Python code. It provides guidelines for describing the inputs, control flow, logic, and output of a function or method, with an emphasis on matching the level of detail to the complexity of the function or method being documented.
-- **Use**: This variable is used as a prompt template for generating detailed documentation of functions or methods in Python code.
+- **Description**: This variable is a multi-line string that provides a template for summarizing a function or method in Python code. It includes instructions on how to describe the inputs, control flow, logic, and output of the function or method.
+- **Use**: Used as a prompt template for generating documentation of functions or methods.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string variable that contains a detailed system prompt for documenting Python variables. It provides instructions on how to describe a variable using a specific JSON schema, emphasizing the importance of explaining technical details and recognizing key components of software.
-- **Use**: This variable is used as a template or guideline for generating documentation for Python variables.
+- **Description**: A multi-line string that contains instructions for documenting Python variables. It includes guidelines for writing technical documentation and a JSON schema for the expected output.
+- **Use**: Used as a template for generating documentation for Python variables.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for a user prompt. This prompt is designed to guide users in summarizing a global variable in a given code snippet. It provides instructions on how to describe the variable, emphasizing the need for detail proportional to the complexity of the variable.
-- **Use**: This variable is used as a template to generate user prompts for summarizing global variables in Python code.
+- **Description**: A multi-line string that provides instructions for summarizing a global variable in Python code. It includes guidelines on how to describe the variable based on its complexity.
+- **Use**: Used as a prompt or template for users to document global variables in Python code.
 
 
 # Classes
@@ -184,14 +182,14 @@ The code is structured to support a modular and extensible approach to code anal
 ### PyVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L254>)
 
-- **Description**: The `PyVariableData` class is a specialized subclass of `VariableData` designed to handle variable-related data in a Python context. It provides class methods for generating system and user prompts based on a given `RawSymbolData` object, which represents a variable's metadata. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that variables should not have children in this context. This class is part of a larger framework for structured prompting and symbol data management in Python code analysis.
+- **Description**: Represents a specialized data structure for handling Python variable data, extending the `VariableData` class. It provides class methods to generate system and user prompts based on a given `RawSymbolData` object. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that variables should not have children in this context.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.system_prompt`](<#PyVariableDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.user_prompt`](<#PyVariableDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.child_to_ir`](<#PyVariableDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.child_to_field_name`](<#PyVariableDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.system_prompt`](<#pyvariabledatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.user_prompt`](<#pyvariabledatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.child_to_ir`](<#pyvariabledatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.child_to_field_name`](<#pyvariabledatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#variabledata>)
 
 **Methods**
 
@@ -199,78 +197,78 @@ The code is structured to support a modular and extensible approach to code anal
 #### PyVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L255>)
 
-The `system_prompt` method constructs and returns a formatted string prompt for documenting functions or methods.
+Generates a system prompt string for a given symbol using predefined components and instructions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyVariableData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty `Prompt` object.
-    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` string to the `Prompt`.
-    - It appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - It appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Finally, it converts the `Prompt` into a string using `into_str()` and returns it.
-- **Output**: A string representing the constructed prompt for documenting functions or methods.
+    - `cls`: Reference to the class `PyVariableData`.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()`.
+- **Output**: A string representing the system prompt for the given symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#PyVariableData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#pyvariabledata>)  (Base Class)
 
 
 ---
 #### PyVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L265>)
 
-The `user_prompt` method constructs and returns a formatted string prompt based on the provided `RawSymbolData` object.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyVariableData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a component with the user prompt and symbol name.
+    - `cls`: The class `PyVariableData` to which this method belongs.
+    - `symbol`: An instance of `RawSymbolData` containing information about the symbol, such as its name and code.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a component with the user prompt and symbol name.
     - Append a component with a no-restatement style instruction for symbols.
-    - Append a component with the variable code from the `symbol` object.
-    - Check if `symbol.file_code` is present; if so, append a component with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt based on the provided symbol data.
+    - Append a component with the variable code from the symbol data.
+    - Check if `symbol.file_code` is not empty; if true, append a component with the full file code.
+    - Convert the `Prompt` object into a string and return it.
+- **Output**: A string that represents the user prompt based on the symbol data.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#PyVariableData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#pyvariabledata>)  (Base Class)
 
 
 ---
 #### PyVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L279>)
 
-The `child_to_ir` method raises a `NotImplementedError` indicating that variables should not have children.
+Raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyVariableData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` representing a symbol, which is expected to be a variable.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with the message 'Variables should not have children'.
+    - `cls`: The class `PyVariableData` itself.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Variables should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#PyVariableData>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#pyvariabledata>)  (Base Class)
 
 
 ---
 #### PyVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L283>)
 
-The `child_to_field_name` method raises a `NotImplementedError` indicating that variables should not have children.
+Raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyVariableData` itself, as this is a class method.
+    - `cls`: The class `PyVariableData` itself.
     - `child`: An instance of `RawSymbolData` representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with the message 'Variables should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#PyVariableData>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Variables should not have children'.
+- **Output**: This method does not return a value; it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableData`](<#pyvariabledata>)  (Base Class)
 
 
 
@@ -279,12 +277,12 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L288>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to either a single PyVariableData instance or a list of PyVariableData instances.
-- **Description**: The PyVariableCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize variable data represented by the PyVariableData class. It contains a dictionary, 'data', which maps string keys to either a single PyVariableData instance or a list of such instances, allowing for flexible storage of variable information. The class also provides a class method 'from_llm' to create an instance of PyVariableCollection using a language model and a collection of raw symbols, facilitating the integration of language model data into the collection.
+    - `data`: Stores a dictionary mapping strings to `PyVariableData` or lists of `PyVariableData`.
+- **Description**: Manages a collection of Python variable data, inheriting from `IrCollection`. It provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols, utilizing the `PyVariableData` class for data representation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableCollection.from_llm`](<#PyVariableCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableCollection.from_llm`](<#pyvariablecollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -292,18 +290,19 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 #### PyVariableCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L291>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using LLM and a list of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class itself, used to create an instance.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model to be used.
-    - `symbols_list`: A `RawSymbolCollection` containing symbols to be processed.
-- **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) on the class, passing `PyVariableData`, `llm`, and `symbols_list` as arguments.
-- **Output**: Returns an instance of the class initialized with data from the language model and symbols list.
+    - `llm`: An instance of `ChatOpenAI` used for processing.
+    - `symbols_list`: A collection of symbols of type `RawSymbolCollection`.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `PyVariableData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class created using the provided LLM and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableCollection`](<#PyVariableCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableCollection`](<#pyvariablecollection>)  (Base Class)
 
 
 
@@ -312,20 +311,20 @@ The `from_llm` method creates an instance of the class using data from a languag
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L296>)
 
 - **Members**:
-    - `single_sentence`: Stores a single sentence description of the function or method.
+    - `single_sentence`: Stores a single sentence of raw content.
     - `decorators`: Holds a list of decorators applied to the function or method.
-    - `inputs`: Contains a list of input arguments for the function or method.
-    - `logic_and_control_flow`: Describes the logic and control flow of the function or method.
-    - `output`: Provides a description of the output of the function or method.
-- **Description**: The `PyFnData` class is a specialized data structure that extends `IrData` to encapsulate metadata and documentation details for Python functions or methods. It includes attributes to store a single sentence description, a list of decorators, input arguments, logic and control flow, and output details. The class provides class methods to generate default instances and system or user prompts for documentation purposes, but it does not support child elements, as functions should not have children.
+    - `inputs`: Contains a list of input parameters with optional names.
+    - `logic_and_control_flow`: Represents the logic and control flow content with optional elements.
+    - `output`: Describes the output field with raw content.
+- **Description**: Represents a data structure for storing information about Python functions or methods, including their decorators, inputs, logic, and output. It provides class methods to generate default instances and prompts for system and user interactions. The class does not support child elements, as indicated by the `NotImplementedError` for child-related methods.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.default_instance`](<#PyFnDatadefault_instance>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.system_prompt`](<#PyFnDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.user_prompt`](<#PyFnDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.child_to_ir`](<#PyFnDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.child_to_field_name`](<#PyFnDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.default_instance`](<#pyfndatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.system_prompt`](<#pyfndatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.user_prompt`](<#pyfndatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.child_to_ir`](<#pyfndatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.child_to_field_name`](<#pyfndatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -333,99 +332,101 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### PyFnData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L303>)
 
-The `default_instance` method creates and returns a default instance of the `PyFnData` class with empty or default values for its attributes.
+Creates and returns a default instance of the `PyFnData` class with empty or default values.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `PyFnData`, which is used to create a new instance.
-    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method body.
-- **Control Flow**:
-    - The method directly returns a new instance of the `PyFnData` class.
-    - The instance is initialized with default or empty values for its attributes: `single_sentence`, `inputs`, `logic_and_control_flow`, and `output`.
-- **Output**: A new instance of the `PyFnData` class with default values for its attributes.
+    - `cls`: Represents the class `PyFnData` itself, used to create a new instance.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method logic.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls()` to create a new instance of `PyFnData`.
+    - Initializes `single_sentence` with an empty [`RawContent`](<ir_common.py.md#rawcontent>) object.
+    - Initializes `inputs` with an empty [`ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>) object.
+    - Initializes `logic_and_control_flow` with an empty [`ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>) object.
+    - Initializes `output` with an empty [`FieldNameWithBulletedContent`](<ir_common.py.md#fieldnamewithbulletedcontent>) object.
+- **Output**: Returns a new instance of `PyFnData` with default values for its attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<ir_common.py.md#RawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#ListedBacktickNameRawContentWithNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBulletedContent`](<ir_common.py.md#FieldNameWithBulletedContent>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#PyFnData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<ir_common.py.md#rawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBulletedContent`](<ir_common.py.md#fieldnamewithbulletedcontent>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#pyfndata>)  (Base Class)
 
 
 ---
 #### PyFnData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L312>)
 
-The `system_prompt` method constructs and returns a formatted string prompt for documenting functions or methods.
+Generates a system prompt string for a given symbol using predefined components and instructions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyFnData` itself, used to call class methods.
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the prompt is being generated.
-- **Control Flow**:
-    - Create an empty `Prompt` object.
-    - Append a component with the string `FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON`.
-    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the prompt.
-    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the prompt.
-    - Convert the constructed prompt into a string using `into_str()`.
-- **Output**: A string representing the constructed prompt for documenting functions or methods.
+    - `cls`: The class `PyFnData` itself, used to call the class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Converts the `Prompt` into a string using `into_str()` and returns it.
+- **Output**: A string representing the system prompt for the given symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#PyFnData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#pyfndata>)  (Base Class)
 
 
 ---
 #### PyFnData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L322>)
 
-The `user_prompt` method generates a user prompt string based on the provided symbol's data, including its code and potentially its parent class code.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyFnData` to which this method belongs.
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, such as its name, code, and parent class.
-- **Control Flow**:
-    - Initialize an empty prompt and append a no-restatement style instruction.
-    - Check if the symbol has a reified symbol with a parent and if the parent's raw symbol code is available.
-    - If the above condition is true, append the method code and parent class code to the prompt.
-    - If the above condition is false, append the function code to the prompt.
-    - If the symbol has file code, append the full file code to the prompt.
-    - Convert the constructed prompt into a string and return it.
-- **Output**: A string representing the constructed user prompt based on the symbol's data.
+    - `cls`: The class `PyFnData` itself.
+    - `symbol`: An instance of `RawSymbolData` containing information about a symbol.
+- **Logic and Control Flow**:
+    - Initialize an empty `Prompt` and append a no-restatement style instruction.
+    - Check if the `symbol` has a `reified_symbol` with a parent and if the parent's raw symbol code is not `None`.
+    - If the above condition is true, append the method code and parent class code to the `user_prompt`.
+    - If the above condition is false, append the function code to the `user_prompt`.
+    - If `symbol.file_code` is present, append the full file code to the `user_prompt`.
+- **Output**: A string representation of the constructed user prompt.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#PyFnData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#pyfndata>)  (Base Class)
 
 
 ---
 #### PyFnData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L354>)
 
-The `child_to_ir` method raises a NotImplementedError indicating that functions should not have children.
+Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called.
-    - `symbol`: An instance of RawSymbolData representing the symbol to be processed.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#PyFnData>)  (Base Class)
+    - `cls`: The class `PyFnData` itself.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Functions should not have children'.
+- **Output**: Does not return a value; instead, it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#pyfndata>)  (Base Class)
 
 
 ---
 #### PyFnData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L358>)
 
-The `child_to_field_name` method raises a NotImplementedError indicating that functions should not have children.
+Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called.
-    - `child`: An instance of RawSymbolData representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#PyFnData>)  (Base Class)
+    - `cls`: The class `PyFnData` itself.
+    - `child`: An instance of `RawSymbolData` representing a child symbol.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Functions should not have children'.
+- **Output**: Does not return a value; it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnData`](<#pyfndata>)  (Base Class)
 
 
 
@@ -434,12 +435,12 @@ The `child_to_field_name` method raises a NotImplementedError indicating that fu
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L363>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to PyFnData or lists of PyFnData.
-- **Description**: The PyFnCollection class is a specialized collection that inherits from IrCollection, designed to manage and organize function-related data encapsulated in PyFnData objects. It stores this data in a dictionary where each key is a string and the value is either a single PyFnData instance or a list of such instances. The class provides a class method, from_llm, which facilitates the creation of a PyFnCollection instance from a language model and a collection of raw symbols, leveraging the PyFnData structure to process and store the information.
+    - `data`: Stores a dictionary mapping strings to `PyFnData` or lists of `PyFnData`.
+- **Description**: Manages a collection of Python function data, allowing for the organization and retrieval of function-related information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnCollection.from_llm`](<#PyFnCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnCollection.from_llm`](<#pyfncollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -447,18 +448,18 @@ The `child_to_field_name` method raises a NotImplementedError indicating that fu
 #### PyFnCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L366>)
 
-The `from_llm` class method creates an instance of `PyFnCollection` using data from a language model and a collection of raw symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyFnCollection` itself, used to call other class methods.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model to be used for data extraction.
-    - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed.
-- **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) on the class `cls`, passing `PyFnData`, `llm`, and `symbols_list` as arguments.
-- **Output**: Returns an instance of `PyFnCollection` initialized with data processed from the language model and raw symbols.
+    - `cls`: The class itself, used to create an instance.
+    - `llm`: An instance of `ChatOpenAI`, representing the language model.
+    - `symbols_list`: A collection of symbols of type `RawSymbolCollection`.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `PyFnData`, `llm`, and `symbols_list` as arguments.
+- **Output**: Returns an instance of the class created using the provided language model and symbols.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnCollection`](<#PyFnCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnCollection`](<#pyfncollection>)  (Base Class)
 
 
 
@@ -468,18 +469,18 @@ The `from_llm` class method creates an instance of `PyFnCollection` using data f
 
 - **Members**:
     - `decorators`: Holds a list of decorators applied to the class.
-    - `members`: Contains a list of instance and class variables or properties of the class.
+    - `members`: Contains a list of instance and class variables or properties.
     - `description`: Provides a detailed description of the class.
-    - `_supported_child_ordering`: Defines the order of supported child elements like methods and nested classes.
-- **Description**: The `PyClassData` class is a specialized data structure that extends `IrData` to encapsulate metadata about Python classes, including their decorators, members, and a description. It also specifies the order of child elements such as methods and nested classes. This class provides class methods to generate default instances and prompts for system and user interactions, facilitating the documentation and analysis of Python class structures.
+    - `_supported_child_ordering`: Defines the order of child elements like methods and nested classes.
+- **Description**: Represents a data structure for documenting Python classes, including their decorators, members, and descriptions. It inherits from `IrData` and provides methods to generate default instances and prompts for system and user interactions. The class also includes a private attribute to specify the order of child elements, such as methods and nested classes.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.default_instance`](<#PyClassDatadefault_instance>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.system_prompt`](<#PyClassDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.user_prompt`](<#PyClassDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.child_to_ir`](<#PyClassDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.child_to_field_name`](<#PyClassDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.default_instance`](<#pyclassdatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.system_prompt`](<#pyclassdatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.user_prompt`](<#pyclassdatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.child_to_ir`](<#pyclassdatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.child_to_field_name`](<#pyclassdatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -487,99 +488,103 @@ The `from_llm` class method creates an instance of `PyFnCollection` using data f
 #### PyClassData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L379>)
 
-The `default_instance` method creates a default instance of the `PyClassData` class with predefined attributes.
+Creates and returns a default instance of the `PyClassData` class with predefined attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `PyClassData`, to create an instance of.
-    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
-- **Control Flow**:
-    - The method returns a new instance of the `cls` (which is `PyClassData`) with specific default values for its attributes.
-- **Output**: A new instance of `PyClassData` with default values for `description`, `type`, `members`, and `inherits_from` attributes.
+    - `cls`: Represents the class `PyClassData` itself, used to create a new instance.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method logic.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls()` to create a new instance of `PyClassData`.
+    - Sets the `description` attribute to a [`FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>) object with content 'Implemented elsewhere'.
+    - Sets the `type` attribute to a [`FieldNameWithBackTickContent`](<ir_common.py.md#fieldnamewithbacktickcontent>) object with content 'N/A'.
+    - Initializes the `members` attribute as an empty [`ListedBacktickNameRawContentNoNone`](<ir_common.py.md#listedbackticknamerawcontentnonone>) object.
+    - Initializes the `inherits_from` attribute as an empty [`ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>) object.
+- **Output**: Returns a new instance of `PyClassData` with default attributes set.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<ir_common.py.md#FieldNameWithBackTickContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#ListedRawContentNoNone>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#PyClassData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<ir_common.py.md#fieldnamewithbacktickcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#listedbackticknamerawcontentnonone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#listedrawcontentnonone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#pyclassdata>)  (Base Class)
 
 
 ---
 #### PyClassData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L388>)
 
-The `system_prompt` method constructs and returns a system prompt string for documenting Python classes.
+Generates a system prompt string for documenting Python classes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyClassData` itself, used to call the class method.
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
+    - `cls`: Reference to the class `PyClassData`.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
+- **Logic and Control Flow**:
     - Create an empty `Prompt` object.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
-    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Convert the `Prompt` into a string using `into_str()` and return it.
-- **Output**: A string representing the constructed system prompt for documenting Python classes.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()`.
+- **Output**: A string representing the system prompt for documenting Python classes.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#PyClassData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#pyclassdata>)  (Base Class)
 
 
 ---
 #### PyClassData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L398>)
 
-The `user_prompt` method generates a user prompt string based on the provided symbol's name and code, optionally including the full file code if available.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyClassData` to which this method belongs.
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) to the prompt with the symbol's name and class code.
-    - Check if the symbol has associated file code; if so, append it to the prompt as a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>).
-    - Convert the constructed prompt into a string and return it.
-- **Output**: A string representing the constructed user prompt based on the symbol's data.
+    - `cls`: Reference to the class `PyClassData`.
+    - `symbol`: An instance of `RawSymbolData` containing information about the symbol.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) to the `Prompt` with the class name and class code from the `symbol`.
+    - Check if `symbol.file_code` is present; if so, append the full file code to the `Prompt`.
+    - Convert the `Prompt` into a string and return it.
+- **Output**: A string representing the user prompt.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#PyClassData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#pyclassdata>)  (Base Class)
 
 
 ---
 #### PyClassData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L415>)
 
-The `child_to_ir` method maps a given symbol's kind to its corresponding intermediate representation (IR) data type or returns None if not applicable.
+Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `symbol_kind`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyClassData` itself, used to access class-level attributes and methods.
-    - `symbol`: An instance of `RawSymbolData` representing the symbol whose kind is to be mapped to an IR data type.
-- **Control Flow**:
-    - A dictionary `mapping` is defined to associate `SymbolKind.CALLABLE` with `PyFnData` and `SymbolKind.CLASS` with `None`.
-    - The method retrieves the IR data type from the `mapping` dictionary using the `symbol.symbol_kind` as the key.
-- **Output**: The method returns the IR data type associated with the symbol's kind or `None` if the kind is not mapped.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#PyClassData>)  (Base Class)
+    - `cls`: Represents the class `PyClassData` itself.
+    - `symbol`: An instance of `RawSymbolData` that contains information about a symbol.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `PyFnData` and `SymbolKind.CLASS` with `None`.
+    - Uses the `get` method on the mapping dictionary to retrieve the corresponding `IrData` type for the `symbol_kind` of the input `symbol`.
+- **Output**: Returns a type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#pyclassdata>)  (Base Class)
 
 
 ---
 #### PyClassData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L423>)
 
-The `child_to_field_name` method maps a `RawSymbolData` child's symbol kind to a corresponding field name in the `PyClassData` class.
+Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyClassData` itself, as this is a class method.
-    - `child`: An instance of `RawSymbolData` representing a child symbol whose field name is to be determined.
-- **Control Flow**:
-    - A dictionary `mapping` is defined to map `SymbolKind.CALLABLE` to `ScopeRelation.METHOD` and `SymbolKind.CLASS` to `ScopeRelation.NESTED_CLASS`.
-    - The method returns the value from the `mapping` dictionary corresponding to the `symbol_kind` of the `child` argument.
-- **Output**: The method returns a string representing the field name associated with the child's symbol kind, or `None` if the symbol kind is not in the mapping.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#PyClassData>)  (Base Class)
+    - `cls`: Represents the class `PyClassData` itself.
+    - `child`: A `RawSymbolData` object representing a child symbol with a `symbol_kind` attribute.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `ScopeRelation.METHOD` and `SymbolKind.CLASS` with `ScopeRelation.NESTED_CLASS`.
+    - Uses the `get` method on the mapping dictionary to retrieve the corresponding `ScopeRelation` for the `child.symbol_kind`.
+- **Output**: Returns a `ScopeRelation` field name as a string, or `None` if the `symbol_kind` is not in the mapping.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassData`](<#pyclassdata>)  (Base Class)
 
 
 
@@ -588,12 +593,12 @@ The `child_to_field_name` method maps a `RawSymbolData` child's symbol kind to a
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L432>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to PyClassData or lists of PyClassData.
-- **Description**: The `PyClassCollection` class is a specialized collection that inherits from `IrCollection` and is designed to manage a collection of Python class data. It stores the data in a dictionary where the keys are strings and the values are either `PyClassData` instances or lists of `PyClassData`. This class provides a class method `from_llm` to create an instance of `PyClassCollection` from a language model and a list of raw symbols, facilitating the integration of language model outputs with intermediate representation data.
+    - `data`: Stores a dictionary mapping strings to `PyClassData` or lists of `PyClassData`.
+- **Description**: Manages a collection of Python class data, inheriting from `IrCollection`. It provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols, utilizing the `from_llm_with_ir_data` method with `PyClassData` as the data type.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassCollection.from_llm`](<#PyClassCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassCollection.from_llm`](<#pyclasscollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -601,19 +606,18 @@ The `child_to_field_name` method maps a `RawSymbolData` child's symbol kind to a
 #### PyClassCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L435>)
 
-The `from_llm` class method creates an instance of `PyClassCollection` using data from a language model and a collection of raw symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyClassCollection` itself, used to call other class methods.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model to be used for data extraction.
-    - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed.
-- **Control Flow**:
-    - The method calls `cls.from_llm_with_ir_data` with `PyClassData`, `llm`, and `symbols_list` as arguments.
-    - The [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method processes the provided data to create an instance of `PyClassCollection`.
-- **Output**: An instance of `PyClassCollection` initialized with data processed from the language model and raw symbols.
+    - `cls`: The class itself, used to create an instance.
+    - `llm`: An instance of `ChatOpenAI`, representing the language model.
+    - `symbols_list`: A collection of symbols of type `RawSymbolCollection`.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method on the class `cls` with `PyClassData`, `llm`, and `symbols_list` as arguments.
+- **Output**: Returns an instance of the class created using the provided language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassCollection`](<#PyClassCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassCollection`](<#pyclasscollection>)  (Base Class)
 
 
 
@@ -622,14 +626,14 @@ The `from_llm` class method creates an instance of `PyClassCollection` using dat
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L441>)
 
 - **Members**:
-    - `data`: A dictionary mapping variable names to their corresponding RawSymbolData objects.
-- **Description**: The `PyVariableRawSymbolCollection` class is a specialized collection that extends `RawSymbolCollection` to handle Python variable symbols. It provides functionality to create an instance from static analysis of Python code, extracting variable symbols using a driver tree and storing them in a dictionary. This class is designed to facilitate the organization and retrieval of raw symbol data for Python variables, primarily through static analysis, and does not support creation from language model outputs.
+    - `data`: Stores a dictionary mapping variable names to `RawSymbolData` instances.
+- **Description**: Collects and manages raw symbol data for Python variables extracted from code. It extends `RawSymbolCollection` and provides methods to create instances from static analysis of code, specifically focusing on variable symbols. The `data` attribute holds a dictionary where keys are variable names and values are `RawSymbolData` objects, representing the extracted symbol information.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.from_static_analysis`](<#PyVariableRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.from_llm`](<#PyVariableRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.to_dict`](<#PyVariableRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.from_static_analysis`](<#pyvariablerawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.from_llm`](<#pyvariablerawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.to_dict`](<#pyvariablerawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -637,56 +641,56 @@ The `from_llm` class method creates an instance of `PyClassCollection` using dat
 #### PyVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L444>)
 
-The `from_static_analysis` method creates an instance of `PyVariableRawSymbolCollection` from static analysis of Python code, extracting variable symbols and their associated data.
+Creates an instance of `PyVariableRawSymbolCollection` from static analysis of the given code and path, or returns `None` if no variables are found.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyVariableRawSymbolCollection` itself, used to create an instance.
-    - `code`: A string containing the Python source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-- **Control Flow**:
-    - A `PyDriverTree` is created from the provided code and path using `PyDriverTree.from_code`.
-    - An empty dictionary `variable_raw_symbol_data` is initialized to store variable symbol data.
-    - The method checks if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - The method iterates over each variable symbol extracted from the driver tree using `driver_tree.extract_variables()`.
-    - For each symbol with a non-None name, a `RawSymbolData` object is created using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including the symbol, path, and code.
-    - The created `RawSymbolData` is stored in the `variable_raw_symbol_data` dictionary with the symbol's name as the key.
-    - If `variable_raw_symbol_data` is empty, the method returns `None`; otherwise, it returns an instance of `cls` initialized with `variable_raw_symbol_data`.
-- **Output**: Returns an instance of `PyVariableRawSymbolCollection` containing the extracted variable symbols and their data, or `None` if no variables are found.
+    - `cls`: The class `PyVariableRawSymbolCollection` itself.
+    - `code`: A string containing the source code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
+- **Logic and Control Flow**:
+    - Call `PyDriverTree.from_code` with `code` and `root_rel_path` to get a `driver_tree` object.
+    - Initialize an empty dictionary `variable_raw_symbol_data`.
+    - Determine if the code is a large file by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code`.
+    - Iterate over each symbol extracted by `driver_tree.extract_variables()`.
+    - For each symbol with a non-`None` name, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` and add it to `variable_raw_symbol_data`.
+    - Return `None` if `variable_raw_symbol_data` is empty, otherwise return an instance of `cls` initialized with `variable_raw_symbol_data`.
+- **Output**: Returns an instance of `PyVariableRawSymbolCollection` containing the extracted variable symbols, or `None` if no variables are found.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_variables`](<../treesitter_drivers/python_driver.py.md#PyDriverTreeextract_variables>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection`](<#PyVariableRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_variables`](<../treesitter_drivers/python_driver.py.md#pydrivertreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection`](<#pyvariablerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L474>)
 
-The `from_llm` class method raises a NotImplementedError indicating that static analysis should be used for Python variables.
+Raises a NotImplementedError indicating that static analysis should be used for Python variables.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyVariableRawSymbolCollection` itself, used to call the class method.
-    - `code`: A string representing the Python code to be analyzed.
+    - `cls`: The class `PyVariableRawSymbolCollection` itself.
+    - `code`: A string representing the Python code to analyze.
     - `root_rel_path`: A string representing the root relative path for the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Python variables.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection`](<#PyVariableRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a specific message.
+- **Output**: Raises a NotImplementedError.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection`](<#pyvariablerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L478>)
 
-The `to_dict` method returns the `data` attribute of the `PyVariableRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the `PyVariableRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: The instance of the `PyVariableRawSymbolCollection` class.
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection`](<#PyVariableRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` instances.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyVariableRawSymbolCollection`](<#pyvariablerawsymbolcollection>)  (Base Class)
 
 
 
@@ -695,14 +699,14 @@ The `to_dict` method returns the `data` attribute of the `PyVariableRawSymbolCol
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L482>)
 
 - **Members**:
-    - `data`: A dictionary mapping function names to their corresponding RawSymbolData.
-- **Description**: The PyFnRawSymbolCollection class is a specialized collection for handling raw symbol data related to Python functions. It extends the RawSymbolCollection class and provides functionality to create instances from static analysis of code, specifically focusing on callable symbols. The class includes a method to convert the collection into a dictionary format, facilitating easy access to the raw symbol data associated with each function name. This class is integral for managing and organizing function-related symbol data extracted from Python code.
+    - `data`: Stores a dictionary mapping function names to `RawSymbolData` instances.
+- **Description**: Manages a collection of raw symbol data for Python functions, specifically those identified as callable symbols. It provides a method to create an instance from static analysis, filtering symbols to include only those that are functions and not class methods. The class also includes a method to convert the stored data into a dictionary format.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.from_static_analysis`](<#PyFnRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.from_llm`](<#PyFnRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.to_dict`](<#PyFnRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.from_static_analysis`](<#pyfnrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.from_llm`](<#pyfnrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.to_dict`](<#pyfnrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -710,53 +714,55 @@ The `to_dict` method returns the `data` attribute of the `PyVariableRawSymbolCol
 #### PyFnRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L485>)
 
-The `from_static_analysis` method creates an instance of `PyFnRawSymbolCollection` from static analysis of Python code, focusing on callable symbols.
+Creates an instance of `PyFnRawSymbolCollection` from static analysis of the given code and reified symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyFnRawSymbolCollection` itself, used to create an instance.
-    - `code`: A string representing the Python source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols extracted from the code.
-- **Control Flow**:
-    - Filter `reified_symbols` to include only those with a `CALLABLE` symbol kind.
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - Iterate over the filtered callable symbols and check if their parent is not a class and they have a name.
-    - For each valid symbol, create a `RawSymbolData` instance using `RawSymbolData.from_tree_sitter_raw_symbol` and add it to `function_raw_symbol_data`.
-    - Return `None` if `function_raw_symbol_data` is empty, otherwise return a new instance of `cls` with `function_raw_symbol_data`.
-- **Output**: Returns an instance of `PyFnRawSymbolCollection` containing raw symbol data for callable symbols, or `None` if no such symbols are found.
+    - `cls`: The class `PyFnRawSymbolCollection` itself.
+    - `code`: A string containing the source code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the source code.
+    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols to analyze.
+- **Logic and Control Flow**:
+    - Filters `reified_symbols` to include only those with `SymbolKind.CALLABLE`.
+    - Initializes an empty dictionary `function_raw_symbol_data` to store raw symbol data.
+    - Determines if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Iterates over each `reified_sym` in `func_symbols`.
+    - Checks if the symbol's name is not `None` and its parent is not a class.
+    - Creates `RawSymbolData` for each valid symbol and adds it to `function_raw_symbol_data`.
+    - Returns `None` if `function_raw_symbol_data` is empty, otherwise returns an instance of `cls` with the collected data.
+- **Output**: Returns an instance of `PyFnRawSymbolCollection` with the collected function raw symbol data, or `None` if no data is collected.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection`](<#PyFnRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection`](<#pyfnrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyFnRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L525>)
 
-The `from_llm` class method is a placeholder that raises a NotImplementedError, indicating that static analysis should be used instead for Python functions.
+Raises a NotImplementedError indicating that static analysis should be used for Python functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyFnRawSymbolCollection` itself, used to call the class method.
-    - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the source code file.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Python functions.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection`](<#PyFnRawSymbolCollection>)  (Base Class)
+    - `cls`: The class `PyFnRawSymbolCollection` itself.
+    - `code`: A string representing the Python code to analyze.
+    - `root_rel_path`: A string representing the root relative path of the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a message indicating that static analysis should be used for Python functions.
+- **Output**: This method does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection`](<#pyfnrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyFnRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L529>)
 
-The `to_dict` method returns the `data` attribute of the `PyFnRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the `PyFnRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
-    - `self`: The instance of the `PyFnRawSymbolCollection` class.
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection`](<#PyFnRawSymbolCollection>)  (Base Class)
+    - `self`: Represents the instance of the `PyFnRawSymbolCollection` class.
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` instances.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyFnRawSymbolCollection`](<#pyfnrawsymbolcollection>)  (Base Class)
 
 
 
@@ -765,14 +771,14 @@ The `to_dict` method returns the `data` attribute of the `PyFnRawSymbolCollectio
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L533>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData instances.
-- **Description**: The `PyClassRawSymbolCollection` class is a specialized collection for handling raw symbol data related to Python classes. It extends the `RawSymbolCollection` and provides functionality to construct itself from static analysis of Python code, specifically focusing on class symbols and their associated callable children. The class is designed to parse and organize class-related symbols, including methods, from a given codebase, and store them in a structured format for further processing or analysis.
+    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` instances.
+- **Description**: Extends `RawSymbolCollection` to represent a collection of raw symbol data specifically for Python classes. It provides a method `from_static_analysis` to populate the collection using static analysis of code, identifying class symbols and their associated callable children within the same file. The class also includes a method `to_dict` to convert the stored data into a dictionary format.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.from_static_analysis`](<#PyClassRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.from_llm`](<#PyClassRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.to_dict`](<#PyClassRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.from_static_analysis`](<#pyclassrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.from_llm`](<#pyclassrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.to_dict`](<#pyclassrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -780,56 +786,59 @@ The `to_dict` method returns the `data` attribute of the `PyFnRawSymbolCollectio
 #### PyClassRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L536>)
 
-The `from_static_analysis` method constructs a `PyClassRawSymbolCollection` instance from static analysis of Python code, focusing on class and callable symbols.
+Creates an instance of `PyClassRawSymbolCollection` from static analysis of Python code, focusing on class and callable symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyClassRawSymbolCollection` itself, used to create an instance.
-    - `code`: A string representing the Python source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-    - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
-- **Control Flow**:
-    - Filter `reified_symbols` to identify class definitions and store them in `ds_symbols`.
+    - `cls`: The class `PyClassRawSymbolCollection` itself.
+    - `code`: The Python source code to analyze.
+    - `root_rel_path`: The root relative path of the source code file.
+    - `reified_symbols`: A list of `ReifiedSymbol` objects representing symbols in the code.
+- **Logic and Control Flow**:
+    - Filter `reified_symbols` to find class definitions and store them in `ds_symbols`.
     - Initialize an empty dictionary `data_structure_raw_symbol_data` to store raw symbol data.
-    - Determine if the file is large using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function.
-    - Iterate over `ds_symbols` to create [`RawSymbolData`](<symbol_common.py.md#RawSymbolData>) for each class and its children if they are callable and in the same file.
-    - Filter `reified_symbols` to identify callable symbols with a class parent and update `data_structure_raw_symbol_data` accordingly.
-    - Return `None` if `data_structure_raw_symbol_data` is empty, otherwise return an instance of `PyClassRawSymbolCollection` with the collected data.
-- **Output**: Returns an instance of `PyClassRawSymbolCollection` containing the raw symbol data for classes and their methods, or `None` if no relevant symbols are found.
+    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Iterate over `ds_symbols` to create [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) for each class and its children if they are callable and in the same file.
+    - Store the [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) in `data_structure_raw_symbol_data` using the class name as the key.
+    - Filter `reified_symbols` to find callable symbols with a parent and store them in `callable_symbols_with_parent`.
+    - Iterate over `callable_symbols_with_parent` to ensure their parent class is in `data_structure_raw_symbol_data` and add the callable as a child if not already present.
+    - Return `None` if `data_structure_raw_symbol_data` is empty, otherwise return an instance of `cls` with the collected data.
+- **Output**: An instance of `PyClassRawSymbolCollection` with the collected class and callable symbol data, or `None` if no data is collected.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#RawSymbolData>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection`](<#PyClassRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#rawsymboldata>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection`](<#pyclassrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyClassRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L645>)
 
-The `from_llm` method is a class method that raises a NotImplementedError, indicating that static analysis should be used for Python classes instead.
+Raises a NotImplementedError indicating that static analysis should be used for Python classes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called.
-    - `code`: A string representing the code to be analyzed.
+    - `cls`: The class `PyClassRawSymbolCollection` itself.
+    - `code`: A string representing the code to analyze.
     - `root_rel_path`: A string representing the root relative path of the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Python classes.
-- **Output**: This method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection`](<#PyClassRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a specific message.
+- **Output**: Does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection`](<#pyclassrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyClassRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L649>)
 
-The `to_dict` method returns the `data` attribute of the `PyClassRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the `PyClassRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: The instance of the `PyClassRawSymbolCollection` class.
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection`](<#PyClassRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary where keys are strings and values are `RawSymbolData` instances.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyClassRawSymbolCollection`](<#pyclassrawsymbolcollection>)  (Base Class)
 
 
 
@@ -838,14 +847,14 @@ The `to_dict` method returns the `data` attribute of the `PyClassRawSymbolCollec
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L653>)
 
 - **Members**:
-    - `data`: A dictionary mapping import names to their corresponding RawSymbolData.
-- **Description**: The `PyImportRawSymbolCollection` class is a specialized collection for handling raw symbol data related to Python imports. It extends the `RawSymbolCollection` class and is designed to facilitate the extraction and storage of import symbols from Python code using static analysis. The class provides a method to create an instance from static analysis, which processes the code to extract import symbols and their associated data, storing them in a dictionary. This class is particularly useful for analyzing and managing import statements in Python codebases.
+    - `data`: Stores a dictionary mapping import symbol names to `RawSymbolData` instances.
+- **Description**: Manages a collection of raw symbol data for Python import statements. It uses static analysis to extract import symbols from Python code and stores them in a dictionary. The class provides a method to convert the stored data into a dictionary format. It inherits from `RawSymbolCollection`, which provides the base functionality for handling raw symbol data.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.from_static_analysis`](<#PyImportRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.from_llm`](<#PyImportRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.to_dict`](<#PyImportRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.from_static_analysis`](<#pyimportrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.from_llm`](<#pyimportrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.to_dict`](<#pyimportrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -853,57 +862,56 @@ The `to_dict` method returns the `data` attribute of the `PyClassRawSymbolCollec
 #### PyImportRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L656>)
 
-The `from_static_analysis` method creates an instance of `PyImportRawSymbolCollection` from static analysis of Python code, extracting import symbols and their associated data.
+Creates an instance of `PyImportRawSymbolCollection` from static analysis of Python code, focusing on import symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyImportRawSymbolCollection` itself, used to create an instance.
-    - `code`: A string representing the Python code to be analyzed for imports.
-    - `root_rel_path`: A `Path` object representing the root relative path of the code file being analyzed.
-- **Control Flow**:
-    - Create a `PyDriverTree` instance from the provided code and root relative path.
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - Initialize an empty dictionary `import_dict` to store import symbols and their data.
-    - Iterate over each import symbol extracted from the `driver_tree`.
-    - For each import symbol, create a `RawSymbolData` instance using `RawSymbolData.from_tree_sitter_raw_symbol` with relevant parameters.
-    - Store the `RawSymbolData` instance in `import_dict` with the symbol's name as the key.
-    - Check if `import_dict` is empty; if so, set `output` to `None`, otherwise create a `PyImportRawSymbolCollection` instance with `import_dict`.
-    - Return the `output`, which is either `None` or the created `PyImportRawSymbolCollection` instance.
-- **Output**: Returns an instance of `PyImportRawSymbolCollection` containing import symbols and their data, or `None` if no imports are found.
+    - `cls`: The class `PyImportRawSymbolCollection` itself.
+    - `code`: A string containing the Python code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
+- **Logic and Control Flow**:
+    - Call `PyDriverTree.from_code` to create a driver tree from the given code and path.
+    - Determine if the code requires multiple prompts by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Initialize an empty dictionary `import_dict` to store import symbols.
+    - Iterate over each import symbol extracted by `driver_tree.extract_imports`.
+    - For each import symbol, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol`.
+    - Add the `RawSymbolData` object to `import_dict` with the symbol's name as the key.
+    - Return `None` if `import_dict` is empty; otherwise, return an instance of `cls` initialized with `import_dict`.
+- **Output**: Returns an instance of `PyImportRawSymbolCollection` if import symbols are found; otherwise, returns `None`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_imports`](<../treesitter_drivers/python_driver.py.md#PyDriverTreeextract_imports>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection`](<#PyImportRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/python_driver.PyDriverTree.extract_imports`](<../treesitter_drivers/python_driver.py.md#pydrivertreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection`](<#pyimportrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyImportRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L680>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Python imports.
+Raises a NotImplementedError indicating that static analysis should be used for Python imports.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `PyImportRawSymbolCollection` itself, used to call class methods.
-    - `code`: A string representing the Python code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Python imports.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection`](<#PyImportRawSymbolCollection>)  (Base Class)
+    - `cls`: The class `PyImportRawSymbolCollection` itself.
+    - `code`: A string representing the Python code to analyze.
+    - `root_rel_path`: A string representing the root relative path for the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a message indicating that static analysis should be used for Python imports.
+- **Output**: Raises a NotImplementedError.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection`](<#pyimportrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### PyImportRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/python.py#L684>)
 
-The `to_dict` method returns the `data` attribute of the `PyImportRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the `PyImportRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: The instance of the `PyImportRawSymbolCollection` class.
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection`](<#PyImportRawSymbolCollection>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/python.PyImportRawSymbolCollection`](<#pyimportrawsymbolcollection>)  (Base Class)
 
 
 

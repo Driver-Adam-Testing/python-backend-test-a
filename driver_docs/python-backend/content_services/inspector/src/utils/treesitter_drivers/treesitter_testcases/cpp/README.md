@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A collection of C++ test files demonstrating programming concepts like classes, enums, functions, inheritance, structs, unions, variables, and include directives.
+C++ test cases demonstrating classes, enums, functions, includes, inheritance, structs, unions, and variables.
 
 
 ## Files
-- **[test_classes.cpp](test_classes.cpp.md)**: The `test_classes.cpp` file demonstrates various C++ programming concepts including class definitions, inheritance, templates, RAII, singleton pattern, and more, through a series of example classes and implementations.
-- **[test_enums.cpp](test_enums.cpp.md)**: The `test_enums.cpp` file demonstrates various uses of enums in C++, including basic enums, scoped enums, enums with explicit values and underlying types, bit flags, and enums within classes, namespaces, and templates.
-- **[test_func_calls.cpp](test_func_calls.cpp.md)**: The `test_func_calls.cpp` file in the `python-backend` codebase provides a comprehensive set of examples demonstrating various types of function calls, including basic, template, namespace-qualified, member, operator, lambda, virtual, and smart pointer method calls, as well as advanced concepts like variadic templates, exception handling, and perfect forwarding.
-- **[test_func_declarations.cpp](test_func_declarations.cpp.md)**: The `test_func_declarations.cpp` file in the `python-backend` codebase contains a comprehensive set of C++ function declarations and definitions, including basic, template, constexpr, noexcept, and virtual functions, as well as class member functions, operator overloads, and various C++20 features.
-- **[test_func_defs.cpp](test_func_defs.cpp.md)**: The `test_func_defs.cpp` file in the `python-backend` codebase provides a comprehensive set of C++ function and class examples, including basic and advanced function definitions, class member functions, template functions, lambda expressions, and inheritance with virtual functions.
-- **[test_includes.cpp](test_includes.cpp.md)**: The `test_includes.cpp` file demonstrates various types of include directives in C++, including standard library, system, local, conditional, and third-party library includes.
-- **[test_inheritance.cpp](test_inheritance.cpp.md)**: The `test_inheritance.cpp` file contains various C++ inheritance test cases, demonstrating different inheritance types and scenarios such as public, private, protected, virtual, multiple, template, and nested class inheritance.
-- **[test_structs.cpp](test_structs.cpp.md)**: The `test_structs.cpp` file contains various C++ struct test cases demonstrating features such as constructors, access specifiers, inheritance, templates, namespaces, static members, and modern C++11 features.
-- **[test_unions.cpp](test_unions.cpp.md)**: The `test_unions.cpp` file contains various C++ union test cases demonstrating features such as constructors, destructors, member functions, non-trivial types, anonymous unions, scoping within namespaces and classes, tagged unions, templates, and static members.
-- **[test_variables.cpp](test_variables.cpp.md)**: The `test_variables.cpp` file in the `python-backend` codebase demonstrates various types of variable declarations and usages in C++, including global, static, const, pointer, reference, auto, decltype, array, STL container, smart pointer, thread-related, function pointer, template, namespace, conditional compilation, macro-defined, class static members, template class static members, attributes, volatile, bitfield, union, initializer lists, structured bindings, custom types, function objects, RAII pattern, and inline variables.
+- **[test_classes.cpp](test_classes.cpp.md)**: Demonstrates various C++ class features including inheritance, templates, RAII, and design patterns.
+- **[test_enums.cpp](test_enums.cpp.md)**: Demonstrates various C++ enum types, including scoped, bit flags, and usage in classes and templates.
+- **[test_func_calls.cpp](test_func_calls.cpp.md)**: A comprehensive test suite for various C++ function call types, including templates, operators, and smart pointers.
+- **[test_func_declarations.cpp](test_func_declarations.cpp.md)**: A comprehensive set of C++ function and class member declarations, including templates, operators, and various C++ features.
+- **[test_func_defs.cpp](test_func_defs.cpp.md)**: Demonstrates various C++ function types, class definitions, templates, and lambda expressions.
+- **[test_includes.cpp](test_includes.cpp.md)**: Demonstrates various include directives for standard, system, local, and conditional libraries in C++.
+- **[test_inheritance.cpp](test_inheritance.cpp.md)**: Test cases for various C++ inheritance scenarios, including public, private, protected, virtual, and template inheritance.
+- **[test_structs.cpp](test_structs.cpp.md)**: C++ struct test cases demonstrating features like constructors, inheritance, templates, and namespaces.
+- **[test_unions.cpp](test_unions.cpp.md)**: C++ test cases for unions, demonstrating features like constructors, member functions, and templates.
+- **[test_variables.cpp](test_variables.cpp.md)**: A comprehensive test file for various C++ variable types and features, including global, static, and template variables.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Unit tests for `DataSource`, `LlmMessage`, and `LlmMessageHistory` classes, focusing on creation, interaction, and conversion.
+Tests for DataSource class methods and LlmMessage functionalities, including conversions and persistence.
 
 
 ## Files
-- **[test_datasource.py](test_datasource.py.md)**: The `test_datasource.py` file contains unit tests for the `DataSource` class, specifically testing the creation of a `DataSource` from node IDs and page IDs, as well as checking the scope functionality.
-- **[test_llm_message.py](test_llm_message.py.md)**: The `test_llm_message.py` file contains unit tests for the `LlmMessage` class and its interactions with various message types and tools, including OpenAI and Anthropic message formats, within the `python-backend` codebase.
-- **[test_llm_message_history.py](test_llm_message_history.py.md)**: The `test_llm_message_history.py` file contains a suite of tests for the `LlmMessage` and `LlmMessageHistory` classes, verifying their functionality in converting to persistent formats, handling different message kinds, and ensuring correct behavior in saving, loading, and converting to Anthropic format.
+- **[test_datasource.py](test_datasource.py.md)**: Tests for the DataSource class methods from_node_ids, from_page_id, and is_in_scope.
+- **[test_llm_message.py](test_llm_message.py.md)**: Tests for LlmMessage functionality, including conversions and tool call responses, using pytest fixtures.
+- **[test_llm_message_history.py](test_llm_message_history.py.md)**: Tests for LlmMessage and LlmMessageHistory functionalities, including persistence and format conversion.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

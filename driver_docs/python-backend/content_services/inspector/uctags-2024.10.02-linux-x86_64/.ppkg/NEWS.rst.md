@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `NEWS.rst` file documents changes and updates in version 6.?.0 of the `python-backend` codebase, including new parsers and integration of `pegof` into the build process.
+Documenting changes in version 6.?.0, including new options, parser updates, and merged pull requests.
 
 # Purpose
-This document appears to be a changelog for a software project, detailing updates and modifications introduced in version 6.?.0. It outlines new and extended options, incompatible changes, and parser-related updates, including the integration of the `pegof` tool into the build process. The document also lists new parsers, such as TOML and Cargo, and discusses changes related to parser-specific elements like kinds, roles, fields, and extras. Additionally, it provides information on merged pull requests and notes that some contributions may not be fully attributed in the list, advising users to refer to the git log for comprehensive details.
+The document outlines changes and updates in version 6.?.0 of a software project. It includes sections on new and extended options, incompatible changes, and parser-related changes. The document notes the integration of `pegof` into the build process, and introduces new parsers such as TOML and a Cargo TOML-based subparser. It also details changes related to parser-specific kinds, roles, fields, and extras. Additionally, the document lists merged pull requests and notes that some pull requests were cleaned up before merging, with a suggestion to refer to the git log for more details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

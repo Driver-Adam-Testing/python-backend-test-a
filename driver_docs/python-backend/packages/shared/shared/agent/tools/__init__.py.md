@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase initializes a tool registry by importing and registering various tools such as `CodebaseFolderSummaryTool`, `OpenFileTool`, and `SearchTool`.
+Registers tools for codebase folder summary, file opening, and searching in a tool registry.
 
 # Purpose
-This code is a configuration script that registers a set of tools into a dictionary called `TOOL_REGISTRY`, which maps the tool's class name to its class type. It provides narrow functionality by organizing and making these tools accessible through a centralized registry. The tools being registered include `CodebaseFolderSummaryTool`, `OpenFileTool`, and `SearchTool`, all of which are subclasses of `ToolStrict`. This setup is useful for managing and accessing different tool functionalities in a modular and scalable manner within a larger application or framework.
+This code defines a registry for tools by importing several classes and storing them in a dictionary named `TOOL_REGISTRY`. The classes `CodebaseFolderSummaryTool`, `OpenFileTool`, and `SearchTool` are imported from their respective modules, and each class is registered in the `TOOL_REGISTRY` dictionary using its class name as the key. The dictionary maps the class names to their corresponding class types, which are all expected to be subclasses of `ToolStrict`. This setup allows for dynamic access and management of tool classes within the application.
 # Imports and Dependencies
 
 ---
@@ -20,9 +20,9 @@ This code is a configuration script that registers a set of tools into a diction
 
 ---
 ### TOOL\_REGISTRY
-- **Type**: `dict[str, type[ToolStrict]]`
-- **Description**: `TOOL_REGISTRY` is a dictionary that maps the names of tool classes to their respective class types, all of which are subclasses of `ToolStrict`. It serves as a registry for tools, allowing for dynamic access and instantiation of tool classes by their names.
-- **Use**: This variable is used to store and retrieve tool classes by their names, facilitating dynamic tool management and instantiation.
+- **Type**: ``dict[str, type[ToolStrict]]``
+- **Description**: A dictionary that maps the names of tool classes to their respective class types. The keys are strings representing the class names, and the values are the class types that inherit from `ToolStrict`. This allows for dynamic access to tool classes by their names.
+- **Use**: Stores and provides access to tool classes by their names for dynamic tool management.
 
 
 

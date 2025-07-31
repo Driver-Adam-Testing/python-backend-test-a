@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `technical_context_interface.py` file defines a system message prompt that instructs a response to be based solely on technical context, delaying final answers until sufficient context is provided and ensuring responses are relevant and supported by source documentation.
+Defines a system message prompt for responding with technical context-specific information.
 
 # Purpose
-This code defines a configuration setup for a system that involves a prompt and a message structure. It consists of two global variables: `PROMPT`, a multi-line string that outlines guidelines for generating responses based on technical context, and `MESSAGE`, a dictionary with a "role" key set to "system" and a "content" key containing the `PROMPT`. The functionality is narrow, focusing on establishing a template for system messages, likely used in a context where automated or guided responses are generated based on specific criteria. This setup is typical in applications involving chatbots or automated response systems where maintaining a consistent message format is crucial.
+This code defines a configuration for a conversational AI system. The `PROMPT` variable contains a string that instructs the AI on how to respond, emphasizing the need to provide information based on technical context and to avoid general information. The `MESSAGE` dictionary uses the `PROMPT` as its content and assigns it a role of `system`, indicating that it is a system-level instruction for the AI. This setup is typically used to guide the behavior of an AI model in generating responses that are contextually relevant and accurate.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that provides instructions for generating responses based on technical context. It emphasizes the importance of responding with information relevant to the technical context and source documentation, and advises against providing general or unsupported information.
-- **Use**: This variable is used to define the content of a system message, likely for a chatbot or automated response system, ensuring that responses are contextually accurate and relevant.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for generating responses based on technical context. It emphasizes the importance of responding with information that is directly relevant to the technical context and source documentation.
+- **Use**: Used as a template or guideline for generating context-aware responses.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for generating responses based on technical context.
-- **Use**: This variable is used to define a system message template that guides the behavior of a response system, ensuring it adheres to specific instructions when processing technical context.
+- **Type**: ``dict``
+- **Description**: A dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and a prompt message for further processing.
 
 
 

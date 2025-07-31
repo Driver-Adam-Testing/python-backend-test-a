@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm.py` file contains utility functions for handling string chunking and estimating the number of tokens used by messages in OpenAI's chat completions API, specifically for various GPT models.
+Functions for chunking strings and estimating token counts for OpenAI chat models.
 
 # Purpose
-This Python code file provides utility functions related to string manipulation and token counting for OpenAI's chat completions API. The file includes two primary functions: [`chunk_str`](<#chunk_str>) and [`num_tokens_from_messages_open_ai`](<#num_tokens_from_messages_open_ai>). The [`chunk_str`](<#chunk_str>) function is designed to divide a given string into chunks of a specified size with a defined overlap, which can be useful for processing large strings in manageable parts. The [`num_tokens_from_messages_open_ai`](<#num_tokens_from_messages_open_ai>) function estimates the number of tokens used by a list of messages when interacting with OpenAI's models, specifically tailored for models like "gpt-3.5-turbo" and "gpt-4". This function uses the `tiktoken` library to handle token encoding and includes logic to handle different model versions, providing warnings and fallbacks for unrecognized models.
+The code provides utility functions for processing strings and estimating token usage in messages for OpenAI's chat completions API. It includes two main functions: [`chunk_str`](<#chunk_str>) and [`num_tokens_from_messages_open_ai`](<#num_tokens_from_messages_open_ai>). The [`chunk_str`](<#chunk_str>) function divides a given string into chunks of a specified size with a defined overlap, returning a list of string segments. This function is useful for handling large strings by breaking them into manageable parts.
 
-The file appears to be part of a larger codebase, as indicated by the import statements and the use of a decorator from a shared utilities module. It is likely intended to be used as a utility module within a larger application or library, rather than as a standalone script. The presence of logging and error handling suggests that it is designed to be robust and informative in its operation, providing feedback through warnings and exceptions when necessary. The code also includes a reference to the OpenAI cookbook, indicating that it builds upon existing examples to tailor functionality for specific use cases involving OpenAI's API.
+The [`num_tokens_from_messages_open_ai`](<#num_tokens_from_messages_open_ai>) function calculates the number of tokens used by a list of messages when interacting with OpenAI's models. It uses the `tiktoken` library to determine the encoding for the specified model and estimates the token count based on predefined rules for different models. The function handles various model versions and provides warnings if a model may change over time. It raises an error if the model is not supported. This function is essential for developers who need to manage token usage when working with OpenAI's API. The code also includes logging capabilities to track warnings and errors.
 # Imports and Dependencies
 
 ---
@@ -21,47 +21,51 @@ The file appears to be part of a larger codebase, as indicated by the import sta
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the name of the current module (`__name__`) as its logger name, which helps in identifying the source of log messages.
-- **Use**: This logger is used to output warning messages when certain conditions are met, such as when a model is not found or when a model may update over time.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows the logger to output messages that are tagged with the module's name, aiding in identifying the source of log messages.
+- **Use**: Used to log warning messages and other information within the module, particularly in the `num_tokens_from_messages_open_ai` function.
 
 
 # Functions
 
 ---
 ### chunk\_str<!-- {{#callable:python-backend/content_services/inspector/src/utils/llm.chunk_str}} -->
-The `chunk_str` function divides a given string into overlapping chunks of specified size.
+[View Source →](<../../../../../../content_services/inspector/src/utils/llm.py#L10>)
+
+Divides a string into overlapping chunks of specified size.
 - **Inputs**:
-    - `chunk_size`: The size of each chunk to be created from the input string.
+    - `chunk_size`: The size of each chunk to create from the input string.
     - `chunk_overlap`: The number of characters that overlap between consecutive chunks.
-    - `str_in`: The input string to be divided into chunks.
-- **Control Flow**:
-    - Calculate the number of chunks needed by dividing the length of the input string by the effective chunk size (chunk_size - chunk_overlap) and adding one.
-    - Determine the step size for each chunk, which is the effective chunk size (chunk_size - chunk_overlap).
-    - Use a list comprehension to iterate over the range of the number of chunks, slicing the input string from the current index times the step size to the next index times the step size.
-    - Return the list of string chunks.
-- **Output**: A list of strings, each representing a chunk of the input string with the specified overlap.
+    - `str_in`: The input string to divide into chunks.
+- **Logic and Control Flow**:
+    - Calculate the number of chunks needed by dividing the length of the input string by the effective chunk size (chunk size minus overlap) and adding one.
+    - Determine the step size for each chunk as the chunk size minus the overlap.
+    - Use a list comprehension to iterate over the range of calculated number of chunks, slicing the input string into chunks using the calculated step size.
+- **Output**: A list of strings, each representing a chunk of the input string.
 
 
 ---
 ### num\_tokens\_from\_messages\_open\_ai<!-- {{#callable:python-backend/content_services/inspector/src/utils/llm.num_tokens_from_messages_open_ai}} -->
-The function calculates the estimated number of tokens used by a list of messages for a specified OpenAI model.
+[View Source →](<../../../../../../content_services/inspector/src/utils/llm.py#L24>)
+
+Calculates the number of tokens used by a list of messages for a specified OpenAI model.
 - **Decorators**: `@suppress_logging`
 - **Inputs**:
-    - `messages`: A list of string messages for which the token count is to be estimated.
-    - `model`: A string representing the OpenAI model to be used for encoding, defaulting to 'gpt-3.5-turbo-0613'.
-- **Control Flow**:
-    - Attempt to get the encoding for the specified model using tiktoken.encoding_for_model().
-    - If a KeyError occurs, log a warning and use the 'cl100k_base' encoding as a fallback.
-    - Determine the number of tokens per message based on the specified model.
-    - If the model is 'gpt-3.5-turbo-0301', set tokens_per_message to 4; otherwise, set it to 3 for other specified models.
-    - If the model is a variant of 'gpt-3.5-turbo' or 'gpt-4', log a warning and recursively call the function with a default model version.
-    - Raise a NotImplementedError if the model is not supported.
-    - Initialize num_tokens to 0 and iterate over each message in the messages list.
-    - For each message, add tokens_per_message and the length of the encoded message to num_tokens.
-    - Add 3 additional tokens to num_tokens to account for the reply priming.
-    - Return the total num_tokens.
-- **Output**: An integer representing the estimated number of tokens used by the messages for the specified model.
+    - `messages`: A list of string messages to calculate the token count for.
+    - `model`: A string representing the OpenAI model to use for token encoding, defaulting to 'gpt-3.5-turbo-0613'.
+- **Logic and Control Flow**:
+    - Try to get the encoding for the specified model using `tiktoken.encoding_for_model`.
+    - If a `KeyError` occurs, log a warning and use the 'cl100k_base' encoding.
+    - Check if the model is one of the predefined models and set `tokens_per_message` accordingly.
+    - If the model is 'gpt-3.5-turbo-0301', set `tokens_per_message` to 4.
+    - If the model string contains 'gpt-3.5-turbo', log a warning and recursively call the function with 'gpt-3.5-turbo-0613'.
+    - If the model string contains 'gpt-4', log a warning and recursively call the function with 'gpt-4-0613'.
+    - If the model is not recognized, raise a `NotImplementedError`.
+    - Initialize `num_tokens` to 0 and iterate over each message in `messages`.
+    - For each message, add `tokens_per_message` and the length of the encoded message to `num_tokens`.
+    - Add 3 to `num_tokens` to account for the reply priming tokens.
+    - Return the total `num_tokens`.
+- **Output**: An integer representing the total number of tokens used by the messages.
 
 
 

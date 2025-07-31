@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_12_23_1420-fe3ae98dfbf6_create_nodes.py` file contains an Alembic migration script that adds a `content_kind` column to the `derived_contents` table and updates it based on the `derived_content_types` table.
+Alembic migration script to add and populate the "content_kind" column in the "derived_contents" table.
 
 # Purpose
-This Python script is a database migration file used with Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality, specifically focusing on updating the "derived_contents" table by adding a new column named "content_kind" and populating it based on a join with the "derived_content_types" table. The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function reverses them by removing the "content_kind" column. This script is part of a version-controlled sequence of database schema changes, as indicated by the revision identifiers, and is designed to be executed as part of a larger database migration process.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's primary function is to modify the `derived_contents` table by adding a new column named `content_kind`. The [`upgrade`](<#upgrade>) function adds this column with a type of `AutoString`, which is a SQLModel type, and populates it with data from the `derived_content_types` table based on a matching `content_type_id`. The [`downgrade`](<#downgrade>) function reverses this change by removing the `content_kind` column from the `derived_contents` table.
+
+The script includes revision identifiers, `revision` and `down_revision`, which Alembic uses to track the migration's position in the sequence of database changes. This script is part of a series of migrations, as indicated by the `revision` and `down_revision` identifiers, and it does not have any branch labels or dependencies. The script is intended to be executed as part of a database schema update process, ensuring that the database structure aligns with the application's data model requirements.
 # Imports and Dependencies
 
 ---
@@ -19,51 +21,55 @@ This Python script is a database migration file used with Alembic, a database mi
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring the correct application of database schema changes.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Indicates the immediate predecessor revision in the Alembic migration chain.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration such as branching in the migration history.
-- **Use**: This variable is used by Alembic to manage migration branches, but in this script, it is not actively utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.upgrade}} -->
-The `upgrade` function adds a new column `content_kind` to the `derived_contents` table and populates it with data from the `derived_content_types` table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.py#L20>)
+
+Adds a new column to the 'derived_contents' table and updates its values based on a related table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by adding a new column named `content_kind` to the `derived_contents` table, allowing null values.
-    - It then executes an SQL update statement to populate the `content_kind` column with values from the `type_name` column of the `derived_content_types` table, matching rows based on the `content_type_id`.
-- **Output**: The function does not return any value; it performs database schema and data modifications.
+- **Logic and Control Flow**:
+    - Adds a new column named 'content_kind' to the 'derived_contents' table, allowing null values.
+    - Executes an SQL update statement to set the 'content_kind' column values by joining 'derived_contents' with 'derived_content_types' on 'content_type_id' and assigning 'type_name' from 'derived_content_types'.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.downgrade}} -->
-The `downgrade` function removes the 'content_kind' column from the 'derived_contents' table in the database.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_23_1420-fe3ae98dfbf6_create_nodes.py#L33>)
+
+Removes the `content_kind` column from the `derived_contents` table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.drop_column` to remove the 'content_kind' column from the 'derived_contents' table.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Calls `op.drop_column` to remove the `content_kind` column from the `derived_contents` table.
+- **Output**: No output is returned.
 
 
 

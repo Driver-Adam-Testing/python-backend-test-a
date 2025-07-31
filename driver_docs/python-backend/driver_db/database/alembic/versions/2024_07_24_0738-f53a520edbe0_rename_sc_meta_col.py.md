@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_07_24_0738-f53a520edbe0_rename_sc_meta_col.py` file contains an Alembic migration script that renames the column `analysis_metadata` to `metadata` in the `source_contents` table and provides a downgrade function to reverse the change.
+Alembic migration script to rename a column in the 'source_contents' table.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically focusing on renaming a column in a PostgreSQL database table. The script defines two functions: `upgrade()` and `downgrade()`. The `upgrade()` function renames the column `analysis_metadata` to `metadata` in the `source_contents` table, while the `downgrade()` function reverses this change, renaming `metadata` back to `analysis_metadata`. This script is part of a version control system for database schemas, allowing developers to apply and revert changes to the database structure systematically.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality to rename a column in a PostgreSQL database table. Specifically, it changes the column name from `analysis_metadata` to `metadata` in the `source_contents` table during the upgrade process. The [`downgrade`](<#downgrade>) function reverses this change by renaming the column back to `analysis_metadata`. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -19,54 +19,55 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
-- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration's branch labels.
-- **Use**: This variable is used to define branch labels for the migration, but is currently set to `None`, indicating no specific branch labels are associated with this migration.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is set to `None`, indicating that this Alembic migration script does not depend on any other migrations to be applied before it. It is a part of the Alembic migration configuration.
+- **Use**: Indicates the absence of dependencies for the migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_0738-f53a520edbe0_rename_sc_meta_col.upgrade}} -->
-The `upgrade` function renames a column in the 'source_contents' table from 'analysis_metadata' to 'metadata' using Alembic operations.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_0738-f53a520edbe0_rename_sc_meta_col.py#L20>)
+
+Renames the column 'analysis_metadata' to 'metadata' in the 'source_contents' table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.alter_column` to perform the column renaming operation.
-    - It specifies the table name 'source_contents' and the current column name 'analysis_metadata'.
-    - The new column name 'metadata' is provided as an argument to `op.alter_column`.
-    - The existing column type is specified as `postgresql.JSONB` with a text type for conversion.
-- **Output**: The function does not return any value; it performs a database schema change.
+- **Logic and Control Flow**:
+    - Calls `op.alter_column` to change the column name from 'analysis_metadata' to 'metadata' in the 'source_contents' table.
+    - Specifies the existing column type as `postgresql.JSONB` with `astext_type` set to `sa.Text()`.
+- **Output**: No return value; performs a database schema change.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_0738-f53a520edbe0_rename_sc_meta_col.downgrade}} -->
-The `downgrade` function renames the 'metadata' column back to 'analysis_metadata' in the 'source_contents' table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_0738-f53a520edbe0_rename_sc_meta_col.py#L30>)
+
+Renames the column 'metadata' back to 'analysis_metadata' in the 'source_contents' table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.alter_column` to rename the column 'metadata' to 'analysis_metadata' in the 'source_contents' table.
-    - The `existing_type` parameter specifies that the column type is `postgresql.JSONB` with `astext_type` set to `sa.Text()`.
-- **Output**: The function does not return any value; it performs a database schema alteration.
+- **Logic and Control Flow**:
+    - Calls `op.alter_column` to change the column name from 'metadata' to 'analysis_metadata'.
+- **Output**: No output is returned.
 
 
 

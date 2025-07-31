@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `js_ts_driver.py` file implements a TypeScript tree-sitter driver for extracting various code elements such as imports, callable definitions, data structures, function calls, and variables from TypeScript and JavaScript code.
+Tree-sitter driver for TypeScript that extracts imports, callables, data structures, function calls, and variables.
 
 # Purpose
-This Python file implements a tree-sitter driver specifically for parsing TypeScript code. It is part of a larger system that uses the tree-sitter library to analyze and extract various elements from TypeScript source files. The primary class, `JsTsDriverTree`, extends a base class `DriverTree` and provides methods to extract different types of symbols from TypeScript code, such as import statements, callable definitions (functions and methods), data structure definitions (classes, interfaces, enums, and type aliases), function calls, and variable declarations. The file is structured to handle various TypeScript-specific syntax elements and uses tree-sitter queries to identify and process these elements within the abstract syntax tree (AST) of the code.
+The code implements a `tree-sitter` driver for parsing TypeScript and JavaScript code. It defines a class `JsTsDriverTree` that extends `DriverTree` and provides methods to extract various elements from the source code, such as import statements, callable definitions (functions and methods), data structure definitions (classes, interfaces, enums, and type aliases), function calls, and variable declarations. The class uses `tree-sitter` queries to identify and process these elements, creating instances of `RawTreeSitterSymbolData` to represent the extracted symbols.
 
-The file is designed to be part of a library or module that can be imported and used in other parts of a software system. It does not define a standalone script but rather provides a set of functionalities encapsulated in the `JsTsDriverTree` class. The class methods return lists of `RawTreeSitterSymbolData` objects, which encapsulate detailed information about the extracted symbols, such as their names, types, locations in the source code, and any parent-child relationships. This implementation is focused on TypeScript and JavaScript files, as indicated by the supported file extensions, and it does not currently support `.tsx` and `.jsx` files, as noted in the comments.
+The `JsTsDriverTree` class is designed to work with TypeScript and JavaScript files, as indicated by the `language` and `extensions` class variables. The methods in the class use `tree-sitter` queries to navigate the abstract syntax tree (AST) of the source code and extract relevant information. The extracted data is then used to create symbol data objects, which include details such as the symbol's name, kind, location in the source code, and any parent or base class relationships. This functionality is useful for tasks such as code analysis, refactoring, or documentation generation.
 # Imports and Dependencies
 
 ---
@@ -24,237 +24,265 @@ The file is designed to be part of a library or module that can be imported and 
 
 ---
 ### JsTsDriverTree<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L17>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `language`: A class variable indicating the language type as 'js_ts'.
-    - `extensions`: A class variable containing a set of file extensions associated with the language, specifically '.ts' and '.js'.
-- **Description**: The JsTsDriverTree class is a specialized driver for parsing and analyzing TypeScript and JavaScript code using the Tree-sitter library. It extends the DriverTree class and is designed to extract various code elements such as imports, callable definitions, data structures, function calls, and variables from TypeScript and JavaScript source files. The class utilizes Tree-sitter queries to identify and process different syntax elements, providing a structured way to analyze and manipulate code written in these languages.
+    - `language`: Specifies the language as 'js_ts'.
+    - `extensions`: Contains a set of file extensions for TypeScript and JavaScript.
+- **Description**: Implements a tree-sitter driver for the TypeScript language, providing methods to extract various code elements such as imports, callable definitions, data structures, function calls, and variables from TypeScript source code.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports`](<#JsTsDriverTreeextract_imports>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](<#JsTsDriverTreeextract_callable_definitions>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<#JsTsDriverTreeextract_data_structure_definitions>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_calls`](<#JsTsDriverTreeextract_function_calls>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](<#JsTsDriverTreeextract_variables>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_declarations`](<#JsTsDriverTreeextract_function_declarations>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#JsTsDriverTree_get_fully_qualified_path_to_parent>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_type`](<#JsTsDriverTree_find_child_by_type>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#JsTsDriverTree_find_child_by_field>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#JsTsDriverTree_create_symbol_data>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports`](<#jstsdrivertreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions`](<#jstsdrivertreeextract_callable_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions`](<#jstsdrivertreeextract_data_structure_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_calls`](<#jstsdrivertreeextract_function_calls>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](<#jstsdrivertreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_declarations`](<#jstsdrivertreeextract_function_declarations>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#jstsdrivertree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_type`](<#jstsdrivertree_find_child_by_type>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#jstsdrivertree_find_child_by_field>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#jstsdrivertree_create_symbol_data>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<base.py.md#DriverTree>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree`](<base.py.md#drivertree>)
 
 **Methods**
 
 ---
 #### JsTsDriverTree\.extract\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports}} -->
-The `extract_imports` method extracts various types of import statements from TypeScript code using tree-sitter queries and returns them as a list of `RawTreeSitterSymbolData` objects.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L27>)
+
+Extracts import statements from TypeScript code using tree-sitter queries.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize an empty list `imports` to store extracted import data.
-    - Define a query `import_query` to capture standard import statements and execute it to get `captures_dict`.
-    - Iterate over captured import nodes, extract the source string, and append the import data to `imports`.
-    - Define a query `import_assign_query` to capture TypeScript import assignments and execute it to get `import_assign_captures`.
-    - Iterate over captured module nodes, extract the module string, find the parent import statement, and append the import data to `imports`.
-    - Define a query `require_query` to capture require() style imports and execute it to get `require_captures`.
-    - Iterate over captured module nodes, extract the module string, find the parent variable declarator, and append the import data to `imports`.
-    - Define a query `dynamic_import_query` to capture dynamic import() expressions and execute it to get `dynamic_captures`.
-    - Iterate over captured source nodes, extract the source string, find the parent call expression, and append the import data to `imports`.
-    - Define a query `import_meta_query` to capture import.meta expressions and execute it to get `meta_captures`.
-    - Iterate over captured import_meta nodes, extract the full expression, and append the import data to `imports`.
+- **Logic and Control Flow**:
+    - Initialize an empty list `imports` to store import data.
+    - Query the syntax tree for different types of import statements using tree-sitter queries.
+    - Capture nodes for standard import statements and extract the source string, removing quotes, and append the data to `imports`.
+    - Capture nodes for TypeScript import assignments, extract the module string, find the parent import statement, and append the data to `imports`.
+    - Capture nodes for `require()` style imports, extract the module string, find the parent declarator node, and append the data to `imports`.
+    - Capture nodes for dynamic imports using `import()` expressions, extract the source string, find the parent call expression, and append the data to `imports`.
+    - Capture nodes for `import.meta` access, extract the full expression, and append the data to `imports`.
     - Return the sorted list of `imports` based on the start byte of each import.
-- **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing the extracted import statements.
+- **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing import statements.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#JsTsDriverTree_create_symbol_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#jstsdrivertree_create_symbol_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.extract\_callable\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_callable_definitions}} -->
-The `extract_callable_definitions` method extracts and returns a list of function and method definitions from a TypeScript syntax tree using tree-sitter queries.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L165>)
+
+Extracts function and method definitions from a TypeScript syntax tree using tree-sitter queries.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an empty list `callables` to store callable definitions.
-    - Define a query `function_query` to capture various function types including function declarations, generator functions, and variable declarators assigned to functions.
+    - Define a query `function_query` to capture function, generator function, and variable declarator nodes that represent functions.
     - Execute the query on the root node of the syntax tree to get `function_captures`.
     - Process each type of function capture (function, generator, arrow, and variable functions) by iterating over the captured nodes.
-    - For each node, find the name node using helper methods and create a `RawTreeSitterSymbolData` object with the node's details, adding it to the `callables` list.
-    - Define a query `method_query` to capture method definitions, including computed methods.
-    - Execute the query on the root node to get `method_captures`.
-    - Process each method capture by iterating over the captured nodes, finding the name node, and creating a `RawTreeSitterSymbolData` object for each, adding it to the `callables` list.
-    - Return the sorted list of `callables` based on their start byte positions.
-- **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing the extracted callable definitions.
+    - For each node, find the name node using helper methods and create a `RawTreeSitterSymbolData` object with the node's details.
+    - Add the node to `processed_nodes` to avoid duplicate processing.
+    - Append the created `RawTreeSitterSymbolData` to the `callables` list.
+    - Define a query `method_query` to capture method definition nodes.
+    - Execute the query on the root node of the syntax tree to get `method_captures`.
+    - Process each method capture by iterating over the captured nodes, checking if they are already processed, and creating `RawTreeSitterSymbolData` objects for unprocessed nodes.
+    - Return the sorted list of `callables` based on their `start_byte`.
+- **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing callable definitions.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_type`](<#JsTsDriverTree_find_child_by_type>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#JsTsDriverTree_create_symbol_data>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#JsTsDriverTree_get_fully_qualified_path_to_parent>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#JsTsDriverTree_find_child_by_field>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_type`](<#jstsdrivertree_find_child_by_type>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#jstsdrivertree_create_symbol_data>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#jstsdrivertree_get_fully_qualified_path_to_parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#jstsdrivertree_find_child_by_field>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.extract\_data\_structure\_definitions<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_data_structure_definitions}} -->
-The `extract_data_structure_definitions` method extracts and returns a list of data structure definitions such as classes, interfaces, enums, and type aliases from a TypeScript source tree.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L307>)
+
+Extracts definitions of classes, interfaces, enums, and type aliases from a TypeScript syntax tree.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize an empty list `structures` to store the extracted data structures.
-    - Define a query `structure_query` to capture various data structure types like classes, interfaces, enums, type aliases, and class variables.
-    - Execute the query on the root node of the tree to get `structure_captures`, a dictionary mapping capture types to nodes.
-    - Iterate over each capture type and its associated nodes in `structure_captures`.
-    - For each node, check if it has already been processed; if so, skip it.
-    - For 'class_var' capture type, handle class expressions by extracting the class name if available and appending the structure to `structures`.
-    - For 'interface' capture type, extract the interface name and any base interfaces, then append the structure to `structures`.
-    - For other capture types, extract the name and any base classes or interfaces, determine the kind of symbol, and append the structure to `structures`.
-    - Sort the `structures` list by the start byte of each structure and return it.
+- **Logic and Control Flow**:
+    - Initializes an empty list `structures` to store the extracted data structures.
+    - Defines a query `structure_query` to capture different types of data structures such as classes, interfaces, enums, type aliases, and class variables.
+    - Executes the query on the root node of the syntax tree to get `structure_captures`.
+    - Iterates over each captured structure type and its nodes.
+    - For each node, checks if it has been processed; if not, processes it based on its capture type.
+    - Handles `class_var` capture type by checking for class expressions and extracting their names if available.
+    - Handles `interface` capture type by extracting the interface name and any base interfaces it extends.
+    - Handles other capture types by extracting the name and any base classes or interfaces they extend or implement.
+    - Creates a `RawTreeSitterSymbolData` object for each processed node and appends it to `structures`.
+    - Sorts the `structures` list by the start byte of each structure and returns it.
 - **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing the extracted data structures.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#JsTsDriverTree_find_child_by_field>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#JsTsDriverTree_create_symbol_data>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#JsTsDriverTree_get_fully_qualified_path_to_parent>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#jstsdrivertree_find_child_by_field>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#jstsdrivertree_create_symbol_data>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#jstsdrivertree_get_fully_qualified_path_to_parent>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_calls}} -->
-The `extract_function_calls` method identifies and extracts function and method call expressions from a TypeScript syntax tree, returning them as a list of `RawTreeSitterSymbolData` objects.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L462>)
+
+Extracts function and method calls from a TypeScript syntax tree using tree-sitter.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize an empty list `calls` to store the extracted function call data.
+- **Logic and Control Flow**:
+    - Initialize an empty list `calls` to store the extracted function and method calls.
     - Define a query `call_query` to capture call expressions in the syntax tree.
-    - Execute the query on the root node of the syntax tree to get `call_captures`.
-    - Check if 'call' is in `call_captures` and iterate over each captured node.
-    - For each node, check if it has already been processed; if not, find the function node using [`_find_child_by_field`](<#JsTsDriverTree_find_child_by_field>).
-    - Determine if the function node is a member expression (method call) or a simple function call, and extract the function name accordingly.
+    - Initialize a set `processed_nodes` to keep track of nodes that have been processed.
+    - Execute the query to get `call_captures` from the root node of the syntax tree.
+    - Check if 'call' is in `call_captures` and iterate over each node in `call_captures['call']`.
+    - For each node, check if it is already processed; if not, find the child node representing the function being called.
+    - Determine if the function call is a method call (member expression) or a simple function call and extract the function name accordingly.
     - Create a `RawTreeSitterSymbolData` object for each call and append it to `calls`.
-    - Check if 'new' is in `call_captures` and iterate over each captured node for constructor calls.
-    - For each constructor node, extract the constructor name, create a `RawTreeSitterSymbolData` object, and append it to `calls`.
-    - Return the sorted list of `calls` based on the start byte of each call.
-- **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing the function and method calls found in the syntax tree.
+    - Check if 'new' is in `call_captures` and iterate over each node in `call_captures['new']`.
+    - For each node, check if it is already processed; if not, find the child node representing the constructor being called.
+    - Create a `RawTreeSitterSymbolData` object for each constructor call and append it to `calls`.
+    - Return the `calls` list sorted by the `start_byte` of each call.
+- **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing function and method calls.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#JsTsDriverTree_find_child_by_field>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#JsTsDriverTree_create_symbol_data>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#JsTsDriverTree_get_fully_qualified_path_to_parent>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#jstsdrivertree_find_child_by_field>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#jstsdrivertree_create_symbol_data>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#jstsdrivertree_get_fully_qualified_path_to_parent>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.extract\_variables<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables}} -->
-The `extract_variables` method extracts variable declarations from a TypeScript syntax tree, excluding certain function-related declarations, and returns them as a sorted list of `RawTreeSitterSymbolData` objects.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L530>)
+
+Extracts variable declarations from a TypeScript syntax tree.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an empty list `variables` to store variable data.
     - Define a query `variable_query` to capture variable declarators in the syntax tree.
-    - Execute the query on the root node of the syntax tree to get `variable_captures`.
-    - Check if 'declarator' is in `variable_captures` and iterate over each node in `variable_captures['declarator']`.
-    - For each node, check if it has not been processed and retrieve its 'name' and 'value' child nodes.
-    - Skip nodes where the 'value' node type is one of the specified function-related types.
-    - If the 'name' node is an identifier, add the node to `processed_nodes` and append a new `RawTreeSitterSymbolData` object to `variables`.
-    - Sort the `variables` list by the `start_byte` attribute of each `RawTreeSitterSymbolData` object.
-    - Return the sorted list of variables.
+    - Initialize a set `processed_nodes` to track processed nodes.
+    - Capture variable declarators using `variable_query.captures` on the root node of the tree.
+    - Check if 'declarator' is in the captured variables.
+    - Iterate over each node in `variable_captures['declarator']`.
+    - For each node, check if it is not in `processed_nodes`.
+    - Find child nodes for 'name' and 'value' fields using [`_find_child_by_field`](<#jstsdrivertree_find_child_by_field>).
+    - Skip nodes where the 'value' type is in a predefined list of types (e.g., 'class', 'arrow_function').
+    - If a 'name' node exists and is of type 'identifier', add the node to `processed_nodes`.
+    - Create a `RawTreeSitterSymbolData` object for the variable and append it to `variables`.
+    - Sort the `variables` list by `start_byte` before returning.
 - **Output**: A sorted list of `RawTreeSitterSymbolData` objects representing variable declarations.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#JsTsDriverTree_find_child_by_field>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#JsTsDriverTree_create_symbol_data>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#JsTsDriverTree_get_fully_qualified_path_to_parent>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#jstsdrivertree_find_child_by_field>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data`](<#jstsdrivertree_create_symbol_data>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent`](<#jstsdrivertree_get_fully_qualified_path_to_parent>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.extract\_function\_declarations<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_function_declarations}} -->
-The `extract_function_declarations` method returns an empty list, indicating it does not perform any extraction of function declarations.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L588>)
+
+Returns an empty list of `RawTreeSitterSymbolData` objects.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns an empty list without performing any operations or logic.
-- **Output**: An empty list of type `list[RawTreeSitterSymbolData]`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+- **Logic and Control Flow**:
+    - Returns an empty list immediately.
+- **Output**: An empty list of `RawTreeSitterSymbolData` objects.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.\_get\_fully\_qualified\_path\_to\_parent<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_fully_qualified_path_to_parent}} -->
-The method `_get_fully_qualified_path_to_parent` constructs a fully qualified path to the parent symbol of a given node by traversing its parent nodes.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L591>)
+
+Builds a fully qualified path to the parent symbol of a given node.
 - **Inputs**:
-    - `node`: A `Node` object representing the starting point for building the path to its parent symbol.
-- **Control Flow**:
+    - `node`: A `Node` object representing the current node for which the path to the parent symbol is to be built.
+- **Logic and Control Flow**:
     - Initialize an empty list `path_parts` to store parts of the path.
     - Set `current` to the parent of the input `node`.
     - Enter a loop that continues as long as `current` is not `None`.
-    - Check if `current` is a named container (e.g., class, interface, module, enum) and if so, find its name and append it to `path_parts`.
-    - If `current` is an object literal or object, attempt to find the variable or property name from its parent and append it to `path_parts`.
+    - Check if `current` is a named container (e.g., class, interface, module, enum).
+    - If `current` is a named container, find its name node and append its text to `path_parts`.
+    - If `current` is an object literal or object, find the variable or property name and append its text to `path_parts`.
     - If `current` is a program node, append the file path without its suffix to `path_parts`.
     - Update `current` to its parent node and repeat the loop.
-    - Reverse the `path_parts` list to construct the path from root to the node.
-    - Join the elements of `path_parts` with a dot `.` to form the fully qualified path.
+    - Reverse the `path_parts` list to get the correct order of the path.
+    - Join the elements of `path_parts` with a dot ('.') and return the resulting string.
 - **Output**: A string representing the fully qualified path to the parent symbol of the given node.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#JsTsDriverTree_find_child_by_field>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field`](<#jstsdrivertree_find_child_by_field>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.\_find\_child\_by\_type<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_type}} -->
-The `_find_child_by_type` method searches for and returns the first child node of a specified type from a given node.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L629>)
+
+Finds the first child node of a specified type from a given node.
 - **Inputs**:
-    - `node`: A `Node` object representing the parent node whose children are to be searched.
-    - `child_type`: A string representing the type of child node to search for.
-- **Control Flow**:
-    - Iterates over each child node of the given `node`.
-    - Checks if the type of the current child node matches the specified `child_type`.
-    - If a match is found, returns the child node immediately.
-    - If no matching child node is found after checking all children, returns `None`.
-- **Output**: Returns the first child `Node` of the specified type if found, otherwise returns `None`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - `node`: A `Node` object from which to search for a child node.
+    - `child_type`: A string representing the type of child node to find.
+- **Logic and Control Flow**:
+    - Iterate over each child in the `node.children` list.
+    - Check if the `type` of the current child matches `child_type`.
+    - Return the child node if a match is found.
+    - Return `None` if no matching child node is found after checking all children.
+- **Output**: A `Node` object representing the first child of the specified type, or `None` if no such child exists.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.\_find\_child\_by\_field<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._find_child_by_field}} -->
-The `_find_child_by_field` method retrieves a child node from a given node based on a specified field name.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L636>)
+
+Finds a child node by a specified field name from a given node.
 - **Inputs**:
-    - `node`: A `Node` object from which a child node is to be retrieved.
-    - `field_name`: A string representing the field name used to identify the child node.
-- **Control Flow**:
-    - The method calls `child_by_field_name` on the `node` object, passing `field_name` as an argument.
-    - The method returns the result of `child_by_field_name`, which is either a `Node` object or `None` if no child with the specified field name exists.
+    - `node`: A `Node` object from which to find the child node.
+    - `field_name`: A string representing the field name to search for in the child nodes.
+- **Logic and Control Flow**:
+    - Calls the `child_by_field_name` method on the `node` object with `field_name` as the argument.
+    - Returns the result of the `child_by_field_name` method call.
 - **Output**: A `Node` object representing the child node with the specified field name, or `None` if no such child exists.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.\_get\_node\_text<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text}} -->
-The `_get_node_text` method retrieves and decodes the text content of a given node from the source bytes.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L640>)
+
+Retrieves and decodes the text content of a specified node from the source bytes.
 - **Inputs**:
-    - `node`: A `Node` object representing a part of the syntax tree from which text content is to be extracted.
-- **Control Flow**:
-    - Accesses the `source_bytes` attribute of the class instance, which contains the raw byte data of the source code.
-    - Slices the `source_bytes` from `node.start_byte` to `node.end_byte` to extract the relevant portion of the source code corresponding to the node.
-    - Decodes the extracted byte slice using UTF-8 encoding to convert it into a string.
-- **Output**: A string representing the decoded text content of the specified node.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - `node`: A `Node` object representing a part of the syntax tree from which to extract text.
+- **Logic and Control Flow**:
+    - Accesses the `source_bytes` attribute using the `start_byte` and `end_byte` of the `node` to slice the relevant byte sequence.
+    - Decodes the sliced byte sequence using UTF-8 encoding to obtain the text content.
+- **Output**: A string containing the decoded text content of the specified node.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 ---
 #### JsTsDriverTree\.\_create\_symbol\_data<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._create_symbol_data}} -->
-The `_create_symbol_data` method constructs a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object from a given node, capturing various attributes such as name, line range, byte range, symbol kind, and more.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.py#L644>)
+
+Creates a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object from a given `Node`.
 - **Inputs**:
-    - `node`: A `Node` object representing a part of the syntax tree from which symbol data is to be extracted.
+    - `node`: A `Node` object representing a part of the syntax tree.
     - `name`: A string representing the name of the symbol.
-    - `kind`: A `SymbolKind` enum value indicating the type of symbol (e.g., IMPORT, CALLABLE, VARIABLE).
+    - `kind`: A `SymbolKind` enum value indicating the type of symbol (e.g., IMPORT, CALLABLE, etc.).
     - `parent_path`: A string representing the fully qualified path to the parent symbol.
-    - `base_class_names`: An optional list of strings representing the names of base classes or interfaces, defaulting to None.
-- **Control Flow**:
-    - Retrieve the start and end line numbers of the node using [`get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>) method.
-    - Create and return a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object with attributes such as name, start and end lines, start and end bytes, symbol kind, fully qualified parent path, file path, symbol code, delimiter, and base class names.
-- **Output**: A [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>) object containing detailed information about the symbol represented by the node.
+    - `base_class_names`: An optional list of strings representing the names of base classes, or `None` if not applicable.
+- **Logic and Control Flow**:
+    - Calls [`get_node_line_range`](<base.py.md#drivertreeget_node_line_range>) to obtain the start and end line numbers of the `node`.
+    - Creates and returns a [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object with the provided parameters and additional data extracted from the `node`.
+- **Output**: A [`RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>) object containing metadata about the symbol represented by the `node`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#DriverTreeget_node_line_range>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#RawTreeSitterSymbolData>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#JsTsDriverTree_get_node_text>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#JsTsDriverTree>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.get_node_line_range`](<base.py.md#drivertreeget_node_line_range>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData`](<../lang_specialization/symbol_common.py.md#rawtreesittersymboldata>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree._get_node_text`](<#jstsdrivertree_get_node_text>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree`](<#jstsdrivertree>)  (Base Class)
 
 
 

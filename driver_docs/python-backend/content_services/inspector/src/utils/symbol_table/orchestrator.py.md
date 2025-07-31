@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `orchestrator.py` file in the `python-backend` codebase provides functionality to build and print a symbol table for various programming languages by grouping files, building language-specific symbol tables, and returning a unified mapping of file paths to symbols, with optional timing information.
+Builds and prints a symbol table for various programming languages, with timing and summary options.
 
 # Purpose
-This Python code file is designed to build and manage symbol tables for various programming languages, providing a unified mapping of file paths to symbols. The primary function, [`build_symbol_table`](<#build_symbol_table>), takes a list of file paths and processes them by grouping files based on their detected programming language. It then constructs language-specific symbol tables using language providers and returns a comprehensive mapping of file paths to symbols. The code supports multiple languages, including C, C++, Python, Java, C#, and JavaScript/TypeScript, and it handles unsupported files by notifying the user. The symbol tables are built using a visibility algorithm, and the process can optionally return timing information for performance analysis.
+The code provides functionality to build and manage symbol tables for source code files across multiple programming languages. It defines a function [`build_symbol_table`](<#build_symbol_table>) that processes a list of file paths, groups them by detected language, and constructs language-specific symbol tables using language providers. The function returns a unified mapping of file paths to lists of `ReifiedSymbol` objects, which represent the symbols found in the files. The code supports languages such as C, C++, Python, Java, C#, TypeScript, and JavaScript, and it handles unsupported files by logging them.
 
-The file also includes a function, [`print_summary`](<#print_summary>), which provides a colorized summary of the symbols in the symbol table. This summary includes details such as symbol definitions, declarations, usages, and relationships like inheritance and member functions/variables for classes or structs. The code is structured to be part of a larger system, likely a library or tool for code analysis, as it imports various utilities and components from other modules. It defines a public API for building symbol tables and printing summaries, making it suitable for integration into other software systems that require detailed symbol analysis across multiple programming languages.
+The code also includes a helper function [`_build_language_symbol_table`](<#_build_language_symbol_table>) that performs parsing, resolving, linking, and reifying of symbols for a specific language group. It uses a `LanguageProvider` to obtain the necessary parser and resolver for each language. Additionally, the [`print_summary`](<#print_summary>) function provides a colorized summary of the symbols in the symbol table, displaying details such as symbol definitions, declarations, usages, and relationships like inheritance and member functions. The code is structured to be part of a library, as it defines functions that can be imported and used elsewhere, and it does not define a standalone script or application.
 # Imports and Dependencies
 
 ---
@@ -33,81 +33,90 @@ The file also includes a function, [`print_summary`](<#print_summary>), which pr
 
 ---
 ### build\_symbol\_table<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/orchestrator.build_symbol_table}} -->
-The `build_symbol_table` function constructs a unified symbol table for a set of files by grouping them by language, building language-specific symbol tables, and optionally returning timing information.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/orchestrator.py#L19>)
+
+Builds a unified symbol table by grouping files by language, constructing language-specific symbol tables, and optionally returning timing information.
 - **Inputs**:
-    - `file_paths`: A list of Path objects representing the file paths to process.
-    - `project_root`: A Path object representing the root directory of the project.
+    - `file_paths`: A list of `Path` objects representing the file paths to process.
+    - `project_root`: A `Path` object representing the root directory of the project.
     - `num_workers`: An optional integer specifying the number of worker threads to use, defaulting to 8.
-    - `algorithm`: A VisibilityAlgorithm enum value specifying the algorithm to use for visibility computation, defaulting to VisibilityAlgorithm.SCC.
-    - `return_timing`: A boolean indicating whether to return timing information, defaulting to False.
-- **Control Flow**:
-    - Initialize language providers and create dictionaries for language groups and unsupported files.
-    - Iterate over each file path, determine its language, and group it accordingly or mark it as unsupported if no provider is available.
+    - `algorithm`: A `VisibilityAlgorithm` enum value specifying the algorithm to use for visibility computation, defaulting to `VisibilityAlgorithm.SCC`.
+    - `return_timing`: A boolean indicating whether to return timing information, defaulting to `False`.
+- **Logic and Control Flow**:
+    - Initialize language providers and dictionaries for language groups and unsupported files.
+    - Iterate over `file_paths` to determine the language of each file and group them accordingly, appending unsupported files to a separate list.
     - Print a message if there are unsupported files.
-    - Initialize an empty dictionary for the unified result and a TimingInfo object for total timing.
-    - For each language group, retrieve the corresponding provider and build the language-specific symbol table using [`_build_language_symbol_table`](<#_build_language_symbol_table>), optionally collecting timing information.
-    - Update the unified result with the symbols from the language-specific index.
-    - Return the unified result and optionally the total timing information.
-- **Output**: Returns a dictionary mapping file paths to lists of ReifiedSymbol objects, and optionally a TimingInfo object if return_timing is True.
+    - Initialize an empty dictionary for the unified result and a [`TimingInfo`](<comparison.py.md#timinginfo>) object for total timing.
+    - Iterate over each language group, skipping empty groups, and retrieve the corresponding language provider.
+    - Print a message indicating the start of symbol table building for each language group.
+    - Call [`_build_language_symbol_table`](<#_build_language_symbol_table>) for each language group, passing relevant parameters and handling the `return_timing` flag to accumulate timing information if needed.
+    - Update the unified result with the symbols from each language-specific index.
+    - Return the unified result and optionally the total timing information based on the `return_timing` flag.
+- **Output**: A dictionary mapping `Path` objects to lists of `ReifiedSymbol` objects, or a tuple containing this dictionary and a [`TimingInfo`](<comparison.py.md#timinginfo>) object if `return_timing` is `True`.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/language_utils.get_language_providers`](<language_utils.py.md#get_language_providers>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.from_ext`](<../lang_specialization/symbol_common.py.md#Langfrom_ext>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<comparison.py.md#TimingInfo>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.from_ext`](<../lang_specialization/symbol_common.py.md#langfrom_ext>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<comparison.py.md#timinginfo>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/orchestrator._build_language_symbol_table`](<#_build_language_symbol_table>)
 
 
 ---
 ### \_build\_language\_symbol\_table<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/orchestrator._build_language_symbol_table}} -->
-The `_build_language_symbol_table` function constructs a language-specific symbol table for a set of files, measuring the time taken for parsing, resolving, linking, and reifying operations, and optionally returns timing information.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/orchestrator.py#L98>)
+
+Builds a language-specific symbol table for a set of files and optionally returns timing information.
 - **Inputs**:
-    - `file_paths`: A list of `Path` objects representing the file paths to be processed.
+    - `file_paths`: A list of `Path` objects representing the file paths to process.
     - `project_root`: A `Path` object representing the root directory of the project.
-    - `provider`: An instance of `LanguageProvider` that supplies the necessary parser and resolver for the language.
+    - `provider`: An instance of `LanguageProvider` that supplies the parser and resolver for the language.
     - `num_workers`: An optional integer specifying the number of worker threads to use, defaulting to 8.
-    - `algorithm`: An instance of `VisibilityAlgorithm` specifying the algorithm to use for visibility computation, defaulting to `VisibilityAlgorithm.SCC`.
-    - `return_timing`: A boolean indicating whether to return timing information along with the result, defaulting to `False`.
-- **Control Flow**:
-    - Initialize a parser and resolver using the provided `LanguageProvider`.
-    - Create a [`TimingInfo`](<comparison.py.md#TimingInfo>) object to store timing data.
-    - Parse the files using `ParsedProject.from_files`, measuring the time taken and storing it in `timing.parsing_time`.
-    - Resolve includes and visibility using `ParsedProjectWithVisibility.from_parsed_project`, always measuring the time taken and storing it in `timing.visibility_time`.
-    - Link symbols using `LinkedProject.from_parsed_project_with_visibility`, measuring the time taken and storing it in `timing.linking_time`.
-    - Reify the symbol graph using `ReifiedProjectIndex.from_linked_project`, measuring the time taken and storing it in `timing.reification_time`.
-    - Calculate the total time taken for all operations and store it in `timing.total_time`.
-    - Return the `ReifiedProjectIndex` and optionally the [`TimingInfo`](<comparison.py.md#TimingInfo>) if `return_timing` is `True`.
-- **Output**: Returns a `ReifiedProjectIndex` object representing the reified symbol table, and optionally a [`TimingInfo`](<comparison.py.md#TimingInfo>) object if `return_timing` is `True`.
+    - `algorithm`: An instance of `VisibilityAlgorithm` specifying the algorithm to use for visibility resolution, defaulting to `VisibilityAlgorithm.SCC`.
+    - `return_timing`: A boolean indicating whether to return timing information, defaulting to `False`.
+- **Logic and Control Flow**:
+    - Get the parser and resolver from the `provider`.
+    - Initialize a [`TimingInfo`](<comparison.py.md#timinginfo>) object to store timing data.
+    - Parse the files using `ParsedProject.from_files`, and record the parsing time.
+    - Resolve includes and visibility using `ParsedProjectWithVisibility.from_parsed_project`, and record the visibility time.
+    - Link symbols using `LinkedProject.from_parsed_project_with_visibility`, and record the linking time.
+    - Reify the symbol graph using `ReifiedProjectIndex.from_linked_project`, and record the reification time.
+    - Calculate the total time by summing the individual timing components.
+    - Return the `ReifiedProjectIndex` and optionally the [`TimingInfo`](<comparison.py.md#timinginfo>) if `return_timing` is `True`.
+- **Output**: Returns a `ReifiedProjectIndex` object representing the reified symbol graph, and optionally a [`TimingInfo`](<comparison.py.md#timinginfo>) object if `return_timing` is `True`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser`](<base.py.md#LanguageProviderget_parser>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_resolver`](<base.py.md#LanguageProviderget_resolver>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<comparison.py.md#TimingInfo>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser`](<base.py.md#languageproviderget_parser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_resolver`](<base.py.md#languageproviderget_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<comparison.py.md#timinginfo>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.timer`](<comparison.py.md#timer>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject.from_files`](<core.py.md#ParsedProjectfrom_files>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility.from_parsed_project`](<core.py.md#ParsedProjectWithVisibilityfrom_parsed_project>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject.from_parsed_project_with_visibility`](<core.py.md#LinkedProjectfrom_parsed_project_with_visibility>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_fqn_delimiter`](<base.py.md#LanguageProviderget_fqn_delimiter>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex.from_linked_project`](<core.py.md#ReifiedProjectIndexfrom_linked_project>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject.from_files`](<core.py.md#parsedprojectfrom_files>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility.from_parsed_project`](<core.py.md#parsedprojectwithvisibilityfrom_parsed_project>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject.from_parsed_project_with_visibility`](<core.py.md#linkedprojectfrom_parsed_project_with_visibility>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_fqn_delimiter`](<base.py.md#languageproviderget_fqn_delimiter>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex.from_linked_project`](<core.py.md#reifiedprojectindexfrom_linked_project>)
 
 
 ---
 ### print\_summary<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/orchestrator.print_summary}} -->
-The `print_summary` function prints a colorized summary of symbols from a symbol table, optionally filtered by a list of files, using a specified separator for fully qualified names.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/orchestrator.py#L158>)
+
+Prints a colorized summary of symbols from a symbol table, optionally filtered by a list of files.
 - **Inputs**:
-    - `symbol_table`: A dictionary mapping file paths to lists of `ReifiedSymbol` objects, representing the symbol table.
-    - `files`: An optional list of file paths to filter the summary output; if `None`, all files in the symbol table are included.
+    - `symbol_table`: A dictionary mapping file paths to lists of `ReifiedSymbol` objects.
+    - `files`: An optional list of file paths to filter the summary; if `None`, all files in the symbol table are included.
     - `sep`: A string separator used for fully qualified names, defaulting to '::'.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize color codes for terminal output.
-    - Determine the target files to process, defaulting to all files in the symbol table if `files` is `None`.
+    - Determine the target files to process based on the `files` argument or all keys in `symbol_table`.
     - Iterate over each file path in the target list.
-    - For each file, retrieve the list of `ReifiedSymbol` objects from the symbol table.
-    - If no symbols are found for a file, print a message indicating this and continue to the next file.
-    - For each symbol, determine its name, line range, and fully qualified name (FQN) if applicable.
-    - If the symbol is a definition, print details including usage count, declaration count, and handle special cases for classes/structs by printing member functions and variables.
-    - If the symbol is a declaration, print its details and link to its definition if available.
-    - If the symbol is neither a definition nor a declaration, it is ignored in the current implementation.
-- **Output**: The function outputs a colorized summary of symbols to the console, detailing definitions, declarations, and usages, with special handling for classes and structs.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<utils.py.md#get_fully_qualified_name>)
+    - For each file path, retrieve the list of `ReifiedSymbol` objects from `symbol_table`.
+    - If no symbols are found for a file path, print a message and continue to the next file.
+    - For each symbol, determine its name, line range, and fully qualified name if applicable.
+    - If the symbol is a definition, print details including usage and declaration counts.
+    - Handle special cases for classes/structs by printing member functions and variables, and inheritance information if available.
+    - For callable symbols, print the functions they call.
+    - Print usage information for symbols, limiting to the first five usages if there are more.
+    - If the symbol is a declaration, print its associated definition if available.
+    - If the symbol is neither a definition nor a declaration, skip further processing.
+- **Output**: No return value; the function outputs text directly to the console.
 
 
 

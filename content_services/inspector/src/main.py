@@ -146,7 +146,7 @@ async def get_result_loading_config(
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     memory=4096,
-    timeout=3600 * 8,
+    timeout=3600 * 12,
     region="us-east",
     max_containers=5,
     cpu=1.0,

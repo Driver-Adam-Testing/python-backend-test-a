@@ -21,7 +21,7 @@ from .utils import (
     is_definition,
 )
 
-MAX_LLM_CALLS_PER_FILE = 25
+MAX_LLM_CALLS_PER_FILE = 15
 
 
 class VisibilityAlgorithm(StrEnum):

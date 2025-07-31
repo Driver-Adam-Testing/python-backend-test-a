@@ -682,7 +682,7 @@ def connect_unconnected_repos() -> None:
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
-    timeout=60 * 60 * 9,
+    timeout=60 * 60 * 12.5,  # longer than inspect db timeout
     region="us-east",
     max_containers=5,
     memory=2048,
@@ -919,7 +919,20 @@ def run_codebase_connection(
         if version_status == VersionStatus.GENERATING:
             print("Inspecting...")
             inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-            inspect_db.remote(version_id)  # TODO: spawn?
+            try:
+                inspect_db.remote(version_id)
+            except Exception as e:
+                print(f"Uncaught during inspection: {e}")
+                # Note: this is likely redundant setting of error state, but this allows us to handle modal timeout exceptions
+
+                with Session(engine) as session, session.begin():
+                    update_stmt = (
+                        update(Version)
+                        .where(Version.id == version_id)
+                        .values(status=VersionStatus.GENERATION_ERROR)
+                    )
+                    session.exec(update_stmt)
+                raise
             print("Inspection complete")
 
     print(

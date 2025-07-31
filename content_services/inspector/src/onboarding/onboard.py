@@ -682,7 +682,7 @@ def connect_unconnected_repos() -> None:
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
-    timeout=60 * 60 * 12.5,  # longer than inspect db timeout
+    timeout=int(60 * 60 * 12.5),  # longer than inspect db timeout
     region="us-east",
     max_containers=5,
     memory=2048,

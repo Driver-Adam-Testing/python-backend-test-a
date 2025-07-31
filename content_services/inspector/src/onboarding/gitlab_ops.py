@@ -1,10 +1,8 @@
 import hashlib
 import logging
 import os
-from datetime import UTC, datetime
 from uuid import UUID
 
-import modal
 import requests
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
@@ -151,10 +149,6 @@ def download_and_upload_repo(
     from database.db import engine
     from database.models_v1 import (
         GitProviderAppInstallation,
-        InspectorRun,
-        UsageEvent,
-        UsageEventType,
-        UsageSession,
     )
     from database.models_v2 import (
         PrimaryAsset,
@@ -243,99 +237,105 @@ def download_and_upload_repo(
                             version_id = new_version.id
                             break
                         elif version.status == VersionStatus.GENERATING:
-                            # Delete running version, and restart inspection with the new version,
-                            # this way the docs we generate reflect the most up to date state
-                            run_statement = (
-                                select(InspectorRun)
-                                .where(InspectorRun.version_id == version.id)
-                                .order_by(InspectorRun.created_at.desc())
-                            )
-                            run = session.exec(run_statement).first()
-
-                            if run is not None:
-                                call_id = run.call_id
-                                modal_call = modal.FunctionCall.from_id(call_id)
-                                modal_call.cancel()
-                            # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
-                            session.delete(version)
-                            # Find and delete the usage session for the version
-                            print("Fetching existing usage session...")
-                            usage_session_statement = (
-                                select(UsageSession)
-                                .join(
-                                    UsageEvent, UsageSession.id == UsageEvent.session_id
-                                )
-                                .where(
-                                    UsageSession.session_metadata["version_id"].astext
-                                    == str(version.id)
-                                )
-                                .where(
-                                    UsageEvent.event_type
-                                    == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-                                )
-                                .options(selectinload(UsageSession.usage_events))
-                            )
-                            usage_session = session.exec(
-                                usage_session_statement
-                            ).first()
-                            print(usage_session)
-                            if usage_session is not None:
-                                usage_event = next(
-                                    (
-                                        event
-                                        for event in usage_session.usage_events
-                                        if event.event_type
-                                        == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
-                                    ),
-                                    None,
-                                )
-                                print(
-                                    f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
-                                )
-                                if usage_event is not None:
-                                    new_usage_session = UsageSession(
-                                        status=usage_session.status,
-                                        organization_id=usage_session.organization_id,
-                                        user_id="SYSTEM",
-                                        session_metadata=usage_session.session_metadata,
-                                    )
-                                    session.add(new_usage_session)
-                                    usage_event_credit = UsageEvent(
-                                        **usage_event.dict(
-                                            exclude={
-                                                "id",
-                                                "bytes_in",
-                                                "session_id",
-                                                "timestamp",
-                                                "event_type",
-                                            }
-                                        ),
-                                        event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                                        session_id=new_usage_session.id,
-                                        bytes_in=abs(usage_event.bytes_in),
-                                        timestamp=datetime.now(tz=UTC),
-                                    )
-                                    print(usage_event_credit)
-                                    print(
-                                        f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
-                                    )
-                                    session.add(usage_event_credit)
-
-                            new_version = Version(
-                                primary_asset_id=primary_asset.id,
-                                vcs_hash=commit,
-                                status=VersionStatus.GENERATING,
-                                # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
-                                previous_version_id=version.previous_version_id,
-                                vcs_metadata=vcs_info.model_dump(),
-                            )
-                            session.add(new_version)
-                            version_id = new_version.id
-
+                            # STOPGAP: Ignore push events during active generation to ensure completion
                             print(
-                                f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
+                                f"Generation already in progress for {repo.get('repo_name', 'unknown')}. "
+                                f"Ignoring push event to allow current generation to complete."
                             )
-                            break
+                            return repo
+                            # # Delete running version, and restart inspection with the new version,
+                            # # this way the docs we generate reflect the most up to date state
+                            # run_statement = (
+                            #     select(InspectorRun)
+                            #     .where(InspectorRun.version_id == version.id)
+                            #     .order_by(InspectorRun.created_at.desc())
+                            # )
+                            # run = session.exec(run_statement).first()
+                            #
+                            # if run is not None:
+                            #     call_id = run.call_id
+                            #     modal_call = modal.FunctionCall.from_id(call_id)
+                            #     modal_call.cancel()
+                            # # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
+                            # session.delete(version)
+                            # # Find and delete the usage session for the version
+                            # print("Fetching existing usage session...")
+                            # usage_session_statement = (
+                            #     select(UsageSession)
+                            #     .join(
+                            #         UsageEvent, UsageSession.id == UsageEvent.session_id
+                            #     )
+                            #     .where(
+                            #         UsageSession.session_metadata["version_id"].astext
+                            #         == str(version.id)
+                            #     )
+                            #     .where(
+                            #         UsageEvent.event_type
+                            #         == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+                            #     )
+                            #     .options(selectinload(UsageSession.usage_events))
+                            # )
+                            # usage_session = session.exec(
+                            #     usage_session_statement
+                            # ).first()
+                            # print(usage_session)
+                            # if usage_session is not None:
+                            #     usage_event = next(
+                            #         (
+                            #             event
+                            #             for event in usage_session.usage_events
+                            #             if event.event_type
+                            #             == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
+                            #         ),
+                            #         None,
+                            #     )
+                            #     print(
+                            #         f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
+                            #     )
+                            #     if usage_event is not None:
+                            #         new_usage_session = UsageSession(
+                            #             status=usage_session.status,
+                            #             organization_id=usage_session.organization_id,
+                            #             user_id="SYSTEM",
+                            #             session_metadata=usage_session.session_metadata,
+                            #         )
+                            #         session.add(new_usage_session)
+                            #         usage_event_credit = UsageEvent(
+                            #             **usage_event.dict(
+                            #                 exclude={
+                            #                     "id",
+                            #                     "bytes_in",
+                            #                     "session_id",
+                            #                     "timestamp",
+                            #                     "event_type",
+                            #                 }
+                            #             ),
+                            #             event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+                            #             session_id=new_usage_session.id,
+                            #             bytes_in=abs(usage_event.bytes_in),
+                            #             timestamp=datetime.now(tz=UTC),
+                            #         )
+                            #         print(usage_event_credit)
+                            #         print(
+                            #             f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
+                            #         )
+                            #         session.add(usage_event_credit)
+                            #
+                            # new_version = Version(
+                            #     primary_asset_id=primary_asset.id,
+                            #     vcs_hash=commit,
+                            #     status=VersionStatus.GENERATING,
+                            #     # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
+                            #     previous_version_id=version.previous_version_id,
+                            #     vcs_metadata=vcs_info.model_dump(),
+                            # )
+                            # session.add(new_version)
+                            # version_id = new_version.id
+                            #
+                            # print(
+                            #     f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
+                            # )
+                            # break
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
                     print(
                         f"Version already in connecting state for {repo_name}, skipping..."

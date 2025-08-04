@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 class PipelineRequest(BaseModel, ABC):
     _datasource: DataSource
     _llm_session: RuntimeLlmSession | None = None
+    _datasource_changed_since_llm_session: bool = False
 
     def __init__(
         self,
@@ -56,12 +57,29 @@ class PipelineRequest(BaseModel, ABC):
                         RuntimeLlmSession.id == llm_session_id
                     )
                 ).first()
-                if self._datasource is None:
-                    self._datasource = DataSource.from_node_ids(
-                        json.loads(self._llm_session.source_node_ids_str),
-                        self._llm_session.organization_id,
+                if self._llm_session is not None:
+                    if self._datasource is None:
+                        # If the datasource is not provided, use the datasource from the llm session
+                        self._datasource = DataSource.from_node_ids(
+                            json.loads(self._llm_session.source_node_ids_str),
+                            self._llm_session.organization_id,
+                        )
+                    self._datasource_changed_since_llm_session = (
+                        json.dumps(self._datasource.node_ids, cls=UUIDEncoder)
+                        != self._llm_session.source_node_ids_str
                     )
+                    if self._datasource_changed_since_llm_session:
+                        self._llm_session.source_node_ids_str = json.dumps(
+                            self._datasource.node_ids, cls=UUIDEncoder
+                        )
+                        session.add(self._llm_session)
+                        session.commit()
+                        session.refresh(self._llm_session)
+                else:
+                    self._datasource_changed_since_llm_session = True
+
             if not llm_session_id or self._llm_session is None:
+                self._datasource_changed_since_llm_session = True
                 self._llm_session = RuntimeLlmSession(
                     organization_id=organization_id,
                     user_id=user_id,

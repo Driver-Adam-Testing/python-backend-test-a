@@ -77,8 +77,8 @@ image = inspection_image = (
         modal.Secret.from_name("open-ai"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     memory=2048,
     timeout=3600 * 8,
     region="us-east",
@@ -321,8 +321,8 @@ def main(
         modal.Secret.from_name("aws-inspector-s3"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     memory="2048",
     timeout=3600 * 8,
     region="us-east",

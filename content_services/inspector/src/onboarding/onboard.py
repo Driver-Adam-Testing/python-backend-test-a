@@ -137,8 +137,8 @@ def process_file(local_path_and_extracted_path: tuple[Path, Path]) -> tuple[Path
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     timeout=60 * 60,
     region="us-east",
     max_containers=5,
@@ -253,11 +253,9 @@ def handle_github_events(
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB.
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-        else None
-    ),
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     timeout=60 * 60,
     region="us-east",
     max_containers=5,
@@ -360,11 +358,9 @@ def handle_gitlab_events(
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
     ],
-    proxy=(
-        modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-        else None
-    ),
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     timeout=60 * 60,
     region="us-east",
     max_containers=5,
@@ -474,8 +470,8 @@ def handle_bitbucket_events(
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     timeout=60 * 60,
     region="us-east",
     max_containers=1,
@@ -579,8 +575,8 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     timeout=60 * 60,
     region="us-east",
     max_containers=1,
@@ -680,8 +676,8 @@ def connect_unconnected_repos() -> None:
     image=image,
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging"]
+    else modal.Proxy.from_name("my-proxy", environment_name="prod"),
     timeout=int(60 * 60 * 12.5),  # longer than inspect db timeout
     region="us-east",
     max_containers=5,

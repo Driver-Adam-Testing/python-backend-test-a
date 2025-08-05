@@ -10,6 +10,7 @@ import modal
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
+from sqlmodel import select
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -414,6 +415,7 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        cleanup_old_versions.remote(version_id)
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
@@ -676,6 +678,54 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         session.add(version)
 
 
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .pip_install("/driver_db")
+    .add_local_python_source(
+        "database",
+        copy=True,
+        ignore=lambda p: False,
+    ),
+)
+def cleanup_old_versions(new_version_id: str) -> None:
+    from database.db import engine
+    from database.models_v1 import DocumentSource
+    from database.models_v2 import Node, Version
+    from sqlmodel import Session
+
+    with Session(engine) as session, session.begin():
+        # Get all versions
+        primary_asset_id = session.get(Version, new_version_id).primary_asset_id
+        versions = session.exec(
+            select(Version).where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        versions_with_sources = session.exec(
+            select(Version)
+            .join(Node)
+            .outerjoin(DocumentSource)
+            .where(DocumentSource.source_node_id == Node.id)
+            .where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        # Sort versions by creation date or any other criteria if needed
+        versions_to_keep = sorted(versions, key=lambda v: v.created_at, reverse=True)[
+            :10
+        ]
+        versions_to_keep.extend(versions_with_sources)
+
+        # Delete all versions except the 10 most recent
+        print(f"DEBUG: Keeping {len(versions_to_keep)} versions")
+        print(f"DEBUG: Deleting {len(versions) - len(versions_to_keep)} versions")
+
+        versions_to_delete = [v for v in versions if v not in versions_to_keep]
+        for version in versions_to_delete:
+            print(
+                f"DEBUG: Deleting version: {version} (deletion is not implemented yet)"
+            )
+            # TODO delete all derived content for this version
+            # This will switch to happen once we can test this function
+            # session.delete(version)
+
+
 @app.local_entrypoint()
 def main(
     version_id: str,
@@ -683,17 +733,11 @@ def main(
 ) -> None:
     """Resume or rerun inspector given a version"""
     inspection_mode = InspectionMode.from_str(mode)
-    try:
-        inspect_db.remote(
-            version_id,
-            inspection_mode,
-        )
-    except Exception as e:
-        print(f"Error while processing version {version_id}: {e}")
-        set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
-        raise
-    else:
-        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+
+    inspect_db.remote(
+        version_id,
+        inspection_mode,
+    )
 
 
 @app.local_entrypoint()

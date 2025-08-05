@@ -24,7 +24,7 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event_name == 'workflow_run')
-    name: Deploy to Dev Environment
+    name: Deploy to PMS Environment
     runs-on: self-hosted
     #Use if self-hosted no longer is up
     #runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
       - name: CDK Deploy
         env:
-          DEPLOYMENT_ENVIRONMENT: development
+          DEPLOYMENT_ENVIRONMENT: pms
         run: poetry run npx cdk deploy --require-approval never --outputs-file ./cdk-outputs.json
       - name: Parse CDK Outputs
         id: parse_outputs

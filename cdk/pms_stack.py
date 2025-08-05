@@ -14,6 +14,9 @@ class PMSStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        self.cdkenv = kwargs.get("env")
+        print(f"AWS environment set to : {self.cdkenv}")
+        
         cors_origins = "https://app.pms.driverai.com"
 
         self.metrics_lambda = MetricsLambda(

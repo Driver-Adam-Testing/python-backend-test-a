@@ -20,7 +20,7 @@ class PMSStack(Stack):
             self,
             "MetricsLambda",
             MetricsLambdaParams(
-                environment="production",
+                environment="pms",
                 cloudwatch_alarm_arn="arn:aws:sns:us-east-1:537622164442:CloudwatchAlarms",
             ),
         )
@@ -39,7 +39,7 @@ class PMSStack(Stack):
             self,
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
-                environment="production",
+                environment="pms",
                 api_url="https://api.pms.driverai.com/studio/v1",
                 auth0_url="https://auth.pms.driverai.com",
                 auth0_audience="https://api.pms.driverai.com/api/v1",

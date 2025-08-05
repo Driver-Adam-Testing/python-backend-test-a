@@ -1,11 +1,11 @@
 name: PMS Deployment
 on:
   workflow_run:
+    workflows: ["Unit Test"]
     branches: ["hotfix/amark/my-proxy-fix"]
     types:
       - completed
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

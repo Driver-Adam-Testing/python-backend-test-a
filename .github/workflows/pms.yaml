@@ -9,7 +9,8 @@ on:
   workflow_dispatch:
     inputs:
       parameter:
-        description: Backend PMS Deployment    
+        description: Backend PMS Deployment   
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

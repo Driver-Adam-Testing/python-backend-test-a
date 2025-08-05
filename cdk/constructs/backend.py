@@ -304,7 +304,7 @@ class Backend(Construct):
             )
         )
 
-        # Output ECS Cluster ARN
+        # Output ECS Cluster ARN:
         CfnOutput(self, "EcsClusterArn", export_name="EcsClusterArn", value=cluster.cluster_arn)
 
         # Output ECS Service ARN

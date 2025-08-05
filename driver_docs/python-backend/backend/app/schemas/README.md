@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various Pydantic models and related unit tests for handling user roles, codebase analysis, content operations, document sources, Git provider configurations, secret management, tagging, uploads, and user responses.
+Pydantic models and tests for user roles, codebase analysis, content management, Git configurations, and uploads.
 
 
 ## Files
-- **[auth0_schema.py](auth0_schema.py.md)**: The `auth0_schema.py` file defines Pydantic models for handling user invitations and role modifications, including classes for invitees, invitations, and user role changes.
-- **[codebase_schema.py](codebase_schema.py.md)**: The `codebase_schema.py` file defines various Pydantic models for handling requests and responses related to codebase analysis, generation, and onboarding, including metrics calculations for source lines of code (SLOC).
-- **[codebase_schema_test.py](codebase_schema_test.py.md)**: The `codebase_schema_test.py` file contains pytest unit tests for the `CodebaseAnalysisMetrics` schema, verifying its data integrity and immutability.
-- **[content_schema.py](content_schema.py.md)**: The `content_schema.py` file defines various Pydantic models for handling content-related operations, including listing, tagging, creating, and exporting content within the `python-backend` codebase.
-- **[document_source_schema.py](document_source_schema.py.md)**: The `document_source_schema.py` file defines a Pydantic model `DocumentSourceCreate` for creating document source entries with fields for `document_id`, `source_id`, and an `include` flag.
-- **[git_provider_schema.py](git_provider_schema.py.md)**: The `git_provider_schema.py` file defines various Pydantic models for representing Git provider configurations, repositories, access tokens, and webhook information in the `python-backend` codebase.
-- **[secret_management_schema.py](secret_management_schema.py.md)**: The `secret_management_schema.py` file defines constants for secret name prefixes related to Git provider applications and installations.
-- **[tag_contents_schema.py](tag_contents_schema.py.md)**: The `tag_contents_schema.py` file defines a Pydantic model `TagContentCreate` for creating tag content associations with fields for `tag_id`, `content_id`, and an `include` boolean.
-- **[tag_schema.py](tag_schema.py.md)**: The `tag_schema.py` file defines Pydantic models for handling tag-related input and output data, including validation for tag names and hex color formats, within the `python-backend` codebase.
-- **[upload_schema.py](upload_schema.py.md)**: The `upload_schema.py` file defines Pydantic models for handling upload requests and responses, including validation for file types such as zip, pdf, and toml.
-- **[user_schema.py](user_schema.py.md)**: The `user_schema.py` file defines a Pydantic model `MessageResponse` with a single string field `message`.
+- **[auth0_schema.py](auth0_schema.py.md)**: Defines Pydantic models for handling user invitations and role modifications.
+- **[codebase_schema.py](codebase_schema.py.md)**: Defines Pydantic models for codebase analysis, generation, and onboarding requests and responses.
+- **[codebase_schema_test.py](codebase_schema_test.py.md)**: Tests for the `CodebaseAnalysisMetrics` schema, including validation and immutability checks.
+- **[content_schema.py](content_schema.py.md)**: Defines Pydantic models for content management operations, including listing, tagging, and exporting content.
+- **[document_source_schema.py](document_source_schema.py.md)**: Defines a Pydantic model for creating a document source with UUIDs and an include flag.
+- **[git_provider_schema.py](git_provider_schema.py.md)**: Defines schemas for Git provider configurations, access tokens, repositories, and webhook information.
+- **[secret_management_schema.py](secret_management_schema.py.md)**: Defines secret name prefixes for Git provider applications.
+- **[tag_contents_schema.py](tag_contents_schema.py.md)**: Defines a Pydantic model for creating tag content with tag and content IDs and an include flag.
+- **[tag_schema.py](tag_schema.py.md)**: Defines Pydantic models for tag-related input and output schemas, including validation for tag attributes.
+- **[upload_schema.py](upload_schema.py.md)**: Defines Pydantic models for upload requests and responses with file type validation.
+- **[user_schema.py](user_schema.py.md)**: Defines a Pydantic model `MessageResponse` with a single string field `message`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

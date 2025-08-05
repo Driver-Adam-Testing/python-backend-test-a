@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agent_pipelines.py` file defines API routes for executing agent sequences in various modes (synchronous, asynchronous, and batch) using FastAPI, with support for different block kinds and user permissions.
+API routes for executing agent sequences with different block kinds, supporting synchronous and asynchronous operations.
 
 # Purpose
-This Python file is a FastAPI-based module that defines a set of API endpoints for executing agent sequences in a modal environment. The primary functionality revolves around handling different types of block kinds, such as text, list, code, diagram, and table, and executing corresponding agent sequences based on the input provided. The file imports various components from shared interfaces and pipelines, which are used to configure and execute these sequences. The endpoints include both synchronous and asynchronous execution paths, allowing for flexible interaction with the agent sequences. The use of Pydantic models ensures that the input data is validated and structured appropriately.
+The code defines a FastAPI router that provides several endpoints for executing agent sequences in different modes. It includes both synchronous and asynchronous execution paths for processing agent sequences, which are defined by the `AgentRunRequest` model. The endpoints handle requests to execute sequences based on different block kinds, such as text, list, code, diagram, and table, by mapping these block kinds to specific response formats and execution functions. The code uses the `modal` library to manage function calls and their execution, allowing for both immediate and deferred processing of tasks.
 
-The file defines several API routes using FastAPI's `APIRouter`, each serving a specific purpose. The `/dep` and `/sync` endpoints handle synchronous execution of agent sequences, while the `/async` and `/async/batch` endpoints manage asynchronous execution and retrieval of results. The code also includes permission checks to ensure that only authorized users can access certain endpoints, leveraging custom permission classes like `ContentEditorPermission` and `ContentReadonlyPermission`. The integration with a modal function system allows for the dynamic execution of agent sequences, with results being fetched and returned to the client. Overall, this file serves as a crucial component in a larger system that manages and executes complex agent workflows in a modular and scalable manner.
+The primary components of the code include the `AgentRunRequest` class, which specifies the input structure for agent sequence execution, and several endpoint functions that handle the execution logic. The endpoints include `/dep`, `/async`, `/async/{call_id}`, `/async/batch`, and `/sync`, each serving different purposes such as starting a sequence, retrieving results, and handling batch requests. The code also incorporates user authentication and session management through dependencies like `ContentEditorPermission` and `ContentReadonlyPermission`, ensuring that only authorized users can access these functionalities.
 # Imports and Dependencies
 
 ---
@@ -49,28 +49,33 @@ The file defines several API routes using FastAPI's `APIRouter`, each serving a 
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a set of routes that can be included in a FastAPI application. This allows for modular route definitions and helps in organizing the API endpoints.
-- **Use**: The `router` is used to register HTTP endpoints for handling requests related to executing agent sequences and retrieving their results.
+- **Description**: Initializes an instance of the `APIRouter` class from FastAPI. This instance is used to define and manage API routes for the application.
+- **Use**: Used to register and handle HTTP routes and their corresponding request handlers in the application.
 
 
 # Classes
 
 ---
 ### AgentRunRequest<!-- {{#class:python-backend/backend/app/api/routes/v1/agent_pipelines.AgentRunRequest}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L36>)
+
 - **Members**:
-    - `steps`: A list of pipeline step configurations with a default step type.
-    - `node_ids`: An optional list of UUIDs representing node identifiers.
-    - `block_kind`: An optional block kind that specifies the type of block to be processed.
-- **Description**: The AgentRunRequest class is a data structure that extends PromptWithContext and is used to encapsulate the configuration for running an agent sequence. It includes a list of pipeline step configurations, optional node identifiers, and an optional block kind to determine the type of block processing required. This class is integral to the execution of agent sequences, providing necessary context and configuration for the pipeline.
+    - `steps`: A list of `PipelineStepConfiguration` objects that define the steps for the agent run.
+    - `node_ids`: An optional list of `UUID` objects representing node identifiers.
+    - `block_kind`: An optional `BlockKind` object that specifies the type of block to process.
+- **Description**: Inherits from `PromptWithContext` and is used to configure and initiate an agent run with specified pipeline steps, node identifiers, and block kind.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../../../../packages/shared/shared/interfaces/agents/prompt.py.md#PromptWithContext>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../../../../packages/shared/shared/interfaces/agents/prompt.py.md#promptwithcontext>)
 
 
 ---
 ### BatchInput<!-- {{#class:python-backend/backend/app/api/routes/v1/agent_pipelines.BatchInput}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L133>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
     - `call_ids`: A list of strings representing call identifiers.
-- **Description**: The `BatchInput` class is a simple data model that inherits from `BaseModel` and is used to encapsulate a list of call identifiers, which are represented as strings. This class is likely used to handle batch processing of asynchronous function calls, where each call is identified by a unique string ID.
+- **Description**: Represents input data for batch processing, specifically a list of call identifiers used to track or manage batch operations.
 - **Inherits From**:
     - `BaseModel`
 
@@ -79,22 +84,24 @@ The file defines several API routes using FastAPI's `APIRouter`, each serving a 
 
 ---
 ### execute\_agent\_sequence<!-- {{#callable:python-backend/backend/app/api/routes/v1/agent_pipelines.execute_agent_sequence}} -->
-The `execute_agent_sequence` function processes an agent run request by determining the appropriate response format and executing the corresponding block kind agent or sequence.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L46>)
+
+Executes a sequence of agent operations based on the specified block kind and user input.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `session`: A `CurrentSession` object representing the current session context.
-    - `input`: An `AgentRunRequest` object containing the details of the agent run, including prompt, context, steps, node IDs, and block kind.
-- **Control Flow**:
-    - A dictionary `block_kind_to_response_format` maps each `BlockKind` to its corresponding response format class.
-    - The `response_format` is determined by looking up the `input.block_kind` in the dictionary, defaulting to `BlockKindCopyEditorAny` if not specified.
-    - A [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>) object is created using the input data, user information, and determined response format.
-    - The function checks the `input.block_kind` and calls the corresponding block kind agent execution function ([`execute_list_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py.md#execute_list_block_agent>), [`execute_table_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/table.py.md#execute_table_block_agent>), [`execute_diagram_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/diagram.py.md#execute_diagram_block_agent>), [`execute_code_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/code.py.md#execute_code_block_agent>)) if it matches a specific block kind.
-    - If no specific block kind matches, the [`execute_sequence`](<../../../../../packages/shared/shared/pipelines/agents/execute.py.md#execute_sequence>) function is called with the `pipeline_input`.
-- **Output**: Returns a `PipelineResponse` object which is the result of executing the appropriate block kind agent or sequence.
+    - `user`: A `UserToken` object representing the authenticated user.
+    - `session`: A `CurrentSession` object representing the current session.
+    - `input`: An `AgentRunRequest` object containing the prompt, context, steps, node IDs, and block kind for the agent sequence.
+- **Logic and Control Flow**:
+    - Maps the `input.block_kind` to a corresponding response format using a predefined dictionary.
+    - Creates a [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>) object with the prompt, context, steps, data scope, and response format.
+    - Checks the `input.block_kind` to determine which specific block agent function to execute.
+    - Calls the appropriate block agent function ([`execute_list_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py.md#execute_list_block_agent>), [`execute_table_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/table.py.md#execute_table_block_agent>), [`execute_diagram_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/diagram.py.md#execute_diagram_block_agent>), [`execute_code_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/code.py.md#execute_code_block_agent>)) based on the `input.block_kind`.
+    - Defaults to calling [`execute_sequence`](<../../../../../packages/shared/shared/pipelines/agents/execute.py.md#execute_sequence>) if the `input.block_kind` does not match any specific block type.
+- **Output**: Returns a `PipelineResponse` object from the executed block agent function or sequence.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#DataScope>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#datascope>)
     - [`python-backend/packages/shared/shared/pipelines/block_kind_pipelines/list.execute_list_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py.md#execute_list_block_agent>)
     - [`python-backend/packages/shared/shared/pipelines/block_kind_pipelines/table.execute_table_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/table.py.md#execute_table_block_agent>)
     - [`python-backend/packages/shared/shared/pipelines/block_kind_pipelines/diagram.execute_diagram_block_agent`](<../../../../../packages/shared/shared/pipelines/block_kind_pipelines/diagram.py.md#execute_diagram_block_agent>)
@@ -104,75 +111,82 @@ The `execute_agent_sequence` function processes an agent run request by determin
 
 ---
 ### execute\_agent\_sequence\_modal\_async<!-- {{#callable:python-backend/backend/app/api/routes/v1/agent_pipelines.execute_agent_sequence_modal_async}} -->
-The `execute_agent_sequence_modal_async` function initiates an asynchronous execution of an agent sequence using a modal instance and returns a response containing the call ID.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L89>)
+
+Starts an asynchronous modal instance to execute an agent sequence based on the provided input and user session.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `input`: An `AgentRunRequest` object containing the details of the agent run, including prompt, context, steps, node IDs, and block kind.
-    - `session`: A `CurrentSession` object representing the current session context.
-- **Control Flow**:
-    - A dictionary `block_kind_to_response_format` maps different `BlockKind` values to their corresponding response format classes.
-    - The `response_format` is determined by looking up the `input.block_kind` in the dictionary, defaulting to `BlockKindCopyEditorAny` if not specified.
-    - A [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>) object is created using the input data, including prompt, context, steps, and a [`DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#DataScope>) object that contains node IDs, organization ID, and user ID.
-    - The `Function.lookup` method is used to find the 'agent' function with the 'run' method.
-    - The `modal_function.spawn` method is called with the `pipeline_input` to start the asynchronous execution, returning an instance.
-    - A [`DriverModalResponse`](<../../../../../packages/shared/shared/interfaces/response.py.md#DriverModalResponse>) object is returned, containing the `call_id` of the spawned instance.
-- **Output**: A [`DriverModalResponse`](<../../../../../packages/shared/shared/interfaces/response.py.md#DriverModalResponse>) object containing the `call_id` of the spawned modal instance.
+    - `user`: A `UserToken` object representing the authenticated user.
+    - `input`: An `AgentRunRequest` object containing the prompt, context, steps, node IDs, and block kind for the agent sequence.
+    - `session`: A `CurrentSession` object representing the current user session.
+- **Logic and Control Flow**:
+    - Maps the `input.block_kind` to a corresponding response format using a predefined dictionary `block_kind_to_response_format`.
+    - If `input.block_kind` is not specified, defaults to `BlockKind.ANY`.
+    - Creates a [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>) object with the prompt, context, steps, data scope, response format, and block kind from the `input` and `user` data.
+    - Looks up the modal function named 'agent' with the method 'run'.
+    - Spawns a new instance of the modal function using the `pipeline_input`.
+    - Returns a [`DriverModalResponse`](<../../../../../packages/shared/shared/interfaces/response.py.md#drivermodalresponse>) containing the `call_id` of the spawned instance.
+- **Output**: A [`DriverModalResponse`](<../../../../../packages/shared/shared/interfaces/response.py.md#drivermodalresponse>) object containing the `call_id` of the spawned modal function instance.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#DataScope>)
-    - [`python-backend/packages/shared/shared/interfaces/response.DriverModalResponse`](<../../../../../packages/shared/shared/interfaces/response.py.md#DriverModalResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#datascope>)
+    - [`python-backend/packages/shared/shared/interfaces/response.DriverModalResponse`](<../../../../../packages/shared/shared/interfaces/response.py.md#drivermodalresponse>)
 
 
 ---
 ### get\_execution\_results<!-- {{#callable:python-backend/backend/app/api/routes/v1/agent_pipelines.get_execution_results}} -->
-The `get_execution_results` function retrieves the execution result of a function call identified by a `call_id`.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L126>)
+
+Retrieves the execution results of a function call using a given call ID.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `call_id`: A string representing the unique identifier of the function call whose result is to be retrieved.
-- **Control Flow**:
+    - `call_id`: A string representing the unique identifier of the function call whose results are to be retrieved.
+- **Logic and Control Flow**:
     - Retrieve a `FunctionCall` object using the `call_id` by calling `FunctionCall.from_id(call_id)`.
-    - Attempt to get the result of the function call with a timeout of 0 seconds using `function_call.get(timeout=0)`.
+    - Get the result of the function call by calling `function_call.get(timeout=0)`.
     - Return the result obtained from the function call.
-- **Output**: The function returns a `PipelineResponse` object, which contains the result of the function call execution.
+- **Output**: A `PipelineResponse` object containing the results of the function call.
 
 
 ---
 ### get\_batch\_execution\_results<!-- {{#callable:python-backend/backend/app/api/routes/v1/agent_pipelines.get_batch_execution_results}} -->
-The `get_batch_execution_results` function retrieves the execution results of multiple asynchronous function calls based on their call IDs and returns a dictionary with the status and response for each call.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L138>)
+
+Processes a batch of function calls and returns their execution results.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `input`: A `DriverModalBatchRequest` object containing a list of call IDs for which execution results are to be retrieved.
-- **Control Flow**:
-    - Initialize an empty dictionary `results` to store the execution results for each call ID.
+    - `user`: A `UserToken` object representing the authenticated user.
+    - `input`: A `DriverModalBatchRequest` object containing a list of call IDs to process.
+- **Logic and Control Flow**:
+    - Initialize an empty dictionary `results` to store the execution results.
     - Iterate over each `call_id` in `input.call_ids`.
     - For each `call_id`, retrieve the corresponding `FunctionCall` object using `FunctionCall.from_id(call_id)`.
-    - Attempt to get the result of the function call with a timeout of 0 seconds using `function_call.get(timeout=0)`.
-    - If the result is successfully retrieved, store it in the `results` dictionary with the status 'completed'.
-    - If a `TimeoutError` occurs, store the status 'running' in the `results` dictionary for that call ID.
-    - If any other exception occurs, store the status 'expired' and the exception message in the `results` dictionary for that call ID.
-    - Return the `results` dictionary containing the status and response for each call ID.
-- **Output**: A dictionary where each key is a call ID and each value is a dictionary containing the call ID, status ('completed', 'running', or 'expired'), response (result or None), and error message (if any).
+    - Attempt to get the result of the function call with a timeout of 0 seconds.
+    - If successful, store the result in `results` with status 'completed'.
+    - If a `TimeoutError` occurs, store the status as 'running' with no response.
+    - If any other exception occurs, store the status as 'expired' and record the error message.
+- **Output**: A dictionary containing the execution results for each call ID, including status, response, and any error messages.
 
 
 ---
 ### execute\_agent\_sequence\_modal\_sync<!-- {{#callable:python-backend/backend/app/api/routes/v1/agent_pipelines.execute_agent_sequence_modal_sync}} -->
-The `execute_agent_sequence_modal_sync` function initiates a synchronous execution of an agent sequence using a modal function call with the provided user and input data.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/agent_pipelines.py#L171>)
+
+Executes a synchronous agent sequence by transforming input data and invoking a remote function.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user, containing user-specific information such as organization ID and subject.
-    - `input`: An `AgentRunRequest` object containing the steps and node IDs required for the agent sequence execution.
-- **Control Flow**:
-    - The function begins by transforming the `AgentRunRequest` input into a [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>) object, which includes the steps and a [`DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#DataScope>) object with node IDs, organization ID, and user ID.
-    - It then looks up a modal function named 'run' under the 'agent' category using `Function.lookup`.
-    - The function calls the `remote` method on the retrieved modal function, passing the [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>) as an argument to execute the agent sequence synchronously.
-    - Finally, the result of the modal function call is returned as the output of the function.
-- **Output**: The function returns a `PipelineResponse` object, which is the result of the synchronous execution of the agent sequence.
+    - `user`: A `UserToken` object representing the authenticated user.
+    - `input`: An `AgentRunRequest` object containing the steps and node IDs for the agent sequence.
+- **Logic and Control Flow**:
+    - Transforms the `AgentRunRequest` into a [`PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>) object, setting the steps and data scope with node IDs, organization ID, and user ID.
+    - Looks up the 'agent' function using `Function.lookup`.
+    - Calls the remote function with the `pipeline_input` and stores the result.
+    - Returns the result of the remote function call.
+- **Output**: A `PipelineResponse` object containing the result of the remote function execution.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#DataScope>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../../packages/shared/shared/interfaces/agents/data_scope.py.md#datascope>)
 
 
 

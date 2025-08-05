@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dependencies.d2` file outlines the dependency relationships for `uctags`, indicating its dependencies on `libjansson`, `libyaml`, `libxml2`, and `libiconv`, with `libxml2` further depending on `libiconv` and `libz`.
+Dependency graph for uctags and its related libraries.
 
 # Purpose
-The file defines a set of dependencies between software components or libraries, where each line indicates a direct dependency relationship. The format "A -> B" specifies that component A depends on component B. This is typically used in build systems or package managers to ensure that all necessary dependencies are resolved and available for a given software component.
+The content defines dependencies between software libraries. The `uctags` library depends on `libjansson`, `libyaml`, `libxml2`, and `libiconv`. Additionally, `libxml2` depends on `libiconv` and `libz`. This information is used to manage and resolve library dependencies during the build or installation process.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

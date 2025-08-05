@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mypy-pre-commit.sh` file is a shell script that runs the `mypy` type checker on all tracked Python files in a Git repository, ignoring import-related errors.
+A pre-commit script to run mypy on tracked Python files, ignoring import-untyped errors.
 
 # Purpose
-This Bash script is designed to provide a narrow functionality focused on type-checking Python files within a Git repository. It identifies all tracked Python files by using `git ls-files` and filtering for files with a `.py` extension. If no such files are found, the script exits gracefully with a message indicating the absence of tracked Python files. Otherwise, it proceeds to run the `mypy` tool on these files, specifically ignoring errors related to missing type information in imports. This script is not an executable or a library but rather a utility script intended to be run in a development environment to ensure type consistency in Python code.
+This script is a Bash executable that checks Python files in a Git repository for type consistency using the `mypy` tool. It first retrieves a list of tracked files in the repository that have a `.py` extension. If no such files are found, the script outputs a message and exits. If Python files are present, it runs `mypy` on these files, while ignoring errors related to missing type information in imports. This script provides a narrow functionality focused on type checking for Python files in a version-controlled environment.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

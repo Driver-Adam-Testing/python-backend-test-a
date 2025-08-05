@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Essential configuration and logging setup files, including a Pydantic-based settings manager and a deprecated logger configuration.
+Configuration settings, logger setup, and an empty initializer file for a Python backend application.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[config.py](config.py.md)**: The `config.py` file defines a `Settings` class using Pydantic to manage application configuration, including environment variables, API endpoints, authentication credentials, and other settings, with a mechanism to warn or raise errors if default secrets are not changed.
-- **[logger.py](logger.py.md)**: The `logger.py` file sets up a logging configuration with a stream handler for outputting log messages to standard output, but it is marked for deprecation in favor of a logger in `main.py`.
+- **[config.py](config.py.md)**: Configuration settings for a Python backend application using Pydantic for environment variables and validation.
+- **[logger.py](logger.py.md)**: Configures a logger with a stream handler for outputting warning-level messages to stdout.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

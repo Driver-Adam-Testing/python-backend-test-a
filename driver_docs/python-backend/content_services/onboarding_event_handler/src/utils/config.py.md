@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `config.py` file defines a `Settings` class using Pydantic to manage environment-specific configuration settings for the application, including API URLs, authentication details, and AWS S3 configurations.
+Configuration settings for environment variables and AWS S3 integration using Pydantic.
 
 # Purpose
-This Python code defines a configuration management class using the Pydantic library, specifically leveraging the `BaseSettings` class from `pydantic_settings`. The primary purpose of this file is to manage application settings by loading them from environment variables, which are specified in a `.env` file. The `Settings` class encapsulates various configuration parameters such as API URLs, authentication details, environment types, and AWS S3 settings. The use of `Literal` for the `ENVIRONMENT` attribute ensures that only predefined environment types are allowed, enhancing type safety and reducing configuration errors.
+The code defines a configuration management class using the `pydantic_settings` library. The `Settings` class inherits from `BaseSettings`, which allows it to manage application settings through environment variables. The class specifies a configuration model using `SettingsConfigDict`, which includes options such as the path to an environment file (`.env`), ignoring empty environment variables, and ignoring extra fields not defined in the class. The class defines several configuration attributes, such as `API_URL`, `AUTH0_URL`, `AUTH0_AUDIENCE`, and others, which are expected to be provided as environment variables. Some attributes have default values, such as `AWS_S3_CODE_BUCKET_SUFFIX` and `USE_LEGACY_DROPZONE`.
 
-The code is structured to be a configuration module, likely intended to be imported and used in other parts of an application to access these settings. By using Pydantic's `BaseSettings`, it automatically handles the parsing and validation of environment variables, providing a robust and flexible way to manage application configuration. The `SettingsConfigDict` is used to specify additional configuration options, such as the location of the `.env` file and how to handle extra environment variables. This file does not define a public API or external interfaces but serves as an internal utility to centralize and streamline configuration management across the application.
+The `Settings` class also uses the `Literal` type from the `typing` module to restrict the `ENVIRONMENT` attribute to specific string values, such as "local", "ops", "development", "staging", "production", and "cloud-local". This ensures that only valid environment names are used. The code creates an instance of the `Settings` class named `settings`, which can be used throughout the application to access the configuration values. This setup is typical for applications that require flexible configuration management, allowing settings to be easily changed without modifying the codebase.
 # Imports and Dependencies
 
 ---
@@ -21,28 +21,31 @@ The code is structured to be a configuration module, likely intended to be impor
 
 ---
 ### settings
-- **Type**: `Settings`
-- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is configured to load environment variables from a `.env` file and includes various configuration parameters such as API URLs, authentication details, environment type, and AWS S3 settings.
-- **Use**: The `settings` variable is used to access application configuration parameters that are loaded from environment variables, providing a centralized configuration management system.
+- **Type**: ``Settings``
+- **Description**: Represents an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This instance is configured to load environment variables from a `.env` file and includes various configuration parameters such as API URLs, authentication details, environment settings, and AWS-related configurations.
+- **Use**: Used to access application configuration settings throughout the codebase.
 
 
 # Classes
 
 ---
 ### Settings<!-- {{#class:python-backend/content_services/onboarding_event_handler/src/utils/config.Settings}} -->
+[View Source →](<../../../../../../content_services/onboarding_event_handler/src/utils/config.py#L6>)
+
 - **Members**:
-    - `model_config`: A configuration dictionary for environment settings.
-    - `API_URL`: The URL for the API.
-    - `AUTH0_URL`: The URL for the Auth0 service.
-    - `AUTH0_AUDIENCE`: The audience identifier for Auth0.
-    - `CLIENT_ID_SECRET`: The client ID secret for authentication.
-    - `CLIENT_SECRET_SECRET`: The client secret for authentication.
-    - `ENVIRONMENT`: The deployment environment setting.
-    - `AWS_S3_ENDPOINT_URL`: The endpoint URL for AWS S3, which can be None.
-    - `AWS_S3_CODE_BUCKET_SUFFIX`: The suffix for the AWS S3 code bucket, defaulting to 'codebase-dropzone'.
-    - `USE_LEGACY_DROPZONE`: A boolean indicating whether to use the legacy dropzone, defaulting to True.
-    - `DROPZONE_BUCKET_NAME`: The name of the dropzone bucket, which can be None.
-- **Description**: The `Settings` class is a configuration class that extends `BaseSettings` from the `pydantic_settings` module, designed to manage application settings through environment variables. It includes various configuration parameters such as API URLs, authentication secrets, environment types, and AWS S3 settings. The class uses a `SettingsConfigDict` to specify environment file handling and behavior for extra fields, ensuring that only specified settings are loaded and used.
+    - `model_config`: Defines configuration for environment variables and extra settings.
+    - `API_URL`: Stores the API URL as a string.
+    - `AUTH0_URL`: Stores the Auth0 URL as a string.
+    - `AUTH0_AUDIENCE`: Stores the Auth0 audience as a string.
+    - `CLIENT_ID_SECRET`: Stores the client ID secret as a string.
+    - `CLIENT_SECRET_SECRET`: Stores the client secret secret as a string.
+    - `ENVIRONMENT`: Specifies the environment type as a literal value.
+    - `AWS_S3_ENDPOINT_URL`: Stores the AWS S3 endpoint URL, which can be None.
+    - `AWS_S3_CODE_BUCKET_SUFFIX`: Stores the suffix for the AWS S3 code bucket.
+    - `USE_LEGACY_DROPZONE`: Indicates whether to use the legacy dropzone as a boolean.
+    - `DROPZONE_BUCKET_NAME`: Stores the dropzone bucket name, which can be None.
+    - `AWS_REGION`: Stores the AWS region as a string.
+- **Description**: Manages application settings by extending `BaseSettings` from Pydantic, allowing configuration through environment variables and providing default values for various application-specific settings.
 - **Inherits From**:
     - `BaseSettings`
 

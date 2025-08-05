@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `convenience_endpoints.py` file defines FastAPI endpoints for editing pages, creating new pages, and creating new templates, handling operations related to derived content and primary assets within a user's organization.
+Defines FastAPI endpoints for editing pages, creating new pages, and creating new templates.
 
 # Purpose
-This Python file is a FastAPI-based module that provides API endpoints for managing content pages and templates within an application. The code defines three main endpoints: [`edit_page_CONVENIENCE_METHOD`](<#edit_page_CONVENIENCE_METHOD>), [`new_page`](<#new_page>), and [`new_template`](<#new_template>). These endpoints are part of a broader API, as indicated by the use of the `router` from FastAPI, which suggests that this file is a component of a larger web service. The [`edit_page_CONVENIENCE_METHOD`](<#edit_page_CONVENIENCE_METHOD>) endpoint allows users to update existing content pages, ensuring that the content belongs to the user's organization and updating the content and its associated metadata. The [`new_page`](<#new_page>) and [`new_template`](<#new_template>) endpoints facilitate the creation of new content pages and templates, respectively, by generating unique names and initializing associated database records.
+The code defines a set of API endpoints using FastAPI for managing content related to pages and templates within an application. It includes three main endpoints: [`edit_page_CONVENIENCE_METHOD`](<#edit_page_convenience_method>), [`new_page`](<#new_page>), and [`new_template`](<#new_template>). These endpoints allow users to edit existing pages, create new pages, and create new templates, respectively. The endpoints interact with a database using SQLModel to perform operations such as fetching, updating, and creating records related to `DerivedContent`, `PrimaryAsset`, `Version`, and `Node` entities.
 
-The code heavily interacts with a database using SQLModel, a Python ORM, to perform operations such as selecting, inserting, and updating records. It leverages models like `DerivedContent`, `PrimaryAsset`, `Version`, and `Node` to represent different entities in the database. The endpoints ensure that operations are performed within the context of the user's organization, using authentication tokens to verify user identity and permissions. The file is structured to be part of a modular API system, with clear separation of concerns and adherence to RESTful principles, making it suitable for integration into a larger application that manages content dynamically.
+The [`edit_page_CONVENIENCE_METHOD`](<#edit_page_convenience_method>) endpoint allows users to update the content and name of a page, ensuring that the page belongs to the user's organization. The [`new_page`](<#new_page>) and [`new_template`](<#new_template>) endpoints create new pages and templates with unique names by incrementing a numerical suffix. These endpoints also handle the creation of associated database records, such as `PrimaryAsset`, `Version`, `Node`, and `DerivedContent`, ensuring that all necessary relationships and metadata are correctly established. The code uses authentication tokens to verify user identity and organization membership, ensuring that operations are authorized.
 # Imports and Dependencies
 
 ---
@@ -21,6 +21,7 @@ The code heavily interacts with a database using SQLModel, a Python ORM, to perf
 - `database.models_v2.UserCache`
 - `database.models_v2.Version`
 - `database.models_v2.VersionCreator`
+- `database.models_v2_enums.PrimaryAssetProvider`
 - `database.models_v2_enums.VersionStatus`
 - `fastapi.Body`
 - `fastapi.HTTPException`
@@ -38,74 +39,81 @@ The code heavily interacts with a database using SQLModel, a Python ORM, to perf
 
 ---
 ### edit\_page\_CONVENIENCE\_METHOD<!-- {{#callable:python-backend/backend/app/api/routes/v2/convenience_endpoints.edit_page_CONVENIENCE_METHOD}} -->
-The `edit_page_CONVENIENCE_METHOD` updates the content and content name of a derived content entity associated with a specific node ID, ensuring it belongs to the user's organization, and commits the changes to the database.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/convenience_endpoints.py#L26>)
+
+Updates derived content and its associated primary asset if authorized by the user's organization.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `node_id`: A `UUID` path parameter identifying the node whose derived content is to be edited.
-    - `payload`: An instance of `DerivedContentUpdate` containing the new content and/or content name to update.
-- **Control Flow**:
-    - The function begins by querying the database to fetch the `DerivedContent` associated with the given `node_id` and checks if it belongs to the user's organization.
-    - If no such derived content is found, an `HTTPException` with a 404 status code is raised.
-    - If the `payload` contains a new `content`, it updates the `derived_content.content`.
-    - If the `payload` contains a new `content_name`, it updates the `derived_content.content_name` and attempts to update the `display_name` of the associated `PrimaryAsset` if it exists and is of the correct kind.
-    - The updated `derived_content` and possibly `primary_asset` are added to the session, and the session is committed to save changes to the database.
-    - The `derived_content` is refreshed to reflect the latest state from the database.
-    - Finally, a `Response` with a 202 status code is returned to indicate successful processing.
-- **Output**: A `Response` object with a status code of 202, indicating that the request has been accepted for processing.
+    - `session`: The current database session used to execute queries and manage transactions.
+    - `user`: The user token containing authentication and organization information.
+    - `node_id`: The UUID of the node to identify the derived content to edit.
+    - `payload`: The data containing updates for the derived content, including optional fields 'content' and 'content_name'.
+- **Logic and Control Flow**:
+    - Selects the derived content from the database where the node ID matches and the organization ID matches the user's organization ID.
+    - Raises an HTTP 404 exception if the derived content is not found or the user is not authorized.
+    - Updates the 'content' field of the derived content if provided in the payload.
+    - Updates the 'content_name' field of the derived content if provided in the payload and updates the display name of the associated primary asset if it exists.
+    - Adds the updated derived content and primary asset to the session and commits the transaction.
+    - Refreshes the derived content to ensure it reflects the latest state in the database.
+    - Returns a response with a status code of 202 indicating the request was accepted.
+- **Output**: A `Response` object with a status code of 202 indicating the request was accepted.
 
 
 ---
 ### new\_page<!-- {{#callable:python-backend/backend/app/api/routes/v2/convenience_endpoints.new_page}} -->
-The `new_page` function creates a new page asset for a user's organization, ensuring unique naming and associating it with a version, node, and derived content.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/convenience_endpoints.py#L75>)
+
+Creates a new page with a unique name for a user's organization and returns its details.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of CurrentSession used to interact with the database.
-    - `user`: An instance of UserToken representing the authenticated user making the request.
-- **Control Flow**:
-    - Retrieve all existing PrimaryAsset entries with names starting with 'Untitled Page' for the user's organization.
-    - Iterate over these assets to find the highest numerical suffix in their names.
-    - Create a new PrimaryAsset with a name incremented by one from the highest found number.
-    - Add and commit the new PrimaryAsset to the session.
-    - Check if the user exists in the UserCache; if not, create and add the user to the cache.
-    - Create a new Version associated with the new PrimaryAsset and commit it to the session.
-    - Create a VersionCreator entry linking the new version to the user and commit it.
-    - Create a new Node associated with the new version and commit it to the session.
-    - Create a new DerivedContent entry linked to the new node, commit it, and refresh it.
-    - Ensure the node relationship is populated in the new DerivedContent.
-- **Output**: Returns a ContentDetailRead object representing the newly created derived content.
+    - `session`: The current database session used to execute queries and manage transactions.
+    - `user`: The user token containing information about the authenticated user, including their organization ID.
+- **Logic and Control Flow**:
+    - Query the database for existing primary assets with names starting with 'Untitled Page' for the user's organization.
+    - Extract numbers from the existing asset names to find the maximum number used.
+    - Create a new primary asset with a name incremented by one from the maximum number found.
+    - Add and commit the new primary asset to the database.
+    - Check if the user exists in the [`UserCache`](<../../../../../driver_db/database/models_v2.py.md#usercache>); if not, create and add the user to the cache.
+    - Create a new version associated with the new primary asset and commit it to the database.
+    - Create a [`VersionCreator`](<../../../../../driver_db/database/models_v2.py.md#versioncreator>) entry linking the new version to the user and commit it to the database.
+    - Create a new node associated with the new version and commit it to the database.
+    - Create a new derived content entry associated with the new node and commit it to the database.
+    - Ensure the node relationship is populated in the derived content.
+    - Return the validated content details of the new derived content.
+- **Output**: A `ContentDetailRead` object containing the details of the newly created page.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAsset>)
-    - [`python-backend/driver_db/database/models_v2.UserCache`](<../../../../../driver_db/database/models_v2.py.md#UserCache>)
-    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../../driver_db/database/models_v2.py.md#Version>)
-    - [`python-backend/driver_db/database/models_v2.VersionCreator`](<../../../../../driver_db/database/models_v2.py.md#VersionCreator>)
-    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../../driver_db/database/models_v2.py.md#Node>)
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>)
+    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>)
+    - [`python-backend/driver_db/database/models_v2.UserCache`](<../../../../../driver_db/database/models_v2.py.md#usercache>)
+    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../../driver_db/database/models_v2.py.md#version>)
+    - [`python-backend/driver_db/database/models_v2.VersionCreator`](<../../../../../driver_db/database/models_v2.py.md#versioncreator>)
+    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../../driver_db/database/models_v2.py.md#node>)
+    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>)
 
 
 ---
 ### new\_template<!-- {{#callable:python-backend/backend/app/api/routes/v2/convenience_endpoints.new_template}} -->
-The `new_template` function creates a new template asset with a unique name for a user's organization and returns its details.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/convenience_endpoints.py#L152>)
+
+Creates a new template asset with a unique name for the user's organization and returns its details.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of CurrentSession used to interact with the database.
-    - `user`: An instance of UserToken representing the authenticated user making the request.
-- **Control Flow**:
-    - Query the database for existing template assets with names starting with 'Untitled Template' for the user's organization.
-    - Iterate over the existing assets to extract and determine the maximum number used in the template names.
-    - Create a new PrimaryAsset with a display name incremented by one from the maximum number found.
-    - Commit the new PrimaryAsset to the database.
-    - Create a new Version associated with the new PrimaryAsset and commit it to the database.
-    - Create a new Node associated with the new Version and commit it to the database.
-    - Create a new DerivedContent associated with the new Node, commit it to the database, and refresh it to get the latest state.
-    - Return the validated model of the new DerivedContent.
-- **Output**: A ContentDetailRead object representing the newly created template asset.
+    - `session`: The current database session used to execute queries and manage transactions.
+    - `user`: The user token containing information about the authenticated user, including their organization ID.
+- **Logic and Control Flow**:
+    - Query the database for existing assets with names starting with 'Untitled Template' for the user's organization.
+    - Extract numbers from the existing asset names to find the maximum number used.
+    - Create a new [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>) with an incremented number in its display name.
+    - Add and commit the new [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>) to the database session.
+    - Create a new [`Version`](<../../../../../driver_db/database/models_v2.py.md#version>) associated with the new [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>) and commit it to the session.
+    - Create a new [`Node`](<../../../../../driver_db/database/models_v2.py.md#node>) associated with the new [`Version`](<../../../../../driver_db/database/models_v2.py.md#version>) and commit it to the session.
+    - Create a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>) associated with the new [`Node`](<../../../../../driver_db/database/models_v2.py.md#node>), commit it to the session, and refresh it.
+    - Return the validated `ContentDetailRead` model of the new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>).
+- **Output**: A `ContentDetailRead` object representing the newly created template asset.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAsset>)
-    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../../driver_db/database/models_v2.py.md#Version>)
-    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../../driver_db/database/models_v2.py.md#Node>)
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>)
+    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>)
+    - [`python-backend/driver_db/database/models_v2.Version`](<../../../../../driver_db/database/models_v2.py.md#version>)
+    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../../driver_db/database/models_v2.py.md#node>)
+    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>)
 
 
 

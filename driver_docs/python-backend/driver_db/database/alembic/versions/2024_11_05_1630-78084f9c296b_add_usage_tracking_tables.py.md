@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.py` file is an Alembic migration script that adds `usage_sessions` and `usage_events` tables to the database for tracking usage, including creating indices and handling the upgrade and downgrade processes.
+Alembic migration script to add usage tracking tables with related indexes and constraints.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding tables related to usage tracking. Specifically, it introduces two new tables: `usage_sessions` and `usage_events`. The `usage_sessions` table is intended to track individual usage sessions, with columns for session status, organization and user identifiers, metadata, and timestamps for creation and updates. The `usage_events` table records events within these sessions, capturing details such as event type, associated session, data transfer metrics, and additional metadata. Both tables utilize UUIDs for unique identification and include foreign key constraints to maintain referential integrity between sessions and events.
+The code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The primary purpose of this script is to add two new tables, `usage_sessions` and `usage_events`, to the database. These tables are designed to track usage data, with `usage_sessions` capturing session-level information and `usage_events` capturing event-level details within each session.
 
-The script defines two primary functions: `upgrade()` and `downgrade()`. The `upgrade()` function is responsible for creating the new tables and their associated indexes, while the `downgrade()` function reverses these changes by dropping the tables and indexes. This migration script is part of a broader database version control system, as indicated by the use of Alembic, a popular database migration tool for SQLAlchemy. The script is not intended to be a standalone application but rather a component of a larger system, facilitating the evolution of the database schema in a controlled and reversible manner.
+The `usage_sessions` table includes columns such as `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`. The `status` column uses an enumeration type to represent different session states. The `usage_events` table includes columns like `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`. A foreign key constraint links `usage_events` to `usage_sessions` via the `session_id` column. The script also creates indexes on the `status` column of `usage_sessions` and the `session_id` column of `usage_events` to optimize query performance. The [`downgrade`](<#downgrade>) function reverses these changes, removing the tables and associated indexes.
 # Imports and Dependencies
 
 ---
@@ -22,60 +22,62 @@ The script defines two primary functions: `upgrade()` and `downgrade()`. The `up
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script and ensure that database schema changes are applied in the correct order.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Type**: ``str``
+- **Description**: A string variable that holds the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of migrations by specifying the predecessor revision.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration such as branching labels for the migration path.
-- **Use**: This variable is used to indicate that there are no specific branch labels associated with this Alembic migration script.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between database revisions.
-- **Use**: This variable is used to indicate that the current database revision does not depend on any other revisions.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies on other migrations.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.upgrade}} -->
-The `upgrade` function creates two new database tables, `usage_sessions` and `usage_events`, along with their respective indexes, to track usage data.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.py#L21>)
+
+Creates the `usage_sessions` and `usage_events` tables with specified columns and indexes in the database.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by creating a table named `usage_sessions` with columns for `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`.
-    - A primary key constraint is set on the `id` column of the `usage_sessions` table.
-    - An index is created on the `status` column of the `usage_sessions` table.
-    - Next, the function creates a table named `usage_events` with columns for `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`.
-    - A foreign key constraint is set on the `session_id` column of the `usage_events` table, referencing the `id` column of the `usage_sessions` table with a cascade delete option.
-    - A primary key constraint is set on the `id` column of the `usage_events` table.
-    - An index is created on the `session_id` column of the `usage_events` table.
-- **Output**: The function does not return any output as it is designed to modify the database schema by creating tables and indexes.
+- **Logic and Control Flow**:
+    - Calls `op.create_table` to create the `usage_sessions` table with columns for `id`, `status`, `organization_id`, `user_id`, `metadata`, `created_at`, and `updated_at`, and sets `id` as the primary key.
+    - Creates an index on the `status` column of the `usage_sessions` table using `op.create_index`.
+    - Calls `op.create_table` to create the `usage_events` table with columns for `id`, `event_type`, `session_id`, `organization_id`, `user_id`, `event_source`, `bytes_in`, `bytes_out`, `tokens_in`, `tokens_out`, `timestamp`, and `metadata`, and sets `id` as the primary key.
+    - Adds a foreign key constraint on `session_id` in the `usage_events` table referencing `id` in the `usage_sessions` table with `ondelete="CASCADE"`.
+    - Creates an index on the `session_id` column of the `usage_events` table using `op.create_index`.
+- **Output**: No output is returned as the function modifies the database schema.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.downgrade}} -->
-The `downgrade` function reverses database schema changes by dropping tables, indexes, and a type related to usage tracking.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_11_05_1630-78084f9c296b_add_usage_tracking_tables.py#L85>)
+
+Reverts the database schema changes by dropping tables, indexes, and a type related to usage tracking.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by dropping the index 'ix_usage_events_session_id' from the 'usage_events' table.
-    - It then drops the 'usage_events' table entirely.
-    - Next, it drops the index 'ix_usage_sessions_status' from the 'usage_sessions' table.
-    - It proceeds to drop the 'usage_sessions' table.
-    - Finally, it executes a raw SQL command to drop the type 'usagesessionstatus' if it exists.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Drop the index `ix_usage_events_session_id` from the `usage_events` table.
+    - Drop the `usage_events` table.
+    - Drop the index `ix_usage_sessions_status` from the `usage_sessions` table.
+    - Drop the `usage_sessions` table.
+    - Execute a SQL command to drop the type `usagesessionstatus` if it exists.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

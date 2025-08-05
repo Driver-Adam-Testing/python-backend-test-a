@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders define API routes and functionalities using FastAPI and GraphQL, including legacy support and versioned endpoints.
+FastAPI and GraphQL API routes for health checks, chat, assets, search, user info, and more.
 
 ## Folders
-- **[api](api/README.md)**: Defines API routes for health checks, chat handling, asset management, search, and user profile access.
-- **[legacy](legacy/README.md)**: Various Python files define GraphQL types, queries, mutations, and schemas using Strawberry, manage Auth0, handle document sets and S3 storage, and provide logging and ORM operations within a FastAPI context.
-- **[v1](v1/README.md)**: FastAPI route definitions for agent execution, codebase management, content handling, document sources, Git operations, health checks, onboarding, organization management, search, subscriptions, tags, uploads, usage, and user accounts.
-- **[v2](v2/README.md)**: FastAPI-based API endpoint definitions and utility functions for managing entities like API keys, autodocs, chat, content, document sources, nodes, primary assets, tags, and versions, with query utilities and schema definitions.
+- **[api](api/README.md)**: FastAPI endpoints for health checks, chat streaming, assets, ping, search, and user info.
+- **[legacy](legacy/README.md)**: GraphQL types, mutations, queries, schema, and logging extension, Auth0 API management, S3 file access, and database operations.
+- **[v1](v1/README.md)**: API routes for agent sequences, codebase management, content, document sources, Git, health checks, onboarding, organization, search, subscription, tags, upload, usage, and user management using FastAPI.
+- **[v2](v2/README.md)**: API routes and utilities for managing keys, autodocs, chat, codebase cards, content, documents, nodes, assets, tags, and versions using FastAPI.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

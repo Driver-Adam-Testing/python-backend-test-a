@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libjansson.yml` file specifies the configuration and installation details for the Jansson C library, which is used for encoding, decoding, and manipulating JSON, within the `python-backend` codebase.
+C library for encoding, decoding, and manipulating JSON with installation instructions.
 
 # Purpose
-The provided content is a metadata configuration file for a software package, specifically the Jansson library, which is a C library used for encoding, decoding, and manipulating JSON data. The file includes metadata such as a brief summary of the library's purpose, a web URL for more information, a source URL for downloading the library's tarball, and a SHA-256 checksum for verifying the integrity of the downloaded file. It also specifies the license under which the library is distributed, which is the MIT License. Additionally, the file contains installation instructions using `cmakew`, detailing two configurations: one for building the library without shared libraries and tests, and another for building with shared libraries, both excluding documentation, coverage, examples, and tests.
+The metadata file provides essential information and installation instructions for the Jansson library, a C library used for encoding, decoding, and manipulating JSON data. It includes a brief summary of the library's purpose and provides URLs for the library's homepage and source code download. The file specifies the SHA-256 checksum for verifying the integrity of the downloaded source code. The installation section contains commands to configure the build process using `cmakew`, with options to control the building of shared libraries, documentation, coverage, examples, and tests. The configuration options are set to disable documentation, coverage, examples, and tests, while allowing the building of shared libraries.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

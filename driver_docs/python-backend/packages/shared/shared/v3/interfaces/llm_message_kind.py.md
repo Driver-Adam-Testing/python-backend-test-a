@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_message_kind.py` file defines an enumeration `MessageKind` that categorizes different types of messages such as user, assistant, developer, and system within the `python-backend` codebase.
+Defines the `MessageKind` enum with various message types like USER, ASSISTANT, and SYSTEM.
 
 # Purpose
-This code defines an enumeration class `MessageKind` using Python's `enum` module, which is a collection of symbolic names bound to unique, constant values. The `MessageKind` class inherits from both `str` and `Enum`, allowing its members to be used as strings while also providing enumeration capabilities. Each member of the `MessageKind` enum represents a different type of message, such as "user", "assistant", "developer", and others, which suggests that this code is likely used to categorize or identify different kinds of messages or events in a system. The functionality provided by this code is narrow, focusing specifically on defining a set of constants for message types, which can be useful for ensuring consistency and clarity when handling different message kinds in a larger application.
+The code defines an enumeration `MessageKind` that categorizes different types of messages in a system. It uses the `Enum` class from Python's `enum` module, with each member of the enumeration being a string. The members include `USER`, `ASSISTANT`, `DEVELOPER`, `SYSTEM`, `TOOL_CALL_RESPONSE`, `TOOL_CALL_REQUEST`, `ITERATION`, and `PARSING_DESCRIPTION`. This enumeration provides a structured way to handle and differentiate message types, which can be useful in applications that involve communication between different entities or components.
 # Imports and Dependencies
 
 ---
@@ -17,16 +17,18 @@ This code defines an enumeration class `MessageKind` using Python's `enum` modul
 
 ---
 ### MessageKind<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_message_kind.MessageKind}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_message_kind.py#L4>)
+
 - **Members**:
-    - `USER`: Represents a message from a user.
-    - `ASSISTANT`: Represents a message from an assistant.
-    - `DEVELOPER`: Represents a message from a developer.
-    - `SYSTEM`: Represents a message from the system.
-    - `TOOL_CALL_RESPONSE`: Represents a response message from a tool call.
-    - `TOOL_CALL_REQUEST`: Represents a request message for a tool call.
-    - `ITERATION`: Represents a message related to an iteration.
-    - `PARSING_DESCRIPTION`: Represents a message related to parsing description.
-- **Description**: The MessageKind class is an enumeration that defines various types of messages that can be exchanged in a system, such as messages from users, assistants, developers, and system components, as well as messages related to tool calls, iterations, and parsing descriptions.
+    - `USER`: Defines the message kind as 'user'.
+    - `ASSISTANT`: Defines the message kind as 'assistant'.
+    - `DEVELOPER`: Defines the message kind as 'developer'.
+    - `SYSTEM`: Defines the message kind as 'system'.
+    - `TOOL_CALL_RESPONSE`: Defines the message kind as 'tool_call_response'.
+    - `TOOL_CALL_REQUEST`: Defines the message kind as 'tool_call_request'.
+    - `ITERATION`: Defines the message kind as 'iteration'.
+    - `PARSING_DESCRIPTION`: Defines the message kind as 'parsing_description'.
+- **Description**: Represents different types of message kinds as string-based enumeration values, allowing for categorization and identification of message sources or types in a system.
 - **Inherits From**:
     - `str`
     - `Enum`

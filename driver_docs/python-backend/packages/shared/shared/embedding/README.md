@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utilities for generating text embeddings, including functions for downloading content and embedding text.
+Functions for S3 file download, text embedding, and error handling using OpenAI models.
 
 
 ## Files
-- **[embed_helpers.py](embed_helpers.py.md)**: The `embed_helpers.py` file contains functions for downloading source content files from an S3 bucket and generating embeddings for text strings by splitting the text and asynchronously embedding the chunks.
-- **[text_embedder.py](text_embedder.py.md)**: The `text_embedder.py` file provides synchronous and asynchronous functions for embedding text using OpenAI's text embedding models, with support for batching and error handling.
+- **[embed_helpers.py](embed_helpers.py.md)**: Functions for downloading files from S3 and generating embeddings for text content.
+- **[text_embedder.py](text_embedder.py.md)**: Functions for synchronous and asynchronous text embedding using OpenAI models with error handling.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

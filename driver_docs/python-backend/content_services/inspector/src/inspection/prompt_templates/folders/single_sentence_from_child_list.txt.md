@@ -3,10 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_child_list.txt` file outlines the task of summarizing the contents of a software folder by using concise descriptions of its child files and folders.
+Instructions for summarizing the contents of a folder based on its child files and folders.
 
 # Purpose
-The provided content outlines the purpose and guidelines for generating a concise, single-sentence description of a software folder based on its child files and folders. It emphasizes the importance of using precise language derived directly from the given information about the folder's contents, without introducing assumptions or extraneous details. The instructions highlight the preference for straightforward descriptions that avoid unnecessary leading verbs, except in cases where they enhance clarity, such as when describing the provision of specific functionalities or API wrappers. This approach ensures that the folder's purpose is communicated clearly and efficiently.
+`Makefile`: Automates the build process by defining a set of tasks to compile and link the program, specifying dependencies and rules for building the software.
+
+`README.md`: Provides an overview of the project, including installation instructions, usage guidelines, and any other relevant information for users and developers.
+
+`config.json`: Stores configuration settings in a structured format, allowing the software to read and apply these settings at runtime.
+
+`src/`: Contains the source code files for the project, organized in a way that supports the development and maintenance of the software.
+
+`tests/`: Includes test scripts and files used to verify the functionality and correctness of the software components.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python scripts and modules for generating and managing content prompts for diverse audiences and tasks.
+Prompt templates, Pydantic models, system message prompts, task modules, and structured text prompt management.
 
 ## Folders
-- **[audience](audience/README.md)**: Various Python scripts for tailored content prompts for business development, fifth graders, product managers, and software engineers.
-- **[block_kind](block_kind/README.md)**: Python files that define Pydantic models for markdown conversion of text, code, diagrams, lists, and tables.
-- **[interface](interface/README.md)**: Python files that define system message prompts and templates for guiding tool execution and response formulation based on context, including modules for batch processing, iteration limits, and technical context handling.
-- **[task](task/README.md)**: Python scripts for task prompts including document planning, writing, code verification, and prompt enhancement.
-- **[tools](tools/README.md)**: Initialization and module import files, specifically `__init__.py` for package marking and `think.py` for importing a `think` module and defining an empty `PROMPT` variable.
-- **[voice](voice/README.md)**: Initialization and prompt files for roles and instructions in technical copy editing and content creation.
+- **[audience](audience/README.md)**: Prompt templates for business development, product managers, fifth graders, and software engineers.
+- **[block_kind](block_kind/README.md)**: Pydantic models and classes for markdown content conversion, including code, diagrams, lists, tables, and text.
+- **[interface](interface/README.md)**: Imports and defines system message prompts for batch tools, iterations, and technical context interfaces.
+- **[task](task/README.md)**: Task-related prompts and modules for technical document creation, code verification, and prompt enhancement.
+- **[tools](tools/README.md)**: Initialization file for the shared prompts tools package and defines an empty string constant named PROMPT.
+- **[voice](voice/README.md)**: Imports and system message prompts for copy editor and software engineer roles, and pipeline configuration.
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `shared.prompts` package by importing the `audience`, `interface`, `task`, and `voice` modules.
-- **[structured_prompting.py](structured_prompting.py.md)**: The `structured_prompting.py` file defines a system for creating and manipulating structured prompts using components, with various style instructions for technical documentation.
+- **[__init__.py](__init__.py.md)**: Imports modules: audience, interface, task, and voice.
+- **[structured_prompting.py](structured_prompting.py.md)**: Defines `Component` and `Prompt` classes for managing and manipulating structured text components.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

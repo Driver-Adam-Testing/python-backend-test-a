@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `queries.py` file defines a set of GraphQL query endpoints using the Strawberry library, including operations for fetching organization details, document sets, codebase trees, user information, connected Git providers, and repositories by Git provider.
+GraphQL queries for retrieving organization details, document sets, codebase trees, user info, connected Git providers, and repositories by Git provider.
 
 # Purpose
-This Python file is a GraphQL API implementation using the Strawberry library, designed to handle various queries related to organizational data, document sets, codebase trees, and Git provider integrations. The file defines a `Query` class with several fields, each representing a different endpoint in the GraphQL schema. These endpoints include fetching organization details, retrieving document sets based on specific parameters, obtaining a tree structure of a codebase, and listing connected Git providers and repositories. The code leverages Strawberry's type system to define the structure of the responses, such as `OrganizationResult`, `MeResponse`, and `GitRepository`.
+The code defines a GraphQL API using the `strawberry` library, which is a Python library for building GraphQL APIs. The primary purpose of this code is to provide a set of query endpoints that allow clients to interact with organizational data, document sets, codebase trees, and Git provider information. The code is structured as a collection of `strawberry.type` classes and query methods, which define the GraphQL schema and the operations that can be performed.
 
-The file imports several modules and functions from the application's API routes and utility libraries, indicating its integration with a larger codebase. It uses logging to track whether code content is requested in queries and handles access control by checking user permissions before executing certain operations. The code is structured to be part of a broader application, likely serving as a backend component that interfaces with a frontend UI, as suggested by the comment about polling by the UI. The use of GraphQL allows for flexible and efficient data retrieval, making this file a crucial part of the application's data access layer.
+Key components include the `Query` class, which contains several `strawberry.field` methods. These methods define the available queries: [`organization`](<#queryorganization>), [`documentSet`](<#querydocumentset>), [`tree`](<#querytree>), [`me`](<#queryme>), [`connectedGitProviders`](<#queryconnectedgitproviders>), and [`reposByGitProvider`](<#queryreposbygitprovider>). Each method handles specific data retrieval tasks, such as fetching organization details, retrieving document sets, accessing codebase trees, and listing connected Git providers and repositories. The code also includes utility functions like [`is_code_content_requested`](<#is_code_content_requested>) to assist in determining query specifics. The code uses external modules and repositories to perform operations like checking access permissions and fetching repository data, ensuring that the API can interact with other parts of the application.
 # Imports and Dependencies
 
 ---
@@ -35,160 +35,181 @@ The file imports several modules and functions from the application's API routes
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module, configured to use the name of the current module (`__name__`). This allows for logging messages that are specific to the module's context, facilitating easier debugging and log management.
-- **Use**: The `logger` is used to log informational messages, such as whether code content is requested, within the application's functions.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name.
+- **Use**: Used to log informational messages, such as whether code content is requested, within the application.
 
 
 # Classes
 
 ---
 ### MeResponse<!-- {{#class:python-backend/backend/app/api/routes/legacy/queries.MeResponse}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L27>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `id`: Represents the unique identifier of the response.
-- **Description**: The `MeResponse` class is a simple data structure used in a GraphQL API to represent a response containing a single field, `id`, which is an identifier of type `ID`. It is decorated with `@strawberry.type`, indicating that it is a GraphQL type definition in the Strawberry library.
+    - `id`: Holds the unique identifier of type `ID`.
+- **Description**: Represents a response object with a single `id` field, used to encapsulate user-related data in GraphQL queries.
 
 
 ---
 ### OrganizationResult<!-- {{#class:python-backend/backend/app/api/routes/legacy/queries.OrganizationResult}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L49>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `id`: A string representing the unique identifier of the organization.
-    - `name`: A string representing the name of the organization.
-    - `display_name`: A string representing the display name of the organization.
+    - `id`: A string that uniquely identifies the organization.
+    - `name`: A string that represents the name of the organization.
+    - `display_name`: A string that provides the display name of the organization.
     - `workspaces`: A list of strings representing the workspaces associated with the organization.
-- **Description**: The `OrganizationResult` class is a data structure used to represent an organization within a GraphQL API, providing essential information such as the organization's ID, name, display name, and associated workspaces. It is decorated with `@strawberry.type`, indicating its use in a Strawberry GraphQL schema.
+- **Description**: Represents an organization with its unique identifier, name, display name, and associated workspaces.
 
 
 ---
 ### Query<!-- {{#class:python-backend/backend/app/api/routes/legacy/queries.Query}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L57>)
+
 - **Decorators**: `@strawberry.type`
-- **Description**: The `Query` class is a GraphQL type defined using the Strawberry library, which provides several fields to query organizational and repository data. It includes methods to fetch organization details, document sets, codebase trees, user information, connected Git providers, and repositories by Git provider. The class leverages context information to perform access checks and data retrieval, ensuring that only authorized users can access specific data. It is designed to integrate with a GraphQL API, facilitating complex queries related to organizational structures and version control systems.
+- **Description**: Defines a GraphQL query type with fields to retrieve organization details, document sets, codebase trees, user information, connected Git providers, and repositories by Git provider. Each field is decorated with `@strawberry.field` to expose it as a GraphQL query endpoint.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/queries.Query.organization`](<#Queryorganization>)
-    - [`python-backend/backend/app/api/routes/legacy/queries.Query.documentSet`](<#QuerydocumentSet>)
-    - [`python-backend/backend/app/api/routes/legacy/queries.Query.tree`](<#Querytree>)
-    - [`python-backend/backend/app/api/routes/legacy/queries.Query.me`](<#Queryme>)
-    - [`python-backend/backend/app/api/routes/legacy/queries.Query.connectedGitProviders`](<#QueryconnectedGitProviders>)
-    - [`python-backend/backend/app/api/routes/legacy/queries.Query.reposByGitProvider`](<#QueryreposByGitProvider>)
+    - [`python-backend/backend/app/api/routes/legacy/queries.Query.organization`](<#queryorganization>)
+    - [`python-backend/backend/app/api/routes/legacy/queries.Query.documentSet`](<#querydocumentset>)
+    - [`python-backend/backend/app/api/routes/legacy/queries.Query.tree`](<#querytree>)
+    - [`python-backend/backend/app/api/routes/legacy/queries.Query.me`](<#queryme>)
+    - [`python-backend/backend/app/api/routes/legacy/queries.Query.connectedGitProviders`](<#queryconnectedgitproviders>)
+    - [`python-backend/backend/app/api/routes/legacy/queries.Query.reposByGitProvider`](<#queryreposbygitprovider>)
 
 **Methods**
 
 ---
 #### Query\.organization<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.Query.organization}} -->
-The `organization` method retrieves and returns the organization details of the current user from the context.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L59>)
+
+Retrieves organization details for the current user from the context and returns them as an [`OrganizationResult`](<#organizationresult>) object.
 - **Decorators**: `@strawberry.field`
 - **Inputs**:
-    - `info`: An instance of `Info` that provides context about the GraphQL request, including user and session information.
-    - `id`: A string representing the organization ID, although it is not used in the method's logic.
-- **Control Flow**:
-    - The method accesses the `info.context.user` object to retrieve the current user's organization details.
-    - It constructs an [`OrganizationResult`](<#OrganizationResult>) object using the organization ID and display name from the user's context.
-    - The method returns the [`OrganizationResult`](<#OrganizationResult>) object with the organization details and an empty list for workspaces.
-- **Output**: An [`OrganizationResult`](<#OrganizationResult>) object containing the organization ID, name, display name, and an empty list of workspaces.
+    - `info`: An `Info` object that contains the context and execution information for the GraphQL query.
+    - `id`: A string representing the organization ID, although it is not used in the method logic.
+- **Logic and Control Flow**:
+    - Accesses the `info.context.user` to retrieve the current user's organization details.
+    - Creates an [`OrganizationResult`](<#organizationresult>) object using the organization ID and display name from the context.
+    - Returns the [`OrganizationResult`](<#organizationresult>) object with an empty list for `workspaces`.
+- **Output**: An [`OrganizationResult`](<#organizationresult>) object containing the organization ID, name, display name, and an empty list of workspaces.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/legacy/queries.OrganizationResult`](<#OrganizationResult>)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#Query>)  (Base Class)
+    - [`python-backend/backend/app/api/routes/legacy/queries.OrganizationResult`](<#organizationresult>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#query>)  (Base Class)
 
 
 ---
 #### Query\.documentSet<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.Query.documentSet}} -->
-The `documentSet` method retrieves a set of documents based on specified parameters, ensuring access permissions and optionally fetching code content.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L68>)
+
+Retrieves a `DocumentSet` based on the provided parameters and checks user access permissions.
 - **Decorators**: `@strawberry.field`
 - **Inputs**:
-    - `info`: An `Info` object containing the execution context, including session and user information.
-    - `nodeKind`: A `NodeType` indicating the type of node to retrieve.
-    - `path`: An optional string representing the path to the document set; defaults to `None`.
-    - `primaryAssetId`: An optional `ID` representing the primary asset identifier; defaults to `None`.
-    - `versionId`: An optional `ID` representing the version identifier; defaults to `None`.
-- **Control Flow**:
-    - Check if `path`, `versionId`, or `primaryAssetId` is `None` and raise a `GraphQLError` if any are `None`.
-    - Retrieve the session from `info.context.session`.
-    - Check access permissions using [`check_access`](<orm_ops.py.md#check_access>) with the session, organization ID, and primary asset ID; raise a `GraphQLError` if access is denied.
-    - Determine if code content is requested by calling `is_code_content_requested(info)`.
-    - Log whether code content is requested using the logger.
-    - Call [`get_document_set`](<document_set.py.md#get_document_set>) with the provided parameters and return the result.
-- **Output**: Returns a `DocumentSet` object containing the requested documents.
+    - `info`: An `Info` object that contains context about the GraphQL request, including user and session information.
+    - `nodeKind`: A `NodeType` that specifies the kind of node to retrieve.
+    - `path`: An optional string that specifies the path to the document set.
+    - `primaryAssetId`: An optional `ID` that identifies the primary asset.
+    - `versionId`: An optional `ID` that identifies the version of the document set.
+- **Logic and Control Flow**:
+    - Checks if `path`, `versionId`, or `primaryAssetId` is `None` and raises a `GraphQLError` if any are `None`.
+    - Retrieves the session from `info.context.session`.
+    - Checks user access permissions using [`check_access`](<orm_ops.py.md#check_access>) with the session, organization ID, and primary asset ID. Raises a `GraphQLError` if access is denied.
+    - Determines if code content is requested by calling `is_code_content_requested(info)`.
+    - Logs whether code content is requested.
+    - Calls [`get_document_set`](<document_set.py.md#get_document_set>) with the provided parameters and returns the result.
+- **Output**: A `DocumentSet` object that matches the specified parameters.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](<orm_ops.py.md#check_access>)
     - [`python-backend/backend/app/api/routes/legacy/queries.is_code_content_requested`](<#is_code_content_requested>)
     - [`python-backend/backend/app/api/routes/legacy/document_set.get_document_set`](<document_set.py.md#get_document_set>)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#Query>)  (Base Class)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#query>)  (Base Class)
 
 
 ---
 #### Query\.tree<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.Query.tree}} -->
-The `tree` method retrieves a list of `FlatNode` objects representing the codebase tree for a given organization and version.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L102>)
+
+Retrieves a list of `FlatNode` objects representing the codebase tree for a given organization and version.
 - **Decorators**: `@strawberry.field`
 - **Inputs**:
-    - `info`: An `Info` object containing the execution context, including session and user information.
+    - `info`: An `Info` object that contains the context of the request, including session and user information.
     - `codebaseId`: An optional `ID` representing the codebase identifier.
     - `workspaceId`: An optional `ID` representing the workspace identifier.
     - `versionId`: An optional `ID` representing the version identifier.
-- **Control Flow**:
-    - Retrieve the session and user from the `info` context.
-    - Call the [`get_codebase_tree`](<tree.py.md#get_codebase_tree>) function with the session, organization ID from the user, and the version ID (converted to string if provided).
-- **Output**: A list of `FlatNode` objects representing the structure of the codebase tree.
+- **Logic and Control Flow**:
+    - Retrieve the session and user from the `info.context` object.
+    - Call the [`get_codebase_tree`](<tree.py.md#get_codebase_tree>) function with the session, organization ID from the user, and the version ID if provided.
+    - Return the result of the [`get_codebase_tree`](<tree.py.md#get_codebase_tree>) function.
+- **Output**: A list of `FlatNode` objects representing the codebase tree.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/legacy/tree.get_codebase_tree`](<tree.py.md#get_codebase_tree>)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#Query>)  (Base Class)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#query>)  (Base Class)
 
 
 ---
 #### Query\.me<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.Query.me}} -->
-The `me` method returns a [`MeResponse`](<#MeResponse>) object containing the current user's subject ID.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L122>)
+
+Retrieves the current user's information and returns it as a [`MeResponse`](<#meresponse>) object.
 - **Decorators**: `@strawberry.field`
 - **Inputs**:
-    - `info`: An `Info` object that provides context about the GraphQL request, including the current user.
-- **Control Flow**:
-    - Retrieve the current user from the `info.context.user` attribute.
-    - Create and return a [`MeResponse`](<#MeResponse>) object with the user's subject ID.
-- **Output**: A [`MeResponse`](<#MeResponse>) object containing the ID of the current user.
+    - `info`: An `Info` object that contains the context of the request, including the current user.
+- **Logic and Control Flow**:
+    - Accesses the `user` attribute from the `info.context` to get the current user.
+    - Creates a [`MeResponse`](<#meresponse>) object using the `id` of the current user, which is obtained from `user.subject`.
+    - Returns the [`MeResponse`](<#meresponse>) object.
+- **Output**: A [`MeResponse`](<#meresponse>) object containing the `id` of the current user.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/legacy/queries.MeResponse`](<#MeResponse>)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#Query>)  (Base Class)
+    - [`python-backend/backend/app/api/routes/legacy/queries.MeResponse`](<#meresponse>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#query>)  (Base Class)
 
 
 ---
 #### Query\.connectedGitProviders<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.Query.connectedGitProviders}} -->
-The `connectedGitProviders` method returns a list of Git providers configured for a user or organization.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L127>)
+
+Lists the git providers configured for a user or organization.
 - **Decorators**: `@strawberry.field`
 - **Inputs**:
-    - `info`: An instance of `Info` that provides context about the GraphQL request, including user and session information.
-- **Control Flow**:
-    - Initialize an empty list `providers` to store configured Git providers.
+    - `info`: An `Info` object that contains context and execution information for the request.
+- **Logic and Control Flow**:
+    - Initialize an empty list `providers` to store configured git providers.
     - Retrieve the current user from `info.context.user`.
-    - Create an instance of [`GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository>) using the session from `info.context.session`.
-    - Check if there are any GitHub installations for the user's organization by calling [`list_by_organization_id`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepositorylist_by_organization_id>) with the user's organization ID.
-    - If there are any installations, append a [`GitProvider`](<api_types.py.md#GitProvider>) instance representing GitHub to the `providers` list.
-- **Output**: A list of [`GitProvider`](<api_types.py.md#GitProvider>) objects representing the configured Git providers for the user or organization.
+    - Create an instance of [`GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>) using the session from `info.context.session`.
+    - Check if there are any GitHub installations for the user's organization by calling [`list_by_organization_id`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositorylist_by_organization_id>) on the `gh_repository` object.
+    - If there are GitHub installations, append a [`GitProvider`](<api_types.py.md#gitprovider>) object representing GitHub to the `providers` list.
+    - Return the `providers` list.
+- **Output**: A list of [`GitProvider`](<api_types.py.md#gitprovider>) objects representing the configured git providers for the user or organization.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository>)
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_organization_id`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepositorylist_by_organization_id>)
-    - [`python-backend/backend/app/api/routes/legacy/api_types.GitProvider`](<api_types.py.md#GitProvider>)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#Query>)  (Base Class)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_organization_id`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositorylist_by_organization_id>)
+    - [`python-backend/backend/app/api/routes/legacy/api_types.GitProvider`](<api_types.py.md#gitprovider>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#query>)  (Base Class)
 
 
 ---
 #### Query\.reposByGitProvider<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.Query.reposByGitProvider}} -->
-The `reposByGitProvider` method retrieves a list of Git repositories for a specified provider, currently only supporting GitHub.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L143>)
+
+Fetches and returns a list of Git repositories for a specified Git provider, currently only supporting GitHub.
 - **Decorators**: `@strawberry.field`
 - **Inputs**:
-    - `info`: An `Info` object containing context about the GraphQL request, including user and session information.
-    - `provider`: A string specifying the name of the Git provider, currently only 'github' is supported.
-- **Control Flow**:
-    - Initialize an empty list `repos` to store the resulting GitRepository objects.
-    - Retrieve the current user and session from the `info.context`.
+    - `info`: An `Info` object that contains context information, including the user and session.
+    - `provider`: A string specifying the Git provider, currently only 'github' is supported.
+- **Logic and Control Flow**:
+    - Initialize an empty list `repos` to store the resulting repositories.
+    - Retrieve the user and session from the `info.context`.
     - Check if the `provider` is not 'github', and if so, raise a `NotImplementedError`.
     - Call [`fetch_repos`](<../../../utils/gh_ops.py.md#fetch_repos>) with the session and user's organization ID to get a list of repositories.
-    - Iterate over the fetched repositories, creating a [`GitRepository`](<api_types.py.md#GitRepository>) object for each, and append it to the `repos` list.
-    - Return the list of [`GitRepository`](<api_types.py.md#GitRepository>) objects.
-- **Output**: A list of [`GitRepository`](<api_types.py.md#GitRepository>) objects representing the repositories fetched from the specified Git provider.
+    - Iterate over the fetched repositories and create [`GitRepository`](<api_types.py.md#gitrepository>) objects with the relevant data, appending them to the `repos` list.
+    - Return the `repos` list containing [`GitRepository`](<api_types.py.md#gitrepository>) objects.
+- **Output**: A list of [`GitRepository`](<api_types.py.md#gitrepository>) objects representing the repositories for the specified Git provider.
 - **Functions Called**:
     - [`python-backend/backend/app/utils/gh_ops.fetch_repos`](<../../../utils/gh_ops.py.md#fetch_repos>)
-    - [`python-backend/backend/app/api/routes/legacy/api_types.GitRepository`](<api_types.py.md#GitRepository>)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#Query>)  (Base Class)
+    - [`python-backend/backend/app/api/routes/legacy/api_types.GitRepository`](<api_types.py.md#gitrepository>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/queries.Query`](<#query>)  (Base Class)
 
 
 
@@ -196,18 +217,20 @@ The `reposByGitProvider` method retrieves a list of Git repositories for a speci
 
 ---
 ### is\_code\_content\_requested<!-- {{#callable:python-backend/backend/app/api/routes/legacy/queries.is_code_content_requested}} -->
-The function checks if the 'content' field under 'code' is requested in a GraphQL query by recursively examining the selected fields.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/queries.py#L32>)
+
+Checks if the 'content' field under 'code' is requested in a GraphQL query.
 - **Inputs**:
-    - `info`: An instance of the Info class from the Strawberry GraphQL library, which contains details about the GraphQL query, including the selected fields.
-- **Control Flow**:
-    - Define a nested function 'has_content_field' that takes a list of 'Selection' objects as input.
-    - Iterate over each 'Selection' object in the provided list.
-    - Check if the current field's name is 'code' and if any of its subfields have the name 'content'.
-    - If such a subfield is found, return True, indicating that the 'content' field is requested.
-    - If the current field has nested selections, recursively call 'has_content_field' on these nested selections.
-    - If no 'content' field is found in the entire selection hierarchy, return False.
-    - Call 'has_content_field' with 'info.selected_fields' and return its result.
-- **Output**: A boolean value indicating whether the 'content' field under 'code' is requested in the query.
+    - `info`: An instance of `Info` that contains the selected fields from a GraphQL query.
+- **Logic and Control Flow**:
+    - Defines a nested function `has_content_field` that takes a list of `Selection` objects as input.
+    - Iterates over each `field` in the `fields` list.
+    - Checks if the `field` name is 'code' and if any of its `subfield` names is 'content'.
+    - If the condition is met, returns `True`.
+    - If the `field` has nested selections, recursively calls `has_content_field` on these selections.
+    - If no 'content' field is found under 'code', returns `False`.
+    - Calls `has_content_field` with `info.selected_fields` and returns the result.
+- **Output**: A boolean value indicating whether the 'content' field under 'code' is requested.
 
 
 

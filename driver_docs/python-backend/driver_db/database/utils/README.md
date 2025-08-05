@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Scripts for reindexing vector data in a PostgreSQL database, including a shell script and a SQL script.
+Shell script and SQL script for reindexing vectors in a PostgreSQL database.
 
 
 ## Files
-- **[reindex_vectors.sh](reindex_vectors.sh.md)**: The `reindex_vectors.sh` file is a shell script that prompts the user for PostgreSQL connection details and executes a SQL script to reindex vectors in a specified database, while timing the operation.
-- **[reindex_vectors.sql](reindex_vectors.sql.md)**: The `reindex_vectors.sql` file contains a PL/pgSQL script that recalculates and updates the index parameters for a specific vector index in the database if the new calculated list size significantly exceeds the current one.
+- **[reindex_vectors.sh](reindex_vectors.sh.md)**: Shell script to reindex vectors in a PostgreSQL database after user confirmation.
+- **[reindex_vectors.sql](reindex_vectors.sql.md)**: Reindexes vectors in a database by recalculating and updating index parameters if necessary.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

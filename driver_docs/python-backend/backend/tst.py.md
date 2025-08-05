@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst.py` file contains test functions for verifying the behavior of the `LlmConfig` class methods, including `default` and `from_name`, within the `python-backend` codebase.
+Tests for `LlmConfig` methods including `default` and `from_name` with valid and invalid inputs.
 
 # Purpose
-This code is a short test script designed to verify the functionality of the `LlmConfig` class, which is imported from a module within a shared library. The script specifically tests two methods of the `LlmConfig` class: `default()` and `from_name()`. It checks whether the `default()` method returns an instance of `LlmConfig` and whether the `from_name()` method correctly handles both valid and invalid model names, raising a `ValueError` when an invalid name is provided. The script provides narrow functionality focused on ensuring that these methods behave as expected, and it outputs messages to indicate the success or failure of each test case.
+This code is a test script for the `LlmConfig` class, which is imported from the `shared.v3.llms.llm` module. It defines a function [`test_llm_config_methods`](<#test_llm_config_methods>) that tests the functionality of two methods within the `LlmConfig` class: `default` and `from_name`. The script verifies that the `default` method returns an instance of `LlmConfig` and that the `from_name` method correctly handles both valid and invalid model names. The script uses assertions to confirm expected behavior and prints messages to indicate the success or failure of each test case. The function is executed at the end of the script to run the tests.
 # Imports and Dependencies
 
 ---
@@ -17,16 +17,20 @@ This code is a short test script designed to verify the functionality of the `Ll
 
 ---
 ### test\_llm\_config\_methods<!-- {{#callable:python-backend/backend/tst.test_llm_config_methods}} -->
-The function `test_llm_config_methods` tests the `default` and `from_name` methods of the `LlmConfig` class to ensure they return instances of `LlmConfig` and handle invalid model names correctly.
+[View Source →](<../../../backend/tst.py#L4>)
+
+Tests the `default` and `from_name` methods of the `LlmConfig` class for correct behavior.
 - **Inputs**: None
-- **Control Flow**:
-    - Call `LlmConfig.default()` and assert the result is an instance of `LlmConfig`.
-    - Print a success message if the default method test passes.
-    - Call `LlmConfig.from_name("gpt_4o")` within a try block and assert the result is an instance of `LlmConfig`.
-    - Print a success message if the from_name method test with a valid model name passes, otherwise catch and print the exception message.
-    - Call `LlmConfig.from_name("invalid_model_name")` within a try block and expect a `ValueError` exception.
-    - Print a failure message if no exception is raised, otherwise print a success message if the exception is caught as expected.
-- **Output**: The function outputs printed messages indicating whether each test case has passed or failed, including any exception messages for failed tests.
+- **Logic and Control Flow**:
+    - Call the `default` method of `LlmConfig` and assert that the result is an instance of `LlmConfig`.
+    - Print a success message if the `default` method test passes.
+    - Call the `from_name` method of `LlmConfig` with a valid model name (`gpt_4o`) and assert that the result is an instance of `LlmConfig`.
+    - Print a success message if the `from_name` method test with a valid model name passes.
+    - Catch a `ValueError` if the `from_name` method with a valid model name fails and print an error message.
+    - Call the `from_name` method of `LlmConfig` with an invalid model name and expect a `ValueError`.
+    - Print a failure message if no exception is raised for the invalid model name.
+    - Print a success message if a `ValueError` is raised as expected for the invalid model name.
+- **Output**: No return value; prints messages indicating the success or failure of each test.
 
 
 

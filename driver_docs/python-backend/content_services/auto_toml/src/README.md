@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python scripts for generating and managing TOML configurations, including a CLI, OpenAI chat integration, and logging.
+Classes and interfaces for generating and appending TOML content, OpenAI chat, logging, and prompts.
 
 
 ## Files
-- **[auto_toml.py](auto_toml.py.md)**: The `auto_toml.py` file in the `python-backend` codebase provides a class `AutoToml` that facilitates the generation and appending of TOML configurations by summarizing content from source files and PDFs, with support for auto-scaling and integration with a language model for generating responses.
-- **[auto_toml_cli.py](auto_toml_cli.py.md)**: The `auto_toml_cli.py` file in the `python-backend` codebase provides a command-line interface for generating and appending TOML files based on document goals or existing TOML files, with support for different execution environments and auto-scaling options.
-- **[auto_toml_modal.py](auto_toml_modal.py.md)**: The `auto_toml_modal.py` file defines a `modal.App` class `AutoTomlModal` that provides asynchronous methods for generating and appending TOML configurations from page or node IDs, utilizing the `AutoToml` class and integrating with various dependencies and secrets.
-- **[chat_openai.py](chat_openai.py.md)**: The `chat_openai.py` file defines a `ChatOpenAI` class for interacting with OpenAI's chat models, including response generation with configurable output formats and error handling with retry logic.
-- **[logger.py](logger.py.md)**: The `logger.py` file sets up a custom logger with color-coded output for different logging levels, using a stream handler to output to standard output.
-- **[prompts.py](prompts.py.md)**: The `prompts.py` file in the `python-backend` codebase provides templates and functions for generating system and user prompts to assist in creating and extending TOML configuration files for technical documentation based on user-defined goals and source material.
+- **[auto_toml.py](auto_toml.py.md)**: A class for generating and appending TOML content using large language models, with support for auto-scaling and content summarization.
+- **[auto_toml_cli.py](auto_toml_cli.py.md)**: A command-line interface for generating and appending TOML files using specified document goals and contexts.
+- **[auto_toml_modal.py](auto_toml_modal.py.md)**: Defines a Modal application for generating and appending TOML data using page or node IDs.
+- **[chat_openai.py](chat_openai.py.md)**: Implements a chat interface with OpenAI models, supporting various output configurations and retry logic.
+- **[logger.py](logger.py.md)**: Sets up a color-coded logger with customizable name and logging level.
+- **[prompts.py](prompts.py.md)**: Functions and components for generating and appending prompts for creating technical documentation from TOML files.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

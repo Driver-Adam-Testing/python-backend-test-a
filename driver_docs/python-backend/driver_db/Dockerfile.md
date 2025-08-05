@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `Dockerfile` in the `python-backend` codebase sets up a Docker container for a Python 3.12 slim environment, installs necessary packages and Poetry, and configures the application to run database migrations using Alembic.
+Dockerfile for setting up a Python 3.12 environment with Poetry and running database migrations.
 
 # Purpose
-The provided content is a Dockerfile, which is used to automate the creation of a Docker container image for a Python application. It specifies the use of a slim version of Python 3.12 for the Linux/amd64 platform as the base image. The Dockerfile sets up a working directory at `/driver_db`, updates the package list, and installs necessary system packages like `curl` and `build-essential`, which are later removed to minimize the image size. It installs Poetry, a dependency management tool for Python, and configures it to avoid creating virtual environments. The application code is copied into the container, and dependencies are installed using Poetry. Finally, the Dockerfile sets the working directory to `/driver_db/database` and defines the default command to run Alembic, a database migration tool, to upgrade the database schema to the latest version.
+The Dockerfile defines the environment and steps to build a Docker image for a Python application. It starts by using the `python:3.12-slim` base image for the `linux/amd64` platform and sets the working directory to `/driver_db`. The file installs necessary system packages, including `curl` and `build-essential`, and then removes unnecessary files to reduce image size. It installs Poetry, a dependency management tool, and configures it to not create virtual environments. The application code is copied into the image, and dependencies are installed using Poetry. After installation, the file removes build tools to further reduce the image size. Finally, it sets the working directory to `/driver_db/database` and specifies the command to run database migrations using Alembic when the container starts.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

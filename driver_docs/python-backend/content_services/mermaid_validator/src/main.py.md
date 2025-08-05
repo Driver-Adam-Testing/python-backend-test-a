@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.py` file in the `python-backend` codebase sets up a Modal app to validate Mermaid diagram syntax using a Node.js environment with the Mermaid CLI, and provides functions to check the version and syntax of Mermaid diagrams, including a local entry point to test various diagram examples.
+Validates Mermaid diagram syntax and checks CLI version using a Modal app with Node.js and Chromium.
 
 # Purpose
-This Python script is designed to perform syntax checking on Mermaid diagrams using the Mermaid CLI. It leverages the Modal framework to create a containerized environment where the Mermaid CLI is installed and executed. The script defines a Modal application named "mermaid-syntax-check" and uses a Docker image based on Node.js with additional installations of Chromium and the Mermaid CLI. The primary functionality is encapsulated in two functions: [`check_mermaid_version`](<#check_mermaid_version>), which prints the installed version of the Mermaid CLI, and [`check_mermaid_syntax`](<#check_mermaid_syntax>), which checks the syntax of Mermaid diagram code and returns a status indicating whether the syntax is correct, contains errors, or if another type of error occurred.
+This code defines a Modal application named `mermaid-syntax-check` that provides functionality to check the syntax of Mermaid diagrams. It uses the `modal` library to create a containerized environment with a specific image that includes Node.js and the Mermaid CLI tool. The code defines two main functions: [`check_mermaid_version`](<#check_mermaid_version>) and [`check_mermaid_syntax`](<#check_mermaid_syntax>). The [`check_mermaid_version`](<#check_mermaid_version>) function retrieves and prints the version of the Mermaid CLI installed in the environment. The [`check_mermaid_syntax`](<#check_mermaid_syntax>) function checks the syntax of a given Mermaid diagram by attempting to convert it into an SVG file using the Mermaid CLI. It returns a status indicating whether the syntax is correct, contains a syntax error, or has another type of error.
 
-The script also includes a local entry point function, [`main`](<#main>), which demonstrates the syntax checking functionality by testing a series of predefined Mermaid diagrams. These diagrams include both valid and intentionally erroneous examples to showcase the script's ability to detect syntax errors. The results are printed to the console with color-coded status messages for easy interpretation. This script is primarily intended for use as a standalone tool to verify Mermaid diagram syntax, and it does not define any public APIs or external interfaces beyond its command-line output.
+The code also includes a local entry point function [`main`](<#main>), which serves as a script to test various Mermaid diagrams for syntax correctness. It defines a list of sample diagrams, each with a title and code, and checks their syntax using the [`check_mermaid_syntax`](<#check_mermaid_syntax>) function. The results are printed to the console with color-coded status messages indicating whether each diagram is valid, has a syntax error, or has another type of error. The code is structured to be executed as a script, leveraging the Modal framework to manage the execution environment and function calls.
 # Imports and Dependencies
 
 ---
@@ -23,66 +23,72 @@ The script also includes a local entry point function, [`main`](<#main>), which 
 
 ---
 ### app
-- **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'mermaid-syntax-check'. This instance represents a Modal application that is used to define and manage functions and their execution environments.
-- **Use**: This variable is used to register functions and manage their execution within the Modal framework, specifically for checking Mermaid syntax and version.
+- **Type**: ``modal.App``
+- **Description**: Represents an instance of a Modal application with the name 'mermaid-syntax-check'. This instance is used to define and manage functions and entry points within the application.
+- **Use**: Used to create and manage functions and entry points for the 'mermaid-syntax-check' application.
 
 
 ---
 ### mermaid\_image
-- **Type**: `modal.Image`
-- **Description**: The `mermaid_image` variable is an instance of `modal.Image` that is configured to run a Node.js environment with additional Python support. It installs Chromium and DejaVu fonts, and sets up the Mermaid CLI for generating diagrams. The configuration also includes a Puppeteer configuration file to run Chromium without a sandbox.
-- **Use**: This variable is used to define the execution environment for functions that check the version and syntax of Mermaid diagrams.
+- **Type**: ``modal.Image``
+- **Description**: The `mermaid_image` variable is an instance of the `modal.Image` class, created from a Docker image based on the `node:20-slim` image with Python 3.12 added. It installs the `chromium` and `fonts-dejavu` packages and runs commands to install the `@mermaid-js/mermaid-cli` globally and configure Puppeteer to use Chromium without a sandbox.
+- **Use**: Used as the image for functions in the application to check Mermaid syntax and version.
 
 
 # Functions
 
 ---
 ### check\_mermaid\_version<!-- {{#callable:python-backend/content_services/mermaid_validator/src/main.check_mermaid_version}} -->
-The `check_mermaid_version` function retrieves and prints the version of the Mermaid CLI installed in the environment.
+[View Source →](<../../../../../content_services/mermaid_validator/src/main.py#L17>)
+
+Executes a subprocess to check and print the version of the Mermaid CLI.
 - **Decorators**: `@app.function`
 - **Inputs**: None
-- **Control Flow**:
-    - The function imports the `subprocess` module to execute shell commands.
-    - It uses `subprocess.check_output` to run the command `mmdc --version` to get the version of the Mermaid CLI.
-    - The output from the command is decoded from bytes to a string and stripped of any leading or trailing whitespace.
-    - The version information is printed to the console.
-- **Output**: The function does not return any value; it prints the Mermaid CLI version to the console.
+- **Logic and Control Flow**:
+    - Imports the `subprocess` module to execute shell commands.
+    - Uses `subprocess.check_output` to run the command `mmdc --version` and capture its output.
+    - Decodes the output from bytes to a string and removes any leading or trailing whitespace.
+    - Prints the Mermaid CLI version to the console.
+- **Output**: No return value; prints the Mermaid CLI version to the console.
 
 
 ---
 ### check\_mermaid\_syntax<!-- {{#callable:python-backend/content_services/mermaid_validator/src/main.check_mermaid_syntax}} -->
-The `check_mermaid_syntax` function checks the syntax of Mermaid diagram code by attempting to convert it to an SVG using the Mermaid CLI and returns the result status and any error messages.
+[View Source →](<../../../../../content_services/mermaid_validator/src/main.py#L25>)
+
+Checks the syntax of Mermaid code and returns the result along with any error messages.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `code`: A string containing the Mermaid diagram code to be checked for syntax correctness.
-- **Control Flow**:
-    - A temporary file is created to store the input Mermaid code with a '.mmd' suffix.
-    - Another temporary file is created to store the output SVG with a '.svg' suffix.
-    - The function attempts to execute the Mermaid CLI command `mmdc` to convert the input file to an SVG, capturing any output or errors.
-    - If the command succeeds, it returns a tuple with 'ok' and an empty string.
-    - If a `CalledProcessError` is raised, it decodes the error output and checks for 'parse error' or 'syntax error' in the message.
-    - If a syntax error is detected, it returns 'syntax_error' and the error message; otherwise, it returns 'other_error' and the error message.
-    - Finally, it ensures that any temporary files created are deleted.
-- **Output**: A tuple containing a status string ('ok', 'syntax_error', or 'other_error') and a string with error details if applicable.
+    - `code`: A string containing the Mermaid code to check for syntax errors.
+- **Logic and Control Flow**:
+    - Create a temporary file with a '.mmd' suffix and write the provided Mermaid code to it.
+    - Create another temporary file with a '.svg' suffix to store the output.
+    - Use the 'mmdc' command to process the input file and generate an output file, capturing any errors.
+    - If the command executes successfully, return 'ok' with an empty string.
+    - If a 'CalledProcessError' occurs, decode the error output and check for 'parse error' or 'syntax error' in the message.
+    - Return 'syntax_error' with the error message if a syntax error is detected, otherwise return 'other_error' with the error message.
+    - Ensure that both temporary files are deleted after processing, regardless of success or failure.
+- **Output**: A tuple containing a status string ('ok', 'syntax_error', or 'other_error') and an error message string.
 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/mermaid_validator/src/main.main}} -->
-The `main` function checks the syntax of various Mermaid diagrams and prints the results with color-coded status messages.
+[View Source →](<../../../../../content_services/mermaid_validator/src/main.py#L59>)
+
+Checks the syntax of various Mermaid diagrams and prints the results with color-coded status.
 - **Decorators**: `@app.local_entrypoint`
 - **Inputs**: None
-- **Control Flow**:
-    - The function starts by calling `check_mermaid_version.remote()` to check the installed version of the Mermaid CLI.
-    - A list of tuples named `diagrams` is defined, each containing a title and a Mermaid diagram code.
-    - ANSI color codes for resetting, green, red, and yellow are defined for terminal output.
-    - A header "=== Mermaid Syntax Check ===" is printed to the console.
-    - The function iterates over each diagram in the `diagrams` list, calling `check_mermaid_syntax.remote(code)` to check the syntax of the diagram code.
-    - Based on the returned status from `check_mermaid_syntax`, a color is selected: green for "ok", red for "syntax_error", and yellow for any other error.
-    - The title and status of each diagram are printed with the corresponding color.
-    - If there is an error message, it is printed line by line, indented for readability.
-    - A blank line is printed after each diagram's result for separation.
-- **Output**: The function does not return any value; it outputs the syntax check results directly to the console.
+- **Logic and Control Flow**:
+    - Calls `check_mermaid_version.remote()` to check the Mermaid CLI version remotely.
+    - Defines a list of tuples `diagrams`, each containing a title and a Mermaid diagram code.
+    - Sets ANSI color codes for resetting, green, red, and yellow text.
+    - Prints a header for the Mermaid syntax check.
+    - Iterates over each `title` and `code` in `diagrams`.
+    - For each diagram, calls `check_mermaid_syntax.remote(code)` to check its syntax remotely.
+    - Determines the color based on the `status` returned: green for 'ok', red for 'syntax_error', and yellow for other errors.
+    - Prints the `title` and `status` with the corresponding color.
+    - If there is an error message `err`, prints each line of the error message indented.
+- **Output**: No return value; outputs results to the console.
 
 
 

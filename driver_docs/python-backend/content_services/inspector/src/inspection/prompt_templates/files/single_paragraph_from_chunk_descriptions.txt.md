@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for generating a single paragraph description of a software file by synthesizing information from overlapping chunk descriptions.
+Instructions for writing a single paragraph description of a software file using detailed descriptions of its chunks.
 
 # Purpose
-The provided content outlines a task where you are required to synthesize a comprehensive description of a software file based on detailed descriptions of its individual segments. Each segment description provides insights into overlapping portions of the file, which collectively contribute to understanding the file's overall purpose and functionality. Your role is to distill these detailed descriptions into a cohesive paragraph that accurately reflects the file's intent and contents, without introducing any assumptions or external information. The final paragraph should succinctly encapsulate the essence of the file, ensuring clarity and completeness within a limit of six sentences. This task emphasizes the importance of precision and coherence in technical documentation, particularly when dealing with large and complex files that are broken down into smaller, more manageable descriptions.
+Understood. Please provide the descriptions for the pieces of the software file.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

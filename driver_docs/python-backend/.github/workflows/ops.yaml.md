@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `ops.yaml` file defines a GitHub Actions workflow for deploying backend operations, triggered by pushes to the "ops" branch, and includes steps for setting up Node.js, Python, and AWS credentials, as well as deploying with CDK.
+GitHub Actions workflow for deploying backend operations with Node.js, Python, and AWS configuration.
 
 # Purpose
-The provided file is a GitHub Actions workflow configuration written in YAML, designed to automate the deployment process for a backend operations environment. This workflow is triggered by a push to the "ops" branch or can be manually initiated from the Actions tab. It ensures that only one instance of the workflow runs at a time by using a concurrency group, and it sets specific permissions for reading contents and writing ID tokens. The workflow runs on the latest Ubuntu environment and involves several steps, including checking out the code, setting up Node.js and Python environments, installing dependencies with Poetry, configuring AWS credentials, and deploying using the AWS CDK without requiring approval. This setup streamlines the deployment process, ensuring consistency and efficiency in managing backend operations.
+The YAML configuration file defines a GitHub Actions workflow named `Backend Ops Deployment`. This workflow triggers on pushes to the `ops` branch and can also be manually initiated from the Actions tab. It ensures that only one instance of the workflow runs at a time by using a concurrency group based on the workflow and reference. The workflow requires specific permissions, including writing `id-token` and reading `contents`. The `ops` job runs on the latest Ubuntu environment and sets up Node.js version 20.x and Python version 3.12. It installs dependencies using Poetry without creating a virtual environment and configures AWS credentials for deployment. Finally, it executes a CDK deployment command with the `ops` environment, bypassing approval requirements.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cdk_dev_stack_app.py` file sets up and deploys a temporary development stack using AWS CDK, requiring specific environment variables and configuration from a JSON file.
+Deploys a CDK stack using environment variables and configuration from a JSON file.
 
 # Purpose
-This Python script is a configuration and deployment script for an AWS Cloud Development Kit (CDK) application, specifically designed to set up a development stack. It provides narrow functionality focused on deploying a temporary development stack using the AWS CDK framework. The script checks for the presence of specific environment variables (`DEV_NAME`, `DEPLOYMENT_ENVIRONMENT`, and `DATABASE_URL`) and raises an error if they are not set, ensuring that necessary configuration details are provided. It reads additional configuration from a JSON file and uses this data to configure the environment variables required for the deployment. The script then initializes a `DevStack` object with these parameters and synthesizes the CDK application, effectively preparing the infrastructure for deployment in a specified AWS account and region.
+This script is a deployment configuration for an AWS Cloud Development Kit (CDK) application. It initializes a CDK `App` and checks for the presence of specific environment variables: `DEV_NAME`, `DEPLOYMENT_ENVIRONMENT`, and `DATABASE_URL`. If any of these variables are missing, the script raises a `ValueError`. The script reads a JSON configuration file, `cdk-stack-config.json`, to set additional environment variables needed for the deployment. It then creates an instance of `DevStack` with parameters derived from the environment variables and the configuration file, specifying the AWS account and region for deployment. Finally, the script synthesizes the CDK app, preparing it for deployment.
 # Imports and Dependencies
 
 ---
@@ -21,23 +21,23 @@ This Python script is a configuration and deployment script for an AWS Cloud Dev
 
 ---
 ### app
-- **Type**: `cdk.App`
-- **Description**: The `app` variable is an instance of the `cdk.App` class from the AWS Cloud Development Kit (CDK). It serves as the root of the CDK application, which is responsible for synthesizing the entire stack of resources defined in the application.
-- **Use**: The `app` variable is used to initialize and manage the lifecycle of the CDK application, including the creation and deployment of AWS resources defined in the `DevStack`.
+- **Type**: ``cdk.App``
+- **Description**: Represents an instance of the AWS CDK application. This object is the root of the construct tree and is responsible for managing the lifecycle of the application.
+- **Use**: Used to define and synthesize the AWS Cloud Development Kit (CDK) application.
 
 
 ---
 ### dev\_name
-- **Type**: `str`
-- **Description**: The `dev_name` variable is a string derived from the environment variable `DEV_NAME`. It is processed by removing hyphens, spaces, and leading or trailing whitespace.
-- **Use**: This variable is used to construct the `dev_stack_name` and as a prefix for the CDK stack deployment.
+- **Type**: ``str``
+- **Description**: The `dev_name` variable is a string derived from the `DEV_NAME` environment variable. It removes hyphens, spaces, and leading or trailing whitespace from the original environment variable value.
+- **Use**: Used to construct the `dev_stack_name` and as a prefix in `DevStackParams`.
 
 
 ---
 ### dev\_stack\_name
-- **Type**: `str`
-- **Description**: The `dev_stack_name` variable is a string that concatenates the `dev_name` with the suffix 'TempTestInDevStack'. It is constructed using the `dev_name` derived from the environment variable `DEV_NAME`, which is sanitized by removing hyphens, spaces, and trimming whitespace.
-- **Use**: This variable is used to define the name of the AWS CDK stack being deployed, ensuring it is unique and environment-specific.
+- **Type**: ``str``
+- **Description**: A string variable that concatenates the environment variable `dev_name` with the suffix 'TempTestInDevStack'. This variable is used to define the name of a development stack in the AWS CDK application.
+- **Use**: Used to specify the name of the development stack when deploying the CDK stack.
 
 
 

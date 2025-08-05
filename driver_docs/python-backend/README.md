@@ -3,42 +3,42 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Built around FastAPI, featuring AWS CDK infrastructure, Docker configurations, dependency management, and various scripts and modules for backend services, testing, and deployment.
+GitHub Actions, FastAPI and GraphQL APIs, AWS CDK constructs, agent tools, AWS Lambda functions, Docker setup, database migration, agent classes, shell scripts, environment configurations, Git settings, pre-commit hooks, Docker services, and deployment instructions.
 
 ## Folders
-- **[.github](.github/README_.md)**: Configurations for GitHub Actions, workflows for automation, and Dependabot for update management.
-- **[backend](backend/README.md)**: Built around FastAPI, featuring API configurations, scripts for operations, and configuration files for Docker, Git, and dependency management.
-- **[cdk](cdk/README.md)**: AWS CDK constructs and stack definitions for environments like development, staging, production, and operations.
-- **[content_services](content_services/README.md)**: Modules and scripts for configuration, documentation, code inspection, deployment, and dependency management.
-- **[dev_stack](dev_stack/README.md)**: Infrastructure definitions, deployment scripts, Python source code, and configuration files for managing and deploying a development environment using AWS CDK, Poetry, and other tools.
-- **[driver_data](driver_data/README.md)**: Scripts for GitHub integration and data migration, GitLab setup files, package management configurations, and data copying documentation.
-- **[driver_db](driver_db/README.md)**: Components for database management, including configuration files, scripts, certificates, Docker, and Poetry setup.
-- **[lambdas](lambdas/README.md)**: Handles AWS Lambda events, manages dependencies with Poetry, and sends usage events for LLM sessions.
-- **[packages](packages/README.md)**: Includes the `shared` folder with components for backend functionalities, dependencies, and Docker configuration.
-- **[scripts](scripts/README.md)**: The `scripts` folder in the `python-backend` codebase contains a shell script, `test.sh`, designed for managing Docker Compose environments to facilitate backend testing.
+- **[.github](.github/README_.md)**: GitHub Actions for deployment, workflows for updates and testing, and Dependabot configuration.
+- **[backend](backend/README.md)**: FastAPI and GraphQL APIs, scripts for various operations, Docker and Git ignore files, dependency management, and test scripts.
+- **[cdk](cdk/README.md)**: AWS CDK constructs and stack definitions for development, operations, production, and staging environments.
+- **[content_services](content_services/README.md)**: Tools and scripts for agent interfaces, TOML and documentation generation, code analysis, and service deployment.
+- **[dev_stack](dev_stack/README.md)**: AWS Lambda constructs, deployment scripts, authentication tools, Ngrok management, and configuration files.
+- **[driver_data](driver_data/README.md)**: Configuration files for GitLab with Docker, scripts for data migration and GitHub integration, and Poetry project files.
+- **[driver_db](driver_db/README.md)**: Database migration scripts, Docker setup, MyPy configuration, and secure communication certificates.
+- **[lambdas](lambdas/README.md)**: AWS Lambda function for handling and logging usage events with Pydantic configuration and Poetry.
+- **[packages](packages/README.md)**: Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
+- **[scripts](scripts/README.md)**: Shell script to build, run, and test a Docker Compose environment for the backend.
 
 ## Files
-- **[.env.example](.env.example.md)**: The `.env.example` file in the `python-backend` codebase provides a template for environment variables needed for configuring domain settings, backend services, email servers, database connections, Docker images, Auth0 authentication, and AWS credentials.
-- **[.env.test](.env.test.md)**: The `.env.test` file in the `python-backend` codebase contains environment variable configurations for testing, including domain settings, backend CORS origins, email SMTP settings, PostgreSQL database credentials, Docker image names, Auth0 credentials, and AWS access keys.
-- **[.gitattributes](.gitattributes.md)**: The `.gitattributes` file in the `python-backend` codebase specifies automatic text normalization and enforces LF line endings for shell scripts.
-- **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies a comprehensive list of files and directories to be excluded from version control, including environment files, build artifacts, and various IDE and tool-specific files.
-- **[.pre-commit-config.yaml](.pre-commit-config.yaml.md)**: The `.pre-commit-config.yaml` file in the `python-backend` codebase configures pre-commit hooks for tasks such as checking large files, formatting, linting with Ruff, and running unit tests with pytest.
-- **[.ruff.toml](.ruff.toml.md)**: The `.ruff.toml` file in the `python-backend` codebase configures the Ruff linter with specific settings such as line length, target Python version, rules to select and ignore, and per-file ignores for Alembic migration files.
-- **[cdk.json](cdk/README.md.json)**: The `cdk.json` file in the `python-backend` codebase configures the AWS CDK application with specific context settings and file watch rules for deployment using `python3 cdk_app.py`.
-- **[cdk_app.py](cdk/README.md_app.py)**: The `cdk_app.py` file in the `python-backend` codebase sets up and synthesizes different AWS CDK stacks based on the deployment environment specified in the environment variables.
-- **[deployment.md](deployment.md.md)**: The `deployment.md` file provides instructions for setting up environment variables and generating secret keys for deploying a FastAPI project on AWS, with a note that most of the previous deployment instructions are irrelevant.
-- **[deps-pre-commit.sh](deps-pre-commit.sh.md)**: The `deps-pre-commit.sh` file is a shell script that installs dependencies and updates interdependent packages using Poetry in the `python-backend` codebase.
-- **[docker-compose.yml](docker-compose.yml.md)**: The `docker-compose.yml` file in the `python-backend` codebase configures services for a PostgreSQL database and a backend application, specifying images, ports, volumes, environment variables, and dependencies.
-- **[Dockerfile](Dockerfile.md)**: The `Dockerfile` in the `python-backend` codebase sets up a Docker image for a Python application using a slim Python 3.12 base, installs dependencies with Poetry, and configures start scripts for development and production environments.
-- **[LICENSE](LICENSE.md)**: The `LICENSE` file in the `python-backend` codebase contains the MIT License, granting permission to use, copy, modify, and distribute the software with certain conditions.
-- **[mypy-pre-commit.sh](mypy-pre-commit.sh.md)**: The `mypy-pre-commit.sh` file is a shell script that runs the `mypy` type checker on all tracked Python files in a Git repository, ignoring import-related errors.
-- **[package-lock.json](package-lock.json.md)**: The `package-lock.json` file in the `python-backend` codebase specifies the exact versions and dependencies for the Node.js packages used, including `aws-cdk` and `fsevents`.
-- **[package.json](package.json.md)**: The `package.json` file in the `python-backend` codebase specifies a dependency on the `aws-cdk` library version `^2.164.1`.
+- **[.env.example](.env.example.md)**: Example environment configuration file for setting up domain, backend, email, database, and cloud service variables.
+- **[.env.test](.env.test.md)**: Configuration settings for a local test environment, including domain, backend, email, database, and AWS.
+- **[.gitattributes](.gitattributes.md)**: Configuration for Git to handle text files and set line endings for shell scripts.
+- **[.gitignore](.gitignore.md)**: Specifies files and directories to ignore in version control for a Python backend project.
+- **[.pre-commit-config.yaml](.pre-commit-config.yaml.md)**: Configuration for pre-commit hooks to check file formats, run linters, and execute tests.
+- **[.ruff.toml](.ruff.toml.md)**: Configuration for the Ruff linter, specifying line length, target Python version, rulesets, and exceptions.
+- **[cdk.json](cdk.json.md)**: Configuration for AWS CDK application with context settings and file watch exclusions.
+- **[cdk_app.py](cdk_app.py.md)**: Configures AWS CDK stacks based on the deployment environment variable.
+- **[deployment.md](deployment.md.md)**: Instructions for setting environment variables and generating secret keys for deploying a FastAPI project.
+- **[deps-pre-commit.sh](deps-pre-commit.sh.md)**: A shell script to install dependencies and update interdependent packages using Poetry.
+- **[docker-compose.yml](docker-compose.yml.md)**: Defines Docker services for a PostgreSQL database and a backend application with environment variables.
+- **[Dockerfile](Dockerfile.md)**: Dockerfile for setting up a Python backend environment with Poetry and start scripts.
+- **[LICENSE](LICENSE.md)**: MIT License for the software, granting permission to use, copy, modify, and distribute.
+- **[mypy-pre-commit.sh](mypy-pre-commit.sh.md)**: A pre-commit script to run mypy on tracked Python files, ignoring import-untyped errors.
+- **[package-lock.json](package-lock.json.md)**: Specifies the exact versions and dependencies for the `python-backend` project using npm.
+- **[package.json](package.json.md)**: Specifies a dependency on AWS CDK version 2.164.1 or higher.
 - **[poetry.lock](poetry.lock.md)**: A lock file generated by Poetry 2.1.3, listing package dependencies and their versions for a Python project.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies, development tools, and build settings.
-- **[README.md](README.md.md)**: The `README.md` file in the `python-backend` codebase provides instructions for setting up pre-commit hooks and testing CDK additions to maintain code quality and facilitate infrastructure testing.
-- **[release-notes.md](release-notes.md.md)**: The `release-notes.md` file in the `python-backend` codebase documents the changes, features, fixes, refactors, upgrades, and internal updates for various versions of the project, highlighting the latest version 0.6.0 with significant updates like adopting SQLModel, a new frontend setup, and CI/CD improvements.
-- **[update_interdependent_packages.py](update_interdependent_packages.py.md)**: The `update_interdependent_packages.py` file automates the process of running 'poetry lock' in multiple interdependent Python projects within a directory structure, ensuring the correct order based on their dependencies.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies, dev tools, and mypy settings.
+- **[README.md](README.md.md)**: Instructions for setting up pre-commit hooks and testing CDK additions in a development environment.
+- **[release-notes.md](release-notes.md.md)**: Release notes detailing updates, features, fixes, refactors, upgrades, documentation, and internal changes for version 0.6.0.
+- **[update_interdependent_packages.py](update_interdependent_packages.py.md)**: Automates running 'poetry lock' in interdependent Python projects by determining execution order.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

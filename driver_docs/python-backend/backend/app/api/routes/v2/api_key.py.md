@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `api_key.py` file defines API endpoints for creating, retrieving, and deleting API keys, utilizing FastAPI and SQLModel for database interactions.
+API routes for creating, retrieving, and deleting API keys with user authentication and query utilities.
 
 # Purpose
-This Python file is a FastAPI router module that provides a RESTful API for managing API keys. It defines three main endpoints: creating, retrieving, and deleting API keys. The [`create_api_key`](<#create_api_key>) function allows authenticated users to generate a new API key associated with their organization and user ID, storing it in the database. The [`get_api_keys`](<#get_api_keys>) function retrieves a list of API keys for the authenticated user, supporting pagination, filtering, and sorting through utility functions. The [`delete_api_key`](<#delete_api_key>) function enables users to delete a specific API key by its UUID, ensuring that the key belongs to the requesting user.
+The code defines a set of API endpoints for managing API keys using the FastAPI framework. It includes three main operations: creating, retrieving, and deleting API keys. The [`create_api_key`](<#create_api_key>) function allows the creation of a new API key associated with a user's organization and user ID. The [`get_api_keys`](<#get_api_keys>) function retrieves a list of API keys for the authenticated user, with support for filtering and sorting through query parameters. The [`delete_api_key`](<#delete_api_key>) function removes an API key specified by its UUID, ensuring that the key belongs to the authenticated user.
 
-The code leverages FastAPI's routing and dependency injection features, using `APIRouter` to define routes and `CurrentSession` for database interactions. It also uses `UserToken` for user authentication and authorization, ensuring that operations are performed only by authorized users. The module imports several utility functions and schemas to handle query modifications and response formatting, indicating a modular design. This file is intended to be part of a larger application, serving as a specific component for API key management within a broader API service.
+The code uses several components to achieve its functionality. It imports models and utilities for database operations, such as `ApiKey` and `select`, and uses FastAPI's `APIRouter` to define the routes. The `UserToken` is used for authentication, ensuring that operations are performed in the context of the authenticated user. The code also utilizes pagination and query utilities to manage large datasets efficiently. The endpoints are designed to be part of a larger application, as indicated by the use of `CurrentSession` for database interactions and the structured routing provided by FastAPI.
 # Imports and Dependencies
 
 ---
@@ -32,47 +32,51 @@ The code leverages FastAPI's routing and dependency injection features, using `A
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class, which is used to define a group of related API routes. It allows for modularizing the API by grouping routes together and applying common configurations such as dependencies, tags, and prefixes.
-- **Use**: The `router` is used to register API endpoints for creating, retrieving, and deleting API keys, facilitating organized route management within the FastAPI application.
+- **Description**: Defines a router instance for handling API routes in a FastAPI application. It is used to register and manage the API endpoints defined in the module.
+- **Use**: Used to organize and manage the API routes for creating, retrieving, and deleting API keys.
 
 
 # Functions
 
 ---
 ### create\_api\_key<!-- {{#callable:python-backend/backend/app/api/routes/v2/api_key.create_api_key}} -->
-The `create_api_key` function creates a new API key for a user and saves it to the database.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L19>)
+
+Creates a new API key for a user and commits it to the database.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: An instance of `UserToken` representing the authenticated user for whom the API key is being created.
-- **Control Flow**:
-    - Prints the `user` object to the console for debugging or logging purposes.
-    - Creates a new [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#ApiKey>) object using the `organization_id` and `user_id` from the `user` object.
-    - Adds the new [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#ApiKey>) object to the database session.
-    - Commits the transaction to save the new API key to the database.
-    - Refreshes the `api_key` object to ensure it has the latest data from the database.
-    - Returns the newly created [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#ApiKey>) object.
-- **Output**: Returns the newly created [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#ApiKey>) object, which includes the details of the API key associated with the user.
+    - `session`: The current database session used to interact with the database.
+    - `user`: The user token containing user information, including organization and user IDs.
+- **Logic and Control Flow**:
+    - Prints the user information to the console for debugging or logging purposes.
+    - Creates a new [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance using the `organization_id` and `user_id` from the `user` token.
+    - Adds the new [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance to the database session.
+    - Commits the current transaction to save the new API key to the database.
+    - Refreshes the `api_key` instance to ensure it has the latest data from the database.
+    - Returns the newly created [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance.
+- **Output**: An [`ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>) instance representing the newly created API key.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.ApiKey`](<../../../../../driver_db/database/models_v2.py.md#ApiKey>)
+    - [`python-backend/driver_db/database/models_v2.ApiKey`](<../../../../../driver_db/database/models_v2.py.md#apikey>)
 
 
 ---
 ### get\_api\_keys<!-- {{#callable:python-backend/backend/app/api/routes/v2/api_key.get_api_keys}} -->
-The `get_api_keys` function retrieves a list of API keys associated with a specific user, applying any filters and sorting specified in the request.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L35>)
+
+Retrieves a list of API keys for a specific user with optional filtering and sorting.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to execute database queries.
-    - `user`: An instance of `UserToken` representing the authenticated user, used to filter API keys by user ID.
-    - `pagination`: An instance of `Pagination` containing pagination and sorting information for the query.
-    - `request`: An instance of `Request` containing query parameters for filtering the API keys.
-- **Control Flow**:
-    - A query is constructed to select `ApiKey` records where the `user_id` matches the `user.user_id`.
-    - The query parameters from the request are converted into a dictionary and used to apply filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
-    - The query is further modified to apply sorting based on the pagination information using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
-    - The modified query is executed using the session, and all resulting API keys are retrieved.
-    - The list of API keys is returned.
-- **Output**: A `ListWithCount[ApiKey]` containing the filtered and sorted list of API keys associated with the user.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing user information, specifically the user ID.
+    - `pagination`: The pagination object that contains sorting and pagination details.
+    - `request`: The HTTP request object containing query parameters for filtering.
+- **Logic and Control Flow**:
+    - Selects API keys from the database where the `user_id` matches the `user.user_id`.
+    - Converts query parameters from the request into a dictionary of filters.
+    - Applies these filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
+    - Applies sorting to the query using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>) based on the pagination object.
+    - Executes the query using the session and retrieves all matching API keys.
+- **Output**: A list of API keys that match the specified user and any applied filters and sorting.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
@@ -80,19 +84,20 @@ The `get_api_keys` function retrieves a list of API keys associated with a speci
 
 ---
 ### delete\_api\_key<!-- {{#callable:python-backend/backend/app/api/routes/v2/api_key.delete_api_key}} -->
-The `delete_api_key` function deletes an API key associated with a user if it exists, otherwise raises a 404 HTTP exception.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/api_key.py#L50>)
+
+Deletes an API key for a specific user if it exists.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `api_key_id`: A `UUID` representing the unique identifier of the API key to be deleted, extracted from the path.
-- **Control Flow**:
-    - The function executes a database query to select an `ApiKey` where the `id` matches `api_key_id` and the `user_id` matches the `user.user_id`.
-    - If no matching API key is found, an `HTTPException` with a 404 status code is raised, indicating the API key was not found.
-    - If a matching API key is found, it is deleted from the session.
-    - The session is committed to persist the deletion in the database.
-    - The function returns `None` after successful deletion.
-- **Output**: The function returns `None` after deleting the API key or raises an `HTTPException` if the API key is not found.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing user information, including the user ID.
+    - `api_key_id`: The UUID of the API key to delete, provided as a path parameter.
+- **Logic and Control Flow**:
+    - Selects the `ApiKey` from the database where the `id` matches `api_key_id` and `user_id` matches the user's ID.
+    - Checks if the `api_key` exists; if not, raises an `HTTPException` with a 404 status code indicating the API key is not found.
+    - Deletes the `api_key` from the session if it exists.
+    - Commits the transaction to the database to persist the deletion.
+- **Output**: Returns `None` after deleting the API key or raising an exception if the key is not found.
 
 
 

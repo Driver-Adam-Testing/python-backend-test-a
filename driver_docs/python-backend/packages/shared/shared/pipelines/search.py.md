@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `search.py` file in the `python-backend` codebase implements a search pipeline that supports keyword, semantic, and hybrid search algorithms using BM25 and semantic embeddings to retrieve and rank content from a database.
+Implements search functionality using keyword, semantic, and hybrid algorithms with SQLModel and BM25.
 
 # Purpose
-This Python code file is designed to implement a search functionality that supports keyword-based, semantic, and hybrid search algorithms. It is structured as a library module that can be imported and used in other parts of a software system. The code leverages SQLAlchemy and SQLModel for database interactions, specifically targeting a database schema that includes models like `ChunkAndEmbedding`, `Node`, and `PrimaryAsset`. The search functionality is built around the BM25 algorithm for keyword relevance and a semantic search approach using text embeddings. The code provides utility functions for tokenizing text and calculating BM25 scores, as well as functions to compute an overall score that combines semantic and keyword relevance.
+The code is a search module that provides functionality for performing different types of searches on a database of text content. It supports three main search algorithms: keyword-based, semantic (vector-based), and a hybrid approach that combines both methods. The module uses the BM25 algorithm for keyword searches and vector embeddings for semantic searches. It integrates with a database using SQLAlchemy and SQLModel to retrieve and filter content based on various criteria such as organization ID, node IDs, and content kinds.
 
-The file defines several public functions that serve as the main entry points for performing searches: [`search_content_without_session`](<#search_content_without_session>), [`search_content`](<#search_content>), [`semantic_search`](<#semantic_search>), [`keyword_search`](<#keyword_search>), and [`hybrid_search`](<#hybrid_search>). These functions manage database sessions and execute search queries based on the specified algorithm. The [`create_filtered_chunk_statement`](<#create_filtered_chunk_statement>) function constructs SQL queries to filter and retrieve relevant data from the database, supporting various filtering criteria such as organization ID, node IDs, and content kinds. The code is designed to be flexible and extensible, allowing for different search strategies to be applied based on user input, and it provides a structured way to return search results with associated metadata.
+The module defines several utility functions and public search functions. The utility functions include [`tokenize_for_bm25`](<#tokenize_for_bm25>) for tokenizing text for BM25 scoring, [`get_bm25_scores`](<#get_bm25_scores>) for calculating BM25 scores, and [`overall_score`](<#overall_score>) for combining semantic and BM25 scores into a single score. The public search functions, such as [`search_content_without_session`](<#search_content_without_session>), [`search_content`](<#search_content>), [`semantic_search`](<#semantic_search>), [`keyword_search`](<#keyword_search>), and [`hybrid_search`](<#hybrid_search>), manage database sessions and execute the appropriate search algorithm based on user input. The module also constructs SQL statements to filter and retrieve relevant content from the database, ensuring that search results are sorted and limited according to specified parameters.
 # Imports and Dependencies
 
 ---
@@ -30,6 +30,7 @@ The file defines several public functions that serve as the main entry points fo
 - `sqlmodel.and_`
 - `sqlmodel.asc`
 - `sqlmodel.select`
+- `sqlmodel.text`
 - `shared.embedding.text_embedder.batch_embed_text`
 - `shared.interfaces.search.SearchAlgorithm`
 - `shared.interfaces.search.SearchInput`
@@ -41,113 +42,122 @@ The file defines several public functions that serve as the main entry points fo
 
 ---
 ### SEMANTIC\_WEIGHT
-- **Type**: `float`
-- **Description**: `SEMANTIC_WEIGHT` is a global constant set to 1.0, representing the weight assigned to semantic scores in the overall scoring algorithm. It is used in conjunction with `BM25_WEIGHT` to balance the influence of semantic and BM25 scores when calculating the overall score for search results.
-- **Use**: This variable is used to determine the contribution of semantic scores in the overall scoring of search results.
+- **Type**: ``float``
+- **Description**: A constant that represents the weight assigned to semantic scores in the overall scoring calculation. It is used to balance the influence of semantic similarity in the search results.
+- **Use**: Used in the `overall_score` function to calculate the combined score from semantic and BM25 scores.
 
 
 ---
 ### BM25\_WEIGHT
-- **Type**: `float`
-- **Description**: `BM25_WEIGHT` is a global constant set to 1.0, representing the weight assigned to the BM25 score in the overall scoring function. It is used in conjunction with the semantic score to compute a combined relevance score for search results.
-- **Use**: This variable is used to weight the BM25 score when calculating the overall score for search results in the `overall_score` function.
+- **Type**: ``float``
+- **Description**: Represents the weight assigned to the BM25 score in the overall scoring calculation. It is used to balance the influence of BM25 scores relative to semantic scores in the `overall_score` function.
+- **Use**: Used in the `overall_score` function to compute a combined score from semantic and BM25 scores.
 
 
 ---
 ### MAX\_BM25\_SCORE
-- **Type**: `float`
-- **Description**: `MAX_BM25_SCORE` is a constant float value set to 6.0, representing the maximum score that can be achieved using the BM25 algorithm in this context. BM25 is a ranking function used in information retrieval to estimate the relevance of documents to a given search query.
-- **Use**: This variable is used to normalize BM25 scores in the `overall_score` function, ensuring that the BM25 component of the score is within a defined range.
+- **Type**: ``float``
+- **Description**: Represents the maximum BM25 score used in the search algorithm. BM25 is a ranking function used to estimate the relevance of documents to a given search query.
+- **Use**: Used to normalize BM25 scores in the `overall_score` function.
 
 
 ---
 ### SEMANTIC\_SCORE\_IGNORE\_THRESHOLD
-- **Type**: `float`
-- **Description**: `SEMANTIC_SCORE_IGNORE_THRESHOLD` is a constant float value set to 1.25. It is used as a threshold to determine whether a semantic score should be ignored in the context of search operations.
-- **Use**: This variable is used to filter out semantic scores that are below the threshold, ensuring only significant scores are considered in search results.
+- **Type**: ``float``
+- **Description**: Defines the threshold value for ignoring semantic scores in the search process. This threshold is used to determine when a semantic score is considered too low to be relevant.
+- **Use**: Used in search algorithms to filter out results with semantic scores below this threshold.
 
 
 ---
 ### CHARS\_PER\_TOKEN\_APPROXIMATION
-- **Type**: `float`
-- **Description**: `CHARS_PER_TOKEN_APPROXIMATION` is a constant float value set to 2.5. It represents an approximate ratio of characters per token, which is used to estimate the number of tokens in a given text based on its character length.
-- **Use**: This variable is used to calculate the number of tokens in a text by dividing the character count by this approximation value.
+- **Type**: ``float``
+- **Description**: Represents an approximation of the number of characters per token. This constant is used to estimate the number of tokens in a text based on its character count.
+- **Use**: Used in the `hybrid_search` function to calculate the token count from the character count of text chunks.
 
 
 # Functions
 
 ---
 ### tokenize\_for\_bm25<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.tokenize_for_bm25}} -->
-The function `tokenize_for_bm25` tokenizes a given text into a list of tokens suitable for BM25 scoring.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L30>)
+
+Tokenizes input text for BM25 scoring by extracting word-like tokens.
 - **Inputs**:
-    - `text`: The input text to be tokenized.
-- **Control Flow**:
-    - Convert the input text to lowercase to ensure case-insensitivity.
-    - Use a regular expression to find all word-like sequences in the text, including words with underscores and apostrophes.
-    - Return the list of tokens extracted from the text.
-- **Output**: A list of strings, each representing a token extracted from the input text.
+    - `text`: The input text to tokenize.
+- **Logic and Control Flow**:
+    - Converts the input text to lowercase to ensure case-insensitive tokenization.
+    - Uses a regular expression to find all word-like tokens in the text, including words with underscores and apostrophes.
+- **Output**: A list of tokens extracted from the input text.
 
 
 ---
 ### get\_bm25\_scores<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.get_bm25_scores}} -->
-The `get_bm25_scores` function calculates BM25 scores for a list of texts based on a given query.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L40>)
+
+Computes BM25 scores for a list of texts against a given query.
 - **Inputs**:
-    - `query`: The search query string to be used for scoring.
-    - `texts`: A list of documents (strings) to score against the query.
-- **Control Flow**:
-    - Tokenize the input query using the [`tokenize_for_bm25`](<#tokenize_for_bm25>) function.
-    - Tokenize each document in the `texts` list using the [`tokenize_for_bm25`](<#tokenize_for_bm25>) function.
-    - Initialize a BM25Okapi model with the tokenized documents.
-    - Compute and return the BM25 scores for the tokenized query using the BM25 model.
-- **Output**: A list of BM25 scores corresponding to each document in the `texts` list, indicating their relevance to the query.
+    - `query`: The search query string.
+    - `texts`: List of documents to score.
+- **Logic and Control Flow**:
+    - Tokenizes the input query using the [`tokenize_for_bm25`](<#tokenize_for_bm25>) function.
+    - Tokenizes each document in the `texts` list using the [`tokenize_for_bm25`](<#tokenize_for_bm25>) function.
+    - Initializes a `BM25Okapi` model with the tokenized documents.
+    - Calculates BM25 scores for the tokenized query using the `get_scores` method of the `BM25Okapi` model.
+- **Output**: A list of BM25 scores, in the same order as the input `texts`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/search.tokenize_for_bm25`](<#tokenize_for_bm25>)
 
 
 ---
 ### overall\_score<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.overall_score}} -->
-The `overall_score` function calculates a combined score from semantic and BM25 scores, normalizing and weighting them to produce a final score between 0 and 1.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L54>)
+
+Computes a combined score from semantic and BM25 scores, normalizing and weighting them to produce a final score in the range [0,1].
 - **Inputs**:
     - `semantic_score`: The semantic similarity score, which is distance-based and can be None.
     - `bm25_score`: The BM25 score, which indicates relevance and can be None.
-- **Control Flow**:
-    - Check if `semantic_score` is not None, normalize it to a range of [0,1], cube it to emphasize differences, and ensure it is not negative.
-    - Check if `bm25_score` is not None, apply a naive normalization to it, and ensure it is not negative.
-    - If `normalized_semantic` is None, return `normalized_bm25` if it is not None, otherwise return 0.0.
-    - If `normalized_bm25` is None, return `normalized_semantic`.
-    - If both normalized scores are available, compute the weighted average using `SEMANTIC_WEIGHT` and `BM25_WEIGHT` and return the result.
+- **Logic and Control Flow**:
+    - If `semantic_score` is not None, normalize it to the range [0,1] and cube it to emphasize differences, then ensure it is not negative.
+    - If `bm25_score` is not None, perform a naive normalization to the range [0,1] and ensure it is not negative.
+    - If both normalized scores are None, return 0.0.
+    - If only one of the normalized scores is available, return that score.
+    - If both normalized scores are available, compute a weighted average using `SEMANTIC_WEIGHT` and `BM25_WEIGHT` and return the result.
 - **Output**: A single float representing the combined score, in the range [0,1].
 
 
 ---
 ### create\_filtered\_chunk\_statement<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.create_filtered_chunk_statement}} -->
-The function creates a SQLAlchemy Select statement to filter ChunkAndEmbedding records based on organization, node IDs, content kinds, and optionally an embedded query for semantic scoring.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L91>)
+
+Creates a SQLAlchemy Select statement to filter ChunkAndEmbedding records based on organization, node IDs, content kinds, and an optional embedded query.
 - **Inputs**:
-    - `organization_id`: A string representing the ID of the organization to filter the records by.
-    - `node_ids`: An optional list of UUIDs representing node IDs to further filter the records.
-    - `content_kinds`: An optional list of ContentKind objects to filter the records by specific content types.
-    - `embedded_query`: An optional list representing the query vector for calculating L2 distance for semantic scoring.
-- **Control Flow**:
-    - An alias for the Node model is created using SQLAlchemy's aliased function.
-    - The function checks if an embedded_query is provided; if so, it includes a semantic score calculation using L2 distance in the select statement.
-    - A base SQLAlchemy select statement is created to select ChunkAndEmbedding records and optionally a semantic score.
-    - The statement is configured to load related content, node, and version data using selectinload for efficient querying.
-    - The statement joins several tables: DerivedContent, Node, Version, and PrimaryAsset, and filters by the provided organization_id.
-    - If content_kinds are provided, the statement is further filtered to include only those content kinds.
-    - If node_ids are provided, the statement joins with an aliased Node table to filter by node IDs and their sub-paths.
-- **Output**: The function returns a SQLAlchemy Select statement configured with the specified filters and joins.
+    - `organization_id`: The ID of the organization to search within.
+    - `node_ids`: An optional list of node UUIDs to further filter the search.
+    - `content_kinds`: An optional list of content kinds to filter the search.
+    - `embedded_query`: An optional list representing the query vector for calculating L2 distance.
+- **Logic and Control Flow**:
+    - Create an alias for the `Node` model using `aliased` function.
+    - Initialize a SQLAlchemy `select` statement with `ChunkAndEmbedding` and a semantic score label, which is calculated using L2 distance if `embedded_query` is provided, otherwise set to 0.
+    - Apply `distinct` to the statement and configure `selectinload` options for related content, node, and version models.
+    - Join the statement with `DerivedContent`, `Node`, `Version`, and `PrimaryAsset` models, filtering by `organization_id`.
+    - If `content_kinds` is provided, add a `where` clause to filter by `content_kind`.
+    - If `node_ids` is provided, join with `NodeAlias` and filter by node IDs using a `where` clause.
+    - Return the constructed SQLAlchemy `Select` statement.
+- **Output**: A SQLAlchemy `Select` statement for querying `ChunkAndEmbedding` records with specified filters.
 
 
 ---
 ### search\_content\_without\_session<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.search_content_without_session}} -->
-The function `search_content_without_session` manages its own database session to perform a search using the provided input configuration.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L149>)
+
+Manages its own session and calls the [`search_content`](<#search_content>) function with the provided input.
 - **Inputs**:
-    - `input`: The user-provided search input configuration, which is an instance of `SearchInput`.
-- **Control Flow**:
-    - The function begins by creating a new session using the [`get_session`](<../../../../driver_db/database/db.py.md#get_session>) context manager.
-    - Within the session context, it calls the [`search_content`](<#search_content>) function, passing the session and the input configuration.
-    - The result from [`search_content`](<#search_content>) is returned as the output of the function.
-- **Output**: The function returns the search results as a `SearchResults` object.
+    - `input`: The user-provided search input configuration of type `SearchInput`.
+- **Logic and Control Flow**:
+    - Opens a new session using the [`get_session`](<../../../../driver_db/database/db.py.md#get_session>) context manager.
+    - Calls the [`search_content`](<#search_content>) function with the opened session and the provided `input`.
+    - Returns the result from the [`search_content`](<#search_content>) function.
+- **Output**: Returns a `SearchResults` object containing the search results.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/pipelines/search.search_content`](<#search_content>)
@@ -155,17 +165,18 @@ The function `search_content_without_session` manages its own database session t
 
 ---
 ### search\_content<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.search_content}} -->
-The `search_content` function routes a search request to the appropriate search algorithm (KEYWORD, SEMANTIC, or HYBRID) based on the user's input configuration.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L160>)
+
+Routes the search request to the appropriate algorithm based on the specified search algorithm type.
 - **Inputs**:
-    - `session`: The active SQLModel session used to interact with the database.
-    - `input`: An instance of SearchInput containing the user's search configuration, including the algorithm to use.
-- **Control Flow**:
-    - Check the algorithm specified in the input argument.
-    - If the algorithm is KEYWORD, call the [`keyword_search`](<#keyword_search>) function with the session and input.
-    - If the algorithm is SEMANTIC, call the [`semantic_search`](<#semantic_search>) function with the session and input.
-    - If the algorithm is HYBRID, call the [`hybrid_search`](<#hybrid_search>) function with the session and input.
-    - If the algorithm is not recognized, raise a ValueError indicating an unsupported algorithm.
-- **Output**: Returns a SearchResults object containing the results of the search operation.
+    - `session`: The active `SQLModel` session used for database operations.
+    - `input`: The user-provided search input configuration, which includes the search algorithm type and other parameters.
+- **Logic and Control Flow**:
+    - Check if the `input.algorithm` is `SearchAlgorithm.KEYWORD` and call [`keyword_search`](<#keyword_search>) if true.
+    - Check if the `input.algorithm` is `SearchAlgorithm.SEMANTIC` and call [`semantic_search`](<#semantic_search>) if true.
+    - Check if the `input.algorithm` is `SearchAlgorithm.HYBRID` and call [`hybrid_search`](<#hybrid_search>) if true.
+    - Raise a `ValueError` if the `input.algorithm` is not one of the supported types.
+- **Output**: Returns a `SearchResults` object containing the results of the search operation.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/search.keyword_search`](<#keyword_search>)
     - [`python-backend/packages/shared/shared/pipelines/search.semantic_search`](<#semantic_search>)
@@ -174,81 +185,88 @@ The `search_content` function routes a search request to the appropriate search 
 
 ---
 ### semantic\_search<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.semantic_search}} -->
-The `semantic_search` function performs a vector-based semantic search using embedded query vectors to retrieve and rank search results from a database.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L178>)
+
+Executes a semantic search using vector-based methods to retrieve and rank search results based on semantic similarity.
 - **Inputs**:
-    - `session`: The active SQLModel session used to execute database queries.
-    - `input`: An instance of SearchInput containing user-provided search parameters such as query text, organization ID, node IDs, content kinds, and result limit.
-- **Control Flow**:
+    - `session`: The active `SQLModel` session used to execute database queries.
+    - `input`: An instance of `SearchInput` containing the user-provided search parameters, including the query, organization ID, node IDs, content kinds, and result limit.
+- **Logic and Control Flow**:
     - Initialize a logger for debugging purposes.
     - Embed the query text using the [`batch_embed_text`](<../embedding/text_embedder.py.md#batch_embed_text>) function to obtain a vector representation.
-    - Create a SQL statement using [`create_filtered_chunk_statement`](<#create_filtered_chunk_statement>) to filter database records based on the embedded query and other input parameters, ordering by semantic score.
+    - Create a filtered SQL statement using [`create_filtered_chunk_statement`](<#create_filtered_chunk_statement>), incorporating the embedded query and ordering by ascending semantic score.
     - If a limit is specified in the input, apply it to the SQL statement.
-    - Execute the SQL statement using the provided session to retrieve results.
-    - Log the raw results for debugging purposes.
-    - If no results are found, return an empty SearchResults object.
-    - Iterate over the retrieved results, converting each database record into a SearchResult object with calculated overall scores and metadata.
-    - Sort the SearchResult objects by their scores in descending order and apply the input limit to the results.
+    - Execute a SQL command to set the `hnsw.ef_search` parameter to 400 for the session.
+    - Execute the SQL statement to retrieve raw search results from the database.
+    - Log the raw search results for debugging purposes.
+    - If no results are found, return an empty [`SearchResults`](<../interfaces/search.py.md#searchresults>) object.
+    - Iterate over the retrieved results, converting each database result into a [`SearchResult`](<../interfaces/search.py.md#searchresult>) object with calculated overall scores and metadata.
+    - Sort the [`SearchResult`](<../interfaces/search.py.md#searchresult>) objects by score in descending order and apply the input limit to the results.
     - Label each result with a result number in the metadata.
-    - Return a SearchResults object containing the sorted and labeled search results.
-- **Output**: A SearchResults object containing a list of SearchResult objects, each representing a search result with content, score, metadata, and other relevant information.
+    - Return a [`SearchResults`](<../interfaces/search.py.md#searchresults>) object containing the processed and sorted search results.
+- **Output**: A [`SearchResults`](<../interfaces/search.py.md#searchresults>) object containing the ranked search results based on semantic similarity.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/embedding/text_embedder.batch_embed_text`](<../embedding/text_embedder.py.md#batch_embed_text>)
     - [`python-backend/packages/shared/shared/pipelines/search.create_filtered_chunk_statement`](<#create_filtered_chunk_statement>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../interfaces/search.py.md#SearchResults>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../interfaces/search.py.md#SearchResult>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../interfaces/search.py.md#searchresults>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../interfaces/search.py.md#searchresult>)
     - [`python-backend/packages/shared/shared/pipelines/search.overall_score`](<#overall_score>)
 
 
 ---
 ### keyword\_search<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.keyword_search}} -->
-The `keyword_search` function performs a keyword-based search using a TS vector, computes BM25 scores for the results, and returns the top search results sorted by score.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L242>)
+
+Executes a keyword-based search using a TS vector and BM25 scoring to retrieve and rank search results.
 - **Inputs**:
-    - `session`: The active SQLModel session used to execute database queries.
-    - `input`: A `SearchInput` object containing user-provided search parameters such as query, organization_id, node_ids, content_kinds, and limit.
-- **Control Flow**:
-    - Create a SQL statement to filter `ChunkAndEmbedding` records based on the organization_id, node_ids, and content_kinds, and match the query using a TS vector.
+    - `session`: The active `SQLModel` session used to execute database queries.
+    - `input`: An instance of `SearchInput` containing user-provided search parameters such as query, organization ID, node IDs, content kinds, and result limit.
+- **Logic and Control Flow**:
+    - Create a SQL statement to filter `ChunkAndEmbedding` records based on the organization ID, node IDs, and content kinds, and match the TS vector with the input query.
     - Execute the SQL statement using the provided session to retrieve database results.
-    - If no results are found, return an empty [`SearchResults`](<../interfaces/search.py.md#SearchResults>) object.
-    - Prepare texts from the database results for BM25 scoring by concatenating chunk text and node relative path.
+    - If no results are found, return an empty [`SearchResults`](<../interfaces/search.py.md#searchresults>) object.
+    - Prepare texts from the database results for BM25 scoring by concatenating chunk text and relative path.
     - Compute BM25 scores for the prepared texts against the input query.
-    - Convert the database results into [`SearchResult`](<../interfaces/search.py.md#SearchResult>) objects, calculating an overall score using the BM25 scores and adding metadata.
-    - Sort the [`SearchResult`](<../interfaces/search.py.md#SearchResult>) objects by their score in descending order.
+    - Convert database results into [`SearchResult`](<../interfaces/search.py.md#searchresult>) objects, calculating an overall score using BM25 scores and adding metadata.
+    - Sort the [`SearchResult`](<../interfaces/search.py.md#searchresult>) objects by score in descending order.
     - Limit the number of results to the specified input limit.
     - Label each result with a result number in the metadata.
-    - Return a [`SearchResults`](<../interfaces/search.py.md#SearchResults>) object containing the sorted and labeled search results.
-- **Output**: A [`SearchResults`](<../interfaces/search.py.md#SearchResults>) object containing a list of [`SearchResult`](<../interfaces/search.py.md#SearchResult>) objects, each with content, score, metadata, relative path, version display name, version id, and node id.
+- **Output**: A [`SearchResults`](<../interfaces/search.py.md#searchresults>) object containing a list of [`SearchResult`](<../interfaces/search.py.md#searchresult>) objects, each with content, score, metadata, relative path, version display name, version ID, and node ID.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/search.create_filtered_chunk_statement`](<#create_filtered_chunk_statement>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../interfaces/search.py.md#SearchResults>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../interfaces/search.py.md#searchresults>)
     - [`python-backend/packages/shared/shared/pipelines/search.get_bm25_scores`](<#get_bm25_scores>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../interfaces/search.py.md#SearchResult>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../interfaces/search.py.md#searchresult>)
     - [`python-backend/packages/shared/shared/pipelines/search.overall_score`](<#overall_score>)
 
 
 ---
 ### hybrid\_search<!-- {{#callable:python-backend/packages/shared/shared/pipelines/search.hybrid_search}} -->
-The `hybrid_search` function performs a combined semantic and keyword search, deduplicates results, computes BM25 scores, and returns sorted search results.
+[View Source →](<../../../../../../packages/shared/shared/pipelines/search.py#L302>)
+
+Combines semantic and keyword search to return ranked search results.
 - **Inputs**:
-    - `session`: The active SQLModel session used to execute database queries.
-    - `input`: A `SearchInput` object containing user-provided search parameters such as query, organization_id, node_ids, content_kinds, limit, and token_limit.
-- **Control Flow**:
-    - Embed the search query using [`batch_embed_text`](<../embedding/text_embedder.py.md#batch_embed_text>) to prepare for semantic search.
-    - Create a SQL statement for semantic search using [`create_filtered_chunk_statement`](<#create_filtered_chunk_statement>) with the embedded query and execute it to get results up to twice the specified limit.
-    - Create a SQL statement for lexical search using [`create_filtered_chunk_statement`](<#create_filtered_chunk_statement>) without the embedded query and execute it to get results up to twice the specified limit.
-    - Combine results from both searches into a dictionary keyed by chunk ID, preserving semantic scores where available, and deduplicate entries.
-    - If no combined results exist, return an empty [`SearchResults`](<../interfaces/search.py.md#SearchResults>) object.
-    - Prepare texts from combined results for BM25 scoring and compute BM25 scores using [`get_bm25_scores`](<#get_bm25_scores>).
-    - Iterate over combined results, compute an overall score using [`overall_score`](<#overall_score>) for each result, and accumulate tokens while respecting the token limit if specified.
+    - `session`: The active `SQLModel` session used to execute database queries.
+    - `input`: The `SearchInput` object containing user-provided search parameters.
+- **Logic and Control Flow**:
+    - Embed the query text for semantic search and create a filtered SQL statement with semantic scores, limiting results to twice the specified limit.
+    - Execute the semantic search statement and retrieve results.
+    - Create a filtered SQL statement for lexical search using TS vector matching, limiting results to twice the specified limit.
+    - Execute the lexical search statement and retrieve results.
+    - Combine semantic and lexical search results, deduplicating by chunk ID and preserving semantic scores where available.
+    - If no combined results exist, return an empty [`SearchResults`](<../interfaces/search.py.md#searchresults>) object.
+    - Prepare texts from combined results for BM25 scoring and compute BM25 scores.
+    - Iterate over combined results to compute overall scores using semantic and BM25 scores, respecting any token limit specified in the input.
     - Sort the search results by score in descending order and limit the results to the specified limit.
-    - Label each result with a result number in the metadata.
-- **Output**: A [`SearchResults`](<../interfaces/search.py.md#SearchResults>) object containing the final sorted and labeled search results.
+    - Label each result with a result number and return the final [`SearchResults`](<../interfaces/search.py.md#searchresults>) object.
+- **Output**: A [`SearchResults`](<../interfaces/search.py.md#searchresults>) object containing the ranked search results.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/embedding/text_embedder.batch_embed_text`](<../embedding/text_embedder.py.md#batch_embed_text>)
     - [`python-backend/packages/shared/shared/pipelines/search.create_filtered_chunk_statement`](<#create_filtered_chunk_statement>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../interfaces/search.py.md#SearchResults>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResults`](<../interfaces/search.py.md#searchresults>)
     - [`python-backend/packages/shared/shared/pipelines/search.get_bm25_scores`](<#get_bm25_scores>)
     - [`python-backend/packages/shared/shared/pipelines/search.overall_score`](<#overall_score>)
-    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../interfaces/search.py.md#SearchResult>)
+    - [`python-backend/packages/shared/shared/interfaces/search.SearchResult`](<../interfaces/search.py.md#searchresult>)
 
 
 

@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `claude` folder in the `python-backend` codebase contains a `helpers.py` file that provides functions for handling tool prompts, parsing XML responses, and formatting tool results.
+Functions for formatting tool prompts and results, and parsing tool calls from XML responses.
 
 
 ## Files
-- **[helpers.py](helpers.py.md)**: The `helpers.py` file in the `python-backend` codebase provides functions for formatting tool prompts, parsing tool calls from XML responses, and formatting tool results, utilizing XML structures to manage tool descriptions and interactions.
+- **[helpers.py](helpers.py.md)**: Functions for formatting tool prompts and results, and parsing tool calls from XML responses.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

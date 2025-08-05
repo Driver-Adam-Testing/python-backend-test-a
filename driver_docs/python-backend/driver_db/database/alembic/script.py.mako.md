@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `script.py.mako` file is a template for Alembic migration scripts, allowing for the specification of revision identifiers, dependencies, and upgrade/downgrade operations in the `python-backend` codebase.
+Alembic migration script template for database schema upgrades and downgrades.
 
 # Purpose
-This source code file is a database migration script used in conjunction with Alembic, a lightweight database migration tool for usage with SQLAlchemy. The script is designed to manage changes to the database schema over time, allowing for both upgrades and downgrades. The file includes metadata such as the revision ID, the revision it builds upon, and the creation date, which are essential for tracking the sequence of migrations and ensuring that they are applied in the correct order.
+The code is a database migration script used with Alembic, a database migration tool for SQLAlchemy. It defines the structure for upgrading and downgrading a database schema. The script includes metadata such as `revision`, `down_revision`, `branch_labels`, and `depends_on`, which are used by Alembic to track the migration's position in the sequence of migrations.
 
-The script imports necessary modules from Alembic and SQLAlchemy, indicating its reliance on these libraries to perform database operations. The `upgrade` and `downgrade` functions are defined to apply and revert changes to the database schema, respectively. These functions are placeholders in this template, suggesting that specific SQL commands or SQLAlchemy operations would be inserted to modify the database structure as required by the migration.
+The `upgrade` function is intended to contain the operations required to apply the migration, such as creating or altering database tables and columns. The `downgrade` function is intended to reverse these operations, allowing the database schema to revert to its previous state. If no specific operations are provided, the functions default to `pass`, indicating no changes.
 
-Overall, this file serves as a template for creating new migration scripts, providing a structured way to define and manage database schema changes. It is part of a broader collection of migration files that collectively ensure the database schema can evolve in a controlled and reversible manner.
+The script imports necessary modules from Alembic and SQLAlchemy, and it may include additional imports if required by the migration operations. The use of placeholders like `${up_revision}` and `${down_revision}` suggests that this script is a template, which will be populated with specific values when a migration is generated.
 # Imports and Dependencies
 
 ---
@@ -23,53 +23,54 @@ Overall, this file serves as a template for creating new migration scripts, prov
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that serves as a unique identifier for a specific database schema migration in Alembic, a database migration tool for SQLAlchemy. It is typically generated automatically and used to track the version of the database schema.
-- **Use**: This variable is used by Alembic to identify and apply the correct migration scripts in the correct order.
+- **Type**: ``str``
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
+- **Use**: Used as a unique identifier for the current database schema revision in Alembic migrations.
 
 
 ---
 ### down\_revision
-- **Type**: `string or None`
-- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the revision identifier of the previous migration that the current migration depends on. It is typically a string representing the unique identifier of the previous migration, or it can be `None` if there is no previous migration.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that migrations are applied in the correct sequence.
+- **Type**: ``str` or `None``
+- **Description**: The `down_revision` variable is a string or `None` that indicates the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by specifying the immediate predecessor of the current revision.
+- **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
 ---
 ### branch\_labels
-- **Type**: `Optional[str]`
-- **Description**: The `branch_labels` variable is a global variable used in Alembic migration scripts to specify labels for a particular branch of the database schema. It is typically a string or None, indicating the label or absence of a label for the migration branch.
-- **Use**: This variable is used to identify and manage different branches of database schema migrations in Alembic.
+- **Type**: ``str` or `None``
+- **Description**: The `branch_labels` variable is a global variable that holds a string or `None`. It is used as a revision identifier in Alembic migrations.
+- **Use**: Stores the branch label for the current database migration revision.
 
 
 ---
 ### depends\_on
-- **Type**: `Optional[str]`
-- **Description**: The `depends_on` variable is a global variable used in Alembic migration scripts to specify dependencies between revisions. It is typically a string or a list of strings representing the revision identifiers that the current revision depends on.
-- **Use**: This variable is used to define the order of execution for database migrations by indicating which revisions must be applied before the current one.
+- **Type**: ``str` or `None``
+- **Description**: Specifies the revision ID that this migration script depends on. It is used to establish dependencies between different migration scripts in Alembic.
+- **Use**: Used to define the dependency of the current migration script on another migration script.
 
 
 # Functions
 
 ---
 ### upgrade
-The `upgrade` function applies database schema changes as part of a migration using Alembic.
+Executes database schema upgrades using Alembic operations.
 - **Inputs**: None
-- **Control Flow**:
-    - The function checks if there are any upgrade operations specified in the `upgrades` variable.
-    - If `upgrades` is not empty, it executes the specified operations to modify the database schema.
-    - If `upgrades` is empty, the function does nothing and simply passes.
-- **Output**: The function does not return any value; it performs operations to modify the database schema.
+- **Logic and Control Flow**:
+    - Checks if there are any upgrade operations specified in the `upgrades` variable.
+    - If `upgrades` is not empty, executes the specified upgrade operations.
+    - If `upgrades` is empty, the function does nothing and exits.
+- **Output**: None
 
 
 ---
 ### downgrade
-The `downgrade` function is a placeholder for database schema changes that reverse the effects of the `upgrade` function in an Alembic migration script.
+Reverts the database schema to a previous state as defined by the Alembic migration script.
 - **Inputs**: None
-- **Control Flow**:
-    - The function checks if there are any downgrade operations specified in the `${downgrades}` variable.
-    - If downgrade operations are specified, they are executed; otherwise, the function does nothing and simply passes.
-- **Output**: The function does not return any value; it performs operations to revert database schema changes.
+- **Logic and Control Flow**:
+    - Checks if there are any downgrade operations specified in the `${downgrades}` variable.
+    - If downgrade operations exist, executes them to revert the database schema changes.
+    - If no downgrade operations are specified, the function does nothing (`pass`).
+- **Output**: None
 
 
 

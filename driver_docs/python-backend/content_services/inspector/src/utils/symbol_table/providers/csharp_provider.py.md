@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `csharp_provider.py` file defines a `CSharpLanguageProvider` class that specifies the C# language and provides methods to obtain a C# parser and resolver.
+CSharp language provider with methods to get a parser and resolver.
 
 # Purpose
-This code defines a class `CSharpLanguageProvider` that extends the `LanguageProvider` class, providing a narrow and specific functionality related to the C# programming language. It serves as a part of a larger system, likely involved in parsing and resolving symbols for C# code. The class includes two class methods, [`get_parser`](<#CSharpLanguageProviderget_parser>) and [`get_resolver`](<#CSharpLanguageProviderget_resolver>), which return instances of `CSharpParser` and `CSharpResolver`, respectively. This setup suggests that the file is part of a modular architecture, where different language providers can be implemented to support various programming languages by offering language-specific parsing and resolution capabilities.
+The `CSharpLanguageProvider` class extends the `LanguageProvider` class to support the C# programming language. It defines the `language` attribute as "csharp" and provides two class methods: [`get_parser`](<#csharplanguageproviderget_parser>) and [`get_resolver`](<#csharplanguageproviderget_resolver>). The [`get_parser`](<#csharplanguageproviderget_parser>) method returns an instance of `CSharpParser`, while the [`get_resolver`](<#csharplanguageproviderget_resolver>) method returns an instance of `CSharpResolver`. This code is part of a system that manages language-specific parsing and resolution, specifically for C#.
 # Imports and Dependencies
 
 ---
@@ -19,43 +19,51 @@ This code defines a class `CSharpLanguageProvider` that extends the `LanguagePro
 
 ---
 ### CSharpLanguageProvider<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider}} -->
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/csharp_provider.py#L6>)
+
 - **Members**:
     - `language`: Specifies the programming language as 'csharp'.
-- **Description**: The CSharpLanguageProvider class is a specialized implementation of the LanguageProvider for the C# programming language. It defines the language attribute to specify 'csharp' and provides class methods to obtain instances of CSharpParser and CSharpResolver, which are responsible for parsing and resolving C# code respectively.
+- **Description**: Provides language-specific functionality for C# by implementing methods to return a parser and a resolver for C# code.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_parser`](<#CSharpLanguageProviderget_parser>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_resolver`](<#CSharpLanguageProviderget_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_parser`](<#csharplanguageproviderget_parser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_resolver`](<#csharplanguageproviderget_resolver>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<../base.py.md#LanguageProvider>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<../base.py.md#languageprovider>)
 
 **Methods**
 
 ---
 #### CSharpLanguageProvider\.get\_parser<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_parser}} -->
-The `get_parser` method returns an instance of the [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#CSharpParser>) class.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/csharp_provider.py#L9>)
+
+Returns an instance of [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#csharpparser>).
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `CSharpLanguageProvider` itself, passed automatically as this is a class method.
-- **Control Flow**:
-    - The method directly returns a new instance of the [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#CSharpParser>) class without any additional logic or conditions.
-- **Output**: An instance of the [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#CSharpParser>) class.
+    - `cls`: Represents the class `CSharpLanguageProvider` itself, not an instance of the class.
+- **Logic and Control Flow**:
+    - Calls the constructor of [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#csharpparser>).
+    - Returns a new instance of [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#csharpparser>).
+- **Output**: An instance of [`CSharpParser`](<../symbol_parsers/csharp_parser.py.md#csharpparser>).
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/csharp_parser.CSharpParser`](<../symbol_parsers/csharp_parser.py.md#CSharpParser>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider`](<#CSharpLanguageProvider>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/csharp_parser.CSharpParser`](<../symbol_parsers/csharp_parser.py.md#csharpparser>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider`](<#csharplanguageprovider>)  (Base Class)
 
 
 ---
 #### CSharpLanguageProvider\.get\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider.get_resolver}} -->
-The `get_resolver` method returns an instance of [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#CSharpResolver>).
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/csharp_provider.py#L13>)
+
+Returns an instance of [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#csharpresolver>).
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `CSharpLanguageProvider` itself, passed automatically as this is a class method.
-- **Control Flow**:
-    - The method directly returns a new instance of [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#CSharpResolver>) without any additional logic or conditions.
-- **Output**: An instance of [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#CSharpResolver>).
+    - `cls`: Represents the class `CSharpLanguageProvider` itself, not an instance of the class.
+- **Logic and Control Flow**:
+    - Calls the constructor of [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#csharpresolver>) to create a new instance.
+    - Returns the newly created [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#csharpresolver>) instance.
+- **Output**: An instance of [`CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#csharpresolver>).
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#CSharpResolver>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider`](<#CSharpLanguageProvider>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<../import_resolvers/csharp_resolver.py.md#csharpresolver>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/csharp_provider.CSharpLanguageProvider`](<#csharplanguageprovider>)  (Base Class)
 
 
 

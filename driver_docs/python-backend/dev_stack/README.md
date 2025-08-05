@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Infrastructure definitions, deployment scripts, Python source code, and configuration files for managing and deploying a development environment using AWS CDK, Poetry, and other tools.
+AWS Lambda constructs, deployment scripts, authentication tools, Ngrok management, and configuration files.
 
 ## Folders
-- **[cdk](cdk/README.md)**: AWS CDK constructs and infrastructure definitions for deploying Lambda functions and other resources.
-- **[scripts](scripts/README.md)**: The `scripts` folder in the `python-backend` codebase contains a bash script, `modal_deploy.sh`, which is used for deploying content services to a specified environment using Poetry and the `modal` command.
-- **[src](src/README.md)**: Python scripts for authentication mechanisms, developer environments, application configuration, and resource management.
-- **[static](static/README.md)**: The `static` folder in the `python-backend` codebase contains the `index.html` file, which provides a web interface for managing Ngrok tunnels with features like starting, stopping, and checking tunnel status, as well as displaying live logs via WebSocket.
+- **[cdk](cdk/README.md)**: AWS Lambda constructs for asset onboarding and metrics processing, and a development stack for infrastructure deployment.
+- **[scripts](scripts/README.md)**: Bash script for deploying services to a specified environment using Poetry and Modal.
+- **[src](src/README.md)**: Authentication tools with FastAPI, CLI interfaces, Auth0 management, developer setup, and ngrok management.
+- **[static](static/README.md)**: HTML page for managing Ngrok tunnels with controls and WebSocket connectivity.
 
 ## Files
-- **[.env.example](.env.example.md)**: The `.env.example` file in the `python-backend` codebase provides a template for environment variables related to AWS, NGROK, Auth0, PostgreSQL, OpenAI, and Modal configurations.
-- **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies files and directories to be ignored by Git, including swap files, package-lock.json, Python cache directories, virtual environments, CDK directories, and a secrets script.
-- **[cdk.json](cdk/README.md.json)**: The `cdk.json` file in the `python-backend` codebase specifies the configuration for a CDK application, including the command to run the app, file watch settings, and various AWS CDK context flags for resource management and policy settings.
-- **[cdk_dev_stack_app.py](cdk/README.md_dev_stack_app.py)**: The `cdk_dev_stack_app.py` file sets up and deploys a temporary development stack using AWS CDK, requiring specific environment variables and configuration from a JSON file.
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[.env.example](.env.example.md)**: Example environment configuration file for AWS, NGROK, Auth0, PostgreSQL, and OpenAI API keys.
+- **[.gitignore](.gitignore.md)**: Specifies files and directories for Git to ignore in the `python-backend` development stack.
+- **[cdk.json](cdk.json.md)**: Configuration for AWS CDK application with context settings and file watch exclusions.
+- **[cdk_dev_stack_app.py](cdk_dev_stack_app.py.md)**: Deploys a CDK stack using environment variables and configuration from a JSON file.
+- **[poetry.lock](poetry.lock.md)**: Specifies exact versions of dependencies and sub-dependencies for consistent Python project environments.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system details.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).
 

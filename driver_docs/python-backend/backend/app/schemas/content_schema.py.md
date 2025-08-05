@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `content_schema.py` file defines various Pydantic models for handling content-related operations, including listing, tagging, creating, and exporting content within the `python-backend` codebase.
+Defines Pydantic models for content management operations, including listing, tagging, and exporting content.
 
 # Purpose
-This Python file defines a set of data models and request/response structures using the Pydantic library, which is commonly used for data validation and settings management in Python applications. The primary purpose of this file is to facilitate the handling of content and tag management operations within a system, likely a content management system (CMS) or a similar application. The file includes models for listing content, managing content types, associating tags with content, and handling batch operations related to tags. These models are designed to be used as part of a broader API, providing structured data formats for requests and responses.
+The code defines a set of data models and request/response structures for managing content and tags in a database system. It uses the `pydantic` library to create data validation and serialization models, and `sqlmodel` for database interaction. The primary focus is on handling content-related operations, such as listing content, associating tags, creating templates, and exporting content. The models include `ListContentInput`, `ListContentResult`, and `ListContentResults`, which facilitate querying and organizing content data. Additionally, the code provides structures for managing tag associations, such as `TagAssociationRequest` and `BatchTagAssociationRequest`, and their corresponding responses.
 
-The code is organized around several key components, including `ListContentInput`, `ListContentResult`, and `TagAssociationRequest`, among others. These components define the structure of data that can be sent to and received from the system, ensuring consistency and type safety. The use of Pydantic's `BaseModel` allows for automatic data validation and serialization, which is crucial for maintaining data integrity across API boundaries. Additionally, the file includes generic base classes like `ContentResultBase` and `ContentRequestBase`, which provide a flexible foundation for creating specific request and response models. Overall, this file serves as a foundational part of a larger system, providing essential data structures for content and tag management operations.
+The code also includes several classes for handling specific content operations, such as `CreateContentResponse`, `DownloadContentResponse`, and `ExportSingleRequest`. These classes define the expected input and output formats for various API endpoints or internal functions. The use of generics in `ContentResultBase` and `ContentRequestBase` allows for flexible handling of different data types. The code is structured to support a modular approach to content management, with clear definitions for each operation's input and output, making it suitable for integration into a larger application or service that requires content and tag management capabilities.
 # Imports and Dependencies
 
 ---
@@ -29,244 +29,287 @@ The code is organized around several key components, including `ListContentInput
 
 ---
 ### DataT
-- **Type**: `TypeVar`
-- **Description**: `DataT` is a type variable that is bound to the `SQLModel` class. This means that `DataT` can be used as a generic type placeholder for any subclass of `SQLModel`. It is used to create generic classes or functions that can operate on any type that is a subclass of `SQLModel`, ensuring type safety and flexibility.
-- **Use**: `DataT` is used to define generic classes like `ContentResultBase` and `ContentRequestBase`, allowing them to handle any specific type derived from `SQLModel`.
+- **Type**: ``TypeVar``
+- **Description**: Defines a type variable named `DataT` that is bound to the `SQLModel` class. This means `DataT` can be used as a generic type placeholder for any subclass of `SQLModel`.
+- **Use**: Used to create generic classes or functions that operate on instances of `SQLModel` or its subclasses.
 
 
 # Classes
 
 ---
 ### ListContentInput<!-- {{#class:python-backend/backend/app/schemas/content_schema.ListContentInput}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L17>)
+
 - **Members**:
-    - `latest_version_only`: Indicates whether only the latest version of content should be retrieved.
-    - `text`: Optional text to filter the content.
-    - `limit`: Maximum number of content items to retrieve, default is 20.
-    - `offset`: Number of content items to skip before starting to collect the result set, default is 0.
-    - `sort_by`: Field by which to sort the content.
-    - `sort_direction`: Direction of sorting, default is descending ('DESC').
-    - `status`: Status filter for the content.
-    - `content_type_name`: List of content type names to filter the content.
-    - `order`: Order of the content.
-    - `tags`: List of tags to filter the content.
-    - `tag_ids`: List of tag IDs to filter the content.
-    - `version_id`: List of version IDs to filter the content.
-- **Description**: The ListContentInput class is a Pydantic model used to define the input parameters for listing content. It includes various filters and options such as limiting the number of results, specifying an offset, sorting preferences, and filtering by status, tags, or content type. The class ensures that only the latest version of content is retrieved when specified, and provides flexibility in querying content data.
+    - `latest_version_only`: Indicates if only the latest version of content is needed.
+    - `text`: Optional text to filter content.
+    - `limit`: Maximum number of content items to return.
+    - `offset`: Number of content items to skip before starting to collect the result set.
+    - `sort_by`: Field name to sort the content by.
+    - `sort_direction`: Direction to sort the content, either ascending or descending.
+    - `status`: Status of the content to filter by.
+    - `content_type_name`: List of content type names to filter by.
+    - `order`: Order of the content in the result set.
+    - `tags`: List of tags to filter content by.
+    - `tag_ids`: List of tag IDs to filter content by.
+    - `version_id`: List of version IDs to filter content by.
+- **Description**: Defines input parameters for listing content, including filters for version, text, sorting, and tags.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ListContentTypesInput<!-- {{#class:python-backend/backend/app/schemas/content_schema.ListContentTypesInput}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L32>)
+
 - **Members**:
-    - `limit`: Specifies the maximum number of content types to return, defaulting to 20.
-    - `offset`: Indicates the starting point for the list of content types, defaulting to 0.
-    - `sort_by`: Determines the field by which the content types should be sorted.
-    - `sort_direction`: Specifies the direction of sorting, defaulting to 'DESC' for descending order.
-- **Description**: The ListContentTypesInput class is a Pydantic model that defines the input parameters for listing content types, including pagination and sorting options. It allows specifying a limit on the number of content types to retrieve, an offset for pagination, and sorting preferences by field and direction.
+    - `limit`: Defines the maximum number of content types to list, defaulting to 20.
+    - `offset`: Specifies the starting point for listing content types, defaulting to 0.
+    - `sort_by`: Indicates the attribute by which to sort the content types, defaulting to None.
+    - `sort_direction`: Determines the direction of sorting, defaulting to 'DESC' for descending order.
+- **Description**: Defines input parameters for listing content types, including pagination and sorting options.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ListContentResult<!-- {{#class:python-backend/backend/app/schemas/content_schema.ListContentResult}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L39>)
+
 - **Members**:
-    - `id`: A unique identifier for the content.
-    - `organization_id`: The identifier for the organization associated with the content.
-    - `content_type_name`: The name of the content type.
-    - `content_name`: The name of the content.
-    - `codebase_name`: The name of the codebase associated with the content.
-    - `relative_path`: The relative path to the content.
-    - `content`: The actual content as a string.
-    - `misc_metadata`: A dictionary containing miscellaneous metadata about the content.
-    - `status`: The version status of the content.
-    - `tags`: A list of tags associated with the content.
-    - `source_links`: A list of document sources linked to the content.
-    - `created_at`: The datetime when the content was created.
-    - `updated_at`: The datetime when the content was last updated.
-    - `source_content`: The derived content source, if any.
-    - `order`: The order of the content.
-    - `version_id`: The identifier for the version of the content.
-    - `version`: The version string of the content.
-- **Description**: The ListContentResult class is a data model that represents the result of a content listing operation, encapsulating various attributes such as identifiers, names, paths, metadata, status, tags, and timestamps related to a piece of content. It is designed to provide a comprehensive view of content details, including its organizational context, versioning information, and associated resources.
+    - `id`: Unique identifier for the content.
+    - `organization_id`: Identifier for the organization associated with the content.
+    - `content_type_name`: Name of the content type.
+    - `content_name`: Name of the content.
+    - `codebase_name`: Name of the codebase associated with the content.
+    - `relative_path`: Relative path to the content.
+    - `content`: Actual content data.
+    - `misc_metadata`: Additional metadata for the content.
+    - `status`: Version status of the content.
+    - `tags`: List of tags associated with the content.
+    - `source_links`: List of document sources linked to the content.
+    - `created_at`: Timestamp when the content was created.
+    - `updated_at`: Timestamp when the content was last updated.
+    - `source_content`: Derived content source.
+    - `order`: Order of the content.
+    - `version_id`: Identifier for the version of the content.
+    - `version`: Version string of the content.
+- **Description**: Represents the result of listing content, including metadata, status, and associated tags and links.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ListContentResults<!-- {{#class:python-backend/backend/app/schemas/content_schema.ListContentResults}} -->
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L61>)
+
 - **Members**:
-    - `results`: A list of ListContentResult objects representing the content results.
-    - `offset`: An integer representing the starting point of the results in the list.
-    - `limit`: An integer indicating the maximum number of results to return.
-    - `count`: An integer representing the total number of results available.
-- **Description**: The ListContentResults class is a data model that encapsulates a paginated list of content results, including metadata such as the offset, limit, and total count of results. It is used to manage and return a structured response for content queries, leveraging the Pydantic BaseModel for data validation and serialization.
+    - `results`: A list of `ListContentResult` objects.
+    - `offset`: An integer that indicates the starting point of the results.
+    - `limit`: An integer that specifies the maximum number of results to return.
+    - `count`: An integer that represents the total number of available results.
+- **Description**: Represents a paginated collection of content results, including metadata for pagination such as offset, limit, and total count.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### TagAssociationRequest<!-- {{#class:python-backend/backend/app/schemas/content_schema.TagAssociationRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L68>)
+
 - **Members**:
-    - `tag_id`: A UUID representing the unique identifier of the tag.
-    - `include`: A boolean indicating whether the tag should be included or not.
-- **Description**: The TagAssociationRequest class is a data model used to represent a request to associate or disassociate a tag with a particular entity, identified by a UUID. It includes a boolean flag to specify whether the tag should be included in the association.
+    - `tag_id`: Stores the unique identifier for a tag.
+    - `include`: Indicates whether to include the tag in the association.
+- **Description**: Represents a request to associate a tag with an entity, specifying the tag's unique identifier and whether to include it in the association.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### TagAssociationResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.TagAssociationResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L73>)
+
 - **Members**:
-    - `tag_id`: The unique identifier for the tag associated with the content.
-    - `content_id`: The unique identifier for the content associated with the tag.
-    - `message`: A message providing additional information about the tag association.
-- **Description**: The `TagAssociationResponse` class is a data model that represents the response structure for associating a tag with a piece of content. It includes identifiers for both the tag and the content, as well as a message field to convey additional information about the association process. This class is a subclass of `BaseModel`, indicating it is used for data validation and serialization in the context of a Pydantic model.
+    - `tag_id`: Stores the unique identifier for the tag.
+    - `content_id`: Stores the unique identifier for the content.
+    - `message`: Contains a message related to the tag association.
+- **Description**: Represents the response for a tag association operation, including identifiers for the tag and content, and a message.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### BatchTagAssociationRequest<!-- {{#class:python-backend/backend/app/schemas/content_schema.BatchTagAssociationRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L79>)
+
 - **Members**:
-    - `tags`: A list of TagAssociationRequest objects representing the tags to be associated.
-- **Description**: The BatchTagAssociationRequest class is a data model used to encapsulate a batch of tag association requests, where each request specifies a tag and whether it should be included or not. It extends the BaseModel from Pydantic, ensuring data validation and serialization capabilities for handling multiple tag associations in a single request.
+    - `tags`: A list of `TagAssociationRequest` objects.
+- **Description**: Facilitates the association of multiple tags with content by encapsulating a list of `TagAssociationRequest` objects.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### BatchTagAssociationResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.BatchTagAssociationResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L83>)
+
 - **Members**:
-    - `results`: A list of TagAssociationResponse objects representing the results of batch tag associations.
-- **Description**: The BatchTagAssociationResponse class is a Pydantic model that encapsulates the response for a batch operation of tag associations. It contains a list of TagAssociationResponse objects, each detailing the outcome of associating a tag with content. This class is used to convey the results of batch processing operations involving tag associations, providing a structured way to handle multiple tag association responses in a single response object.
+    - `results`: A list of `TagAssociationResponse` objects.
+- **Description**: Represents a response for a batch operation that associates tags with content, containing a list of results for each tag association.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ContentResultBase<!-- {{#class:python-backend/backend/app/schemas/content_schema.ContentResultBase}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L87>)
+
 - **Members**:
-    - `results`: A list of data items of type DataT or None.
-- **Description**: The ContentResultBase class is a generic base model that extends Pydantic's BaseModel and is designed to hold a list of results, where each result is of a specified type DataT or None. It serves as a foundational structure for other classes that require a standardized way to store and manage a collection of data items, leveraging Python's type hinting and Pydantic's data validation capabilities.
+    - `results`: A list of data items of type `DataT` or `None`.
+- **Description**: Serves as a base class for content result models, allowing for generic handling of lists of data items.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ContentRequestBase<!-- {{#class:python-backend/backend/app/schemas/content_schema.ContentRequestBase}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L91>)
+
 - **Members**:
-    - `result`: Holds an optional result of type DataT, which is a generic type bound to SQLModel.
-- **Description**: The ContentRequestBase class is a generic base model that extends Pydantic's BaseModel and is designed to handle requests involving content data. It uses a generic type parameter, DataT, which is constrained to be a subclass of SQLModel, allowing it to be flexible with different types of content data. The class contains a single member, 'result', which can hold an instance of DataT or be None, providing a structure for handling optional content results in a standardized way.
+    - `result`: Holds an optional result of type `DataT`.
+- **Description**: Defines a base class for content requests, parameterized by a generic type `DataT`, which is bound to `SQLModel`. It includes a single member `result` to store the result of a content request, which can be of type `DataT` or `None`.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CreateContentResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.CreateContentResponse}} -->
-- **Description**: The `CreateContentResponse` class is a specialized subclass of `ContentResultBase` that is parameterized with `DerivedContent`. It serves as a response model for creating content, inheriting the structure and behavior from `ContentResultBase`, but does not introduce any additional properties or methods of its own.
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L95>)
+
+- **Description**: Inherits from `ContentResultBase` with a type parameter of `DerivedContent`, indicating it is a specialized response class for creating content operations.
 
 
 ---
 ### ContentSourceResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.ContentSourceResponse}} -->
-- **Description**: The `ContentSourceResponse` class is a specialized subclass of `ContentResultBase` that is parameterized with `ListContentResult`. It is designed to encapsulate a response containing a list of content results, leveraging the generic capabilities of `ContentResultBase` to handle data of type `ListContentResult`. This class does not introduce any additional properties or methods beyond those inherited from its base class.
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L99>)
+
+- **Description**: Inherits from `ContentResultBase` with a generic type of `ListContentResult`, serving as a response structure for content source operations.
 
 
 ---
 ### CreateTemplateRequest<!-- {{#class:python-backend/backend/app/schemas/content_schema.CreateTemplateRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L103>)
+
 - **Members**:
-    - `content_id`: A UUID representing the unique identifier for the content.
-- **Description**: The CreateTemplateRequest class is a simple data model that inherits from BaseModel and is used to encapsulate the request data for creating a template, specifically containing a single UUID field named content_id to uniquely identify the content involved in the request.
+    - `content_id`: Stores the unique identifier for the content as a UUID.
+- **Description**: Represents a request to create a template, containing a unique identifier for the content.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CreateTemplateResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.CreateTemplateResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L107>)
+
 - **Members**:
-    - `created`: Indicates whether the template was successfully created.
-- **Description**: The `CreateTemplateResponse` class is a simple data model that extends `BaseModel` and is used to represent the response of a template creation operation, containing a single boolean attribute `created` to indicate the success of the operation.
+    - `created`: Indicates if the template was successfully created.
+- **Description**: Represents the response for a template creation request, indicating the success of the operation.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ContentCollectionAssociationRequest<!-- {{#class:python-backend/backend/app/schemas/content_schema.ContentCollectionAssociationRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L111>)
+
 - **Members**:
-    - `collection_id`: A UUID representing the unique identifier of the collection to be associated.
-- **Description**: The ContentCollectionAssociationRequest class is a simple data model that represents a request to associate a piece of content with a specific collection, identified by a unique UUID. It extends the BaseModel from Pydantic, ensuring data validation and serialization capabilities.
+    - `collection_id`: Stores the unique identifier for the content collection.
+- **Description**: Associates a content collection with a unique identifier using the `UUID` type.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### BatchDeleteTagsRequest<!-- {{#class:python-backend/backend/app/schemas/content_schema.BatchDeleteTagsRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L115>)
+
 - **Members**:
-    - `tag_ids`: A list of UUIDs representing the tags to be deleted.
-- **Description**: The `BatchDeleteTagsRequest` class is a data model used to encapsulate a request for batch deletion of tags, identified by their UUIDs, in a system that manages content and associated metadata.
+    - `tag_ids`: A list of UUIDs that identify tags to delete.
+- **Description**: Represents a request to delete multiple tags identified by their UUIDs.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DeleteTagItemResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.DeleteTagItemResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L119>)
+
 - **Members**:
-    - `content_id`: The unique identifier for the content associated with the tag.
-    - `tag_id`: The unique identifier for the tag being deleted.
-    - `message`: A message providing additional information about the deletion operation.
-- **Description**: The DeleteTagItemResponse class is a data model that represents the response received after attempting to delete a tag from a piece of content. It includes identifiers for both the content and the tag, as well as a message that provides additional context or information about the result of the deletion operation. This class is useful for encapsulating the outcome of a tag deletion request in a structured format.
+    - `content_id`: Stores the unique identifier for the content.
+    - `tag_id`: Stores the unique identifier for the tag.
+    - `message`: Contains a message related to the delete operation.
+- **Description**: Represents the response for a delete tag item operation, including identifiers for the content and tag, and a message about the operation.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### BatchDeleteTagsResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.BatchDeleteTagsResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L125>)
+
 - **Members**:
-    - `results`: A list of DeleteTagItemResponse objects representing the outcome of each tag deletion operation.
-- **Description**: The BatchDeleteTagsResponse class is a Pydantic model that encapsulates the response for a batch delete operation of tags, containing a list of results for each tag deletion attempt. Each result is represented by a DeleteTagItemResponse object, which provides details about the success or failure of the deletion for a specific tag.
+    - `results`: Contains a list of `DeleteTagItemResponse` objects.
+- **Description**: Represents the response for a batch delete tags operation, containing the results of each tag deletion attempt.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DownloadContentResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.DownloadContentResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L129>)
+
 - **Members**:
-    - `download_url`: A string representing the URL from which the content can be downloaded.
-    - `content_name`: A string representing the name of the content to be downloaded.
-    - `status`: A string indicating the status of the download operation.
-- **Description**: The `DownloadContentResponse` class is a data model that encapsulates the response details for a content download operation, including the URL for downloading the content, the name of the content, and the status of the download process.
+    - `download_url`: Specifies the URL from which to download the content.
+    - `content_name`: Indicates the name of the content to download.
+    - `status`: Represents the current status of the download operation.
+- **Description**: Defines the structure for a response that includes details about downloadable content, such as the URL, content name, and download status.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### TagResult<!-- {{#class:python-backend/backend/app/schemas/content_schema.TagResult}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L135>)
+
 - **Members**:
-    - `id`: A unique identifier for the tag.
-    - `name`: The name of the tag.
-    - `color`: The color associated with the tag.
-    - `created_at`: The timestamp when the tag was created.
-    - `updated_at`: The timestamp when the tag was last updated.
-- **Description**: The `TagResult` class is a data model that represents a tag with its unique identifier, name, color, and timestamps for creation and last update. It is used to encapsulate the properties of a tag in a structured format, facilitating the management and retrieval of tag-related information within the application.
+    - `id`: Unique identifier for the tag.
+    - `name`: Name of the tag.
+    - `color`: Color associated with the tag.
+    - `created_at`: Timestamp when the tag was created.
+    - `updated_at`: Timestamp when the tag was last updated.
+- **Description**: Represents a tag with attributes for identification, naming, color coding, and timestamps for creation and updates.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ContentTagsResponse<!-- {{#class:python-backend/backend/app/schemas/content_schema.ContentTagsResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L143>)
+
 - **Members**:
-    - `tags`: A list of TagResult objects representing the tags associated with the content.
-- **Description**: The ContentTagsResponse class is a data model that encapsulates a list of tags associated with a particular content. It inherits from BaseModel, indicating that it is designed to work seamlessly with Pydantic for data validation and serialization. The primary purpose of this class is to provide a structured response format for content tags, making it easier to handle and manipulate tag data within the application.
+    - `tags`: A list of `TagResult` objects.
+- **Description**: Represents a response containing a list of tags associated with content, encapsulated as `TagResult` objects.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ExportSingleRequest<!-- {{#class:python-backend/backend/app/schemas/content_schema.ExportSingleRequest}} -->
+[View Source →](<../../../../../backend/app/schemas/content_schema.py#L147>)
+
 - **Members**:
-    - `content`: A string representing the content to be exported.
-- **Description**: The `ExportSingleRequest` class is a simple data model that inherits from `BaseModel` and is used to encapsulate a single piece of content for export operations.
+    - `content`: Stores the content to export as a string.
+- **Description**: Represents a request to export a single piece of content, encapsulating the content data as a string.
 - **Inherits From**:
     - `BaseModel`
 

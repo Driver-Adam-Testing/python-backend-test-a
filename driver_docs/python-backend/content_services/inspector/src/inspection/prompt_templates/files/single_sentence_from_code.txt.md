@@ -3,10 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_code.txt` file outlines guidelines for writing concise, single-sentence descriptions of software files, emphasizing clarity and brevity.
+A single sentence description of a software file.
 
 # Purpose
-The provided text outlines a task for a software engineering expert to create concise, single-sentence descriptions of software files, focusing on summarizing the contents and purpose without adding extraneous information. The example given demonstrates how to describe a Python class that implements complex numbers, highlighting its ability to perform addition and multiplication operations. The guidance emphasizes clarity and brevity, advising against unnecessary leading verbs unless they add meaningful context, such as indicating a specific function or purpose of the file.
+```yaml
+name: "My Application"
+version: "1.0.0"
+description: "This is a sample application."
+dependencies:
+  - "library-one"
+  - "library-two"
+scripts:
+  start: "node index.js"
+  test: "npm test"
+```
+
+This YAML configuration file defines metadata for an application, including its name, version, and description. It specifies dependencies required for the application, listing them as `library-one` and `library-two`. The file also includes scripts for starting the application with `node index.js` and running tests using `npm test`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

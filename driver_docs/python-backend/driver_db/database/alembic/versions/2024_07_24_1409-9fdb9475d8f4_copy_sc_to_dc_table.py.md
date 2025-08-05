@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.py` file contains an Alembic migration script that copies data from the `source_contents` table to the `derived_contents` table and provides a downgrade operation to delete entries from `derived_contents` where `source_content_id` is null.
+Alembic migration script to copy data from `source_contents` to `derived_contents` table.
 
 # Purpose
-This Python file is an Alembic migration script designed to manage database schema changes. It specifically handles the migration of data from a table named `source_contents` to another table called `derived_contents`. The script defines two primary functions: `upgrade()` and `downgrade()`. The `upgrade()` function executes an SQL command to copy all records from the `source_contents` table into the `derived_contents` table, preserving all fields such as `id`, `content_type_id`, `workspace_id`, and others. This operation is typically used to populate a new or modified table structure with existing data during a database upgrade.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines a migration identified by the revision ID `9fdb9475d8f4`, which follows the previous migration `ccbc4d05e796`. The primary function of this script is to copy data from the `source_contents` table to the `derived_contents` table. The [`upgrade`](<#upgrade>) function executes an SQL `INSERT INTO` statement to transfer all columns from `source_contents` to `derived_contents`. 
 
-The `downgrade()` function provides a mechanism to reverse the changes made by the `upgrade()` function. It executes an SQL command to delete records from the `derived_contents` table where the `source_content_id` is `NULL`, effectively cleaning up the data that was inserted during the upgrade. This script is part of a version-controlled database migration process, as indicated by the use of Alembic's revision identifiers (`revision`, `down_revision`). It is intended to be executed as part of a larger migration strategy, ensuring that database schema changes are applied consistently and can be rolled back if necessary.
+The [`downgrade`](<#downgrade>) function provides a way to reverse the migration. It executes an SQL `DELETE` statement to remove entries from the `derived_contents` table where the `source_content_id` is `NULL`. This script is part of a series of migrations that manage changes to the database schema and data, ensuring that the database structure evolves in a controlled manner.
 # Imports and Dependencies
 
 ---
@@ -19,52 +19,55 @@ The `downgrade()` function provides a mechanism to reverse the changes made by t
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the specific migration script when applying or rolling back database schema changes.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates that this migration does not depend on any other migrations to be applied first.
-- **Use**: This variable is used to specify dependencies between database migrations, but in this case, it indicates no dependencies.
+- **Description**: `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.upgrade}} -->
-The `upgrade` function copies data from the `source_contents` table to the `derived_contents` table in a database.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.py#L18>)
+
+Copies data from the `source_contents` table to the `derived_contents` table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function executes a SQL `INSERT INTO` statement using the `op.execute` method from Alembic.
-    - The SQL statement selects all columns from the `source_contents` table and inserts them into the `derived_contents` table.
-- **Output**: The function does not return any value; it performs a database operation to copy data between tables.
+- **Logic and Control Flow**:
+    - Executes a SQL `INSERT INTO` statement to copy all columns from the `source_contents` table to the `derived_contents` table.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.downgrade}} -->
-The `downgrade` function removes entries from the `derived_contents` table where the `source_content_id` is NULL.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1409-9fdb9475d8f4_copy_sc_to_dc_table.py#L52>)
+
+Deletes rows from the `derived_contents` table where `source_content_id` is NULL.
 - **Inputs**: None
-- **Control Flow**:
-    - The function executes a SQL DELETE statement using the `op.execute` method from Alembic.
-    - The SQL statement deletes rows from the `derived_contents` table where the `source_content_id` column is NULL.
-- **Output**: The function does not return any value; it performs a database operation to delete specific rows.
+- **Logic and Control Flow**:
+    - Executes a SQL `DELETE` statement on the `derived_contents` table.
+    - The `DELETE` operation targets rows where the `source_content_id` column is `NULL`.
+- **Output**: No output is returned.
 
 
 

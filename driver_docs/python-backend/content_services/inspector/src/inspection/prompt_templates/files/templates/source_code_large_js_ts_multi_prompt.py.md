@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_js_ts_multi_prompt.py` file defines a template for generating structured prompts to analyze and extract information from large JavaScript and TypeScript source code files, focusing on elements like imports, global variables, classes, interfaces, types, and functions.
+Templates for generating multi-prompt structures for large JavaScript and TypeScript source code analysis.
 
 # Purpose
-This Python code defines a structured template for generating prompts related to JavaScript and TypeScript source code analysis. It is part of a larger system that appears to be focused on analyzing and documenting code, specifically JavaScript and TypeScript, by breaking down the code into various components such as imports, global variables, classes, interfaces, types, and functions. The file imports several modules and classes that facilitate the creation of structured prompts and the collection of code symbols through static analysis and language model (LLM) processing. The main structure, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS`, is a list of tuples, each representing a different aspect of the code to be analyzed and documented, with specific instructions and methods for extracting and formatting the relevant information.
+The code defines a structured template for generating multi-prompt documentation specifically for JavaScript and TypeScript source code. It imports various components and utilities from different modules, which are used to construct prompts and analyze code. The main purpose is to create a template that can generate detailed documentation sections such as purpose, imports and dependencies, global variables, classes, interfaces, types, and functions. Each section is associated with specific collections and methods that extract relevant information from the source code through static analysis and language model processing.
 
-The code is designed to be part of a larger framework or library, likely intended for use in automated code documentation or analysis tools. It does not define a standalone script but rather a set of templates and instructions that can be used by other components of the system to generate detailed documentation or analysis reports. The use of structured prompting and the integration of static analysis with LLM outputs suggest a sophisticated approach to understanding and documenting code, making it useful for developers and tools that need to process and interpret large codebases in JavaScript and TypeScript.
+The template uses a combination of static analysis and language model outputs to populate each section with accurate data. The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS` variable is a list of tuples, where each tuple represents a section of the documentation. Each section includes a title, a method for extracting raw symbols, a method for processing these symbols, and an optional transformation function. This setup allows for the generation of comprehensive documentation by systematically analyzing and describing the components of JavaScript and TypeScript code.
 # Imports and Dependencies
 
 ---
@@ -40,8 +40,8 @@ The code is designed to be part of a larger framework or library, likely intende
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_JS\_TS
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS` is a list of tuples, each containing structured data for generating prompts related to JavaScript and TypeScript code analysis. Each tuple includes a section identifier, a description, and various components or functions for processing or generating prompt content, such as static analysis collections and lambda functions for data transformation.
-- **Use**: This variable is used to define a template for generating multi-part prompts that facilitate the analysis and documentation of JavaScript and TypeScript source code.
+- **Description**: A list of tuples where each tuple contains a string identifier, a section header, and a series of prompts or functions related to JavaScript and TypeScript code analysis. Each tuple is designed to handle different aspects of code such as purpose, imports, global variables, classes, interfaces, types, and functions.
+- **Use**: Used to define a structured template for generating prompts and processing JavaScript and TypeScript code analysis.
 
 
 

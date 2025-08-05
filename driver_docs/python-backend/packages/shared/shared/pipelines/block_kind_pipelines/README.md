@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python scripts for executing block agents, including code, diagram, list, and table, with prompt tools.
+Executes block agents for code, diagram, list, and table generation using LLM sessions and prompt augmentation.
 
 
 ## Files
-- **[code.py](code.py.md)**: The `code.py` file implements a function to execute a code block agent that generates and verifies code snippets using various tools and prompts within a pipeline framework.
-- **[diagram.py](diagram.py.md)**: The `diagram.py` file in the `python-backend` codebase implements a function to execute a diagram block agent that generates and verifies mermaid diagrams using prompt augmentation and agent tools.
-- **[list.py](list.py.md)**: The `list.py` file in the `python-backend` codebase defines a function to execute a list block agent that utilizes prompt augmentation and smart instruction steps to generate a comprehensive list as output.
-- **[table.py](table.py.md)**: The `table.py` file defines a function `execute_table_block_agent` that orchestrates the execution of a table block agent using prompt augmentation and default agent steps to generate an exhaustive table output.
+- **[code.py](code.py.md)**: Executes a code block agent to generate and correct code snippets using an LLM session.
+- **[diagram.py](diagram.py.md)**: Executes a pipeline to generate and validate mermaid diagrams using agent-based prompt augmentation.
+- **[list.py](list.py.md)**: Executes a list block agent to generate a single list output using prompt augmentation and smart instruction steps.
+- **[table.py](table.py.md)**: Executes a table block agent to generate an exhaustive table using prompt augmentation and smart instructions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

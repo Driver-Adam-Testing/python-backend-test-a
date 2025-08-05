@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `token_store.py` file provides functions to save, load, and clear authentication tokens stored in a JSON file located in the user's home directory.
+Manages token storage with functions to save, load, and clear tokens in a JSON file.
 
 # Purpose
-This Python script provides narrow functionality for managing token data in a JSON file located in the user's home directory. It defines three functions: [`save_tokens`](<#save_tokens>), [`load_tokens`](<#load_tokens>), and [`clear_tokens`](<#clear_tokens>). The [`save_tokens`](<#save_tokens>) function writes a dictionary of tokens to a file named `.driver_cli.json`, the [`load_tokens`](<#load_tokens>) function reads and returns the tokens from this file if it exists, and the [`clear_tokens`](<#clear_tokens>) function deletes the file if it is present. This script is likely part of a larger application, serving as a utility for handling authentication or session tokens in a command-line interface (CLI) environment.
+This code provides functionality for managing token data in a JSON file located in the user's home directory. It defines a constant `TOKEN_FILE` that specifies the path to the file `.driver_cli.json`. The [`save_tokens`](<#save_tokens>) function writes a dictionary of tokens to this file using JSON format. The [`load_tokens`](<#load_tokens>) function reads and returns the token data from the file if it exists, otherwise, it returns `None`. The [`clear_tokens`](<#clear_tokens>) function deletes the token file if it exists. This code is a utility script for handling token storage and retrieval.
 # Imports and Dependencies
 
 ---
@@ -18,44 +18,50 @@ This Python script provides narrow functionality for managing token data in a JS
 
 ---
 ### TOKEN\_FILE
-- **Type**: `Path`
-- **Description**: `TOKEN_FILE` is a global variable that represents the file path to a JSON file named ".driver_cli.json" located in the user's home directory. It is constructed using the `Path` object from the `pathlib` module, which provides a convenient way to handle file system paths.
-- **Use**: This variable is used to store, load, and clear token data in a JSON file for a command-line interface application.
+- **Type**: ``Path` object`
+- **Description**: Represents the file path to a JSON file named `.driver_cli.json` located in the user's home directory. This file is used to store token data for the application.
+- **Use**: Used to read from, write to, and delete the token data file in the user's home directory.
 
 
 # Functions
 
 ---
 ### save\_tokens<!-- {{#callable:python-backend/dev_stack/src/auth/token_store.save_tokens}} -->
-The `save_tokens` function writes a given dictionary of tokens to a JSON file located at a predefined path.
+[View Source →](<../../../../../dev_stack/src/auth/token_store.py#L7>)
+
+Writes the given tokens to a JSON file at a predefined location.
 - **Inputs**:
-    - `tokens`: A dictionary containing token data to be saved to a file.
-- **Control Flow**:
-    - Open the file specified by TOKEN_FILE in write mode.
-    - Use the json.dump function to write the tokens dictionary to the file.
-- **Output**: The function does not return any value; it writes the tokens to a file as a side effect.
+    - `tokens`: A data structure (likely a dictionary or list) that contains the tokens to save.
+- **Logic and Control Flow**:
+    - Opens the file specified by `TOKEN_FILE` in write mode.
+    - Uses `json.dump` to write the `tokens` data to the file.
+- **Output**: No output is returned.
 
 
 ---
 ### load\_tokens<!-- {{#callable:python-backend/dev_stack/src/auth/token_store.load_tokens}} -->
-The `load_tokens` function reads and returns JSON data from a predefined token file if it exists, otherwise it returns None.
+[View Source →](<../../../../../dev_stack/src/auth/token_store.py#L12>)
+
+Loads tokens from a JSON file if it exists.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if the TOKEN_FILE exists using the `exists()` method.
-    - If the file exists, open the file in read mode.
-    - Load the JSON data from the file using `json.load()` and return it.
-    - If the file does not exist, return `None`.
-- **Output**: The function returns the JSON data loaded from the token file if it exists, otherwise it returns `None`.
+- **Logic and Control Flow**:
+    - Check if `TOKEN_FILE` exists.
+    - If `TOKEN_FILE` exists, open the file and load its contents using `json.load()`.
+    - Return the loaded JSON data.
+    - If `TOKEN_FILE` does not exist, return `None`.
+- **Output**: Returns the JSON data from `TOKEN_FILE` if it exists, otherwise returns `None`.
 
 
 ---
 ### clear\_tokens<!-- {{#callable:python-backend/dev_stack/src/auth/token_store.clear_tokens}} -->
-The `clear_tokens` function deletes the token file if it exists.
+[View Source →](<../../../../../dev_stack/src/auth/token_store.py#L19>)
+
+Deletes the token file if it exists.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if the token file exists at the specified path.
-    - If the file exists, delete it using the `unlink` method.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Checks if `TOKEN_FILE` exists.
+    - If `TOKEN_FILE` exists, deletes it using the `unlink` method.
+- **Output**: No output is returned.
 
 
 

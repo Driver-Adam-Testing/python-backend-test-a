@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `migrate_top_level_content.py` file contains SQL commands to update the `content_kind` of entries in the `derived_contents` table to various 'TOP_LEVEL' types based on their current `content_kind` and a relationship to a 'codebase' entry.
+SQL script to update content kinds in the `derived_contents` table to top-level descriptions.
 
 # Purpose
-This code is a SQL script stored as a multi-line string in a Python variable named `MIGRATE_TOP_LEVEL`. It provides narrow functionality, specifically designed to update the `content_kind` field in a database table named `derived_contents`. The script consists of a series of SQL `UPDATE` statements that modify entries based on specific conditions, effectively migrating content descriptions to a new top-level categorization. Each `UPDATE` statement targets a different type of content description, such as 'terse_sentence_description' or 'long_description', and updates them to a corresponding 'TOP_LEVEL' category. This script is likely part of a database migration or data transformation process within a larger application, ensuring that content descriptions are consistently categorized.
+The code defines a SQL migration script stored in the `MIGRATE_TOP_LEVEL` variable. This script updates the `content_kind` field in the `derived_contents` table for specific records. It changes the `content_kind` of entries that are linked to a `source_content_id` with a `content_kind` of 'codebase'. The updates are made to transform 'terse_sentence_description', 'short_sentence_description', 'short_paragraph_description', and 'long_description' into 'TOP_LEVEL_TERSE_SENTENCE', 'TOP_LEVEL_SHORT_SENTENCE', 'TOP_LEVEL_SHORT_PARAGRAPH', and 'TOP_LEVEL_LONG_DESCRIPTION', respectively. The script uses a transaction block with `BEGIN` and `COMMIT` to ensure that all updates are applied atomically.
 # Global Variables
 
 ---
 ### MIGRATE\_TOP\_LEVEL
-- **Type**: `str`
-- **Description**: The `MIGRATE_TOP_LEVEL` variable is a multi-line string containing a series of SQL commands. These commands are designed to update the `content_kind` field in the `derived_contents` table based on certain conditions. Specifically, it changes the `content_kind` to a 'TOP_LEVEL' variant if the source content is of kind 'codebase' and the current content kind matches specific descriptions.
-- **Use**: This variable is used to store and execute a batch of SQL commands for migrating content kinds in a database.
+- **Type**: ``str``
+- **Description**: Contains a multi-line SQL script that updates the `content_kind` field in the `derived_contents` table. The script changes the `content_kind` to a top-level category based on the existing `content_kind` and its relation to a `codebase` entry.
+- **Use**: Used to execute a series of SQL updates to migrate content descriptions to top-level categories in a database.
 
 
 

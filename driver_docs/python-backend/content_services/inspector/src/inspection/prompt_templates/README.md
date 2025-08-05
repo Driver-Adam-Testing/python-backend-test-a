@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders with Python files and text templates for generating structured prompts and summarizing software.
+Templates and instructions for analyzing, summarizing, and describing software files, folders, and codebases.
 
 ## Folders
-- **[files](files/README.md)**: Templates for generating structured prompts and analyzing code, with text files for writing software descriptions.
-- **[folders](folders/README.md)**: Various text files that provide templates and instructions for summarizing folder contents in single sentences or paragraphs.
-- **[toplevel](toplevel/README.md)**: Various text files with guidelines for summarizing software modules and a `templates` folder with a guide template.
+- **[files](files/README.md)**: Templates for structured analyses and text files with instructions for describing software files and symbols.
+- **[folders](folders/README.md)**: Instructions for summarizing folder contents and writing descriptions based on child files and folders.
+- **[toplevel](toplevel/README.md)**: Templates for a getting started guide and instructions for summarizing and describing codebases.
 
 
 ---

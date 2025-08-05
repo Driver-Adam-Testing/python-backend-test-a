@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `global_messages.py` file defines the `GlobalSystemMessage` class, which outlines universal behaviors for LLM calls, including the use of XML tags for input components and formatting tool calls as JSON, while ensuring final responses are in markdown without XML tags.
+Defines a global system message for the LLM Framework, detailing universal behaviors for LLM calls.
 
 # Purpose
-This Python code defines a class `GlobalSystemMessage` that extends `LlmMessage` and serves as a global system message within an LLM (Language Model) Framework. The class provides narrow functionality by specifying universal behaviors and guidelines for handling LLM calls, ensuring consistency across different API, model, and pipeline interactions. It outlines how inputs should be structured with XML tags, the formatting of tool calls as JSON, and the format of final assistant responses in markdown. The class encapsulates these rules in a `content` string, which acts as a template for how the system should respond to requests, emphasizing clarity and uniformity in communication without assuming specific operational contexts.
+The code defines a class `GlobalSystemMessage` that extends the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. This class represents a global system message for a Language Learning Model (LLM) Framework, specifying behaviors that are consistent across all LLM calls. It ensures that the message does not assume specifics about the API, model, or pipeline being used. The class outlines that inputs will have XML tags for request components, tool calls must be formatted as JSON, and glossary terms like "Tools" and "Final Assistant Response" are defined with specific formats. The `content` attribute provides a template for how the assistant should respond to requests, either through tool calls or final responses, emphasizing the use of JSON for tool calls and markdown for final responses, without including XML tags or describing tool requests in the final output.
 # Imports and Dependencies
 
 ---
@@ -18,12 +18,14 @@ This Python code defines a class `GlobalSystemMessage` that extends `LlmMessage`
 
 ---
 ### GlobalSystemMessage<!-- {{#class:python-backend/packages/shared/shared/v3/globals/global_messages.GlobalSystemMessage}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/globals/global_messages.py#L4>)
+
 - **Members**:
-    - `message_kind`: Specifies the kind of message, set to MessageKind.SYSTEM.
-    - `content`: Contains the predefined message content for the global system message.
-- **Description**: The GlobalSystemMessage class is a specialized message class within the LLM Framework that defines universal behaviors for all LLM calls. It ensures that the message does not assume specifics about the API, model, or pipeline being used. The class outlines that inputs will have XML tags, tool calls must be formatted as JSON, and the final assistant response should be in markdown without XML tags. It provides a structured approach to handling requests, emphasizing the use of tool calls and final responses without describing the process steps.
+    - `message_kind`: Defines the type of message as a system message.
+    - `content`: Contains the instructions for how the assistant should respond to requests.
+- **Description**: Represents a global system message for the LLM Framework, defining universal behaviors for all LLM calls. It specifies that inputs will have XML tags, tool calls must be formatted as JSON, and the final assistant response should be in markdown format without XML tags. The class ensures that the message does not assume specifics about the API, model, or pipeline being used.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
 
 

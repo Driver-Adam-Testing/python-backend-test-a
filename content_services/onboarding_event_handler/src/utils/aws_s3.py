@@ -4,7 +4,7 @@ from src.utils.config import settings
 # Initialize S3 client
 s3_client = boto3.client(
     "s3",
-    region_name="us-east-1",
+    region_name=settings.AWS_REGION,
     endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
 )
 

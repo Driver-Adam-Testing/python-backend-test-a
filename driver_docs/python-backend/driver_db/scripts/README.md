@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `scripts` folder in the `python-backend` codebase contains a script named `populate_app_note_content_name.py` that populates and truncates the `content_name` field for application notes and PDFs in a database.
+Populates and truncates the `content_name` field for application notes and PDFs in the database.
 
 
 ## Files
-- **[populate_app_note_content_name.py](populate_app_note_content_name.py.md)**: The `populate_app_note_content_name.py` file is a script that populates the `content_name` field for application notes and PDFs in a database, ensuring names are truncated to fit within a specified index length.
+- **[populate_app_note_content_name.py](populate_app_note_content_name.py.md)**: Populates and truncates the `content_name` field for application notes and PDFs in the database.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

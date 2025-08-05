@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines and implements clients for interacting with Anthropic and OpenAI language model APIs.
+LLM client implementations for Anthropic's Claude and OpenAI's Chat and O-Series models.
 
 
 ## Files
-- **[llm_client.py](llm_client.py.md)**: The `llm_client.py` file defines an abstract base class `LlmClient` for managing interactions with various language model APIs, including methods for single and multi-shot message generation and streaming, as well as handling tool execution and response management.
-- **[llm_client_claude.py](llm_client_claude.py.md)**: The `llm_client_claude.py` file implements a client for interacting with Anthropic's Claude models, converting messages to the expected format and handling responses.
-- **[llm_client_openai_chat.py](llm_client_openai_chat.py.md)**: The `llm_client_openai_chat.py` file implements an OpenAI Chat client for interacting with OpenAI's Chat models, supporting both synchronous and asynchronous message generation with tool integration capabilities.
-- **[llm_client_openai_o1.py](llm_client_openai_o1.py.md)**: The `llm_client_openai_o1.py` file implements the `OpenAiO1SeriesClient`, a specialized LLM client for interacting with OpenAI's O-Series models, focusing on JSON strictness and flexible tool integration.
-- **[llm_client_openai_strict.py](llm_client_openai_strict.py.md)**: The `llm_client_openai_strict.py` file implements a client for interacting with OpenAI's API in strict mode, providing both synchronous and asynchronous methods for generating and streaming language model messages with support for tool integration.
+- **[llm_client.py](llm_client.py.md)**: Abstract base class for LLM clients with methods for single and multi-shot message processing.
+- **[llm_client_claude.py](llm_client_claude.py.md)**: A client for Anthropic's Claude models, converting shared message formats to Anthropic's API format.
+- **[llm_client_openai_chat.py](llm_client_openai_chat.py.md)**: A client for OpenAI's Chat models, enabling message generation and tool execution with streaming support.
+- **[llm_client_openai_o1.py](llm_client_openai_o1.py.md)**: Specialized LLM client for interacting with OpenAI's O-Series models, enforcing JSON strictness.
+- **[llm_client_openai_strict.py](llm_client_openai_strict.py.md)**: Implements a strict-mode OpenAI client for generating and streaming LLM messages with tool integration.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

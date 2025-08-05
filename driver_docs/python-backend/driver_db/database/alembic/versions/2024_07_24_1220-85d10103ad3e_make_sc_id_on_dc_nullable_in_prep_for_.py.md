@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.py` file contains an Alembic migration script that alters the `derived_contents` table to make the `source_content_id` column nullable and modifies foreign key constraints and indexes on the `source_contents` table.
+Alembic migration script to make `source_content_id` nullable in `derived_contents` table.
 
 # Purpose
-This Python file is an Alembic migration script used to modify a database schema. It provides narrow functionality, specifically altering the "derived_contents" table by making the "source_content_id" column nullable, and removing certain foreign key constraints and indexes from the "source_contents" table. The script includes both an [`upgrade`](<#upgrade>) function to apply these changes and a [`downgrade`](<#downgrade>) function to revert them, ensuring that the database schema can be transitioned back and forth between states. The script is part of a version-controlled database migration process, identified by unique revision identifiers, which helps in managing schema changes over time.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script modifies the database schema by altering the `source_content_id` column in the `derived_contents` table to be nullable, which is part of the [`upgrade`](<#upgrade>) function. It also removes an index and a foreign key constraint from the `source_contents` table. The [`downgrade`](<#downgrade>) function reverses these changes by restoring the foreign key constraint and index, and setting the `source_content_id` column back to non-nullable. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
 # Imports and Dependencies
 
 ---
@@ -18,54 +18,58 @@ This Python file is an Alembic migration script used to modify a database schema
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: Stores the unique identifier for the current database schema revision in the Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration script.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision ID and dependencies.
-- **Use**: This variable is used to define branch labels for the migration script, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.upgrade}} -->
-The `upgrade` function modifies the database schema by altering a column to be nullable, dropping an index, and removing a foreign key constraint.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.py#L19>)
+
+Modifies the database schema by altering a column, dropping an index, and removing a foreign key constraint.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by altering the 'source_content_id' column in the 'derived_contents' table to allow null values, changing its nullable property to True.
-    - It then drops the index 'ix_source_contents_content_type_id' from the 'source_contents' table.
-    - Finally, it removes the foreign key constraint 'source_contents_source_content_type_id_fkey' from the 'source_contents' table.
-- **Output**: The function does not return any value; it performs schema modifications on the database.
+- **Logic and Control Flow**:
+    - Alter the column `source_content_id` in the `derived_contents` table to be nullable.
+    - Drop the index `ix_source_contents_content_type_id` from the `source_contents` table.
+    - Remove the foreign key constraint `source_contents_source_content_type_id_fkey` from the `source_contents` table.
+- **Output**: No output is returned as this function performs schema modifications.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.downgrade}} -->
-The `downgrade` function reverts database schema changes by recreating a foreign key and index, and altering a column to be non-nullable.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1220-85d10103ad3e_make_sc_id_on_dc_nullable_in_prep_for_.py#L35>)
+
+Reverts database schema changes by recreating a foreign key, an index, and altering a column to be non-nullable.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by creating a foreign key constraint named 'source_contents_source_content_type_id_fkey' between the 'source_contents' table and the 'source_content_types' table, linking 'content_type_id' to 'id'.
-    - It then creates an index named 'ix_source_contents_content_type_id' on the 'content_type_id' column of the 'source_contents' table, which is not unique.
-    - The function alters the 'source_content_id' column in the 'derived_contents' table to be non-nullable, ensuring that this column must have a value for each row.
-- **Output**: The function does not return any value; it performs schema modifications on the database.
+- **Logic and Control Flow**:
+    - Creates a foreign key constraint named `source_contents_source_content_type_id_fkey` on the `source_contents` table referencing the `source_content_types` table.
+    - Creates an index named `ix_source_contents_content_type_id` on the `content_type_id` column of the `source_contents` table, which is not unique.
+    - Alters the `source_content_id` column in the `derived_contents` table to be non-nullable.
+- **Output**: No output is returned.
 
 
 

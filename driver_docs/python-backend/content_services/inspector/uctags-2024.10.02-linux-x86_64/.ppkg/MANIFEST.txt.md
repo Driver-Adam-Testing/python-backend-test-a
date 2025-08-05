@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `MANIFEST.txt` file lists the directory and files included in the `uctags-2024.10.02-linux-x86_64` package, along with their hash values, within the `python-backend` codebase.
+A manifest file listing directory and file hashes for binaries in the `bin/` directory.
 
 # Purpose
-The file contents represent a manifest or index of files and directories, likely used for tracking or verifying the integrity of files within a software package. Each line specifies an entry type ('d' for directory, 'f' for file), followed by a hash value for files, and the relative path of the directory or file within the package. This structure is typically used in package management or deployment systems to ensure that files are correctly installed and unaltered.
+The file content describes a list of files and directories with their corresponding hash values. Each entry starts with a type indicator: `d` for directories and `f` for files. The hash values are SHA-256 checksums that ensure data integrity and verify the contents of the files. The paths following the hash values specify the location of each file or directory within the `bin/` directory. This structure is typically used for tracking file changes or verifying file integrity in a software project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

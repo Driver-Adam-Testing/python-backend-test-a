@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_calls.ts` file is a comprehensive test suite for various TypeScript function and method call scenarios, including multiple arguments, method chaining, constructor calls, async calls, and more, within the `python-backend` codebase.
+Tests for various TypeScript function and method call scenarios, including async, chaining, and templates.
 
 # Purpose
-This TypeScript file serves as a comprehensive test suite for various function and method call patterns in JavaScript and TypeScript. It includes a wide array of examples demonstrating different types of function calls, method invocations, and object interactions. The file covers basic function calls with multiple arguments, method calls on objects, and more complex patterns such as chained method calls, constructor invocations, and super calls in class hierarchies. It also explores advanced JavaScript features like tagged template literals, immediately invoked function expressions (IIFEs), and the use of the spread operator in function calls.
+This code is a comprehensive test suite for various JavaScript and TypeScript function and method call patterns. It demonstrates a wide range of function invocation techniques, including multiple arguments, method chaining, constructor calls, and tagged template literals. The code also covers advanced topics such as async/await, generator functions, and the use of the `Symbol` and `Reflect` APIs. Additionally, it includes examples of using built-in JavaScript objects and methods, such as `Array`, `Promise`, `Set`, `Map`, and `Intl`, as well as DOM manipulation and event handling.
 
-Additionally, the file illustrates the use of modern JavaScript and TypeScript features, including async/await for asynchronous operations, optional chaining, and nullish coalescing. It demonstrates the use of built-in JavaScript objects and methods, such as Array, Promise, and Object methods, as well as more specialized constructs like generators, async generators, and the Reflect API. The file also includes examples of using decorators, dynamic imports, and type assertions, showcasing the versatility and depth of JavaScript and TypeScript's function and method call capabilities. This test file is a valuable resource for understanding and verifying the behavior of various function and method call patterns in a TypeScript environment.
+The file serves as a reference for testing and understanding different invocation patterns and their behaviors in JavaScript and TypeScript. It includes examples of using optional chaining, nullish coalescing, type assertions, and currying. The code also explores the use of proxies, decorators, and dynamic imports, providing a broad overview of modern JavaScript features. This test suite is useful for developers who want to ensure their understanding of function and method calls across various contexts and use cases in JavaScript and TypeScript.
 # Imports and Dependencies
 
 ---
@@ -19,414 +19,450 @@ Additionally, the file illustrates the use of modern JavaScript and TypeScript f
 
 ---
 ### obj
-- **Type**: `object`
-- **Description**: The `obj` variable is a global object that contains a method named `method` and a property named `property`. The `method` returns the string 'method', and the `property` holds the string 'value'.
-- **Use**: This variable is used to demonstrate method calls on objects by invoking its `method` function.
+- **Type**: ``object``
+- **Description**: Contains a method `method` that returns the string 'method' and a property `property` with the value 'value'.
+- **Use**: Used to demonstrate method calls on objects.
 
 
 ---
 ### chainable
-- **Type**: `object`
-- **Description**: The `chainable` variable is an object that provides a simple interface for method chaining. It contains three methods: `first`, `second`, and `third`. The `first` and `second` methods return the `chainable` object itself, allowing for method chaining, while the `third` method returns the string 'done', terminating the chain.
-- **Use**: This variable is used to demonstrate method chaining by allowing sequential calls to `first`, `second`, and `third` methods.
+- **Type**: ``object``
+- **Description**: Contains three methods: `first`, `second`, and `third`. The `first` and `second` methods return the object itself, enabling method chaining, while the `third` method returns the string 'done'.
+- **Use**: Enables method chaining by returning the object itself in `first` and `second` methods, and concludes the chain with a return value in the `third` method.
 
 
 ---
 ### nums
-- **Type**: `Array<number>`
-- **Description**: The `nums` variable is an array containing three numeric elements: 1, 2, and 3. It is defined as a constant, meaning its reference cannot be changed, although its contents can be modified.
-- **Use**: This variable is used to demonstrate the spread operator in function calls, specifically in the `spreadFunc` and `mixedSpread` functions.
+- **Type**: ``Array<number>``
+- **Description**: An array that contains the numbers 1, 2, and 3.
+- **Use**: Used as arguments in the `spreadFunc` function call with the spread operator.
 
 
 ---
 ### maybeObj
-- **Type**: `any`
-- **Description**: The `maybeObj` variable is a global variable of type `any`, initialized with an object containing a method `method` that returns the string 'exists'. The use of optional chaining (`?.`) allows safe access to the `method` property, preventing runtime errors if `maybeObj` or `method` is undefined or null.
-- **Use**: `maybeObj` is used to demonstrate optional chaining by safely calling its `method` property.
+- **Type**: ``any``
+- **Description**: This variable is an object that can have any type, as indicated by the `any` type annotation. It is initialized with an object that contains a method named `method`, which returns the string 'exists' when called.
+- **Use**: Used to demonstrate optional chaining with method calls on an object that might be undefined or null.
 
 
 ---
 ### context
-- **Type**: `object`
-- **Description**: The `context` variable is an object with a single property `value` set to 10. It is used to provide a specific execution context for a function call.
-- **Use**: This variable is used as the `this` context for the `func` function when it is called using `Function.prototype.call`.
+- **Type**: ``object``
+- **Description**: Contains a single property `value` with a numeric value of 10. It is used as the `this` context for function calls.
+- **Use**: Used as the `this` context in the `func.call` and `func.apply` method calls.
 
 
 ---
 ### array
-- **Type**: `Array<number>`
-- **Description**: The `array` variable is a global constant array containing the numbers 1 through 5. It is defined at the top level of the code and is used to demonstrate various array methods.
-- **Use**: This variable is used to perform operations such as mapping, filtering, reducing, and iterating over its elements using array methods.
+- **Type**: ``Array<number>``
+- **Description**: An array of numbers that contains the elements 1, 2, 3, 4, and 5.
+- **Use**: Used to perform various array operations such as `map`, `filter`, `reduce`, `forEach`, `find`, `findIndex`, `some`, and `every`.
 
 
 ---
 ### methodName
-- **Type**: `string`
-- **Description**: The variable `methodName` is a string constant initialized with the value `'method'`. It is used as a key to access a method in an object using computed property syntax.
-- **Use**: This variable is used to dynamically call a method on an object using bracket notation.
+- **Type**: ``string``
+- **Description**: A constant string variable that holds the value `'method'`. It is used as a key to access properties in objects.
+- **Use**: Used to dynamically access the `method` property in the `dynamicObj` object.
 
 
 ---
 ### dynamicObj
-- **Type**: `object`
-- **Description**: The `dynamicObj` is a global object that contains two methods: `method` and `another`. Each method returns a string when called, specifically 'called' and 'another', respectively.
-- **Use**: This variable is used to demonstrate method calls on an object using computed property names.
+- **Type**: ``object``
+- **Description**: Contains two methods: `method` and `another`, which return the strings 'called' and 'another', respectively. The object allows dynamic method invocation using computed property names.
+- **Use**: Used to call methods dynamically based on the value of `methodName`.
 
 
 ---
 ### sym
-- **Type**: `Symbol`
-- **Description**: The `sym` variable is a global constant that holds the `Symbol.iterator` symbol, which is a well-known symbol used to define the default iterator for an object. This symbol is part of the ECMAScript specification and is used to make an object iterable, allowing it to be used in constructs like `for...of` loops.
-- **Use**: The `sym` variable is used to access and define the iterator method on the `iterableObj` object, enabling it to be iterated over.
+- **Type**: ``symbol``
+- **Description**: The `sym` variable is a global constant that holds the `Symbol.iterator` symbol. This symbol is a well-known symbol that specifies the default iterator for an object.
+- **Use**: Used to define or access the default iterator method for objects that are iterable.
 
 
 ---
 ### iterableObj
-- **Type**: `object`
-- **Description**: The `iterableObj` is a global object that implements the iterator protocol by defining a method for the `Symbol.iterator` symbol. This method returns an object with a `next` function that always returns an object with a `value` of 1 and `done` as true, indicating the end of the iteration. Additionally, it has another method defined using a symbol `sym` that returns a similar object with a `value` of 2.
-- **Use**: This variable is used to demonstrate custom iteration behavior by implementing the iterator protocol with different symbol keys.
+- **Type**: ``object``
+- **Description**: Implements an iterable object with two iterator methods. The first method, `Symbol.iterator`, returns an iterator that immediately completes with a value of 1. The second method, defined using a symbol `sym`, returns an iterator that immediately completes with a value of 2.
+- **Use**: Used to demonstrate custom iterator implementations using symbols.
 
 
 ---
 ### maybeFunc
-- **Type**: `null`
-- **Description**: The `maybeFunc` variable is a global variable initialized to `null`. It is intended to potentially hold a function reference, but currently does not point to any function or value.
-- **Use**: This variable is used in a nullish coalescing operation to determine if a default function should be executed.
+- **Type**: ``null``
+- **Description**: Represents a variable that is initialized with a `null` value. It is intended to hold a function or remain `null` if no function is assigned.
+- **Use**: Used in a nullish coalescing operation to determine if a default function should be executed.
 
 
 ---
 ### unknownObj
-- **Type**: `unknown`
-- **Description**: The variable `unknownObj` is declared with the `unknown` type, which is a TypeScript type that represents any value but requires type assertions or type checks before being used. It is initialized with an object that has a `call` method returning the string 'called'.
-- **Use**: `unknownObj` is used with type assertion to call its `call` method as if it were of type `Callable`.
+- **Type**: ``unknown``
+- **Description**: Represents an object with an unknown type that contains a method `call` which returns the string 'called'. The variable is initially typed as `unknown`, which means its type is not known at compile time.
+- **Use**: Used to demonstrate type assertion by casting it to a `Callable` interface to call the `call` method.
 
 
 ---
 ### target
-- **Type**: `object`
-- **Description**: The `target` variable is an object with a single property `value` set to 42. It serves as the target object for a JavaScript Proxy, which allows for custom behavior to be defined for fundamental operations on the object, such as property lookup.
-- **Use**: This variable is used as the target for a Proxy to intercept and customize operations on the object.
+- **Type**: ``object``
+- **Description**: Contains a single property `value` with a numeric value of 42. It is used as the target object for a `Proxy` instance.
+- **Use**: Serves as the target object for a `Proxy` to intercept and customize operations on the `value` property.
 
 
 ---
 ### proxy
-- **Type**: `Proxy`
-- **Description**: The `proxy` variable is an instance of the JavaScript `Proxy` object, which is used to define custom behavior for fundamental operations on a target object, such as property lookup. In this case, the `proxy` is set up to intercept the `get` operation, allowing it to return the property value from the target object when accessed.
-- **Use**: This variable is used to create a proxy that intercepts and customizes the behavior of property access on the `target` object.
+- **Type**: ``Proxy``
+- **Description**: Creates a `Proxy` object that wraps the `target` object. The `get` trap intercepts property access on the `target` and returns the corresponding property value.
+- **Use**: Used to intercept and customize operations on the `target` object, such as property access.
 
 
 ---
 ### genericInstance
-- **Type**: `GenericClass`
-- **Description**: The `genericInstance` variable is an instance of the `GenericClass`, which is a class that includes a method capable of handling generic type parameters. This instance is used to demonstrate method calls with type parameters, specifically calling the `method` with a string type argument.
-- **Use**: This variable is used to call a generic method with a specific type argument, showcasing the use of generics in TypeScript.
+- **Type**: ``GenericClass``
+- **Description**: Creates an instance of the `GenericClass` and assigns it to the variable `genericInstance`. The `GenericClass` has a method `method` that accepts a generic type parameter `T` and returns a value of the same type.
+- **Use**: Used to call the `method` of `GenericClass` with different type parameters, such as `string` and `number`.
 
 
 ---
 ### set
-- **Type**: `Set<number>`
-- **Description**: The `set` variable is an instance of the JavaScript `Set` object, initialized with an array containing the numbers 1, 2, and 3. It is then modified by adding the number 4 to it.
-- **Use**: This variable is used to store a collection of unique numbers, demonstrating the use of the `Set` object and its `add` method.
+- **Type**: ``Set<number>``
+- **Description**: A `Set` object that contains unique numbers. It is initialized with the numbers 1, 2, and 3, and then the number 4 is added.
+- **Use**: Stores a collection of unique numbers and allows operations like adding, checking, and deleting elements.
 
 
 ---
 ### map
-- **Type**: `Map`
-- **Description**: The `map` variable is an instance of the JavaScript `Map` object, initialized with a single key-value pair `['key', 'value']`. It is a collection of keyed data items, similar to an object, but with the key-value pairs maintaining their insertion order and allowing any data type for keys.
-- **Use**: This variable is used to store and retrieve key-value pairs, with methods like `get`, `set`, `has`, and `delete` to manipulate the data.
+- **Type**: ``Map``
+- **Description**: A `Map` object that stores key-value pairs, initialized with a single entry where the key is `'key'` and the value is `'value'`. The `Map` object allows for efficient retrieval of values based on keys.
+- **Use**: Used to store and retrieve values associated with specific keys using methods like `get`, `set`, `has`, and `delete`.
 
 
 ---
 ### weakSet
-- **Type**: `WeakSet`
-- **Description**: The `weakSet` variable is an instance of the `WeakSet` class, which is a collection of objects that allows for garbage collection of its items when there are no other references to them. It is initialized as an empty `WeakSet` and can only store objects, not primitive values.
-- **Use**: The `weakSet` is used to store and manage a collection of objects with weak references, allowing for automatic garbage collection of objects that are no longer in use.
+- **Type**: ``WeakSet``
+- **Description**: A `WeakSet` is a collection of objects where each object can only appear once. It does not prevent its objects from being garbage-collected.
+- **Use**: Stores a collection of objects with weak references, allowing for garbage collection of objects not referenced elsewhere.
 
 
 ---
 ### obj1
-- **Type**: `object`
-- **Description**: `obj1` is a global variable that is initialized as an empty object. It is subsequently added to a `WeakSet` instance, which is a collection of objects that are held weakly, meaning they can be garbage collected if there are no other references to them.
-- **Use**: `obj1` is used as an element in a `WeakSet` to demonstrate the addition of objects to this collection type.
+- **Type**: ``object``
+- **Description**: An empty object that is used as an element in a `WeakSet`. It is defined as a constant and does not have any properties or methods.
+- **Use**: Used as an element in the `weakSet` to demonstrate `WeakSet` operations.
 
 
 ---
 ### weakMap
-- **Type**: `WeakMap`
-- **Description**: The `weakMap` variable is an instance of the `WeakMap` class, which is a collection of key/value pairs where the keys are objects and the values can be arbitrary values. In this code, `weakMap` is used to associate the object `obj1` with the string 'value'.
-- **Use**: This variable is used to store and retrieve values associated with object keys, allowing for efficient memory management as the keys are weakly referenced.
+- **Type**: ``WeakMap``
+- **Description**: `WeakMap` is a global variable that is an instance of the `WeakMap` class. It is used to store key-value pairs where the keys are objects and the values can be arbitrary values.
+- **Use**: Stores a mapping of an object `obj1` to the string `'value'`.
 
 
 ---
 ### buffer
-- **Type**: `ArrayBuffer`
-- **Description**: The `buffer` variable is an instance of the `ArrayBuffer` class, which represents a fixed-length raw binary data buffer. It is initialized with a size of 16 bytes, allowing for the storage of binary data in a contiguous block of memory.
-- **Use**: This variable is used to create a `DataView` instance, which provides a way to read and write multiple number types in the `buffer`.
+- **Type**: ``ArrayBuffer``
+- **Description**: Represents a fixed-length raw binary data buffer. The `buffer` variable is an instance of `ArrayBuffer` with a size of 16 bytes.
+- **Use**: Used to store binary data that can be accessed and manipulated through a `DataView` or typed arrays.
 
 
 ---
 ### view
-- **Type**: `DataView`
-- **Description**: The `view` variable is an instance of the `DataView` class, which provides a low-level interface for reading and writing multiple number types in an `ArrayBuffer` without having to care about the platform's endianness. It is initialized with a buffer, allowing for manipulation of the data within that buffer.
-- **Use**: This variable is used to access and manipulate binary data stored in an `ArrayBuffer`.
+- **Type**: ``DataView``
+- **Description**: Represents a view of an `ArrayBuffer` that allows reading and writing of various data types at specified byte offsets. It provides methods to access the data in the buffer in a platform-independent way.
+- **Use**: Used to read and write data from the `buffer` using methods like `getInt32`.
 
 
 ---
 ### regex
-- **Type**: `RegExp`
-- **Description**: The `regex` variable is a global regular expression object defined with the pattern `/pattern/g`. It is used to perform pattern matching and search operations on strings.
-- **Use**: This variable is used to test if a string matches the specified pattern using the `test` method.
+- **Type**: ``RegExp``
+- **Description**: A regular expression object that matches the pattern 'pattern' globally in a string. It is used to perform pattern matching and search operations on strings.
+- **Use**: Used to test if a string contains the specified pattern using the `test` method.
 
 
 ---
 ### gs
-- **Type**: `GetterSetter`
-- **Description**: The variable `gs` is an instance of the `GetterSetter` class, which provides getter and setter methods for a private `_value` property. This class allows controlled access to the `_value` property, enabling encapsulation and data protection.
-- **Use**: The `gs` variable is used to demonstrate property access through getter and setter methods in the `GetterSetter` class.
+- **Type**: ``GetterSetter``
+- **Description**: Represents an instance of the `GetterSetter` class, which has a private `_value` property with getter and setter methods for accessing and modifying its value.
+- **Use**: Used to access and modify the `_value` property through its getter and setter methods.
 
 
 ---
 ### objWithToString
-- **Type**: `object`
-- **Description**: The `objWithToString` variable is an object that implements custom `toString` and `valueOf` methods. The `toString` method returns a string 'string representation', while the `valueOf` method returns the number 42.
-- **Use**: This variable is used to demonstrate implicit calls to `toString` and `valueOf` when converting the object to a string or number.
+- **Type**: ``object``
+- **Description**: Contains two methods: `toString` and `valueOf`. The `toString` method returns a string 'string representation', and the `valueOf` method returns the number 42.
+- **Use**: Used to demonstrate implicit calls to `toString` and `valueOf` when converting the object to a string or number.
 
 
 ---
 ### customIterator
-- **Type**: `object`
-- **Description**: The `customIterator` is an object that implements the iterator protocol by defining a `[Symbol.iterator]` method. This method returns an iterator object with a `next` method that produces a sequence of numbers starting from 0 and ending at 3.
-- **Use**: This variable is used to create an iterable object that can be expanded using the spread operator or iterated over with a loop.
+- **Type**: ``object``
+- **Description**: Implements a custom iterator object that conforms to the iterator protocol. The iterator starts at 0 and increments by 1 until it reaches 3, at which point it signals completion.
+- **Use**: Used to iterate over a sequence of numbers from 0 to 2 using the spread operator or other iteration constructs.
 
 
 ---
 ### customAsyncIterator
-- **Type**: `object`
-- **Description**: The `customAsyncIterator` is an object that implements the asynchronous iterator protocol using the `Symbol.asyncIterator` method. It is designed to yield values asynchronously, specifically yielding the numbers 1 and 2 after resolving promises for each.
-- **Use**: This variable is used to create an asynchronous iterable object that can be consumed using a `for await...of` loop to handle asynchronous data streams.
+- **Type**: ``object``
+- **Description**: Implements an asynchronous iterator using the `Symbol.asyncIterator` method. The iterator yields two values, `1` and `2`, each wrapped in a resolved `Promise`. This allows asynchronous iteration over the values using `for await...of` loops.
+- **Use**: Used to provide an asynchronous iteration protocol for consuming values asynchronously.
 
 
 ---
 ### controller
-- **Type**: `AbortController`
-- **Description**: The `controller` variable is an instance of the `AbortController` class, which is part of the Fetch API. It is used to control and abort web requests programmatically.
-- **Use**: This variable is used to create an abortable signal for web requests, allowing them to be cancelled if needed.
+- **Type**: ``AbortController``
+- **Description**: Creates an instance of the `AbortController` class, which allows you to abort one or more DOM requests as and when desired. The `abort` method is called immediately after instantiation to signal that the associated requests should be aborted.
+- **Use**: Used to control the aborting of DOM requests by calling the `abort` method.
 
 
 # Classes
 
 ---
 ### MyClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MyClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L21>)
+
 - **Members**:
-    - `value`: A public string property initialized via the constructor.
-- **Description**: The `MyClass` class is a simple TypeScript class that includes a constructor accepting a single string parameter, which is assigned to a public property named `value`. This class serves as a basic example of how to define a class with a constructor and a public property in TypeScript.
+    - `value`: Stores a string value passed to the constructor.
+- **Description**: Represents a class with a constructor that initializes a public string property named `value`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MyClass.constructor`](<#MyClassconstructor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MyClass.constructor`](<#myclassconstructor>)
 
 **Methods**
 
 ---
 #### MyClass\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MyClass.constructor}} -->
-The constructor initializes an instance of MyClass with a given string value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L22>)
+
+Initializes a new instance of the `MyClass` class with a `value` property.
 - **Inputs**:
-    - `value`: A string that represents the value to be assigned to the instance's public property 'value'.
+    - `value`: A string that initializes the `value` property of the class instance.
 - **Control Flow**:
-    - The constructor takes a single argument 'value' of type string.
-    - It assigns the provided 'value' to the public property 'value' of the MyClass instance.
-- **Output**: An instance of MyClass with the 'value' property set to the provided string.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MyClass`](<#MyClass>)  (Base Class)
+    - Assigns the input `value` to the `value` property of the class instance.
+- **Output**: A new instance of the `MyClass` class with the `value` property set to the provided string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MyClass`](<#myclass>)  (Base Class)
 
 
 
 ---
 ### EmptyClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.EmptyClass}} -->
-- **Description**: The `EmptyClass` is a minimalistic class definition in TypeScript that does not contain any properties or methods. It serves as a basic example of a class structure without any functionality or state.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L27>)
+
+- **Description**: Defines an empty class with no properties or methods.
 
 
 ---
 ### Parent<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent}} -->
-- **Description**: The `Parent` class is a simple class that contains a single method `method` which returns the string 'parent'. It serves as a base class for inheritance, as demonstrated by the `Child` class extending it.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L31>)
+
+- **Description**: Represents a class with a method that returns the string 'parent'.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent.method`](<#Parentmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent.method`](<#parentmethod>)
 
 **Methods**
 
 ---
 #### Parent\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent.method}} -->
-The `method` in the `Parent` class returns the string 'parent'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L32>)
+
+Overrides the `method` from the `Parent` class to call the parent method and return its result.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called without any parameters.
-    - It directly returns the string 'parent'.
-- **Output**: The output is the string 'parent'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent`](<#Parent>)  (Base Class)
+    - Calls `super.method()` to invoke the `method` from the `Parent` class.
+    - Returns the result of `super.method()`.
+- **Output**: Returns the string 'parent' from the `Parent` class's `method`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent`](<#parent>)  (Base Class)
 
 
 
 ---
 ### Child<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child}} -->
-- **Description**: The `Child` class is a simple subclass of the `Parent` class, demonstrating inheritance in TypeScript. It overrides the `method` function to call the `Parent` class's `method` twice using `super.method()`. The constructor of the `Child` class also calls the constructor of the `Parent` class using `super()`, ensuring proper initialization of the parent class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L34>)
+
+- **Description**: Extends the `Parent` class and overrides the `method` to call the `Parent` class's `method` twice, returning the result of the second call.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child.method`](<#Childmethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child.constructor`](<#Childconstructor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child.method`](<#childmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child.constructor`](<#childconstructor>)
 - **Extends/Implements**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent`](<#Parent>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Parent`](<#parent>)
 
 **Methods**
 
 ---
 #### Child\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child.method}} -->
-The `method` in the `Child` class calls the `method` from its `Parent` class twice and returns the result of the second call.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L35>)
+
+Calls the `method` from the parent class twice and returns the result of the second call.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls `super.method()` to invoke the `method` from the `Parent` class.
-    - It then calls `super.method()` again and returns the result of this second call.
-- **Output**: The output is the result of the second call to `super.method()`, which is the string 'parent'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child`](<#Child>)  (Base Class)
+    - Calls `super.method()` to invoke the `method` from the parent class.
+    - Calls `super.method()` again and returns its result.
+- **Output**: The result of the second call to `super.method()`, which is a string 'parent'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child`](<#child>)  (Base Class)
 
 
 ---
 #### Child\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child.constructor}} -->
-The constructor method in the Child class initializes a new instance of the Child class by calling the constructor of its parent class, Parent.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L39>)
+
+Initializes a new instance of the `Child` class and calls the constructor of its parent class `Parent`.
 - **Inputs**: None
 - **Control Flow**:
-    - The constructor method is invoked when a new instance of the Child class is created.
-    - The constructor calls the constructor of the Parent class using the super() function.
-- **Output**: The output is a new instance of the Child class, fully initialized by the Parent class constructor.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child`](<#Child>)  (Base Class)
+    - Calls the `super()` function to invoke the constructor of the parent class `Parent`.
+- **Output**: There is no explicit output from the constructor, as constructors do not return values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Child`](<#child>)  (Base Class)
 
 
 
 ---
 ### StaticClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass}} -->
-- **Description**: The `StaticClass` is a simple class that contains static methods, which can be called without instantiating the class. It includes a `staticMethod` that returns a string 'static' and another static method `another` that takes a number as an argument and returns its double. This class demonstrates the use of static methods in TypeScript.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L124>)
+
+- **Description**: Defines a class with static methods that can be called without creating an instance of the class. The `staticMethod` returns a string 'static', and the `another` method takes a number as an argument and returns its double.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass.staticMethod`](<#StaticClassstaticMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass.another`](<#StaticClassanother>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass.staticMethod`](<#staticclassstaticmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass.another`](<#staticclassanother>)
 
 **Methods**
 
 ---
 #### StaticClass\.staticMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass.staticMethod}} -->
-The `staticMethod` is a static method of the `StaticClass` that returns the string 'static'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L125>)
+
+Returns the string 'static'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a static method within the `StaticClass`.
-    - It directly returns the string 'static' without any conditions or iterations.
-- **Output**: The method returns the string 'static'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass`](<#StaticClass>)  (Base Class)
+    - The method returns the string 'static'.
+- **Output**: The output is a string with the value 'static'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass`](<#staticclass>)  (Base Class)
 
 
 ---
 #### StaticClass\.another<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass.another}} -->
-The `another` method is a static method that doubles the input number.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L126>)
+
+Multiplies the input number by 2.
 - **Inputs**:
-    - `x`: A number to be doubled.
+    - `x`: A number to be multiplied by 2.
 - **Control Flow**:
-    - The method takes a single input parameter `x`.
-    - It returns the result of multiplying `x` by 2.
-- **Output**: The output is a number, which is the input number doubled.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass`](<#StaticClass>)  (Base Class)
+    - Receives a number `x` as input.
+    - Multiplies `x` by 2.
+    - Returns the result of the multiplication.
+- **Output**: The result of multiplying the input number by 2.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.StaticClass`](<#staticclass>)  (Base Class)
 
 
 
 ---
 ### GenericClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GenericClass}} -->
-- **Description**: The `GenericClass` is a simple TypeScript class that includes a single generic method `method<T>`, which takes a value of any type `T` and returns it. This class demonstrates the use of generics in TypeScript, allowing the method to operate on any data type while maintaining type safety.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L290>)
+
+- **Description**: Defines a generic method `method` that accepts a value of any type `T` and returns the same value, demonstrating the use of generics in TypeScript.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GenericClass.method`](<#GenericClassmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GenericClass.method`](<#genericclassmethod>)
 
 **Methods**
 
 ---
 #### GenericClass\.method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GenericClass.method}} -->
-The `method` in `GenericClass` is a generic method that returns the input value of any type `T`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L291>)
+
+Returns the input value of any type without modification.
 - **Inputs**:
-    - `value`: A value of generic type `T` that is passed to the method.
+    - `value`: The input value of generic type `T`.
 - **Control Flow**:
-    - The method takes a single argument `value` of type `T`.
-    - It immediately returns the input `value`.
-- **Output**: The output is the same as the input value, of type `T`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GenericClass`](<#GenericClass>)  (Base Class)
+    - Receives an input `value` of type `T`.
+    - Returns the input `value` without any changes.
+- **Output**: The same value of type `T` that was provided as input.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GenericClass`](<#genericclass>)  (Base Class)
 
 
 
 ---
 ### MethodClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass}} -->
-- **Description**: The `MethodClass` is a simple class that demonstrates method visibility and invocation in TypeScript. It contains three methods: `method1`, which is a public method that calls the private method `method2` and returns the result of the protected method `method3`. The class showcases the use of different access modifiers (private and protected) to control the accessibility of its methods.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L383>)
+
+- **Description**: Defines a class with a public method `method1` that calls a private method `method2` and returns the result of a protected method `method3`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method1`](<#MethodClassmethod1>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method2`](<#MethodClassmethod2>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method3`](<#MethodClassmethod3>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method1`](<#methodclassmethod1>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method2`](<#methodclassmethod2>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method3`](<#methodclassmethod3>)
 
 **Methods**
 
 ---
 #### MethodClass\.method1<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method1}} -->
-The `method1` function in the `MethodClass` calls a private method and returns the result of a protected method.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L384>)
+
+Calls `method2` and returns the result of `method3`.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls the private method `method2` of the class instance.
-    - Returns the result of the protected method `method3` of the class instance.
-- **Output**: The output is the string returned by the `method3` method, which is 'protected'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass`](<#MethodClass>)  (Base Class)
+    - Calls the `method2` method on the current instance.
+    - Returns the result of calling the `method3` method on the current instance.
+- **Output**: The output is the result of the `method3` method, which is the string 'protected'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass`](<#methodclass>)  (Base Class)
 
 
 ---
 #### MethodClass\.method2<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method2}} -->
-The `method2` is a private method in the `MethodClass` that returns the string 'private'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L388>)
+
+Returns the string 'private'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as private, meaning it can only be accessed within the `MethodClass`.
-    - It directly returns the string 'private' without any additional logic or computation.
-- **Output**: The method returns the string 'private'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass`](<#MethodClass>)  (Base Class)
+    - Returns the string 'private'.
+- **Output**: The string 'private'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass`](<#methodclass>)  (Base Class)
 
 
 ---
 #### MethodClass\.method3<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass.method3}} -->
-The `method3` function is a protected method that returns the string 'protected'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L389>)
+
+Returns the string 'protected'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method simply returns the string 'protected'.
-- **Output**: The output is the string 'protected'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass`](<#MethodClass>)  (Base Class)
+    - Returns the string 'protected'.
+- **Output**: The string 'protected'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.MethodClass`](<#methodclass>)  (Base Class)
 
 
 
 ---
 ### GetterSetter<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L393>)
+
 - **Members**:
-    - `_value`: A private instance variable that holds the numeric value.
-- **Description**: The `GetterSetter` class provides a simple encapsulation of a numeric value with getter and setter methods to access and modify the value. It demonstrates basic encapsulation and property access in TypeScript, allowing controlled access to the private `_value` variable through the `value` property.
+    - `_value`: Stores the internal numeric value of the instance.
+- **Description**: Encapsulates a numeric value with getter and setter methods to access and modify the value.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter.value`](<#GetterSettervalue>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter.value`](<#GetterSettervalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter.value`](<#gettersettervalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter.value`](<#gettersettervalue>)
 
 **Methods**
 
 ---
 #### GetterSetter\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter.value}} -->
-The `value` method in the `GetterSetter` class provides a getter and setter for the private `_value` property.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L395>)
+
+Provides a getter and setter for the `_value` property in the `GetterSetter` class.
 - **Inputs**:
-    - `v`: The new value to set for the private `_value` property, expected to be a number.
+    - `v`: The new value to set for the `_value` property, expected to be a number.
 - **Control Flow**:
-    - The getter method simply returns the current value of the private `_value` property.
-    - The setter method assigns the provided number `v` to the private `_value` property.
-- **Output**: The getter returns the current value of the private `_value` property, while the setter does not return a value.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter`](<#GetterSetter>)  (Base Class)
+    - The getter method `value` returns the current value of the private property `_value`.
+    - The setter method `value` assigns the provided number `v` to the private property `_value`.
+- **Output**: The getter returns the current value of the `_value` property, and the setter does not return a value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter`](<#gettersetter>)  (Base Class)
 
 
 ---
 #### GetterSetter\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter.value}} -->
-The `value` method is a setter that assigns a given number to the private `_value` property of the `GetterSetter` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L396>)
+
+Sets the private `_value` property to the provided number `v`.
 - **Inputs**:
-    - `v`: A number to be assigned to the private `_value` property.
+    - `v`: A number to set as the new value of the private `_value` property.
 - **Control Flow**:
-    - The method takes a single argument `v`.
-    - It assigns the value of `v` to the private property `_value`.
+    - Assigns the input `v` to the private property `_value`.
 - **Output**: There is no output as this is a setter method.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter`](<#GetterSetter>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.GetterSetter`](<#gettersetter>)  (Base Class)
 
 
 
@@ -434,501 +470,572 @@ The `value` method is a setter that assigns a given number to the private `_valu
 
 ---
 ### Callable<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.Callable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L203>)
+
 - **Members**:
-    - `call`: Defines a method that returns a string when invoked.
-- **Description**: The `Callable` interface defines a contract for objects that must implement a `call` method, which returns a string. This interface is used to ensure that any object adhering to it can be 'called' in a manner similar to a function, providing a consistent way to invoke and retrieve a string result from such objects.
+    - `call`: Returns a string when called.
+- **Description**: Defines a contract for objects that must implement a `call` method, which returns a string.
 
 
 # Functions
 
 ---
 ### method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.dynamicObj.method}} -->
-The `method` function is a simple method that returns the string 'called' when invoked.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L146>)
+
+Returns the string 'called' when invoked.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as part of an object literal.
-    - When invoked, it immediately returns the string 'called'.
-- **Output**: The output is a string 'called'.
+    - The method is called without any parameters.
+    - The method returns the string 'called'.
+- **Output**: The output is the string 'called'.
 
 
 ---
 ### first<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.chainable.first}} -->
-The `first` method returns the current object instance, enabling method chaining.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L14>)
+
+Returns the current object instance to enable method chaining.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called on an object instance.
-    - It returns the `this` reference, which is the current object instance.
+    - Returns the current object instance using `return this;`.
 - **Output**: The current object instance (`this`).
 
 
 ---
 ### second<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.chainable.second}} -->
-The `second` method returns the current object instance, enabling method chaining.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L15>)
+
+Returns the current object instance to enable method chaining.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called on an object instance.
-    - It returns the `this` keyword, which refers to the current object instance.
+    - Returns the current object instance using `return this;`.
 - **Output**: The current object instance (`this`).
 
 
 ---
 ### third<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.chainable.third}} -->
-The `third` method returns the string 'done'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L16>)
+
+Returns the string 'done'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the string 'done' without any conditions or iterations.
-- **Output**: The output is a string with the value 'done'.
+    - Returns the string 'done'.
+- **Output**: The string 'done'.
 
 
 ---
 ### myTag<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.myTag}} -->
-The `myTag` function is a tagged template function that joins template strings into a single string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L45>)
+
+Joins the elements of a `TemplateStringsArray` into a single string.
 - **Inputs**:
-    - `strings`: An array of strings representing the literal segments of the template.
-    - `values`: An array of any type representing the interpolated values in the template.
+    - `strings`: A `TemplateStringsArray` containing the literal segments of the template string.
+    - `values`: An array of values that are interpolated into the template string, but are not used in this function.
 - **Control Flow**:
-    - The function receives a `TemplateStringsArray` and a rest parameter `values` as inputs.
-    - It uses the `join` method on the `strings` array to concatenate all the string segments into a single string.
-    - The function returns the concatenated string.
-- **Output**: A single string that is the result of joining all the template string segments.
+    - The function receives a `TemplateStringsArray` and additional values as arguments.
+    - It uses the `join` method on the `strings` array to concatenate all its elements into a single string.
+- **Output**: A single string that is the result of joining all elements of the `strings` array.
 
 
 ---
 ### complexTag<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.complexTag}} -->
-The `complexTag` function processes a tagged template literal and returns an object containing the template strings and their corresponding interpolated values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L51>)
+
+Processes a tagged template literal and returns an object containing the template strings and their corresponding values.
 - **Inputs**:
-    - `strings`: An array of strings representing the literal sections of the template.
-    - `values`: An array of values representing the interpolated expressions within the template.
+    - `strings`: An array of strings from the template literal.
+    - `values`: An array of values interpolated into the template literal.
 - **Control Flow**:
-    - The function receives a `TemplateStringsArray` and a rest parameter `values` as inputs.
-    - It constructs and returns an object with two properties: `strings` and `values`, which hold the input `strings` and `values` respectively.
-- **Output**: An object containing two properties: `strings`, an array of template strings, and `values`, an array of interpolated values.
+    - Receives `strings` and `values` as arguments from a tagged template literal.
+    - Returns an object containing the `strings` and `values`.
+- **Output**: An object with two properties: `strings`, which is an array of template strings, and `values`, which is an array of interpolated values.
 
 
 ---
 ### spreadFunc<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.spreadFunc}} -->
-The `spreadFunc` function takes a variable number of numeric arguments and returns them as an array.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L63>)
+
+Returns an array of numbers from the provided arguments.
 - **Inputs**:
-    - `args`: A rest parameter that collects all provided numeric arguments into an array.
+    - `args`: A rest parameter that collects all provided number arguments into an array.
 - **Control Flow**:
-    - The function uses the rest parameter syntax to gather all arguments into a single array named `args`.
-    - The function immediately returns the `args` array.
-- **Output**: An array containing all the numeric arguments passed to the function.
+    - Collects all provided arguments into an array using the rest parameter syntax.
+    - Returns the array of collected arguments.
+- **Output**: An array of numbers that were passed as arguments to the function.
 
 
 ---
 ### mixedSpread<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.mixedSpread}} -->
-The `mixedSpread` function creates an object with a string and an array of numbers from its arguments.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L69>)
+
+Creates an object with a string and an array of numbers from the provided arguments.
 - **Inputs**:
     - `first`: A string that represents the first argument.
-    - `rest`: A rest parameter that collects all additional number arguments into an array.
+    - `rest`: An array of numbers that represents the rest of the arguments.
 - **Control Flow**:
-    - The function takes a string as the first argument and collects any additional number arguments into an array using the rest parameter syntax.
-    - It returns an object with two properties: `first`, which holds the string argument, and `rest`, which holds the array of numbers.
-- **Output**: An object with two properties: `first` (a string) and `rest` (an array of numbers).
+    - The function takes a string as the first argument and collects the rest of the arguments as an array of numbers using the rest parameter syntax.
+    - It returns an object with two properties: `first`, which holds the string, and `rest`, which holds the array of numbers.
+- **Output**: An object with properties `first` (a string) and `rest` (an array of numbers).
 
 
 ---
 ### multiGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.multiGeneric}} -->
-The `multiGeneric` function creates an object containing two properties, `first` and `second`, with values of generic types `T` and `U` respectively.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L78>)
+
+Creates an object containing two properties, `first` and `second`, with values from the provided arguments.
 - **Inputs**:
-    - `first`: The first input parameter of generic type `T`.
-    - `second`: The second input parameter of generic type `U`.
+    - `first`: The first argument of generic type `T`.
+    - `second`: The second argument of generic type `U`.
 - **Control Flow**:
-    - The function takes two parameters, `first` and `second`, of generic types `T` and `U`.
-    - It returns an object with properties `first` and `second` set to the values of the input parameters.
-- **Output**: An object with properties `first` and `second`, containing the values of the input parameters.
+    - The function takes two arguments, `first` and `second`, of generic types `T` and `U` respectively.
+    - It returns an object with two properties: `first` set to the value of the `first` argument, and `second` set to the value of the `second` argument.
+- **Output**: An object with properties `first` and `second`, containing the values of the input arguments.
 
 
 ---
 ### asyncFunc<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.asyncFunc}} -->
-The `asyncFunc` function is an asynchronous function that returns a resolved promise with the string 'async result'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L82>)
+
+Returns a string 'async result' asynchronously.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an asynchronous function using the `async` keyword.
-    - The function immediately returns a resolved promise with the string 'async result'.
+    - The function executes asynchronously.
+    - The function returns the string 'async result'.
 - **Output**: A promise that resolves to the string 'async result'.
 
 
 ---
 ### asyncContext<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.asyncContext}} -->
-The `asyncContext` function executes an asynchronous function twice and returns a resolved promise with the string 'done'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L86>)
+
+Executes asynchronous operations sequentially and returns a resolved promise with the string 'done'.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by awaiting the execution of `asyncFunc()`.
-    - It then assigns the result of another `await asyncFunc()` call to the `result` variable.
-    - Finally, it returns a resolved promise with the string 'done' using `await Promise.resolve('done')`.
+    - Calls `asyncFunc()` and waits for its completion using `await`.
+    - Calls `asyncFunc()` again, assigns the result to `result`, and waits for its completion using `await`.
+    - Returns a resolved promise with the string 'done' using `await Promise.resolve('done')`.
 - **Output**: A resolved promise with the string 'done'.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.asyncFunc`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsasyncFunc>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.asyncFunc`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsasyncfunc>)
 
 
 ---
 ### func<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.func}} -->
-The function `func` adds a given number to the `value` property of its context object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L93>)
+
+Calculates the sum of a property `value` from the context object and a given number `x`.
 - **Inputs**:
-    - `x`: A number to be added to the `value` property of the context object.
+    - `x`: A number to add to the `value` property of the context object.
 - **Control Flow**:
-    - The function accesses the `value` property of the `this` context.
-    - It adds the input `x` to the `this.value`.
-    - The result of the addition is returned.
-- **Output**: The sum of the `value` property of the context object and the input number `x`.
+    - Accesses the `value` property from the `this` context.
+    - Adds the `value` property to the input `x`.
+    - Returns the result of the addition.
+- **Output**: The sum of the `value` property from the context object and the input number `x`.
 
 
 ---
 ### another<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.dynamicObj.another}} -->
-The `another` method returns the string 'another'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L147>)
+
+Returns the string 'another'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called without any parameters.
-    - It directly returns the string 'another'.
-- **Output**: The output is the string 'another'.
+    - Returns the string 'another'.
+- **Output**: The string 'another'.
 
 
 ---
 ### outer<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.outer}} -->
-The `outer` function takes a number as input and returns its double.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L153>)
+
+Processes a number by multiplying it by 2.
 - **Inputs**:
-    - `x`: A number that will be doubled.
+    - `x`: A number to be multiplied by 2.
 - **Control Flow**:
-    - The function receives a single argument `x`.
-    - It calculates the result by multiplying `x` by 2.
-    - The function returns the calculated result.
-- **Output**: The function returns a number which is the double of the input `x`.
+    - Receives a number `x` as input.
+    - Multiplies `x` by 2.
+- **Output**: Returns the result of `x` multiplied by 2.
 
 
 ---
 ### inner<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.inner}} -->
-The `inner` function returns the constant value 21.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L154>)
+
+Returns the number 21.
 - **Inputs**: None
 - **Control Flow**:
-    - The function executes a return statement immediately, returning the number 21.
-- **Output**: The output is the number 21.
+    - The function executes and immediately returns the number 21.
+- **Output**: The number 21.
 
 
 ---
 ### a<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.a}} -->
-The function `a` is a simple function that returns the constant value 1.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L158>)
+
+Returns the number 1.
 - **Inputs**: None
 - **Control Flow**:
-    - The function `a` is defined without any parameters.
-    - The function immediately returns the constant value 1.
-- **Output**: The output is the constant number 1.
+    - The function executes a return statement.
+- **Output**: The function returns the number 1.
 
 
 ---
 ### b<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.b}} -->
-The function 'b' takes a number as input and returns the number incremented by one.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L159>)
+
+Increments the input number by one.
 - **Inputs**:
-    - `x`: A number that will be incremented by one.
+    - `x`: A number to increment.
 - **Control Flow**:
-    - The function receives a single argument 'x'.
-    - It computes the result by adding 1 to 'x'.
-    - The computed result is returned.
-- **Output**: The function returns a number which is the input number incremented by one.
+    - Receives a number `x` as input.
+    - Adds 1 to the input number `x`.
+- **Output**: Returns the result of `x + 1`.
 
 
 ---
 ### c<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.c}} -->
-The function `c` takes a number as input and returns its double.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L160>)
+
+Multiplies the input number by 2.
 - **Inputs**:
-    - `x`: A number that will be doubled.
+    - `x`: A number to be multiplied by 2.
 - **Control Flow**:
-    - The function receives a single argument `x`.
-    - It calculates the result by multiplying `x` by 2.
-    - The function returns the calculated result.
-- **Output**: The output is a number which is the result of doubling the input number `x`.
+    - Receives a number `x` as input.
+    - Returns the result of `x` multiplied by 2.
+- **Output**: The result of the input number `x` multiplied by 2.
 
 
 ---
 ### \[Symbol\.iterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.customIterator.[Symbol.iterator]}} -->
-The [Symbol.iterator] method provides an iterator that iterates over numbers starting from 0 up to 2.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L412>)
+
+Implements an iterator that iterates over numbers from 0 to 3.
 - **Inputs**: None
 - **Control Flow**:
-    - Initialize a variable 'i' to 0.
-    - Return an object with a 'next' method.
-    - The 'next' method returns an object with 'value' set to the current value of 'i' and 'done' set to true if 'i' exceeds 3.
-    - Increment 'i' after each call to 'next'.
-- **Output**: An iterator object that provides a sequence of numbers from 0 to 2.
+    - Initialize a variable `i` to 0.
+    - Return an object with a `next` method.
+    - In the `next` method, return an object with `value` set to the current value of `i` and `done` set to `true` if `i` is greater than 3.
+    - Increment `i` after returning the object.
+- **Output**: An iterator object with a `next` method that provides the next number in the sequence and a `done` flag indicating if the iteration is complete.
 
 
 ---
 ### \[sym\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.iterableObj.[sym]}} -->
-The `sym` method returns an iterator object with a `next` method that always returns an object with a fixed value of 2 and a `done` status of true.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L169>)
+
+Implements a method that returns an iterator object with a `next` method that always returns a fixed value and indicates completion.
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns an object.
-    - The returned object has a `next` method.
+    - Returns an object with a `next` method.
     - The `next` method returns an object with `value` set to 2 and `done` set to true.
-- **Output**: An iterator object with a `next` method that returns a fixed result.
+- **Output**: An object with a `next` method that returns an object with `value` 2 and `done` true.
 
 
 ---
 ### generator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.generator}} -->
-The `generator` function is a generator function that yields a sequence of numbers from 1 to 3.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L177>)
+
+Generates a sequence of numbers using a generator function.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as a generator function using the `function*` syntax.
-    - It uses the `yield` keyword to produce a sequence of values: 1, 2, and 3, one at a time.
-    - Each call to the generator's `next()` method will return an object with the next value and a `done` flag indicating if the generator is finished.
-- **Output**: The output is a generator object that can be iterated over to yield the values 1, 2, and 3 sequentially.
+    - The function uses the `yield` keyword to produce a sequence of numbers.
+    - First, it yields the number `1`.
+    - Then, it yields the number `2`.
+    - Finally, it yields the number `3`.
+- **Output**: An iterator object that can be used to iterate over the yielded values.
 
 
 ---
 ### asyncGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.asyncGenerator}} -->
-The `asyncGenerator` function is an asynchronous generator that yields two resolved promises sequentially.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L189>)
+
+Implements an asynchronous generator that yields resolved promises with values 1 and 2.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an asynchronous generator using the `async function*` syntax.
-    - It yields the result of `await Promise.resolve(1)`, which resolves to the value `1`.
-    - It then yields the result of `await Promise.resolve(2)`, which resolves to the value `2`.
-- **Output**: The function outputs an asynchronous iterator that yields the values `1` and `2` sequentially.
+    - The function is defined as an asynchronous generator using `async function*` syntax.
+    - The function yields the result of `await Promise.resolve(1)`, which resolves to the value 1.
+    - The function yields the result of `await Promise.resolve(2)`, which resolves to the value 2.
+- **Output**: An asynchronous generator object that yields the values 1 and 2 sequentially.
 
 
 ---
 ### defaultFunc<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.defaultFunc}} -->
-The `defaultFunc` function returns the string 'default' and is used as a fallback in a nullish coalescing operation.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L199>)
+
+Returns the string 'default' if `maybeFunc` is null or undefined, otherwise calls `maybeFunc`.
 - **Inputs**: None
 - **Control Flow**:
-    - The function `defaultFunc` is defined as an arrow function that returns the string 'default'.
-    - A nullish coalescing operation is performed with `maybeFunc` and `defaultFunc`, where `defaultFunc` is invoked if `maybeFunc` is null or undefined.
-- **Output**: The output is the string 'default' if `maybeFunc` is null or undefined.
+    - Defines a constant `defaultFunc` as an arrow function that returns the string 'default'.
+    - Uses the nullish coalescing operator `??` to check if `maybeFunc` is null or undefined.
+    - If `maybeFunc` is null or undefined, `defaultFunc` is called; otherwise, `maybeFunc` is called.
+- **Output**: The output is the result of calling either `defaultFunc` or `maybeFunc`, which is a string.
 
 
 ---
 ### nullableFunc<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.nullableFunc}} -->
-The `nullableFunc` is a nullable function type that defaults to a function returning a string 'not null' and is immediately invoked using a non-null assertion.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L211>)
+
+Executes a non-null function that returns a string.
 - **Inputs**: None
 - **Control Flow**:
-    - The function `nullableFunc` is defined as a type that can either be a function returning a string or null.
-    - It is assigned a function that returns the string 'not null'.
-    - The non-null assertion operator `!` is used to immediately invoke `nullableFunc`, ensuring it is not null at the time of invocation.
-- **Output**: The output is the string 'not null' returned by the invoked function.
+    - Defines a constant `nullableFunc` as a function that returns the string 'not null' or can be null.
+    - Uses the non-null assertion operator `!` to call `nullableFunc`, ensuring it is not null at the time of invocation.
+- **Output**: The output is the string 'not null' returned by the function.
 
 
 ---
 ### curry<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.curry}} -->
-The `curry` function is a curried function that takes three numbers as arguments in a nested manner and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L216>)
+
+Implements a curried function that takes three numbers and returns their sum.
 - **Inputs**:
-    - `a`: The first number to be added.
-    - `b`: The second number to be added, provided to the returned function from the first call.
-    - `c`: The third number to be added, provided to the returned function from the second call.
+    - `a`: The first number to add.
+    - `b`: The second number to add.
+    - `c`: The third number to add.
 - **Control Flow**:
-    - The function `curry` is called with a number `a`, returning a new function.
-    - The returned function is called with a number `b`, returning another function.
-    - The innermost function is called with a number `c`, which computes and returns the sum of `a`, `b`, and `c`.
+    - Returns a function that takes a number `b`.
+    - The returned function takes a number `c`.
+    - The innermost function returns the sum of `a`, `b`, and `c`.
 - **Output**: The sum of the three numbers `a`, `b`, and `c`.
 
 
 ---
 ### arrowCurry<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.arrowCurry}} -->
-The `arrowCurry` function is a curried arrow function that takes three numbers as arguments and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L226>)
+
+Implements a curried function that takes three numbers and returns their sum.
 - **Inputs**:
-    - `a`: The first number to be added.
-    - `b`: The second number to be added.
-    - `c`: The third number to be added.
+    - `a`: The first number in the curried function.
+    - `b`: The second number in the curried function.
+    - `c`: The third number in the curried function.
 - **Control Flow**:
-    - The function is defined as a series of nested arrow functions, each taking one argument.
-    - The first function takes `a` and returns another function that takes `b`.
-    - The second function takes `b` and returns another function that takes `c`.
-    - The third function takes `c` and returns the sum of `a`, `b`, and `c`.
-- **Output**: The sum of the three input numbers `a`, `b`, and `c`.
+    - The function `arrowCurry` is defined as a curried function using arrow syntax.
+    - The function takes a number `a` and returns another function that takes a number `b`.
+    - The returned function takes a number `c` and returns the sum of `a`, `b`, and `c`.
+- **Output**: Returns the sum of the three numbers `a`, `b`, and `c`.
 
 
 ---
 ### restFunc<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.restFunc}} -->
-The `restFunc` function takes a string, a number, and a variable number of boolean arguments, returning an object containing these values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L230>)
+
+Creates an object with a string, a number, and an array of booleans.
 - **Inputs**:
-    - `first`: A string representing the first argument.
-    - `second`: A number representing the second argument.
-    - `rest`: A rest parameter capturing any additional boolean arguments.
+    - `first`: A string value.
+    - `second`: A number value.
+    - `rest`: An array of boolean values.
 - **Control Flow**:
-    - The function receives three parameters: a string, a number, and a rest parameter for booleans.
-    - It constructs an object with properties `first`, `second`, and `rest`, where `rest` is an array of the boolean arguments.
-    - The function returns the constructed object.
-- **Output**: An object with properties `first`, `second`, and `rest`, where `rest` is an array of boolean values.
+    - The function receives three parameters: `first`, `second`, and `rest`.
+    - It returns an object containing the `first` string, the `second` number, and the `rest` array of booleans.
+- **Output**: An object with properties `first`, `second`, and `rest`.
 
 
 ---
 ### withCallback<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.withCallback}} -->
-The `withCallback` function executes a provided callback function with the argument 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L236>)
+
+Executes a callback function with the number 42 as its argument.
 - **Inputs**:
-    - `cb`: A callback function that takes a single number argument.
+    - `cb`: A callback function that takes a single number as its argument.
 - **Control Flow**:
-    - The function calls the provided callback `cb` with the number 42 as its argument.
-- **Output**: There is no return value from this function; it executes the callback with a specific argument.
+    - Calls the provided callback function `cb` with the number 42 as the argument.
+- **Output**: There is no return value from this function.
 
 
 ---
 ### get<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.get}} -->
-The `get` method retrieves the value of a specified property from a target object using dynamic property access.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L276>)
+
+Retrieves the value of a specified property from a target object.
 - **Inputs**:
-    - `target`: The object from which a property value is to be retrieved.
-    - `prop`: The property name or symbol whose value is to be retrieved from the target object.
+    - `target`: The object from which to retrieve the property value.
+    - `prop`: The property name to retrieve from the target object.
 - **Control Flow**:
-    - The method accesses the property of the target object using bracket notation, which allows for dynamic property access.
-    - The property name is type-asserted to ensure it is a key of the target object type.
+    - Accesses the property `prop` on the `target` object using bracket notation.
+    - Casts `prop` to a key of the `target` object to ensure type safety.
 - **Output**: The value of the specified property from the target object.
 
 
 ---
 ### decorator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.decorator}} -->
-The `decorator` function is a simple TypeScript decorator that returns the provided property descriptor unchanged.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L341>)
+
+Returns the `descriptor` parameter unchanged.
 - **Inputs**:
-    - `target`: The target object for the decorator, typically the class prototype.
-    - `propertyKey`: The name of the property or method being decorated.
+    - `target`: The target object for the decorator.
+    - `propertyKey`: The name of the property being decorated.
     - `descriptor`: The property descriptor for the method being decorated.
 - **Control Flow**:
-    - The function receives three parameters: `target`, `propertyKey`, and `descriptor`.
-    - It immediately returns the `descriptor` without any modifications.
-- **Output**: The function returns the unmodified `PropertyDescriptor` that it receives as an input.
+    - Receives three parameters: `target`, `propertyKey`, and `descriptor`.
+    - Returns the `descriptor` parameter without modification.
+- **Output**: The same `descriptor` object that was passed as an input.
 
 
 ---
 ### assert<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.assert}} -->
-The `assert` function checks a condition and throws an error if the condition is false.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L349>)
+
+Checks a condition and throws an error if the condition is false.
 - **Inputs**:
-    - `condition`: The condition to be checked, which can be of any type.
+    - `condition`: The condition to check, which can be of any type.
 - **Control Flow**:
-    - The function checks if the provided condition is falsy.
-    - If the condition is falsy, it throws an Error with the message 'Assertion failed'.
-- **Output**: The function does not return a value; it either completes successfully if the condition is truthy or throws an error if the condition is falsy.
+    - Checks if the `condition` is falsy.
+    - If `condition` is falsy, throws an `Error` with the message 'Assertion failed'.
+- **Output**: There is no return value; the function either completes without error or throws an `Error` if the condition is false.
 
 
 ---
 ### isString<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isString}} -->
-The `isString` function checks if a given value is of type string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L357>)
+
+Determines if a given value is of type string.
 - **Inputs**:
-    - `value`: An unknown type value that needs to be checked if it is a string.
+    - `value`: The value to check if it is a string.
 - **Control Flow**:
-    - The function uses the `typeof` operator to determine the type of the input value.
-    - It compares the result of `typeof value` with the string 'string'.
-- **Output**: A boolean value indicating whether the input value is a string.
+    - Checks if the type of `value` is equal to 'string'.
+- **Output**: Returns `true` if `value` is a string, otherwise returns `false`.
 
 
 ---
 ### factorial<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.factorial}} -->
-The `factorial` function calculates the factorial of a given non-negative integer using recursion.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L364>)
+
+Calculates the factorial of a given number using recursion.
 - **Inputs**:
-    - `n`: A non-negative integer for which the factorial is to be calculated.
+    - `n`: The number for which to calculate the factorial.
 - **Control Flow**:
-    - Check if the input `n` is less than or equal to 1.
-    - If `n` is less than or equal to 1, return 1 as the factorial of 0 or 1 is 1.
-    - If `n` is greater than 1, recursively call `factorial` with `n - 1` and multiply the result by `n`.
-- **Output**: The factorial of the input number `n`, which is a non-negative integer.
+    - Checks if `n` is less than or equal to 1; if true, returns 1.
+    - If `n` is greater than 1, recursively calls `factorial` with `n - 1` and multiplies the result by `n`.
+- **Output**: The factorial of the input number `n` as a number.
 
 
 ---
 ### isEven<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isEven}} -->
-The `isEven` function determines if a given number is even using mutual recursion with the [`isOdd`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisOdd>) function.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L371>)
+
+Determines if a given number is even using mutual recursion with the [`isOdd`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisodd>) function.
 - **Inputs**:
-    - `n`: A number to be checked for evenness.
+    - `n`: A number to check for evenness.
 - **Control Flow**:
-    - Check if the input number `n` is equal to 0.
-    - If `n` is 0, return `true` indicating the number is even.
-    - If `n` is not 0, call the [`isOdd`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisOdd>) function with `n - 1` as the argument.
-- **Output**: A boolean value indicating whether the input number is even.
+    - Checks if `n` is equal to 0; if true, returns `true`.
+    - If `n` is not 0, calls the [`isOdd`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisodd>) function with `n - 1` as the argument.
+- **Output**: A boolean value indicating whether the number is even.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isOdd`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisOdd>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isOdd`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisodd>)
 
 
 ---
 ### isOdd<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isOdd}} -->
-The `isOdd` function determines if a given number is odd by using mutual recursion with the [`isEven`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisEven>) function.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L375>)
+
+Determines if a given number is odd by using mutual recursion with the [`isEven`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsiseven>) function.
 - **Inputs**:
-    - `n`: A number to be checked for oddness.
+    - `n`: A number to check for oddness.
 - **Control Flow**:
-    - The function checks if the input number `n` is equal to 0.
-    - If `n` is 0, the function returns `false`, indicating that 0 is not odd.
-    - If `n` is not 0, the function calls [`isEven`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisEven>) with `n - 1` to determine if the number is odd.
-- **Output**: A boolean value indicating whether the input number is odd.
+    - Checks if `n` is equal to 0; if true, returns `false`.
+    - Calls the [`isEven`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsiseven>) function with `n - 1` as the argument.
+- **Output**: A boolean value indicating whether the number is odd.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isEven`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsisEven>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.isEven`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_callsiseven>)
 
 
 ---
 ### toString<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.objWithToString.toString}} -->
-The `toString` method returns a string representation of the object it is called on.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L404>)
+
+Returns a string representation of the object.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called without any parameters.
-    - It directly returns the string 'string representation'.
+    - The method returns the string 'string representation'.
 - **Output**: A string 'string representation'.
 
 
 ---
 ### valueOf<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.objWithToString.valueOf}} -->
-The `valueOf` method returns the numeric value 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L405>)
+
+Returns the numeric value 42.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is called without any parameters.
-    - It directly returns the number 42.
+    - The method directly returns the number 42 without any conditions or calculations.
 - **Output**: The output is the number 42.
 
 
 ---
 ### next<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.customIterator.next}} -->
-The `next` method returns an object representing the next value in a sequence and indicates if the sequence is complete.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L415>)
+
+Implements the iterator protocol by returning an object with `value` and `done` properties.
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns an object with two properties: `value` and `done`.
-    - The `value` property is set to the current value of `i` before it is incremented.
-    - The `done` property is a boolean that evaluates to `true` if `i` is greater than 3, indicating the end of the sequence.
-- **Output**: An object with properties `value` (the current value of `i`) and `done` (a boolean indicating if `i` is greater than 3).
+    - Returns an object with a `value` property set to the current value of `i` and a `done` property indicating if `i` is greater than 3.
+    - Increments the value of `i` after returning the object.
+- **Output**: An object with `value` and `done` properties, where `value` is the current value of `i` and `done` is a boolean indicating if `i` is greater than 3.
 
 
 ---
 ### \[Symbol\.asyncIterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.customAsyncIterator.[Symbol.asyncIterator]}} -->
-The `[Symbol.asyncIterator]` method is an asynchronous generator function that yields resolved promises of numbers 1 and 2.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L425>)
+
+Implements an asynchronous iterator that yields resolved promises with values 1 and 2.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as an asynchronous generator using the `async *` syntax.
-    - It yields the result of `await Promise.resolve(1)`, which resolves to the number 1.
-    - It then yields the result of `await Promise.resolve(2)`, which resolves to the number 2.
-- **Output**: An asynchronous iterator that yields the numbers 1 and 2, each wrapped in a resolved promise.
+    - The method is defined as an asynchronous generator function using the `async *` syntax.
+    - The method yields the result of `await Promise.resolve(1)`, which resolves to the value 1.
+    - The method yields the result of `await Promise.resolve(2)`, which resolves to the value 2.
+- **Output**: An asynchronous iterator that yields the values 1 and 2 sequentially.
 
 
 ---
 ### consumeAsyncIterator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.consumeAsyncIterator}} -->
-The `consumeAsyncIterator` function asynchronously iterates over a custom async iterator and logs each value to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L432>)
+
+Consumes an asynchronous iterator and logs each value to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses a `for await...of` loop to iterate over the `customAsyncIterator`.
-    - For each value yielded by the iterator, the function logs the value to the console using `console.log(value)`.
-- **Output**: The function does not return any value; it performs side effects by logging to the console.
+    - Uses a `for await...of` loop to iterate over `customAsyncIterator`.
+    - Logs each `value` obtained from the iterator to the console.
+- **Output**: No explicit output; side effect is logging values to the console.
 
 
 ---
 ### pipe<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.pipe}} -->
-The `pipe` function composes multiple functions into a single function that applies them in sequence to an initial value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L470>)
+
+Composes a series of functions into a single function that applies them in sequence to an initial value.
 - **Inputs**:
-    - `fns`: An array of functions to be composed and applied in sequence.
+    - `fns`: An array of functions to apply in sequence.
 - **Control Flow**:
-    - The `pipe` function takes a variable number of function arguments and returns a new function.
-    - The returned function takes a single argument `x` and applies the composed functions to it in sequence.
-    - The `reduce` method is used to apply each function in the `fns` array to the accumulated value, starting with `x`.
-- **Output**: A new function that takes an initial value and returns the result of applying the composed functions in sequence.
+    - Takes a series of functions as arguments using rest parameters.
+    - Returns a new function that takes an initial value `x`.
+    - Uses `Array.prototype.reduce` to apply each function in `fns` to the result of the previous function, starting with `x`.
+- **Output**: A function that, when called with an initial value, returns the result of applying the composed functions in sequence.
 
 
 ---
 ### add1<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.add1}} -->
-The `add1` function takes a number and returns the number incremented by one.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L471>)
+
+Increments the input number by 1.
 - **Inputs**:
-    - `x`: A number to be incremented.
+    - `x`: A number to increment.
 - **Control Flow**:
-    - The function receives a single argument `x`.
-    - It computes the result by adding 1 to `x`.
-- **Output**: The function returns the result of `x + 1`, which is a number.
+    - Takes the input number `x`.
+    - Adds 1 to `x`.
+- **Output**: Returns the result of `x + 1`.
 
 
 ---
 ### mult2<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.mult2}} -->
-The `mult2` function takes a number and returns its double.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_calls.ts#L472>)
+
+Multiplies a given number by 2.
 - **Inputs**:
-    - `x`: A number to be doubled.
+    - `x`: A number to multiply by 2.
 - **Control Flow**:
-    - The function receives a single argument `x`.
-    - It multiplies `x` by 2.
+    - Receives a number `x` as input.
+    - Multiplies `x` by 2.
 - **Output**: The result of multiplying the input number by 2.
 
 

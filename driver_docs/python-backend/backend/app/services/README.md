@@ -3,24 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Service implementations and unit tests for Auth0, codebase analysis, content, tags, GitLab, uploads, and utility functions.
+Auth0, codebase, content, GitLab provider, tag, and upload services with corresponding tests, plus utility functions for `DerivedContent` objects.
 
 ## Folders
-- **[utils](utils/README.md)**: Utility functions for content extraction and naming, with unit tests for their functionality.
+- **[utils](utils/README.md)**: Functions for extracting content names from `DerivedContent` objects and tests for these functions.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[auth0_service.py](auth0_service.py.md)**: The `auth0_service.py` file implements the `Auth0Service` class, which provides various methods for interacting with the Auth0 API, including managing user roles, organizations, invitations, and handling authentication tokens.
-- **[auth0_service_test.py](auth0_service_test.py.md)**: The `auth0_service_test.py` file contains unit tests for the `Auth0Service` class, verifying its functionality in managing tokens, user roles, organization members, and invitations within the Auth0 platform.
-- **[codebase_service.py](codebase_service.py.md)**: The `codebase_service.py` file in the `python-backend` codebase provides functionality for executing and managing codebase analysis, including validating presigned URLs, handling modal function calls, and triggering codebase onboarding.
-- **[codebase_service_test.py](codebase_service_test.py.md)**: The `codebase_service_test.py` file contains unit tests for validating codebase analysis presigned URLs and object keys, ensuring proper authorization using the `CodebaseAnalysisAuthException`.
-- **[content_service.py](content_service.py.md)**: The `content_service.py` file implements the `ContentService` class, which provides methods for managing and retrieving content-related data, including listing content, fetching content by ID, generating download URLs, retrieving content tags, and converting markdown to reStructuredText.
-- **[content_service_test.py](content_service_test.py.md)**: The `content_service_test.py` file contains a suite of tests for the `ContentService` in the `python-backend` codebase, verifying functionalities such as content creation, retrieval, association, editing, and deletion, while handling different organizational contexts and exceptions.
-- **[gitlab_provider_service.py](gitlab_provider_service.py.md)**: The `gitlab_provider_service.py` file in the `python-backend` codebase implements services for managing GitLab provider applications, including creating, installing, authorizing, and handling access tokens and repository operations.
-- **[tag_service.py](tag_service.py.md)**: The `tag_service.py` file implements the `TagService` class, which provides functionalities for managing tags, including associating tags with content, creating, editing, listing, and deleting tags within an organization.
-- **[tag_service_test.py](tag_service_test.py.md)**: The `tag_service_test.py` file contains a suite of pytest tests for the `TagService` in the `python-backend` codebase, verifying functionalities such as creating, updating, listing, associating, and deleting tags, while ensuring proper exception handling for invalid operations.
-- **[upload_service.py](upload_service.py.md)**: The `upload_service.py` file in the `python-backend` codebase implements the `UploadService` class, which provides functionality for creating asset versions, generating upload URLs for zip, pdf, and toml files, and handling associated metadata and exceptions.
-- **[upload_service_test.py](upload_service_test.py.md)**: The `upload_service_test.py` file contains unit tests for the `UploadService` in the `python-backend` codebase, verifying the functionality of uploading codebases and PDFs, including handling of valid and invalid file paths and user permissions.
+- **[auth0_service.py](auth0_service.py.md)**: Auth0 service for managing user roles, organizations, invitations, and authentication tokens.
+- **[auth0_service_test.py](auth0_service_test.py.md)**: Unit tests for the Auth0Service class, using unittest and pytest to mock and verify Auth0 API interactions.
+- **[codebase_service.py](codebase_service.py.md)**: Implements codebase analysis services with security checks and AWS S3 integration.
+- **[codebase_service_test.py](codebase_service_test.py.md)**: Tests for validating codebase analysis presigned URLs and object keys with exception handling.
+- **[content_service.py](content_service.py.md)**: A service for managing content operations, including retrieval, filtering, and conversion, using SQLAlchemy and FastAPI.
+- **[content_service_test.py](content_service_test.py.md)**: Unit tests for the `ContentService` and `TagService` in a FastAPI application using pytest.
+- **[git_provider_service.py](git_provider_service.py.md)**: A unified service for managing Git provider operations, including app management, access token handling, repository operations, and webhook event processing.
+- **[gitlab_provider_service.py](gitlab_provider_service.py.md)**: Functions for managing GitLab provider applications, including creation, installation, authorization, and repository access.
+- **[tag_service.py](tag_service.py.md)**: Implements tag management services including creation, association, editing, listing, and deletion.
+- **[tag_service_test.py](tag_service_test.py.md)**: Tests for the `TagService` class, including tag creation, updating, listing, association, and deletion.
+- **[upload_service.py](upload_service.py.md)**: Handles asset version creation and presigned URL generation for file uploads, supporting zip, pdf, and toml files.
+- **[upload_service_test.py](upload_service_test.py.md)**: Tests for the upload service, including codebase and PDF upload scenarios with validation and exceptions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

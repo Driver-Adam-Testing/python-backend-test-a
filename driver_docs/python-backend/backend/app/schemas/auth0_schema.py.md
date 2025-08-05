@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth0_schema.py` file defines Pydantic models for handling user invitations and role modifications, including classes for invitees, invitations, and user role changes.
+Defines Pydantic models for handling user invitations and role modifications.
 
 # Purpose
-This code defines a set of data models using the Pydantic library, which is commonly used for data validation and settings management in Python. The file provides narrow functionality, focusing specifically on defining structured data models for handling user invitations and role modifications. It includes classes such as `Invitee`, `Invitation`, `CreateInvitationInput`, `ModifyUserRolesInput`, and `ModifyUserRolesResponse`, each extending from `BaseModel` to leverage Pydantic's validation features. These models are designed to ensure that data related to user invitations and role management is correctly structured and validated, with fields like email addresses and lists of role IDs being explicitly defined. This code is likely part of a larger system that manages user access and permissions, ensuring that data integrity is maintained when creating invitations or modifying user roles.
+This code defines a set of data models using the Pydantic library, which is used for data validation and settings management in Python. The `Invitee` class models an invitee with an `email` attribute of type `EmailStr`, ensuring valid email format. The `Invitation` class includes an `invitee` of type `Invitee` and a `roles` attribute, which is a list of strings representing role IDs. The `CreateInvitationInput` class models input data for creating invitations, containing a list of `Invitation` objects. The `ModifyUserRolesInput` class models input data for modifying user roles, with a `roles` attribute that is a list of role IDs. Finally, the `ModifyUserRolesResponse` class models the response for a user role modification operation, including the `user_id`, `added_roles`, and `removed_roles` attributes.
 # Imports and Dependencies
 
 ---
@@ -19,48 +19,58 @@ This code defines a set of data models using the Pydantic library, which is comm
 
 ---
 ### Invitee<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.Invitee}} -->
+[View Source →](<../../../../../backend/app/schemas/auth0_schema.py#L4>)
+
 - **Members**:
-    - `email`: An email address of the invitee, validated as an EmailStr.
-- **Description**: The Invitee class is a Pydantic model that represents an individual who is invited, identified by their email address, which is validated to ensure it is a proper email format.
+    - `email`: Stores the email address of the invitee as an `EmailStr` type.
+- **Description**: Represents an invitee with an email address, using Pydantic's `BaseModel` for data validation.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### Invitation<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.Invitation}} -->
+[View Source →](<../../../../../backend/app/schemas/auth0_schema.py#L8>)
+
 - **Members**:
-    - `invitee`: An instance of the Invitee class representing the person being invited.
-    - `roles`: A list of role IDs associated with the invitation.
-- **Description**: The Invitation class is a data model that represents an invitation, including the invitee's details and the roles associated with the invitation. It extends the BaseModel from Pydantic, ensuring data validation and serialization. The class includes an invitee, which is an instance of the Invitee class, and a list of roles, which are represented as strings and described using a Pydantic Field for additional metadata.
+    - `invitee`: Holds the invitee's information as an `Invitee` object.
+    - `roles`: Stores a list of role IDs as strings.
+- **Description**: Represents an invitation with details about the invitee and their associated roles.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CreateInvitationInput<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.CreateInvitationInput}} -->
+[View Source →](<../../../../../backend/app/schemas/auth0_schema.py#L13>)
+
 - **Members**:
-    - `invitations`: A list of Invitation objects to be created.
-- **Description**: The CreateInvitationInput class is a Pydantic model designed to encapsulate a list of Invitation objects, which are used to create new invitations. Each Invitation object within the list contains details about the invitee and their associated roles.
+    - `invitations`: A list of `Invitation` objects.
+- **Description**: Represents input data for creating invitations, containing a list of `Invitation` objects.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ModifyUserRolesInput<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesInput}} -->
+[View Source →](<../../../../../backend/app/schemas/auth0_schema.py#L17>)
+
 - **Members**:
-    - `roles`: A list of role IDs to be modified for a user.
-- **Description**: The ModifyUserRolesInput class is a Pydantic model that defines the input structure for modifying user roles, specifically containing a list of role IDs that are to be updated.
+    - `roles`: A list of role IDs.
+- **Description**: Represents input data for modifying user roles, containing a list of role IDs.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ModifyUserRolesResponse<!-- {{#class:python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesResponse}} -->
+[View Source →](<../../../../../backend/app/schemas/auth0_schema.py#L21>)
+
 - **Members**:
-    - `user_id`: A string representing the unique identifier of the user.
-    - `added_roles`: A list of strings representing the roles that have been added to the user.
-    - `removed_roles`: A list of strings representing the roles that have been removed from the user.
-- **Description**: The ModifyUserRolesResponse class is a data model that represents the response structure for modifying user roles, including the user's ID and lists of roles that were added or removed.
+    - `user_id`: Stores the user identifier as a string.
+    - `added_roles`: Contains a list of role identifiers that were added.
+    - `removed_roles`: Contains a list of role identifiers that were removed.
+- **Description**: Represents the response structure for modifying user roles, including the user ID and lists of roles that were added or removed.
 - **Inherits From**:
     - `BaseModel`
 

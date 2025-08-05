@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     AWS_S3_CODE_BUCKET_SUFFIX: str = "codebase-dropzone"
     USE_LEGACY_DROPZONE: bool = True
     DROPZONE_BUCKET_NAME: str | None = None
+    AWS_REGION: str
 
 
 settings = Settings()  # type: ignore

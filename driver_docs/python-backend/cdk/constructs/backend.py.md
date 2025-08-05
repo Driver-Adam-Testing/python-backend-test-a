@@ -3,19 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `backend.py` file in the `python-backend` codebase defines a CDK construct for deploying a backend service on AWS, utilizing various AWS services such as ECS, S3, Secrets Manager, and Route 53, with configurations for environment variables, secrets, and network settings.
+Defines AWS infrastructure for a backend service using AWS CDK, including ECS, VPC, and secret management.
 
 # Purpose
-This Python code file is designed to define and deploy a backend infrastructure using AWS Cloud Development Kit (CDK). It primarily focuses on setting up an Amazon ECS (Elastic Container Service) Fargate service with an application load balancer, integrating various AWS services such as EC2, S3, Secrets Manager, and Route 53. The `Backend` class, which extends the `Construct` class, encapsulates the logic for configuring the necessary AWS resources, including VPC, ECS cluster, hosted zone, and secrets management. The code retrieves configuration parameters from AWS Systems Manager Parameter Store and AWS Secrets Manager to securely manage sensitive information like database credentials and API keys. It also configures a CORS-enabled S3 bucket and sets up environment variables and secrets for the ECS container.
+The code defines a backend infrastructure setup using the AWS Cloud Development Kit (CDK) for deploying a containerized application on AWS. It primarily consists of two classes: `BackendParams` and `Backend`. The `BackendParams` class is a data structure that holds configuration parameters such as CORS origins, allowed IPs, environment settings, and an AWS EventBus for metrics. These parameters are used to configure the backend service.
 
-The file is structured to be part of a larger infrastructure-as-code setup, likely intended to be used as a module within a broader CDK application. It does not define a standalone script but rather a reusable construct that can be instantiated within a CDK stack. The code includes detailed configuration for the ECS service, such as task image options, health checks, and deployment settings, ensuring robust and secure deployment of the backend service. Additionally, it includes comments and TODOs indicating areas for future enhancement, such as parameterizing task count and container size, and re-enabling AWS WAF once certain conditions are met.
+The `Backend` class extends the `Construct` class and is responsible for setting up various AWS resources and services. It retrieves configuration values from AWS Systems Manager Parameter Store and AWS Secrets Manager to configure a Virtual Private Cloud (VPC), ECS cluster, and Route 53 hosted zone. It also sets up an S3 bucket with CORS configuration and lifecycle rules. The class configures an ECS Fargate service using an application load balancer, specifying environment variables and secrets for the container. The service is set to run on the latest Fargate platform version with specific CPU and memory limits. Additionally, the code outputs the ARNs of the ECS cluster and service, and grants permissions for the service to put events on the specified EventBus.
 # Imports and Dependencies
 
 ---
 - `aws_cdk.Duration`
 - `aws_cdk.Stack`
+- `aws_cdk.CfnOutput`
 - `aws_cdk.aws_ec2`
 - `aws_cdk.aws_ecs`
+- `aws_cdk.aws_ecr`
+- `aws_cdk.aws_ecr_assets`
 - `aws_cdk.aws_ecs_patterns`
 - `aws_cdk.aws_elasticloadbalancingv2`
 - `aws_cdk.aws_events`
@@ -32,46 +35,56 @@ The file is structured to be part of a larger infrastructure-as-code setup, like
 
 ---
 ### BackendParams<!-- {{#class:python-backend/cdk/constructs/backend.BackendParams}} -->
+[View Source →](<../../../../cdk/constructs/backend.py#L23>)
+
 - **Members**:
-    - `cors_origins`: A string representing the allowed CORS origins.
-    - `allowed_ips`: A list of strings representing the allowed IP addresses.
-    - `environment`: A string indicating the environment (e.g., development, production).
-    - `use_legacy_dropzone`: A boolean indicating whether to use the legacy dropzone feature.
-    - `metrics_bus`: An AWS EventBus object for handling metrics events.
-- **Description**: The BackendParams class is a configuration holder for backend parameters, including CORS origins, allowed IPs, environment settings, a flag for using legacy dropzone features, and an AWS EventBus for metrics. It is used to encapsulate and pass these configuration settings to other components, such as the Backend class, which utilizes these parameters to set up and manage backend services.
+    - `cors_origins`: Specifies the CORS origins as a string.
+    - `allowed_ips`: Contains a list of allowed IP addresses.
+    - `environment`: Indicates the environment setting as a string.
+    - `use_legacy_dropzone`: Determines if the legacy dropzone is used as a boolean.
+    - `metrics_bus`: Holds an AWS EventBus object for metrics.
+- **Description**: Defines parameters for backend configuration, including CORS settings, allowed IPs, environment, legacy dropzone usage, and metrics bus.
 - **Methods**:
-    - [`python-backend/cdk/constructs/backend.BackendParams.__init__`](<#BackendParams__init__>)
+    - [`python-backend/cdk/constructs/backend.BackendParams.__init__`](<#backendparams__init__>)
 
 **Methods**
 
 ---
 #### BackendParams\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/constructs/backend.BackendParams.__init__}} -->
-The `__init__` method initializes an instance of the `BackendParams` class with configuration parameters for CORS, allowed IPs, environment, legacy dropzone usage, and an AWS EventBus for metrics.
+[View Source →](<../../../../cdk/constructs/backend.py#L30>)
+
+Initializes an instance of the `BackendParams` class with specified configuration parameters.
 - **Inputs**:
-    - `cors_origins`: A list of strings representing the allowed CORS origins.
-    - `allowed_ips`: A list of strings representing the allowed IP addresses.
-    - `environment`: A string indicating the environment (e.g., 'development', 'production').
-    - `use_legacy_dropzone`: A boolean indicating whether to use the legacy dropzone feature.
-    - `metrics_bus`: An instance of `aws_events.EventBus` used for metrics.
-- **Control Flow**:
+    - `cors_origins`: A list of strings specifying the allowed CORS origins.
+    - `allowed_ips`: A list of strings specifying the allowed IP addresses.
+    - `environment`: A string indicating the environment (e.g., 'production', 'development').
+    - `use_legacy_dropzone`: A boolean indicating whether to use the legacy dropzone.
+    - `metrics_bus`: An `aws_events.EventBus` object for handling metrics events.
+    - `aws_region`: A string specifying the AWS region.
+    - `aws_account`: A string specifying the AWS account ID.
+- **Logic and Control Flow**:
     - Assigns the `cors_origins` parameter to the instance variable `self.cors_origins`.
     - Assigns the `allowed_ips` parameter to the instance variable `self.allowed_ips`.
     - Assigns the `environment` parameter to the instance variable `self.environment`.
     - Assigns the `use_legacy_dropzone` parameter to the instance variable `self.use_legacy_dropzone`.
     - Assigns the `metrics_bus` parameter to the instance variable `self.metrics_bus`.
-- **Output**: This method does not return any value; it initializes the instance variables with the provided parameters.
-- **See also**: [`python-backend/cdk/constructs/backend.BackendParams`](<#BackendParams>)  (Base Class)
+    - Assigns the `aws_region` parameter to the instance variable `self.aws_region`.
+    - Assigns the `aws_account` parameter to the instance variable `self.aws_account`.
+- **Output**: None
+- **See also**: [`python-backend/cdk/constructs/backend.BackendParams`](<#backendparams>)  (Base Class)
 
 
 
 ---
 ### Backend<!-- {{#class:python-backend/cdk/constructs/backend.Backend}} -->
+[View Source →](<../../../../cdk/constructs/backend.py#L49>)
+
 - **Members**:
-    - `dropzone_bucket`: An S3 bucket configured with CORS and lifecycle rules for temporary storage.
-    - `service`: An Application Load Balanced Fargate Service for deploying the backend API.
-- **Description**: The `Backend` class is a construct that sets up a backend infrastructure using AWS CDK. It configures various AWS resources such as VPC, ECS Cluster, Route 53 Hosted Zone, and Secrets Manager secrets. The class also sets up an S3 bucket with specific CORS and lifecycle configurations and deploys a backend API using an Application Load Balanced Fargate Service. It manages environment variables and secrets for the container, configures health checks, and attaches necessary IAM policies for secret management and event bus permissions.
+    - `dropzone_bucket`: Stores the S3 bucket for the dropzone with CORS and lifecycle rules.
+    - `service`: Holds the ECS Fargate service for the backend API.
+- **Description**: Implements a backend infrastructure using AWS CDK, setting up an ECS Fargate service with necessary resources like VPC, ECS cluster, hosted zone, and secrets. It configures environment variables and secrets for the container, sets up an S3 bucket for the dropzone, and outputs ECS cluster and service ARNs. The class also manages IAM policies for secret access and configures health checks for the service.
 - **Methods**:
-    - [`python-backend/cdk/constructs/backend.Backend.__init__`](<#Backend__init__>)
+    - [`python-backend/cdk/constructs/backend.Backend.__init__`](<#backend__init__>)
 - **Inherits From**:
     - `Construct`
 
@@ -79,30 +92,31 @@ The `__init__` method initializes an instance of the `BackendParams` class with 
 
 ---
 #### Backend\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/constructs/backend.Backend.__init__}} -->
-The [`__init__`](<#BackendParams__init__>) method initializes a Backend construct by setting up AWS resources such as VPC, ECS cluster, Route 53 hosted zone, S3 bucket, and secrets, and configures an Application Load Balanced Fargate Service with environment variables and secrets.
+[View Source →](<../../../../cdk/constructs/backend.py#L50>)
+
+Initializes the `Backend` construct by setting up AWS resources and configurations for a backend service.
 - **Inputs**:
-    - `scope`: A Construct object that defines the scope in which this construct is created.
+    - `scope`: A `Construct` object that defines the scope in which this construct is created.
     - `id`: A string that serves as the unique identifier for this construct.
-    - `params`: An instance of BackendParams containing configuration parameters such as CORS origins, environment, and metrics bus.
-- **Control Flow**:
-    - Call the superclass constructor with scope and id.
-    - Retrieve VPC ID from AWS SSM and look up the VPC using AWS EC2.
-    - Retrieve ECS cluster name from AWS SSM and look up the cluster using AWS ECS.
-    - Retrieve hosted zone ID and name from AWS SSM and look up the hosted zone using AWS Route 53.
-    - Retrieve various secret names from AWS SSM and look up the secrets using AWS Secrets Manager.
-    - Retrieve inspector bucket name from AWS SSM.
-    - Create an S3 bucket with CORS configuration and lifecycle rules.
-    - Define environment variables for the container using parameters and retrieved values.
-    - Define container secrets using the retrieved secrets.
-    - Create a container image from the local asset and configure task image options with environment variables and secrets.
-    - Create an Application Load Balanced Fargate Service with specified configurations such as protocol, SSL policy, platform version, and task image options.
-    - Configure health check for the service's target group.
-    - Attach an inline policy to the task role for managing customer secrets.
-    - Grant permissions to the service's task role to put events on the metrics bus.
-- **Output**: The method does not return any value; it initializes the Backend construct with configured AWS resources and services.
+    - `params`: An instance of `BackendParams` containing configuration parameters for the backend service.
+- **Logic and Control Flow**:
+    - Calls the parent class [`__init__`](<#backendparams__init__>) method to initialize the base `Construct` class.
+    - Retrieves the VPC ID from AWS SSM Parameter Store and uses it to look up the VPC.
+    - Retrieves the ECS cluster name from AWS SSM Parameter Store and uses it to look up the ECS cluster attributes.
+    - Retrieves the hosted zone ID and name from AWS SSM Parameter Store and uses them to look up the hosted zone attributes.
+    - Retrieves various secret names from AWS SSM Parameter Store and uses them to look up secrets in AWS Secrets Manager.
+    - Creates an S3 bucket with specified CORS and lifecycle rules.
+    - Defines environment variables and secrets for the ECS container.
+    - Retrieves the ECR repository and sets up task image options for the ECS service.
+    - Creates an `ApplicationLoadBalancedFargateService` with specified configurations, including protocol, SSL policy, platform version, and task options.
+    - Configures health checks for the ECS service target group.
+    - Attaches an inline IAM policy to the ECS task role to allow access to customer secrets.
+    - Outputs the ECS Cluster ARN and ECS Service ARN using `CfnOutput`.
+    - Grants permissions to the ECS task role to put events on the metrics bus.
+- **Output**: No return value; sets up AWS resources and configurations for the backend service.
 - **Functions Called**:
-    - [`python-backend/cdk/constructs/backend.BackendParams.__init__`](<#BackendParams__init__>)
-- **See also**: [`python-backend/cdk/constructs/backend.Backend`](<#Backend>)  (Base Class)
+    - [`python-backend/cdk/constructs/backend.BackendParams.__init__`](<#backendparams__init__>)
+- **See also**: [`python-backend/cdk/constructs/backend.Backend`](<#backend>)  (Base Class)
 
 
 

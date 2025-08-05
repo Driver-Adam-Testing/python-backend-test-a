@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auto_toml_cli.py` file in the `python-backend` codebase provides a command-line interface for generating and appending TOML files based on document goals or existing TOML files, with support for different execution environments and auto-scaling options.
+A command-line interface for generating and appending TOML files using specified document goals and contexts.
 
 # Purpose
-This Python script is a command-line interface (CLI) tool designed to facilitate the generation and modification of TOML files based on specified document goals or existing TOML content. The script provides two primary commands: `generate` and `append`. The `generate` command creates a new TOML file from a specified document goal, while the `append` command adds content to an existing TOML file. Both commands support execution in different environments—local, development, and production—by setting the `MODAL_ENVIRONMENT` environment variable accordingly. The script utilizes the `AutoToml` class for local operations and a remote `AutoTomlModal` class for operations in development and production environments, leveraging asynchronous execution to handle potentially time-consuming tasks.
+This code is a command-line interface (CLI) tool designed to generate or append TOML files based on specified document goals and user inputs. It uses the `argparse` module to parse command-line arguments and supports two main commands: `generate` and `append`. The `generate` command creates a new TOML file, while the `append` command adds content to an existing TOML file. Both commands can operate in different environments, such as local, development, or production, which is controlled by the `--env` argument.
 
-The script employs the `argparse` module to parse command-line arguments, allowing users to specify various options such as the document goal, output file path, execution environment, and additional user context. It also supports specifying source identifiers through node IDs or a page ID, ensuring flexibility in how the TOML content is generated or appended. The use of asynchronous functions ([`generate_command`](<#generate_command>) and [`append_command`](<#append_command>)) ensures that the script can efficiently handle I/O-bound operations, such as reading from and writing to files, and interacting with remote services. This script is intended to be executed as a standalone tool, as indicated by the `if __name__ == "__main__":` block, which calls the [`main`](<#main>) function to initiate the argument parsing and command execution process.
+The code utilizes asynchronous functions [`generate_command`](<#generate_command>) and [`append_command`](<#append_command>) to handle the respective operations. These functions interact with the `AutoToml` class or its remote counterpart `AutoTomlModal`, depending on the execution environment. The tool allows users to specify node IDs or a page ID as the source of the data, and it can enable auto-scaling to improve latency. The results are written to an output file specified by the user. The CLI is initiated by the [`main`](<#main>) function, which sets up the argument parser and executes the appropriate command based on user input.
 # Imports and Dependencies
 
 ---
@@ -24,63 +24,75 @@ The script employs the `argparse` module to parse command-line arguments, allowi
 
 ---
 ### generate\_command<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_cli.generate_command}} -->
-The `generate_command` function generates a TOML file based on provided arguments, either using a remote service or local execution, and writes the result to a specified output file.
-- **Decorators**: `@asyncio.coroutine`
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_cli.py#L9>)
+
+Generates a TOML file based on the specified environment and input parameters, either from node IDs or a page ID.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `args`: An argparse.Namespace object containing command-line arguments such as environment, node IDs, page ID, document goal, auto-scaling option, user context, and output file path.
-- **Control Flow**:
-    - Check if the environment specified in args.env is either 'dev' or 'prod'.
-    - If in 'dev' or 'prod', set the MODAL_ENVIRONMENT environment variable and import the Cls class from the modal module.
-    - Instantiate AutoTomlModal using Cls.from_name and create an instance of it.
-    - If node IDs are provided, split them into a list and call generate_from_node_ids.remote on the AutoTomlModal instance with the appropriate arguments.
-    - If no node IDs are provided, call generate_from_page_id.remote on the AutoTomlModal instance with the appropriate arguments.
-    - If the environment is not 'dev' or 'prod', check if node IDs are provided and create an AutoToml instance using from_node_ids or from_page_id methods.
-    - Await the generate method on the AutoToml instance with the appropriate arguments.
-    - Open the specified output file in write mode and write the result to it.
-- **Output**: The function writes the generated TOML content to the specified output file.
+    - `args`: An `argparse.Namespace` object containing command-line arguments such as `env`, `node_ids`, `page_id`, `goal`, `auto_scale`, `user_context`, and `output`.
+- **Logic and Control Flow**:
+    - Check if `args.env` is either 'dev' or 'prod'.
+    - If `args.env` is 'dev' or 'prod', set the environment variable `MODAL_ENVIRONMENT` to `args.env` and import `Cls` from `modal`.
+    - Create an instance of [`AutoTomlModal`](<auto_toml_modal.py.md#autotomlmodal>) using `Cls.from_name`.
+    - If `args.node_ids` is provided, split it by commas, strip whitespace, and call `generate_from_node_ids.remote` on `auto_toml_modal` with the node IDs and other parameters.
+    - If `args.node_ids` is not provided, call `generate_from_page_id.remote` on `auto_toml_modal` with `args.page_id` and other parameters.
+    - If `args.env` is not 'dev' or 'prod', check if `args.node_ids` is provided.
+    - If `args.node_ids` is provided, split it by commas, strip whitespace, and create an `AutoToml` instance using [`from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>).
+    - If `args.node_ids` is not provided, create an `AutoToml` instance using [`from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>) with `args.page_id` converted to a UUID.
+    - Await the [`generate`](<auto_toml.py.md#autotomlgenerate>) method on the `AutoToml` instance with `args.goal` and `args.user_context`.
+    - Open the file specified by `args.output` in write mode and write the result to it.
+- **Output**: Writes the generated TOML content to the file specified by `args.output`.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<auto_toml_modal.py.md#AutoTomlModal>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#AutoTomlfrom_node_ids>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#AutoTomlfrom_page_id>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<auto_toml.py.md#AutoTomlgenerate>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<auto_toml_modal.py.md#autotomlmodal>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<auto_toml.py.md#autotomlgenerate>)
 
 
 ---
 ### append\_command<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_cli.append_command}} -->
-The `append_command` function appends data to an existing TOML file using either a remote or local execution environment based on the provided arguments.
-- **Decorators**: `@asyncio.coroutine`
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_cli.py#L50>)
+
+Appends data to an existing TOML file based on the specified environment and input parameters.
 - **Inputs**:
-    - `args`: An argparse.Namespace object containing command-line arguments, including 'toml_file', 'output', 'auto_scale', 'env', 'user_context', 'node_ids', and 'page_id'.
-- **Control Flow**:
-    - Open the TOML file specified by 'args.toml_file' and read its contents into 'user_toml'.
-    - Check if 'args.env' is either 'dev' or 'prod'.
-    - If 'args.env' is 'dev' or 'prod', set the environment variable 'MODAL_ENVIRONMENT' and use the 'modal' library to append data remotely.
-    - If 'args.node_ids' is provided, split it into a list and call 'append_from_node_ids.remote' on the remote object; otherwise, call 'append_from_page_id.remote'.
-    - If 'args.env' is not 'dev' or 'prod', use the 'AutoToml' class for local execution.
-    - If 'args.node_ids' is provided, split it into a list and call 'from_node_ids' on the 'AutoToml' object; otherwise, call 'from_page_id'.
-    - Await the 'append' method on the 'AutoToml' object for local execution.
-    - Write the result to the file specified by 'args.output'.
-- **Output**: The function writes the result of the append operation to the file specified by 'args.output'.
+    - `args`: An `argparse.Namespace` object containing command-line arguments, including `toml_file`, `output`, `auto_scale`, `env`, `user_context`, `node_ids`, and `page_id`.
+- **Logic and Control Flow**:
+    - Open the TOML file specified by `args.toml_file` and read its contents into `user_toml`.
+    - Check if `args.env` is either 'dev' or 'prod'.
+    - If `args.env` is 'dev' or 'prod', set the environment variable `MODAL_ENVIRONMENT` to `args.env` and import `Cls` from `modal`.
+    - Create an instance of [`AutoTomlModal`](<auto_toml_modal.py.md#autotomlmodal>) using `Cls.from_name` with 'auto_toml' and 'AutoTomlModal'.
+    - If `args.node_ids` is provided, split it by commas, strip whitespace, and call `auto_toml_modal.append_from_node_ids.remote` with the node IDs, `args.auto_scale`, `user_toml`, and `args.user_context`.
+    - If `args.node_ids` is not provided, call `auto_toml_modal.append_from_page_id.remote` with `args.page_id`, `args.auto_scale`, `user_toml`, and `args.user_context`.
+    - If `args.env` is not 'dev' or 'prod', execute locally by checking if `args.node_ids` is provided.
+    - If `args.node_ids` is provided, split it by commas, strip whitespace, and call `AutoToml.from_node_ids` with the node IDs and `args.auto_scale`.
+    - If `args.node_ids` is not provided, call `AutoToml.from_page_id` with `args.page_id` converted to a UUID and `args.auto_scale`.
+    - Await the result of `auto_toml.append` with `user_toml` and `args.user_context`.
+    - Open the file specified by `args.output` and write the result to it.
+- **Output**: Writes the result of the append operation to the file specified by `args.output`.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<auto_toml_modal.py.md#AutoTomlModal>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#AutoTomlfrom_node_ids>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#AutoTomlfrom_page_id>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml_modal.AutoTomlModal`](<auto_toml_modal.py.md#autotomlmodal>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_node_ids`](<auto_toml.py.md#autotomlfrom_node_ids>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.from_page_id`](<auto_toml.py.md#autotomlfrom_page_id>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<auto_toml.py.md#autotomlappend>)
 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/auto_toml/src/auto_toml_cli.main}} -->
-The `main` function sets up a command-line interface for generating or appending TOML files based on user input and executes the appropriate asynchronous command.
+[View Source →](<../../../../../content_services/auto_toml/src/auto_toml_cli.py#L94>)
+
+Parses command-line arguments and executes the appropriate command to generate or append TOML files.
 - **Inputs**: None
-- **Control Flow**:
-    - An `ArgumentParser` is created with a description for the CLI tool.
-    - Subparsers are added to handle different commands: `generate` and `append`.
-    - For the `generate` command, arguments such as `--goal`, `--output`, `--auto-scale`, `--env`, `--user-context`, `--node-ids`, and `--page-id` are defined.
-    - For the `append` command, arguments such as `--toml-file`, `--output`, `--auto-scale`, `--env`, `--user-context`, `--node-ids`, and `--page-id` are defined.
-    - The `parse_args` method is called to parse the command-line arguments.
-    - Based on the parsed command, either [`generate_command`](<#generate_command>) or [`append_command`](<#append_command>) is executed asynchronously using `asyncio.run`.
-    - If no valid command is provided, the help message is printed.
-- **Output**: The function does not return any value; it executes the appropriate command based on user input.
+- **Logic and Control Flow**:
+    - Creates an argument parser with a description 'Auto TOML CLI'.
+    - Adds subparsers for 'generate' and 'append' commands, each with specific arguments.
+    - For the 'generate' command, requires '--goal' and either '--node-ids' or '--page-id'.
+    - For the 'append' command, requires '--toml-file' and either '--node-ids' or '--page-id'.
+    - Parses the command-line arguments into 'args'.
+    - Checks the 'command' attribute of 'args' to determine which command to execute.
+    - If 'args.command' is 'generate', calls 'generate_command' with 'args' using 'asyncio.run'.
+    - If 'args.command' is 'append', calls 'append_command' with 'args' using 'asyncio.run'.
+    - If no valid command is provided, prints the help message.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/content_services/auto_toml/src/auto_toml_cli.generate_command`](<#generate_command>)
     - [`python-backend/content_services/auto_toml/src/auto_toml_cli.append_command`](<#append_command>)

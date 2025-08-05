@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_classes.java` file contains Java classes demonstrating features such as encapsulation, inheritance, and interfaces, including a `TestClass` with an inner class, an abstract class, and a concrete class implementing `Comparable`.
+Java classes demonstrating inheritance, encapsulation, and interfaces with inner and abstract classes.
 
 # Purpose
-The provided Java source code file defines a small collection of classes that demonstrate basic object-oriented programming concepts, such as encapsulation, inheritance, and abstraction. The primary class, [`TestClass`](<#TestClassTestClass>), encapsulates a simple integer value and provides getter and setter methods to access and modify this value. It also includes a static inner class, [`InnerClass`](<#InnerClassInnerClass>), which encapsulates a string attribute. This structure highlights the use of inner classes in Java, allowing for logical grouping of classes that are only used in one place, thereby enhancing encapsulation.
+The code defines several classes within the `com.example` package, demonstrating various Java features. The [`TestClass`](<#testclasstestclass>) is a public class that encapsulates an integer value and provides methods to get and set this value. It also contains a static final string constant named `CONSTANT`. Additionally, [`TestClass`](<#testclasstestclass>) includes a static inner class, [`InnerClass`](<#innerclassinnerclass>), which holds a string attribute `name` and provides a constructor to initialize it.
 
-Additionally, the file defines an abstract class, `AbstractClass`, with an abstract method [`doSomething`](<#AbstractClassdoSomething>), and a concrete subclass, `ConcreteClass`, which implements this method and also implements the `Comparable` interface. This demonstrates the use of abstract classes and interfaces in Java, showcasing how they can be used to define a contract for subclasses and to provide polymorphic behavior. The `ConcreteClass` provides a basic implementation of the [`compareTo`](<#ConcreteClasscompareTo>) method, which is a requirement of the `Comparable` interface, although it currently returns a constant value. Overall, the file serves as a concise example of Java's class structure, inheritance, and interface implementation.
+The code also includes an `AbstractClass` and a `ConcreteClass`. `AbstractClass` is an abstract class with a single abstract method [`doSomething`](<#abstractclassdosomething>), which must be implemented by any subclass. `ConcreteClass` extends `AbstractClass` and provides an implementation for the [`doSomething`](<#abstractclassdosomething>) method, which outputs a message to the console. Furthermore, `ConcreteClass` implements the `Comparable` interface, providing a [`compareTo`](<#concreteclasscompareto>) method that currently returns zero, indicating equality for any two instances of `ConcreteClass`. This code demonstrates the use of inheritance, encapsulation, and interface implementation in Java.
 # Imports and Dependencies
 
 ---
@@ -21,143 +21,162 @@ Additionally, the file defines an abstract class, `AbstractClass`, with an abstr
 
 ---
 ### TestClass<!-- {{#class:com.example.TestClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L9>)
+
 - **Modifiers**: `public`
-- **Description**: The `TestClass` is a simple Java class that encapsulates an integer value and provides methods to get and set this value. It also contains a static final string constant and an inner static class `InnerClass` that holds a string name. The class demonstrates basic object-oriented principles such as encapsulation and the use of inner classes.
+- **Description**: Represents a simple Java class with a private integer field `value`, a static final string `CONSTANT`, and an inner static class `InnerClass`. It provides methods to get and set the `value` field and includes a constructor for initialization.
 - **Fields**:
-    - `value`: `int` An integer field that stores the value associated with an instance of `TestClass`.
-    - `CONSTANT`: `String` A static final string constant with the value "test".
+    - `value`: `int` A private integer field that stores a value.
+    - `CONSTANT`: `String` A static final string field with the value "test".
 - **Methods**:
-    - [`com.example.TestClass.TestClass`](<#TestClassTestClass>)
-    - [`com.example.TestClass.getValue`](<#TestClassgetValue>)
-    - [`com.example.TestClass.setValue`](<#TestClasssetValue>)
+    - [`com.example.TestClass.TestClass`](<#testclasstestclass>)
+    - [`com.example.TestClass.getValue`](<#testclassgetvalue>)
+    - [`com.example.TestClass.setValue`](<#testclasssetvalue>)
 
 **Methods**
 
 ---
 #### TestClass\.TestClass<!-- {{#callable:com.example.TestClass.TestClass}} -->
-The constructor `TestClass(int value)` initializes a new instance of the `TestClass` with a specified integer value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L13>)
+
+Initializes a `TestClass` object with a specified integer value.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `value`: An integer that is used to initialize the `value` field of the `TestClass` instance.
+    - `value`: An integer to initialize the `value` field of the `TestClass` object.
 - **Control Flow**:
-    - The constructor takes an integer parameter `value`.
-    - It assigns the passed integer `value` to the instance variable `this.value`.
+    - Assigns the input `value` to the instance variable `this.value`.
 - **Output**:
-    - The constructor does not return any value as it is used to initialize an object of the `TestClass`.
-- **See also**: [`com.example.TestClass`](<#TestClass>)  (Base Class)
+    - There is no output as this is a constructor.
+- **See also**: [`com.example.TestClass`](<#testclass>)  (Base Class)
 
 
 ---
 #### TestClass\.getValue<!-- {{#callable:com.example.TestClass.getValue}} -->
-The `getValue` method returns the current value of the `value` field in the `TestClass`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L17>)
+
+Returns the current value of the `value` field.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private instance variable `value`.
+    - Accesses the `value` field of the `TestClass` instance.
+    - Returns the value of the `value` field.
 - **Output**:
-    - The method returns an integer, which is the current value of the `value` field.
-- **See also**: [`com.example.TestClass`](<#TestClass>)  (Base Class)
+    - The method returns an `int` which is the current value of the `value` field.
+- **See also**: [`com.example.TestClass`](<#testclass>)  (Base Class)
 
 
 ---
 #### TestClass\.setValue<!-- {{#callable:com.example.TestClass.setValue}} -->
-The `setValue` method assigns a new integer value to the `value` field of the `TestClass` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L21>)
+
+Sets the `value` field of the `TestClass` instance to the specified integer.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `value`: An integer that will be assigned to the `value` field of the `TestClass` instance.
+    - `value`: An integer to set as the new value of the `value` field.
 - **Control Flow**:
-    - Assigns the input parameter `value` to the instance variable `this.value`.
+    - Assigns the input `value` to the instance variable `this.value`.
 - **Output**:
-    - This method does not return any value.
-- **See also**: [`com.example.TestClass`](<#TestClass>)  (Base Class)
+    - No output is returned as the method is `void`.
+- **See also**: [`com.example.TestClass`](<#testclass>)  (Base Class)
 
 
 
 ---
 ### InnerClass<!-- {{#class:com.example.TestClass.InnerClass}} -->
-- **Modifiers**: `public`, `static`
-- **Description**: The `InnerClass` is a static nested class within `TestClass` that encapsulates a single private field `name` and provides a constructor to initialize this field.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L25>)
+
+- **Modifiers**: `static`
+- **Description**: Represents a static inner class within `TestClass` that encapsulates a single `String` field named `name`, which is initialized through the constructor.
 - **Fields**:
-    - `name`: `String` A private string field that stores the name associated with an instance of `InnerClass`.
+    - `name`: `String` A private `String` field that stores the name associated with an instance of `InnerClass`.
 - **Methods**:
-    - [`com.example.TestClass.InnerClass.InnerClass`](<#InnerClassInnerClass>)
+    - [`com.example.TestClass.InnerClass.InnerClass`](<#innerclassinnerclass>)
 
 **Methods**
 
 ---
 #### InnerClass\.InnerClass<!-- {{#callable:com.example.TestClass.InnerClass.InnerClass}} -->
-The constructor `InnerClass` initializes an instance of the `InnerClass` with a specified name.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L28>)
+
+Initializes an instance of the `InnerClass` with a specified name.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `name`: A `String` representing the name to be assigned to the `InnerClass` instance.
+    - `name`: A `String` that represents the name to assign to the `InnerClass` instance.
 - **Control Flow**:
-    - Assigns the provided `name` parameter to the `name` field of the `InnerClass` instance.
+    - Assigns the input `name` to the `name` field of the `InnerClass` instance.
 - **Output**:
-    - There is no return value as this is a constructor.
-- **See also**: [`com.example.TestClass.InnerClass`](<#TestClass.InnerClass>)  (Base Class)
+    - No output is returned as this is a constructor.
+- **See also**: [`com.example.TestClass.InnerClass`](<#innerclass>)  (Base Class)
 
 
 
 ---
 ### AbstractClass<!-- {{#class:com.example.AbstractClass}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L34>)
+
 - **Modifiers**: `abstract`
-- **Description**: The `AbstractClass` is an abstract class that serves as a blueprint for other classes, requiring them to implement the `doSomething` method, which is defined as an abstract method with protected access.
+- **Description**: Defines an abstract class with a single abstract method `doSomething`, which must be implemented by any subclass.
 - **Methods**:
-    - [`com.example.AbstractClass.doSomething`](<#AbstractClassdoSomething>)
+    - [`com.example.AbstractClass.doSomething`](<#abstractclassdosomething>)
 
 **Methods**
 
 ---
 #### AbstractClass\.doSomething<!-- {{#callable:com.example.AbstractClass.doSomething}} -->
-The `doSomething` method is an abstract method in `AbstractClass` that is implemented in `ConcreteClass` to print a message to the console.
-- **Modifiers**: `protected`, `abstract`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L35>)
+
+Prints a message to the standard output.
+- **Modifiers**: `protected`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is declared as abstract in `AbstractClass`, meaning it has no implementation in that class.
-    - In `ConcreteClass`, the method is overridden to provide a concrete implementation.
-    - The implementation in `ConcreteClass` simply prints the message 'Doing something' to the console.
+    - Prints the string 'Doing something' to the standard output using `System.out.println`.
 - **Output**:
-    - The method does not return any value.
-- **See also**: [`com.example.AbstractClass`](<#AbstractClass>)  (Base Class)
+    - No output is returned as the method has a `void` return type.
+- **See also**: [`com.example.AbstractClass`](<#abstractclass>)  (Base Class)
 
 
 
 ---
 ### ConcreteClass<!-- {{#class:com.example.ConcreteClass}} -->
-- **Description**: The ConcreteClass is a concrete implementation of the AbstractClass and implements the Comparable interface for comparing instances of itself. It provides a specific implementation of the abstract method doSomething, which outputs a message to the console, and defines a compareTo method that currently returns zero, indicating all instances are considered equal.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L38>)
+
+- **Description**: Extends `AbstractClass` and implements `Comparable<ConcreteClass>`, providing a concrete implementation of the `doSomething` method and a `compareTo` method that always returns 0.
 - **Methods**:
-    - [`com.example.ConcreteClass.doSomething`](<#ConcreteClassdoSomething>)
-    - [`com.example.ConcreteClass.compareTo`](<#ConcreteClasscompareTo>)
+    - [`com.example.ConcreteClass.doSomething`](<#concreteclassdosomething>)
+    - [`com.example.ConcreteClass.compareTo`](<#concreteclasscompareto>)
 - **Extends/Implements**:
-    - [`com.example.AbstractClass`](<#AbstractClass>)
+    - [`com.example.AbstractClass`](<#abstractclass>)
 
 **Methods**
 
 ---
 #### ConcreteClass\.doSomething<!-- {{#callable:com.example.ConcreteClass.doSomething}} -->
-The `doSomething` method in `ConcreteClass` prints a message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L39>)
+
+Prints a message to the standard output.
 - **Modifiers**: `protected`
 - **Inputs**: None
 - **Control Flow**:
-    - The method overrides an abstract method from `AbstractClass`.
-    - It executes a single statement that prints 'Doing something' to the console.
+    - Prints the string 'Doing something' to the standard output using `System.out.println`.
 - **Output**:
-    - The method does not return any value.
-- **See also**: [`com.example.ConcreteClass`](<#ConcreteClass>)  (Base Class)
+    - No output is returned.
+- **See also**: [`com.example.ConcreteClass`](<#concreteclass>)  (Base Class)
 
 
 ---
 #### ConcreteClass\.compareTo<!-- {{#callable:com.example.ConcreteClass.compareTo}} -->
-The compareTo method in ConcreteClass always returns 0, indicating that all instances are considered equal.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_classes.java#L44>)
+
+Implements the `compareTo` method to always return 0, indicating equality between `ConcreteClass` instances.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `other`: An instance of ConcreteClass to compare with the current instance.
+    - `other`: An instance of `ConcreteClass` to compare with the current instance.
 - **Control Flow**:
-    - The method takes an instance of ConcreteClass as an argument.
-    - It directly returns the integer 0 without performing any comparison logic.
+    - The method takes an instance of `ConcreteClass` as an argument.
+    - It returns the integer 0, indicating that the current instance is considered equal to the `other` instance.
 - **Output**:
-    - The method returns an integer value of 0, indicating equality between the compared instances.
-- **See also**: [`com.example.ConcreteClass`](<#ConcreteClass>)  (Base Class)
+    - An integer value of 0, indicating equality between the current instance and the `other` instance.
+- **See also**: [`com.example.ConcreteClass`](<#concreteclass>)  (Base Class)
 
 
 

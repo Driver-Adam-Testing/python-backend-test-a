@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `code_critic_verifier.py` file contains a prompt outlining a systematic approach for verifying, detecting errors, correcting, and documenting input code snippets to ensure their correctness and functionality.
+A prompt for verifying, detecting errors, correcting, and documenting code snippets.
 
 # Purpose
-This code defines a configuration for a system message, specifically for a process that involves analyzing and verifying the correctness of input code snippets. It provides a structured prompt that outlines a series of steps for source verification, error detection, correction, and documentation, ensuring that any code discrepancies are identified and addressed. The code is essentially a configuration variable (`MESSAGE`) that encapsulates a detailed multi-step procedure within a string (`PROMPT`). This setup is likely used in a larger application or system that requires automated code review or validation, offering narrow functionality focused on code analysis and correction. The `MESSAGE` dictionary is formatted to be used in a context where a system role is defined, suggesting integration with a conversational AI or automated code review tool.
+The code defines a constant `PROMPT` and a dictionary `MESSAGE` that contains a structured prompt for analyzing and verifying source code snippets. The `PROMPT` string outlines a multi-step process for source verification, error detection, correction, and documentation. It instructs users to review source code for correctness, identify errors, and make necessary corrections with supporting evidence. The `MESSAGE` dictionary assigns the role of "system" to the content, which is the `PROMPT` string. This code provides a narrow functionality, serving as a template or guideline for code analysis and verification tasks.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that provides detailed instructions for analyzing and verifying the correctness of an input code snippet. It outlines a step-by-step process for source verification, error detection, correction, and documentation, ensuring that the code is accurate and functions as intended.
-- **Use**: This variable is used to store a comprehensive set of guidelines for code analysis, which can be utilized by a system or user to ensure code correctness and provide necessary documentation.
+- **Type**: ``PROMPT``
+- **Description**: A multi-line string that provides detailed instructions for analyzing an input code snippet. It includes steps for source verification, error detection, correction process, evidence and documentation, and final reporting.
+- **Use**: Used as a template or guideline for performing code analysis and verification tasks.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing detailed instructions for analyzing and correcting code snippets.
-- **Use**: This variable is used to encapsulate a system message with specific instructions, likely for use in a context where such structured messages are required, such as in a chatbot or automated code review system.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds a multi-line string from the `PROMPT` variable.
+- **Use**: Used to store system-level information and instructions for processing code snippets.
 
 
 

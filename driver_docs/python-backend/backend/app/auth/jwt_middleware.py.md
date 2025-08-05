@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `jwt_middleware.py` file implements middleware for verifying Auth0 RS256 JWTs in a FastAPI application, including functions to fetch JWKS, verify tokens, and enforce JWT authentication for user and machine-to-machine requests.
+Middleware for verifying Auth0 RS256 JWTs and enforcing token-based authentication in FastAPI.
 
 # Purpose
-This Python code file is designed to handle JWT (JSON Web Token) authentication, specifically for verifying tokens issued by Auth0 using the RS256 algorithm. It is structured as a module that can be integrated into a FastAPI application, providing essential functions and dependencies for token verification. The code includes functions to fetch and cache the JSON Web Key Set (JWKS) from Auth0, extract the appropriate RSA key for a given token, and verify the token's validity. The [`verify_jwt`](<#verify_jwt>) function is central to this process, as it decodes the token and checks its authenticity against the expected audience and issuer, raising an HTTP 401 exception if verification fails.
+This code provides functionality for verifying JSON Web Tokens (JWTs) using the RS256 algorithm, specifically for integration with Auth0. It is designed to be used within a FastAPI application, as indicated by the use of FastAPI's dependency injection system. The code includes functions to fetch and cache JSON Web Key Sets (JWKS) from Auth0, extract RSA keys from the JWKS, and verify JWTs against these keys. The [`verify_jwt`](<#verify_jwt>) function is central to this process, as it decodes and validates the JWT, raising an HTTP 401 exception if the token is invalid or cannot be verified.
 
-The module also defines two FastAPI dependencies, [`require_jwt`](<#require_jwt>) and [`require_m2m_jwt`](<#require_m2m_jwt>), which ensure that incoming requests carry a valid Bearer token. These dependencies utilize the `HTTPBearer` security scheme to extract credentials from requests and verify them using the [`verify_jwt`](<#verify_jwt>) function. The [`require_jwt`](<#require_jwt>) function returns a `User` object, while [`require_m2m_jwt`](<#require_m2m_jwt>) returns an `M2M` object, both of which are presumably models defined elsewhere in the application. This setup allows for seamless integration of JWT authentication into FastAPI routes, ensuring that only authenticated requests are processed further.
+The code also defines two FastAPI dependencies, [`require_jwt`](<#require_jwt>) and [`require_m2m_jwt`](<#require_m2m_jwt>), which ensure that incoming requests carry valid Bearer tokens. These dependencies use the `HTTPBearer` security scheme to extract credentials from requests and then verify these credentials using the [`verify_jwt`](<#verify_jwt>) function. The [`require_jwt`](<#require_jwt>) function returns a `User` object, while [`require_m2m_jwt`](<#require_m2m_jwt>) returns an `M2M` object, both of which are likely models defined elsewhere in the application. This setup facilitates secure authentication and authorization in the application by ensuring that only requests with valid JWTs are processed.
 # Imports and Dependencies
 
 ---
@@ -32,58 +32,66 @@ The module also defines two FastAPI dependencies, [`require_jwt`](<#require_jwt>
 ---
 ### \_jwt\_scheme
 - **Type**: `HTTPBearer`
-- **Description**: The `_jwt_scheme` variable is an instance of the `HTTPBearer` class from FastAPI's security module. It is configured with `auto_error` set to `False`, meaning that it will not automatically raise an HTTP error if authentication fails.
-- **Use**: This variable is used as a dependency in the `require_jwt` and `require_m2m_jwt` functions to ensure that requests carry a valid Bearer token.
+- **Description**: The `_jwt_scheme` variable is an instance of the `HTTPBearer` class with the `auto_error` parameter set to `False`. This configuration allows the application to handle authentication errors manually instead of automatically returning an error response.
+- **Use**: Used as a dependency in the `require_jwt` and `require_m2m_jwt` functions to ensure that requests carry a valid Bearer token.
 
 
 ---
 ### ALGORITHMS
-- **Type**: `list`
-- **Description**: The `ALGORITHMS` variable is a list containing a single string element, "RS256". This string represents the RS256 algorithm, which is a type of RSA signature algorithm that uses SHA-256 as the hash function.
-- **Use**: This variable is used to specify the algorithm(s) that the JWT library should use to decode and verify JSON Web Tokens (JWTs) in the application.
+- **Type**: ``list``
+- **Description**: Contains a list of JWT algorithms used for token verification. In this case, it includes only the 'RS256' algorithm.
+- **Use**: Used in the `verify_jwt` function to specify the algorithm for decoding JWT tokens.
 
 
 # Functions
 
 ---
 ### get\_jwks<!-- {{#callable:python-backend/backend/app/auth/jwt_middleware.get_jwks}} -->
-The `get_jwks` function fetches the JSON Web Key Set (JWKS) from the Auth0 domain and caches the result for one hour.
+[View Source →](<../../../../../backend/app/auth/jwt_middleware.py#L18>)
+
+Fetches the JSON Web Key Set (JWKS) from the Auth0 domain and caches it for one hour.
 - **Decorators**: `@expiring_cache`
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Constructs the URL for the JWKS using the Auth0 domain from the settings.
-    - Fetches the JWKS by opening the URL and reading its content.
-    - Parses the fetched content as JSON and returns it.
-- **Output**: A dictionary representing the JSON Web Key Set (JWKS) fetched from the Auth0 domain.
+    - Opens the URL and reads the JWKS data.
+    - Parses the JWKS data from JSON format into a Python dictionary.
+    - Caches the result for one hour using the [`expiring_cache`](<../../../packages/shared/shared/utils/decorators.py.md#expiring_cache>) decorator.
+- **Output**: A dictionary containing the JWKS data.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/utils/decorators.expiring_cache`](<../../../packages/shared/shared/utils/decorators.py.md#expiring_cache>)
 
 
 ---
 ### \_get\_rsa\_key<!-- {{#callable:python-backend/backend/app/auth/jwt_middleware._get_rsa_key}} -->
-The function `_get_rsa_key` retrieves a JSON Web Key (JWK) from a given set of JWKs that matches a specified key ID (kid).
+[View Source →](<../../../../../backend/app/auth/jwt_middleware.py#L25>)
+
+Finds and returns the JSON Web Key (JWK) from a set of keys that matches a given key ID (kid).
 - **Inputs**:
     - `jwks`: A dictionary containing a list of JSON Web Keys (JWKs) under the key 'keys'.
     - `kid`: A string representing the key ID to match against the JWKs.
-- **Control Flow**:
-    - Iterates over the list of JWKs in the 'keys' field of the `jwks` dictionary.
-    - Checks each JWK to see if its 'kid' field matches the provided `kid`.
-    - Returns the first JWK that matches the `kid`.
-    - If no matching JWK is found, returns an empty dictionary.
-- **Output**: A dictionary representing the JWK that matches the specified `kid`, or an empty dictionary if no match is found.
+- **Logic and Control Flow**:
+    - Iterates over the list of keys in the 'keys' field of the 'jwks' dictionary.
+    - Checks if the 'kid' field of each key matches the provided 'kid'.
+    - Returns the first matching key as a dictionary.
+    - If no matching key is found, returns an empty dictionary.
+- **Output**: A dictionary representing the JWK that matches the given 'kid', or an empty dictionary if no match is found.
 
 
 ---
 ### verify\_jwt<!-- {{#callable:python-backend/backend/app/auth/jwt_middleware.verify_jwt}} -->
-The `verify_jwt` function verifies an Auth0 RS256 JWT and returns its payload, raising an HTTPException if the token is invalid or cannot be verified.
+[View Source →](<../../../../../backend/app/auth/jwt_middleware.py#L30>)
+
+Verifies an Auth0 RS256 JWT and returns its payload.
 - **Inputs**:
-    - `token`: A string representing the JWT to be verified.
-- **Control Flow**:
-    - Retrieve the unverified header from the JWT using `jwt.get_unverified_header(token)`.
-    - Fetch the JSON Web Key Set (JWKS) using the `get_jwks()` function and extract the RSA key corresponding to the 'kid' from the JWT header using `_get_rsa_key()`.
-    - If no RSA key is found, raise an `HTTPException` with a 401 status code and an appropriate message.
-    - Attempt to create a public key from the RSA key using `RSAAlgorithm.from_jwk()` and decode the JWT using `jwt.decode()` with the specified algorithms, audience, and issuer.
-    - If a `PyJWTError` is raised during decoding, catch the exception and raise an `HTTPException` with a 401 status code and an 'Unauthorized' message.
+    - `token`: A JSON Web Token (JWT) in string format that needs verification.
+- **Logic and Control Flow**:
+    - Get the unverified header from the JWT using `jwt.get_unverified_header(token)`.
+    - Retrieve the RSA key using `_get_rsa_key(get_jwks(), header['kid'])`.
+    - If the RSA key is not found, raise an `HTTPException` with status code 401 and message 'Unable to find appropriate key'.
+    - Attempt to create a public key from the RSA key using `RSAAlgorithm.from_jwk(json.dumps(rsa_key))`.
+    - Decode the JWT using `jwt.decode` with the public key, specified algorithms, audience, and issuer.
+    - If decoding fails due to a `PyJWTError`, raise an `HTTPException` with status code 401 and message 'Unauthorized'.
 - **Output**: A dictionary containing the payload of the verified JWT.
 - **Functions Called**:
     - [`python-backend/backend/app/auth/jwt_middleware._get_rsa_key`](<#_get_rsa_key>)
@@ -92,31 +100,37 @@ The `verify_jwt` function verifies an Auth0 RS256 JWT and returns its payload, r
 
 ---
 ### require\_jwt<!-- {{#callable:python-backend/backend/app/auth/jwt_middleware.require_jwt}} -->
-The `require_jwt` function is a FastAPI dependency that ensures a request contains a valid Bearer token and returns a User object based on the verified JWT payload.
+[View Source →](<../../../../../backend/app/auth/jwt_middleware.py#L58>)
+
+Asserts that a request carries a valid Bearer token and returns a [`User`](<models.py.md#user>) object.
 - **Inputs**:
-    - `creds`: An optional HTTPAuthorizationCredentials object, defaulting to the result of the _jwt_scheme dependency, which represents the Bearer token credentials from the request.
-- **Control Flow**:
-    - Check if the 'creds' argument is None or if it lacks credentials; if so, raise an HTTPException with a 401 status code indicating a missing Bearer token.
-    - Call the 'verify_jwt' function with the credentials from 'creds' to verify the JWT and obtain its payload.
-    - Return a User object initialized with the verified JWT payload.
-- **Output**: A User object created from the verified JWT payload.
+    - `creds`: An instance of `HTTPAuthorizationCredentials` or `None`, which defaults to the result of the `_jwt_scheme` dependency.
+- **Logic and Control Flow**:
+    - Check if `creds` is `None` or if `creds.credentials` is empty.
+    - Raise an `HTTPException` with status code 401 and message 'Missing Bearer token' if the check fails.
+    - Call [`verify_jwt`](<#verify_jwt>) with `creds.credentials` to verify the JWT and obtain the payload.
+    - Return a [`User`](<models.py.md#user>) object initialized with the verified JWT payload.
+- **Output**: A [`User`](<models.py.md#user>) object initialized with the verified JWT payload.
 - **Functions Called**:
-    - [`python-backend/backend/app/auth/models.User`](<models.py.md#User>)
+    - [`python-backend/backend/app/auth/models.User`](<models.py.md#user>)
     - [`python-backend/backend/app/auth/jwt_middleware.verify_jwt`](<#verify_jwt>)
 
 
 ---
 ### require\_m2m\_jwt<!-- {{#callable:python-backend/backend/app/auth/jwt_middleware.require_m2m_jwt}} -->
-The `require_m2m_jwt` function is a FastAPI dependency that ensures a request contains a valid Bearer token and returns an M2M object based on the verified JWT payload.
+[View Source →](<../../../../../backend/app/auth/jwt_middleware.py#L67>)
+
+Asserts that a request carries a valid Bearer token and returns an [`M2M`](<models.py.md#m2m>) object.
 - **Inputs**:
-    - `creds`: An optional HTTPAuthorizationCredentials object, defaulting to the result of the _jwt_scheme dependency, which represents the Bearer token credentials from the request.
-- **Control Flow**:
-    - Check if the 'creds' argument is None or if it lacks credentials; if so, raise an HTTPException with a 401 status code indicating a missing Bearer token.
-    - Call the 'verify_jwt' function with the credentials from 'creds' to verify the JWT and obtain its payload.
-    - Return an M2M object initialized with the verified JWT payload.
-- **Output**: A dictionary representing an M2M object created from the verified JWT payload.
+    - `creds`: An `HTTPAuthorizationCredentials` object or `None`, which is obtained using the `_jwt_scheme` dependency.
+- **Logic and Control Flow**:
+    - Check if `creds` is `None` or if `creds.credentials` is missing.
+    - Raise an `HTTPException` with status code 401 and message 'Missing Bearer token' if the check fails.
+    - Call [`verify_jwt`](<#verify_jwt>) with `creds.credentials` to verify the JWT and obtain its payload.
+    - Return an [`M2M`](<models.py.md#m2m>) object initialized with the verified JWT payload.
+- **Output**: A dictionary representing an [`M2M`](<models.py.md#m2m>) object initialized with the verified JWT payload.
 - **Functions Called**:
-    - [`python-backend/backend/app/auth/models.M2M`](<models.py.md#M2M>)
+    - [`python-backend/backend/app/auth/models.M2M`](<models.py.md#m2m>)
     - [`python-backend/backend/app/auth/jwt_middleware.verify_jwt`](<#verify_jwt>)
 
 

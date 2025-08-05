@@ -6,7 +6,7 @@
 Configuration for a Python project using Poetry, specifying dependencies, build system, and testing tools.
 
 # Purpose
-The file is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. It specifies the project's metadata, including the name `app`, version `0.1.0`, and author information. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, such as `uvicorn`, `fastapi`, and `pydantic`, along with their version constraints. The `[tool.poetry.group.dev.dependencies]` section defines additional dependencies needed for development, like `pytest` and `mypy`. The `[build-system]` section indicates the build requirements and backend, specifying that Poetry version `0.12` or higher is needed. Additional configurations for tools like `mypy` and `pytest` are included, setting options for type checking and test coverage reporting.
+The file is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. It specifies the project's metadata, including the name `app`, version `0.1.0`, and author information. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, such as `uvicorn`, `fastapi`, and `pydantic`, along with their version constraints. The `[tool.poetry.group.dev.dependencies]` section defines additional dependencies needed for development, including `pytest` and `mypy`. The `[build-system]` section indicates that the project requires Poetry version `0.12` or higher for building. Additional configurations for tools like `mypy` and `pytest` are also included, specifying options such as strict type checking and test coverage reporting.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

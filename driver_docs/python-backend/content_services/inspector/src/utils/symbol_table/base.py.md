@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `base.py` file defines abstract base classes for language-specific symbol parsing, import resolution, and language implementation within the `python-backend` codebase.
+Abstract base classes for language-specific symbol parsing, import resolution, and language implementation.
 
 # Purpose
-This Python code defines an abstract framework for language-specific symbol parsing and import resolution, primarily intended for use in a larger system that processes source code files. The file contains three abstract base classes: `SymbolParser`, `ImportResolver`, and `LanguageProvider`. Each class is designed to be subclassed for specific programming languages, ensuring that subclasses implement necessary attributes and methods. The `SymbolParser` class provides a method to parse a file and extract symbols, imports, and a containment map, which are essential for understanding the structure and dependencies of the code. The `ImportResolver` class defines an abstract method for resolving import strings to file paths, facilitating the management of dependencies within a project. The `LanguageProvider` class acts as a comprehensive interface, ensuring that a complete language implementation is provided by requiring methods to return instances of `SymbolParser` and `ImportResolver`, as well as methods to retrieve file extensions and fully qualified name delimiters.
+The code defines an abstract framework for language-specific symbol parsing and import resolution. It consists of three main abstract base classes: `SymbolParser`, `ImportResolver`, and `LanguageProvider`. Each class serves a distinct purpose in the process of analyzing and handling programming language symbols and imports.
 
-The code is structured to be part of a library or framework, as it defines abstract classes that are meant to be extended rather than executed directly. It does not provide a public API or external interfaces but instead establishes a contract for subclasses to follow, ensuring consistency and completeness in language-specific implementations. The use of abstract base classes and class variables enforces a design pattern that promotes modularity and extensibility, allowing developers to create custom parsers and resolvers for different programming languages by adhering to the defined structure. This design is particularly useful in environments where multiple languages need to be supported, and consistent handling of symbols and imports is required.
+The `SymbolParser` class is responsible for parsing files to extract symbols and imports, and it constructs a containment map of these symbols. It requires subclasses to define specific class attributes such as `language`, `fqn_delimiter`, and `tree`. The `ImportResolver` class provides an abstract method for resolving import strings to file paths, ensuring that subclasses specify the `language` attribute. The `LanguageProvider` class ensures that a complete language implementation is available by requiring subclasses to provide instances of `SymbolParser` and `ImportResolver`, as well as methods to retrieve file extensions and fully qualified name delimiters. This code is intended to be extended by language-specific implementations, providing a structured approach to symbol and import management across different programming languages.
 # Imports and Dependencies
 
 ---
@@ -27,15 +27,17 @@ The code is structured to be part of a library or framework, as it defines abstr
 
 ---
 ### SymbolParser<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L11>)
+
 - **Decorators**: `@ABC`
 - **Members**:
-    - `language`: Specifies the programming language for the parser.
-    - `fqn_delimiter`: Defines the delimiter used for fully qualified names in the language.
-    - `tree`: Represents the type of driver tree used for parsing.
-- **Description**: The `SymbolParser` class serves as an abstract base class for creating language-specific symbol parsers. It requires subclasses to define certain class attributes such as `language`, `fqn_delimiter`, and `tree`, which are essential for parsing symbols in a given programming language. The class provides a method `parse_file` that reads a file, extracts symbols, and builds a containment map, facilitating the parsing process. It ensures that any subclass implements these attributes, raising a `TypeError` if they are not defined, thus enforcing a contract for language-specific implementations.
+    - `language`: Specifies the language for the symbol parser.
+    - `fqn_delimiter`: Defines the delimiter for fully qualified names.
+    - `tree`: Represents the type of `DriverTree` used for parsing.
+- **Description**: Provides an abstract base class for parsing language-specific symbols. It requires subclasses to define the `language`, `fqn_delimiter`, and `tree` class attributes. The `parse_file` method processes a file to extract symbols, imports, and a containment map, ensuring that subclasses implement language-specific parsing logic.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.parse_file`](<#SymbolParserparse_file>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.__init_subclass__`](<#SymbolParser__init_subclass__>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.parse_file`](<#symbolparserparse_file>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.__init_subclass__`](<#symbolparser__init_subclass__>)
 - **Inherits From**:
     - `ABC`
 
@@ -43,55 +45,59 @@ The code is structured to be part of a library or framework, as it defines abstr
 
 ---
 #### SymbolParser\.parse\_file<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.parse_file}} -->
-The `parse_file` method parses a file to extract symbols, imports, and a containment map using a language-specific driver.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L19>)
+
+Parses a file to extract symbols, imports, and a containment map.
 - **Inputs**:
     - `fpath`: A `Path` object representing the file path to be parsed.
     - `project_root`: A `Path` object representing the root directory of the project.
-- **Control Flow**:
-    - Read the file content as a UTF-8 encoded string from the given file path `fpath`.
-    - Convert the file path to a root-relative path using [`to_root_relative`](<utils.py.md#to_root_relative>).
-    - Instantiate a driver object using the `tree` class attribute and the code string and root-relative path.
-    - Extract all symbols from the code using the driver's [`extract_all_symbols`](<../treesitter_drivers/base.py.md#DriverTreeextract_all_symbols>) method.
-    - Build a containment map from the extracted symbols using [`build_containment_map`](<utils.py.md#build_containment_map>).
-    - Initialize an empty list `imports` to store import symbols.
-    - Iterate over all extracted symbols, and if a symbol is of kind `IMPORT` and has a name, append it to the `imports` list.
-    - Return a tuple containing all symbols, the list of import symbols, and the containment map.
-- **Output**: A tuple containing a list of all symbols, a list of import symbols, and a containment map as a dictionary.
+- **Logic and Control Flow**:
+    - Reads the file content as a string using UTF-8 encoding.
+    - Converts the file path to a root-relative path.
+    - Creates a `DriverTree` instance using the file content and root-relative path.
+    - Extracts all symbols from the file using the `DriverTree` instance.
+    - Builds a containment map from the extracted symbols.
+    - Initializes an empty list to store import symbols.
+    - Iterates over all extracted symbols to identify and collect import symbols.
+    - Returns a tuple containing all symbols, import symbols, and the containment map.
+- **Output**: A tuple containing a list of all symbols, a list of import symbols, and a dictionary representing the containment map.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.to_root_relative`](<utils.py.md#to_root_relative>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_all_symbols`](<../treesitter_drivers/base.py.md#DriverTreeextract_all_symbols>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.build_containment_map`](<utils.py.md#build_containment_map>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<#SymbolParser>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_all_symbols`](<../treesitter_drivers/base.py.md#drivertreeextract_all_symbols>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<#symbolparser>)  (Base Class)
 
 
 ---
 #### SymbolParser\.\_\_init\_subclass\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.__init_subclass__}} -->
-The [`__init_subclass__`](<#ImportResolver__init_subclass__>) method ensures that subclasses of `SymbolParser` define required class attributes `language`, `fqn_delimiter`, and `tree`.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L42>)
+
+Ensures subclasses define required class attributes.
 - **Inputs**:
-    - `cls`: The class being initialized as a subclass.
-    - `kwargs`: Additional keyword arguments passed to the superclass initializer.
-- **Control Flow**:
-    - Calls the superclass's [`__init_subclass__`](<#ImportResolver__init_subclass__>) method with any provided keyword arguments.
-    - Checks if the subclass has a `language` attribute and raises a `TypeError` if it is missing or falsy.
-    - Checks if the subclass has a `fqn_delimiter` attribute and raises a `TypeError` if it is missing or falsy.
-    - Checks if the subclass has a `tree` attribute and raises a `TypeError` if it is missing or falsy.
-- **Output**: The method does not return any value; it raises a `TypeError` if required class attributes are not defined.
+    - `cls`: The class that is being initialized as a subclass.
+    - `kwargs`: Additional keyword arguments passed to the method.
+- **Logic and Control Flow**:
+    - Calls the superclass's [`__init_subclass__`](<#importresolver__init_subclass__>) method with any keyword arguments.
+    - Checks if the `cls` has a `language` attribute and raises a `TypeError` if it is not defined or is falsy.
+    - Checks if the `cls` has a `fqn_delimiter` attribute and raises a `TypeError` if it is not defined or is falsy.
+    - Checks if the `cls` has a `tree` attribute and raises a `TypeError` if it is not defined or is falsy.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.__init_subclass__`](<#ImportResolver__init_subclass__>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<#SymbolParser>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.__init_subclass__`](<#importresolver__init_subclass__>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<#symbolparser>)  (Base Class)
 
 
 
 ---
 ### ImportResolver<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L54>)
+
 - **Decorators**: `@abstractmethod`
 - **Members**:
-    - `language`: A class variable that specifies the language for which the import resolution is implemented.
-- **Description**: The ImportResolver class serves as an abstract base class for implementing language-specific import resolution mechanisms. It requires subclasses to define a 'language' class attribute and implement the 'resolve_import' method, which is responsible for resolving import strings to file paths within a project. This class ensures that any subclass provides the necessary functionality to handle import resolution for a specific programming language.
+    - `language`: Specifies the language for which the import resolution is implemented.
+- **Description**: Provides an abstract base class for resolving language-specific imports. Requires subclasses to define the `language` class attribute and implement the `resolve_import` method, which resolves an import string to a project file path. Ensures that subclasses specify the language they support.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<#ImportResolverresolve_import>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.__init_subclass__`](<#ImportResolver__init_subclass__>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<#importresolverresolve_import>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.__init_subclass__`](<#importresolver__init_subclass__>)
 - **Inherits From**:
     - `ABC`
 
@@ -99,48 +105,55 @@ The [`__init_subclass__`](<#ImportResolver__init_subclass__>) method ensures tha
 
 ---
 #### ImportResolver\.resolve\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import}} -->
-The `resolve_import` method is an abstract method intended to resolve an import string to a corresponding project file path or paths.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L59>)
+
+Resolves an import string to a corresponding project file path or paths.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `current_file`: A `Path` object representing the current file from which the import is being resolved.
-    - `import_str`: A string representing the import statement that needs to be resolved.
-    - `project_files_to_symbols_map`: A dictionary mapping `Path` objects to lists of `RawTreeSitterSymbolData`, representing the project's files and their associated symbols.
-- **Control Flow**:
+    - `current_file`: The path to the current file from which the import is being resolved.
+    - `import_str`: The import string that needs to be resolved to a file path.
+    - `project_files_to_symbols_map`: A dictionary mapping file paths to lists of `RawTreeSitterSymbolData`, representing the symbols in each file.
+- **Logic and Control Flow**:
     - The method is abstract and must be implemented by subclasses of `ImportResolver`.
-    - The method is expected to use the provided `current_file`, `import_str`, and `project_files_to_symbols_map` to determine the file path(s) corresponding to the import string.
-- **Output**: The method returns a `Path`, a list of `Path` objects, or `None`, representing the resolved file path(s) for the import string.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<#ImportResolver>)  (Base Class)
+    - The method takes three parameters: `current_file`, `import_str`, and `project_files_to_symbols_map`.
+    - The method's purpose is to resolve the `import_str` to a file path or paths within the project.
+- **Output**: A `Path`, a list of `Path` objects, or `None`, representing the resolved file path(s) or indicating that the import could not be resolved.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<#importresolver>)  (Base Class)
 
 
 ---
 #### ImportResolver\.\_\_init\_subclass\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.__init_subclass__}} -->
-The [`__init_subclass__`](<#SymbolParser__init_subclass__>) method ensures that any subclass of `ImportResolver` defines a `language` class attribute.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L68>)
+
+Ensures that subclasses define the required 'language' class attribute.
 - **Inputs**:
     - `cls`: The class that is being initialized as a subclass.
-    - `kwargs`: Additional keyword arguments that may be passed during subclass initialization.
-- **Control Flow**:
-    - Call the superclass's [`__init_subclass__`](<#SymbolParser__init_subclass__>) method with any provided keyword arguments.
-    - Check if the `cls` has a `language` attribute and if it is not empty.
-    - Raise a `TypeError` if the `language` attribute is not defined or is empty.
-- **Output**: This method does not return any value; it raises a `TypeError` if the `language` attribute is not properly defined.
+    - `kwargs`: Additional keyword arguments passed to the method.
+- **Logic and Control Flow**:
+    - Calls the superclass's '__init_subclass__' method with any provided keyword arguments.
+    - Checks if the 'language' class attribute is defined and not empty in the subclass.
+    - Raises a 'TypeError' if the 'language' class attribute is not defined or is empty.
+- **Output**: Does not return a value; raises 'TypeError' if the 'language' attribute is missing or empty.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.__init_subclass__`](<#SymbolParser__init_subclass__>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<#ImportResolver>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.__init_subclass__`](<#languageprovider__init_subclass__>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<#importresolver>)  (Base Class)
 
 
 
 ---
 ### LanguageProvider<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider}} -->
-- **Decorators**: `@ABC`
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L74>)
+
+- **Decorators**: `@abstractmethod`
 - **Members**:
-    - `language`: A class variable representing the language for which the provider is implemented.
-- **Description**: The `LanguageProvider` class is an abstract base class designed to ensure the complete implementation of language-specific functionalities. It mandates the implementation of methods to retrieve a `SymbolParser` and an `ImportResolver`, which are essential for parsing symbols and resolving imports in a language-specific manner. Additionally, it provides methods to obtain file extensions and fully qualified name delimiters, which are derived from the associated driver and parser, respectively. The class enforces the definition of a `language` class attribute in any subclass, ensuring that each language provider is explicitly associated with a specific programming language.
+    - `language`: Stores the language identifier as a class variable.
+- **Description**: Defines an abstract base class for language-specific implementations, ensuring that subclasses provide methods for obtaining a symbol parser and an import resolver. It also provides methods to retrieve file extensions and fully qualified name delimiters, which are derived from the driver and parser, respectively. Subclasses must define the 'language' class attribute.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser`](<#LanguageProviderget_parser>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_resolver`](<#LanguageProviderget_resolver>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_extensions`](<#LanguageProviderget_extensions>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_fqn_delimiter`](<#LanguageProviderget_fqn_delimiter>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.__init_subclass__`](<#LanguageProvider__init_subclass__>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser`](<#languageproviderget_parser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_resolver`](<#languageproviderget_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_extensions`](<#languageproviderget_extensions>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_fqn_delimiter`](<#languageproviderget_fqn_delimiter>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.__init_subclass__`](<#languageprovider__init_subclass__>)
 - **Inherits From**:
     - `ABC`
 
@@ -148,72 +161,82 @@ The [`__init_subclass__`](<#SymbolParser__init_subclass__>) method ensures that 
 
 ---
 #### LanguageProvider\.get\_parser<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser}} -->
-The `get_parser` method is an abstract class method that returns an instance of a `SymbolParser` for language-specific symbol parsing.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L79>)
+
+Returns the symbol parser instance for a specific language implementation.
 - **Decorators**: `@classmethod`, `@abstractmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called, typically a subclass of `LanguageProvider`.
-- **Control Flow**:
-    - The method is abstract and must be implemented by any subclass of `LanguageProvider`.
-    - It is intended to return an instance of `SymbolParser`, which is responsible for parsing language-specific symbols.
-- **Output**: An instance of `SymbolParser`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#LanguageProvider>)  (Base Class)
+    - `cls`: The class object that calls this method.
+- **Logic and Control Flow**:
+    - The method is abstract and must be implemented by subclasses of `LanguageProvider`.
+    - The method is a class method, meaning it is called on the class itself rather than an instance of the class.
+- **Output**: An instance of `SymbolParser` specific to the language implementation.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#languageprovider>)  (Base Class)
 
 
 ---
 #### LanguageProvider\.get\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_resolver}} -->
-The `get_resolver` method is an abstract class method that must be implemented to return an instance of an `ImportResolver` for a specific language.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L84>)
+
+Returns the import resolver instance for a language implementation.
 - **Decorators**: `@classmethod`, `@abstractmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called, typically a subclass of `LanguageProvider`.
-- **Control Flow**:
-    - The method is defined as an abstract method, meaning it must be implemented by any non-abstract subclass of `LanguageProvider`.
-    - The method is a class method, which means it is called on the class itself rather than an instance of the class.
-- **Output**: The method returns an instance of `ImportResolver`, which is responsible for resolving import strings to file paths for a specific language.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#LanguageProvider>)  (Base Class)
+    - `cls`: The class on which this method is called.
+- **Logic and Control Flow**:
+    - The method is abstract and must be implemented by subclasses of `LanguageProvider`.
+    - The method is a class method, meaning it is called on the class rather than an instance.
+- **Output**: An instance of `ImportResolver`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#languageprovider>)  (Base Class)
 
 
 ---
 #### LanguageProvider\.get\_extensions<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_extensions}} -->
-The `get_extensions` method retrieves a set of file extensions associated with the driver class of the language provider.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L89>)
+
+Retrieves a set of file extensions from the driver class.
 - **Decorators**: `@classmethod`
-- **Inputs**:
-    - `cls`: The class object on which this method is called, typically a subclass of `LanguageProvider`.
-- **Control Flow**:
-    - The method calls `cls.get_driver_class()` to obtain the driver class associated with the language provider.
-    - It accesses the `extensions` attribute of the driver class to retrieve the set of file extensions.
-- **Output**: A set of strings representing file extensions associated with the driver class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#LanguageProvider>)  (Base Class)
+- **Inputs**: None
+- **Logic and Control Flow**:
+    - Calls the `get_driver_class` method on the class to obtain the driver class.
+    - Accesses the `extensions` attribute of the driver class.
+- **Output**: A set of strings representing file extensions.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#languageprovider>)  (Base Class)
 
 
 ---
 #### LanguageProvider\.get\_fqn\_delimiter<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_fqn_delimiter}} -->
-The `get_fqn_delimiter` method retrieves the fully qualified name (FQN) delimiter from the associated symbol parser.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L94>)
+
+Retrieves the fully qualified name (FQN) delimiter from the parser.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class on which this method is called, typically a subclass of `LanguageProvider`.
-- **Control Flow**:
-    - The method calls `cls.get_parser()` to obtain the symbol parser instance associated with the class.
-    - It accesses the `fqn_delimiter` attribute of the returned parser instance.
-- **Output**: The method returns a string representing the FQN delimiter used by the parser.
+- **Logic and Control Flow**:
+    - Calls the [`get_parser`](<#languageproviderget_parser>) method on the class to obtain a `SymbolParser` instance.
+    - Accesses the `fqn_delimiter` attribute from the `SymbolParser` instance.
+    - Returns the `fqn_delimiter` value.
+- **Output**: A string representing the FQN delimiter.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser`](<#LanguageProviderget_parser>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#LanguageProvider>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.get_parser`](<#languageproviderget_parser>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#languageprovider>)  (Base Class)
 
 
 ---
 #### LanguageProvider\.\_\_init\_subclass\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider.__init_subclass__}} -->
-The [`__init_subclass__`](<#SymbolParser__init_subclass__>) method ensures that any subclass of `LanguageProvider` defines a `language` class attribute.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/base.py#L99>)
+
+Ensures that subclasses define the 'language' class attribute.
 - **Inputs**:
     - `cls`: The class that is being initialized as a subclass.
-    - `kwargs`: Additional keyword arguments that may be passed to the superclass initializer.
-- **Control Flow**:
-    - Call the superclass's [`__init_subclass__`](<#SymbolParser__init_subclass__>) method with any provided keyword arguments.
-    - Check if the `cls` has a `language` attribute and if it is not empty.
-    - Raise a `TypeError` if the `language` attribute is missing or empty, indicating that the subclass must define it.
-- **Output**: This method does not return any value; it raises a `TypeError` if the `language` attribute is not defined.
+    - `kwargs`: Additional keyword arguments passed to the method.
+- **Logic and Control Flow**:
+    - Calls the superclass's [`__init_subclass__`](<#symbolparser__init_subclass__>) method with any provided keyword arguments.
+    - Checks if the `cls` has a 'language' class attribute and if it is not empty.
+    - Raises a `TypeError` if the 'language' class attribute is not defined or is empty.
+- **Output**: Does not return a value; raises a `TypeError` if the 'language' class attribute is not defined or is empty.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.__init_subclass__`](<#SymbolParser__init_subclass__>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#LanguageProvider>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.__init_subclass__`](<#symbolparser__init_subclass__>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<#languageprovider>)  (Base Class)
 
 
 

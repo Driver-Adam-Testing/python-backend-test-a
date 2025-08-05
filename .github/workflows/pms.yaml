@@ -1,11 +1,7 @@
 name: Backend PMS Deployment
 on:
-  workflow_run:
-    workflows: ["Unit Test"]
+  push:
     branches: ["nwellinghoff/pms deploy"]
-    types:
-      - completed
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,10 +11,7 @@ permissions:
   id-token: write
   contents: read
 jobs:
-  deploy:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event_name == 'workflow_run')
+  main:
     name: Deploy to Dev Environment
     runs-on: self-hosted
     #Use if self-hosted no longer is up

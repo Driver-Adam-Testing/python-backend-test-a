@@ -16,7 +16,7 @@ class PMSStack(Stack):
 
         self.cdkenv = kwargs.get("env")
         print(f"AWS environment set to : {self.cdkenv}")
-        
+
         cors_origins = "https://app.pms.driverai.com"
 
         self.metrics_lambda = MetricsLambda(
@@ -36,6 +36,8 @@ class PMSStack(Stack):
                 allowed_ips=[],  # All IPs currently allowed
                 use_legacy_dropzone=True,
                 metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(

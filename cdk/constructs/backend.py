@@ -310,6 +310,10 @@ class Backend(Construct):
         # Output ECS Service ARN
         CfnOutput(self, "EcsServiceArn", export_name="EcsServiceArn", value=self.service.service.service_arn)
 
+         # Output ECS Service ARN
+        CfnOutput(self, "EcsServiceArn2", export_name="EcsServiceArn", value=self.service.service.service_arn)
+
+
 
         # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         # response = client.put_events(

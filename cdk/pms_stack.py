@@ -27,19 +27,19 @@ class PMSStack(Stack):
                 cloudwatch_alarm_arn="arn:aws:sns:us-east-1:537622164442:CloudwatchAlarms",
             ),
         )
-        self.backend = Backend(
-            self,
-            "ApiBackend",
-            BackendParams(
-                environment="pms",
-                cors_origins=[cors_origins],
-                allowed_ips=[],  # All IPs currently allowed
-                use_legacy_dropzone=True,
-                metrics_bus=self.metrics_lambda.metrics_bus,
-                aws_region=self.cdkenv.region,
-                aws_account=self.cdkenv.account
-            ),
-        )
+        # self.backend = Backend(
+        #     self,
+        #     "ApiBackend",
+        #     BackendParams(
+        #         environment="pms",
+        #         cors_origins=[cors_origins],
+        #         allowed_ips=[],  # All IPs currently allowed
+        #         use_legacy_dropzone=True,
+        #         metrics_bus=self.metrics_lambda.metrics_bus,
+        #         aws_region=self.cdkenv.region,
+        #         aws_account=self.cdkenv.account
+        #     ),
+        # )
         self.onboarding_lambda = AssetOnboardingLambda(
             self,
             "AssetOnboardingLambda",

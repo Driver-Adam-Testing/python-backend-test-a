@@ -5,7 +5,7 @@ Mount order:
 2. **studio_router**      - JWT-protected via `require_jwt`.
 3. **api_router**         - API-key-protected via `require_api_key`.
 
-The Sentry and logging setup is unchanged.
+The Sentry and logging setup is unchanged. test
 """
 
 from __future__ import annotations

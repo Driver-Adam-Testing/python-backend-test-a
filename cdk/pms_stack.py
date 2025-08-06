@@ -40,18 +40,18 @@ class PMSStack(Stack):
         #         aws_account=self.cdkenv.account
         #     ),
         # )
-        self.onboarding_lambda = AssetOnboardingLambda(
-            self,
-            "AssetOnboardingLambda",
-            AssetOnboardingLambdaParams(
-                environment="pms",
-                api_url="https://api.pms.driverai.com/studio/v1",
-                auth0_url="https://auth.pms.driverai.com",
-                auth0_audience="https://api.pms.driverai.com/api/v1",
-                dropzone_bucket=self.backend.dropzone_bucket,
-                use_legacy_dropzone=True,
-            ),
-        )
+        # self.onboarding_lambda = AssetOnboardingLambda(
+        #     self,
+        #     "AssetOnboardingLambda",
+        #     AssetOnboardingLambdaParams(
+        #         environment="pms",
+        #         api_url="https://api.pms.driverai.com/studio/v1",
+        #         auth0_url="https://auth.pms.driverai.com",
+        #         auth0_audience="https://api.pms.driverai.com/api/v1",
+        #         dropzone_bucket=self.backend.dropzone_bucket,
+        #         use_legacy_dropzone=True,
+        #     ),
+        # )
         self.inspector = Inspector(
             self, "Inspector", InspectorParams(environment="pms")
         )

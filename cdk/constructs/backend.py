@@ -143,14 +143,14 @@ class Backend(Construct):
                         aws_s3.HttpMethods.POST,
                         aws_s3.HttpMethods.GET,
                     ],
-                    "allowedOrigins": ",".join(params.cors_origins),
+                    "allowedOrigins": params.cors_origins.split(","),
                     "allowedHeaders": ["*"],
                 }
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
         container_environment_vars = {
-            "BACKEND_CORS_ORIGINS": ",".join(params.cors_origins),
+            "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
             "PROJECT_NAME": "DriverAI API",
             "ENVIRONMENT": params.environment,

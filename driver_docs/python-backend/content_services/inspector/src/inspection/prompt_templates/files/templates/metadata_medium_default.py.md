@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `metadata_medium_default.py` file defines a template for medium-sized metadata prompts using various components and style instructions.
+Defines a metadata medium template using structured prompting and language specialization utilities.
 
 # Purpose
-This code is a configuration setup for generating structured prompts, specifically tailored for metadata purposes in medium-sized systems. It imports various components and instructions from shared modules and utilities, which are then used to construct a template (`METADATA_MEDIUM_TEMPLATE`) that defines how prompts should be formatted and structured. The template combines different prompt components and style instructions to ensure consistency and adherence to specific guidelines, such as using backticks and avoiding restatements. This setup provides narrow functionality focused on creating standardized prompt structures for metadata-related tasks.
+This code defines a configuration for a metadata template used in a structured prompting system. It imports several components and prompts from different modules, such as `GENERAL_STE_STYLE_INSTRUCTION` and `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT`, which are used to construct the template. The `METADATA_MEDIUM_TEMPLATE` is a list containing tuples that define the structure and content of prompts, including instructions for style and purpose. The code uses the `Prompt` and `Component` classes to build and format the template strings, ensuring they adhere to specific style instructions. This setup is likely part of a larger system that generates or processes structured prompts for metadata purposes.
 # Imports and Dependencies
 
 ---
@@ -24,9 +24,9 @@ This code is a configuration setup for generating structured prompts, specifical
 
 ---
 ### METADATA\_MEDIUM\_TEMPLATE
-- **Type**: `list`
-- **Description**: `METADATA_MEDIUM_TEMPLATE` is a list containing a single tuple. This tuple is structured to hold metadata prompts, specifically for medium-sized metadata. It includes a prompt text identifier, a purpose header, and two formatted prompt strings created using the `Prompt` and `Component` classes.
-- **Use**: This variable is used to define and store a structured template for generating medium-sized metadata prompts.
+- **Type**: ``list``
+- **Description**: Contains a list with a single tuple that defines a structured prompt template for metadata. The tuple includes a prompt type, a section header, and two formatted prompt strings created by appending components and instructions to empty prompts.
+- **Use**: Used to define a medium complexity metadata prompt template for structured prompting.
 
 
 

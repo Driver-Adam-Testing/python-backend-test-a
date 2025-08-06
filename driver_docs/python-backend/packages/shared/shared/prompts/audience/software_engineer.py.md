@@ -3,31 +3,31 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `software_engineer.py` file defines a prompt and response structure for a seasoned software engineer seeking in-depth, codebase-specific technical documentation and analysis.
+Defines a prompt and response structure for a software engineer seeking detailed technical documentation.
 
 # Purpose
-This code defines a set of global variables that appear to be part of a conversational AI or chatbot system. The `PROMPT` variable contains a detailed string that outlines the expectations of a seasoned software engineer seeking in-depth technical documentation. The `MESSAGE` and `ASSISTANT_MESSAGE` variables are dictionaries representing a user message and an assistant's response, respectively, in a conversational context. This code provides narrow functionality, primarily serving as a configuration or template for initializing a conversation between a user and an AI assistant, ensuring that the assistant's responses are tailored to the user's advanced technical requirements.
+This code defines a set of constants and dictionaries used for constructing a structured message exchange between a user and an assistant. The `PROMPT` variable contains a detailed string that outlines the user's expectations for technical documentation. The `MESSAGE` dictionary uses this prompt to define a message with a user role. The `ASSISTANT_MESSAGE` dictionary provides a structured response from the assistant, detailing how it will address the user's request with a focus on advanced topics and relevant information. This code is a configuration setup for a dialogue system, specifying the roles and content of messages exchanged between a user and an assistant.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that contains a detailed description of the expectations and requirements of a seasoned software engineer seeking in-depth technical documentation. It outlines the desire for advanced topics, technical enhancements, explanations, analyses, code examples, and assessments, emphasizing the need for content specific to the codebase being examined.
-- **Use**: This variable is used to define the content of a message that specifies the user's expectations for technical documentation.
+- **Description**: A multi-line string that describes the expectations and preferences of a seasoned software engineer for in-depth technical documentation. It emphasizes the need for advanced topics, technical enhancements, explanations, analyses, code examples, and assessments specific to the codebase being examined.
+- **Use**: Used as a prompt to guide the generation of content that meets the specified documentation requirements.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that represents a message object with two key-value pairs: 'role' and 'content'. The 'role' key is set to 'user', indicating the message is from the user, and the 'content' key is set to the value of the `PROMPT` variable, which contains a detailed string describing the user's expectations for technical documentation.
-- **Use**: This variable is used to store and represent a user's message, including their role and the content of their request, in a structured format.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two key-value pairs: `role` set to `'user'` and `content` set to the value of the `PROMPT` variable. The `PROMPT` variable is a string that describes the user's expectations for technical documentation.
+- **Use**: Used to store and convey the user's role and their specific content request in a structured format.
 
 
 ---
 ### ASSISTANT\_MESSAGE
-- **Type**: `dict`
-- **Description**: The `ASSISTANT_MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'assistant', indicating the role of the message sender, while the 'content' key holds a multi-line string that outlines the assistant's approach to providing detailed and context-specific technical information.
-- **Use**: This variable is used to define the assistant's response format and content when interacting with a user seeking technical documentation.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `assistant`, and the `content` key contains a string that outlines how the assistant will provide detailed and tailored responses to technical inquiries.
+- **Use**: Used to define the assistant's response behavior and content in a structured format.
 
 
 

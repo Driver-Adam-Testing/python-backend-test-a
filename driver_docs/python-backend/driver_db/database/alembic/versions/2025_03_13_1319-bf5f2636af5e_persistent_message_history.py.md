@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_03_13_1319-bf5f2636af5e_persistent_message_history.py` file contains an Alembic migration script for creating and managing tables related to runtime LLM sessions and message history in a PostgreSQL database.
+Defines Alembic migrations to create and manage tables for LLM session and message history.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by creating new tables and indexes related to a persistent message history system. The script defines an upgrade function that creates three tables: `v2_runtime_llm_session`, `v2_runtime_llm_message_history`, and `v2_runtime_llm_messages`. These tables are structured to store information about sessions, message histories, and individual messages, respectively. The `v2_runtime_llm_session` table includes columns for session identifiers, user and organization IDs, and timestamps for creation and updates. The `v2_runtime_llm_message_history` table links to the session table via a foreign key and stores information about different message pipelines. The `v2_runtime_llm_messages` table records individual messages, including their content in JSON format, and links to the message history table. Indexes are created on key columns to optimize query performance.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage the schema changes for a database. The upgrade function creates three tables: `v2_runtime_llm_session`, `v2_runtime_llm_message_history`, and `v2_runtime_llm_messages`. These tables are designed to store information about sessions, message histories, and individual messages related to a runtime large language model (LLM) system. The `v2_runtime_llm_session` table includes columns for session identifiers, user and organization IDs, and timestamps for creation and updates. The `v2_runtime_llm_message_history` table links to the session table and stores information about different message pipelines. The `v2_runtime_llm_messages` table records individual messages, including a message hash and JSON data, and links to the message history table.
 
-The script also includes a downgrade function that reverses the changes made by the upgrade function, effectively removing the tables and indexes if needed. This migration script is part of a broader database version control system, allowing developers to manage changes to the database schema over time. The use of Alembic, a database migration tool for SQLAlchemy, indicates that this script is intended to be part of a larger application that uses SQLAlchemy for ORM (Object-Relational Mapping) and PostgreSQL as the database backend. The script is not a standalone application but a component of a larger system, likely used in a development or production environment to manage database schema changes systematically.
+The script also creates several indexes to optimize queries on specific columns, such as `organization_id`, `user_id`, `llm_session_id`, and `pipeline_kind`. The downgrade function reverses these changes by dropping the indexes and tables in the reverse order of their creation. This script is part of a version-controlled database schema management system, allowing developers to apply and revert schema changes consistently across different environments.
 # Imports and Dependencies
 
 ---
@@ -22,60 +22,68 @@ The script also includes a downgrade function that reverses the changes made by 
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration version in the database schema history.
+- **Type**: ``str``
+- **Description**: Contains the unique identifier for the current database schema revision in the Alembic migration script. This identifier is used to track the version of the database schema.
+- **Use**: Used by Alembic to identify the current state of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
+- **Use**: Indicates the parent revision ID for the current migration script in Alembic.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_03_13_1319-bf5f2636af5e_persistent_message_history.upgrade}} -->
-The `upgrade` function creates three new database tables and their associated indexes to support runtime LLM sessions, message history, and messages.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_03_13_1319-bf5f2636af5e_persistent_message_history.py#L21>)
+
+Creates tables and indexes for managing runtime LLM sessions, message history, and messages in a database.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by creating a table named `v2_runtime_llm_session` with columns for `id`, `user_id`, `organization_id`, `source_node_ids_str`, `page_node_id`, `created_at`, and `updated_at`, and sets `id` as the primary key.
-    - Indexes are created for the `organization_id` and `user_id` columns of the `v2_runtime_llm_session` table to optimize query performance.
-    - A second table, `v2_runtime_llm_message_history`, is created with columns for `id`, `llm_session_id`, and `pipeline_kind`, with `id` as the primary key and a foreign key constraint on `llm_session_id` referencing `v2_runtime_llm_session.id`.
-    - Indexes are created for the `llm_session_id` and `pipeline_kind` columns of the `v2_runtime_llm_message_history` table.
-    - A third table, `v2_runtime_llm_messages`, is created with columns for `id`, `message_history_id`, `llm_message_hash`, `llm_message_json`, `created_at`, and `updated_at`, with `id` as the primary key and a foreign key constraint on `message_history_id` referencing `v2_runtime_llm_message_history.id`.
-    - An index is created for the `message_history_id` column of the `v2_runtime_llm_messages` table.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Creates a table named `v2_runtime_llm_session` with columns for `id`, `user_id`, `organization_id`, `source_node_ids_str`, `page_node_id`, `created_at`, and `updated_at`, and sets `id` as the primary key.
+    - Creates indexes on the `organization_id` and `user_id` columns of the `v2_runtime_llm_session` table.
+    - Creates a table named `v2_runtime_llm_message_history` with columns for `id`, `llm_session_id`, and `pipeline_kind`, and sets `id` as the primary key.
+    - Adds a foreign key constraint on `llm_session_id` in `v2_runtime_llm_message_history` referencing `id` in `v2_runtime_llm_session` with `CASCADE` on delete.
+    - Creates indexes on the `llm_session_id` and `pipeline_kind` columns of the `v2_runtime_llm_message_history` table.
+    - Creates a table named `v2_runtime_llm_messages` with columns for `id`, `message_history_id`, `llm_message_hash`, `llm_message_json`, `created_at`, and `updated_at`, and sets `id` as the primary key.
+    - Adds a foreign key constraint on `message_history_id` in `v2_runtime_llm_messages` referencing `id` in `v2_runtime_llm_message_history` with `CASCADE` on delete.
+    - Creates an index on the `message_history_id` column of the `v2_runtime_llm_messages` table.
+- **Output**: No return value; modifies the database schema by creating tables and indexes.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_03_13_1319-bf5f2636af5e_persistent_message_history.downgrade}} -->
-The `downgrade` function reverses database schema changes by dropping specific tables and indexes.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_03_13_1319-bf5f2636af5e_persistent_message_history.py#L120>)
+
+Reverts database schema changes by dropping specific tables and indexes.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by dropping the index 'ix_v2_runtime_llm_messages_message_history_id' from the 'v2_runtime_llm_messages' table.
-    - It then drops the 'v2_runtime_llm_messages' table.
-    - Next, it drops the indexes 'ix_v2_runtime_llm_message_history_pipeline_kind' and 'ix_v2_runtime_llm_message_history_llm_session_id' from the 'v2_runtime_llm_message_history' table.
-    - It proceeds to drop the 'v2_runtime_llm_message_history' table.
-    - The function continues by dropping the indexes 'ix_v2_runtime_llm_session_user_id' and 'ix_v2_runtime_llm_session_organization_id' from the 'v2_runtime_llm_session' table.
-    - Finally, it drops the 'v2_runtime_llm_session' table.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Drops the index `ix_v2_runtime_llm_messages_message_history_id` from the table `v2_runtime_llm_messages`.
+    - Drops the table `v2_runtime_llm_messages`.
+    - Drops the index `ix_v2_runtime_llm_message_history_pipeline_kind` from the table `v2_runtime_llm_message_history`.
+    - Drops the index `ix_v2_runtime_llm_message_history_llm_session_id` from the table `v2_runtime_llm_message_history`.
+    - Drops the table `v2_runtime_llm_message_history`.
+    - Drops the index `ix_v2_runtime_llm_session_user_id` from the table `v2_runtime_llm_session`.
+    - Drops the index `ix_v2_runtime_llm_session_organization_id` from the table `v2_runtime_llm_session`.
+    - Drops the table `v2_runtime_llm_session`.
+- **Output**: No output is returned.
 
 
 

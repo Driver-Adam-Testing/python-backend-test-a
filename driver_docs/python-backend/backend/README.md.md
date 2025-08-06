@@ -3,41 +3,50 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README.md` file in the `python-backend` codebase provides comprehensive instructions for setting up and developing a FastAPI backend project, including requirements, local development setup with Docker and Poetry, backend testing, and database migrations.
+Instructions for setting up and developing a FastAPI backend using Docker, Poetry, and VS Code, including testing and database migrations.
 
 # Purpose
-This document is a comprehensive guide for setting up and managing a FastAPI project backend environment, primarily focusing on local development using Docker and Poetry. It provides detailed instructions on how to start the development stack using Docker Compose, interact with various components like the frontend, backend, and database administration tools, and manage Python dependencies with Poetry. The document also covers advanced development workflows, such as using VS Code for debugging, modifying Docker Compose settings for local development, and running backend tests with Pytest. Additionally, it includes instructions for handling database migrations using Alembic, ensuring that changes to SQLModel models are properly reflected in the database schema. This file is crucial for developers working on the codebase, as it outlines the necessary steps and tools for efficient development and testing, ensuring consistency and reliability in the development process.
+This document provides instructions for setting up and managing a FastAPI project backend using Docker and Poetry. It outlines the requirements for local development, including the use of Docker Compose to start the application stack and access various components such as the frontend, backend API, and database administration tools. The document details the workflow for managing Python dependencies with Poetry, including installing dependencies and starting a shell session within the virtual environment. It also explains how to configure and use Visual Studio Code for debugging and testing the backend. Additionally, it describes how to override Docker Compose settings for local development, enabling live code reloading and interactive sessions within the Docker container. The document includes instructions for running backend tests using Pytest and managing database migrations with Alembic, ensuring that changes to SQLModel models are reflected in the database schema.
 # Content Summary
-This document provides comprehensive instructions for setting up and developing a FastAPI-based backend project using Docker and Poetry. It is structured to guide developers through the local development process, including environment setup, code management, and testing.
+This document provides instructions for setting up and developing a FastAPI project backend using Docker and Poetry. It outlines the requirements, local development setup, and additional details for backend development.
 
-### Key Components:
+### Requirements
+- **Docker**: Used for containerization and managing the application stack.
+- **Poetry**: Manages Python packages and environments.
 
-1. **Requirements**: 
-   - The project requires Docker for containerization and Poetry for Python package and environment management.
+### Local Development
+- **Starting the Stack**: Use Docker Compose to start the application stack with `docker compose up -d`.
+- **Accessing Services**: The application includes several services accessible via specific URLs:
+  - Frontend: `http://localhost`
+  - Backend API: `http://localhost/api/`
+  - Swagger UI for API documentation: `http://localhost/docs`
+  - Adminer for database management: `http://localhost:8080`
+  - Traefik UI for route management: `http://localhost:8090`
+- **Logs**: Monitor logs using `docker compose logs` and specify a service to view its logs.
 
-2. **Local Development Setup**:
-   - Developers can start the application stack using Docker Compose with the command `docker compose up -d`. This initializes various services, including the frontend, backend API, Swagger UI for API documentation, Adminer for database management, and Traefik for route handling.
+### Backend Development
+- **Dependencies**: Install dependencies using Poetry with `poetry install` and start a shell session with `poetry shell`.
+- **Code Modifications**: Modify SQLModel models, API endpoints, and CRUD utilities in specified directories.
+- **VS Code Integration**: Configurations are available for debugging and running tests within VS Code.
 
-3. **Backend Development Workflow**:
-   - Dependencies are managed with Poetry, and developers can install them using `poetry install` and start a shell session with `poetry shell`.
-   - Code modifications are made in specific directories: models in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, and CRUD utilities in `./backend/app/crud.py`.
+### Docker Compose Override
+- **Local Development Adjustments**: Use `docker-compose.override.yml` to make changes that only affect the local environment.
+- **Live Code Reloading**: The backend can be set to reload automatically on code changes using `/start-reload.sh`.
+- **Container Access**: Access the running container with `docker compose exec backend bash` for direct command execution.
 
-4. **Development Tools**:
-   - The project is configured for use with Visual Studio Code, allowing debugging and test execution directly from the IDE.
-   - Docker Compose can be customized for local development using `docker-compose.override.yml`, enabling live code reloading and fast iteration without rebuilding Docker images.
+### Backend Testing
+- **Running Tests**: Execute tests using `bash ./scripts/test.sh` with Pytest. Tests are located in `./backend/app/tests/`.
+- **Test Coverage**: View test coverage in `htmlcov/index.html`.
+- **GitHub Actions**: Tests run automatically if using GitHub Actions.
 
-5. **Testing**:
-   - Backend tests are executed using Pytest, with scripts provided to facilitate test execution (`./scripts/test.sh`).
-   - Test coverage reports are generated in `htmlcov/index.html`.
+### Migrations
+- **Alembic for Migrations**: Use Alembic to manage database migrations. Create revisions and upgrade the database as needed.
+- **Interactive Session**: Start a session in the backend container to run Alembic commands.
 
-6. **Database Migrations**:
-   - Alembic is used for database migrations, allowing developers to create and apply revisions to the database schema.
-   - Instructions are provided for creating migrations and updating the database schema, with options to bypass migrations if desired.
+### Unit Testing
+- **Command**: Run unit tests with `pytest -m unit`.
 
-7. **Unit Testing**:
-   - Unit tests can be run using the command `pytest -m unit`.
-
-This document serves as a detailed guide for developers to efficiently set up and manage the development environment, ensuring a smooth workflow for building and testing the FastAPI backend application.
+This document serves as a comprehensive guide for developers to set up, develop, and test the FastAPI backend efficiently using Docker and Poetry.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

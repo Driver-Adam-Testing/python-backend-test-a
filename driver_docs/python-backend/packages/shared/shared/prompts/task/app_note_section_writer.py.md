@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `app_note_section_writer.py` file contains a prompt for writing a section of a detailed technical document called an app note, emphasizing the need for thorough understanding and analysis of the codebase to provide in-depth insights.
+A prompt for writing a detailed technical document section called an app note, requiring in-depth codebase understanding.
 
 # Purpose
-This code snippet defines two global variables, `PROMPT` and `MESSAGE`, which are used to store a string and a dictionary, respectively. The `PROMPT` variable contains a multi-line string that appears to be a template or guideline for writing a technical document, specifically an app note, which requires a deep understanding of a codebase and the use of certain tools for context gathering. The `MESSAGE` variable is a dictionary with a single key-value pair, where the key is `"role"` and the value is `"system"`, and the content is set to the `PROMPT` string. This code provides narrow functionality, primarily serving as a configuration or setup for a system message, likely intended for use in a larger application or script that involves generating or processing technical documentation.
+This code defines two global variables, `PROMPT` and `MESSAGE`, which are used for generating a section of a technical document called an app note. The `PROMPT` variable contains a multi-line string that outlines the task of writing a detailed technical document, emphasizing the need for understanding the codebase and using tools to gather context. The `MESSAGE` variable is a dictionary with a key `role` set to "system" and a key `content` set to the value of `PROMPT`. This setup is likely used in a system that processes or generates technical documentation based on predefined instructions.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that provides detailed instructions for writing a section of a technical document called an app note. It emphasizes the need for in-depth insights into the technical context and understanding of the codebase before writing the document.
-- **Use**: This variable is used to store the instructions for generating a technical document, which can be referenced by other parts of the program to guide the document creation process.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for writing a section of a technical document called an app note. It emphasizes the need for in-depth insights and understanding of the technical context and codebase before writing the document.
+- **Use**: Used as a template or guideline for writing detailed technical documentation.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' with the value 'system', and 'content' with the value of the `PROMPT` variable. The `PROMPT` variable is a multi-line string that provides instructions for writing a detailed technical document.
-- **Use**: This variable is used to store and convey system-level instructions for generating a technical document.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a value of `system`, and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and a detailed prompt for technical documentation.
 
 
 

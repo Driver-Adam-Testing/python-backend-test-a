@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `ping.py` file defines an API route that returns the user ID of the caller authenticated via an API key token.
+Defines a FastAPI route for a ping endpoint that returns the user ID from an API key token.
 
 # Purpose
-This code defines a simple FastAPI route that provides narrow functionality, specifically for handling a GET request to the root endpoint ("/"). It imports an `ApiKeyToken` class from an authentication module, which is used to authenticate the caller of the endpoint. The [`ping`](<#ping>) function is an asynchronous endpoint that returns a dictionary containing the `user_id` of the authenticated caller, indicating that the endpoint is likely used to verify the identity or presence of a user. The use of `APIRouter` suggests that this code is part of a larger application, where this router can be included as a module to handle specific API routes.
+This code defines a FastAPI router that provides a single endpoint for a basic health check or "ping" operation. The endpoint is defined using the `@router.get("/")` decorator, which maps HTTP GET requests to the root path ("/"). The [`ping`](<#ping>) function is asynchronous and requires an `ApiKeyToken` object as a parameter, which is used to authenticate the caller. The function returns a dictionary containing the `user_id` of the authenticated caller, indicating that the endpoint is protected and requires valid API key authentication. This code provides narrow functionality, focusing on a simple authenticated endpoint within a FastAPI application.
 # Imports and Dependencies
 
 ---
@@ -18,24 +18,25 @@ This code defines a simple FastAPI route that provides narrow functionality, spe
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a set of routes for the application, allowing for the organization and modularization of API endpoints.
-- **Use**: This variable is used to register and manage HTTP routes and their corresponding handler functions within the FastAPI application.
+- **Type**: ``APIRouter``
+- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage a group of related API routes.
+- **Use**: Facilitates the organization and handling of API endpoints within the application.
 
 
 # Functions
 
 ---
 ### ping<!-- {{#callable:python-backend/backend/app/api/routes/api/ping.ping}} -->
-The 'ping' function is an asynchronous FastAPI endpoint that returns the user ID of the caller authenticated via an API key.
+[View Source →](<../../../../../../../backend/app/api/routes/api/ping.py#L7>)
+
+Handles a GET request to return the user ID from the provided API key token.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `caller`: An instance of ApiKeyToken representing the authenticated caller, which contains user authentication details.
-- **Control Flow**:
-    - The function is defined as an asynchronous endpoint using FastAPI's routing capabilities.
-    - It takes a single parameter 'caller', which is expected to be an instance of ApiKeyToken.
-    - The function returns a dictionary containing the 'user_id' attribute of the 'caller' object.
-- **Output**: A dictionary with a single key 'user_id', whose value is the user ID extracted from the 'caller' object.
+    - `caller`: An instance of `ApiKeyToken` that contains the user's authentication information.
+- **Logic and Control Flow**:
+    - Extracts the `user_id` from the `caller` object.
+    - Returns a dictionary containing the `user_id`.
+- **Output**: A dictionary with a single key `user_id` and its corresponding value from the `caller` object.
 
 
 

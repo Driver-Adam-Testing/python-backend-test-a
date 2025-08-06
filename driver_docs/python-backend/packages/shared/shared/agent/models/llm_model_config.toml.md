@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_model_config.toml` file in the `python-backend` codebase specifies configuration details for various language models, including their model IDs, providers, context window sizes, maximum output tokens, and system prompts.
+Configuration for various language models with details on model ID, provider, and token limits.
 
 # Purpose
-The provided file is a configuration file that defines various machine learning models, specifying their attributes and settings. Each model is identified by a unique `model_id` and is associated with a `provider`, such as "openai", "anthropic", or "google". Key parameters for each model include `context_window_size`, which indicates the maximum number of tokens the model can process in a single input, and `max_output_tokens`, which specifies the maximum number of tokens the model can generate as output. Additionally, the `system_prompts` attribute indicates the type or number of system prompts that the model can handle, with values like "many", "none", or "one". This configuration allows for the selection and utilization of different models based on their capabilities and the requirements of specific tasks.
+The configuration file defines various models available for use, specifying their unique identifiers, providers, and operational parameters. Each model entry includes a `model_id`, which serves as a unique identifier, and a `provider`, indicating the organization responsible for the model, such as "openai", "anthropic", or "google". The `context_window_size` parameter specifies the maximum number of tokens the model can process in a single input, while `max_output_tokens` defines the maximum number of tokens the model can generate as output. The `system_prompts` field indicates the type or number of system prompts associated with each model, which can vary from "none" to "many". This configuration allows for the selection and use of different models based on specific requirements and capabilities.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

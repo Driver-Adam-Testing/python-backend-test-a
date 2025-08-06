@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `java_driver_test.py` file contains a suite of tests for the `JavaDriverTree` class, verifying its ability to extract various Java code elements such as imports, classes, interfaces, methods, variables, and enums from test Java files.
+Tests for Java code parsing using the JavaDriverTree class with various test cases.
 
 # Purpose
-This Python file is a test suite designed to validate the functionality of a Java code analysis tool, specifically focusing on the extraction of various Java code elements such as imports, classes, interfaces, methods, variables, and enums. The file uses the `pytest` framework to define a series of test cases that ensure the correct identification and extraction of these elements from Java source code. The tests are organized using fixtures to load Java test files, which are then parsed by the `JavaDriverTree` class to extract the relevant code elements. Each test checks for the presence and correctness of extracted elements, such as ensuring the correct number of imports or verifying the line ranges of class definitions.
+The code is a test suite for verifying the functionality of the `JavaDriverTree` class, which is part of a Java code analysis tool. The test suite uses the `pytest` framework to define a series of tests that check the ability of `JavaDriverTree` to extract various Java code elements such as imports, classes, interfaces, methods, variables, and enums from Java source files. The tests are organized into functions that each focus on a specific type of code element, ensuring that the `JavaDriverTree` can correctly identify and extract these elements from the provided Java test cases.
 
-The file is structured to provide comprehensive coverage of the Java code analysis tool's capabilities, with tests for duplication detection, inheritance extraction, and fully qualified path generation. The use of parameterized tests allows for efficient validation of multiple expected outcomes within a single test function. This test suite serves as a critical component in ensuring the reliability and accuracy of the Java code analysis tool, making it suitable for integration into larger software systems that require Java code parsing and analysis.
+The test suite includes several `pytest` fixtures that read Java source code from files located in a `treesitter_testcases/java` directory. These fixtures provide the test functions with the necessary Java code to analyze. The test functions then create instances of `JavaDriverTree` using this code and call methods to extract specific elements. Assertions are used to verify that the extracted elements match expected values, such as the number of elements and their names and line ranges. The suite also includes parameterized tests to check multiple expected outcomes for certain elements, enhancing the coverage and reliability of the tests.
 # Imports and Dependencies
 
 ---
@@ -22,384 +22,452 @@ The file is structured to provide comprehensive coverage of the Java code analys
 
 ---
 ### imports\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.imports_test_code}} -->
-The `imports_test_code` function is a pytest fixture that reads and returns the contents of a Java test file for import statements.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L10>)
+
+Reads and returns the content of a Java test file for imports as a string.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - Constructs the file path to 'test_imports.java' located in the 'treesitter_testcases/java' directory relative to the current file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the 'test_imports.java' file located in the 'treesitter_testcases/java' directory relative to the current file.
     - Opens the file at the constructed path with UTF-8 encoding.
-    - Reads the entire content of the file and returns it as a string.
-- **Output**: A string containing the contents of the 'test_imports.java' file.
+    - Reads the entire content of the file into a string.
+    - Returns the string containing the file content.
+- **Output**: A string containing the content of the 'test_imports.java' file.
 
 
 ---
 ### classes\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.classes_test_code}} -->
-The `classes_test_code` function is a pytest fixture that reads and returns the content of a Java test file named `test_classes.java`.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L22>)
+
+Provides the content of a Java test file for class definitions as a string fixture for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to `test_classes.java` located in the `treesitter_testcases/java` directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: The function returns the content of the `test_classes.java` file as a string.
+- **Logic and Control Flow**:
+    - Constructs the file path to the Java test file `test_classes.java` located in the `treesitter_testcases/java` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file into a string.
+    - Returns the string containing the file content.
+- **Output**: A string containing the content of the `test_classes.java` file.
 
 
 ---
 ### methods\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.methods_test_code}} -->
-The `methods_test_code` function is a pytest fixture that reads and returns the contents of a Java test file for methods.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L34>)
+
+Provides a fixture that reads and returns the content of a Java test file for methods.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_methods.java' file located in the 'treesitter_testcases/java' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The contents of the file are read and returned as a string.
-- **Output**: A string containing the contents of the 'test_methods.java' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the Java test file `test_methods.java` located in the `treesitter_testcases/java` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the content of the file as a string.
+- **Output**: A string containing the content of the `test_methods.java` file.
 
 
 ---
 ### variables\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.variables_test_code}} -->
-The `variables_test_code` function is a pytest fixture that reads and returns the content of a Java test file named `test_variables.java`.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L46>)
+
+Provides the content of the 'test_variables.java' file as a string for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the `test_variables.java` file located in the `treesitter_testcases/java` directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: A string containing the content of the `test_variables.java` file.
+- **Logic and Control Flow**:
+    - Constructs the file path to 'test_variables.java' using the current file's directory.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the content of the file and returns it as a string.
+- **Output**: A string containing the content of the 'test_variables.java' file.
 
 
 ---
 ### interfaces\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.interfaces_test_code}} -->
-The `interfaces_test_code` function is a pytest fixture that reads and returns the content of a Java test file for interfaces.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L58>)
+
+Provides the content of the 'test_interfaces.java' file as a string for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - Constructs the file path to the 'test_interfaces.java' file located in the 'treesitter_testcases/java' directory relative to the current file.
+- **Logic and Control Flow**:
+    - Constructs the file path to 'test_interfaces.java' using the current file's directory.
     - Opens the file at the constructed path with UTF-8 encoding.
-    - Reads the entire content of the file and returns it as a string.
+    - Reads the content of the file and returns it as a string.
 - **Output**: A string containing the content of the 'test_interfaces.java' file.
 
 
 ---
 ### enums\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.enums_test_code}} -->
-The `enums_test_code` function is a pytest fixture that reads and returns the content of a Java test file for enums.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L70>)
+
+Provides the content of a Java test file for enums as a string fixture for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function constructs a file path to the 'test_enums.java' file located in the 'treesitter_testcases/java' directory relative to the current file.
-    - It opens the file in read mode with UTF-8 encoding.
-    - The content of the file is read and returned as a string.
-- **Output**: A string containing the content of the 'test_enums.java' file.
+- **Logic and Control Flow**:
+    - Constructs the file path to the Java test file `test_enums.java` located in the `treesitter_testcases/java` directory relative to the current file.
+    - Opens the file at the constructed path with UTF-8 encoding.
+    - Reads the entire content of the file into a string.
+    - Returns the string containing the file content.
+- **Output**: A string containing the content of the `test_enums.java` file.
 
 
 ---
 ### test\_extract\_imports\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_imports_duplications}} -->
-The function `test_extract_imports_duplications` tests that the number of import statements extracted from a Java code snippet is exactly six.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L82>)
+
+Verifies that the number of imports extracted from Java code is exactly six.
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `imports_test_code`: A string containing Java code from which import statements are to be extracted.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object by parsing the `imports_test_code` string as Java code.
-    - Extract import statements from the `JavaDriverTree` object using the [`extract_imports`](<java_driver.py.md#JavaDriverTreeextract_imports>) method.
-    - Assert that the number of extracted import statements is equal to six.
-- **Output**: The function does not return any value; it raises an assertion error if the number of imports is not six.
+    - `imports_test_code`: A string containing Java code to test for import extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code`.
+    - Call [`extract_imports`](<java_driver.py.md#javadrivertreeextract_imports>) on the `JavaDriverTree` object to get a list of imports.
+    - Assert that the length of the imports list is equal to six.
+- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_imports`](<java_driver.py.md#JavaDriverTreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_imports`](<java_driver.py.md#javadrivertreeextract_imports>)
 
 
 ---
 ### test\_extract\_imports<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_imports}} -->
-The `test_extract_imports` function verifies that specific Java import statements are correctly extracted from a given code snippet and match expected names and line ranges.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L89>)
+
+Validates that the expected Java import statements and their line ranges are correctly extracted from the provided code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `imports_test_code`: A string containing Java code from which import statements are to be extracted.
-    - `expected_import_name`: The expected name of the import statement to be verified.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the import statement in the code.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code` method.
-    - Extract import statements from the `JavaDriverTree` object using the [`extract_imports`](<java_driver.py.md#JavaDriverTreeextract_imports>) method.
-    - Transform the extracted import statements into a list of tuples containing the import name and its line range.
-    - Assert that the expected import name and line range tuple is present in the list of extracted imports, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected import is not found in the extracted imports.
+    - `imports_test_code`: A string containing Java code to test for import extraction.
+    - `expected_import_name`: The expected name of the import to be found in the code.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the import in the code.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `imports_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Call the [`extract_imports`](<java_driver.py.md#javadrivertreeextract_imports>) method on the `driver_tree` to get a list of import objects.
+    - Transform the list of import objects into a list of tuples containing the import name and its line range.
+    - Check if the tuple `(expected_import_name, expected_line_range)` is in the list of extracted imports.
+    - If the expected import is not found, raise an assertion error with a message indicating the missing import and the extracted imports.
+- **Output**: None, but raises an assertion error if the expected import is not found in the extracted imports.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_imports`](<java_driver.py.md#JavaDriverTreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_imports`](<java_driver.py.md#javadrivertreeextract_imports>)
 
 
 ---
 ### test\_extract\_classes\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_classes_duplications}} -->
-The function `test_extract_classes_duplications` tests that the [`extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>) method of `JavaDriverTree` correctly identifies and extracts four class definitions from a given Java source code string.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L114>)
+
+Verifies that the number of class definitions extracted from Java code is exactly four.
 - **Inputs**:
-    - `classes_test_code`: A string containing Java source code from which class definitions are to be extracted.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object by parsing the `classes_test_code` string with the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - Call the [`extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>) method on the `JavaDriverTree` object to retrieve class definitions.
-    - Assert that the number of extracted class definitions is exactly four.
-- **Output**: The function does not return any value; it raises an assertion error if the number of extracted classes is not four.
+    - `classes_test_code`: A string containing Java source code to test for class definitions.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `classes_test_code` string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract class definitions from the `JavaDriverTree` object using the [`extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>) method.
+    - Assert that the number of extracted class definitions is equal to four.
+- **Output**: No output is returned; the function raises an assertion error if the number of classes is not four.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>)
 
 
 ---
 ### test\_extract\_classes<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_classes}} -->
-The `test_extract_classes` function verifies that specific class definitions and their line ranges are correctly extracted from Java source code using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L121>)
+
+Validates that the [`extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>) method correctly identifies and extracts class definitions from Java code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `classes_test_code`: A string containing the Java source code to be tested for class extraction.
-    - `expected_class_name`: The name of the class expected to be found in the extracted class definitions.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the class definition in the source code.
-- **Control Flow**:
-    - The function begins by creating a `JavaDriverTree` object from the provided Java source code string.
-    - It then calls the [`extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>) method on the `JavaDriverTree` object to retrieve a list of class definitions.
-    - The function constructs a list of tuples, each containing a class name and its line range, from the extracted class definitions.
-    - An assertion checks if the expected class name and line range tuple is present in the list of extracted class definitions, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected class is not found in the extracted classes.
+    - `classes_test_code`: A string containing Java code to test class extraction.
+    - `expected_class_name`: The name of the class expected to be found in the Java code.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the class definition in the Java code.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Call the [`extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>) method on the `JavaDriverTree` object to get a list of class definitions.
+    - Transform the list of class definitions into a list of tuples containing class names and their line ranges.
+    - Check if the expected class name and line range tuple is present in the extracted list of class definitions.
+    - If the expected class is not found, raise an assertion error with a message indicating the missing class and the extracted classes.
+- **Output**: No output is returned; the function raises an assertion error if the expected class is not found in the extracted classes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>)
 
 
 ---
 ### test\_extract\_class\_inheritance<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_class_inheritance}} -->
-The function `test_extract_class_inheritance` verifies that the class inheritance information is correctly extracted from Java code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L145>)
+
+Verifies that the class inheritance information is correctly extracted from Java code.
 - **Inputs**:
-    - `classes_test_code`: A string containing Java code to be tested for class inheritance extraction.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided Java code string.
-    - Extract class definitions from the `JavaDriverTree`.
-    - Search for a class named `ConcreteClass` within the extracted class definitions.
-    - Assert that `ConcreteClass` is found and that it has at least one base class name, indicating it extends or implements other classes.
-- **Output**: The function does not return any value; it uses assertions to validate the correctness of class inheritance extraction.
+    - `classes_test_code`: A string containing Java code to test class inheritance extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `classes_test_code` string.
+    - Extract class definitions from the `JavaDriverTree` object.
+    - Find the class named `ConcreteClass` in the extracted class definitions.
+    - Assert that `ConcreteClass` is not `None`, indicating it was found.
+    - Assert that `ConcreteClass` has a non-`None` list of base class names.
+    - Assert that the length of `ConcreteClass`'s base class names is at least 1, indicating it extends or implements other classes.
+- **Output**: No output is returned; the function uses assertions to validate the extraction of class inheritance information.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>)
 
 
 ---
 ### test\_extract\_interfaces\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_interfaces_duplications}} -->
-The function `test_extract_interfaces_duplications` tests that the number of interface definitions extracted from Java code is exactly four.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L159>)
+
+Tests the extraction of interface definitions from Java code and verifies the expected number of interfaces.
 - **Inputs**:
-    - `interfaces_test_code`: A string containing Java code to be analyzed for interface definitions.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code`.
-    - Extract interface definitions from the `JavaDriverTree` object using [`extract_interface_definitions`](<java_driver.py.md#JavaDriverTreeextract_interface_definitions>).
-    - Assert that the number of extracted interfaces is equal to four.
-- **Output**: The function does not return any value; it raises an assertion error if the number of interfaces is not four.
+    - `interfaces_test_code`: A string containing Java code to test for interface extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `interfaces_test_code` string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract interface definitions from the `JavaDriverTree` object using the [`extract_interface_definitions`](<java_driver.py.md#javadrivertreeextract_interface_definitions>) method.
+    - Assert that the number of extracted interfaces is equal to 4.
+- **Output**: No output is returned as the function is a test and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_interface_definitions`](<java_driver.py.md#JavaDriverTreeextract_interface_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_interface_definitions`](<java_driver.py.md#javadrivertreeextract_interface_definitions>)
 
 
 ---
 ### test\_extract\_interfaces<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_interfaces}} -->
-The `test_extract_interfaces` function tests the extraction of interface definitions from Java code, ensuring that specific interfaces and their line ranges are correctly identified.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L166>)
+
+Tests if the [`extract_interface_definitions`](<java_driver.py.md#javadrivertreeextract_interface_definitions>) method correctly identifies and extracts interface definitions from Java code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `interfaces_test_code`: A string containing Java code to be tested for interface extraction.
+    - `interfaces_test_code`: A string containing Java code to test for interface extraction.
     - `expected_interface_name`: The name of the interface expected to be found in the Java code.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the interface in the Java code.
-- **Control Flow**:
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the interface in the Java code.
+- **Logic and Control Flow**:
     - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code`.
-    - Extract interface definitions from the `JavaDriverTree` object using [`extract_interface_definitions`](<java_driver.py.md#JavaDriverTreeextract_interface_definitions>).
+    - Call [`extract_interface_definitions`](<java_driver.py.md#javadrivertreeextract_interface_definitions>) on the `JavaDriverTree` object to get a list of interface definitions.
     - Create a list of tuples containing the name and line range of each extracted interface.
-    - Assert that the expected interface name and line range tuple is present in the list of extracted interfaces.
-- **Output**: The function does not return any value; it raises an assertion error if the expected interface is not found in the extracted interfaces.
+    - Check if the tuple `(expected_interface_name, expected_line_range)` is in the list of extracted interfaces.
+    - If the expected interface is not found, raise an assertion error with a message indicating the missing interface and the list of extracted interfaces.
+- **Output**: No output is returned; the function raises an assertion error if the expected interface is not found.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_interface_definitions`](<java_driver.py.md#JavaDriverTreeextract_interface_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_interface_definitions`](<java_driver.py.md#javadrivertreeextract_interface_definitions>)
 
 
 ---
 ### test\_extract\_interface\_inheritance<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_interface_inheritance}} -->
-The function `test_extract_interface_inheritance` verifies that the inheritance information of Java interfaces is correctly extracted, specifically checking that the `Resizable` interface extends the `Drawable` interface.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L192>)
+
+Tests if the interface inheritance information is extracted correctly from Java code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `interfaces_test_code`: A string containing Java code that defines interfaces, used to test the extraction of interface inheritance information.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided `interfaces_test_code` string, simulating a Java file named 'test.java'.
+    - `interfaces_test_code`: A string containing Java code to test interface inheritance extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `interfaces_test_code` string.
     - Extract interface definitions from the `JavaDriverTree` object.
-    - Search for an interface named 'Resizable' within the extracted interfaces.
-    - Assert that the 'Resizable' interface is found and that it has a non-null list of base class names.
-    - Assert that 'Drawable' is included in the list of base class names for the 'Resizable' interface.
-- **Output**: The function does not return any value; it uses assertions to validate the correct extraction of interface inheritance information.
+    - Find the interface named `Resizable` from the extracted interfaces.
+    - Assert that the `Resizable` interface is not `None`.
+    - Assert that the `base_class_names` attribute of `Resizable` is not `None`.
+    - Assert that `Drawable` is in the `base_class_names` of `Resizable`.
+- **Output**: No output is returned as the function is a test and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_interface_definitions`](<java_driver.py.md#JavaDriverTreeextract_interface_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_interface_definitions`](<java_driver.py.md#javadrivertreeextract_interface_definitions>)
 
 
 ---
 ### test\_extract\_methods\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_methods_duplications}} -->
-The function `test_extract_methods_duplications` tests the extraction of method and constructor definitions from Java code using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L204>)
+
+Validates that the Java code contains a minimum number of method and constructor definitions.
 - **Inputs**:
-    - `methods_test_code`: A string containing Java code to be analyzed for method and constructor definitions.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object by parsing the `methods_test_code` string with the filename 'test.java'.
-    - Extract method definitions from the parsed Java code using [`extract_method_definitions`](<java_driver.py.md#JavaDriverTreeextract_method_definitions>).
-    - Extract constructor definitions from the parsed Java code using [`extract_constructor_definitions`](<java_driver.py.md#JavaDriverTreeextract_constructor_definitions>).
+    - `methods_test_code`: A string containing Java code to test for method and constructor definitions.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `methods_test_code` string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract method definitions from the `driver_tree` using the [`extract_method_definitions`](<java_driver.py.md#javadrivertreeextract_method_definitions>) method.
+    - Extract constructor definitions from the `driver_tree` using the [`extract_constructor_definitions`](<java_driver.py.md#javadrivertreeextract_constructor_definitions>) method.
     - Assert that the number of extracted methods is at least 5.
     - Assert that the number of extracted constructors is at least 1.
-- **Output**: The function does not return any value; it raises an assertion error if the conditions on the number of methods and constructors are not met.
+- **Output**: No output is returned, but assertions validate the presence of methods and constructors in the Java code.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_method_definitions`](<java_driver.py.md#JavaDriverTreeextract_method_definitions>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_constructor_definitions`](<java_driver.py.md#JavaDriverTreeextract_constructor_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_method_definitions`](<java_driver.py.md#javadrivertreeextract_method_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_constructor_definitions`](<java_driver.py.md#javadrivertreeextract_constructor_definitions>)
 
 
 ---
 ### test\_extract\_methods<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_methods}} -->
-The `test_extract_methods` function verifies that specific Java method definitions are correctly extracted from a given code string by comparing them against expected method names and line ranges.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L214>)
+
+Tests if the method definitions extracted from Java code match the expected method names and line ranges.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `methods_test_code`: A string containing Java code from which method definitions are to be extracted.
+    - `methods_test_code`: A string containing Java code to test method extraction.
     - `expected_method_name`: The name of the method expected to be found in the extracted methods.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the method in the code.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided `methods_test_code` string.
-    - Extract method definitions from the `JavaDriverTree` object.
-    - Create a list of tuples containing method names and their corresponding line ranges from the extracted methods.
-    - Assert that the tuple of `expected_method_name` and `expected_line_range` is present in the list of extracted methods, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected method is not found in the extracted methods.
+    - `expected_line_range`: A tuple representing the expected start and end line numbers of the method in the Java code.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code` method.
+    - Extract method definitions from the `JavaDriverTree` object using [`extract_method_definitions`](<java_driver.py.md#javadrivertreeextract_method_definitions>) method.
+    - Create a list of tuples containing method names and their line ranges from the extracted methods.
+    - Check if the tuple of the expected method name and line range is in the list of extracted methods.
+    - If the expected method is not found, raise an assertion error with a message indicating the missing method and the extracted methods.
+- **Output**: None, but raises an assertion error if the expected method is not found in the extracted methods.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_method_definitions`](<java_driver.py.md#JavaDriverTreeextract_method_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_method_definitions`](<java_driver.py.md#javadrivertreeextract_method_definitions>)
 
 
 ---
 ### test\_extract\_constructors<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_constructors}} -->
-The function `test_extract_constructors` tests whether a specific constructor is correctly extracted from Java code using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L240>)
+
+Tests if the [`extract_constructor_definitions`](<java_driver.py.md#javadrivertreeextract_constructor_definitions>) method correctly identifies and extracts constructor definitions from Java code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `methods_test_code`: A string containing Java code from which constructors are to be extracted.
-    - `expected_constructor_name`: The name of the constructor expected to be found in the extracted data.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the constructor in the Java code.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code` method.
-    - Extract constructor definitions from the `JavaDriverTree` object using [`extract_constructor_definitions`](<java_driver.py.md#JavaDriverTreeextract_constructor_definitions>) method.
-    - Create a list of tuples containing constructor names and their line ranges from the extracted constructors.
-    - Assert that the expected constructor name and line range tuple is present in the list of extracted constructors.
-- **Output**: The function does not return any value; it raises an assertion error if the expected constructor is not found in the extracted data.
+    - `methods_test_code`: A string containing Java code to test for constructor extraction.
+    - `expected_constructor_name`: The name of the constructor expected to be found in the Java code.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the constructor in the Java code.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code`.
+    - Call [`extract_constructor_definitions`](<java_driver.py.md#javadrivertreeextract_constructor_definitions>) on the `JavaDriverTree` object to get a list of constructor definitions.
+    - Transform the list of constructor definitions into a list of tuples containing constructor names and their line ranges.
+    - Check if the expected constructor name and line range tuple is present in the extracted list of constructors.
+    - If the expected constructor is not found, raise an assertion error with a message indicating the missing constructor and the extracted constructors.
+- **Output**: No output is returned; the function raises an assertion error if the expected constructor is not found.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_constructor_definitions`](<java_driver.py.md#JavaDriverTreeextract_constructor_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_constructor_definitions`](<java_driver.py.md#javadrivertreeextract_constructor_definitions>)
 
 
 ---
 ### test\_extract\_variables\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_variables_duplications}} -->
-The function `test_extract_variables_duplications` tests that at least five variable definitions can be extracted from a given Java code string using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L261>)
+
+Tests the extraction of variable definitions from Java code and verifies that at least five variables are extracted.
+- **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `variables_test_code`: A string containing Java code from which variable definitions are to be extracted.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object by parsing the `variables_test_code` string with the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - Extract field definitions from the `JavaDriverTree` object using the [`extract_field_definitions`](<java_driver.py.md#JavaDriverTreeextract_field_definitions>) method.
+    - `variables_test_code`: A string containing Java code to test for variable extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string `variables_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract field definitions from the `JavaDriverTree` object using the [`extract_field_definitions`](<java_driver.py.md#javadrivertreeextract_field_definitions>) method.
     - Assert that the number of extracted variables is at least five.
-- **Output**: The function does not return any value; it raises an assertion error if the number of extracted variables is less than five.
+- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_field_definitions`](<java_driver.py.md#JavaDriverTreeextract_field_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_field_definitions`](<java_driver.py.md#javadrivertreeextract_field_definitions>)
 
 
 ---
 ### test\_extract\_variables<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_variables}} -->
-The `test_extract_variables` function tests if specific variable names and their line ranges are correctly extracted from Java code using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L268>)
+
+Validates that the [`extract_field_definitions`](<java_driver.py.md#javadrivertreeextract_field_definitions>) method correctly identifies and extracts variable names and their line ranges from Java code.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `variables_test_code`: A string containing Java code from which variables are to be extracted.
-    - `expected_variable_name`: The name of the variable expected to be found in the extracted variables.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the variable in the Java code.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided Java code string `variables_test_code`.
-    - Extract field definitions (variables) from the `JavaDriverTree` object.
+    - `variables_test_code`: A string containing Java code to test for variable extraction.
+    - `expected_variable_name`: The name of the variable expected to be extracted from the Java code.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the variable in the Java code.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code`.
+    - Call [`extract_field_definitions`](<java_driver.py.md#javadrivertreeextract_field_definitions>) on the `JavaDriverTree` object to get a list of variables.
     - Create a list of tuples containing variable names and their line ranges from the extracted variables.
-    - Assert that the tuple of `expected_variable_name` and `expected_line_range` is present in the list of extracted variables, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected variable and line range are not found in the extracted data.
+    - Check if the tuple `(expected_variable_name, expected_line_range)` is in the list of extracted variables.
+    - If the expected variable is not found, raise an assertion error with a message indicating the missing variable and the extracted variables.
+- **Output**: No output is returned; the function raises an assertion error if the expected variable is not found in the extracted variables.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_field_definitions`](<java_driver.py.md#JavaDriverTreeextract_field_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_field_definitions`](<java_driver.py.md#javadrivertreeextract_field_definitions>)
 
 
 ---
 ### test\_extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_function_calls}} -->
-The function `test_extract_function_calls` tests the extraction of method calls from Java code using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L293>)
+
+Tests the extraction of method calls from Java code using the `JavaDriverTree` class.
+- **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `methods_test_code`: A string containing Java code from which method calls are to be extracted.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object from the provided Java code string using `JavaDriverTree.from_code`.
-    - Extract function calls from the Java code using `driver_tree.extract_function_calls()`.
-    - Collect the names of the extracted function calls into a list `call_names`.
-    - Assert that either 'toString' or 'append' is present in the list of call names, indicating successful extraction of method calls.
-- **Output**: The function does not return any value; it raises an assertion error if the expected method calls are not found in the extracted list.
+    - `methods_test_code`: A string containing Java code to test for method call extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string `methods_test_code` and the filename 'test.java'.
+    - Call the [`extract_function_calls`](<java_driver.py.md#javadrivertreeextract_function_calls>) method on the `JavaDriverTree` object to get a list of method calls.
+    - Extract the names of the method calls into a list `call_names`.
+    - Assert that either 'toString' or 'append' is present in the `call_names` list, indicating that these method calls were found in the Java code.
+- **Output**: No output is returned as the function is a test and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_function_calls`](<java_driver.py.md#JavaDriverTreeextract_function_calls>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_function_calls`](<java_driver.py.md#javadrivertreeextract_function_calls>)
 
 
 ---
 ### test\_extract\_fully\_qualified\_paths<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_fully_qualified_paths}} -->
-The function tests the extraction of fully qualified class paths from Java code, ensuring package and nested class paths are correctly identified.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L305>)
+
+Tests the generation of fully qualified paths for classes, including package and nested class information.
+- **Decorators**: `@pytest.mark`
 - **Inputs**:
-    - `classes_test_code`: A string containing Java code to be tested for class path extraction.
-- **Control Flow**:
-    - Create a JavaDriverTree object from the provided Java code string.
-    - Extract class definitions from the JavaDriverTree object.
-    - Search for a class named 'TestClass' and assert its existence and that its fully qualified path includes 'com.example'.
-    - Search for a class named 'InnerClass' and assert its existence and that its fully qualified path includes 'TestClass'.
-- **Output**: The function does not return any value; it uses assertions to validate the correctness of the extracted class paths.
+    - `classes_test_code`: A string containing Java code to test the extraction of fully qualified paths.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string `classes_test_code` and the file name `test.java`.
+    - Extract class definitions from the `JavaDriverTree` object.
+    - Find the class named `TestClass` in the extracted class definitions.
+    - Assert that `TestClass` is not `None` and that its fully qualified parent path includes the package `com.example`.
+    - Find the class named `InnerClass` in the extracted class definitions.
+    - Assert that `InnerClass` is not `None` and that its fully qualified parent path includes `TestClass`.
+- **Output**: No output is returned as this is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#JavaDriverTreeextract_class_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_class_definitions`](<java_driver.py.md#javadrivertreeextract_class_definitions>)
 
 
 ---
 ### test\_extract\_all\_symbols<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_all_symbols}} -->
-The function `test_extract_all_symbols` tests the extraction of various symbol types from Java code using the `JavaDriverTree` class.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L321>)
+
+Tests the extraction of all symbols from Java code using the `JavaDriverTree` class.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `classes_test_code`: A string containing Java code to be tested for symbol extraction.
-- **Control Flow**:
-    - Create a `JavaDriverTree` instance from the provided Java code string `classes_test_code`.
-    - Call the [`extract_all_symbols`](<java_driver.py.md#JavaDriverTreeextract_all_symbols>) method on the `JavaDriverTree` instance to retrieve all symbols from the code.
-    - Assert that the list of extracted symbols is not empty, indicating that symbols were found.
-    - Create a set of symbol kinds from the extracted symbols to categorize them.
-    - Assert that the set of symbol kinds includes `SymbolKind.IMPORT`, `SymbolKind.VARIABLE`, and `SymbolKind.CALLABLE`, ensuring that multiple types of symbols are present.
-- **Output**: The function does not return any value; it uses assertions to validate the presence and types of symbols extracted from the Java code.
+    - `classes_test_code`: A string containing Java code to test symbol extraction.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the `classes_test_code` string.
+    - Call the [`extract_all_symbols`](<java_driver.py.md#javadrivertreeextract_all_symbols>) method on the `JavaDriverTree` object to get all symbols.
+    - Assert that the number of symbols extracted is greater than zero.
+    - Create a set of symbol kinds from the extracted symbols.
+    - Assert that the set of symbol kinds includes `SymbolKind.IMPORT`, `SymbolKind.VARIABLE`, and `SymbolKind.CALLABLE`.
+- **Output**: The function does not return a value; it raises an assertion error if the test fails.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_all_symbols`](<java_driver.py.md#JavaDriverTreeextract_all_symbols>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_all_symbols`](<java_driver.py.md#javadrivertreeextract_all_symbols>)
 
 
 ---
 ### test\_extract\_enums\_duplications<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_enums_duplications}} -->
-The function `test_extract_enums_duplications` tests that the number of enum definitions extracted from Java code is exactly three.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L335>)
+
+Verifies that the number of enum definitions extracted from Java code is exactly three.
 - **Inputs**:
-    - `enums_test_code`: A string containing Java code from which enum definitions are to be extracted.
-- **Control Flow**:
-    - Create a `JavaDriverTree` object by parsing the `enums_test_code` string as Java code.
-    - Extract enum definitions from the `JavaDriverTree` object.
-    - Assert that the number of extracted enum definitions is exactly three.
-- **Output**: The function does not return any value; it raises an assertion error if the number of extracted enums is not three.
+    - `enums_test_code`: A string containing Java code to test for enum definitions.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string `enums_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract enum definitions from the `JavaDriverTree` object using the [`extract_enum_definitions`](<java_driver.py.md#javadrivertreeextract_enum_definitions>) method.
+    - Assert that the number of extracted enum definitions is equal to three.
+- **Output**: No output is returned as the function is a test case that raises an assertion error if the condition is not met.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_enum_definitions`](<java_driver.py.md#JavaDriverTreeextract_enum_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_enum_definitions`](<java_driver.py.md#javadrivertreeextract_enum_definitions>)
 
 
 ---
 ### test\_extract\_enums<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver_test.test_extract_enums}} -->
-The `test_extract_enums` function verifies that the [`extract_enum_definitions`](<java_driver.py.md#JavaDriverTreeextract_enum_definitions>) method correctly identifies and extracts enum definitions from Java code, comparing them against expected names and line ranges.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/java_driver_test.py#L342>)
+
+Validates that the extracted enum definitions from Java code match the expected names and line ranges.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `enums_test_code`: A string containing Java code to be tested for enum extraction.
+    - `enums_test_code`: A string containing Java code to test for enum extraction.
     - `expected_enum_name`: The name of the enum expected to be found in the Java code.
-    - `expected_line_range`: A tuple representing the expected start and end line numbers of the enum in the Java code.
-- **Control Flow**:
-    - The function begins by creating a `JavaDriverTree` object from the provided Java code string using the [`from_code`](<base.py.md#DriverTreefrom_code>) method.
-    - It then calls the [`extract_enum_definitions`](<java_driver.py.md#JavaDriverTreeextract_enum_definitions>) method on the `JavaDriverTree` object to retrieve a list of enum definitions.
-    - The function constructs a list of tuples, each containing an enum's name and its start and end line numbers, from the extracted enums.
-    - An assertion checks if the expected enum name and line range tuple is present in the list of extracted enums, raising an error with a descriptive message if not.
-- **Output**: The function does not return any value; it raises an assertion error if the expected enum is not found in the extracted data.
+    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the enum in the Java code.
+- **Logic and Control Flow**:
+    - Create a `JavaDriverTree` object from the provided Java code string `enums_test_code` using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract enum definitions from the `JavaDriverTree` object using the [`extract_enum_definitions`](<java_driver.py.md#javadrivertreeextract_enum_definitions>) method.
+    - Create a list of tuples containing the name and line range of each extracted enum.
+    - Check if the tuple `(expected_enum_name, expected_line_range)` is present in the list of extracted enums.
+    - If the expected enum is not found, raise an assertion error with a message indicating the missing enum and the extracted enums.
+- **Output**: None, but raises an assertion error if the expected enum is not found in the extracted enums.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#DriverTreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_enum_definitions`](<java_driver.py.md#JavaDriverTreeextract_enum_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/java_driver.JavaDriverTree.extract_enum_definitions`](<java_driver.py.md#javadrivertreeextract_enum_definitions>)
 
 
 

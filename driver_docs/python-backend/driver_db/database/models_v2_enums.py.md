@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models_v2_enums.py` file in the `python-backend` codebase defines various enumerations for categorizing assets, version statuses, node kinds, autodoc statuses, content types, file types, and LLM pipeline kinds, along with a function to map file extensions to their corresponding file type enums.
+Enum classes for asset kinds, providers, version statuses, node kinds, autodoc statuses, content kinds, file types, and LLM pipeline kinds, plus a function to get file type by extension.
 
 # Purpose
-This Python source code file defines a series of enumerations and a utility function, primarily serving as a configuration or constants module. The enumerations, implemented using Python's `enum` module, categorize various types of assets, statuses, node kinds, document statuses, content kinds, file types, and pipeline kinds. These enumerations provide a structured way to handle and reference these categories throughout a larger application, ensuring consistency and reducing the likelihood of errors due to hardcoded strings. The use of `strawberry.enum` for the `ContentKind` class suggests integration with the Strawberry GraphQL library, indicating that these enums might be used in a GraphQL API context.
+The code defines several enumerations and a function to categorize file types based on their extensions. The enumerations, implemented using Python's `enum` module, represent various categories and statuses relevant to asset management, document generation, and file handling. These include `PrimaryAssetKind`, `PrimaryAssetProvider`, `VersionStatus`, `NodeKind`, `AutoDocStatusMessageKind`, `AutoDocConfigKind`, `ContentKind`, `FileTypeEnum`, and `LlmPipelineKind`. Each enumeration provides a set of predefined string constants that can be used to standardize the representation of specific concepts or states within a software system.
 
-The [`get_file_type`](<#get_file_type>) function is a utility that maps file extensions to their corresponding `FileTypeEnum` values, allowing the application to dynamically determine the type of a file based on its extension. This function supports a wide range of file types, reflecting the broad applicability of the module in handling diverse file formats. Overall, this file is likely part of a larger system, providing essential constants and utility functions that facilitate the management of different types of data and operations within the application.
+The [`get_file_type`](<#get_file_type>) function maps file extensions to their corresponding `FileTypeEnum` values. This function uses a dictionary to associate common file extensions with their respective file types, allowing for the identification of file types based on their extensions. If an extension is not recognized, the function returns `FileTypeEnum.UNKNOWN`. The code is structured to be part of a library or module that can be imported and used in other parts of a software system to ensure consistent handling of file types and asset-related statuses. The use of `strawberry.enum` for the `ContentKind` class suggests integration with the Strawberry GraphQL library, indicating that some of these enumerations may be used in GraphQL schemas.
 # Imports and Dependencies
 
 ---
@@ -20,28 +20,41 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### PrimaryAssetKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.PrimaryAssetKind}} -->
-- **Members**:
-    - `CODEBASE`: Represents the asset kind for a codebase.
-    - `FILE`: Represents the asset kind for a file.
-    - `PAGE`: Represents the asset kind for a page.
-    - `PAGE_TEMPLATE`: Represents the asset kind for a page template.
-- **Description**: The `PrimaryAssetKind` class is an enumeration that defines different types of primary assets, such as codebases, files, pages, and page templates. It inherits from both `str` and `enum.Enum`, allowing each member to be treated as a string while also providing enumeration capabilities. This class is useful for categorizing and managing different asset types within a system.
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L6>)
+
+- **Description**: Defines different types of primary assets as enumeration values, such as `CODEBASE`, `FILE`, `PAGE`, and `PAGE_TEMPLATE`.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
 
 
 ---
-### VersionStatus<!-- {{#class:python-backend/driver_db/database/models_v2_enums.VersionStatus}} -->
+### PrimaryAssetProvider<!-- {{#class:python-backend/driver_db/database/models_v2_enums.PrimaryAssetProvider}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L13>)
+
 - **Members**:
-    - `GENERATING`: Represents the status when a version is currently being generated.
-    - `GENERATION_COMPLETE`: Indicates that the version generation process has completed successfully.
-    - `GENERATION_ERROR`: Denotes an error occurred during the version generation process.
-    - `CONNECTED`: Signifies that a connection has been successfully established.
-    - `CONNECTING`: Indicates that a connection attempt is currently in progress.
-    - `CONNECTION_FAILED`: Represents a failed attempt to establish a connection.
-    - `INSUFFICIENT_BALANCE`: Indicates that there is not enough balance to proceed with the operation.
-- **Description**: The VersionStatus class is an enumeration that defines various states related to the generation and connection processes, such as generating, completed, error states, and connection statuses. It extends both the str and enum.Enum classes, allowing for easy comparison and string representation of these states.
+    - `GITHUB`: Represents the GitHub asset provider.
+    - `GITLAB_SELF_MANAGED`: Represents the self-managed GitLab asset provider.
+    - `BITBUCKET`: Represents the Bitbucket asset provider.
+    - `USER`: Represents a user-defined asset provider.
+- **Description**: Defines a set of constants for different primary asset providers using the `enum.StrEnum` class, allowing for easy identification and use of these providers in the code.
+- **Inherits From**:
+    - `enum.StrEnum`
+
+
+---
+### VersionStatus<!-- {{#class:python-backend/driver_db/database/models_v2_enums.VersionStatus}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L20>)
+
+- **Members**:
+    - `GENERATING`: Indicates the version is in the process of being generated.
+    - `GENERATION_COMPLETE`: Indicates the version generation process is complete.
+    - `GENERATION_ERROR`: Indicates an error occurred during version generation.
+    - `CONNECTED`: Indicates a successful connection has been established.
+    - `CONNECTING`: Indicates an attempt to establish a connection is in progress.
+    - `CONNECTION_FAILED`: Indicates a failure occurred while trying to establish a connection.
+    - `INSUFFICIENT_BALANCE`: Indicates there is not enough balance to proceed.
+- **Description**: Defines various statuses related to version generation and connection processes, using string values for each status.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -49,11 +62,13 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### NodeKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.NodeKind}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L30>)
+
 - **Members**:
-    - `CODEBASE_FILE`: Represents a file within a codebase.
-    - `CODEBASE_DIRECTORY`: Represents a directory within a codebase.
-    - `OTHER`: Represents any other type of node not specifically categorized as a file or directory.
-- **Description**: The NodeKind class is an enumeration that categorizes different types of nodes within a codebase, specifically distinguishing between files, directories, and other unspecified node types. It inherits from both str and enum.Enum, allowing for string-based enumeration values.
+    - `CODEBASE_FILE`: Represents a file in the codebase.
+    - `CODEBASE_DIRECTORY`: Represents a directory in the codebase.
+    - `OTHER`: Represents an unspecified or other type of node.
+- **Description**: Defines different types of nodes in a codebase, such as files, directories, or other unspecified types.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -61,18 +76,20 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### AutoDocStatusMessageKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.AutoDocStatusMessageKind}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L36>)
+
 - **Members**:
-    - `NOT_STARTED`: Represents the status when the process has not started.
-    - `RETRIEVING_SOURCES`: Indicates the process of retrieving sources is underway.
-    - `EVALUATING_SECTIONS`: Denotes the evaluation of document sections.
-    - `EVALUATING_SOURCES`: Represents the evaluation of sources.
-    - `GENERATING_SECTION_DRAFTS`: Indicates the generation of section drafts.
-    - `OPTIMIZING_SECTION_STRUCTURE`: Denotes the optimization of section structure.
-    - `ASSEMBLING_FINAL_DOCUMENT`: Represents the assembly of the final document.
-    - `COPY_EDITING`: Indicates the copy editing phase.
-    - `GENERATION_COMPLETE`: Denotes the completion of the document generation.
-    - `GENERATION_ERROR`: Represents an error during the document generation process.
-- **Description**: The `AutoDocStatusMessageKind` class is an enumeration that defines various statuses for the stages of an automated document generation process, ranging from the initial 'NOT_STARTED' state to the final 'GENERATION_COMPLETE' or 'GENERATION_ERROR' states, providing a structured way to track the progress and state of the document generation workflow.
+    - `NOT_STARTED`: Indicates the process has not started.
+    - `RETRIEVING_SOURCES`: Indicates the process is retrieving sources.
+    - `EVALUATING_SECTIONS`: Indicates the process is evaluating sections.
+    - `EVALUATING_SOURCES`: Indicates the process is evaluating sources.
+    - `GENERATING_SECTION_DRAFTS`: Indicates the process is generating section drafts.
+    - `OPTIMIZING_SECTION_STRUCTURE`: Indicates the process is optimizing section structure.
+    - `ASSEMBLING_FINAL_DOCUMENT`: Indicates the process is assembling the final document.
+    - `COPY_EDITING`: Indicates the process is copy editing.
+    - `GENERATION_COMPLETE`: Indicates the document generation is complete.
+    - `GENERATION_ERROR`: Indicates an error occurred during document generation.
+- **Description**: Defines various stages of an automated documentation generation process as enumeration values.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -80,11 +97,14 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### AutoDocConfigKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.AutoDocConfigKind}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L49>)
+
 - **Members**:
-    - `ADI_DRIVER`: Represents the configuration kind for ADI_DRIVER.
-    - `ARCHITECTURE`: Represents the configuration kind for ARCHITECTURE.
-    - `CUSTOM`: Represents the configuration kind for CUSTOM.
-- **Description**: The `AutoDocConfigKind` class is an enumeration that defines different kinds of configurations for autodoc generation, including ADI_DRIVER, ARCHITECTURE, and CUSTOM. It is currently not used as a database entity but may be considered for future integration to specify the configuration kind for each autodoc generated.
+    - `ADI_DRIVER`: Represents the configuration kind for ADI driver.
+    - `ARCHITECTURE`: Represents the configuration kind for architecture.
+    - `CUSTOM`: Represents a custom configuration kind.
+    - `FROM_DOCUMENT_GOAL`: Represents the configuration kind derived from a document goal.
+- **Description**: Defines different kinds of configuration for autodoc generation, such as ADI driver, architecture, custom, and from document goal.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -92,36 +112,42 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### ContentKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.ContentKind}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L58>)
+
 - **Decorators**: `@strawberry.enum`
 - **Members**:
-    - `PDF_VISUAL_SUMMARY`: Represents a PDF visual summary content type.
-    - `PDF_TEXT_SUMMARY`: Represents a PDF text summary content type.
-    - `PDF_IMAGE_SUMMARY`: Represents a PDF image summary content type.
+    - `PDF_VISUAL_SUMMARY`: Represents a PDF visual summary.
+    - `PDF_TEXT_SUMMARY`: Represents a PDF text summary.
+    - `PDF_IMAGE_SUMMARY`: Represents a PDF image summary.
     - `PDF_EXTRACTED_TEXT`: Represents extracted text from a PDF.
-    - `PDF_EXTRACTED_TABLE`: Represents extracted table data from a PDF.
-    - `TEMPLATE`: Represents a template content type.
-    - `SHORT_PARAGRAPH_DESCRIPTION`: Represents a short paragraph description content type.
-    - `TERSE_SENTENCE_DESCRIPTION`: Represents a terse sentence description content type.
-    - `LONG_DESCRIPTION`: Represents a long description content type.
-    - `QUICK_START_ENTRY`: Represents a quick start entry content type.
-    - `QUICK_START_GETTING_STARTED`: Represents a quick start getting started content type.
-    - `QUICK_START_DEPENDENCIES`: Represents a quick start dependencies content type.
-    - `QUICK_START_USE`: Represents a quick start use content type.
-    - `ARCHITECTURE_DIAGRAM`: Represents an architecture diagram content type.
-    - `CHUNK_DESCRIPTIONS`: Represents chunk descriptions content type.
-    - `application_note`: Represents an application note content type.
-    - `SHORT_SENTENCE_DESCRIPTION`: Represents a short sentence description content type.
-    - `SYMBOL`: Represents a symbol content type.
-    - `PDF_SUMMARY`: Represents a PDF summary content type.
-    - `CODEBASE`: Represents a codebase content type.
-    - `CODEBASE_DIRECTORY`: Represents a codebase directory content type.
-    - `CODEBASE_FILE`: Represents a codebase file content type.
-    - `SUPPLEMENTAL_DOCUMENT`: Represents a supplemental document content type.
-    - `TOP_LEVEL_SHORT_SENTENCE`: Represents a top-level short sentence content type.
-    - `TOP_LEVEL_SHORT_PARAGRAPH`: Represents a top-level short paragraph content type.
-    - `TOP_LEVEL_TERSE_SENTENCE`: Represents a top-level terse sentence content type.
-    - `TOP_LEVEL_LONG_DESCRIPTION`: Represents a top-level long description content type.
-- **Description**: The ContentKind class is an enumeration that defines various types of content that can be used in documentation or data processing. It includes a wide range of content types such as PDF summaries, text and image summaries, extracted text and tables, templates, descriptions of varying lengths, quick start guides, architecture diagrams, and more. This class is decorated with the @strawberry.enum decorator, indicating its use in a Strawberry GraphQL schema, and it extends both the str and enum.Enum classes, allowing for string-based enumeration values.
+    - `PDF_EXTRACTED_TABLE`: Represents extracted tables from a PDF.
+    - `TEMPLATE`: Represents a template.
+    - `SHORT_PARAGRAPH_DESCRIPTION`: Represents a short paragraph description.
+    - `TERSE_SENTENCE_DESCRIPTION`: Represents a terse sentence description.
+    - `LONG_DESCRIPTION`: Represents a long description.
+    - `QUICK_START_ENTRY`: Represents a quick start entry.
+    - `QUICK_START_GETTING_STARTED`: Represents a quick start getting started guide.
+    - `QUICK_START_DEPENDENCIES`: Represents quick start dependencies.
+    - `QUICK_START_USE`: Represents quick start usage instructions.
+    - `ARCHITECTURE_DIAGRAM`: Represents an architecture diagram.
+    - `CHUNK_DESCRIPTIONS`: Represents chunk descriptions.
+    - `application_note`: Represents an application note.
+    - `SHORT_SENTENCE_DESCRIPTION`: Represents a short sentence description.
+    - `SYMBOL`: Represents a symbol.
+    - `PDF_SUMMARY`: Represents a PDF summary.
+    - `CODEBASE`: Represents a codebase.
+    - `CODEBASE_DIRECTORY`: Represents a codebase directory.
+    - `CODEBASE_FILE`: Represents a codebase file.
+    - `CODEBASE_AUDIENCES`: Represents codebase audiences.
+    - `CODEBASE_DOMAINS`: Represents codebase domains.
+    - `CODEBASE_KINDS`: Represents codebase kinds.
+    - `CODEBASE_ENTRY_POINTS`: Represents codebase entry points.
+    - `SUPPLEMENTAL_DOCUMENT`: Represents a supplemental document.
+    - `TOP_LEVEL_SHORT_SENTENCE`: Represents a top-level short sentence.
+    - `TOP_LEVEL_SHORT_PARAGRAPH`: Represents a top-level short paragraph.
+    - `TOP_LEVEL_TERSE_SENTENCE`: Represents a top-level terse sentence.
+    - `TOP_LEVEL_LONG_DESCRIPTION`: Represents a top-level long description.
+- **Description**: Defines various kinds of content types as enumeration values, each representing a specific type of content such as summaries, descriptions, and codebase elements.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -129,80 +155,84 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### FileTypeEnum<!-- {{#class:python-backend/driver_db/database/models_v2_enums.FileTypeEnum}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L93>)
+
 - **Members**:
-    - `PYTHON`: Represents a Python file type.
-    - `GROOVY`: Represents a Groovy file type.
-    - `C`: Represents a C file type.
-    - `HEADER`: Represents a header file type.
-    - `CPP`: Represents a C++ file type.
-    - `ASSEMBLY`: Represents an assembly file type.
-    - `LINKER_SCRIPT`: Represents a linker script file type.
-    - `ACTIONSCRIPT`: Represents an ActionScript file type.
-    - `HPP`: Represents a C++ header file type.
-    - `JAVA`: Represents a Java file type.
-    - `JAVASCRIPT`: Represents a JavaScript file type.
-    - `TYPESCRIPT`: Represents a TypeScript file type.
-    - `GO`: Represents a Go file type.
-    - `RUST`: Represents a Rust file type.
-    - `SHELL`: Represents a shell script file type.
-    - `BATCH`: Represents a batch script file type.
-    - `TEMPLATE`: Represents a template file type.
-    - `DART`: Represents a Dart file type.
-    - `KOTLIN`: Represents a Kotlin file type.
-    - `SWIFT`: Represents a Swift file type.
-    - `CXX`: Represents a C++ file type.
-    - `OBJECTIVE_C`: Represents an Objective-C file type.
-    - `VERILOG`: Represents a Verilog file type.
-    - `SYSTEM_VERILOG`: Represents a SystemVerilog file type.
-    - `VHDL`: Represents a VHDL file type.
-    - `CSHARP`: Represents a C# file type.
-    - `TERRAFORM`: Represents a Terraform file type.
-    - `SQL`: Represents a SQL file type.
-    - `SAS`: Represents a SAS file type.
-    - `RUBY`: Represents a Ruby file type.
-    - `PERL`: Represents a Perl file type.
-    - `COBOL`: Represents a COBOL file type.
-    - `D`: Represents a D file type.
-    - `NSIS`: Represents a NSIS file type.
-    - `SCSS`: Represents a SCSS file type.
-    - `LESS`: Represents a LESS file type.
-    - `HTML`: Represents an HTML file type.
-    - `CSS`: Represents a CSS file type.
-    - `CRYSTAL`: Represents a Crystal file type.
-    - `TCL`: Represents a TCL file type.
-    - `JSON`: Represents a JSON file type.
-    - `YAML`: Represents a YAML file type.
-    - `TOML`: Represents a TOML file type.
-    - `MARKDOWN`: Represents a Markdown file type.
-    - `TEXT`: Represents a plain text file type.
-    - `RESTRUCTUREDTEXT`: Represents a reStructuredText file type.
-    - `XML`: Represents an XML file type.
-    - `JSX`: Represents a JSX file type.
-    - `INI`: Represents an INI file type.
-    - `CONFIG`: Represents a configuration file type.
-    - `DITA`: Represents a DITA file type.
-    - `ADOC`: Represents an AsciiDoc file type.
-    - `ASPX`: Represents an ASPX file type.
-    - `CMX`: Represents a CMX file type.
-    - `PEP`: Represents a PEP file type.
-    - `APP`: Represents an application file type.
-    - `PRE`: Represents a PRE file type.
-    - `LST`: Represents a LST file type.
-    - `DRIVER_PAGE`: Represents a driver page file type.
+    - `PYTHON`: Represents the Python file type.
+    - `GROOVY`: Represents the Groovy file type.
+    - `C`: Represents the C file type.
+    - `HEADER`: Represents the header file type.
+    - `CPP`: Represents the C++ file type.
+    - `ASSEMBLY`: Represents the assembly file type.
+    - `LINKER_SCRIPT`: Represents the linker script file type.
+    - `ACTIONSCRIPT`: Represents the ActionScript file type.
+    - `HPP`: Represents the HPP file type.
+    - `JAVA`: Represents the Java file type.
+    - `JAVASCRIPT`: Represents the JavaScript file type.
+    - `TYPESCRIPT`: Represents the TypeScript file type.
+    - `GO`: Represents the Go file type.
+    - `RUST`: Represents the Rust file type.
+    - `SHELL`: Represents the shell script file type.
+    - `BATCH`: Represents the batch file type.
+    - `TEMPLATE`: Represents the template file type.
+    - `DART`: Represents the Dart file type.
+    - `KOTLIN`: Represents the Kotlin file type.
+    - `SWIFT`: Represents the Swift file type.
+    - `CXX`: Represents the CXX file type.
+    - `OBJECTIVE_C`: Represents the Objective-C file type.
+    - `VERILOG`: Represents the Verilog file type.
+    - `SYSTEM_VERILOG`: Represents the SystemVerilog file type.
+    - `VHDL`: Represents the VHDL file type.
+    - `CSHARP`: Represents the C# file type.
+    - `TERRAFORM`: Represents the Terraform file type.
+    - `SQL`: Represents the SQL file type.
+    - `SAS`: Represents the SAS file type.
+    - `RUBY`: Represents the Ruby file type.
+    - `PERL`: Represents the Perl file type.
+    - `COBOL`: Represents the COBOL file type.
+    - `D`: Represents the D file type.
+    - `NSIS`: Represents the NSIS file type.
+    - `SCSS`: Represents the SCSS file type.
+    - `LESS`: Represents the LESS file type.
+    - `HTML`: Represents the HTML file type.
+    - `CSS`: Represents the CSS file type.
+    - `CRYSTAL`: Represents the Crystal file type.
+    - `TCL`: Represents the TCL file type.
+    - `JSON`: Represents the JSON file type.
+    - `YAML`: Represents the YAML file type.
+    - `TOML`: Represents the TOML file type.
+    - `MARKDOWN`: Represents the Markdown file type.
+    - `TEXT`: Represents the text file type.
+    - `RESTRUCTUREDTEXT`: Represents the reStructuredText file type.
+    - `XML`: Represents the XML file type.
+    - `JSX`: Represents the JSX file type.
+    - `INI`: Represents the INI file type.
+    - `CONFIG`: Represents the configuration file type.
+    - `DITA`: Represents the DITA file type.
+    - `ADOC`: Represents the AsciiDoc file type.
+    - `ASPX`: Represents the ASPX file type.
+    - `CMX`: Represents the CMX file type.
+    - `PEP`: Represents the PEP file type.
+    - `APP`: Represents the APP file type.
+    - `PRE`: Represents the PRE file type.
+    - `LST`: Represents the LST file type.
+    - `DRIVER_PAGE`: Represents the driver page file type.
     - `UNKNOWN`: Represents an unknown file type.
-- **Description**: The FileTypeEnum class is an enumeration that defines a comprehensive list of file types, each represented by a unique string identifier. It is used to categorize and identify different types of files based on their extensions, providing a standardized way to handle various file formats in a software system. This class is particularly useful in scenarios where file type recognition and processing are required, such as in file management systems or compilers.
+- **Description**: Defines an enumeration for various file types, each represented by a string constant, to categorize files based on their type or extension.
 - **Inherits From**:
     - `enum.Enum`
 
 
 ---
 ### LlmPipelineKind<!-- {{#class:python-backend/driver_db/database/models_v2_enums.LlmPipelineKind}} -->
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L238>)
+
 - **Members**:
     - `DEFAULT`: Represents the default pipeline kind.
     - `CHAT`: Represents a chat-based pipeline kind.
     - `PAGE_CONTEXT_ABBREVIATION`: Represents a pipeline kind for page context abbreviation.
     - `SMART_INSTRUCTION_MAIN_LOOP`: Represents a pipeline kind for smart instruction main loop.
-- **Description**: The `LlmPipelineKind` class is an enumeration that defines different types of pipeline kinds for a language model, each represented as a string. It includes options for default, chat, page context abbreviation, and smart instruction main loop pipeline kinds, allowing for categorization and selection of specific pipeline behaviors in applications.
+- **Description**: Defines different kinds of language model pipelines as enumeration values, each represented as a string.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -212,14 +242,16 @@ The [`get_file_type`](<#get_file_type>) function is a utility that maps file ext
 
 ---
 ### get\_file\_type<!-- {{#callable:python-backend/driver_db/database/models_v2_enums.get_file_type}} -->
-The `get_file_type` function maps a file extension to its corresponding `FileTypeEnum` value, returning `UNKNOWN` if the extension is not recognized.
+[View Source →](<../../../../driver_db/database/models_v2_enums.py#L156>)
+
+Maps a file extension to its corresponding `FileTypeEnum` value.
 - **Inputs**:
-    - `extension`: A string representing the file extension, including the leading dot (e.g., '.py', '.java').
-- **Control Flow**:
-    - The function defines a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
-    - The function uses the `get` method on the `extension_map` dictionary to retrieve the `FileTypeEnum` value corresponding to the provided `extension`.
-    - If the `extension` is not found in the `extension_map`, the function returns `FileTypeEnum.UNKNOWN`.
-- **Output**: The function returns a `FileTypeEnum` value corresponding to the provided file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
+    - `extension`: A string representing the file extension to map.
+- **Logic and Control Flow**:
+    - Defines a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
+    - Uses the `get` method of the dictionary to retrieve the `FileTypeEnum` value for the given `extension`.
+    - Returns `FileTypeEnum.UNKNOWN` if the `extension` is not found in the dictionary.
+- **Output**: A `FileTypeEnum` value corresponding to the given file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
 
 
 

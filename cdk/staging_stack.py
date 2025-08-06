@@ -13,6 +13,9 @@ from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 class StagingStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        
+        self.cdkenv = kwargs.get("env")
+        print(f"AWS environment set to : {self.cdkenv}")
 
         cors_origins = "https://app.staging.driverai.com"
 
@@ -33,6 +36,8 @@ class StagingStack(Stack):
                 allowed_ips=[],  # All IPs currently allowed
                 use_legacy_dropzone=True,
                 metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account
             ),
         )
 

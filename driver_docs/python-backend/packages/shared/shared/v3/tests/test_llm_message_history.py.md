@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_llm_message_history.py` file contains a suite of tests for the `LlmMessage` and `LlmMessageHistory` classes, verifying their functionality in converting to persistent formats, handling different message kinds, and ensuring correct behavior in saving, loading, and converting to Anthropic format.
+Tests for LlmMessage and LlmMessageHistory functionalities, including persistence and format conversion.
 
 # Purpose
-This Python file is a collection of unit tests using the `pytest` framework to validate the functionality of message handling and persistence in a system that deals with different types of messages, such as user, system, and assistant messages. The tests focus on the conversion of `LlmMessage` and `LlmMessageHistory` objects to their persistent counterparts, ensuring that data integrity is maintained during save and load operations. Additionally, the tests verify the correct transformation of message histories into a specific format, referred to as the "Anthropic" format, and check the behavior of message histories when adding, copying, and handling various message kinds. This code provides narrow functionality, specifically targeting the robustness and correctness of message handling and persistence logic within a larger application.
+This code is a test suite for validating the functionality of message handling and persistence in a system that uses large language model (LLM) messages. It uses the `pytest` framework to define fixtures and test cases that check the conversion of `LlmMessage` and `LlmMessageHistory` objects to their persistent counterparts, `RuntimeLlmMessage` and `RuntimeLlmMessageHistory`. The tests cover various scenarios, including adding messages to a history, converting message histories to different formats, and ensuring that message histories can be saved and loaded correctly. The code also verifies that the conversion to an Anthropic format is accurate and that different message kinds are handled as expected.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

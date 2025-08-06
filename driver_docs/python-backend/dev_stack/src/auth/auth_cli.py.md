@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth_cli.py` file implements a command-line interface for authentication using FastAPI and Auth0 with PKCE, providing commands for login, fetching user profile, and logout.
+Command-line interface for authentication using FastAPI and Auth0 with login, whoami, and logout commands.
 
 # Purpose
-This Python script is a command-line interface (CLI) tool designed to manage authentication with Auth0 using the PKCE (Proof Key for Code Exchange) flow, leveraging FastAPI for the backend. It provides narrow functionality focused on user authentication tasks, including logging in, fetching the current user's profile, and logging out. The script uses the `click` library to define a CLI with three commands: [`login`](<#login>), [`whoami`](<#whoami>), and [`logout`](<#logout>). The [`login`](<#login>) command initiates the authentication process and stores the received tokens, [`whoami`](<#whoami>) retrieves and displays the user's profile information if logged in, and [`logout`](<#logout>) clears the stored tokens to log the user out. The script relies on external modules such as `auth_flow` for handling the authentication process and `token_store` for managing token storage.
+This code is a command-line interface (CLI) tool for managing authentication with Auth0 using the Proof Key for Code Exchange (PKCE) flow. It uses the `click` library to define a CLI with three commands: [`login`](<#login>), [`whoami`](<#whoami>), and [`logout`](<#logout>). The [`login`](<#login>) command initiates the authentication process and stores the received tokens using the `auth_flow` module and `save_tokens` function. The [`whoami`](<#whoami>) command retrieves and displays the current user's profile information from Auth0, using the stored tokens to authenticate the request. The [`logout`](<#logout>) command clears the stored tokens, effectively logging the user out. The tool relies on external modules `auth_flow` and `token_store` for handling authentication flow and token management, respectively.
 # Imports and Dependencies
 
 ---
@@ -23,55 +23,62 @@ This Python script is a command-line interface (CLI) tool designed to manage aut
 
 ---
 ### cli<!-- {{#callable:python-backend/dev_stack/src/auth/auth_cli.cli}} -->
-The `cli` function initializes a command-line interface group for authentication operations using FastAPI and Auth0 PKCE.
+[View Source →](<../../../../../dev_stack/src/auth/auth_cli.py#L9>)
+
+Defines a command-line interface (CLI) group for authentication operations using FastAPI and Auth0 PKCE.
 - **Decorators**: `@click.group`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is decorated with `@click.group`, which designates it as a Click command group, allowing it to serve as a container for related command-line commands.
-    - The function itself does not contain any logic or control flow, as it primarily serves as a grouping mechanism for other commands defined in the file.
-- **Output**: The function does not return any output, as it is used to define a command group for Click.
+- **Logic and Control Flow**:
+    - Defines a CLI group using the Click library, which serves as a container for related commands.
+- **Output**: A CLI group object that can contain multiple command functions.
 
 
 ---
 ### login<!-- {{#callable:python-backend/dev_stack/src/auth/auth_cli.login}} -->
-The `login` function handles user authentication with Auth0 and caches the obtained tokens.
+[View Source →](<../../../../../dev_stack/src/auth/auth_cli.py#L14>)
+
+Initiates the login process to Auth0 and caches the obtained tokens.
 - **Decorators**: `@cli.command`
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `auth_flow.login()` to initiate the login process and retrieve authentication tokens.
-    - The retrieved tokens are then saved using the [`save_tokens`](<token_store.py.md#save_tokens>) function.
-    - A success message is displayed to the user using `click.echo`.
-- **Output**: The function does not return any value; it performs actions such as saving tokens and printing a success message.
+- **Logic and Control Flow**:
+    - Calls the `login` function from the `auth_flow` module to initiate the login process and obtain tokens.
+    - Saves the obtained tokens using the [`save_tokens`](<token_store.py.md#save_tokens>) function.
+    - Displays a success message indicating that the login was successful and tokens are cached.
+- **Output**: No return value; outputs a success message to the console.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/token_store.save_tokens`](<token_store.py.md#save_tokens>)
 
 
 ---
 ### whoami<!-- {{#callable:python-backend/dev_stack/src/auth/auth_cli.whoami}} -->
-The `whoami` function fetches and displays the current user's profile information from Auth0 using stored access tokens.
+[View Source →](<../../../../../dev_stack/src/auth/auth_cli.py#L22>)
+
+Fetches the current user profile from Auth0 and displays it.
 - **Decorators**: `@cli.command`
 - **Inputs**: None
-- **Control Flow**:
-    - Load tokens using the [`load_tokens`](<token_store.py.md#load_tokens>) function.
-    - Check if tokens are not available; if so, print a message indicating the user is not logged in and return.
-    - Create an authorization header using the access token from the loaded tokens.
-    - Make a GET request to the Auth0 userinfo endpoint using the constructed headers.
-    - Check if the response status code is 200; if so, parse the JSON response and print the user profile information.
-    - If the response status code is not 200, print a message indicating that user information could not be fetched.
-- **Output**: The function outputs the user's profile information if successful, or an error message if not logged in or if fetching fails.
+- **Logic and Control Flow**:
+    - Loads tokens using the [`load_tokens`](<token_store.py.md#load_tokens>) function.
+    - Checks if tokens are not available; if not, it outputs a message indicating the user is not logged in and suggests running the `login` command, then returns.
+    - Creates an authorization header using the access token from the loaded tokens.
+    - Makes a GET request to the Auth0 userinfo endpoint using the `httpx.get` method with the authorization header.
+    - Checks if the response status code is 200; if so, it parses the response JSON and outputs the user profile data.
+    - If the response status code is not 200, it outputs a message indicating that user information could not be fetched and suggests trying the `login` command again.
+- **Output**: Outputs the current user profile information if available, or an error message if not.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/token_store.load_tokens`](<token_store.py.md#load_tokens>)
 
 
 ---
 ### logout<!-- {{#callable:python-backend/dev_stack/src/auth/auth_cli.logout}} -->
-The `logout` function logs the user out by clearing stored tokens and notifying the user of the logout action.
+[View Source →](<../../../../../dev_stack/src/auth/auth_cli.py#L39>)
+
+Logs out the user and removes authentication tokens.
 - **Decorators**: `@cli.command`
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `clear_tokens()` to remove any stored authentication tokens.
-    - It then uses `click.echo()` to print a message indicating that the user has been logged out.
-- **Output**: The function does not return any value; it performs actions to clear tokens and outputs a logout message to the console.
+- **Logic and Control Flow**:
+    - Calls the [`clear_tokens`](<token_store.py.md#clear_tokens>) function to remove stored authentication tokens.
+    - Uses `click.echo` to print a message indicating the user has logged out.
+- **Output**: No output is returned.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/auth/token_store.clear_tokens`](<token_store.py.md#clear_tokens>)
 

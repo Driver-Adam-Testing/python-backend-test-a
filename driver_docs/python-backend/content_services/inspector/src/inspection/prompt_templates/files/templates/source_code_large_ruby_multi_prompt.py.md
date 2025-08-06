@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_ruby_multi_prompt.py` file defines a template for generating multi-prompt structures specifically tailored for handling large Ruby source code, including instructions and components for processing purposes, imports, modules, and classes.
+Templates for generating multi-prompt structures for large Ruby source code analysis.
 
 # Purpose
-This Python code defines a structured template for generating multi-prompt instructions specifically tailored for analyzing Ruby source code. The file is part of a larger system that appears to facilitate the extraction and organization of information from Ruby codebases. It imports various components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization`, which are used to construct prompts and handle language-specific details. The primary focus of this code is to create a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY`, which is a list of tuples. Each tuple represents a different aspect of the analysis, such as determining the purpose of the code, checking imports and dependencies, and identifying modules and classes within the Ruby code.
+The code defines a structured template for generating prompts related to Ruby source code analysis. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`. The main purpose of the code is to create a multi-prompt template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY`, which is used to analyze and document Ruby source code. This template includes sections for determining the purpose of the code, checking imports and dependencies, and identifying modules and classes within the Ruby code.
 
-The template is designed to be used in a multi-prompt system, likely involving a language model, to systematically analyze and document Ruby source code. It includes instructions for generating prompts that guide the analysis process, such as appending specific style instructions and handling different sections like purpose, imports, modules, and classes. The use of components like `Prompt` and `Component` suggests a modular approach to building these prompts, allowing for flexibility and reuse across different contexts. This code is not a standalone script but rather a part of a library intended to be imported and utilized by other parts of the system that require structured analysis of Ruby code.
+The template is structured as a list of tuples, each representing a different aspect of the analysis. Each tuple contains a specific type of prompt or function, such as `S.MULTI_PROMPT_TEXT` for generating text prompts and `S.FN_COND_JSON` for function-based analysis. The code uses components like `Prompt` and `Component` to build and format these prompts. The template is designed to facilitate the extraction of structured information from Ruby source code, making it easier to document and understand the code's purpose, structure, and dependencies.
 # Imports and Dependencies
 
 ---
@@ -32,9 +32,9 @@ The template is designed to be used in a multi-prompt system, likely involving a
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_RUBY
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY` is a list of tuples, each containing structured data for generating prompts related to Ruby code analysis. Each tuple includes a type identifier, a description, and various components or functions that contribute to the construction of prompts or the processing of Ruby code elements such as purpose, imports, modules, and classes.
-- **Use**: This variable is used to define a template for generating and processing multi-prompt structures specifically tailored for Ruby code analysis.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a description, and a series of prompts or functions related to Ruby code analysis and generation. The list is structured to handle different aspects of Ruby code, such as purpose, imports, modules, and classes.
+- **Use**: Used to define a structured template for generating and analyzing Ruby code prompts and components.
 
 
 

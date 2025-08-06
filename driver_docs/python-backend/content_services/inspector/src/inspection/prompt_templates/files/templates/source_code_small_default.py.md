@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_default.py` file defines a template for inspecting and structuring source code, focusing on elements such as purpose, imports, global variables, data structures, and functions.
+Defines a template for generating structured prompts and checking imports, variables, data structures, and functions.
 
 # Purpose
-This code is a configuration file that defines a template for generating structured prompts and analyzing source code. It provides narrow functionality focused on organizing and formatting information about a codebase, such as its purpose, imports, global variables, data structures, and functions. The file imports various components and utilities from other modules to construct a template (`SOURCE_CODE_SMALL_TEMPLATE_DEFAULT`) that specifies how to extract and present different aspects of a code file. This template is likely used in a larger system for code analysis or documentation generation, where it helps in structuring the output in a consistent and informative manner.
+This code is a configuration script that defines a template for processing and documenting small source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.default`, to facilitate structured prompting and language specialization. The `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` variable is a list of tuples, each representing a section of the template, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and functions to generate prompts or check imports, ensuring that the documentation adheres to specific style instructions, including the use of backticks for code references. This setup is intended to standardize the documentation process for small source code files.
 # Imports and Dependencies
 
 ---
@@ -32,8 +32,8 @@ This code is a configuration file that defines a template for generating structu
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_DEFAULT
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` is a list of tuples, each containing structured information for different sections of a code template. Each tuple includes a section identifier, a section title, and various components or functions related to that section, such as prompts, instructions, or collection methods for symbols and functions.
-- **Use**: This variable is used to define a template structure for generating or processing code, with each tuple providing specific instructions or components for a particular section of the code.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of components or functions related to structured prompting and code analysis. Each tuple represents a different aspect of code documentation, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: Used to define a template for structured code documentation and analysis.
 
 
 

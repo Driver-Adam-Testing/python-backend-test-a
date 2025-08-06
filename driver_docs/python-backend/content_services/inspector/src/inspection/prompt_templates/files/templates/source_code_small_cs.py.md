@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_cs.py` file defines a template for generating structured prompts and analyzing C# source code, focusing on purposes, imports, classes, structs, and interfaces.
+Templates for generating structured prompts and analyzing C# code components like classes, structs, and interfaces.
 
 # Purpose
-This Python code file is a configuration script that defines a template for generating structured prompts and analyzing C# source code. It imports various components and utilities from shared and specialized modules, indicating a narrow functionality focused on handling C# code analysis and prompt structuring. The script sets up a template, `SOURCE_CODE_SMALL_TEMPLATE_CS`, which outlines different sections such as purpose, imports, classes, structs, and interfaces, using specific instructions and components to format and process these sections. The use of collections and prompts suggests that this code is part of a larger system designed to automate or assist in the analysis and documentation of C# code, leveraging language specialization utilities for precise handling of C# constructs.
+The code is a configuration file that defines a template for processing small C# source code files. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.c_sharp`, to facilitate the generation of structured prompts and the analysis of C# code elements like classes, structs, and interfaces. The `SOURCE_CODE_SMALL_TEMPLATE_CS` variable is a list of tuples, each representing a section of the template, such as "Purpose", "Imports and Dependencies", "Classes", "Structs", and "Interfaces". Each section uses specific functions and components to process and analyze the C# code, ensuring that the output conforms to a predefined structure and style.
 # Imports and Dependencies
 
 ---
@@ -31,9 +31,9 @@ This Python code file is a configuration script that defines a template for gene
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_CS
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CS` is a list of tuples, each representing a different section of a C# code analysis template. Each tuple contains a section identifier, a section title, and various functions or prompts related to that section, such as static analysis functions or prompt generation instructions.
-- **Use**: This variable is used to define a structured template for analyzing and generating prompts for different components of C# source code, such as purpose, imports, classes, structs, and interfaces.
+- **Type**: ``list``
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CS` is a list of tuples, where each tuple contains a set of instructions and components related to C# code analysis and generation. Each tuple includes a type identifier, a description string, and a series of components or functions that process or transform code related to C# programming constructs such as classes, structs, and interfaces.
+- **Use**: Used to define a structured template for processing and generating C# code components and their documentation.
 
 
 

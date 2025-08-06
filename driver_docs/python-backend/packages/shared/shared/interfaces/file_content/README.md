@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines models and classes for handling processed file content, with specific support for PDF files.
+Pydantic model for file content and enums with a class for PDF content processing.
 
 
 ## Files
-- **[file_content.py](file_content.py.md)**: The `file_content.py` file defines a Pydantic model `ProcessedFileContent` for handling file content as a string.
-- **[pdf_file_content.py](pdf_file_content.py.md)**: The `pdf_file_content.py` file defines an enumeration for different types of processed PDF content and a class for representing processed PDF file content, including attributes for OpenAI file ID, page number, and content type.
+- **[file_content.py](file_content.py.md)**: Defines a Pydantic model for processed file content with a string attribute.
+- **[pdf_file_content.py](pdf_file_content.py.md)**: Defines enums and a class for processing PDF file content with various extraction types.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

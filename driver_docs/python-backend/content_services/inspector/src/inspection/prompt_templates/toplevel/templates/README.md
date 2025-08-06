@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `templates` folder in the `python-backend` codebase contains a file, `getting_started_guide.py`, which provides a template for creating a detailed guide to assist users in understanding and using the codebase.
+Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
 
 
 ## Files
-- **[getting_started_guide.py](getting_started_guide.py.md)**: The `getting_started_guide.py` file defines a template for creating a comprehensive guide to help users understand and interact with a codebase, including sections on purpose, problem statement, functionality, user information, technical overview, and setup instructions.
+- **[getting_started_guide.py](getting_started_guide.py.md)**: Template for a getting started guide with prompts for codebase purpose, user information, and technical overview.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

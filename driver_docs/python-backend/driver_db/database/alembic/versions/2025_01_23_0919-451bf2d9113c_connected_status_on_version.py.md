@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_23_0919-451bf2d9113c_connected_status_on_version.py` file contains an Alembic migration script that adds a 'CONNECTED' value to the `versionstatus` enum type and provides a method to downgrade by creating a new enum type without the 'CONNECTED' value.
+Alembic migration script to add and remove the 'CONNECTED' value in the 'versionstatus' enum type.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically altering a PostgreSQL enum type by adding a new value 'CONNECTED' to the `versionstatus` enum during the upgrade process. The script also includes a downgrade function, which handles the complex task of removing the 'CONNECTED' value by creating a new enum type, updating existing records, and replacing the old enum type with the new one. This script is part of a version control system for database schemas, ensuring that changes to the database structure are tracked and can be rolled back if necessary.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the `versionstatus` enum type in a PostgreSQL database. The [`upgrade`](<#upgrade>) function adds a new value, `'CONNECTED'`, to the `versionstatus` enum. The [`downgrade`](<#downgrade>) function provides a workaround to remove the `'CONNECTED'` value by creating a new enum type `versionstatus_new`, updating the `v2_version` table to replace `'CONNECTED'` with `'GENERATION_ERROR'`, and then replacing the old enum type with the new one. The script uses Alembic's `op.execute` to run raw SQL commands for these operations.
 # Imports and Dependencies
 
 ---
@@ -17,54 +17,58 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema version in an Alembic migration script. It is used to track the specific changes made to the database schema at this point in time.
-- **Use**: This variable is used by Alembic to identify the current migration version and ensure that database migrations are applied in the correct order.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic migrations.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring that migrations are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations by identifying the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_23_0919-451bf2d9113c_connected_status_on_version.upgrade}} -->
-The `upgrade` function adds a new value 'CONNECTED' to the PostgreSQL enum type `versionstatus`.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_23_0919-451bf2d9113c_connected_status_on_version.py#L19>)
+
+Adds a new value 'CONNECTED' to the 'versionstatus' enum type in the database.
 - **Inputs**: None
-- **Control Flow**:
-    - The function executes a SQL command to alter the enum type `versionstatus` by adding a new value 'CONNECTED'.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Executes a SQL command to alter the 'versionstatus' enum type by adding a new value 'CONNECTED'.
+- **Output**: No output is returned as the function returns None.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_23_0919-451bf2d9113c_connected_status_on_version.downgrade}} -->
-The `downgrade` function modifies the database schema by removing the 'CONNECTED' value from the 'versionstatus' enum type in PostgreSQL.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_23_0919-451bf2d9113c_connected_status_on_version.py#L23>)
+
+Reverts the database schema by removing the 'CONNECTED' enum value from the 'versionstatus' type.
 - **Inputs**: None
-- **Control Flow**:
-    - Create a new enum type 'versionstatus_new' with the desired values excluding 'CONNECTED'.
-    - Update the 'v2_version' table to replace 'CONNECTED' status with 'GENERATION_ERROR'.
-    - Alter the 'v2_version' table to change the 'status' column type to 'versionstatus_new'.
-    - Drop the old 'versionstatus' enum type.
-    - Rename 'versionstatus_new' to 'versionstatus'.
-- **Output**: The function does not return any value; it performs schema changes on the database.
+- **Logic and Control Flow**:
+    - Creates a new enum type 'versionstatus_new' with the desired values excluding 'CONNECTED'.
+    - Updates the 'v2_version' table to change any 'CONNECTED' status to 'GENERATION_ERROR'.
+    - Alters the 'status' column in the 'v2_version' table to use the new enum type 'versionstatus_new'.
+    - Drops the old 'versionstatus' enum type.
+    - Renames 'versionstatus_new' to 'versionstatus' to replace the old type.
+- **Output**: No output is returned as the function returns None.
 
 
 

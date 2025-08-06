@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Main logic for handling AWS Lambda events, managing dependencies with Poetry, and sending usage events.
+AWS Lambda function for handling and logging usage events with Pydantic configuration and Poetry management.
 
 ## Folders
-- **[src](src/README.md)**: Main logic for handling AWS Lambda events and utility functions for configuration management.
+- **[src](src/README.md)**: AWS Lambda function for handling and logging usage events with Pydantic-based configuration management.
 
 ## Files
-- **[event_client.py](event_client.py.md)**: The `event_client.py` file in the `python-backend` codebase is responsible for sending usage events related to LLM (Large Language Model) sessions, either concurrently or sequentially, by utilizing the `LLMUsageSession` class to track and report the success or failure of these events.
-- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[event_client.py](event_client.py.md)**: Handles concurrent sending of usage events for an LLM session, with error handling and status reporting.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of Python project dependencies, ensuring consistent environments and integrity.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for the `metrics-handler` project using Poetry, specifying dependencies and build settings.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).
 

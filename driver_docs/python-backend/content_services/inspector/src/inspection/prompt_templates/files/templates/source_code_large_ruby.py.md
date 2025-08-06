@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_ruby.py` file defines a template for inspecting and processing large Ruby source code files, including handling prompts, imports, modules, and classes.
+Templates for generating structured prompts related to large Ruby source code, including modules and classes.
 
 # Purpose
-This Python code file is designed to facilitate structured prompting and analysis of Ruby source code. It serves as a configuration or template file that defines how to generate prompts and analyze Ruby code, particularly focusing on extracting and organizing information about the purpose, imports, modules, and classes within Ruby source files. The file imports several components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`, which provide specific instructions and tools for handling Ruby code. The main functionality is encapsulated in the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list, which contains tuples that define different aspects of the analysis, such as generating prompts for the purpose of the code, checking imports, and collecting module and class information.
+The code defines a template for generating structured prompts related to Ruby source code analysis. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`, to facilitate the creation of prompts and the analysis of Ruby code. The template, `SOURCE_CODE_LARGE_TEMPLATE_RUBY`, is a list of tuples, each representing a different aspect of the prompt generation process, such as purpose, imports and dependencies, modules, and classes.
 
-The code is structured to be part of a larger system, likely a library or framework, that processes and analyzes Ruby code. It does not define a standalone script but rather a set of instructions and components that can be used by other parts of the system to perform specific tasks related to Ruby code analysis. The file defines public interfaces through the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list, which acts as a configuration for how different aspects of Ruby code should be processed and presented. This setup allows for a modular and extensible approach to handling Ruby code, leveraging Python's capabilities to manage and analyze code from another programming language.
+Each tuple in the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list specifies a different section of the prompt, using components like `Prompt` and `Component` to build the text. The template uses specific instructions, such as `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`, to ensure that the generated prompts adhere to a particular style. Additionally, the template includes functions for checking imports and collecting Ruby modules and classes, which are used to analyze the structure and components of Ruby source code. This code is intended to be part of a larger system that processes and analyzes Ruby code, providing structured and styled prompts for various purposes.
 # Imports and Dependencies
 
 ---
@@ -31,9 +31,9 @@ The code is structured to be part of a larger system, likely a library or framew
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_RUBY
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_RUBY` is a list of tuples, each containing structured information for processing Ruby source code. Each tuple includes a type identifier, a description, and a series of components or functions that are used to generate or process prompts related to Ruby code, such as purpose, imports, modules, and classes.
-- **Use**: This variable is used to define a template for generating structured prompts and processing Ruby source code in a systematic way.
+- **Type**: ``list``
+- **Description**: Contains a list of tuples, each representing a structured prompt configuration for Ruby code analysis. Each tuple includes a prompt type identifier, a description string, and a series of components or functions that define how to generate or process the prompt.
+- **Use**: Used to define and configure structured prompts for analyzing Ruby code, including purpose, imports, modules, and classes.
 
 
 

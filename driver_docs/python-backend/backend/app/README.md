@@ -3,26 +3,26 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-API configurations, authentication, core settings, Git provider management, database operations, Pydantic schemas, service implementations, utility functions, and testing infrastructure, all primarily built around FastAPI.
+FastAPI and GraphQL APIs, authentication, configuration, Git provider management, repositories, schemas, services, tests, utilities, and database initialization.
 
 ## Folders
-- **[api](api/README.md)**: Configurations and definitions for API routes, authentication, logging middleware, and session management using FastAPI.
-- **[auth](auth/README.md)**: Middleware and model definitions for API key validation, JWT verification, and permission management using Auth0.
-- **[core](core/README.md)**: Essential configuration and logging setup files, including a Pydantic-based settings manager and a deprecated logger configuration.
-- **[git_providers](git_providers/README.md)**: Various components for managing GitLab integration, including configuration, OAuth, providers, API, and utilities.
-- **[repositories](repositories/README.md)**: Repository classes and functions for managing database operations related to SQLModel models and Git apps.
-- **[schemas](schemas/README.md)**: Various Pydantic models and related unit tests for handling user roles, codebase analysis, content operations, document sources, Git provider configurations, secret management, tagging, uploads, and user responses.
-- **[services](services/README.md)**: Service implementations and unit tests for Auth0, codebase analysis, content, tags, GitLab, uploads, and utility functions.
-- **[tests](tests/README.md)**: Unit tests for repository CRUD operations and utility functions for authentication token retrieval.
-- **[utils](utils/README.md)**: Utility modules for AWS S3, AWS Secrets Manager, and GitHub API interactions, including presigned URLs and secret management.
+- **[api](api/README.md)**: FastAPI and GraphQL API routes, authentication, logging middleware, and database session management.
+- **[auth](auth/README.md)**: Middleware for API key and JWT validation, Pydantic models for authentication, and permission strings.
+- **[core](core/README.md)**: Configuration settings, logger setup, and an empty initializer file for a Python backend application.
+- **[git_providers](git_providers/README.md)**: Git provider configuration, interfaces, OAuth strategy, provider functionality, API resource management, and utilities.
+- **[repositories](repositories/README.md)**: Generic repository class for SQLModel, Git provider app management, and GithubAppInstallation handling.
+- **[schemas](schemas/README.md)**: Pydantic models and tests for user roles, codebase analysis, content management, Git configurations, and uploads.
+- **[services](services/README.md)**: Auth0, codebase, content, GitLab provider, tag, and upload services with corresponding tests, plus utility functions for `DerivedContent` objects.
+- **[tests](tests/README.md)**: Tests for CRUD operations in BaseRepository and utility to fetch Auth0 access token.
+- **[utils](utils/README.md)**: Utilities for AWS S3, AWS Secrets Manager, and GitHub operations.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[backend_pre_start.py](backend_pre_start.py.md)**: The `backend_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection and optionally configuring database extensions.
-- **[conftest.py](conftest.py.md)**: The `conftest.py` file in the `python-backend` codebase defines pytest fixtures for database session management and mock user tokens for testing purposes.
-- **[initial_data.py](initial_data.py.md)**: The `initial_data.py` file initializes the database with initial data when the environment is set to "local" and logs the process.
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase sets up a FastAPI application with logging, Sentry integration, CORS, middleware, and routers for handling unprotected, JWT-protected, and API-key-protected routes.
-- **[tests_pre_start.py](tests/README.md_pre_start.py)**: The `tests_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection using a retry mechanism to ensure the database is awake before proceeding.
+- **[backend_pre_start.py](backend_pre_start.py.md)**: Initializes the database connection and configures extensions with retry logic and logging.
+- **[conftest.py](conftest.py.md)**: Defines pytest fixtures for database session management and mock user authentication.
+- **[initial_data.py](initial_data.py.md)**: Initializes database with initial data based on environment settings.
+- **[main.py](main.py.md)**: FastAPI application setup with routers, logging, Sentry configuration, and global error handling.
+- **[tests_pre_start.py](tests_pre_start.py.md)**: Retries database connection initialization until successful or timeout.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

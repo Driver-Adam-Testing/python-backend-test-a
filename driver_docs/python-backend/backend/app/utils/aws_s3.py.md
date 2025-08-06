@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `aws_s3.py` file provides utility functions for interacting with AWS S3, including generating presigned URLs, hashing organization IDs, and performing operations like copying, deleting, and checking the existence of objects.
+Utilities for AWS S3 operations, including presigned URL generation, file deletion, and object copying.
 
 # Purpose
-This Python file provides a set of utility functions for interacting with Amazon S3, specifically focusing on generating presigned URLs, managing S3 objects, and handling organization-specific operations. The code initializes an S3 client using the `boto3` library, configured with credentials and endpoint details from a settings module. The primary functionality includes generating presigned URLs for both uploading (`put`) and downloading (`get`) objects, which are essential for secure and temporary access to S3 resources. The file also includes functions for parsing presigned URLs to extract bucket and key information, as well as operations like copying and deleting S3 objects.
+This code provides functionality for interacting with Amazon S3, specifically for generating presigned URLs, managing objects, and handling S3 bucket operations. It initializes an S3 client using the `boto3` library, configured with settings such as AWS region, access keys, and an optional endpoint URL. The code includes functions to generate presigned URLs for both uploading ([`generate_put_presigned_url`](<#generate_put_presigned_url>)) and downloading ([`generate_get_presigned_url`](<#generate_get_presigned_url>), [`generate_org_get_presigned_url`](<#generate_org_get_presigned_url>)) objects from S3. These URLs allow temporary access to S3 objects without requiring AWS credentials.
 
-The code is structured as a collection of functions that encapsulate specific tasks related to S3 operations, making it suitable for use as a library module that can be imported and utilized in other parts of an application. It defines several public APIs for generating presigned URLs, which are crucial for applications that need to provide temporary access to S3 resources without exposing AWS credentials. Additionally, the code includes organization-specific functions that hash organization IDs to create unique bucket names, ensuring data segregation and security. The use of settings for configuration and a logger for logging operations indicates a well-structured approach to managing S3 interactions within a larger application context.
+The code also includes utility functions for S3 operations, such as [`delete_file_from_s3`](<#delete_file_from_s3>) to delete an object, [`copy_s3_object`](<#copy_s3_object>) to copy an object from one bucket to another, and [`head_org_object`](<#head_org_object>) to check the existence of an object in a bucket. The [`org_id_to_hash`](<#org_id_to_hash>) function generates a hash from an organization ID, which is used to create unique bucket names. The [`parse_presigned_url`](<#parse_presigned_url>) function extracts the bucket and key from a given presigned URL. The code relies on configuration settings imported from `app.core.config` and logs operations using a logger from `app.core.logger`. This module is intended to be part of a larger application, providing a set of tools for managing S3 resources.
 # Imports and Dependencies
 
 ---
@@ -24,135 +24,154 @@ The code is structured as a collection of functions that encapsulate specific ta
 
 ---
 ### s3\_client
-- **Type**: `boto3.client`
-- **Description**: The `s3_client` is an instance of the boto3 S3 client, configured to interact with Amazon S3 services. It is initialized with specific AWS credentials and region information, and optionally an endpoint URL, which allows it to perform operations on S3 buckets and objects.
-- **Use**: This variable is used to perform various S3 operations such as generating presigned URLs, copying objects, and deleting files.
+- **Type**: ``boto3.client``
+- **Description**: Represents an Amazon S3 client instance created using the `boto3` library. It is configured with AWS credentials and settings from the `settings` module, including region, access keys, and an optional endpoint URL.
+- **Use**: Used to interact with Amazon S3 services, such as generating presigned URLs, copying objects, and deleting files.
 
 
 # Functions
 
 ---
 ### org\_id\_to\_hash<!-- {{#callable:python-backend/backend/app/utils/aws_s3.org_id_to_hash}} -->
-The `org_id_to_hash` function generates a SHA-256 hash of an organization ID and returns the first 63 characters of the hash.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L19>)
+
+Converts an organization ID into a SHA-256 hash and returns the first 63 characters of the hash.
 - **Inputs**:
     - `organization_id`: A string representing the organization ID to be hashed.
-- **Control Flow**:
-    - The function encodes the input `organization_id` as a byte string.
-    - It computes the SHA-256 hash of the encoded organization ID using the `hashlib.sha256` function.
-    - The resulting hash is converted to a hexadecimal string using the `hexdigest` method.
-    - The function returns the first 63 characters of the hexadecimal hash string.
-- **Output**: A string representing the first 63 characters of the SHA-256 hash of the input organization ID.
+- **Logic and Control Flow**:
+    - Encode the input `organization_id` as a byte string.
+    - Compute the SHA-256 hash of the encoded `organization_id`.
+    - Convert the hash to a hexadecimal string representation.
+    - Return the first 63 characters of the hexadecimal hash string.
+- **Output**: A string containing the first 63 characters of the SHA-256 hash of the input `organization_id`.
 
 
 ---
 ### dropzone\_bucket\_name<!-- {{#callable:python-backend/backend/app/utils/aws_s3.dropzone_bucket_name}} -->
-The `dropzone_bucket_name` function returns the appropriate S3 bucket name based on the current settings configuration.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L23>)
+
+Determines the name of the S3 bucket to use for the dropzone based on configuration settings.
 - **Inputs**: None
-- **Control Flow**:
-    - The function checks if the `USE_LEGACY_DROPZONE` setting is False.
-    - If `USE_LEGACY_DROPZONE` is False, it returns the `DROPZONE_BUCKET_NAME` from the settings.
-    - If `USE_LEGACY_DROPZONE` is True, it constructs and returns a bucket name using the `ENVIRONMENT` and `AWS_S3_CODE_BUCKET_SUFFIX` settings.
-- **Output**: A string representing the S3 bucket name to be used.
+- **Logic and Control Flow**:
+    - Checks if `settings.USE_LEGACY_DROPZONE` is `False`.
+    - If `settings.USE_LEGACY_DROPZONE` is `False`, returns `settings.DROPZONE_BUCKET_NAME`.
+    - If `settings.USE_LEGACY_DROPZONE` is `True`, returns a formatted string combining `settings.ENVIRONMENT` and `settings.AWS_S3_CODE_BUCKET_SUFFIX`.
+- **Output**: A string representing the name of the S3 bucket to use for the dropzone.
 
 
 ---
 ### parse\_presigned\_url<!-- {{#callable:python-backend/backend/app/utils/aws_s3.parse_presigned_url}} -->
-The `parse_presigned_url` function extracts the bucket name and object key from a given S3 presigned URL.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L31>)
+
+Parses a presigned S3 URL to extract the bucket name and object key.
 - **Inputs**:
-    - `url`: A string representing the S3 presigned URL to be parsed.
-- **Control Flow**:
-    - The function begins by parsing the input URL using `urlparse` to separate its components.
-    - It extracts the host and path from the parsed URL, removing any leading slashes from the path.
-    - The function checks if the host contains '.s3.' to determine if the URL is in domain-style format, and extracts the bucket name accordingly.
-    - If the host starts with 's3-' or 's3.', it assumes a path-style format, extracts the bucket name from the path, and adjusts the path to remove the bucket name.
-    - If neither format is detected, it raises a `ValueError` indicating an invalid S3 URL format.
-    - The path is then decoded using `unquote_plus` to handle any URL-encoded characters.
-    - Finally, the function returns a tuple containing the bucket name and the decoded key.
-- **Output**: A tuple containing the bucket name and the decoded object key extracted from the URL.
+    - `url`: A string representing the presigned S3 URL to parse.
+- **Logic and Control Flow**:
+    - Parse the input URL using `urlparse` to separate its components.
+    - Extract the host and path from the parsed URL.
+    - Remove the leading slash from the path.
+    - Check if the host contains '.s3.' to determine if it is a domain-style URL and extract the bucket name accordingly.
+    - If the host starts with 's3-' or 's3.', treat it as a path-style URL and extract the bucket name from the path.
+    - If the URL format is not recognized, raise a `ValueError`.
+    - Decode the path to get the object key using `unquote_plus`.
+- **Output**: A tuple containing the bucket name and the object key as strings.
 
 
 ---
 ### generate\_put\_presigned\_url<!-- {{#callable:python-backend/backend/app/utils/aws_s3.generate_put_presigned_url}} -->
-The `generate_put_presigned_url` function generates a presigned URL for uploading an object to an S3 bucket with specified parameters.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L48>)
+
+Generates a presigned URL for uploading an object to an S3 bucket using the PUT method.
 - **Inputs**:
-    - `key`: A string representing the key (or path) of the object in the S3 bucket.
-    - `content_type`: A string specifying the MIME type of the object to be uploaded.
-    - `metadata`: An optional dictionary containing metadata to be associated with the object; defaults to an empty dictionary if not provided.
-    - `expires`: An integer representing the time in seconds for which the presigned URL is valid; defaults to 3600 seconds (1 hour).
-    - `bucket`: An optional string specifying the name of the S3 bucket; defaults to a value based on application settings if not provided.
-- **Control Flow**:
-    - Check if `metadata` is None and set it to an empty dictionary if so.
-    - Check if `bucket` is None and set it to a default value based on application settings if so.
-    - Call `s3_client.generate_presigned_url` with the method 'put_object' and the provided parameters to generate the presigned URL.
-- **Output**: A string representing the generated presigned URL for uploading an object to the specified S3 bucket.
+    - `key`: The key (path) for the object in the S3 bucket.
+    - `content_type`: The MIME type of the object to be uploaded.
+    - `metadata`: Optional metadata to associate with the object; defaults to an empty dictionary if not provided.
+    - `expires`: The time in seconds for which the presigned URL is valid; defaults to 3600 seconds (1 hour).
+    - `bucket`: The name of the S3 bucket; defaults to a value based on settings if not provided.
+- **Logic and Control Flow**:
+    - Check if `metadata` is `None` and set it to an empty dictionary if true.
+    - Check if `bucket` is `None` and set it to a default value based on `settings` if true.
+    - Call `s3_client.generate_presigned_url` with the method `put_object` and the provided parameters to generate the presigned URL.
+- **Output**: A presigned URL as a string that allows uploading an object to the specified S3 bucket using the PUT method.
 
 
 ---
 ### generate\_get\_presigned\_url<!-- {{#callable:python-backend/backend/app/utils/aws_s3.generate_get_presigned_url}} -->
-The `generate_get_presigned_url` function generates a presigned URL for retrieving an object from an S3 bucket.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L75>)
+
+Generates a presigned URL for retrieving an object from an S3 bucket.
 - **Inputs**:
-    - `key`: A string representing the key of the object in the S3 bucket for which the presigned URL is to be generated.
-    - `expires`: An integer representing the expiration time in seconds for the presigned URL, defaulting to 3600 seconds (1 hour).
-- **Control Flow**:
-    - Determine the bucket name based on the settings configuration, using either the DROPZONE_BUCKET_NAME or a combination of ENVIRONMENT and AWS_S3_CODE_BUCKET_SUFFIX if USE_LEGACY_DROPZONE is true.
-    - Call the `generate_presigned_url` method of the S3 client with the 'get_object' client method, passing the determined bucket name, the provided key, and the expiration time.
-- **Output**: A string containing the generated presigned URL for accessing the specified object in the S3 bucket.
+    - `key`: The key of the object in the S3 bucket for which to generate the presigned URL.
+    - `expires`: The time in seconds for which the presigned URL is valid, defaulting to 3600 seconds (1 hour).
+- **Logic and Control Flow**:
+    - Determine the S3 bucket name based on the `settings.USE_LEGACY_DROPZONE` flag.
+    - If `settings.USE_LEGACY_DROPZONE` is False, use `settings.DROPZONE_BUCKET_NAME` as the bucket name.
+    - If `settings.USE_LEGACY_DROPZONE` is True, construct the bucket name using `settings.ENVIRONMENT` and `settings.AWS_S3_CODE_BUCKET_SUFFIX`.
+    - Call `s3_client.generate_presigned_url` with the method `get_object`, the determined bucket name, the provided key, and the expiration time to generate the presigned URL.
+- **Output**: A presigned URL as a string that allows retrieval of the specified object from the S3 bucket.
 
 
 ---
 ### generate\_org\_get\_presigned\_url<!-- {{#callable:python-backend/backend/app/utils/aws_s3.generate_org_get_presigned_url}} -->
-The function generates a presigned URL for accessing an S3 object associated with a specific organization.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L91>)
+
+Generates a presigned URL for accessing an S3 object using an organization's ID to determine the bucket name.
 - **Inputs**:
-    - `organization_id`: A string representing the unique identifier of the organization, used to derive the S3 bucket name.
+    - `organization_id`: A string representing the unique identifier of the organization, used to generate the bucket name.
     - `key`: A string representing the key of the object in the S3 bucket.
-    - `expires`: An optional integer specifying the expiration time in seconds for the presigned URL, defaulting to 600 seconds.
-- **Control Flow**:
-    - The function computes a bucket name by hashing the organization_id using SHA-256 and truncating the result to 63 characters.
-    - It then calls the s3_client's generate_presigned_url method with the 'get_object' client method, passing the computed bucket name, the provided key, and the expiration time as parameters.
-    - The function returns the generated presigned URL.
-- **Output**: A string representing the presigned URL for accessing the specified S3 object.
+    - `expires`: An integer representing the time in seconds for which the presigned URL is valid, defaulting to 600 seconds.
+- **Logic and Control Flow**:
+    - Compute the bucket name by hashing the `organization_id` using SHA-256 and taking the first 63 characters of the hexadecimal digest.
+    - Call the `generate_presigned_url` method of the `s3_client` to create a presigned URL for the `get_object` operation, using the computed bucket name, the provided key, and the expiration time.
+- **Output**: A string containing the presigned URL for accessing the specified S3 object.
 
 
 ---
 ### head\_org\_object<!-- {{#callable:python-backend/backend/app/utils/aws_s3.head_org_object}} -->
-The `head_org_object` function checks if an object with a specified key exists in an S3 bucket derived from an organization's ID.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L105>)
+
+Checks if an object exists in an S3 bucket for a given organization.
 - **Inputs**:
-    - `organization_id`: A string representing the unique identifier of the organization, used to derive the S3 bucket name.
-    - `key`: A string representing the key of the object to check for existence in the S3 bucket.
-    - `expires`: An integer representing the expiration time in seconds for the operation, defaulting to 600, though it is not used in the function.
-- **Control Flow**:
-    - Compute the S3 bucket name by hashing the `organization_id` and taking the first 63 characters of the SHA-256 hash.
-    - Attempt to call `head_object` on the S3 client with the computed bucket name and the provided key.
+    - `organization_id`: A string that represents the unique identifier of the organization.
+    - `key`: A string that represents the key of the object in the S3 bucket.
+    - `expires`: An integer that specifies the expiration time in seconds, defaulting to 600.
+- **Logic and Control Flow**:
+    - Compute the bucket name by hashing the `organization_id` and taking the first 63 characters of the hash.
+    - Attempt to retrieve the object's metadata from the S3 bucket using the `head_object` method of the S3 client.
     - If the object exists, return `True`.
-    - If a `NoSuchKey` exception is raised, return `False`.
-- **Output**: A boolean value indicating whether the object with the specified key exists in the derived S3 bucket.
+    - If the object does not exist, catch the `NoSuchKey` exception and return `False`.
+- **Output**: A boolean value indicating whether the object exists (`True`) or not (`False`).
 
 
 ---
 ### delete\_file\_from\_s3<!-- {{#callable:python-backend/backend/app/utils/aws_s3.delete_file_from_s3}} -->
-The `delete_file_from_s3` function deletes a specified file from an Amazon S3 bucket using the provided key and bucket name.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L117>)
+
+Deletes a file from an S3 bucket using the specified key and bucket name.
 - **Inputs**:
-    - `key`: A string representing the key (or path) of the file to be deleted in the S3 bucket.
-    - `bucket`: A string representing the name of the S3 bucket from which the file will be deleted.
-- **Control Flow**:
-    - The function calls the `delete_object` method of the `s3_client` to delete the specified file from the given S3 bucket using the provided key and bucket name.
-    - The response from the `delete_object` call is printed to the console.
-- **Output**: The function does not return any value; it performs a side effect by deleting a file from S3 and printing the response.
+    - `key`: The key (or path) of the file to delete in the S3 bucket.
+    - `bucket`: The name of the S3 bucket from which to delete the file.
+- **Logic and Control Flow**:
+    - Calls the `delete_object` method of the `s3_client` to delete the specified file from the given S3 bucket.
+    - Prints the response from the `delete_object` method call.
+- **Output**: No output is returned; the function performs a deletion operation and prints the response.
 
 
 ---
 ### copy\_s3\_object<!-- {{#callable:python-backend/backend/app/utils/aws_s3.copy_s3_object}} -->
-The `copy_s3_object` function copies an object from one S3 bucket to another using the AWS S3 client.
+[View Source →](<../../../../../backend/app/utils/aws_s3.py#L126>)
+
+Copies an object from a source S3 bucket to a destination S3 bucket.
 - **Inputs**:
-    - `source_bucket`: The name of the source S3 bucket from which the object will be copied.
-    - `source_key`: The key (path) of the object in the source S3 bucket.
-    - `dest_bucket`: The name of the destination S3 bucket to which the object will be copied.
-    - `dest_key`: The key (path) for the object in the destination S3 bucket.
-- **Control Flow**:
-    - A dictionary `copy_source` is created with the source bucket and key.
-    - The `s3_client.copy_object` method is called with `CopySource`, `Bucket`, `Key`, and `TaggingDirective` parameters to perform the copy operation.
-    - A log message is generated to indicate the successful copying of the object from the source to the destination.
-- **Output**: The function does not return any value; it performs the copy operation and logs the result.
+    - `source_bucket`: The name of the source S3 bucket.
+    - `source_key`: The key of the object in the source S3 bucket.
+    - `dest_bucket`: The name of the destination S3 bucket.
+    - `dest_key`: The key for the object in the destination S3 bucket.
+- **Logic and Control Flow**:
+    - Create a dictionary `copy_source` with the source bucket and key.
+    - Call `s3_client.copy_object` to copy the object from the source to the destination bucket and key, with the tagging directive set to 'REPLACE'.
+    - Log a message indicating the successful copy of the object.
+- **Output**: No output is returned.
 
 
 

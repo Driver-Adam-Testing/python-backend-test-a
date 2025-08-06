@@ -3,31 +3,38 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_func_calls.c` file contains test functions for demonstrating function calls as arguments and conditional function calls, with one function wrapped in a preprocessor conditional directive.
+Tests for function calls as arguments and conditional function calls in C.
 
 # Purpose
-This C code snippet is a small function collection demonstrating function calls as arguments and conditional compilation. The [`test_function_calls_as_args`](<#test_function_calls_as_args>) function showcases the use of function calls (`strlen` and `sizeof`) as arguments to another function (`max`), and it also prints the length of a string using `printf`. The [`test_conditional_calls`](<#test_conditional_calls>) function, which is conditionally compiled only if the `hi` macro is defined, illustrates a simple conditional logic where a string is validated using `is_valid`, and based on the result, either `process` or `handle_error` is called. This code is likely part of a larger program where these utility functions are used for testing or demonstration purposes.
+This code is a simple C source file that contains two functions for testing purposes. The [`test_function_calls_as_args`](<#test_function_calls_as_args>) function demonstrates the use of function calls as arguments within other functions, specifically using `strlen` and `sizeof` as arguments to the `max` function, and `strlen` within a `printf` statement. The [`test_conditional_calls`](<#test_conditional_calls>) function, which is conditionally compiled with the `#ifdef hi` directive, tests conditional logic by calling `is_valid` to check a condition and then either `process` or `handle_error` based on the result. This file is useful for illustrating function call usage and conditional compilation in C.
 # Functions
 
 ---
 ### test\_function\_calls\_as\_args<!-- {{#callable:test_function_calls_as_args}} -->
-The function `test_function_calls_as_args` demonstrates the use of function calls as arguments to other functions.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_func_calls.c#L1>)
+
+Calls functions as arguments to other functions and prints a formatted string.
 - **Inputs**: None
-- **Control Flow**:
-    - The function initializes an integer variable `x` with the result of the `max` function, which takes the length of the string "test" and the size of an integer as arguments.
-    - It then prints the length of the string "example" using the `printf` function, which includes a call to `strlen` to determine the string's length.
-- **Output**: The function does not return any value as it is a `void` function.
+- **Logic and Control Flow**:
+    - Calls the `strlen` function with the string "test" to get its length.
+    - Calls the `sizeof` operator to get the size of an `int`.
+    - Calls the `max` function with the results of `strlen("test")` and `sizeof(int)` as arguments and assigns the result to `x`.
+    - Calls the `strlen` function with the string "example" to get its length.
+    - Calls the `printf` function to print the string "example" and its length.
+- **Output**: No return value; outputs a formatted string to the standard output.
 
 
 ---
 ### test\_conditional\_calls<!-- {{#callable:test_conditional_calls}} -->
-The function `test_conditional_calls` checks if a condition is valid and processes it if true, otherwise it handles an error.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_func_calls.c#L6>)
+
+Executes a process if a condition is valid, otherwise handles an error.
 - **Inputs**: None
-- **Control Flow**:
-    - The function checks the result of `is_valid("test")`.
-    - If `is_valid("test")` returns true, it calls `process("test")`.
-    - If `is_valid("test")` returns false, it calls `handle_error("invalid")`.
-- **Output**: The function does not return any value; it performs actions based on the validity of a condition.
+- **Logic and Control Flow**:
+    - Checks if the condition `is_valid("test")` is true.
+    - If true, calls the `process("test")` function.
+    - If false, calls the `handle_error("invalid")` function.
+- **Output**: No output is returned as the function has a void return type.
 
 
 

@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_03_01_1418-53972ce88dff_adding_created_and_updated_at.py` file is an Alembic migration script that adds `created_at` and `updated_at` timestamp columns to the `chunk`, `contentmetadata`, and `contentprocessingsession` tables in the database.
+Alembic migration script to add "created_at" and "updated_at" columns to multiple tables.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding timestamp columns to existing tables. Specifically, it adds `created_at` and `updated_at` columns to the `chunk`, `contentmetadata`, and `contentprocessingsession` tables. These columns are of type `DateTime` with timezone support and are nullable, allowing for the recording of creation and modification timestamps for records in these tables. The script includes both an [`upgrade`](<#upgrade>) function, which applies these changes, and a [`downgrade`](<#downgrade>) function, which reverses them by removing the added columns.
-
-The script is part of a version-controlled database migration system, as indicated by the use of Alembic, a database migration tool for SQLAlchemy. The presence of revision identifiers (`revision`, `down_revision`) suggests that this script is part of a sequence of migrations, allowing for systematic upgrades and downgrades of the database schema. This file is not a standalone script but rather a component of a larger system, intended to be executed within the context of Alembic's migration framework. It does not define public APIs or external interfaces but instead focuses on internal database schema management.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function that adds `created_at` and `updated_at` columns to the `chunk`, `contentmetadata`, and `contentprocessingsession` tables. These columns are of type `DateTime` with timezone support and are nullable. The [`downgrade`](<#downgrade>) function reverses these changes by removing the same columns from the respective tables. The script includes revision identifiers, such as `revision` and `down_revision`, to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -22,56 +20,64 @@ The script is part of a version-controlled database migration system, as indicat
 
 ---
 ### revision
-- **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script and ensure that database schema changes are applied in the correct order.
+- **Type**: ``str``
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `Union[str, None]`
-- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the identifier of the previous revision in the migration chain. It is set to the string 'c2ec175264a8', which represents the revision ID of the migration that this script is building upon.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``Union[str, None]``
+- **Description**: Indicates the identifier of the previous database schema revision that this migration script is based on. It is used by Alembic to determine the order of migrations.
+- **Use**: Used by Alembic to track the migration history and ensure that migrations are applied in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `branch_labels` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a version control system for database schema changes.
-- **Use**: This variable is used to specify labels for a branch in database schema migrations, allowing for more organized and identifiable migration paths.
+- **Description**: `branch_labels` is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of Alembic, a database migration tool for SQLAlchemy.
+- **Use**: Indicates the branch labels associated with a particular database revision.
 
 
 ---
 ### depends\_on
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between database revisions.
-- **Use**: This variable is used to define which other database revisions the current revision depends on, allowing Alembic to manage the order of migrations.
+- **Description**: Specifies dependencies for the current database migration script. It can be a single string representing a revision ID, a sequence of strings for multiple revision IDs, or `None` if there are no dependencies.
+- **Use**: Used to define the migration dependencies in Alembic scripts.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_03_01_1418-53972ce88dff_adding_created_and_updated_at.upgrade}} -->
-The `upgrade` function adds 'created_at' and 'updated_at' datetime columns to the 'chunk', 'contentmetadata', and 'contentprocessingsession' tables in the database schema.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_03_01_1418-53972ce88dff_adding_created_and_updated_at.py#L21>)
+
+Adds 'created_at' and 'updated_at' columns to specified database tables.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by adding a 'created_at' column to the 'chunk' table with a datetime type that supports timezone and allows null values.
-    - It then adds an 'updated_at' column to the 'chunk' table with similar properties.
-    - The function proceeds to add 'created_at' and 'updated_at' columns to the 'contentmetadata' table, each with datetime type, timezone support, and nullable.
-    - Finally, it adds 'created_at' and 'updated_at' columns to the 'contentprocessingsession' table, also with datetime type, timezone support, and nullable.
-- **Output**: The function does not return any value; it modifies the database schema by adding new columns to specified tables.
+- **Logic and Control Flow**:
+    - Use the `op.add_column` function to add a 'created_at' column with a timezone-aware DateTime type to the 'chunk' table, allowing null values.
+    - Add an 'updated_at' column with a timezone-aware DateTime type to the 'chunk' table, allowing null values.
+    - Add a 'created_at' column with a timezone-aware DateTime type to the 'contentmetadata' table, allowing null values.
+    - Add an 'updated_at' column with a timezone-aware DateTime type to the 'contentmetadata' table, allowing null values.
+    - Add a 'created_at' column with a timezone-aware DateTime type to the 'contentprocessingsession' table, allowing null values.
+    - Add an 'updated_at' column with a timezone-aware DateTime type to the 'contentprocessingsession' table, allowing null values.
+- **Output**: No output is returned as the function modifies the database schema in place.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_03_01_1418-53972ce88dff_adding_created_and_updated_at.downgrade}} -->
-The `downgrade` function removes the 'created_at' and 'updated_at' columns from the 'chunk', 'contentmetadata', and 'contentprocessingsession' tables.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_03_01_1418-53972ce88dff_adding_created_and_updated_at.py#L48>)
+
+Removes the 'created_at' and 'updated_at' columns from the specified database tables.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by executing a series of operations to drop columns from specific tables.
-    - It uses the `op.drop_column` method from Alembic to remove the 'updated_at' and 'created_at' columns from the 'contentprocessingsession' table.
-    - It continues to drop the same columns from the 'contentmetadata' table.
-    - Finally, it drops the 'updated_at' and 'created_at' columns from the 'chunk' table.
-- **Output**: The function does not return any value; it performs database schema changes.
+- **Logic and Control Flow**:
+    - Calls `op.drop_column` to remove the 'updated_at' column from the 'contentprocessingsession' table.
+    - Calls `op.drop_column` to remove the 'created_at' column from the 'contentprocessingsession' table.
+    - Calls `op.drop_column` to remove the 'updated_at' column from the 'contentmetadata' table.
+    - Calls `op.drop_column` to remove the 'created_at' column from the 'contentmetadata' table.
+    - Calls `op.drop_column` to remove the 'updated_at' column from the 'chunk' table.
+    - Calls `op.drop_column` to remove the 'created_at' column from the 'chunk' table.
+- **Output**: No output is returned as the function returns None.
 
 
 

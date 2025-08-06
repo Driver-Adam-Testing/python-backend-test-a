@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `file_search.py` file defines a function to query and summarize documents using OpenAI's API, specifically leveraging a document summarizer assistant and tools like file search and code interpreter.
+Queries and summarizes documents using OpenAI's API with file search and code interpreter tools.
 
 # Purpose
-This Python code defines a function [`query_file`](<#query_file>) that interacts with the OpenAI API to perform document summarization. The function is designed to query a file using a specified `file_id` and `query`, optionally using a provided `assistant_id`. If no `assistant_id` is given, the function creates a new assistant with specific instructions and tools, such as a file search and code interpreter, to handle the document processing. The assistant is configured to understand and summarize documents, particularly PDFs, with a focus on microprocessors and hardware engineering topics. The function then creates a thread to process the query and uses the assistant to generate a summary of the document's key points. If the summarization process completes successfully, the function returns the summary; otherwise, it raises an exception.
+The code defines a function [`query_file`](<#query_file>) that interacts with the OpenAI API to summarize documents. It uses the OpenAI client to create an assistant, which is configured to understand and summarize PDFs, particularly in the context of microprocessors and hardware engineering. The function takes a `file_id`, a `query`, and an optional `assistant_id` as parameters. If no `assistant_id` is provided, the function creates a new assistant with specific instructions and tools for file searching and code interpretation.
 
-The code is structured as a script that leverages the OpenAI API's beta features, such as creating assistants and threads, to provide a specialized document summarization service. It is not a standalone application but rather a utility function that could be part of a larger system or library. The primary technical components include the creation and management of assistants and threads, as well as the handling of API responses to extract and return the document summary. This code is intended for use in environments where document summarization is needed, particularly in technical fields related to hardware and microprocessors, and it provides a programmatic interface for integrating OpenAI's capabilities into other applications.
+The function then creates a thread with a user message containing the query and file attachments. It uses the OpenAI API to run the thread and poll for results, instructing the assistant to summarize the document's key points. If the run completes successfully, the function retrieves and returns the summary from the thread's messages. If the run does not complete, it raises an exception indicating the failure to query the file. This code is intended to be used as part of a larger application where document summarization is required, leveraging OpenAI's capabilities for natural language processing and understanding.
 # Imports and Dependencies
 
 ---
@@ -19,26 +19,28 @@ The code is structured as a script that leverages the OpenAI API's beta features
 
 ---
 ### client
-- **Type**: `OpenAI`
-- **Description**: The `client` variable is an instance of the `OpenAI` class, which is imported from the `openai` module. This instance is used to interact with the OpenAI API, allowing the program to create assistants, threads, and run queries.
-- **Use**: The `client` variable is used to create and manage interactions with the OpenAI API, facilitating operations such as creating assistants and threads, and executing queries.
+- **Type**: ``OpenAI``
+- **Description**: Represents an instance of the `OpenAI` class, which is imported from the `openai` module. This instance is used to interact with the OpenAI API, specifically for creating assistants and managing threads and their runs.
+- **Use**: Used to create and manage assistants and threads for querying files and summarizing documents.
 
 
 # Functions
 
 ---
 ### query\_file<!-- {{#callable:python-backend/packages/shared/shared/agent/models/openai/file_search.query_file}} -->
-The `query_file` function queries a file using a specified query and returns a summary of the document's key points, optionally creating an assistant if none is provided.
+[View Source →](<../../../../../../../../packages/shared/shared/agent/models/openai/file_search.py#L6>)
+
+Queries a file using an assistant to summarize its key points.
 - **Inputs**:
-    - `file_id`: A string representing the unique identifier of the file to be queried.
-    - `query`: A string containing the query to be executed on the file.
-    - `assistant_id`: An optional string representing the unique identifier of an assistant; if not provided, a new assistant is created.
-- **Control Flow**:
-    - Check if `assistant_id` is None; if so, create a new assistant with specific instructions and tools, and assign its ID to `assistant_id`.
-    - Create a thread with a message containing the query and file attachments, specifying tools for file search and code interpretation.
-    - Create and poll a run on the thread with instructions to summarize the document, using the specified or newly created assistant.
-    - If the run status is 'completed', retrieve the messages from the thread and extract the summary text from the first message.
-    - If the run is not completed, raise an exception indicating the file could not be queried.
+    - `file_id`: A string that uniquely identifies the file to query.
+    - `query`: A string containing the query to be processed by the assistant.
+    - `assistant_id`: An optional string that identifies the assistant to use; if not provided, a new assistant is created.
+- **Logic and Control Flow**:
+    - Check if `assistant_id` is `None` and create a new assistant if necessary, assigning its ID to `assistant_id`.
+    - Create a thread with a message containing the `query` and attach the file identified by `file_id` with tools for file search and code interpretation.
+    - Create and poll a run for the thread, instructing it to summarize the document's key points using the specified `assistant_id`.
+    - If the run completes successfully, retrieve the messages from the thread and extract the summary from the first message's content.
+    - If the run does not complete successfully, raise an exception indicating the file could not be queried.
 - **Output**: A string containing the summary of the document's key points if the query is successful; otherwise, an exception is raised.
 
 

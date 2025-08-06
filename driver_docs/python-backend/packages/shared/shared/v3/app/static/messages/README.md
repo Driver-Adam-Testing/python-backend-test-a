@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files that define classes and system messages for document summarization, technical editing, driver application functionality, format-specific messaging, inline editing, mermaid code review, smart instruction input, and software expertise.
+Classes for creating and defining system and user messages for various contexts and applications.
 
 
 ## Files
-- **[abbreviate_page_content_messages.py](abbreviate_page_content_messages.py.md)**: The `abbreviate_page_content_messages.py` file defines classes for creating system and user messages that assist in summarizing and structuring document content for effective use by downstream language models.
-- **[copy_editor_messages.py](copy_editor_messages.py.md)**: The `copy_editor_messages.py` file defines classes for system and user messages used by a technical copy editor to edit and refine technical documents, ensuring clarity, conciseness, and relevance.
-- **[driver_app_messages.py](driver_app_messages.py.md)**: The `driver_app_messages.py` file defines various system messages for the Driver application, which is designed to assist in generating technical documentation using LLMs, including messages that outline the application's functionality, user interaction guidelines, and the structure of generated content.
-- **[format_kind_message.py](format_kind_message.py.md)**: The `format_kind_message.py` file defines the `FormatKindMessage` class, which generates specific message content based on different `FormatKind` types, such as code examples, diagrams, text, tables, lists, and any format, ensuring responses adhere to strict formatting guidelines.
-- **[inline_edit_messages.py](inline_edit_messages.py.md)**: The `inline_edit_messages.py` file defines classes for handling inline edit messages in a document editing context, including system and user messages that guide the process of refining text based on user prompts and document context.
-- **[mermaid_messages.py](mermaid_messages.py.md)**: The `mermaid_messages.py` file defines a system message class for reviewing and correcting mermaid code blocks to ensure proper rendering by avoiding syntax errors and forbidden characters.
-- **[smart_instruction_messages.py](smart_instruction_messages.py.md)**: The `smart_instruction_messages.py` file defines the `SmartInstructionInputMessage` class, which constructs a message from user prompts and document content surrounding a cursor for use in a large language model (LLM) context.
-- **[software_expertise.py](software_expertise.py.md)**: The `software_expertise.py` file defines a `SoftwareExpertiseMessage` class that represents a system message for an expert software engineer, emphasizing their role in writing high-quality code and documentation without instructing others.
+- **[abbreviate_page_content_messages.py](abbreviate_page_content_messages.py.md)**: Classes for creating system and user messages to summarize and preprocess document content for LLMs.
+- **[copy_editor_messages.py](copy_editor_messages.py.md)**: Defines classes for system and user messages in a copy editing context, with detailed editing instructions.
+- **[driver_app_messages.py](driver_app_messages.py.md)**: Defines various system messages for a documentation generation system using LLMs in the Driver application.
+- **[format_kind_message.py](format_kind_message.py.md)**: Defines the `FormatKindMessage` class to generate specific message content based on `FormatKind`.
+- **[inline_edit_messages.py](inline_edit_messages.py.md)**: Defines message classes for inline text editing, including system and user messages for a technical writing assistant.
+- **[mermaid_messages.py](mermaid_messages.py.md)**: Defines a system message for reviewing and correcting mermaid.js code blocks to ensure proper rendering.
+- **[smart_instruction_messages.py](smart_instruction_messages.py.md)**: Defines a class for creating smart instruction input messages from user prompts and document context.
+- **[software_expertise.py](software_expertise.py.md)**: Defines a system message for a software expertise role with specific responsibilities and limitations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

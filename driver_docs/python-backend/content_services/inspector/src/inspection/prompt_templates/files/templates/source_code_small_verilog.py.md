@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_verilog.py` file defines a template for generating prompts related to Verilog source code, including instructions and collections for modules and functions.
+Templates for generating Verilog code prompts and analyzing Verilog modules and functions.
 
 # Purpose
-This Python code is a configuration file that defines a template for generating structured prompts related to Verilog source code analysis. It imports various components and instructions from shared and utility modules, which are used to construct prompts for understanding the purpose of small Verilog code snippets. The template, `SOURCE_CODE_SMALL_TEMPLATE_VERILOG`, is a list of tuples that specify how to generate prompts for different sections, such as the purpose of the code, modules, and functions/tasks within Verilog code. The file provides narrow functionality, focusing specifically on creating structured prompts for Verilog code analysis, leveraging both static analysis and language model insights.
+The code defines a template for generating documentation related to small Verilog source code files. It imports components and prompts from various modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`, to construct structured prompts and instructions. The `SOURCE_CODE_SMALL_TEMPLATE_VERILOG` variable is a list of tuples, each representing a different section of the documentation template. These sections include instructions for writing the purpose of the code, identifying Verilog modules, and listing functions and tasks. The template uses components like `Prompt` and `Component` to build and format the documentation content, ensuring it adheres to specific style instructions such as using backticks for code references.
 # Imports and Dependencies
 
 ---
@@ -28,9 +28,9 @@ This Python code is a configuration file that defines a template for generating 
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_VERILOG
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_VERILOG` is a list of tuples, each containing structured data for generating Verilog code prompts. Each tuple includes a type identifier, a section header, and various components or functions related to Verilog code analysis and generation.
-- **Use**: This variable is used to define templates for generating structured prompts and processing Verilog code through static analysis and language model predictions.
+- **Type**: ``list``
+- **Description**: A list of tuples that define structured prompts for Verilog code analysis and documentation. Each tuple contains a prompt type, a description, and components or functions related to Verilog modules and functions.
+- **Use**: Used to configure and generate structured prompts for analyzing and documenting Verilog code.
 
 
 

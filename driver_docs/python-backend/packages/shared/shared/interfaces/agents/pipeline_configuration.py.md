@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pipeline_configuration.py` file defines classes and enums for configuring and executing pipeline steps in an agent-based system, including step types, input, and response handling.
+Defines classes and enums for configuring and executing agent pipeline steps, including input and response handling.
 
 # Purpose
-This Python code defines a framework for configuring and executing a series of processing steps, referred to as "pipeline steps," within a broader agent-based system. The code is structured around several key components, including enumerations, data models, and configuration classes, which collectively facilitate the definition and execution of these pipeline steps. The `PipelineStepType` enumeration specifies different types of processing steps, such as `DEFAULT`, `PROMPT_AUGMENTATION`, and `CODE_CRITIC`, each representing a distinct kind of agent operation. The `PipelineStepConfiguration` class extends `AgentConfiguration` and provides a blueprint for configuring individual pipeline steps, including attributes like `prompt`, `step_type`, and methods for transforming configurations into executable steps. The `PipelineMode` enumeration defines the execution mode of the pipeline, either `FANOUT` or `SEQUENTIAL`, indicating how steps are processed.
+The code defines a framework for configuring and executing a series of agent-based operations, referred to as "pipeline steps." It includes several classes and enumerations that facilitate the creation and management of these steps. The `PipelineStepType` enumeration specifies different types of agents, such as `DEFAULT`, `PROMPT_AUGMENTATION`, and `CODE_CRITIC`, which determine the behavior of each step. The `PipelineStepConfiguration` class extends `AgentConfiguration` and includes attributes like `prompt` and `step_type`, allowing for the customization of each pipeline step. The [`into_pipeline_step`](<#pipelinestepconfigurationinto_pipeline_step>) method in this class creates a new pipeline step configuration based on the provided parameters and the step type.
 
-The code also includes data models for handling inputs and outputs of the pipeline. The `PipelineInput` class, which extends `PromptWithContext`, encapsulates the input data required for executing a pipeline, including a list of `PipelineStepConfiguration` objects and other attributes like `scope` and `response_format`. The `PipelineStepResponse` and `PipelineResponse` classes, both extending `BaseModel`, are designed to capture the results of executing individual pipeline steps and the overall pipeline, respectively. These classes include attributes for storing agent results, search results, and final outcomes. Overall, this code provides a structured approach to defining, configuring, and executing a sequence of agent-driven processing steps, making it suitable for applications that require complex, multi-step data processing workflows.
+The code also defines the `PipelineInput` class, which inherits from `PromptWithContext` and represents the input required to execute an agent. It includes a list of `PipelineStepConfiguration` objects, a `scope`, and other attributes that define the execution context. The `PipelineStepResponse` and `PipelineResponse` classes are used to capture the results of executing pipeline steps and the overall pipeline, respectively. These classes include attributes for storing agent results, search results, and the final output of the pipeline. The code is structured to be part of a larger system, likely intended to be imported and used in other modules, and it defines public interfaces for configuring and executing agent pipelines.
 # Imports and Dependencies
 
 ---
@@ -27,14 +27,9 @@ The code also includes data models for handling inputs and outputs of the pipeli
 
 ---
 ### PipelineStepType<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepType}} -->
-- **Members**:
-    - `DEFAULT`: Represents the default type of agent.
-    - `PROMPT_AUGMENTATION`: Represents an agent type for prompt augmentation.
-    - `COPY_EDITOR`: Represents an agent type for copy editing.
-    - `CODE_CRITIC`: Represents an agent type for code criticism.
-    - `SMART_INSTRUCTION`: Represents an agent type for smart instruction.
-    - `EDIT_DOCUMENT`: Represents an agent type for document editing.
-- **Description**: The `PipelineStepType` class is an enumeration that defines various types of agents used in a pipeline, each represented as a string. It includes types such as DEFAULT, PROMPT_AUGMENTATION, COPY_EDITOR, CODE_CRITIC, SMART_INSTRUCTION, and EDIT_DOCUMENT, each corresponding to a specific function or role an agent can perform within the pipeline.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L12>)
+
+- **Description**: Represents an enumeration of different types of agents used in a pipeline. Each member of the enum corresponds to a specific type of agent, such as `DEFAULT`, `PROMPT_AUGMENTATION`, `COPY_EDITOR`, `CODE_CRITIC`, `SMART_INSTRUCTION`, and `EDIT_DOCUMENT`, which define the role or function of the agent within the pipeline.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -42,40 +37,46 @@ The code also includes data models for handling inputs and outputs of the pipeli
 
 ---
 ### PipelineStepConfiguration<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration}} -->
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L25>)
+
 - **Members**:
-    - `prompt`: An optional prompt with context for the pipeline step.
-    - `step_type`: The type of the pipeline step, defaulting to PipelineStepType.DEFAULT.
-- **Description**: The `PipelineStepConfiguration` class extends `AgentConfiguration` and represents the configuration for a single step within a pipeline. It includes attributes for specifying a prompt and the type of step, which can influence the tools and system prompts used during execution. The class provides a method to transform itself into a new pipeline step configuration, adjusting its attributes based on the step type and any provided sequence prompt or working response.
+    - `prompt`: Holds a `PromptWithContext` object or `None` for the pipeline step.
+    - `step_type`: Defines the type of the pipeline step using `PipelineStepType`.
+- **Description**: Configures a step in a pipeline by defining its prompt and type. It can transform into a new pipeline step with specific tools, system prompts, and iterations based on the step type. The configuration adapts the prompt content based on the working response and step type.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration.into_pipeline_step`](<#PipelineStepConfigurationinto_pipeline_step>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration.into_pipeline_step`](<#pipelinestepconfigurationinto_pipeline_step>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration`](<agent_configuration.py.md#AgentConfiguration>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/agent_configuration.AgentConfiguration`](<agent_configuration.py.md#agentconfiguration>)
 
 **Methods**
 
 ---
 #### PipelineStepConfiguration\.into\_pipeline\_step<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration.into_pipeline_step}} -->
-The `into_pipeline_step` method creates a new `PipelineStepConfiguration` instance with updated attributes based on the provided inputs and the step type.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L29>)
+
+Creates a new `PipelineStepConfiguration` object with updated attributes based on the provided inputs and the step type.
 - **Inputs**:
     - `sequence_prompt`: An optional `PromptWithContext` object that provides the prompt for the new pipeline step.
     - `input_scope`: An optional `DataScope` object that defines the scope for the new pipeline step.
-    - `working_response`: An optional string representing the current working response to be used in the new pipeline step.
-- **Control Flow**:
-    - Create a copy of the current model as `new_step`.
+    - `working_response`: An optional string that contains the working response to be used in the new pipeline step.
+- **Logic and Control Flow**:
+    - Create a copy of the current model and assign it to `new_step`.
     - Set `new_step.prompt` to `sequence_prompt` if provided, otherwise use the existing `self.prompt`.
     - Set `new_step.scope` to `input_scope` if provided, otherwise use the existing `self.scope`.
-    - Check if `new_step.step_type` is `PipelineStepType.SMART_INSTRUCTION` and set specific tools, system prompts, and iterations.
-    - Check if `new_step.step_type` is `PipelineStepType.EDIT_DOCUMENT` and set specific tools, system prompts, and iterations.
+    - If `new_step.step_type` is `PipelineStepType.SMART_INSTRUCTION`, set specific tool names, system prompts, and iterations for the step.
+    - If `new_step.step_type` is `PipelineStepType.EDIT_DOCUMENT`, set specific tool names, system prompts, and iterations for the step.
     - If `working_response` is provided, update `new_step.prompt.prompt` based on the `step_type`.
-    - Return the modified `new_step` instance.
-- **Output**: A `PipelineStepConfiguration` instance with updated attributes based on the inputs and step type.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<#PipelineStepConfiguration>)  (Base Class)
+    - Return the modified `new_step` object.
+- **Output**: A `PipelineStepConfiguration` object with updated attributes based on the input parameters and step type.
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<#pipelinestepconfiguration>)  (Base Class)
 
 
 
 ---
 ### PipelineMode<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineMode}} -->
-- **Description**: The `PipelineMode` class is an enumeration that defines two modes for pipeline execution: `FANOUT` and `SEQUENTIAL`. It inherits from both `str` and `enum.Enum`, allowing it to be used as a string while also providing enumeration capabilities. This class is used to specify the mode in which a pipeline should operate, either by executing steps in parallel (`FANOUT`) or in a sequence (`SEQUENTIAL`).
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L79>)
+
+- **Description**: Defines modes for pipeline execution, either as `FANOUT` or `SEQUENTIAL`.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -83,33 +84,39 @@ The `into_pipeline_step` method creates a new `PipelineStepConfiguration` instan
 
 ---
 ### PipelineInput<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput}} -->
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L84>)
+
 - **Members**:
-    - `steps`: A list of configurations for each step in the pipeline.
-    - `scope`: The scope of the agent's operation, which can be None.
-    - `response_format`: The expected type of the response.
-    - `block_kind`: The kind of block associated with the pipeline, which can be None.
-- **Description**: The PipelineInput class is designed to encapsulate the input required for executing an agent within a pipeline. It extends the PromptWithContext class and includes attributes such as a list of step configurations, the operational scope of the agent, the expected response format, and the kind of block associated with the pipeline. This class is essential for defining how an agent should be configured and executed within a series of pipeline steps.
+    - `steps`: A list of `PipelineStepConfiguration` objects that define the steps in the pipeline.
+    - `scope`: Defines the data scope for the agent's operation, which can be `None`.
+    - `response_format`: Specifies the type of the response format.
+    - `block_kind`: Indicates the kind of block, which can be `None`.
+- **Description**: Represents the input required to execute an agent, including configuration details and operational scope. It inherits from `PromptWithContext` and includes a list of pipeline steps, a data scope, a response format, and an optional block kind.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<prompt.py.md#PromptWithContext>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<prompt.py.md#promptwithcontext>)
 
 
 ---
 ### PipelineStepResponse<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse}} -->
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L104>)
+
 - **Members**:
     - `agent_id`: The ID of the agent that executed the step.
     - `agent_result`: The result produced by the agent.
     - `search_results`: List of search results related to the step.
-- **Description**: The `PipelineStepResponse` class is a data model that represents the response from executing a single step in a pipeline. It extends the `BaseModel` from Pydantic, ensuring data validation and serialization. The class includes attributes to store the ID of the agent that executed the step, the result produced by the agent, and a list of search results related to the step. This class is essential for capturing and organizing the output of each pipeline step, facilitating further processing or analysis.
+- **Description**: Represents the response from executing a pipeline step, including the agent's ID, the result produced by the agent, and any related search results.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### PipelineResponse<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineResponse}} -->
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py#L119>)
+
 - **Members**:
-    - `step_responses`: A list of responses from each step in the pipeline.
+    - `step_responses`: A list of responses from each pipeline step.
     - `final_result`: The final result of the pipeline execution.
-- **Description**: The PipelineResponse class is a data model that encapsulates the results of executing a series of steps in a pipeline. It contains a list of PipelineStepResponse objects, each representing the outcome of an individual step, and a final_result string that summarizes the overall outcome of the pipeline process. This class is used to aggregate and present the results of a pipeline execution in a structured manner.
+- **Description**: Represents the response from a pipeline execution, including individual step responses and the final result.
 - **Inherits From**:
     - `BaseModel`
 

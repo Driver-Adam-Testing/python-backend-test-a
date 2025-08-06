@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A collection of language-specific subfolders with test files for C, C++, C#, Java, Python, and TypeScript.
+Test cases for C, C++, C#, Java, Python, and TypeScript covering various language constructs.
 
 ## Folders
-- **[c](c/README.md)**: A collection of C test files demonstrating and testing C programming concepts like enumerations, function calls, declarations, definitions, global variables, structs, and unions.
-- **[cpp](c/README.mdpp)**: A collection of C++ test files demonstrating programming concepts like classes, enums, functions, inheritance, structs, unions, variables, and include directives.
-- **[csharp](c/README.mdsharp)**: A collection of C# test case files covering classes, enums, interfaces, method invocations, methods, namespaces, structs, and using directives.
-- **[java](java/README.md)**: Java test files demonstrating classes, enums, imports, interfaces, methods, and variables.
-- **[python](python/README.md)**: A collection of test case files covering Python function and method calls, class definitions, function features, import statements, method definitions, and variable definitions.
-- **[typescript](typescript/README.md)**: Comprehensive TypeScript test suites covering function calls, classes, enums, functions, imports, interfaces, methods, modules, object types, and variables.
+- **[c](c/README.md)**: C test cases for enums, function calls, declarations, definitions, globals, structs, and unions.
+- **[cpp](cpp/README.md)**: C++ test cases demonstrating classes, enums, functions, includes, inheritance, structs, unions, and variables.
+- **[csharp](csharp/README.md)**: Test cases for C# class, enum, interface, method, namespace, struct definitions, invocations, and using directives.
+- **[java](java/README.md)**: Java test cases demonstrating classes, enums, imports, interfaces, methods, and variables.
+- **[python](python/README.md)**: Test cases for Python function calls, classes, functions, imports, methods, and variables.
+- **[typescript](typescript/README.md)**: TypeScript test cases for functions, classes, enums, imports, interfaces, methods, modules, object types, and variables.
 
 
 ---

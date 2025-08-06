@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_12_05_1357-86ed58d5305f_add_git_provider_table.py` file is an Alembic migration script that adds a new table called `github_app_installations` with various columns and indexes to the database.
+Alembic migration script to add and index the "github_app_installations" table.
 
 # Purpose
-This Python file is an Alembic migration script designed to manage changes to a database schema. Specifically, it introduces a new table named `github_app_installations` to the database. The script is part of a version-controlled sequence of migrations, as indicated by the `revision` and `down_revision` identifiers, which help track the order of schema changes. The [`upgrade`](<#upgrade>) function defines the operations to be performed when applying this migration, such as creating the `github_app_installations` table with columns for `id`, `organization_id`, `github_app_installation_id`, `created_at`, and `updated_at`. It also sets up a primary key constraint on the `id` column and a unique constraint on the combination of `github_app_installation_id` and `organization_id`. Additionally, it creates indexes on the `github_app_installation_id` and `organization_id` columns to optimize query performance.
-
-The [`downgrade`](<#downgrade>) function provides the reverse operations to remove the changes made by the [`upgrade`](<#upgrade>) function, allowing for the migration to be rolled back if necessary. This includes dropping the indexes and the `github_app_installations` table. The use of Alembic, a database migration tool for SQLAlchemy, suggests that this script is part of a larger application that requires systematic and reversible database schema changes. The script is not intended to be a standalone application but rather a component of a broader system that manages database schema evolution.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to manage changes to the database schema. The [`upgrade`](<#upgrade>) function creates a new table named `github_app_installations` with columns for `id`, `organization_id`, `github_app_installation_id`, `created_at`, and `updated_at`. It also sets primary and unique constraints and creates indexes on `github_app_installation_id` and `organization_id`. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the indexes and the table. The script uses revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -21,57 +19,60 @@ The [`downgrade`](<#downgrade>) function provides the reverse operations to remo
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the specific version of the database schema that this script applies.
-- **Use**: This variable is used by Alembic to identify and apply the correct database migration script.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of migrations by linking the current revision to its predecessor.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to specify labels for branching in Alembic migrations, but in this script, it is not utilized and remains set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy.
+- **Use**: Indicates that there are no specific branch labels associated with this Alembic migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts. In this case, it indicates that there are no dependencies for this migration script.
-- **Use**: This variable is used to define the dependency relationship of the current migration script with other scripts, and being `None` means there are no dependencies.
+- **Type**: ``NoneType``
+- **Description**: Represents a global variable that is set to `None`. It is used as a placeholder for dependencies in Alembic migration scripts.
+- **Use**: Indicates that there are no dependencies for the current migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_05_1357-86ed58d5305f_add_git_provider_table.upgrade}} -->
-The `upgrade` function creates a new database table named `github_app_installations` with specified columns and constraints, and adds indexes to it.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_05_1357-86ed58d5305f_add_git_provider_table.py#L20>)
+
+Creates a new table named `github_app_installations` with specified columns and constraints, and adds indexes to it.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by creating a new table named `github_app_installations` using the `op.create_table` method.
-    - Several columns are defined for the table: `id` (UUID, non-nullable), `organization_id` (AutoString, non-nullable), `github_app_installation_id` (AutoString, non-nullable), `created_at` (DateTime with timezone, non-nullable, default to current time), and `updated_at` (DateTime with timezone, non-nullable, default to current time).
-    - A primary key constraint is set on the `id` column.
-    - A unique constraint is applied to the combination of `github_app_installation_id` and `organization_id`.
-    - An index is created on the `github_app_installation_id` column of the `github_app_installations` table.
-    - Another index is created on the `organization_id` column of the `github_app_installations` table.
-- **Output**: The function does not return any value as its purpose is to modify the database schema.
+- **Logic and Control Flow**:
+    - Calls `op.create_table` to create a table named `github_app_installations` with columns `id`, `organization_id`, `github_app_installation_id`, `created_at`, and `updated_at`.
+    - Defines `id` as the primary key and adds a unique constraint on the combination of `github_app_installation_id` and `organization_id`.
+    - Sets default values for `created_at` and `updated_at` columns to the current timestamp using `server_default=sa.text("now()")`.
+    - Calls `op.create_index` to create an index on the `github_app_installation_id` column.
+    - Calls `op.create_index` to create an index on the `organization_id` column.
+- **Output**: No output is returned as the function modifies the database schema.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_05_1357-86ed58d5305f_add_git_provider_table.downgrade}} -->
-The `downgrade` function reverses database schema changes by dropping indexes and a table related to GitHub app installations.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_05_1357-86ed58d5305f_add_git_provider_table.py#L67>)
+
+Reverts the database schema changes by dropping indexes and the `github_app_installations` table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by dropping the index on the 'organization_id' column of the 'github_app_installations' table using the `op.drop_index` method.
-    - Next, it drops the index on the 'github_app_installation_id' column of the same table, again using the `op.drop_index` method.
-    - Finally, the function drops the 'github_app_installations' table entirely using the `op.drop_table` method.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Calls `op.drop_index` to remove the index `ix_github_app_installations_organization_id` from the `github_app_installations` table.
+    - Calls `op.drop_index` to remove the index `ix_github_app_installations_github_app_installation_id` from the `github_app_installations` table.
+    - Calls `op.drop_table` to remove the `github_app_installations` table from the database.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

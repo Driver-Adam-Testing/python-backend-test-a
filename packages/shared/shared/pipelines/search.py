@@ -8,7 +8,7 @@ from database.models_v2 import Node, PrimaryAsset, Version
 from rank_bm25 import BM25Okapi
 from sqlalchemy import Select
 from sqlalchemy.orm import aliased, selectinload
-from sqlmodel import Session, and_, asc, select
+from sqlmodel import Session, and_, asc, select, text
 
 from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import (
@@ -198,7 +198,7 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
 
     if input.limit:
         stmt = stmt.limit(input.limit)
-
+    session.exec(text("SET hnsw.ef_search=400;"))
     results = session.exec(stmt).all()
     logger.debug("Raw semantic search results: %s", results)
 
@@ -253,7 +253,7 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
         node_ids=input.node_ids,
         content_kinds=input.content_kinds,
     ).where(ChunkAndEmbedding.__ts_vector__.match(input.query))
-
+    session.exec(text("SET hnsw.ef_search=400;"))
     db_results = session.exec(stmt).all()
     if not db_results:
         return SearchResults(results=[])
@@ -336,6 +336,7 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
         .where(ChunkAndEmbedding.__ts_vector__.match(input.query))
         .limit(2 * input.limit)
     )
+    session.exec(text("SET hnsw.ef_search=400;"))
     results_lexical = session.exec(stmt_lexical).all()
 
     # 3. Combine / deduplicate

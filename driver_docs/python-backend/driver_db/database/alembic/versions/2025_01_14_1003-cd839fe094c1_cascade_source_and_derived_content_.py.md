@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_14_1003-cd839fe094c1_cascade_source_and_derived_content_.py` file contains an Alembic migration script that modifies foreign key constraints to enable cascading deletions for the `derived_contents` and `document_sources` tables.
+Alembic migration script to modify foreign key constraints with cascade delete behavior.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify the database schema by altering foreign key constraints. The primary purpose of this script is to ensure that deletions in the `v2_node` table cascade to related entries in the `derived_contents` and `document_sources` tables. This is achieved by dropping existing foreign key constraints and creating new ones with the `ondelete="CASCADE"` option. This functionality ensures that when a record in the `v2_node` table is deleted, all associated records in the `derived_contents` and `document_sources` tables are automatically removed, maintaining referential integrity.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to modify the database schema. The primary purpose of this migration is to alter foreign key constraints in the `derived_contents` and `document_sources` tables. During the upgrade, the script removes existing foreign key constraints and creates new ones with the `ondelete="CASCADE"` option. This ensures that when a referenced record in the `v2_node` table is deleted, the related records in the `derived_contents` and `document_sources` tables are also deleted automatically.
 
-The script contains two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function implements the changes to the database schema by dropping the existing constraints and creating new cascading foreign key constraints. Conversely, the `downgrade()` function reverses these changes, restoring the original foreign key constraints without the cascading delete behavior. This script is part of a broader database migration process, allowing developers to apply and revert schema changes as needed. It does not define public APIs or external interfaces but serves as an internal tool for managing database schema evolution.
+The [`upgrade`](<#upgrade>) function implements these changes by dropping the existing constraints and creating new foreign keys with cascading delete behavior. Conversely, the [`downgrade`](<#downgrade>) function reverses these changes. It removes the cascading delete constraints and reinstates the original foreign key constraints without the `ondelete="CASCADE"` option. This script is part of a series of migrations, as indicated by the `revision` and `down_revision` identifiers, which help track the order of migrations in the database schema evolution.
 # Imports and Dependencies
 
 ---
@@ -19,57 +19,62 @@ The script contains two main functions: `upgrade()` and `downgrade()`. The `upgr
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that uniquely identifies the current database migration script in the Alembic migration framework. It is used to track the specific changes made to the database schema in this migration.
-- **Use**: This variable is used by Alembic to identify and apply the correct migration when upgrading or downgrading the database schema.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which can be used to label branches in a migration context.
-- **Use**: This variable is used to potentially label branches in database migration scripts, although it is currently not assigned any value.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
+- **Type**: ``NoneType``
+- **Description**: Represents a global variable that is set to `None`. It is used in the context of Alembic migrations to indicate that there are no dependencies on other revisions.
+- **Use**: Indicates the absence of dependencies for the current Alembic migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_14_1003-cd839fe094c1_cascade_source_and_derived_content_.upgrade}} -->
-The `upgrade` function modifies database schema constraints by dropping existing foreign key constraints and creating new ones with cascade delete behavior.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_14_1003-cd839fe094c1_cascade_source_and_derived_content_.py#L18>)
+
+Modifies foreign key constraints in the database schema to enable cascading deletions for specific tables.
 - **Inputs**: None
-- **Control Flow**:
-    - Drop the foreign key constraint 'derived_contents_node_id_fkey' from the 'derived_contents' table.
-    - Create a new foreign key on 'derived_contents' referencing 'v2_node' with 'ondelete' set to 'CASCADE'.
-    - Drop the foreign key constraints 'document_sources_page_node_id_fkey' and 'document_sources_source_node_id_fkey' from the 'document_sources' table.
-    - Create new foreign keys on 'document_sources' referencing 'v2_node' for 'page_node_id' and 'source_node_id' with 'ondelete' set to 'CASCADE'.
-- **Output**: The function does not return any value; it performs operations on the database schema.
+- **Logic and Control Flow**:
+    - Drops the foreign key constraint `derived_contents_node_id_fkey` from the `derived_contents` table.
+    - Creates a new foreign key constraint on the `derived_contents` table linking `node_id` to `id` in the `v2_node` table with `ondelete="CASCADE"`.
+    - Drops the foreign key constraints `document_sources_page_node_id_fkey` and `document_sources_source_node_id_fkey` from the `document_sources` table.
+    - Creates a new foreign key constraint on the `document_sources` table linking `page_node_id` to `id` in the `v2_node` table with `ondelete="CASCADE"`.
+    - Creates a new foreign key constraint on the `document_sources` table linking `source_node_id` to `id` in the `v2_node` table with `ondelete="CASCADE"`.
+- **Output**: No return value; modifies the database schema.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_14_1003-cd839fe094c1_cascade_source_and_derived_content_.downgrade}} -->
-The `downgrade` function reverts database schema changes by dropping and recreating foreign key constraints without cascade delete options.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_14_1003-cd839fe094c1_cascade_source_and_derived_content_.py#L51>)
+
+Reverts database schema changes by modifying foreign key constraints.
 - **Inputs**: None
-- **Control Flow**:
-    - Drop two unnamed foreign key constraints from the 'document_sources' table.
-    - Create a foreign key constraint 'document_sources_source_node_id_fkey' on 'document_sources' referencing 'v2_node'.
-    - Create a foreign key constraint 'document_sources_page_node_id_fkey' on 'document_sources' referencing 'v2_node'.
-    - Drop an unnamed foreign key constraint from the 'derived_contents' table.
-    - Create a foreign key constraint 'derived_contents_node_id_fkey' on 'derived_contents' referencing 'v2_node'.
-- **Output**: The function does not return any value; it performs schema modifications on the database.
+- **Logic and Control Flow**:
+    - Drops two foreign key constraints from the `document_sources` table.
+    - Creates a foreign key constraint `document_sources_source_node_id_fkey` on the `document_sources` table referencing the `v2_node` table.
+    - Creates a foreign key constraint `document_sources_page_node_id_fkey` on the `document_sources` table referencing the `v2_node` table.
+    - Drops a foreign key constraint from the `derived_contents` table.
+    - Creates a foreign key constraint `derived_contents_node_id_fkey` on the `derived_contents` table referencing the `v2_node` table.
+- **Output**: No return value; modifies the database schema.
 
 
 

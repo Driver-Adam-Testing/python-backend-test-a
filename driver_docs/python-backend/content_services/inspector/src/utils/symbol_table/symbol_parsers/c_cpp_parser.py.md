@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `c_cpp_parser.py` file defines a `CCppParser` class that serves as a shared symbol parser for both C and C++ languages using a C/C++ driver tree.
+Parses C and C++ code using a shared symbol parser and C/C++ driver tree.
 
 # Purpose
-This code defines a class `CCppParser` that extends the `SymbolParser` class, providing a specialized parser for C and C++ languages. It is a narrow functionality script, focusing specifically on parsing symbols within C and C++ codebases. The class sets a few class-level attributes: `language` to indicate the supported languages, `fqn_delimiter` to specify the delimiter used in fully qualified names, and `tree` to associate the parser with a C/C++ specific driver tree, `CppCDriverTree`. This setup suggests that the `CCppParser` is part of a larger system, likely used for code analysis or refactoring tools that require understanding of C/C++ code structure.
+The code defines a class `CCppParser` that extends the `SymbolParser` class, providing functionality specific to parsing C and C++ code. It sets the `language` attribute to `"c_cpp"`, indicating that it is a shared parser for both C and C++ languages. The `fqn_delimiter` is set to `"::"`, which is the delimiter used in C++ for fully qualified names. The `tree` attribute is assigned to `CppCDriverTree`, which is likely a driver for handling the syntax tree of C and C++ code. This code provides narrow functionality focused on parsing and handling symbol tables for C and C++ programming languages.
 # Imports and Dependencies
 
 ---
@@ -18,13 +18,15 @@ This code defines a class `CCppParser` that extends the `SymbolParser` class, pr
 
 ---
 ### CCppParser<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/c_cpp_parser.CCppParser}} -->
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/symbol_parsers/c_cpp_parser.py#L5>)
+
 - **Members**:
-    - `language`: Specifies the language as a shared parser for both C and C++.
+    - `language`: Indicates the parser is for both C and C++.
     - `fqn_delimiter`: Defines the delimiter for fully qualified names as '::'.
-    - `tree`: References the CppCDriverTree for parsing C/C++ code.
-- **Description**: The CCppParser class is a specialized parser for handling both C and C++ languages, inheriting from the SymbolParser base class. It sets the language attribute to 'c_cpp' to indicate its dual capability and uses '::' as the delimiter for fully qualified names, which is typical in C++ for namespaces and class scopes. The class also utilizes the CppCDriverTree to manage the parsing process, leveraging a tree-sitter driver specifically designed for C and C++ code structures.
+    - `tree`: Specifies the use of the C/C++ driver tree.
+- **Description**: Extends the `SymbolParser` to parse symbols in C and C++ code using a shared driver tree and specific language settings.
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#SymbolParser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#symbolparser>)
 
 
 

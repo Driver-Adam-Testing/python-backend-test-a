@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_rust_multi_prompt.py` file defines a template for generating prompts related to Rust source code, focusing on elements like imports, global variables, macros, traits, data structures, and functions.
+Defines a multi-prompt template for analyzing large Rust source code files, focusing on imports, variables, macros, traits, data structures, and functions.
 
 # Purpose
-This Python code defines a configuration for a multi-prompt template specifically tailored for analyzing and documenting Rust source code. It imports various components and utilities from shared and specialized modules to construct a structured approach for generating documentation. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST`, is a list of tuples, each representing a different aspect of Rust code analysis, such as purpose, imports, global variables, macros, traits, data structures, and functions. Each tuple specifies a prompt type, a section header, and a method for extracting or generating the relevant information, often using both static analysis and language model (LLM) insights. This code provides narrow functionality focused on creating a comprehensive documentation framework for Rust codebases, leveraging both predefined instructions and dynamic analysis.
+This code defines a configuration for a multi-prompt template used in a system that processes Rust source code. It imports various components and utilities from different modules, which are used to construct prompts and analyze Rust code. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST`, is a list of tuples, each specifying a different aspect of the Rust code to analyze, such as imports, global variables, macros, traits, data structures, and functions. Each tuple contains instructions for generating prompts and processing the output, facilitating the extraction and organization of information from Rust source code. This setup is part of a larger system that likely automates the analysis and documentation of Rust codebases.
 # Imports and Dependencies
 
 ---
@@ -37,8 +37,8 @@ This Python code defines a configuration for a multi-prompt template specificall
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_RUST
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST` is a list of tuples, each representing a different aspect of Rust code analysis and generation. Each tuple contains a type identifier, a description string, and a series of components or functions that are used to generate or analyze specific parts of Rust code, such as purpose, imports, global variables, macros, traits, data structures, and functions.
-- **Use**: This variable is used to define a structured template for generating and analyzing Rust code using multiple prompts and components.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of `Prompt` objects or functions related to Rust code analysis and generation. Each tuple represents a different aspect of Rust code, such as purpose, imports, global variables, macros, traits, data structures, and functions.
+- **Use**: Used to define a structured template for generating and analyzing Rust code prompts and components.
 
 
 

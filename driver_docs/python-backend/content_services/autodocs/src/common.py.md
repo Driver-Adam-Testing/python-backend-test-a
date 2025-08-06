@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `common.py` file in the `python-backend` codebase provides functions to check and poll for specific GuardDuty malware scan status tags on S3 objects.
+Functions to check and poll S3 objects for specific GuardDuty malware scan status tags.
 
 # Purpose
-This Python script provides a narrow functionality focused on interacting with AWS S3 objects to check for specific tags related to GuardDuty malware scan statuses. It defines two main functions: [`has_guard_duty_tag`](<#has_guard_duty_tag>), which checks if an S3 object has a tag indicating a malware scan status of either 'NO_THREATS_FOUND' or 'UNSUPPORTED', and [`wait_for_guard_duty_tag`](<#wait_for_guard_duty_tag>), which repeatedly polls an S3 object for these tags until they are found or a specified timeout is reached. The script uses the `boto3` library to interact with AWS S3 and relies on environment variables for AWS credentials. This code is a utility script that could be part of a larger system for monitoring and managing AWS resources, particularly in the context of security and compliance.
+The code defines functionality to interact with Amazon S3 objects, specifically focusing on checking and polling for specific tags related to GuardDuty malware scan statuses. It uses the `boto3` library to connect to AWS S3 and retrieve object tags. The function [`has_guard_duty_tag`](<#has_guard_duty_tag>) checks if an S3 object has the tag `GuardDutyMalwareScanStatus` with values `NO_THREATS_FOUND` or `UNSUPPORTED`. The `UNSUPPORTED` tag is noted to be used when files are too large or numerous, but they can still be processed.
+
+Additionally, the code includes a polling mechanism through the function [`wait_for_guard_duty_tag`](<#wait_for_guard_duty_tag>), which repeatedly checks for the presence of the specified tags within a given timeout period. This function uses a loop to poll the S3 object at regular intervals, specified by the `interval` parameter, until the tag is found or the timeout is reached. The code is structured to be part of a larger application, as indicated by the use of `modal.App`, suggesting it is intended to be integrated into a broader system for automated documentation or monitoring tasks.
 # Imports and Dependencies
 
 ---
@@ -20,9 +22,9 @@ This Python script provides a narrow functionality focused on interacting with A
 
 ---
 ### app
-- **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'autodocs'. This suggests that it is used to create or manage an application within the Modal framework, which is likely a service or tool for handling specific tasks or workflows.
-- **Use**: This variable is used to define and manage an application named 'autodocs' within the Modal framework.
+- **Type**: ``modal.App``
+- **Description**: Represents an instance of a `modal.App` with the name 'autodocs'. This instance is created using the `modal` library, which is likely used for application deployment or management.
+- **Use**: Used to define and manage the application context within the `modal` framework.
 
 
 # Functions
@@ -31,39 +33,40 @@ This Python script provides a narrow functionality focused on interacting with A
 ### has\_guard\_duty\_tag<!-- {{#callable:python-backend/content_services/autodocs/src/common.has_guard_duty_tag}} -->
 [View Source →](<../../../../../content_services/autodocs/src/common.py#L6>)
 
-The function checks if an S3 object has a specific tag indicating its malware scan status.
+Checks if an S3 object has the 'GuardDutyMalwareScanStatus' tag with a specific value.
 - **Inputs**:
-    - `bucket`: The name of the S3 bucket containing the object.
+    - `bucket`: The name of the S3 bucket where the object is stored.
     - `key`: The key (path) of the S3 object within the bucket.
-- **Control Flow**:
-    - Import necessary modules: os and boto3.
-    - Create an S3 client using boto3 with credentials from environment variables.
-    - Retrieve the tags of the specified S3 object using the get_object_tagging method.
-    - Define a list of supported tags: 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
-    - Iterate over the tags of the S3 object to check if any tag has the key 'GuardDutyMalwareScanStatus' and a value in the supported tags list.
-    - Return True if exactly one such tag is found, otherwise return False.
-- **Output**: A boolean value indicating whether the S3 object has the 'GuardDutyMalwareScanStatus' tag with a value of 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+- **Logic and Control Flow**:
+    - Import the 'os' and 'boto3' modules to access environment variables and AWS services.
+    - Create an S3 client using 'boto3' with credentials and region from environment variables.
+    - Retrieve the tags of the specified S3 object using 'get_object_tagging'.
+    - Define a list of supported tag values: 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
+    - Check if the 'GuardDutyMalwareScanStatus' tag exists with a value in the supported list.
+    - Return 'True' if the tag exists with a supported value, otherwise return 'False'.
+- **Output**: Returns 'True' if the S3 object has the 'GuardDutyMalwareScanStatus' tag with a value of 'NO_THREATS_FOUND' or 'UNSUPPORTED'; otherwise, returns 'False'.
 
 
 ---
 ### wait\_for\_guard\_duty\_tag<!-- {{#callable:python-backend/content_services/autodocs/src/common.wait_for_guard_duty_tag}} -->
 [View Source →](<../../../../../content_services/autodocs/src/common.py#L40>)
 
-The function polls an S3 object for a specific tag until it is found or a timeout occurs.
+Polls an S3 object for a specific tag until it is found or a timeout occurs.
 - **Inputs**:
-    - `bucket`: The name of the S3 bucket containing the object to be checked.
-    - `key`: The key (path) of the S3 object within the bucket to be checked.
-    - `timeout`: The maximum time in seconds to wait for the tag to be found, defaulting to 60 seconds.
-    - `interval`: The time in seconds to wait between each check, defaulting to 5 seconds.
-- **Control Flow**:
-    - The function starts by recording the current time as the start time.
-    - It prints a message indicating the start of polling and the timeout and interval settings.
-    - A while loop runs as long as the elapsed time is less than the specified timeout.
-    - Within the loop, it calls the [`has_guard_duty_tag`](<#has_guard_duty_tag>) function to check if the desired tag is present on the S3 object.
-    - If the tag is found, it prints a success message and returns `True`.
-    - If the tag is not found, it prints a message indicating the wait and sleeps for the specified interval before retrying.
-    - If the timeout is reached without finding the tag, it prints a timeout message and returns `False`.
-- **Output**: A boolean value indicating whether the tag was found (`True`) or not (`False`) within the timeout period.
+    - `bucket`: The name of the S3 bucket containing the object.
+    - `key`: The key (path) of the S3 object to check for the tag.
+    - `timeout`: The maximum time in seconds to wait for the tag to be found, default is 60 seconds.
+    - `interval`: The time in seconds to wait between each check, default is 5 seconds.
+- **Logic and Control Flow**:
+    - Import the `time` module to track elapsed time.
+    - Record the start time using `time.time()`.
+    - Print a message indicating the start of polling with the specified timeout and interval.
+    - Enter a loop that continues until the elapsed time exceeds the `timeout`.
+    - In each iteration, call [`has_guard_duty_tag`](<#has_guard_duty_tag>) to check if the tag is present on the S3 object.
+    - If the tag is found, print a success message and return `True`.
+    - If the tag is not found, print a message indicating a retry after the `interval` and pause execution using `time.sleep(interval)`.
+    - If the loop exits due to timeout, print a timeout message and return `False`.
+- **Output**: Returns `True` if the tag is found within the timeout period, otherwise returns `False`.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/common.has_guard_duty_tag`](<#has_guard_duty_tag>)
 

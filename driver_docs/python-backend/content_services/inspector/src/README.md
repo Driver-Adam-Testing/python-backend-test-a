@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Modules and scripts for code inspection, onboarding, utility functions, and task management, supporting operations like code analysis, symbol table construction, and technical documentation generation.
+Templates, file analysis, GitHub utilities, code analysis tools, and functions for symbol tables and documentation.
 
 ## Folders
-- **[inspection](inspection/README.md)**: Modules and templates for generating structured descriptions and analyses of codebase components.
-- **[onboarding](onboarding/README.md)**: Scripts and configurations for managing the onboarding process of repositories from GitHub and GitLab.
-- **[utils](utils/README.md)**: Utility modules and subfolders for code analysis, symbol management, database operations, task execution, and more, with tools for handling programming languages, file trees, and OpenAI API interactions.
+- **[inspection](inspection/README.md)**: Templates, file and folder analysis, symbol management, and codebase description functions.
+- **[onboarding](onboarding/README.md)**: Functions and utilities for Bitbucket, GitHub, and GitLab operations, language metadata, and version control data models.
+- **[utils](utils/README.md)**: Utilities for code analysis, symbol mapping, task management, database operations, and language model integration.
 
 ## Files
-- **[common.py](common.py.md)**: The `common.py` file initializes a Modal application named "inspector-v2".
-- **[compare_visibility_algorithms.py](compare_visibility_algorithms.py.md)**: The `compare_visibility_algorithms.py` file in the `python-backend` codebase provides functionality to run and compare multiple visibility algorithms for symbol table construction across different programming languages, including performance and result accuracy evaluations.
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase is responsible for inspecting and processing codebase versions, managing tasks related to code inspection, handling exceptions, and sending notifications, utilizing various utilities and external services like AWS S3 and OpenAI.
-- **[modal_funcs.py](modal_funcs.py.md)**: The `modal_funcs.py` file in the `python-backend` codebase defines several functions for generating and exporting technical documentation using a modal framework, including functions for creating tech docs for files, symbols, folders, and top-level codebases, as well as exporting these documents to a zip file and pushing them to S3.
-- **[run_symbol_table.py](run_symbol_table.py.md)**: The `run_symbol_table.py` file in the `python-backend` codebase provides functionality to build and display a symbol table for a given project directory, with options to specify the visibility algorithm and display detailed timing information.
-- **[tasks.py](tasks.py.md)**: The `tasks.py` file in the `python-backend` codebase defines various asynchronous task classes for generating and managing technical documentation, symbol tables, and embeddings for codebases, utilizing semaphores for concurrency control and interacting with a database to store derived content.
+- **[common.py](common.py.md)**: Initializes a Modal app named "inspector-v2".
+- **[compare_visibility_algorithms.py](compare_visibility_algorithms.py.md)**: Compares multiple visibility algorithms for symbol table construction and analyzes their performance.
+- **[main.py](main.py.md)**: A script for inspecting codebases, managing tasks, and handling versioning with integration to AWS S3 and OpenAI.
+- **[modal_funcs.py](modal_funcs.py.md)**: Functions for generating, exporting, and managing technical documentation using Modal and OpenAI models.
+- **[run_symbol_table.py](run_symbol_table.py.md)**: Builds and displays a symbol table for a project using a specified visibility algorithm.
+- **[tasks.py](tasks.py.md)**: Defines asynchronous tasks for generating technical documentation, symbol tables, and embeddings for codebases, with database integration for storing derived content.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

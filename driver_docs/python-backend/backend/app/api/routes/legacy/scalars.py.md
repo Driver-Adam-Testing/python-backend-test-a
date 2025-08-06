@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `scalars.py` file defines custom scalar types for JSON, ID, and NodeType using the Strawberry library to handle serialization and parsing in a GraphQL API.
+Defines custom scalar types JSON, ID, and NodeType using Strawberry for GraphQL.
 
 # Purpose
-This source code file defines custom scalar types for use with the Strawberry GraphQL library, providing narrow functionality focused on extending GraphQL's type system. It introduces three scalar types: `JSON`, `ID`, and `NodeType`. The `JSON` scalar is defined using the `strawberry.scalar` decorator and represents JSON values, allowing them to be serialized and parsed as specified by ECMA-404. The `ID` and `NodeType` scalars are implemented as classes inheriting from `str`, each with static methods for parsing and serializing string values. This code is a concise example of how to create custom scalar types in a GraphQL schema using Strawberry, enhancing the flexibility and expressiveness of the API.
+This code defines custom scalar types for use with the Strawberry GraphQL library. It introduces three scalar types: `JSON`, `ID`, and `NodeType`. The `JSON` scalar is created using the `strawberry.scalar` function and represents JSON values as specified by ECMA-404. It uses simple identity functions for serialization and parsing, meaning it directly returns the input value without modification.
+
+The `ID` and `NodeType` scalars are defined as classes that inherit from the `str` type. Both classes include static methods [`parse_value`](<#idparse_value>) and [`serialize`](<#idserialize>), which also act as identity functions, returning the input string value unchanged. These scalars are intended to be used in a GraphQL schema to handle specific data types, providing a way to define and manage custom data representations within the GraphQL API.
 # Imports and Dependencies
 
 ---
@@ -18,20 +20,22 @@ This source code file defines custom scalar types for use with the Strawberry Gr
 
 ---
 ### JSON
-- **Type**: `strawberry.scalar`
-- **Description**: The `JSON` variable is a scalar type defined using the Strawberry library, which represents JSON values as specified by the ECMA-404 standard. It is created using the `NewType` function to define a new type named 'JSON' that is based on the `object` type. The scalar includes a description and lambda functions for serialization and parsing, which simply return the value as is.
-- **Use**: This variable is used to handle JSON data within a Strawberry GraphQL schema, allowing JSON values to be serialized and parsed according to the ECMA-404 standard.
+- **Type**: ``strawberry.scalar``
+- **Description**: Represents a custom scalar type for JSON values in a GraphQL schema using the `strawberry` library. It is defined as a new type `JSON` that maps to the Python `object` type, allowing it to handle any JSON-compatible data.
+- **Use**: Used to define and handle JSON values in a GraphQL schema, with serialization and parsing functions that pass values through unchanged.
 
 
 # Classes
 
 ---
 ### ID<!-- {{#class:python-backend/backend/app/api/routes/legacy/scalars.ID}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/scalars.py#L13>)
+
 - **Decorators**: `@strawberry.scalar`
-- **Description**: The `ID` class is a custom scalar type in Strawberry GraphQL, extending the built-in `str` type, and is used to represent unique identifiers in a GraphQL schema. It provides static methods for parsing and serializing values, ensuring that the ID values are handled as strings within the GraphQL framework.
+- **Description**: Represents a scalar type for IDs, extending the built-in `str` type, with static methods to parse and serialize string values.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/scalars.ID.parse_value`](<#IDparse_value>)
-    - [`python-backend/backend/app/api/routes/legacy/scalars.ID.serialize`](<#IDserialize>)
+    - [`python-backend/backend/app/api/routes/legacy/scalars.ID.parse_value`](<#idparse_value>)
+    - [`python-backend/backend/app/api/routes/legacy/scalars.ID.serialize`](<#idserialize>)
 - **Inherits From**:
     - `str`
 
@@ -39,36 +43,44 @@ This source code file defines custom scalar types for use with the Strawberry Gr
 
 ---
 #### ID\.parse\_value<!-- {{#callable:python-backend/backend/app/api/routes/legacy/scalars.ID.parse_value}} -->
-The `parse_value` method returns the input string value as is, without any modification.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/scalars.py#L15>)
+
+Returns the input string value without modification.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `value`: A string input that is intended to be parsed.
-- **Control Flow**:
-    - The method directly returns the input `value` without any processing or transformation.
-- **Output**: The output is the same string that was provided as input.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.ID`](<#ID>)  (Base Class)
+    - `value`: A string input that the method will return.
+- **Logic and Control Flow**:
+    - Receives a string input `value`.
+    - Returns the input `value` without any changes.
+- **Output**: The same string input `value` that was provided.
+- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.ID`](<#id>)  (Base Class)
 
 
 ---
 #### ID\.serialize<!-- {{#callable:python-backend/backend/app/api/routes/legacy/scalars.ID.serialize}} -->
-The `serialize` method returns the input string value unchanged.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/scalars.py#L19>)
+
+Returns the input string value without modification.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `value`: A string input that is to be serialized.
-- **Control Flow**:
-    - The method directly returns the input `value` without any modification.
-- **Output**: The output is the same string as the input `value`, returned unchanged.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.ID`](<#ID>)  (Base Class)
+    - `value`: A string that needs serialization.
+- **Logic and Control Flow**:
+    - Receives a string input `value`.
+    - Returns the input `value` directly without any changes.
+- **Output**: The same string that was provided as input.
+- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.ID`](<#id>)  (Base Class)
 
 
 
 ---
 ### NodeType<!-- {{#class:python-backend/backend/app/api/routes/legacy/scalars.NodeType}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/scalars.py#L24>)
+
 - **Decorators**: `@strawberry.scalar`
-- **Description**: The `NodeType` class is a custom scalar type in Strawberry GraphQL, extending the built-in `str` type, and is designed to handle string values with custom serialization and parsing logic, although in this implementation, it simply returns the input value as is.
+- **Description**: Represents a scalar type for a node, inheriting from `str`, with static methods to parse and serialize string values.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/scalars.NodeType.parse_value`](<#NodeTypeparse_value>)
-    - [`python-backend/backend/app/api/routes/legacy/scalars.NodeType.serialize`](<#NodeTypeserialize>)
+    - [`python-backend/backend/app/api/routes/legacy/scalars.NodeType.parse_value`](<#nodetypeparse_value>)
+    - [`python-backend/backend/app/api/routes/legacy/scalars.NodeType.serialize`](<#nodetypeserialize>)
 - **Inherits From**:
     - `str`
 
@@ -76,27 +88,32 @@ The `serialize` method returns the input string value unchanged.
 
 ---
 #### NodeType\.parse\_value<!-- {{#callable:python-backend/backend/app/api/routes/legacy/scalars.NodeType.parse_value}} -->
-The `parse_value` method returns the input string value as is.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/scalars.py#L26>)
+
+Returns the input string value without modification.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `value`: A string input that is to be returned.
-- **Control Flow**:
-    - The method takes a single string argument named `value`.
-    - It directly returns the input `value` without any modification.
-- **Output**: The method outputs the same string that was provided as input.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.NodeType`](<#NodeType>)  (Base Class)
+    - `value`: A string input that the method will return.
+- **Logic and Control Flow**:
+    - Receives a string input `value`.
+    - Returns the input `value` without any changes.
+- **Output**: The same string input `value` that was provided.
+- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.NodeType`](<#nodetype>)  (Base Class)
 
 
 ---
 #### NodeType\.serialize<!-- {{#callable:python-backend/backend/app/api/routes/legacy/scalars.NodeType.serialize}} -->
-The `serialize` method returns the input string value as is, without any modification.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/scalars.py#L30>)
+
+Returns the input string value without modification.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `value`: A string input that is intended to be serialized.
-- **Control Flow**:
-    - The method directly returns the input `value` without any processing or transformation.
-- **Output**: The output is the same string that was provided as input.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.NodeType`](<#NodeType>)  (Base Class)
+    - `value`: A string input that the method will return.
+- **Logic and Control Flow**:
+    - Receives a string input `value`.
+    - Returns the input `value` without any changes.
+- **Output**: The same string input that was provided.
+- **See also**: [`python-backend/backend/app/api/routes/legacy/scalars.NodeType`](<#nodetype>)  (Base Class)
 
 
 

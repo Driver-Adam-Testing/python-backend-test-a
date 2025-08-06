@@ -29,10 +29,13 @@ class AutoDocLog:
 
     def _split_into_rich_text_array(self, content: str) -> list:
         MAX_NOTION_BLOCK_UPDATE_LENGTH = 2000
-        return [
-            {"text": {"content": content[i : i + MAX_NOTION_BLOCK_UPDATE_LENGTH]}}
-            for i in range(0, len(content), MAX_NOTION_BLOCK_UPDATE_LENGTH)
-        ]
+        if content:
+            return [
+                {"text": {"content": content[i : i + MAX_NOTION_BLOCK_UPDATE_LENGTH]}}
+                for i in range(0, len(content), MAX_NOTION_BLOCK_UPDATE_LENGTH)
+            ]
+        else:
+            return [{"text": {"content": "N/A"}}]
 
     def to_dict(self) -> dict:
         return {

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `data_scope.py` file defines the `DataScope` class, which manages the scope of an agent's operation by handling nodes accessible to the agent, including methods for retrieving nodes by identifier, creating child data scopes, and generating human-readable summaries.
+Defines the `DataScope` class for managing and accessing nodes within an agent's operational scope.
 
 # Purpose
-This Python code defines a class `DataScope` using the Pydantic library, which is designed to manage and represent the scope of an agent's operation within a database context. The primary functionality of this class is to handle a collection of nodes, represented by the `DataScopeNode` inner class, which are lazy-loaded from a database. The `DataScope` class provides methods to retrieve nodes by their identifiers, create child data scopes based on specific identifiers, and generate a human-readable summary of the nodes grouped by their primary asset display names. The class interacts with a database using SQLAlchemy and SQLModel to execute queries and load related data efficiently.
+The code defines a `DataScope` class, which models the scope of an agent's operation within a system. The `DataScope` class is a Pydantic model that includes attributes such as `node_ids`, `user_id`, and `organization_id`. The primary function of this class is to manage and provide access to a collection of nodes, represented by the `DataScopeNode` inner class. Each `DataScopeNode` is associated with a `Node` object from the database, and the class provides methods to retrieve nodes by their identifiers and to create child data scopes based on specific identifiers.
 
-The `DataScope` class is intended to be part of a larger system, likely serving as a component in a backend service that manages data access and organization-specific operations. It does not define a public API or external interface directly but provides methods that can be used internally to manipulate and query the nodes within its scope. The code includes several TODO comments, indicating areas for potential improvement or refactoring, such as validating the `organization_id` and relocating the `user_id` attribute. Overall, the code provides a focused functionality centered around managing and querying nodes within a defined data scope.
+The `DataScope` class interacts with a database using SQLAlchemy and SQLModel to load nodes and their associated versions and primary assets. It includes methods to convert the data scope into a human-readable summary, which groups node identifiers by their primary asset display names. The class also provides functionality to create a new `DataScope` that contains only nodes matching specified identifiers, ensuring that these identifiers are valid within the current data scope. The code is structured to be part of a larger system, likely intended for use as a library or module that can be imported and utilized in other parts of the application.
 # Imports and Dependencies
 
 ---
@@ -28,17 +28,20 @@ The `DataScope` class is intended to be part of a larger system, likely serving 
 
 ---
 ### DataScope<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope}} -->
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L12>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
-    - `node_ids`: A list of UUIDs representing the node identifiers within the data scope.
-    - `user_id`: A string representing the user ID associated with the data scope.
-    - `organization_id`: A string representing the organization ID associated with the data scope.
-    - `_cached_nodes`: A cached list of DataScopeNode objects, initially set to None.
-- **Description**: The DataScope class defines the operational scope of an agent, allowing it to access specific nodes within a database. It includes attributes for node identifiers, user ID, and organization ID, and provides functionality to retrieve nodes by identifier, create child data scopes, and generate human-readable summaries of the nodes. The class also contains an inner class, DataScopeNode, which represents individual nodes and provides methods to access node details and identifiers.
+    - `node_ids`: Holds a list of UUIDs for nodes.
+    - `user_id`: Stores the user ID.
+    - `organization_id`: Stores the organization ID.
+    - `_cached_nodes`: Caches a list of `DataScopeNode` objects.
+- **Description**: Defines the scope of an agent's operation by managing access to nodes within an organization. It includes a nested `DataScopeNode` class that represents individual nodes, which are lazy-loaded from a database. The class provides methods to retrieve nodes by identifier, create child data scopes, and generate human-readable summaries of the nodes.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.nodes`](<#DataScopenodes>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.get_node_by_identifier`](<#DataScopeget_node_by_identifier>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<#DataScopeto_child_datascope>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_human_readable_summary`](<#DataScopeto_human_readable_summary>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.nodes`](<#datascopenodes>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.get_node_by_identifier`](<#datascopeget_node_by_identifier>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope`](<#datascopeto_child_datascope>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_human_readable_summary`](<#datascopeto_human_readable_summary>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -46,122 +49,141 @@ The `DataScope` class is intended to be part of a larger system, likely serving 
 
 ---
 #### DataScope\.nodes<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.nodes}} -->
-The `nodes` method retrieves and caches a list of [`DataScopeNode`](<#DataScopeNode>) objects from the database based on the `node_ids` attribute.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L51>)
+
+Retrieves and caches a list of [`DataScopeNode`](<#datascopenode>) objects from the database based on `node_ids`.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - Check if `_cached_nodes` is `None` to determine if nodes need to be loaded from the database.
-    - If `_cached_nodes` is `None`, open a database session using `get_session()`.
-    - Construct a SQL statement to select `Node` objects with IDs in `self.node_ids`, including related `Version` and `PrimaryAsset` data using `selectinload`.
-    - Execute the SQL statement and retrieve all matching `Node` objects.
-    - Convert each `Node` object into a [`DataScopeNode`](<#DataScopeNode>) and store them in `_cached_nodes`.
-    - Return the list of [`DataScopeNode`](<#DataScopeNode>) objects from `_cached_nodes`.
-- **Output**: A list of [`DataScopeNode`](<#DataScopeNode>) objects representing the nodes accessible within the `DataScope`.
+- **Logic and Control Flow**:
+    - Checks if `_cached_nodes` is `None` to determine if nodes need to be loaded from the database.
+    - Opens a database session using `get_session()`.
+    - Constructs a SQL query to select `Node` objects with `id` in `self.node_ids`, including related `Version` and `PrimaryAsset` data using `selectinload`.
+    - Executes the query and retrieves all matching nodes.
+    - Transforms each `Node` object into a [`DataScopeNode`](<#datascopenode>) and stores them in `_cached_nodes`.
+    - Returns the list of [`DataScopeNode`](<#datascopenode>) objects from `_cached_nodes`.
+- **Output**: A list of [`DataScopeNode`](<#datascopenode>) objects.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#DataScopeNode>)
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#DataScope>)  (Base Class)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#datascopenode>)
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#datascope>)  (Base Class)
 
 
 ---
 #### DataScope\.get\_node\_by\_identifier<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.get_node_by_identifier}} -->
-The `get_node_by_identifier` method retrieves a `DataScopeNode` from the `DataScope` by matching a given identifier string.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L66>)
+
+Retrieves a `DataScopeNode` by its identifier from the list of nodes.
 - **Inputs**:
-    - `identifier`: A string representing the identifier of the node, formatted as '{version_display_name}/{relative_path}'.
-- **Control Flow**:
-    - Iterates over each `DataScopeNode` in the `nodes` list of the `DataScope`.
-    - For each node, calls the [`get_identifier`](<#DataScopeNodeget_identifier>) method to retrieve its identifier.
-    - Compares the retrieved identifier with the input `identifier`.
-    - If a match is found, returns the corresponding `DataScopeNode`.
-    - If no match is found after checking all nodes, returns `None`.
-- **Output**: Returns a `DataScopeNode` if a node with the matching identifier is found, otherwise returns `None`.
+    - `identifier`: A string representing the node's identifier in the format `{version_display_name}/{relative_path}`.
+- **Logic and Control Flow**:
+    - Iterates over each `data_scope_node` in `self.nodes`.
+    - Checks if the `data_scope_node`'s identifier matches the given `identifier`.
+    - Returns the `data_scope_node` if a match is found.
+    - Returns `None` if no matching node is found after checking all nodes.
+- **Output**: A `DataScopeNode` object if a node with the given identifier is found, otherwise `None`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier`](<#DataScopeNodeget_identifier>)
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#DataScope>)  (Base Class)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier`](<#datascopenodeget_identifier>)
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#datascope>)  (Base Class)
 
 
 ---
 #### DataScope\.to\_child\_datascope<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_child_datascope}} -->
-The `to_child_datascope` method creates a new `DataScope` containing nodes that match given identifiers, ensuring they are children of the current `DataScope`, and raises an error if any identifier is invalid.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L75>)
+
+Creates a new `DataScope` containing nodes that match given identifiers, ensuring identifiers are valid and belong to existing nodes.
 - **Inputs**:
-    - `identifiers`: A list of string identifiers in the format '{version_display_name}/{relative_path}' to match against nodes in the current DataScope.
-- **Control Flow**:
-    - Collects existing node identifiers from the current DataScope.
-    - Iterates over the provided identifiers to ensure each starts with an existing node identifier, raising a ValueError if not.
-    - Attempts to match each identifier to a node in the current DataScope, collecting matching node IDs.
-    - If not all identifiers match existing nodes, queries the database to find nodes matching the identifiers based on version display name and relative path, within the same organization.
-    - Creates a new DataScope with the matched node IDs, user ID, and organization ID, and returns it.
-- **Output**: A new `DataScope` object containing the node IDs that match the given identifiers, along with the user ID and organization ID.
+    - `identifiers`: A list of string identifiers representing nodes to include in the new `DataScope`.
+- **Logic and Control Flow**:
+    - Collects existing node identifiers from `self.nodes`.
+    - Checks if each identifier in `identifiers` starts with an existing node identifier; raises `ValueError` if not.
+    - Attempts to match each identifier to a node in `self.nodes` and collects their IDs.
+    - If not all identifiers match existing nodes, queries the database to find nodes matching the identifiers' paths and version hashes.
+    - Creates a new `DataScope` with the matched node IDs, user ID, and organization ID.
+    - Caches nodes in the new `DataScope` if all identifiers matched existing nodes.
+- **Output**: A new `DataScope` object containing nodes that match the given identifiers.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier`](<#DataScopeNodeget_identifier>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.get_node_by_identifier`](<#DataScopeget_node_by_identifier>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier`](<#datascopenodeget_identifier>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.get_node_by_identifier`](<#datascopeget_node_by_identifier>)
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../driver_db/database/db.py.md#get_session>)
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#DataScope>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#datascope>)  (Base Class)
 
 
 ---
 #### DataScope\.to\_human\_readable\_summary<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.to_human_readable_summary}} -->
-The `to_human_readable_summary` method generates a human-readable summary of nodes grouped by their primary asset display names.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L148>)
+
+Generates a human-readable summary of nodes grouped by their primary asset display names.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an empty dictionary `grouped_identifiers` to store identifiers grouped by primary asset display names.
-    - Iterate over each node in `self.nodes`.
-    - For each node, retrieve the primary asset display name and construct an identifier using the node's version display name and relative path.
-    - Check if the primary asset display name is already a key in `grouped_identifiers`; if not, initialize it with an empty list.
-    - Append the constructed identifier to the list corresponding to the primary asset display name in `grouped_identifiers`.
+    - Iterate over each `node` in `self.nodes`.
+    - For each `node`, retrieve the `primary_asset_display_name` from `node.node.version.primary_asset.display_name`.
+    - Determine the `version_display_name` using `node.node.version.vcs_hash` or default to 'Unversioned' if `vcs_hash` is not available.
+    - Create an `identifier` string in the format `{version_display_name}/{node.node.relative_path}`.
+    - Check if `primary_asset_display_name` is not in `grouped_identifiers`, and if not, initialize it with an empty list.
+    - Append the `identifier` to the list associated with `primary_asset_display_name` in `grouped_identifiers`.
     - Initialize an empty list `summary_lines` to store the formatted summary lines.
-    - Iterate over each primary asset and its associated identifiers in `grouped_identifiers`.
-    - For each primary asset, append a line to `summary_lines` indicating the asset's paths.
-    - For each identifier under a primary asset, append a formatted line to `summary_lines`.
+    - Iterate over each `primary_asset` and its `identifiers` in `grouped_identifiers`.
+    - For each `primary_asset`, append a line to `summary_lines` indicating the asset's paths.
+    - For each `identifier` under a `primary_asset`, append it to `summary_lines` with a prefixed dash.
     - Join all lines in `summary_lines` with newline characters and return the resulting string.
-- **Output**: A string containing a human-readable summary of nodes, grouped by primary asset display names, with each identifier listed under its respective asset.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#DataScope>)  (Base Class)
+- **Output**: A string containing a human-readable summary of nodes grouped by their primary asset display names.
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<#datascope>)  (Base Class)
 
 
 
 ---
 ### DataScopeNode<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode}} -->
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L21>)
+
 - **Members**:
-    - `_node`: Stores the Node instance associated with this DataScopeNode.
-- **Description**: The DataScopeNode class represents a node within the DataScope that is lazy-loaded from the database. It encapsulates a Node object and provides a property to access this node. Additionally, it offers a method to generate a unique string identifier for the node, formatted as {version_display_name}/{relative_path}, which can be used for identification and retrieval purposes within the DataScope.
+    - `_node`: Stores the `Node` instance associated with this `DataScopeNode`.
+- **Description**: Represents a node within the `DataScope` that is lazy-loaded from the database. Provides access to the underlying `Node` instance and a method to retrieve a string identifier for the node, formatted as `{version_display_name}/{relative_path}`.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.__init__`](<#DataScopeNode__init__>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.node`](<#DataScopeNodenode>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier`](<#DataScopeNodeget_identifier>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.__init__`](<#datascopenode__init__>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.node`](<#datascopenodenode>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier`](<#datascopenodeget_identifier>)
 
 **Methods**
 
 ---
 #### DataScopeNode\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.__init__}} -->
-The `__init__` method initializes a `DataScopeNode` instance by setting its internal `_node` attribute to the provided `Node` object.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L26>)
+
+Initializes a `DataScopeNode` instance with a given `Node` object.
 - **Inputs**:
-    - `node`: A `Node` object that represents a node within the DataScope, which is lazy-loaded from the database.
-- **Control Flow**:
-    - The method assigns the provided `node` argument to the instance's `_node` attribute.
-- **Output**: This method does not return any value; it initializes the instance's state.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#DataScopeNode>)  (Base Class)
+    - `node`: A `Node` object that represents the node to be associated with the `DataScopeNode` instance.
+- **Logic and Control Flow**:
+    - Assigns the provided `node` to the instance variable `_node`.
+- **Output**: None
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#datascopenode>)  (Base Class)
 
 
 ---
 #### DataScopeNode\.node<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.node}} -->
-The `node` method is a property that returns the private `_node` attribute of a `DataScopeNode` instance.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L29>)
+
+Provides access to the private `_node` attribute of the `DataScopeNode` class.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method simply returns the value of the `_node` attribute.
-- **Output**: The output is the `Node` object stored in the `_node` attribute of the `DataScopeNode` instance.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#DataScopeNode>)  (Base Class)
+- **Logic and Control Flow**:
+    - Returns the value of the private attribute `_node`.
+- **Output**: The `Node` instance stored in the `_node` attribute.
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#datascopenode>)  (Base Class)
 
 
 ---
 #### DataScopeNode\.get\_identifier<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.get_identifier}} -->
-The `get_identifier` method returns a string identifier for a node, formatted as `{version_display_name}/{relative_path}`.
+[View Source →](<../../../../../../../packages/shared/shared/interfaces/agents/data_scope.py#L33>)
+
+Generates a string identifier for a node using its version display name and relative path.
 - **Inputs**: None
-- **Control Flow**:
-    - Retrieve the `version_display_name` from the node's version attribute.
-    - Return a formatted string combining `version_display_name` and the node's `relative_path`.
-- **Output**: A string identifier in the format `{version_display_name}/{relative_path}`.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#DataScopeNode>)  (Base Class)
+- **Logic and Control Flow**:
+    - Checks if the node's version has a `vcs_hash` value.
+    - If `vcs_hash` exists, assigns it to `version_display_name`; otherwise, assigns 'Unversioned' to `version_display_name`.
+    - Returns a formatted string combining `version_display_name` and the node's `relative_path`.
+- **Output**: A string in the format `{version_display_name}/{relative_path}`.
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode`](<#datascopenode>)  (Base Class)
 
 
 

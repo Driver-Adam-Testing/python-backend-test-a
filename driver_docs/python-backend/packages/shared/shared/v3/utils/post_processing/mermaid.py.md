@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mermaid.py` file provides utilities for extracting, validating, and repairing Mermaid diagrams within text using a language model, ensuring they render correctly by replacing broken diagrams with fixed versions.
+Functions to validate and repair Mermaid diagrams in text using a language model client.
 
 # Purpose
-The code in `shared/utils/mermaid_fix.py` is designed to process and correct Mermaid diagram code blocks within a given text. It serves as a utility to ensure that Mermaid diagrams, which are often used for creating visual representations in Markdown documents, are syntactically correct and renderable. The script identifies Mermaid code blocks using a regular expression, checks their syntax through a remote function call, and attempts to fix any errors using a language model client if the syntax is incorrect. This process is repeated up to a specified number of attempts to ensure the diagrams are corrected as much as possible.
+The code in `mermaid_fix.py` is a utility module designed to process and correct Mermaid diagram code blocks within a given text. It identifies Mermaid code blocks using a regular expression pattern and checks their syntax for correctness. If a diagram is found to be incorrect, the code attempts to repair it using a language model client (`LlmClient`). The repair process involves iteratively querying the language model to generate a corrected version of the diagram until it passes validation or the maximum number of attempts is reached.
 
-The file is structured as a collection of functions that work together to achieve this goal. The [`_extract_mermaid_interior`](<#_extract_mermaid_interior>) function isolates the content of Mermaid code blocks, while [`_check_mermaid_syntax`](<#_check_mermaid_syntax>) verifies their correctness. If a diagram is found to be incorrect, [`_fix_with_llm`](<#_fix_with_llm>) uses a language model to attempt repairs. The main function, [`fix_mermaid_syntax_in_response`](<#fix_mermaid_syntax_in_response>), orchestrates these components to scan a text for Mermaid diagrams, validate them, and replace any broken ones with corrected versions. This utility is intended to be used as a post-processing step in a pipeline, ensuring that all Mermaid diagrams in a text are valid and renderable.
+The module defines several functions to achieve its purpose. [`_extract_mermaid_interior`](<#_extract_mermaid_interior>) extracts the content of a Mermaid diagram from a code block. [`_check_mermaid_syntax`](<#_check_mermaid_syntax>) uses a remote function to validate the syntax of a diagram and handles any transport errors gracefully. [`_fix_with_llm`](<#_fix_with_llm>) attempts to correct a faulty diagram by interacting with the language model. The main function, [`fix_mermaid_syntax_in_response`](<#fix_mermaid_syntax_in_response>), orchestrates the process by scanning the input text for Mermaid code blocks, validating them, and replacing any broken diagrams with their repaired versions. This function can be used as a post-processing step in a text processing pipeline to ensure that all Mermaid diagrams are correctly formatted and renderable.
 # Imports and Dependencies
 
 ---
@@ -28,85 +28,92 @@ The file is structured as a collection of functions that work together to achiev
 
 ---
 ### MERMAID\_RE
-- **Type**: `re.Pattern`
-- **Description**: `MERMAID_RE` is a compiled regular expression pattern used to identify and extract Mermaid code blocks from a given text. It matches text enclosed within triple backticks followed by the word 'mermaid', capturing the content between these markers.
-- **Use**: This variable is used to search for and manipulate Mermaid diagram code blocks within text, facilitating their extraction and validation.
+- **Type**: ``re.Pattern``
+- **Description**: A compiled regular expression pattern that matches text blocks formatted as Mermaid diagrams within triple backticks. It uses the `re.DOTALL` flag to allow the dot (`.`) to match newline characters, enabling the pattern to capture multi-line content.
+- **Use**: Used to identify and extract Mermaid diagram code blocks from text for further processing or validation.
 
 
 # Functions
 
 ---
 ### \_extract\_mermaid\_interior<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._extract_mermaid_interior}} -->
-The function extracts the content of a Mermaid diagram from a text block, excluding the surrounding code fences, or returns the full text if no diagram is found.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/utils/post_processing/mermaid.py#L19>)
+
+Extracts the content of a Mermaid diagram from a text string, excluding the surrounding code block fences.
 - **Inputs**:
-    - `text`: A string containing the text from which the Mermaid diagram content is to be extracted.
-- **Control Flow**:
-    - Searches the input text for a Mermaid diagram using a regular expression pattern.
-    - If a match is found, it extracts and returns the content inside the Mermaid code fences, stripping any leading or trailing whitespace.
-    - If no match is found, it returns the entire input text, stripped of leading and trailing whitespace.
-- **Output**: A string containing the extracted Mermaid diagram content or the full input text if no diagram is found.
+    - `text`: A string that may contain a Mermaid diagram enclosed in code block fences.
+- **Logic and Control Flow**:
+    - Searches the input `text` for a Mermaid diagram using the regular expression `MERMAID_RE`.
+    - If a match is found, extracts the content of the diagram (excluding the code block fences) and removes any leading or trailing whitespace.
+    - If no match is found, returns the input `text` with leading and trailing whitespace removed.
+- **Output**: A string containing the extracted Mermaid diagram content or the original text if no diagram is found.
 
 
 ---
 ### \_check\_mermaid\_syntax<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._check_mermaid_syntax}} -->
-The function `_check_mermaid_syntax` checks the syntax of a Mermaid diagram using a remote function and handles any exceptions by returning them as renderable messages.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/utils/post_processing/mermaid.py#L28>)
+
+Checks the syntax of a Mermaid diagram and handles any transport errors.
 - **Inputs**:
-    - `diagram`: A string representing the Mermaid diagram to be checked for syntax correctness.
-- **Control Flow**:
-    - Attempt to retrieve a remote function named 'check_mermaid_syntax' using `Function.from_name`.
-    - Invoke the remote function with the provided `diagram` to check its syntax.
-    - Capture the status and message returned by the remote function.
-    - If the status is 'ok', return `True` and the message; otherwise, return `False` and the message.
-    - If an exception occurs during the remote function call, catch it and return `True` along with the exception message as a string.
-- **Output**: A tuple where the first element is a boolean indicating if the syntax check was successful, and the second element is a string containing the message or error description.
+    - `diagram`: A string representing the Mermaid diagram to check.
+- **Logic and Control Flow**:
+    - Attempts to retrieve the `check_mermaid_syntax` function from the `modal` library using `Function.from_name`.
+    - Calls the `remote` method on the retrieved function with the `diagram` as an argument to check its syntax.
+    - If the syntax check is successful, returns a tuple with `True` and the message from the check.
+    - If an exception occurs during the syntax check (e.g., network or timeout errors), catches the exception and returns a tuple with `True` and the exception message.
+- **Output**: A tuple containing a boolean indicating if the syntax check was successful and a string message.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../llms/config/llm_config.py.md#LlmConfigfrom_name>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../llms/config/llm_config.py.md#llmconfigfrom_name>)
 
 
 ---
 ### \_fix\_with\_llm<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._fix_with_llm}} -->
-The `_fix_with_llm` function attempts to repair a faulty Mermaid diagram using an LLM client until it passes validation or a maximum number of attempts is reached.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/utils/post_processing/mermaid.py#L43>)
+
+Attempts to repair a Mermaid diagram using an LLM until it passes validation or reaches a maximum number of attempts.
 - **Inputs**:
-    - `bad_diagram`: A string representing the initial faulty Mermaid diagram that needs to be fixed.
-    - `error`: A string containing the error message associated with the faulty diagram.
-    - `client`: An instance of `LlmClient` used to interact with the language model for generating diagram corrections.
-    - `max_attempts`: An integer specifying the maximum number of attempts to try fixing the diagram.
-- **Control Flow**:
-    - Initialize `diagram` with `bad_diagram` and `attempts` to 0.
+    - `bad_diagram`: The initial Mermaid diagram that fails to render.
+    - `error`: The error message associated with the failed rendering of the diagram.
+    - `client`: An instance of `LlmClient` used to interact with the language model.
+    - `max_attempts`: The maximum number of attempts to repair the diagram.
+- **Logic and Control Flow**:
+    - Initialize `diagram` with `bad_diagram` and `attempts` with 0.
     - Enter a while loop that continues as long as `attempts` is less than `max_attempts`.
-    - Within the loop, send a request to the LLM client using `client.single_shot` with a message history that includes a request to fix the diagram.
+    - Within the loop, send a request to the LLM client to correct the diagram, including the error message and the current state of the diagram.
     - Extract the corrected diagram from the LLM response using [`_extract_mermaid_interior`](<#_extract_mermaid_interior>).
-    - Check the syntax of the extracted diagram using [`_check_mermaid_syntax`](<#_check_mermaid_syntax>).
+    - Check the syntax of the corrected diagram using [`_check_mermaid_syntax`](<#_check_mermaid_syntax>).
     - If the syntax check is successful, break out of the loop.
-    - Increment the `attempts` counter if the diagram is not successfully fixed.
-- **Output**: Returns a string of the corrected Mermaid diagram, or the last attempted correction if the maximum number of attempts is reached without success.
+    - If the syntax check fails, increment the `attempts` counter and continue the loop.
+- **Output**: The corrected Mermaid diagram as a string, which either passes validation or is the result after reaching the maximum number of attempts.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.single_shot`](<../../llms/clients/llm_client.py.md#LlmClientsingle_shot>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory>)
-    - [`python-backend/packages/shared/shared/v3/globals/global_messages.GlobalSystemMessage`](<../../globals/global_messages.py.md#GlobalSystemMessage>)
-    - [`python-backend/packages/shared/shared/v3/app/static/messages/software_expertise.SoftwareExpertiseMessage`](<../../app/static/messages/software_expertise.py.md#SoftwareExpertiseMessage>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.single_shot`](<../../llms/clients/llm_client.py.md#llmclientsingle_shot>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>)
+    - [`python-backend/packages/shared/shared/v3/globals/global_messages.GlobalSystemMessage`](<../../globals/global_messages.py.md#globalsystemmessage>)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/software_expertise.SoftwareExpertiseMessage`](<../../app/static/messages/software_expertise.py.md#softwareexpertisemessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../interfaces/llm_message.py.md#llmmessage>)
     - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._extract_mermaid_interior`](<#_extract_mermaid_interior>)
     - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._check_mermaid_syntax`](<#_check_mermaid_syntax>)
 
 
 ---
 ### fix\_mermaid\_syntax\_in\_response<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/post_processing/mermaid.fix_mermaid_syntax_in_response}} -->
-The function scans a text for Mermaid code blocks, validates them, and attempts to repair any broken ones using a language model client.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/utils/post_processing/mermaid.py#L81>)
+
+Scans a text for Mermaid code blocks, validates them, and replaces any broken ones with repaired versions using an LLM.
 - **Inputs**:
     - `text`: The full response string that may contain Markdown and Mermaid code blocks.
-    - `client`: An optional LlmClient instance used to repair broken Mermaid diagrams, defaulting to GPT4.1.
+    - `client`: An optional LlmClient instance, defaulting to GPT4.1, used for repairing Mermaid diagrams.
     - `max_attempts`: An optional integer specifying the maximum number of repair attempts per diagram, defaulting to 3.
-- **Control Flow**:
-    - The function defines an inner function `_replace` that processes each Mermaid code block found in the text.
-    - The `_replace` function extracts the body of the Mermaid code block and checks its syntax using [`_check_mermaid_syntax`](<#_check_mermaid_syntax>).
-    - If the syntax is correct, the original code block is returned unchanged.
-    - If the syntax is incorrect, [`_fix_with_llm`](<#_fix_with_llm>) is called to attempt to repair the code block using the LLM client, up to `max_attempts` times.
-    - The repaired or unchanged code block is then formatted back into a Mermaid code block.
-    - The `MERMAID_RE.sub` method is used to apply the `_replace` function to all Mermaid code blocks in the input text.
-- **Output**: The function returns the input text with all Mermaid diagrams either validated and left unchanged or repaired to ensure they render correctly.
+- **Logic and Control Flow**:
+    - Defines an inner function `_replace` to process each Mermaid code block found in the text.
+    - Uses a regular expression `MERMAID_RE` to find Mermaid code blocks in the input `text`.
+    - For each match, extracts the Mermaid diagram and checks its syntax using [`_check_mermaid_syntax`](<#_check_mermaid_syntax>).
+    - If the syntax is correct, returns the original code block unchanged.
+    - If the syntax is incorrect, calls [`_fix_with_llm`](<#_fix_with_llm>) to attempt to repair the diagram using the LLM client, up to `max_attempts` times.
+    - Replaces the original code block with the repaired version if successful, or leaves it unchanged if not.
+- **Output**: The updated response string with all Mermaid diagrams either repaired or left unchanged if no valid fix was found within the specified attempts.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<../../llms/config/llm_config.py.md#LlmConfiggpt_4_1>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<../../llms/config/llm_config.py.md#llmconfiggpt_4_1>)
     - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._check_mermaid_syntax`](<#_check_mermaid_syntax>)
     - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid._fix_with_llm`](<#_fix_with_llm>)
 

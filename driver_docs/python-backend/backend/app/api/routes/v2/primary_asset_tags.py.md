@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `primary_asset_tags.py` file defines API endpoints for creating and deleting primary asset tags using FastAPI within the `python-backend` codebase.
+API endpoints for creating and deleting primary asset tags with authorization checks.
 
 # Purpose
-This Python file is part of a FastAPI application and defines two API endpoints for managing `PrimaryAssetTag` resources. The code provides specific functionality for creating and deleting `PrimaryAssetTag` entries in a database. It uses SQLModel for database interactions and relies on FastAPI's routing and request handling capabilities. The [`delete_primary_asset_tag`](<#delete_primary_asset_tag>) function is a DELETE endpoint that removes a `PrimaryAssetTag` based on a given `primary_asset_id` and `tag_id`, ensuring that the user is authorized by checking the organization ID. If the tag is not found or the user is not authorized, it raises a 404 HTTP exception. The [`create_primary_asset_tag`](<#create_primary_asset_tag>) function is a POST endpoint that creates a new `PrimaryAssetTag` using data provided in the request body, adds it to the session, commits the transaction, and returns the newly created tag.
+The code defines two API endpoints using the FastAPI framework. These endpoints manage `PrimaryAssetTag` resources in a database. The first endpoint, [`delete_primary_asset_tag`](<#delete_primary_asset_tag>), is a DELETE operation that removes a `PrimaryAssetTag` based on the provided `primary_asset_id` and `tag_id`. It checks if the `PrimaryAssetTag` exists and if the user is authorized to delete it by verifying the `organization_id`. If the tag is not found or the user is not authorized, it raises an HTTP 404 exception. Upon successful deletion, it returns a 204 No Content response.
 
-The file is structured as a module within a larger application, likely intended to be part of a microservice architecture. It imports necessary components from other parts of the application, such as authentication and session management, indicating that it is designed to be integrated into a broader system. The endpoints defined here are part of a versioned API, as suggested by the import paths, which implies that the application is designed to support multiple API versions. The use of UUIDs for identifying resources and the structured approach to session management and user authentication highlight the focus on robust and secure API design.
+The second endpoint, [`create_primary_asset_tag`](<#create_primary_asset_tag>), is a POST operation that creates a new `PrimaryAssetTag`. It accepts a payload containing the `tag_id` and `primary_asset_id` and adds the new tag to the database. After committing the transaction, it returns the newly created `PrimaryAssetTag`. Both endpoints use a `CurrentSession` for database operations and a `UserToken` for user authentication, ensuring that actions are performed within the context of the user's organization.
 # Imports and Dependencies
 
 ---
@@ -30,39 +30,43 @@ The file is structured as a module within a larger application, likely intended 
 
 ---
 ### delete\_primary\_asset\_tag<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_asset_tags.delete_primary_asset_tag}} -->
-The `delete_primary_asset_tag` function deletes a specific primary asset tag if it exists and the user is authorized.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_asset_tags.py#L13>)
+
+Deletes a primary asset tag if it exists and the user is authorized.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: An instance of CurrentSession used to interact with the database.
-    - `user`: An instance of UserToken representing the authenticated user making the request.
-    - `tag_id`: A UUID representing the ID of the tag to be deleted, extracted from the path.
-    - `primary_asset_id`: A UUID representing the ID of the primary asset associated with the tag, extracted from the path.
-- **Control Flow**:
-    - Execute a database query to select the PrimaryAssetTag that matches the given tag_id, primary_asset_id, and the user's organization_id.
-    - Check if the primary asset tag exists; if not, raise an HTTP 404 exception indicating the tag was not found or the user is not authorized.
-    - If the primary asset tag exists, delete it from the session.
-    - Commit the transaction to persist the deletion in the database.
-    - Return a Response with a 204 status code indicating successful deletion with no content.
-- **Output**: A Response object with a status code of 204 indicating successful deletion of the primary asset tag.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing user information, including organization ID.
+    - `tag_id`: The UUID of the tag to delete, provided as a path parameter.
+    - `primary_asset_id`: The UUID of the primary asset associated with the tag, provided as a path parameter.
+- **Logic and Control Flow**:
+    - Selects a `PrimaryAssetTag` by joining with `PrimaryAsset` and filtering by `tag_id`, `primary_asset_id`, and the user's organization ID.
+    - Checks if the `primary_asset_tag` exists; if not, raises an `HTTPException` with a 404 status code.
+    - Deletes the `primary_asset_tag` from the session if it exists.
+    - Commits the transaction to the database.
+    - Returns a `Response` with a 204 status code indicating successful deletion.
+- **Output**: A `Response` object with a 204 status code indicating successful deletion of the primary asset tag.
 
 
 ---
 ### create\_primary\_asset\_tag<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_asset_tags.create_primary_asset_tag}} -->
-The `create_primary_asset_tag` function creates a new primary asset tag in the database using the provided payload data.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_asset_tags.py#L38>)
+
+Creates a new primary asset tag and saves it to the database.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of CurrentSession, representing the database session used to interact with the database.
-    - `user`: An instance of UserToken, representing the authenticated user making the request.
-    - `payload`: An instance of PrimaryAssetTagCreate, containing the data required to create a new primary asset tag, provided in the request body.
-- **Control Flow**:
-    - A new instance of PrimaryAssetTag is created using the tag_id and primary_asset_id from the payload.
-    - The new primary asset tag is added to the database session.
-    - The session is committed to save the changes to the database.
-    - The session is refreshed to update the new_primary_asset_tag instance with any changes made during the commit.
-    - The newly created primary asset tag is returned as the response.
-- **Output**: The function returns the newly created PrimaryAssetTag instance, which is also the response model for the API endpoint.
+    - `session`: The current database session used to interact with the database.
+    - `user`: The user token containing authentication and authorization information.
+    - `payload`: The data required to create a new primary asset tag, provided in the request body.
+- **Logic and Control Flow**:
+    - Create a new [`PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>) object using the `tag_id` and `primary_asset_id` from the `payload`.
+    - Add the new [`PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>) object to the database session.
+    - Commit the transaction to save the new primary asset tag to the database.
+    - Refresh the `new_primary_asset_tag` object to reflect the current state in the database.
+    - Return the `new_primary_asset_tag` object.
+- **Output**: A [`PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>) object representing the newly created primary asset tag.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAssetTag>)
+    - [`python-backend/driver_db/database/models_v2.PrimaryAssetTag`](<../../../../../driver_db/database/models_v2.py.md#primaryassettag>)
 
 
 

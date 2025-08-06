@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `codeblock_syntax_mermaid.py` file contains a prompt for reviewing and correcting mermaid code blocks to ensure proper rendering by removing forbidden characters, correcting syntax, and avoiding cycles.
+A prompt for reviewing and correcting mermaid.js code blocks to ensure proper rendering and syntax.
 
 # Purpose
-This code is a configuration script designed to guide a system, likely a chatbot or an automated tool, in processing and correcting Mermaid.js code blocks within a document. It provides narrow functionality focused on ensuring that Mermaid diagrams render correctly by enforcing specific syntax rules, such as removing forbidden characters like parentheses and double hyphens, and correcting list syntax within the diagrams. The script also emphasizes the importance of avoiding cycles in the diagram by not allowing an element to be its own parent. The `PROMPT` variable contains detailed instructions for handling these tasks, while the `MESSAGE` dictionary encapsulates this prompt, likely for use in a larger system that processes or generates Mermaid.js diagrams.
+The code defines a configuration for a system message used in a software application. It contains a string `PROMPT` that instructs a user, specifically an expert in Mermaid.js, to review and correct Mermaid code blocks within a document. The instructions emphasize removing forbidden characters such as parentheses and double hyphens from element labels to prevent rendering errors. It also provides guidance on the correct syntax for lists within Mermaid blocks and highlights the importance of avoiding cycles in diagrams. The `MESSAGE` dictionary stores the role and content of the system message, with `PROMPT` as its content, indicating that this configuration is likely used in a context where automated or guided review of Mermaid diagrams is necessary.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that serves as a detailed instruction set for reviewing and correcting mermaid code blocks within a document. It provides guidelines on avoiding rendering errors by removing forbidden characters, correcting syntax for lists, and ensuring proper formatting of subgraph names and element labels.
-- **Use**: This variable is used to provide comprehensive instructions for processing and correcting mermaid diagrams to ensure they render correctly without errors.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for reviewing and correcting mermaid code blocks in a document. It includes guidelines for syntax correction, such as removing forbidden characters and ensuring correct list syntax in mermaid diagrams.
+- **Use**: Used as a prompt or guideline for processing and correcting mermaid code blocks to ensure they render correctly.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for reviewing and correcting mermaid code blocks.
-- **Use**: This variable is used to store system-level instructions for processing mermaid code blocks, ensuring they are correctly formatted and free of errors.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has the value `system`, and the `content` key holds the value of the `PROMPT` variable, which is a multi-line string providing instructions for reviewing and correcting mermaid code blocks.
+- **Use**: Used to store system-level instructions for processing mermaid code blocks.
 
 
 

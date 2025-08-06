@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `search.py` file defines a FastAPI route for searching content, utilizing user and session information to return search results.
+Defines a FastAPI route for searching content with user authentication and session management.
 
 # Purpose
-This code defines a FastAPI router for handling a search operation within a web application, providing narrow functionality focused on content search. It is a short script that sets up an API endpoint for searching content, utilizing FastAPI's `APIRouter` to define a POST route. The endpoint requires certain dependencies, such as `ContentReadonlyPermission`, to ensure that only authorized users can perform the search. The function [`search`](<#search>) takes in a `CurrentSession`, a `UserToken`, and a `SearchInput`, and returns `SearchResults` by calling the `search_content` function. The code also includes a placeholder comment indicating a need to refine the input transformation process, suggesting ongoing development or optimization.
+This code defines an API endpoint using FastAPI to perform a search operation. It imports necessary components such as `APIRouter` for routing, `SearchInput` and `SearchResults` for handling search data, and `search_content` for executing the search logic. The endpoint is protected by a dependency on `ContentReadonlyPermission`, ensuring that only users with read-only access can perform searches. The [`search`](<#search>) function takes a `CurrentSession`, a `UserToken`, and a `SearchInput` as parameters, modifies the `organization_id` of the input to match the user's organization, and returns the search results. This setup is part of a broader application that manages user sessions and permissions.
 # Imports and Dependencies
 
 ---
@@ -23,26 +23,27 @@ This code defines a FastAPI router for handling a search operation within a web 
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a set of API routes and their associated operations, such as HTTP methods and endpoint paths.
-- **Use**: This variable is used to register and manage API endpoints within the application.
+- **Type**: ``APIRouter``
+- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the API, allowing the organization of endpoints and their associated logic.
+- **Use**: Used to register and manage API routes and their dependencies.
 
 
 # Functions
 
 ---
 ### search<!-- {{#callable:python-backend/backend/app/api/routes/v1/search.search}} -->
-The `search` function handles a POST request to search for content based on user and session information, returning search results.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/search.py#L11>)
+
+Executes a search for content based on user and session data.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current session context.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `input`: An instance of `SearchInput` containing the search parameters.
-- **Control Flow**:
-    - The function begins by setting the `organization_id` attribute of the `input` object to the `organization_id` of the `user` object.
-    - It then calls the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function, passing the `session` and modified `input` as arguments.
-    - The result of the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function is returned as the output of the `search` function.
-- **Output**: The function returns an instance of `SearchResults`, which contains the results of the search operation.
+    - `session`: The current session object, which provides context for the search operation.
+    - `user`: A `UserToken` object representing the authenticated user, which includes user-specific data such as organization ID.
+    - `input`: A `SearchInput` object containing the search parameters and criteria.
+- **Logic and Control Flow**:
+    - Assigns the `organization_id` from the `user` object to the `input` object to ensure the search is scoped to the user's organization.
+    - Calls the [`search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>) function with the `session` and modified `input` to perform the search operation.
+- **Output**: Returns a `SearchResults` object containing the results of the search operation.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/search.search_content`](<../../../../../packages/shared/shared/pipelines/search.py.md#search_content>)
 

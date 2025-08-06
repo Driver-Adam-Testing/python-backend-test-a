@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models_v2_test.py` file contains pytest fixtures for setting up a test database environment and a test to verify session creation using SQLAlchemy and SQLModel.
+Tests for database session creation and management using SQLModel and pytest fixtures.
 
 # Purpose
-This code is a test configuration script for setting up and managing a test database environment using pytest and SQLModel. It provides narrow functionality focused on database testing by defining fixtures that manage the lifecycle of a test database engine, connection, and session. The [`engine`](<#engine>) fixture creates and disposes of a test database engine, while the [`connection`](<#connection>) fixture establishes and closes a connection to this engine. The [`session`](<#session>) fixture provides a transactional scope for database operations, ensuring that each test runs in isolation by rolling back transactions after execution. Additionally, a simple test function, [`test_session_creation`](<#test_session_creation>), verifies that a session can be successfully created, ensuring the setup is functioning correctly.
+The code is a test suite for database-related operations using the `pytest` framework. It defines fixtures to set up and tear down a test environment with a PostgreSQL database. The [`engine`](<#engine>) fixture creates a database engine connected to a test database, while the [`connection`](<#connection>) fixture establishes a connection to this database. The [`session`](<#session>) fixture provides a transactional scope for tests, ensuring that each test runs in isolation by rolling back transactions after execution. The test function [`test_session_creation`](<#test_session_creation>) verifies that a session can be successfully created.
 # Imports and Dependencies
 
 ---
@@ -19,63 +19,71 @@ This code is a test configuration script for setting up and managing a test data
 
 ---
 ### TEST\_DATABASE\_URL
-- **Type**: `str`
-- **Description**: `TEST_DATABASE_URL` is a string that specifies the connection URL for a PostgreSQL test database. It includes the username, password, host, port, and database name required to connect to the database.
-- **Use**: This variable is used to create a database engine for testing purposes, ensuring that tests are run against a specific test database.
+- **Type**: ``str``
+- **Description**: A string that specifies the connection URL for a PostgreSQL test database. It includes the username, password, host, port, and database name.
+- **Use**: Used to create a connection to the test database for running tests.
 
 
 # Functions
 
 ---
 ### engine<!-- {{#callable:python-backend/driver_db/database/models_v2_test.engine}} -->
-The `engine` function is a pytest fixture that creates and yields a SQLAlchemy engine connected to a test database, ensuring a fresh database state for testing and cleaning up resources after tests.
+[View Source →](<../../../../driver_db/database/models_v2_test.py#L11>)
+
+Creates a test database engine, runs migrations, and yields the engine for use in tests.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function starts by creating a SQLAlchemy engine using the `create_engine` function with the `TEST_DATABASE_URL`.
-    - The function then yields the created engine, allowing tests to use it.
-    - After the tests are completed, the function disposes of the engine to clean up resources.
-- **Output**: The function yields a SQLAlchemy engine connected to the test database.
+- **Logic and Control Flow**:
+    - Creates an engine using the `create_engine` function with the `TEST_DATABASE_URL`.
+    - Yields the created engine for use in tests.
+    - Disposes of the engine after tests are complete to clean up resources.
+- **Output**: Yields a `create_engine` instance connected to the test database.
 
 
 ---
 ### connection<!-- {{#callable:python-backend/driver_db/database/models_v2_test.connection}} -->
-The `connection` function is a pytest fixture that establishes and yields a connection to the test database for the duration of the test session.
+[View Source →](<../../../../driver_db/database/models_v2_test.py#L24>)
+
+Establishes a connection to the test database for the duration of the test session.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
     - `engine`: An instance of `create_engine` that represents the connection to the test database.
-- **Control Flow**:
-    - The function begins by calling `engine.connect()` to establish a connection to the test database.
-    - The established connection is yielded, allowing tests to use it.
-    - After the tests using this fixture are complete, the connection is closed with `connection.close()`.
-- **Output**: The function yields a database connection object for use in tests.
+- **Logic and Control Flow**:
+    - Connects to the test database using the provided `engine`.
+    - Yields the `connection` object to be used in tests.
+    - Closes the `connection` after the tests are complete.
+- **Output**: Yields a `connection` object to the test database for use in test functions.
 
 
 ---
 ### session<!-- {{#callable:python-backend/driver_db/database/models_v2_test.session}} -->
-The `session` function is a pytest fixture that provides a transactional scope for database operations during testing.
+[View Source →](<../../../../driver_db/database/models_v2_test.py#L32>)
+
+Provides a transactional scope for a series of operations within a test function.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `engine`: An instance of `create_engine` that represents the database engine to connect to.
-- **Control Flow**:
-    - Connect to the database using the provided engine.
-    - Begin a new transaction on the database connection.
-    - Create a new SQLAlchemy `Session` object bound to the connection.
-    - Yield the session to the test function, allowing it to perform database operations within the transaction.
-    - After the test function completes, close the session to release resources.
-    - Rollback the transaction to undo any changes made during the test.
-    - Close the database connection to clean up resources.
-- **Output**: The function yields a `Session` object that can be used to perform database operations within a transactional scope.
+    - `engine`: A SQLAlchemy engine object used to connect to the database.
+- **Logic and Control Flow**:
+    - Connects to the database using the provided engine.
+    - Begins a new transaction on the database connection.
+    - Creates a new SQLAlchemy session bound to the database connection.
+    - Yields the session to the test function for use.
+    - Closes the session after the test function completes.
+    - Rolls back the transaction to ensure no changes persist in the database.
+    - Closes the database connection.
+- **Output**: Yields a `Session` object for use in test functions.
 
 
 ---
 ### test\_session\_creation<!-- {{#callable:python-backend/driver_db/database/models_v2_test.test_session_creation}} -->
-The function `test_session_creation` verifies that a session object is successfully created and is not None.
+[View Source →](<../../../../driver_db/database/models_v2_test.py#L46>)
+
+Checks if the `session` object is not `None`.
 - **Inputs**:
-    - `session`: A `Session` object provided by the `session` fixture, representing a transactional scope for database operations.
-- **Control Flow**:
-    - The function uses an `assert` statement to check that the `session` object is not `None`.
-- **Output**: The function does not return any value; it raises an AssertionError if the session is None.
+    - `session`: A `Session` object provided by the `session` fixture.
+- **Logic and Control Flow**:
+    - Use an `assert` statement to verify that `session` is not `None`.
+- **Output**: No output is returned, but the test will fail if `session` is `None`.
 
 
 

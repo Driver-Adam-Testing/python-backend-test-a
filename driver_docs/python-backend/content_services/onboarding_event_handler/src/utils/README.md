@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utility files for AWS S3 interactions and environment-specific configuration management using Pydantic.
+Utilities for AWS S3 interactions and configuration settings for environment variables.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[aws_s3.py](aws_s3.py.md)**: The `aws_s3.py` file provides utility functions for interacting with AWS S3, including generating presigned URLs, retrieving object metadata, and checking for specific GuardDuty malware scan status tags.
-- **[config.py](config.py.md)**: The `config.py` file defines a `Settings` class using Pydantic to manage environment-specific configuration settings for the application, including API URLs, authentication details, and AWS S3 configurations.
+- **[aws_s3.py](aws_s3.py.md)**: Utilities for interacting with AWS S3, including generating presigned URLs and checking object tags.
+- **[config.py](config.py.md)**: Configuration settings for environment variables and AWS S3 integration using Pydantic.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

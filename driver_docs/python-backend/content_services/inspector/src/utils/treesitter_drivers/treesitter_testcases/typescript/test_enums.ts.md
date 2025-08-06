@@ -3,92 +3,108 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_enums.ts` file is a test file for TypeScript enum definitions, showcasing various types of enums including basic, explicit values, string, mixed, const, const assertions, ambient, and module-scoped enums.
+Test cases for various TypeScript enum definitions, including basic, string, and mixed enums.
 
 # Purpose
-This TypeScript file serves as a comprehensive demonstration of various enum types and their configurations, showcasing the versatility and use cases of enums in TypeScript. It includes basic enums, enums with explicit numeric values, string enums, mixed enums combining numeric and string values, and const enums for optimized performance. Additionally, it illustrates the use of bitwise operations in enums, ambient enums for external declarations, and module-scoped enums to encapsulate enum definitions within a module. The file provides a broad overview of enum capabilities, making it a useful reference for understanding how to define and utilize enums in different contexts within TypeScript applications.
+This code defines several TypeScript enums to demonstrate different types of enum declarations and their usage. It includes a basic enum `Direction` with default numeric values, and `StatusCode` with explicit numeric values representing HTTP status codes. The `Color` enum is a string enum, while `Mixed` combines numeric and string values. A `const enum` named `ConstDirection` is defined for compile-time optimization. The `FileAccess` enum uses bitwise operations and const assertions to define permission levels. An ambient enum `AmbientEnum` is declared without initialization, indicating it is defined elsewhere. Finally, the `ModuleScope` module contains a module-scoped enum `ModuleEnum`, demonstrating how to encapsulate enums within a module.
 # Types
 
 ---
 ### Direction<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.Direction}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L4>)
+
 - **Members**:
     - `Up`: Represents the upward direction.
     - `Down`: Represents the downward direction.
     - `Left`: Represents the leftward direction.
     - `Right`: Represents the rightward direction.
-- **Description**: The `Direction` enum defines a set of named constants representing four cardinal directions: Up, Down, Left, and Right. This enum is used to provide a clear and descriptive way to handle direction-related logic in TypeScript applications, ensuring that only valid direction values are used.
+- **Description**: The `Direction` enum defines a set of named constants representing four cardinal directions: `Up`, `Down`, `Left`, and `Right`. This enum is used to specify directionality in a program, providing a clear and type-safe way to handle directional logic.
 
 
 ---
 ### StatusCode<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.StatusCode}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L12>)
+
 - **Members**:
-    - `OK`: Represents a successful HTTP request with status code 200.
-    - `Created`: Indicates that a resource has been successfully created with status code 201.
-    - `Accepted`: Denotes that a request has been accepted for processing with status code 202.
-    - `BadRequest`: Signifies a client error due to a bad request with status code 400.
-    - `Unauthorized`: Indicates that authentication is required and has failed or not been provided with status code 401.
-    - `NotFound`: Represents a situation where the requested resource could not be found with status code 404.
-    - `InternalError`: Denotes a server error with status code 500.
-- **Description**: The `StatusCode` enum defines a set of named constants representing common HTTP status codes, providing a clear and descriptive way to handle HTTP responses in a TypeScript application. Each member of the enum corresponds to a specific HTTP status code, facilitating the management of HTTP response statuses in a type-safe manner.
+    - `OK`: Represents the HTTP status code 200, indicating a successful request.
+    - `Created`: Represents the HTTP status code 201, indicating that a resource has been successfully created.
+    - `Accepted`: Represents the HTTP status code 202, indicating that a request has been accepted for processing, but the processing is not complete.
+    - `BadRequest`: Represents the HTTP status code 400, indicating a bad request due to client error.
+    - `Unauthorized`: Represents the HTTP status code 401, indicating that authentication is required and has failed or has not yet been provided.
+    - `NotFound`: Represents the HTTP status code 404, indicating that the requested resource could not be found.
+    - `InternalError`: Represents the HTTP status code 500, indicating an internal server error.
+- **Description**: The `StatusCode` enum defines a set of named constants for common HTTP status codes, providing a clear and readable way to handle HTTP responses in TypeScript applications. Each member of the enum corresponds to a specific HTTP status code, allowing developers to use descriptive names instead of numeric values when working with HTTP responses.
 
 
 ---
 ### Color<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.Color}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L23>)
+
 - **Members**:
     - `Red`: Represents the color red with the string value 'RED'.
     - `Green`: Represents the color green with the string value 'GREEN'.
     - `Blue`: Represents the color blue with the string value 'BLUE'.
     - `Yellow`: Represents the color yellow with the string value 'YELLOW'.
-- **Description**: The `Color` enum defines a set of named constants representing colors, each associated with a string value. This enum is used to ensure type safety and clarity when working with color values in a TypeScript application, allowing developers to use descriptive names instead of raw string values.
+- **Description**: The `Color` enum defines a set of named constants for colors, each associated with a string value. It provides a way to represent specific colors as string literals, ensuring consistency and type safety when working with color values in TypeScript.
 
 
 ---
 ### Mixed<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.Mixed}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L31>)
+
 - **Members**:
-    - `No`: Represents a numeric value of 0.
-    - `Yes`: Represents a string value 'YES'.
-    - `Maybe`: Represents a numeric value of 1.
-    - `Never`: Represents a string value 'NEVER'.
-- **Description**: The `Mixed` enum is a TypeScript enumeration that defines a set of named constants with both numeric and string values. It provides a way to represent a collection of related values that can be either numbers or strings, allowing for more flexible and expressive code. This enum can be used in scenarios where a combination of numeric and string identifiers is needed to represent different states or options.
+    - `No`: Represents the value `0` in the `Mixed` enum.
+    - `Yes`: Represents the string value `'YES'` in the `Mixed` enum.
+    - `Maybe`: Represents the value `1` in the `Mixed` enum.
+    - `Never`: Represents the string value `'NEVER'` in the `Mixed` enum.
+- **Description**: The `Mixed` enum defines a set of named constants that can be either numeric or string values. It includes four members: `No` with a numeric value of `0`, `Yes` with a string value of `'YES'`, `Maybe` with a numeric value of `1`, and `Never` with a string value of `'NEVER'`. This enum allows for a combination of numeric and string values, providing flexibility in representing different states or options.
 
 
 ---
 ### ConstDirection<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ConstDirection}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L39>)
+
 - **Members**:
     - `North`: Represents the north direction.
     - `South`: Represents the south direction.
     - `East`: Represents the east direction.
     - `West`: Represents the west direction.
-- **Description**: The `ConstDirection` is a constant enum that defines four cardinal directions: North, South, East, and West. As a constant enum, it is inlined at compile time, meaning that the enum values are replaced with their corresponding numeric values in the generated JavaScript code, which can lead to more efficient code by reducing runtime overhead.
+- **Description**: The `ConstDirection` is a constant enum that defines four cardinal directions: `North`, `South`, `East`, and `West`. This enum is used to represent fixed directional values in a program, and because it is a constant enum, the TypeScript compiler inlines these values at compile time, which can lead to more efficient code.
 
 
 ---
 ### FileAccess<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.FileAccess}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L47>)
+
 - **Members**:
     - `None`: Represents no file access with a value of 0.
-    - `Read`: Represents read-only file access with a value of 2.
-    - `Write`: Represents write-only file access with a value of 4.
-    - `ReadWrite`: Represents both read and write file access with a value of 6.
-    - `All`: Represents all file access permissions with a value of 10.
-- **Description**: The `FileAccess` enum defines a set of named constants representing different levels of file access permissions. It uses bitwise operations to allow combinations of permissions, such as read, write, and both read and write access. This enum provides a structured way to manage file access rights in a TypeScript application, ensuring that permissions are clearly defined and easily manipulated using bitwise operations.
+    - `Read`: Represents read access with a value of 2.
+    - `Write`: Represents write access with a value of 4.
+    - `ReadWrite`: Represents both read and write access with a value of 6.
+    - `All`: Represents all access types with a value of 10.
+- **Description**: The `FileAccess` enum defines a set of named constants for file access permissions, using bitwise operations to combine different access levels. It provides a way to specify and check file access permissions, such as `None`, `Read`, `Write`, `ReadWrite`, and `All`, where each member represents a specific combination of access rights.
 
 
 ---
 ### AmbientEnum<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.AmbientEnum}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L56>)
+
 - **Members**:
-    - `A`: Represents the numeric value 1 in the enum.
-    - `B`: Represents the numeric value 2 in the enum, as it follows A which is 1.
-    - `C`: Represents the numeric value 4 in the enum.
-- **Description**: The `AmbientEnum` is a TypeScript ambient enum declaration, which means it is a declaration without an implementation, typically used to describe the shape of an enum that is defined elsewhere, such as in a different module or a library. It defines a set of named constants, `A`, `B`, and `C`, with `A` explicitly set to 1, `B` implicitly set to 2 (as it follows `A`), and `C` explicitly set to 4. This enum can be used to ensure type safety and clarity when dealing with these specific numeric values in TypeScript code.
+    - `A`: Represents the numeric value 1 in the `AmbientEnum`.
+    - `B`: Represents the numeric value 2 in the `AmbientEnum`, as it follows `A` which is 1.
+    - `C`: Represents the numeric value 4 in the `AmbientEnum`.
+- **Description**: The `AmbientEnum` is a TypeScript enum declaration that defines a set of named constants with numeric values. It includes three members: `A`, `B`, and `C`, where `A` is explicitly set to 1, `B` is implicitly set to 2 (as it follows `A`), and `C` is explicitly set to 4. This enum is declared as ambient, meaning it is defined without an implementation, typically used to describe the shape of an existing JavaScript object or library.
 
 
 ---
 ### ModuleEnum<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ModuleScope.ModuleEnum}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_enums.ts#L64>)
+
 - **Members**:
     - `A`: Represents the string value 'A'.
     - `B`: Represents the string value 'B'.
     - `C`: Represents the string value 'C'.
-- **Description**: The `ModuleEnum` is a string-based enumeration defined within a module scope, providing a set of named constants 'A', 'B', and 'C'. This enum is used to represent a fixed set of string values, allowing for more readable and maintainable code by replacing string literals with meaningful names.
+- **Description**: The `ModuleEnum` is a string-based enumeration defined within a module scope. It specifies a set of named constants, `A`, `B`, and `C`, each associated with a string value that matches its name. This enum is useful for defining a fixed set of string values that can be used throughout the module to ensure consistency and type safety.
 
 
 

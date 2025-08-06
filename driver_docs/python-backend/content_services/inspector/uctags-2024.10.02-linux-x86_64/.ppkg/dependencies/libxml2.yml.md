@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libxml2.yml` file in the `python-backend` codebase specifies the configuration and installation details for the GNOME XML library, including its dependencies and build options.
+Configuration file for installing the GNOME XML library (libxml2) with specific dependencies and settings.
 
 # Purpose
-The provided content is a configuration file for building and installing the GNOME XML library, known as libxml2. It includes metadata such as the library's summary, web URL, source URLs, and the cryptographic hash (SHA) for verifying the source file's integrity. The file specifies the license under which the library is distributed (MIT) and lists dependencies required for the build, namely libiconv and libz. The `install` section outlines the configuration options for compiling the library, indicating which features to include or exclude, such as enabling IPv6 support and excluding Python bindings. The `dotweak` section contains commands to modify the pkg-config file for libxml2, ensuring that the correct dependencies are specified and unnecessary ones are removed.
+The metadata content describes the configuration and installation details for the GNOME XML library, known as `libxml2`. It provides essential information such as the library's summary, web URL, Git repository URL, source download URLs, and the SHA-256 checksum for verifying the source file integrity. The license is specified as MIT, and the dependencies include `libiconv` and `libz`. The installation instructions configure the library with specific options, such as enabling IPv6 and linking with `libiconv` and `libm`, while excluding certain features like LZMA, Python, and debugging. The `dotweak` section modifies the `libxml-2.0.pc` file in the `pkgconfig` directory to adjust the required libraries, ensuring compatibility with the specified dependencies.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

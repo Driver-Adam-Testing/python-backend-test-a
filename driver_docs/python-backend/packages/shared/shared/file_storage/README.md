@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files for interacting with AWS S3, including bucket creation and presigned URL generation.
+AWS S3 client and functions for creating buckets, presigned URLs, and file operations.
 
 
 ## Files
-- **[aws_s3_client.py](aws_s3_client.py.md)**: The `aws_s3_client.py` file in the `python-backend` codebase provides a class for interacting with AWS S3, including creating buckets, generating presigned URLs, uploading files, and downloading files using presigned URLs.
-- **[s3.py](s3.py.md)**: The `s3.py` file provides functionality to generate presigned URLs for accessing objects in an S3 bucket, using a hashed organization ID as the bucket name.
+- **[aws_s3_client.py](aws_s3_client.py.md)**: AWS S3 client for creating buckets, generating presigned URLs, and uploading/downloading files.
+- **[s3.py](s3.py.md)**: Functions to generate presigned URLs for accessing S3 objects with optional expiration.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

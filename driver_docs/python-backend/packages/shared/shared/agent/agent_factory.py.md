@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agent_factory.py` file defines a function to create and return either an `OpenAIStrictAgent` or an `AnthropicStrictAgent` based on the specified model configuration and provider.
+Factory function to create agents based on model provider, supporting OpenAI and Anthropic agents.
 
 # Purpose
-This Python code defines a function [`create_agent`](<#create_agent>) that serves as a factory for creating instances of either `OpenAIStrictAgent` or `AnthropicStrictAgent`, based on the specified model configuration. The function takes several parameters, including `scope`, `model`, `max_iterations`, `tools`, `response_type`, `debug`, `log`, and `llm_usage_session`, allowing for customization of the agent's behavior and configuration. It utilizes the `ModelConfig` class to determine the appropriate model provider, either OpenAI or Anthropic, and raises an error if an unsupported provider is specified. This code provides narrow functionality, focusing specifically on the instantiation of strict agent objects for language model interactions, and is part of a larger system that likely involves language model management and usage tracking.
+The code defines a function [`create_agent`](<#create_agent>) that instantiates and returns an agent object based on the specified model provider. It imports several components from shared modules, including `AnthropicStrictAgent`, `OpenAIStrictAgent`, `ModelConfig`, `ModelProvider`, `DataScope`, and `LLMUsageSession`. The function takes several parameters, such as `scope`, `model`, `max_iterations`, `tools`, `response_type`, `debug`, `log`, and `llm_usage_session`, to configure the agent's behavior. Depending on the `model` parameter, the function determines the appropriate model configuration and creates an instance of either `OpenAIStrictAgent` or `AnthropicStrictAgent`. If the model provider is not recognized, the function raises a `ValueError`.
+
+This code is part of a broader system that manages language model agents, providing a mechanism to create agents with specific configurations. It serves as a factory function, abstracting the details of agent creation and configuration based on the model provider. The function supports both OpenAI and Anthropic model providers, allowing for flexibility in agent deployment. The use of `BaseModel` for `response_type` suggests integration with Pydantic for data validation, while `LLMUsageSession` indicates tracking or managing usage sessions for language model interactions.
 # Imports and Dependencies
 
 ---
@@ -23,28 +25,30 @@ This Python code defines a function [`create_agent`](<#create_agent>) that serve
 
 ---
 ### create\_agent<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_factory.create_agent}} -->
-The `create_agent` function initializes and returns an agent object based on the specified model provider, either OpenAI or Anthropic, with configurable parameters.
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_factory.py#L10>)
+
+Creates an agent based on the specified model provider and configuration.
 - **Inputs**:
-    - `scope`: A `DataScope` object that defines the scope of data the agent will operate on.
-    - `model`: An optional string specifying the model name; if not provided, a default model configuration is used.
-    - `max_iterations`: An integer specifying the maximum number of iterations the agent can perform, defaulting to 1.
-    - `tools`: An optional object representing tools available to the agent.
-    - `response_type`: An optional `BaseModel` object defining the response format for the agent.
-    - `debug`: A boolean indicating whether debugging is enabled, defaulting to True.
-    - `log`: A boolean indicating whether logging is enabled, defaulting to True.
-    - `llm_usage_session`: An optional `LLMUsageSession` object for tracking usage of the language model.
-- **Control Flow**:
-    - Determine the model configuration using the provided model name or default configuration if none is provided.
-    - Check the model provider from the configuration.
-    - If the provider is OpenAI, instantiate and return an [`OpenAIStrictAgent`](<agent_openai_strict.py.md#OpenAIStrictAgent>) with the specified parameters.
-    - If the provider is Anthropic, instantiate and return an [`AnthropicStrictAgent`](<agent_anthropic_strict.py.md#AnthropicStrictAgent>) with the specified parameters.
-    - Raise a `ValueError` if the provider is not supported.
-- **Output**: Returns an instance of either [`OpenAIStrictAgent`](<agent_openai_strict.py.md#OpenAIStrictAgent>) or [`AnthropicStrictAgent`](<agent_anthropic_strict.py.md#AnthropicStrictAgent>) based on the model provider.
+    - `scope`: Defines the data scope for the agent.
+    - `model`: Specifies the model name or uses the default if None.
+    - `max_iterations`: Sets the maximum number of iterations for the agent.
+    - `tools`: Provides optional tools for the agent.
+    - `response_type`: Specifies the response type as a Pydantic BaseModel or None.
+    - `debug`: Enables or disables debug mode.
+    - `log`: Enables or disables logging.
+    - `llm_usage_session`: Specifies the LLM usage session or None.
+- **Logic and Control Flow**:
+    - Determines the model configuration using the provided model name or defaults if None.
+    - Checks the model provider from the configuration.
+    - If the provider is 'OPENAI', returns an 'OpenAIStrictAgent' with the specified parameters.
+    - If the provider is 'ANTHROPIC', returns an 'AnthropicStrictAgent' with the specified parameters.
+    - Raises a 'ValueError' if the provider is not supported.
+- **Output**: Returns an instance of 'OpenAIStrictAgent' or 'AnthropicStrictAgent' based on the model provider.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<models/llm_models.py.md#ModelConfigdefault>)
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<models/llm_models.py.md#ModelConfigfrom_name>)
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<agent_openai_strict.py.md#OpenAIStrictAgent>)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<agent_anthropic_strict.py.md#AnthropicStrictAgent>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<models/llm_models.py.md#modelconfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<models/llm_models.py.md#modelconfigfrom_name>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<agent_openai_strict.py.md#openaistrictagent>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<agent_anthropic_strict.py.md#anthropicstrictagent>)
 
 
 

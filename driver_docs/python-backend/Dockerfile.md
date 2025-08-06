@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `Dockerfile` in the `python-backend` codebase sets up a Docker image for a Python application using a slim Python 3.12 base, installs dependencies with Poetry, and configures start scripts for development and production environments.
+Dockerfile for setting up a Python backend environment with Poetry and start scripts.
 
 # Purpose
-The provided content is a Dockerfile, which is used to automate the creation of a Docker image for a Python application. It begins by specifying a base image, `python:3.12-slim`, and sets the working directory to `/app/`. The file includes instructions to update the package manager and install necessary system packages like `curl` and `build-essential`, followed by the installation of Poetry, a dependency management tool for Python. The configuration ensures that Poetry does not create virtual environments, simplifying dependency management within the Docker container. The Dockerfile then copies various components of the application, including the `driver_db` package, application code, and configuration files, into the container. It also includes logic to conditionally install development dependencies based on the `INSTALL_DEV` argument. Finally, it sets up executable scripts for starting the application and cleans up unnecessary packages to reduce the image size, concluding with a command to determine which start script to execute based on the environment.
+The Dockerfile defines the environment and steps to build a Docker image for a Python application. It starts from a base image `python:3.12-slim` and sets the working directory to `/app/`. The file installs necessary system packages and the Poetry tool for managing Python dependencies. It configures Poetry to install dependencies directly into the system environment instead of creating virtual environments. The file copies application code and configuration files into the image, installs dependencies based on the `INSTALL_DEV` argument, and sets up executable scripts for starting the application. Finally, it cleans up unnecessary packages to reduce the image size and specifies the command to run the application, choosing between development and production start scripts based on the `INSTALL_DEV` argument.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests-start.sh` file is a shell script that executes a Python pre-start test script followed by a test script in the `python-backend` codebase.
+Shell script to run pre-start tests and execute the main test script with arguments.
 
 # Purpose
-This Bash script is designed to automate the testing process for a Python application. It provides narrow functionality, specifically focusing on executing pre-start tests and running a test script. The script first runs a Python script located at `/app/app/tests_pre_start.py`, which likely contains preliminary checks or setup tasks necessary before the main testing begins. Following this, it executes another script, `./scripts/test.sh`, passing any additional arguments it receives, which suggests that this script is the main test suite for the application. The use of `set -e` ensures that the script will exit immediately if any command fails, while `set -x` enables a mode of the shell where all executed commands are printed to the terminal, aiding in debugging. Overall, this script is a utility for developers to streamline the testing workflow in a development environment.
+The script is a Bash executable that automates the execution of a test suite for a Python application. It begins by setting the script to exit immediately if a command fails (`set -e`) and to print each command before executing it (`set -x`). The script first runs a Python script located at `/app/app/tests_pre_start.py`, which likely performs pre-test setup or checks. After the Python script, it executes another script, `./scripts/test.sh`, passing any additional arguments received by the Bash script. This setup is typically used in development environments to ensure that tests are run consistently and automatically.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

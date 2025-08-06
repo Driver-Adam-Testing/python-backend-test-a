@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `determine_file_kind.txt` file provides instructions for determining the type of source content in a file, categorizing it as either a large source code file, a small source code file, or a metadata/configuration file.
+A text file that describes how to determine the type of source content, using integers 0, 1, or 2.
 
 # Purpose
-The provided content is a set of instructions for a software engineering expert to classify a given file based on its contents. The instructions detail three categories: large source code files, small source code files, and metadata or configuration files, each associated with an integer (0, 1, or 2, respectively). The criteria for classification include the complexity and type of content, such as whether it is executable source code or non-executable configuration data. The expert is expected to analyze the file name and contents provided in a specific format and respond with the corresponding integer to indicate the file type. This document serves as a guideline for consistent and accurate classification of files within a software codebase.
+2
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

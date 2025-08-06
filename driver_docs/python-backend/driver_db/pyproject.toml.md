@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for a Python project using Poetry, specifying dependencies and build system settings.
+Configuration for a Python project using Poetry, specifying dependencies and build settings.
 
 # Purpose
-The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. The `[tool.poetry]` section specifies the project's name as `database`, its version as `0.1.0`, and includes author information and a reference to the `README.md` file. The `[tool.poetry.dependencies]` section lists the required runtime dependencies, including specific versions of Python, Alembic, SQLModel, and others, with a note to potentially remove `strawberry-graphql` in the future. The `[tool.poetry.group.dev.dependencies]` section defines development dependencies such as `pytest`, `pytest-cov`, `mypy`, and `pre-commit`, which are used for testing and code quality checks. The `[build-system]` section specifies the build requirements and backend, indicating the use of `poetry-core` for building the project.
+The `pyproject.toml` file configures the Python project using Poetry, a dependency management tool. It specifies the project's metadata, including the name `database`, version `0.1.0`, and author information. The file defines the Python version compatibility as `>=3.12,<3.13` and lists the required dependencies such as `alembic`, `sqlmodel`, and `pydantic-settings`, each with specified version constraints. Additionally, it includes a note to remove `strawberry-graphql` after migrating schemas or transitioning legacy systems. The file also defines development dependencies under the `[tool.poetry.group.dev.dependencies]` section, including `pytest`, `pytest-cov`, `mypy`, and `pre-commit`. The `[build-system]` section specifies `poetry-core` as a requirement and sets `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `code_snippet_extractor.py` file defines a prompt for a system role to identify and extract code examples, CLI commands, source code, and code snippets from a document.
+Extracts code examples, CLI commands, and snippets from a document.
 
 # Purpose
-This code defines a configuration for a system message in a software application, specifically for a role-based messaging system. It consists of a multi-line string `PROMPT` that provides instructions for a software engineer to identify and extract code examples from a document. The `MESSAGE` dictionary is then created with two key-value pairs: one specifying the role as "system" and the other containing the `PROMPT` content. This code provides narrow functionality, focusing on setting up a specific system message configuration, likely for use in a larger application that processes or generates documentation.
+The code defines a constant `PROMPT` that contains a string message intended for use in a software engineering context. This message instructs a user to identify and extract code examples, CLI commands, source code, and code snippets from a document. Additionally, the code creates a dictionary `MESSAGE` with two keys: `role` and `content`. The `role` key is set to `"system"`, and the `content` key is assigned the value of the `PROMPT` string. This setup is likely used in a system where messages are structured with roles and content, possibly for a chatbot or automated documentation tool.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The `PROMPT` variable is a multi-line string that provides a detailed instruction or guideline for a task. It is designed to instruct a software engineer to identify and extract various types of code examples from a document, including CLI commands, code examples, source code, and code snippets.
-- **Use**: This variable is used as a prompt or instruction set for a system or user to perform the task of extracting code examples from a document.
+- **Type**: ``str``
+- **Description**: A multi-line string that gives instructions to identify and extract code examples from a document. It specifies the types of code elements to find, such as CLI commands, code examples, source code, and code snippets.
+- **Use**: Used as a prompt for a system message to guide the extraction of code elements from a document.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for a software engineer to identify and extract code examples from a document.
-- **Use**: This variable is used to encapsulate a role and a set of instructions, likely for use in a system that processes or interprets these instructions.
+- **Type**: ``dict``
+- **Description**: A dictionary with two key-value pairs: `role` and `content`. The `role` key has a string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store a structured message with a role and content, likely for communication or configuration purposes.
 
 
 

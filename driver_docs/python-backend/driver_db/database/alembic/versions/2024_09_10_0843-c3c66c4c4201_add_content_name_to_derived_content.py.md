@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.py` file is an Alembic migration script that adds a `content_name` column to the `derived_contents` table and creates an index for it, with corresponding downgrade operations to remove them.
+Alembic migration script to add and index a "content_name" column in the "derived_contents" table.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically for modifying the database schema by adding a new column named `content_name` to the `derived_contents` table. The [`upgrade`](<#upgrade>) function implements the changes by adding the column and creating an index on it, while the [`downgrade`](<#downgrade>) function reverses these changes by removing the index and the column. The script includes metadata such as revision identifiers to track the migration's place in the sequence of database changes. This script is typical in environments where database schema evolution is managed programmatically.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), to manage schema changes in a database. The [`upgrade`](<#upgrade>) function adds a new column named `content_name` of type `Text` to the `derived_contents` table and creates an index on this column to improve query performance. The [`downgrade`](<#downgrade>) function reverses these changes by removing the index and the column, allowing for a rollback of the schema update. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -18,52 +18,56 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring that migrations are applied in the correct order.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic to determine the order of migrations.
+- **Use**: Used by Alembic to track and apply database schema changes in the correct order.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to manage database schema changes.
-- **Use**: `branch_labels` is used to specify labels for a branch in Alembic migrations, but in this script, it is not utilized and remains `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify if the current migration depends on any other migrations, but in this case, it indicates no dependencies by being set to `None`.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.upgrade}} -->
-The `upgrade` function adds a new nullable text column named `content_name` to the `derived_contents` table and creates an index on this column.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.py#L18>)
+
+Adds a new column named `content_name` to the `derived_contents` table and creates an index for it.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.add_column` to add a new column `content_name` of type `Text` to the `derived_contents` table, allowing null values.
-    - The function then calls `op.create_index` to create an index named `ix_derived_contents_content_name` on the `content_name` column of the `derived_contents` table.
-- **Output**: The function does not return any output.
+- **Logic and Control Flow**:
+    - Adds a new column `content_name` of type `Text` to the `derived_contents` table, allowing null values.
+    - Creates an index named `ix_derived_contents_content_name` on the `content_name` column in the `derived_contents` table.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.downgrade}} -->
-The `downgrade` function removes a specific index and column from the `derived_contents` table in a database schema.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.py#L29>)
+
+Reverts database schema changes by removing an index and a column from the `derived_contents` table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.drop_index` to remove the index named `ix_derived_contents_content_name` from the `derived_contents` table.
-    - The function calls `op.drop_column` to remove the `content_name` column from the `derived_contents` table.
-- **Output**: The function does not return any value; it performs operations to modify the database schema.
+- **Logic and Control Flow**:
+    - Calls `op.drop_index` to remove the index `ix_derived_contents_content_name` from the `derived_contents` table.
+    - Calls `op.drop_column` to remove the `content_name` column from the `derived_contents` table.
+- **Output**: No output is returned.
 
 
 

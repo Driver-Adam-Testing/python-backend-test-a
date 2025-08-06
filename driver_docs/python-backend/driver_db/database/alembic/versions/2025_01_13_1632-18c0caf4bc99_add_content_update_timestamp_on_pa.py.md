@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_13_1632-18c0caf4bc99_add_content_update_timestamp_on_pa.py` file is an Alembic migration script that adds a `related_content_last_updated` timestamp column to the `v2_primary_asset` table and updates it with the latest content timestamp for each primary asset.
+Alembic migration script to add and populate a content update timestamp column in the `v2_primary_asset` table.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding a new column to an existing table. Specifically, it adds a `related_content_last_updated` column of type `DateTime` with timezone support to the `v2_primary_asset` table. The purpose of this column is to track the last update timestamp of related content for each primary asset. The script includes an [`upgrade`](<#upgrade>) function that not only adds the column but also populates it with initial data. It sets a default timestamp for rows where the new column is initially null and updates it with the latest content update timestamp derived from related tables. This ensures that the new column is immediately useful for tracking content updates.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script's purpose is to modify the database schema by adding a new column named `related_content_last_updated` to the `v2_primary_asset` table. This column is of type `DateTime` with timezone support and is initially nullable. The [`upgrade`](<#upgrade>) function implements the schema change by adding the column and then populating it with a default timestamp for existing records where the column is null. It also updates the column with the latest content update timestamp for each primary asset by joining related tables and calculating the maximum update time.
 
-The script also defines a [`downgrade`](<#downgrade>) function, which serves as a rollback mechanism by removing the `related_content_last_updated` column from the `v2_primary_asset` table. This migration script is a part of a version-controlled database schema management process, allowing developers to apply and revert schema changes systematically. The use of Alembic, a database migration tool for SQLAlchemy, indicates that this script is intended to be executed in environments where the database schema needs to be updated in a controlled and reversible manner.
+The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgrade`](<#upgrade>) function. It removes the `related_content_last_updated` column from the `v2_primary_asset` table, effectively restoring the database schema to its previous state. The script includes revision identifiers, which Alembic uses to track the migration's position in the sequence of migrations. This script is part of a series of migrations, as indicated by the `revision` and `down_revision` identifiers, and is intended to be executed as part of a larger database version control process.
 # Imports and Dependencies
 
 ---
@@ -21,53 +21,57 @@ The script also defines a [`downgrade`](<#downgrade>) function, which serves as 
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the specific migration script when applying or rolling back database schema changes.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring that migrations are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label branches in a version control system for database schema changes.
-- **Use**: This variable is used to define branch labels for Alembic migrations, but is currently set to `None`, indicating no specific branch labeling is applied.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_13_1632-18c0caf4bc99_add_content_update_timestamp_on_pa.upgrade}} -->
-The `upgrade` function adds a new column to the `v2_primary_asset` table and updates it with the latest content update timestamps.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_13_1632-18c0caf4bc99_add_content_update_timestamp_on_pa.py#L21>)
+
+Adds a new column to the 'v2_primary_asset' table and updates it with timestamps of the latest content updates.
 - **Inputs**: None
-- **Control Flow**:
-    - Add a new column `related_content_last_updated` to the `v2_primary_asset` table with a nullable DateTime type.
-    - Execute an SQL command to set the `related_content_last_updated` column to a default timestamp for rows where it is NULL.
-    - Define a common table expression (CTE) `latest_content_updates` to find the latest content update timestamp for each primary asset by joining related tables.
-    - Update the `related_content_last_updated` column with the latest content update timestamp from the CTE for each primary asset where the new timestamp is more recent than the existing value.
-- **Output**: The function does not return any value; it performs database schema and data updates.
+- **Logic and Control Flow**:
+    - Adds a new column named 'related_content_last_updated' to the 'v2_primary_asset' table with a data type of 'DateTime' and allows null values.
+    - Executes an SQL command to set the 'related_content_last_updated' column to a default timestamp of '1970-01-01 00:00:00+00' for rows where it is null.
+    - Defines a common table expression (CTE) named 'latest_content_updates' to find the latest content update timestamp for each primary asset by joining 'v2_primary_asset', 'v2_version', 'v2_node', and 'derived_contents' tables.
+    - Updates the 'related_content_last_updated' column in 'v2_primary_asset' with the latest content update timestamp from the CTE where the new timestamp is more recent than the existing value.
+- **Output**: No output is returned as the function modifies the database schema and data directly.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_13_1632-18c0caf4bc99_add_content_update_timestamp_on_pa.downgrade}} -->
-The `downgrade` function removes the 'related_content_last_updated' column from the 'v2_primary_asset' table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_13_1632-18c0caf4bc99_add_content_update_timestamp_on_pa.py#L56>)
+
+Removes the 'related_content_last_updated' column from the 'v2_primary_asset' table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.drop_column` to remove the 'related_content_last_updated' column from the 'v2_primary_asset' table.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Calls the 'drop_column' method from the 'op' module to remove the 'related_content_last_updated' column from the 'v2_primary_asset' table.
+- **Output**: No output is returned as the function returns 'None'.
 
 
 

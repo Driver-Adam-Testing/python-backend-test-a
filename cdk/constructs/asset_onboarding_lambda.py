@@ -85,8 +85,10 @@ class AssetOnboardingLambda(Construct):
             "LegacyDropzoneBucket",
             bucket_name=f"{params.environment}-codebase-dropzone",
         )
+        #TODO: Guard Duty tags object in the droppzone bucket but since its not enabled in pms, we use OBJECT_CREATED_PUT
+        sns_event_type = aws_s3.EventType.OBJECT_TAGGING_PUT if params.environment != 'pms' else aws_s3.EventType.OBJECT_CREATED_PUT
         legacy_dropzone_bucket.add_event_notification(
-            aws_s3.EventType.OBJECT_TAGGING_PUT,
+            sns_event_type,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="assets/"),
         )

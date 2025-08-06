@@ -32,7 +32,7 @@ class PMSStack(Stack):
             "ApiBackend",
             BackendParams(
                 environment="pms",
-                cors_origins=cors_origins,
+                cors_origins=[cors_origins],
                 allowed_ips=[],  # All IPs currently allowed
                 use_legacy_dropzone=True,
                 metrics_bus=self.metrics_lambda.metrics_bus,

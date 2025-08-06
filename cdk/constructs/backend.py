@@ -37,7 +37,7 @@ class BackendParams:
         aws_region: str,
         aws_account: str
     ) -> None:
-        self.cors_origins = cors_origins
+        self.cors_origins = ",".join(cors_origins)
         self.allowed_ips = allowed_ips
         self.environment = environment
         self.use_legacy_dropzone = use_legacy_dropzone

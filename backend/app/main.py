@@ -55,6 +55,7 @@ class JsonFormatter(Formatter):
         return json.dumps(json_record)
 
 
+
 def _configure_logging() -> None:
     log_level = settings.LOG_LEVEL.upper()
     handler = logging.StreamHandler()

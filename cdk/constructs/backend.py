@@ -149,7 +149,7 @@ class Backend(Construct):
             ],
             lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
-
+        print('cors_origins', params.cors_origins)
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",

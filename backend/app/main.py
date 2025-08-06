@@ -64,12 +64,12 @@ def _configure_logging() -> None:
 
 
 def _configure_sentry(
-    env: Literal["local", "development", "staging", "production"], dsn: str
+    env: Literal["local", "development", "staging", "production","pms"], dsn: str
 ) -> None:
     if env == "local":
         return
 
-    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1}[env]
+    sample_rate = {"development": 1.0, "staging": 0.5, "production": 0.1, "pms": 0.1}[env]
     sentry_sdk.init(
         dsn=dsn,
         environment=env,

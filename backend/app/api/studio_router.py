@@ -17,6 +17,7 @@ from app.api.routes.v2 import (
     api_key as v2_api_key,
 )
 
+
 # ruff: noqa: F401
 from app.api.routes.v2 import (
     autodocs,

@@ -71,10 +71,10 @@ def verify_api_key(raw_key: str) -> dict:
 API_KEY_HEADER_NAME = "X-API-Key"
 
 
-_api_key_scheme = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
+API_KEY_SCHEME = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 
 
-def require_api_key(key: str | None = Depends(_api_key_scheme)) -> dict:
+def require_api_key(key: str | None = Depends(API_KEY_SCHEME)) -> dict:
     """Dependency: assert request carries a valid X-API-Key header."""
     if not key:
         raise HTTPException(401, "Missing X-API-Key header")

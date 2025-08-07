@@ -101,6 +101,7 @@ def create_bucket_if_dne(bucket_name: str) -> None:
         # TODO: handle this cleanly? AWS_S3_ENDPOINT_URL returns None if DNE, which reverts to
         # default boto3 behavior
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+        print(f"Checking if bucket exists... {bucket_name} @ {os.environ.get("AWS_S3_ENDPOINT_URL")}")
         s3_resource.meta.client.head_bucket(Bucket=bucket_name)
     except ClientError:
         # Bucket does not exist

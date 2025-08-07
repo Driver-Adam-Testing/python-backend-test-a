@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `LICENSE` file in the `python-backend` codebase contains the MIT License, granting permission to use, copy, modify, and distribute the software with certain conditions.
+MIT License for the software, granting permission to use, copy, modify, and distribute.
 
 # Purpose
-The provided content is the text of the MIT License, a widely used open-source software license. This license grants users broad permissions to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, as long as the original copyright notice and permission notice are included in all copies or substantial portions of the software. It also includes a disclaimer that the software is provided "as is," without any warranties, thus limiting the liability of the authors or copyright holders for any potential issues arising from the use of the software. The inclusion of this license in a software codebase indicates that the software is open-source and can be freely used and modified under the terms specified.
+The MIT License is a permissive free software license that allows users to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software. It requires that the copyright notice and permission notice are included in all copies or substantial portions of the software. The license disclaims any warranties, including those of merchantability, fitness for a particular purpose, and noninfringement. It also limits the liability of the authors or copyright holders for any claims, damages, or other liabilities that may arise from the use or distribution of the software.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

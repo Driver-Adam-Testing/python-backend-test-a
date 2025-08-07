@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `api_types.py` file defines GraphQL types for a Git provider and a Git repository using the Strawberry library.
+Defines GraphQL types for Git providers and repositories using Strawberry.
 
 # Purpose
-This code defines a GraphQL schema using the Strawberry library, which is a Python library for building GraphQL APIs. It provides narrow functionality by defining two data types, `GitProvider` and `GitRepository`, which are likely used to represent and query information about Git providers and repositories within a GraphQL API. The `GitProvider` class includes fields for the display name, name, and logo URL of a Git provider, while the `GitRepository` class includes fields for the provider name, repository name, organization, last updated timestamp, and additional metadata. This code is a short script that sets up the structure for querying Git-related data in a GraphQL API, focusing on the schema definition aspect.
+This code defines two data models using the `strawberry` library, which is a GraphQL library for Python. The `GitProvider` class represents a Git service provider with attributes `display_name`, `name`, and `logo_url`. The `GitRepository` class models a Git repository with attributes `provider_name`, `repo_name`, `org`, `last_updated`, and `metadata`. The `last_updated` attribute uses the `datetime` type to store the date and time of the last update, while `metadata` is a dictionary for storing additional information about the repository. This code provides a narrow functionality focused on defining GraphQL types for Git-related data.
 # Imports and Dependencies
 
 ---
@@ -18,24 +18,28 @@ This code defines a GraphQL schema using the Strawberry library, which is a Pyth
 
 ---
 ### GitProvider<!-- {{#class:python-backend/backend/app/api/routes/legacy/api_types.GitProvider}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/api_types.py#L6>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `display_name`: The human-readable name of the Git provider.
-    - `name`: The internal or system name of the Git provider.
-    - `logo_url`: The URL to the logo image of the Git provider.
-- **Description**: The GitProvider class is a data structure used to represent a Git service provider, encapsulating its display name, internal name, and logo URL. It is decorated with @strawberry.type, indicating its use in a GraphQL schema with Strawberry.
+    - `display_name`: Stores the display name of the Git provider.
+    - `name`: Stores the internal name of the Git provider.
+    - `logo_url`: Stores the URL of the Git provider's logo.
+- **Description**: Represents a Git provider with attributes for display name, internal name, and logo URL.
 
 
 ---
 ### GitRepository<!-- {{#class:python-backend/backend/app/api/routes/legacy/api_types.GitRepository}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/api_types.py#L13>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `provider_name`: The name of the provider hosting the repository.
-    - `repo_name`: The name of the repository.
-    - `org`: The organization that owns the repository.
-    - `last_updated`: The date and time when the repository was last updated.
-    - `metadata`: A dictionary containing additional metadata about the repository.
-- **Description**: The GitRepository class represents a repository hosted on a version control platform, capturing essential details such as the provider name, repository name, owning organization, last update timestamp, and additional metadata. It is decorated with @strawberry.type, indicating its use in a GraphQL schema.
+    - `provider_name`: Stores the name of the provider.
+    - `repo_name`: Stores the name of the repository.
+    - `org`: Stores the name of the organization.
+    - `last_updated`: Stores the date and time when the repository was last updated.
+    - `metadata`: Stores additional metadata as a dictionary.
+- **Description**: Represents a Git repository with details such as provider name, repository name, organization, last update timestamp, and additional metadata.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_09_05_1551-5a533a6716b2_add_template_derived_content_type.py` file is an Alembic migration script that adds and removes a 'template' entry in the `derived_content_types` table.
+Alembic migration script to add and remove 'template' from the derived_content_types table.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically for managing schema changes in a database. The script defines two functions, `upgrade()` and `downgrade()`, which are used to apply and revert a specific change to the database schema, respectively. In this case, the `upgrade()` function inserts a new entry with the type name 'template' into the `derived_content_types` table, while the `downgrade()` function removes this entry. The script includes metadata such as revision identifiers to track the migration's place in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade function that inserts a new entry with the `type_name` 'template' into the `derived_content_types` table. The [`downgrade`](<#downgrade>) function reverses this change by deleting the entry with `type_name` 'template' from the same table. The script includes revision identifiers `revision` and `down_revision` to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -18,54 +18,58 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the specific migration script when applying or rolling back database changes.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the immediate predecessor of the current migration script, ensuring proper sequencing of database schema updates.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies on other migrations, but in this case, it indicates that there are no dependencies for this migration script.
-- **Use**: This variable is used to indicate that the current Alembic migration does not depend on any other migration.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_05_1551-5a533a6716b2_add_template_derived_content_type.upgrade}} -->
-The `upgrade` function inserts a new entry with the type name 'template' into the `derived_content_types` table in the database.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_05_1551-5a533a6716b2_add_template_derived_content_type.py#L18>)
+
+Inserts a new entry with the type name 'template' into the 'derived_content_types' table.
 - **Inputs**: None
-- **Control Flow**:
-    - Retrieve a database connection using `op.get_bind()`.
-    - Define an SQL insert query to add a new row with the type name 'template' to the `derived_content_types` table.
-    - Execute the SQL insert query using the database connection.
-- **Output**: The function does not return any value; it performs a database operation to insert a new record.
+- **Logic and Control Flow**:
+    - Gets a database connection using `op.get_bind()`.
+    - Defines an SQL insert query to add a new row with the type name 'template' to the 'derived_content_types' table.
+    - Executes the SQL insert query using the database connection.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_05_1551-5a533a6716b2_add_template_derived_content_type.downgrade}} -->
-The `downgrade` function removes the 'template' entry from the `derived_content_types` table in the database.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_05_1551-5a533a6716b2_add_template_derived_content_type.py#L24>)
+
+Removes the 'template' entry from the 'derived_content_types' table in the database.
 - **Inputs**: None
-- **Control Flow**:
-    - Retrieve a connection to the database using `op.get_bind()`.
-    - Define a SQL delete query to remove entries from `derived_content_types` where `type_name` is 'template'.
-    - Execute the delete query using the database connection.
-- **Output**: The function does not return any value; it performs a database operation to delete specific records.
+- **Logic and Control Flow**:
+    - Get a connection to the database using `op.get_bind()`.
+    - Define a SQL delete query to remove the entry with `type_name` equal to 'template' from the `derived_content_types` table.
+    - Execute the delete query using the connection.
+- **Output**: No output is returned.
 
 
 

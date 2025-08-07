@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `oauth` folder in the `python-backend` codebase contains the `gitlab_oauth_strategy.py` file, which implements the GitLab OAuth strategy for managing authorization and token processes.
+Implements GitLab OAuth strategy for token management and user authentication.
 
 
 ## Files
-- **[gitlab_oauth_strategy.py](gitlab_oauth_strategy.py.md)**: The `gitlab_oauth_strategy.py` file implements the GitLab OAuth strategy for handling authorization, token exchange, and token validation within the `python-backend` codebase.
+- **[gitlab_oauth_strategy.py](gitlab_oauth_strategy.py.md)**: Implements GitLab OAuth strategy for token management and user authentication.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

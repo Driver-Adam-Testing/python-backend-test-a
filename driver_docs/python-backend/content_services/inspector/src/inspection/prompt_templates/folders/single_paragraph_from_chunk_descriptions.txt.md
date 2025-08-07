@@ -3,10 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for writing a single paragraph description of a folder in a software codebase by synthesizing slightly overlapping descriptions of its subcomponents.
+Instructions for writing a single paragraph description of a folder in a software codebase.
 
 # Purpose
-The provided text appears to be a template or guideline for generating a comprehensive description of a folder within a software codebase. The purpose of this template is to instruct a software engineering expert on how to synthesize detailed descriptions of various subcomponents within a folder to create a cohesive overview of the folder's purpose and contents. The expert is tasked with analyzing slightly overlapping descriptions of the folder's subcomponents and then crafting a single paragraph that accurately reflects the folder's role and the nature of its contents. The instructions emphasize the importance of deriving information solely from the provided descriptions without introducing any speculative or extraneous details. This approach ensures that the final paragraph is both precise and informative, offering a clear understanding of the folder's function within the broader context of the software project.
+Folder content subset 1 description for folder `data_processing`:
+
+The `data_processing` folder contains scripts for cleaning and transforming raw data. These scripts remove duplicates, handle missing values, and standardize data formats to ensure consistency. The folder also includes configuration files that specify parameters for data processing tasks, such as input file paths and processing options.
+
+Folder content subset 2 description for folder `data_processing`:
+
+In addition to data cleaning scripts, the `data_processing` folder includes modules for data validation. These modules check data integrity by verifying data types, ranges, and constraints. The folder also contains logging utilities that record processing steps and errors for auditing and debugging purposes.
+
+---
+
+The `data_processing` folder is designed to handle the preparation and validation of raw data. It includes scripts that perform data cleaning tasks such as removing duplicates, managing missing values, and standardizing formats. Configuration files within the folder define parameters for these tasks, including input file paths and specific processing options. The folder also contains modules dedicated to data validation, ensuring data integrity by checking types, ranges, and constraints. Additionally, logging utilities are present to document processing steps and errors, facilitating auditing and debugging.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `references.py` file defines a `Reference` class for representing nodes in a graph and a `ReferenceSet` class for managing collections of these references, with functionality for iteration and sorting by score.
+Defines a `Reference` model for graph nodes and a `ReferenceSet` class for managing collections of references.
 
 # Purpose
-This Python code defines two classes, `Reference` and `ReferenceSet`, using the Pydantic library to facilitate data validation and management. The `Reference` class models a reference to a node in a graph, encapsulating various attributes such as `content`, `score`, `relative_path`, and several UUIDs for identification purposes. It includes methods for hashing and equality comparison, which are essential for using instances of this class in sets or as dictionary keys. Additionally, it provides a [`short_path`](<#Referenceshort_path>) property to generate a condensed version of the `relative_path`, enhancing readability when dealing with lengthy paths.
+The code defines two classes, `Reference` and `ReferenceSet`, which are used to manage references to nodes in a graph. The `Reference` class is a data model that extends `BaseModel` from the Pydantic library, providing a structured way to store information about a node reference. It includes attributes such as `content`, `score`, `relative_path`, `version_display_name`, `version_id`, `node_id`, `chunk_id`, `chunk_number`, `metadata`, and `tool_call_id`. The class also implements methods for hashing and equality comparison, which are based on the `content`, `node_id`, and `version_id` attributes. Additionally, it provides a [`short_path`](<#referenceshort_path>) property to generate a shortened version of the `relative_path`.
 
-The `ReferenceSet` class acts as a container for multiple `Reference` objects, implementing the `Iterable` interface to allow iteration over its elements. It provides functionality to create a `ReferenceSet` from a list of other `ReferenceSet` instances, effectively merging them into a single set. The class also includes methods to add individual references and to iterate over the references sorted by their score in descending order. This code is structured as a library file intended for import and use in other parts of a software system, providing a clear API for managing and interacting with collections of graph node references.
+The `ReferenceSet` class is a collection of `Reference` objects and implements the `Iterable` interface, allowing it to be used in loops. It provides methods to add references and to create a new `ReferenceSet` from a list of existing `ReferenceSet` instances. The class ensures that references are stored in a set, which inherently manages uniqueness. The [`__iter__`](<#referenceset__iter__>) method sorts the references by their `score` in descending order, facilitating prioritized access. The [`__len__`](<#referenceset__len__>) method returns the number of references in the set. This code is likely intended to be part of a larger system that manages and processes graph node references, providing a structured and efficient way to handle such data.
 # Imports and Dependencies
 
 ---
@@ -22,22 +22,25 @@ The `ReferenceSet` class acts as a container for multiple `Reference` objects, i
 
 ---
 ### Reference<!-- {{#class:python-backend/packages/shared/shared/v3/utils/references.Reference}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L8>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
     - `content`: Stores the content of the reference as a string.
-    - `score`: Represents the score of the reference, which can be None.
-    - `relative_path`: Holds the relative path to the node, which can be None.
-    - `version_display_name`: Stores the display name of the version, which can be None.
-    - `version_id`: Contains the UUID of the version, which can be None.
-    - `node_id`: Holds the UUID of the node, which can be None.
-    - `chunk_id`: Stores the UUID of the chunk, which can be None.
-    - `chunk_number`: Represents the number of the chunk, which can be None.
-    - `metadata`: Contains additional metadata as a dictionary, which can be None.
-    - `tool_call_id`: Holds the ID of the tool call, which can be None.
-- **Description**: The Reference class is a data model that represents a reference to a node in a graph, encapsulating various attributes such as content, score, and identifiers for version, node, and chunk. It extends the BaseModel from Pydantic, allowing for data validation and serialization. The class includes methods for hashing and equality comparison, and provides a property to generate a shortened path representation from the relative path.
+    - `score`: Represents the score of the reference, which can be a float or None.
+    - `relative_path`: Holds the relative path to the node as a string or None.
+    - `version_display_name`: Contains the display name of the version as a string or None.
+    - `version_id`: Stores the UUID of the version or None.
+    - `node_id`: Holds the UUID of the node or None.
+    - `chunk_id`: Represents the UUID of the chunk or None.
+    - `chunk_number`: Indicates the number of the chunk as an integer or None.
+    - `metadata`: Contains additional metadata as a dictionary or None.
+    - `tool_call_id`: Stores the tool call identifier as a string or None.
+- **Description**: Represents a reference to a node in a graph, encapsulating various attributes such as content, score, and identifiers for version, node, and chunk. It includes methods for hashing and equality comparison, and provides a property to generate a shortened path from the relative path.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/utils/references.Reference.__hash__`](<#Reference__hash__>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.Reference.__eq__`](<#Reference__eq__>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.Reference.short_path`](<#Referenceshort_path>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.Reference.__hash__`](<#reference__hash__>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.Reference.__eq__`](<#reference__eq__>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.Reference.short_path`](<#referenceshort_path>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -45,53 +48,62 @@ The `ReferenceSet` class acts as a container for multiple `Reference` objects, i
 
 ---
 #### Reference\.\_\_hash\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.Reference.__hash__}} -->
-The `__hash__` method generates a unique hash value for a `Reference` object based on its `content`, `node_id`, and `version_id` attributes.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L24>)
+
+Generates a hash value for a `Reference` object based on its `content`, `node_id`, and `version_id` attributes.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Concatenates the `content` attribute with the string representations of `node_id` and `version_id`.
-    - Computes the hash of the concatenated string and returns it.
+    - Calculates the hash of the concatenated string.
 - **Output**: An integer representing the hash value of the `Reference` object.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<#Reference>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<#reference>)  (Base Class)
 
 
 ---
 #### Reference\.\_\_eq\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.Reference.__eq__}} -->
-The `__eq__` method checks if two `Reference` objects are equal by comparing their hash values.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L27>)
+
+Compares two `Reference` objects for equality based on their hash values.
 - **Inputs**:
-    - `other`: Another `Reference` object to compare with the current instance.
-- **Control Flow**:
-    - The method computes the hash of the current instance using the `__hash__` method.
-    - It computes the hash of the `other` instance using its `__hash__` method.
-    - It compares the two hash values for equality and returns the result.
-- **Output**: A boolean value indicating whether the two `Reference` objects are considered equal based on their hash values.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<#Reference>)  (Base Class)
+    - `self`: The instance of the `Reference` class.
+    - `other`: Another instance of the `Reference` class to compare against.
+- **Logic and Control Flow**:
+    - Calculates the hash value of `self` using the `__hash__` method.
+    - Calculates the hash value of `other` using the `__hash__` method.
+    - Compares the two hash values for equality.
+- **Output**: Returns `True` if the hash values of `self` and `other` are equal, otherwise returns `False`.
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<#reference>)  (Base Class)
 
 
 ---
 #### Reference\.short\_path<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.Reference.short_path}} -->
-The `short_path` method returns a shortened version of the `relative_path` attribute if it contains more than three parts, otherwise it returns the `relative_path` as is.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L30>)
+
+Generates a shortened version of the `relative_path` attribute if it contains more than three segments.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - Split the `relative_path` attribute by the '/' character to create a list of parts.
-    - Check if the length of the parts list is greater than 3.
-    - If true, return a formatted string with the first part, ellipsis, second-to-last part, and last part of the path.
+- **Logic and Control Flow**:
+    - Split the `relative_path` attribute by the '/' character to create a list of path segments called `parts`.
+    - Check if the length of `parts` is greater than 3.
+    - If true, return a string formatted as the first segment, followed by '/.../', the second-to-last segment, and the last segment.
     - If false, return the original `relative_path`.
-- **Output**: A string representing the shortened path if applicable, or the original `relative_path`.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<#Reference>)  (Base Class)
+- **Output**: A string representing the shortened path or the original `relative_path` if it has three or fewer segments.
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<#reference>)  (Base Class)
 
 
 
 ---
 ### ReferenceSet<!-- {{#class:python-backend/packages/shared/shared/v3/utils/references.ReferenceSet}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L38>)
+
 - **Members**:
-    - `references`: A set of Reference objects that the ReferenceSet contains.
-- **Description**: The ReferenceSet class is a specialized container for managing a collection of Reference objects. It extends the BaseModel and implements the Iterable interface, allowing it to be used in iteration contexts such as for loops. The class provides functionality to add new references and to create a new ReferenceSet from a list of existing ReferenceSets by merging their contents. The references are stored in a set, ensuring uniqueness, and are iterated over in descending order based on their score attribute.
+    - `references`: A set of `Reference` objects.
+- **Description**: Represents a collection of `Reference` objects and provides functionality to iterate over them. Implements the `Iterable` interface, allowing iteration in sorted order based on the `score` attribute of each `Reference`. Provides a class method to create a `ReferenceSet` from a list of `ReferenceSet` instances by merging their references.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.from_list_of_reference_sets`](<#ReferenceSetfrom_list_of_reference_sets>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<#ReferenceSetadd_reference>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.__iter__`](<#ReferenceSet__iter__>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.__len__`](<#ReferenceSet__len__>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.from_list_of_reference_sets`](<#referencesetfrom_list_of_reference_sets>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<#referencesetadd_reference>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.__iter__`](<#referenceset__iter__>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.__len__`](<#referenceset__len__>)
 - **Inherits From**:
     - `BaseModel`
     - `Iterable`
@@ -100,52 +112,58 @@ The `short_path` method returns a shortened version of the `relative_path` attri
 
 ---
 #### ReferenceSet\.from\_list\_of\_reference\_sets<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.from_list_of_reference_sets}} -->
-The `from_list_of_reference_sets` class method creates a new `ReferenceSet` by combining references from multiple `ReferenceSet` instances.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L47>)
+
+Creates a new `ReferenceSet` by combining references from multiple `ReferenceSet` instances.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reference_sets`: A list of `ReferenceSet` instances from which references will be combined into a new `ReferenceSet`.
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
-    - It takes a list of `ReferenceSet` instances as input.
-    - It uses a set union operation to combine all references from the provided `ReferenceSet` instances into a single set.
-    - A new `ReferenceSet` instance is created with the combined set of references and returned.
+    - `cls`: The class `ReferenceSet` itself, used to create a new instance.
+    - `reference_sets`: A list of `ReferenceSet` instances from which to combine references.
+- **Logic and Control Flow**:
+    - Uses a list comprehension to extract the `references` attribute from each `ReferenceSet` in the `reference_sets` list.
+    - Uses the `set().union()` method to combine all references into a single set, ensuring uniqueness.
+    - Creates a new `ReferenceSet` instance with the combined set of references.
 - **Output**: A new `ReferenceSet` instance containing all unique references from the input list of `ReferenceSet` instances.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#ReferenceSet>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#referenceset>)  (Base Class)
 
 
 ---
 #### ReferenceSet\.add\_reference<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference}} -->
-The `add_reference` method adds a `Reference` object to the `references` set of a `ReferenceSet` instance.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L53>)
+
+Adds a `Reference` object to the `references` set in the `ReferenceSet` class.
 - **Inputs**:
-    - `reference`: A `Reference` object to be added to the `references` set.
-- **Control Flow**:
-    - The method takes a `Reference` object as an argument.
-    - It adds the provided `Reference` object to the `references` set of the `ReferenceSet` instance.
-- **Output**: The method does not return any value (returns `None`).
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#ReferenceSet>)  (Base Class)
+    - `reference`: A `Reference` object to add to the `references` set.
+- **Logic and Control Flow**:
+    - Adds the given `reference` to the `references` set of the `ReferenceSet` instance.
+- **Output**: None
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#referenceset>)  (Base Class)
 
 
 ---
 #### ReferenceSet\.\_\_iter\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.__iter__}} -->
-The `__iter__` method returns an iterator over the `ReferenceSet`'s references, sorted by their score in descending order.
-- **Inputs**:
-    - `self`: An instance of the `ReferenceSet` class.
-- **Control Flow**:
-    - The method sorts the `references` set by the `score` attribute of each `Reference` object, using a lambda function to handle cases where the score might be `None` by treating it as 0.
-    - The sorted references are then passed to the `iter` function to create an iterator.
-    - The iterator is returned, allowing the `ReferenceSet` to be used in for loops and other iterable contexts.
-- **Output**: An iterator over the `Reference` objects in the `ReferenceSet`, sorted by score in descending order.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#ReferenceSet>)  (Base Class)
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L56>)
+
+Provides an iterator over the `ReferenceSet` sorted by the `score` attribute in descending order.
+- **Inputs**: None
+- **Logic and Control Flow**:
+    - Sorts the `references` set by the `score` attribute of each `Reference` object, using a default score of 0 if `score` is `None`.
+    - Returns an iterator over the sorted list of `Reference` objects.
+- **Output**: An iterator over the `Reference` objects in the `ReferenceSet`, sorted by `score` in descending order.
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#referenceset>)  (Base Class)
 
 
 ---
 #### ReferenceSet\.\_\_len\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.__len__}} -->
-The `__len__` method returns the number of references in the `ReferenceSet`.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/references.py#L59>)
+
+Returns the number of references in the `ReferenceSet`.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the length of the `references` set using Python's built-in `len()` function.
-- **Output**: An integer representing the number of `Reference` objects in the `references` set.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#ReferenceSet>)  (Base Class)
+- **Logic and Control Flow**:
+    - Calls the built-in `len` function on the `self.references` set.
+    - Returns the result of the `len` function call.
+- **Output**: An integer representing the number of references in the `ReferenceSet`.
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet`](<#referenceset>)  (Base Class)
 
 
 

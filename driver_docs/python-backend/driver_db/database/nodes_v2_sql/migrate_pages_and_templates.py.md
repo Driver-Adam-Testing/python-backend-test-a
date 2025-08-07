@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `migrate_pages_and_templates.py` file contains a SQL script for migrating pages and templates by inserting and updating records across multiple tables, including `v2_primary_asset`, `v2_version`, and `v2_node`, while handling duplicate content names with row numbers.
+SQL script for migrating pages and templates to new database tables with versioning and node updates.
 
 # Purpose
-The provided code is a SQL script embedded within a Python string, designed to migrate data from a `derived_contents` table to a new schema involving three tables: `v2_primary_asset`, `v2_version`, and `v2_node`. This script is structured as a series of Common Table Expressions (CTEs) that facilitate the transformation and insertion of data. The primary goal is to reorganize content records, specifically those categorized as 'application_note' or 'template', into a new database structure that supports versioning and node management. The script ensures that each content entry is uniquely identified and appropriately categorized, even when duplicate content names exist within the same organization.
+The code is a SQL script designed to migrate data from a table named `derived_contents` to several new tables: `v2_primary_asset`, `v2_version`, and `v2_node`. The script processes records with specific `content_kind` values ('application_note' and 'template') and ensures that each record has a unique `content_name`. It uses a Common Table Expression (CTE) to handle duplicate `content_name` entries by assigning a row number (`rn`) to differentiate them.
 
-The script begins by selecting relevant data from the `derived_contents` table, using a `ROW_NUMBER` function to handle duplicate content names within the same organization. It then inserts this data into the `v2_primary_asset` table, assigning a unique display name for duplicates. Subsequent CTEs insert corresponding records into the `v2_version` and `v2_node` tables, maintaining consistent identifiers across these tables. Finally, the script updates the original `derived_contents` table to link each entry to its corresponding node in the new schema. This migration process is crucial for systems that require a more structured and version-controlled approach to managing content assets.
+The script performs several operations: it inserts records into `v2_primary_asset` using the `id` from `derived_contents` as the primary key, assigns a `display_name` based on the `content_name` and row number, and categorizes the content as either 'PAGE_TEMPLATE' or 'PAGE'. It then inserts corresponding records into `v2_version` and `v2_node`, reusing the same `id` for consistency across tables. Finally, it updates the `derived_contents` table to set the `node_id` to its own `id`, ensuring that the migration maintains referential integrity. The script concludes by selecting all updated records from `derived_contents`.
 # Global Variables
 
 ---
 ### MIGRATE\_PAGES
-- **Type**: `str`
-- **Description**: The `MIGRATE_PAGES` variable is a multi-line string containing a SQL script. This script is designed to migrate data from a `derived_contents` table to several other tables (`v2_primary_asset`, `v2_version`, `v2_node`) by inserting and updating records based on specific conditions. It uses common table expressions (CTEs) to structure the migration process, ensuring that content is uniquely identified and appropriately categorized.
-- **Use**: This variable is used to store a SQL script for migrating page data across different tables in a database.
+- **Type**: ``str``
+- **Description**: Contains a SQL script that performs a series of operations to migrate data from the `derived_contents` table to new tables `v2_primary_asset`, `v2_version`, and `v2_node`. The script uses common table expressions (CTEs) to select and transform data, insert it into the new tables, and update the original table with new identifiers.
+- **Use**: Used to execute a SQL migration process that organizes and updates content data across multiple tables.
 
 
 

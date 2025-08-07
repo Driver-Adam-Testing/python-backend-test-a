@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `deploy_secrets.py` file in the `python-backend` codebase is responsible for deploying secrets to AWS Secrets Manager by fetching CloudFormation stack outputs and updating secret values based on configurations loaded from JSON files.
+Deploys secrets to AWS Secrets Manager using CloudFormation stack outputs and command line arguments.
 
 # Purpose
-This Python script is designed to deploy secrets to AWS Secrets Manager, specifically for AWS Lambda functions. It utilizes the `boto3` library to interact with AWS services and `argparse` to handle command-line arguments. The script loads secrets from two JSON configuration files, `asset-onboarding-lambda-config.json` and `metrics-lambda-config.json`, which contain mappings of environment keys to secret values. The script then retrieves CloudFormation stack outputs to determine the correct secret names and updates the secrets in AWS Secrets Manager with the corresponding values from the configuration files.
+This script is designed to deploy secrets to AWS Secrets Manager using configurations specified in JSON files. It uses the `argparse` module to parse command-line arguments, which include the AWS profile name, region, and CloudFormation stack name. The script loads secrets from two JSON configuration files, `asset-onboarding-lambda-config.json` and `metrics-lambda-config.json`, using a utility function `load_secrets_from_json`. These secrets are then mapped to CloudFormation stack outputs and updated in AWS Secrets Manager.
 
-The script is structured to be executed as a standalone command-line tool, requiring the user to provide an AWS profile, region, and CloudFormation stack name as arguments. It establishes a session with AWS using the provided profile and region, retrieves the outputs of a specified CloudFormation stack, and updates the secrets in AWS Secrets Manager based on the mappings defined in the configuration files. The script ensures that only secrets with corresponding outputs and values are updated, providing feedback through print statements to indicate the progress and any issues encountered during execution.
+The script establishes a session with AWS using the `boto3` library, allowing it to interact with AWS CloudFormation and Secrets Manager services. It retrieves the outputs of a specified CloudFormation stack and uses these outputs to determine the correct secret names. The script then updates the secrets in AWS Secrets Manager with values from the JSON configuration files. The script is intended to be run as a standalone command-line tool, and it does not define any public APIs or external interfaces.
 # Imports and Dependencies
 
 ---
@@ -21,121 +21,121 @@ The script is structured to be executed as a standalone command-line tool, requi
 
 ---
 ### CODE\_LAMBDA\_FN
-- **Type**: `string`
-- **Description**: `CODE_LAMBDA_FN` is a string variable that holds the filename 'asset-onboarding-lambda-config.json'. This filename is used to load configuration secrets for an asset onboarding Lambda function.
-- **Use**: This variable is used to specify the configuration file for loading secrets related to the asset onboarding Lambda function.
+- **Type**: ``str``
+- **Description**: A string that holds the filename of the JSON configuration file for the asset onboarding Lambda function. This file is used to load secrets related to the asset onboarding process.
+- **Use**: Used as an argument to the `load_secrets_from_json` function to load secrets for the asset onboarding Lambda function.
 
 
 ---
 ### METRICS\_LAMBDA\_FN
-- **Type**: `str`
-- **Description**: `METRICS_LAMBDA_FN` is a string variable that holds the filename 'metrics-lambda-config.json'. This file is likely used to store configuration data or secrets related to a metrics Lambda function.
-- **Use**: This variable is used to load secrets from the specified JSON file using the `load_secrets_from_json` function.
+- **Type**: ``str``
+- **Description**: Contains the file name of the JSON configuration for the metrics Lambda function.
+- **Use**: Used to load secrets from the specified JSON configuration file for the metrics Lambda function.
 
 
 ---
 ### asset\_lambda\_secrets
 - **Type**: `dictionary`
-- **Description**: The `asset_lambda_secrets` variable is a dictionary that contains secret mappings and environment variables loaded from a JSON configuration file named 'asset-onboarding-lambda-config.json'. This dictionary is structured to include a 'secret_map' for mapping environment keys to output keys and an 'env' section for storing environment-specific secret values.
-- **Use**: This variable is used to update AWS Secrets Manager with secret values corresponding to specific environment keys for the asset onboarding lambda function.
+- **Description**: Contains secrets loaded from a JSON configuration file specified by the `CODE_LAMBDA_FN` variable. The secrets are organized in a dictionary format with keys for environment variables and their corresponding secret mappings.
+- **Use**: Used to map environment keys to secret values and update them in AWS Secrets Manager.
 
 
 ---
 ### metrics\_lambda\_secrets
 - **Type**: `dict`
-- **Description**: The `metrics_lambda_secrets` variable is a dictionary that is loaded from a JSON configuration file named 'metrics-lambda-config.json'. This dictionary contains secret mappings and environment variables specific to the metrics lambda function.
-- **Use**: This variable is used to map environment keys to output keys and update secret values in AWS Secrets Manager for the metrics lambda function.
+- **Description**: Contains secrets loaded from a JSON configuration file specified by the `METRICS_LAMBDA_FN` constant. The dictionary includes mappings of environment keys to secret values and a secret map for AWS Secrets Manager integration.
+- **Use**: Used to update AWS Secrets Manager with secret values for the metrics Lambda function.
 
 
 ---
 ### parser
-- **Type**: `argparse.ArgumentParser`
-- **Description**: The `parser` variable is an instance of `argparse.ArgumentParser` that is used to handle command-line arguments for the script. It is configured with a description and several required arguments, including `--profile`, `--region`, and `--name`, which are necessary for deploying secrets to AWS.
-- **Use**: This variable is used to parse and validate command-line arguments provided by the user when executing the script.
+- **Type**: ``argparse.ArgumentParser``
+- **Description**: Initializes an `ArgumentParser` object to handle command-line arguments for deploying secrets to AWS. It includes arguments for AWS profile, region, and CloudFormation stack name, all of which are required.
+- **Use**: Used to parse and validate command-line arguments necessary for the script's execution.
 
 
 ---
 ### args
-- **Type**: `argparse.Namespace`
-- **Description**: The `args` variable is an instance of `argparse.Namespace` that holds the parsed command-line arguments. It is created by calling `parser.parse_args()`, which processes the command-line inputs according to the arguments defined in the `ArgumentParser` instance `parser`. The expected arguments include `--profile`, `--region`, and `--name`, each of which is required and has a specific type and help description.
-- **Use**: The `args` variable is used to access the command-line arguments provided by the user, such as the AWS profile name, region, and CloudFormation stack name, which are then utilized throughout the script for AWS operations.
+- **Type**: ``argparse.Namespace``
+- **Description**: The `args` variable is an instance of `argparse.Namespace` that stores the command line arguments parsed by the `argparse.ArgumentParser`. It contains the values for the `--profile`, `--region`, and `--name` options, which are required for the script to execute.
+- **Use**: Stores the parsed command line arguments for AWS profile, region, and CloudFormation stack name.
 
 
 ---
 ### profile
-- **Type**: `str`
-- **Description**: The `profile` variable is a string that holds the AWS profile name specified by the user through command line arguments. It is used to configure the AWS session for deploying secrets to AWS services.
-- **Use**: This variable is used to initialize a Boto3 session with the specified AWS profile.
+- **Type**: ``str``
+- **Description**: The `profile` variable is a string that stores the AWS profile name specified by the user through the command line argument `--profile`. This profile name is used to configure the AWS session for authentication and authorization purposes.
+- **Use**: Used to create a Boto3 session with the specified AWS profile for accessing AWS services.
 
 
 ---
 ### region
-- **Type**: `str`
-- **Description**: The `region` variable is a string that holds the AWS region specified by the user through command line arguments. It is used to configure the AWS session and clients to operate within the specified region.
-- **Use**: This variable is used to set the `region_name` parameter when creating a Boto3 session, ensuring that all AWS operations are performed in the specified region.
+- **Type**: ``str``
+- **Description**: The `region` variable is a string that stores the AWS region specified by the user through the command line argument `--region`. It is required for the script to function correctly as it determines the geographical location where AWS services will be accessed or deployed.
+- **Use**: Used to specify the AWS region for the Boto3 session and other AWS service interactions.
 
 
 ---
 ### name
-- **Type**: `str`
-- **Description**: The `name` variable is a string that holds the value of the CloudFormation stack name, which is provided as a command-line argument. It is used to construct other variables and identifiers within the script, such as `stripped_name` and `stack_name`. The `name` variable is essential for identifying and interacting with specific AWS CloudFormation stacks during the deployment process.
-- **Use**: This variable is used to store the CloudFormation stack name provided by the user as a command-line argument.
+- **Type**: ``str``
+- **Description**: The `name` variable is a string that stores the CloudFormation stack name provided as a command-line argument. It is obtained from the parsed arguments using `args.name`. The `name` variable is used to construct other variables and identifiers in the script.
+- **Use**: Used to store the CloudFormation stack name provided by the user as a command-line argument.
 
 
 ---
 ### stripped\_name
-- **Type**: `str`
-- **Description**: The `stripped_name` variable is a string derived from the `name` argument provided via command line. It is processed by removing hyphens, spaces, and leading or trailing whitespace from the original `name` value.
-- **Use**: This variable is used to create remapped keys for accessing and updating secret values in AWS Secrets Manager.
+- **Type**: ``str``
+- **Description**: Removes hyphens and spaces from the `name` variable and trims any leading or trailing whitespace.
+- **Use**: Used to create a modified version of the `name` variable for constructing keys and identifiers.
 
 
 ---
 ### stack\_name
-- **Type**: `str`
-- **Description**: The `stack_name` variable is a string that is constructed by taking the `name` argument provided by the user, removing any spaces, and appending the suffix 'TempTestInDevStack'. This results in a formatted name used to identify a specific AWS CloudFormation stack.
-- **Use**: This variable is used to specify the name of the CloudFormation stack from which outputs are fetched and secrets are updated in AWS Secrets Manager.
+- **Type**: ``str``
+- **Description**: A string variable that concatenates a modified version of the `name` argument with the suffix 'TempTestInDevStack'. The `name` argument is stripped of spaces and leading/trailing whitespace before concatenation.
+- **Use**: Used to specify the name of the AWS CloudFormation stack for operations.
 
 
 ---
 ### session
-- **Type**: `boto3.Session`
-- **Description**: The `session` variable is an instance of `boto3.Session`, which is initialized with a specific AWS profile and region. This session is used to create clients for AWS services, such as CloudFormation and Secrets Manager, allowing the script to interact with these services using the specified credentials and region.
-- **Use**: This variable is used to create AWS service clients for performing operations like fetching CloudFormation exports and updating secrets in AWS Secrets Manager.
+- **Type**: ``boto3.Session``
+- **Description**: Creates a new Boto3 session using the specified AWS profile and region. This session is used to interact with AWS services.
+- **Use**: Used to create clients for AWS services such as CloudFormation and Secrets Manager.
 
 
 ---
 ### cf
-- **Type**: `boto3.client`
-- **Description**: The variable `cf` is an instance of a Boto3 client for AWS CloudFormation, created using a session with a specified AWS profile and region. This client allows the script to interact with AWS CloudFormation services, such as listing exports and describing stacks.
-- **Use**: This variable is used to perform operations on AWS CloudFormation, such as fetching stack outputs and managing stack resources.
+- **Type**: ``boto3.client``
+- **Description**: Represents a Boto3 client for interacting with the AWS CloudFormation service. This client is used to perform operations related to CloudFormation, such as listing exports and describing stacks.
+- **Use**: Used to interact with AWS CloudFormation to manage and retrieve information about CloudFormation stacks.
 
 
 ---
 ### secretsmanager
-- **Type**: `boto3.client`
-- **Description**: The `secretsmanager` variable is an instance of a Boto3 client specifically configured to interact with the AWS Secrets Manager service. It is created using a session object that is initialized with a specific AWS profile and region, allowing for authenticated and region-specific operations on AWS Secrets Manager.
-- **Use**: This variable is used to update secret values in AWS Secrets Manager by calling methods such as `put_secret_value` to store or update secrets.
+- **Type**: ``boto3.client``
+- **Description**: Represents a Boto3 client for interacting with the AWS Secrets Manager service. This client is created using a Boto3 session configured with a specific AWS profile and region.
+- **Use**: Used to update secret values in AWS Secrets Manager by calling methods such as `put_secret_value`.
 
 
 ---
 ### response
-- **Type**: `dict`
-- **Description**: The `response` variable is a dictionary that stores the result of the `list_exports` method call on the AWS CloudFormation client. This method retrieves a list of exported output values from the CloudFormation stacks in the account and region specified by the Boto3 session.
-- **Use**: This variable is used to access the exported outputs from CloudFormation stacks, which can be utilized for further processing or configuration within the script.
+- **Type**: ``response``
+- **Description**: Holds the result of the `list_exports` method call from the AWS CloudFormation client. This result contains a list of exported output values from the CloudFormation stacks.
+- **Use**: Used to retrieve and store the exported outputs from CloudFormation for further processing.
 
 
 ---
 ### stack
-- **Type**: `dictionary`
-- **Description**: The `stack` variable is a dictionary that represents the details of a specific AWS CloudFormation stack. It is obtained by calling the `describe_stacks` method on the CloudFormation client, using the `stack_name` as a parameter, and accessing the first element of the 'Stacks' list in the response.
-- **Use**: This variable is used to retrieve and store the outputs of a specific CloudFormation stack, which are then used to update secret values in AWS Secrets Manager.
+- **Type**: ``dict``
+- **Description**: Contains the details of a specific AWS CloudFormation stack. The variable is assigned the first stack from the list of stacks returned by the `describe_stacks` method, using the `stack_name` as a filter.
+- **Use**: Used to access the outputs and other details of the specified CloudFormation stack for further processing.
 
 
 ---
 ### outputs
-- **Type**: `dict`
-- **Description**: The `outputs` variable is a dictionary that maps CloudFormation export names to their corresponding output values. It is constructed by iterating over the 'Outputs' list of a specific CloudFormation stack and extracting the 'ExportName' and 'OutputValue' for each output.
-- **Use**: This variable is used to retrieve and map specific output values from a CloudFormation stack, which are then used to update secret values in AWS Secrets Manager.
+- **Type**: ``dict``
+- **Description**: A dictionary that maps CloudFormation export names to their corresponding output values. It is created by iterating over the 'Outputs' list of a specific CloudFormation stack and extracting the 'ExportName' and 'OutputValue' for each output.
+- **Use**: Used to retrieve and map CloudFormation stack outputs to secret names for updating values in AWS Secrets Manager.
 
 
 

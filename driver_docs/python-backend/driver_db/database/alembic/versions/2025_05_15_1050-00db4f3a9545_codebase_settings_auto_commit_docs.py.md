@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.py` file is an Alembic migration script that adds a new boolean column `codebase_settings_auto_commit_docs` to the `v2_primary_asset` table and sets its default value to `False` for rows where `kind` is 'CODEBASE'.
+Alembic migration script to add and remove a boolean column in the `v2_primary_asset` table.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding a new column to an existing table. Specifically, it adds a Boolean column named `codebase_settings_auto_commit_docs` to the `v2_primary_asset` table. The script is part of a version-controlled database migration process, as indicated by the use of Alembic, a lightweight database migration tool for SQLAlchemy. The script includes both an [`upgrade`](<#upgrade>) function, which applies the changes, and a [`downgrade`](<#downgrade>) function, which reverts them. The [`upgrade`](<#upgrade>) function not only adds the new column but also sets its default value to `False` for existing rows where the `kind` is 'CODEBASE', ensuring that the new column is properly initialized for existing data.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines a migration identified by the revision ID `00db4f3a9545`, which follows the previous migration `830fe3c26803`. The primary function of this script is to modify the database schema by adding a new column named `codebase_settings_auto_commit_docs` of type `Boolean` to the `v2_primary_asset` table. This column is initially nullable.
 
-The script is a narrowly focused component within a larger database management system, serving the specific purpose of evolving the database schema in a controlled manner. It does not define public APIs or external interfaces but rather operates as an internal tool to manage database changes. The use of revision identifiers and the structured format of the script suggest that it is part of a series of migrations, each identified by unique revision IDs, allowing for precise tracking and application of database changes over time.
+The [`upgrade`](<#upgrade>) function implements the schema change by adding the new column and setting its default value to `False` for existing rows where the `kind` is 'CODEBASE'. The [`downgrade`](<#downgrade>) function reverses this change by removing the `codebase_settings_auto_commit_docs` column from the `v2_primary_asset` table. This script is part of a series of migrations that manage changes to the database schema over time, ensuring that the database structure aligns with the application's evolving requirements.
 # Imports and Dependencies
 
 ---
@@ -20,51 +20,55 @@ The script is a narrowly focused component within a larger database management s
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used to identify the current migration version in the Alembic migration scripts.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes in a version-controlled manner.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.upgrade}} -->
-The `upgrade` function adds a new nullable Boolean column to the `v2_primary_asset` table and sets its default value to `False` for rows where `kind` is 'CODEBASE'.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.py#L19>)
+
+Adds a new column to the 'v2_primary_asset' table and updates existing rows with a default value.
 - **Inputs**: None
-- **Control Flow**:
-    - Add a new column named `codebase_settings_auto_commit_docs` of type Boolean to the `v2_primary_asset` table, allowing null values.
-    - Execute an SQL update statement to set the `codebase_settings_auto_commit_docs` column to `False` for all rows in the `v2_primary_asset` table where the `kind` column is equal to 'CODEBASE'.
-- **Output**: The function does not return any value as it performs database schema and data modifications.
+- **Logic and Control Flow**:
+    - Adds a new column named 'codebase_settings_auto_commit_docs' of type Boolean to the 'v2_primary_asset' table, allowing null values.
+    - Executes an SQL update statement to set the 'codebase_settings_auto_commit_docs' column to FALSE for all rows where the 'kind' column is equal to 'CODEBASE'.
+- **Output**: No output is returned as the function is of type None.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.downgrade}} -->
-The `downgrade` function removes the `codebase_settings_auto_commit_docs` column from the `v2_primary_asset` table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_05_15_1050-00db4f3a9545_codebase_settings_auto_commit_docs.py#L36>)
+
+Removes the `codebase_settings_auto_commit_docs` column from the `v2_primary_asset` table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function uses Alembic's `op.drop_column` method to remove the specified column from the table.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Calls `op.drop_column` to remove the `codebase_settings_auto_commit_docs` column from the `v2_primary_asset` table.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

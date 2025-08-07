@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `software_expertise.py` file defines a `SoftwareExpertiseMessage` class that represents a system message for an expert software engineer, emphasizing their role in writing high-quality code and documentation without instructing others.
+Defines a system message for a software expertise role with specific responsibilities and limitations.
 
 # Purpose
-This code defines a specialized message class, `SoftwareExpertiseMessage`, which extends the `LlmMessage` class from an imported module. The purpose of this class is to encapsulate a specific type of message, characterized by its `message_kind` attribute set to `MessageKind.SYSTEM`, indicating it is a system-level message. The `content` attribute provides a detailed description of the role and responsibilities of an expert software engineer, emphasizing the focus on writing high-quality code and documentation while avoiding instructing others or making unsupported generalizations. This code provides narrow functionality, serving as a configuration or template for generating consistent system messages within a larger application that likely involves communication or interaction with a language model interface.
+The code defines a class `SoftwareExpertiseMessage` that inherits from `LlmMessage`, which is imported from `shared.v3.interfaces.llm_message`. This class specifies a `message_kind` attribute set to `MessageKind.SYSTEM`, indicating the type of message it represents. The `content` attribute contains a detailed string that describes the role and responsibilities of an expert software engineer, emphasizing the focus on writing high-quality code and documentation without instructing others or making speculative statements. This code provides narrow functionality by defining a specific type of message within a larger messaging system.
 # Imports and Dependencies
 
 ---
@@ -18,12 +18,14 @@ This code defines a specialized message class, `SoftwareExpertiseMessage`, which
 
 ---
 ### SoftwareExpertiseMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/software_expertise.SoftwareExpertiseMessage}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/software_expertise.py#L4>)
+
 - **Members**:
-    - `message_kind`: Specifies the kind of message, set to MessageKind.SYSTEM.
-    - `content`: Contains a detailed description of the expertise and responsibilities of a software engineer.
-- **Description**: The SoftwareExpertiseMessage class extends the LlmMessage class and is designed to encapsulate a system message that outlines the expertise and responsibilities of a software engineer. It includes a message kind, which is set to SYSTEM, and a content string that provides a detailed description of the engineer's role, emphasizing the focus on writing high-quality code and documentation without instructing others or making unsupported generalizations.
+    - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
+    - `content`: Contains a detailed description of the software engineer's expertise and responsibilities.
+- **Description**: Represents a message that defines the role and responsibilities of an expert software engineer, emphasizing the focus on writing high-quality code and documentation without instructing others or making generalizations.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
 
 

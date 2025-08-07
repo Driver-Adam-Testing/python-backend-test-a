@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in `python-backend/content_services/inspector/src/utils/symbol_table/providers` serves as an initializer for the language providers module, which supports different programming languages.
+Language providers for different programming languages.
 
 # Purpose
-This code file appears to be a comment or a placeholder indicating the purpose of the file, which is to provide language providers for different programming languages. It suggests that the file is likely intended to contain or manage functionality related to supporting multiple programming languages, possibly by defining classes or functions that handle language-specific operations or configurations. The functionality implied by the comment is broad, as it suggests support for multiple languages, but the actual implementation details are not present in the provided content. This could be part of a larger system or framework that deals with language processing or translation.
+The code defines language providers for different programming languages. It likely includes classes or functions that supply language-specific features or configurations. This functionality is narrow, focusing on supporting multiple programming languages within a specific context, such as syntax highlighting, code analysis, or language-specific operations. The code is likely part of a larger system that requires language-specific handling or processing.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

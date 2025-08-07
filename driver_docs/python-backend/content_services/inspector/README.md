@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Modules for code inspection and task management, configuration and documentation for `uctags`, and essential project files for managing dependencies and setup instructions.
+Templates, file and code analysis tools, GitHub utilities, uctags configuration, and project setup files.
 
 ## Folders
-- **[src](src/README.md)**: Modules and scripts for code inspection, onboarding, utility functions, and task management, supporting operations like code analysis, symbol table construction, and technical documentation generation.
-- **[uctags-2024.10.02-linux-x86_64](uctags-2024.10.02-linux-x86_64/README.md)**: Configuration files, dependency graphs, licensing information, and documentation in the `.ppkg` subfolder.
+- **[src](src/README.md)**: Templates, file analysis, GitHub utilities, code analysis tools, and functions for symbol tables and documentation.
+- **[uctags-2024.10.02-linux-x86_64](uctags-2024.10.02-linux-x86_64/README.md)**: Configuration files for library installation, dependency graphs, license, manifest, and documentation for uctags.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Manages Python project dependencies with locked versions, metadata, and integrity verification.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager, specifying project metadata and dependencies.
-- **[README.md](README.md.md)**: The `README.md` file in the `python-backend/content_services/inspector` directory provides instructions for setting up, running, and deploying the cloud-first version of the Inspector service using Poetry and Modal.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry tool specifying project metadata, dependencies, and build system settings.
+- **[README.md](README.md.md)**: Instructions for installing, running, and deploying the cloud-first version of Inspector.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

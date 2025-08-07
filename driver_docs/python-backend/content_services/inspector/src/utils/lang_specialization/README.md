@@ -3,26 +3,26 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utilities for analyzing and documenting code across multiple programming languages using static analysis and language models.
+Classes, functions, and utilities for extracting and documenting code symbols across multiple programming languages.
 
 
 ## Files
-- **[assembly.py](assembly.py.md)**: The `assembly.py` file in the `python-backend` codebase provides classes and methods for extracting and documenting assembly code symbols such as data structures, subroutines, macros, and variables using a language model, with a focus on generating detailed technical documentation.
-- **[c.py](c.py.md)**: The `c.py` file in the `python-backend` codebase provides classes and methods for analyzing and documenting C code, focusing on extracting and describing functions, variables, data structures, and declarations using static analysis and structured prompts.
-- **[c_sharp.py](c_sharp.py.md)**: The `c_sharp.py` file in the `python-backend` codebase provides utilities for generating detailed documentation prompts for C# code, focusing on classes, structs, interfaces, methods, variables, and enums, using structured data and JSON schemas.
-- **[cpp.py](cpp.py.md)**: The `cpp.py` file in the `python-backend` codebase provides utilities for extracting and documenting C++ code elements such as variables, functions, data structures, and includes, using static analysis and structured prompting.
-- **[default.py](default.py.md)**: The `default.py` file in the `python-backend` codebase provides utilities for analyzing and documenting code by extracting and describing functions, variables, and data structures using language models, with a focus on generating detailed technical documentation.
-- **[default_multi_context.py](default_multi_context.py.md)**: The `default_multi_context.py` file defines a utility function `default_imports_checker_multi_prompt` that utilizes a language model to check code imports, and includes prompts for generating software documentation and explaining code purposes.
-- **[header.py](header.py.md)**: The `header.py` file in the `python-backend` codebase provides classes and methods for extracting and documenting symbols from C and C++ header files, focusing on data structures, functions, and variables using static analysis with `ctags`.
-- **[ir_common.py](ir_common.py.md)**: The `ir_common.py` file in the `python-backend` codebase provides a comprehensive framework for rendering markdown representations of various data structures and symbols, utilizing classes that extend `MdRenderable` and `IrData` to handle different content types and symbol relationships.
-- **[java.py](java.py.md)**: The `java.py` file in the `python-backend` codebase provides utilities for analyzing and documenting Java code, including classes, interfaces, methods, and fields, using static analysis and tree-sitter for symbol extraction and representation.
-- **[js_ts.py](js_ts.py.md)**: The `js_ts.py` file in the `python-backend` codebase provides utilities for extracting and documenting JavaScript and TypeScript symbols, such as variables, functions, classes, interfaces, and types, using static analysis and structured prompting.
-- **[metadata.py](metadata.py.md)**: The `metadata.py` file in the `python-backend` codebase contains various prompts designed to guide the creation of technical documentation for metadata and configuration files, focusing on explaining their purpose and summarizing their content in different levels of detail.
-- **[python.py](python.py.md)**: The `python.py` file in the `python-backend` codebase provides classes and methods for extracting and documenting Python code symbols, such as variables, functions, classes, and imports, using static analysis and structured prompts.
-- **[ruby.py](ruby.py.md)**: The `ruby.py` file in the `python-backend` codebase provides utilities for analyzing and documenting Ruby code, including classes, modules, methods, and attributes, using structured prompts and static analysis with ctags.
-- **[rust.py](rust.py.md)**: The `rust.py` file in the `python-backend` codebase provides classes and methods for analyzing and documenting Rust code, focusing on data structures, functions, methods, macros, traits, and variables using static analysis and structured prompting.
-- **[symbol_common.py](symbol_common.py.md)**: The `symbol_common.py` file in the `python-backend` codebase defines classes and functions for handling and analyzing programming language symbols, including language detection, symbol parsing, and symbol data representation using various parsers like ctags and LLMs.
-- **[verilog.py](verilog.py.md)**: The `verilog.py` file in the `python-backend` codebase provides utilities for analyzing and documenting Verilog code, including modules, functions, tasks, and data types, using structured prompts and static analysis.
+- **[assembly.py](assembly.py.md)**: Classes and methods for extracting and documenting assembly code symbols using LLMs.
+- **[c.py](c.py.md)**: Classes and methods for analyzing and documenting C code, including functions, variables, and data structures.
+- **[c_sharp.py](c_sharp.py.md)**: Classes and functions for extracting and documenting C# symbols, including classes, structs, interfaces, and methods.
+- **[cpp.py](cpp.py.md)**: Classes and functions for extracting and documenting C++ data structures, functions, and variables using static analysis.
+- **[default.py](default.py.md)**: Implements classes and functions for extracting and analyzing symbols from code using language models.
+- **[default_multi_context.py](default_multi_context.py.md)**: Defines a function to check default imports in code chunks using a language model.
+- **[header.py](header.py.md)**: Classes and functions for extracting and documenting C/C++ header file symbols using static analysis.
+- **[ir_common.py](ir_common.py.md)**: Utilities and classes for rendering markdown from symbol data, including functions for string manipulation and concurrent processing.
+- **[java.py](java.py.md)**: Utilities for Java code analysis and documentation using tree-sitter and structured prompts.
+- **[js_ts.py](js_ts.py.md)**: Classes and functions for extracting and processing JavaScript and TypeScript symbols using static analysis.
+- **[metadata.py](metadata.py.md)**: Defines prompts for explaining and documenting metadata and configuration files in a software codebase.
+- **[python.py](python.py.md)**: Classes and functions for extracting and documenting Python symbols, including variables, functions, classes, and imports, using static analysis.
+- **[ruby.py](ruby.py.md)**: Implements classes and functions for extracting and documenting Ruby classes and modules using static analysis.
+- **[rust.py](rust.py.md)**: Classes and functions for analyzing and documenting Rust code structures, methods, functions, variables, macros, and traits.
+- **[symbol_common.py](symbol_common.py.md)**: Defines classes and functions for symbol parsing and analysis, including language detection and symbol data structures.
+- **[verilog.py](verilog.py.md)**: Utilities for analyzing and documenting Verilog code, including modules, functions, tasks, and data types.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

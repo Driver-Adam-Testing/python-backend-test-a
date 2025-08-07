@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for the Poetry package manager, specifying dependencies and build system for the "agent" project.
+Configuration for a Python project using Poetry, specifying dependencies and build system details.
 
 # Purpose
-The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. It specifies the project's name as `agent`, version `0.1.0`, and author information. The `readme` field points to `README.md` for project documentation. Under `[tool.poetry.dependencies]`, it defines the required Python version as any version from 3.12 up to, but not including, 3.13, and includes a local dependency on a shared package located at `../../packages/shared` with development mode enabled. The `[build-system]` section specifies that the project requires `poetry-core` and uses `poetry.core.masonry.api` as the build backend.
+The file configures a Python project using Poetry, a dependency management tool. It specifies the project name as `agent`, with version `0.1.0`, and lists the author as Neil Zumwalde. The project requires Python version 3.12 or higher but less than 3.13, and it includes a local dependency on a shared package located at `../../packages/shared` in development mode. The build system uses `poetry-core` as a requirement and sets `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

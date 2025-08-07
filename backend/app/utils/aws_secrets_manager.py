@@ -2,7 +2,7 @@ import boto3
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 from app.core.config import settings
 
-region_name = "us-east-1"
+region_name = settings.AWS_REGION
 
 def write_secret(secret_name, secret_value):
     session = boto3.session.Session()

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `format_kinds.py` file defines an enumeration `FormatKind` that categorizes different types of content formats such as code examples, diagrams, text, tables, lists, and any format.
+Defines the `FormatKind` enumeration for different format types like CODE_EXAMPLE, DIAGRAM, and TEXT.
 
 # Purpose
-This code defines an enumeration class `FormatKind` using Python's `enum` module, which provides a way to define a set of named constants. The `FormatKind` class inherits from both `str` and `Enum`, allowing its members to be used as strings while also benefiting from the features of an enumeration. The class includes six members: `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`, each representing a different kind of format. This code provides narrow functionality, specifically for categorizing or identifying different types of content formats in a structured and type-safe manner. It is likely part of a larger system where content needs to be processed or displayed differently based on its format type.
+The code defines an enumeration `FormatKind` that categorizes different types of content formats. This enumeration inherits from both `str` and `Enum`, allowing each member to be treated as a string. The members of `FormatKind` include `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`, each representing a specific format type. This code provides narrow functionality by offering a structured way to handle and identify content formats within a program.
 # Imports and Dependencies
 
 ---
@@ -17,14 +17,16 @@ This code defines an enumeration class `FormatKind` using Python's `enum` module
 
 ---
 ### FormatKind<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/enums/format_kinds.FormatKind}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/enums/format_kinds.py#L4>)
+
 - **Members**:
-    - `CODE_EXAMPLE`: Represents a format kind for code examples.
-    - `DIAGRAM`: Represents a format kind for diagrams.
-    - `TEXT`: Represents a format kind for text content.
-    - `TABLE`: Represents a format kind for tables.
-    - `LIST`: Represents a format kind for lists.
-    - `ANY`: Represents a format kind that can be any type.
-- **Description**: The `FormatKind` class is an enumeration that defines various types of content formats, such as code examples, diagrams, text, tables, lists, and a generic 'any' type. It inherits from both `str` and `Enum`, allowing each member to be treated as a string while also providing enumeration capabilities.
+    - `CODE_EXAMPLE`: Represents the format kind for code examples.
+    - `DIAGRAM`: Represents the format kind for diagrams.
+    - `TEXT`: Represents the format kind for text.
+    - `TABLE`: Represents the format kind for tables.
+    - `LIST`: Represents the format kind for lists.
+    - `ANY`: Represents any format kind.
+- **Description**: Defines different kinds of formats as enumeration members, each represented by a string value.
 - **Inherits From**:
     - `str`
     - `Enum`

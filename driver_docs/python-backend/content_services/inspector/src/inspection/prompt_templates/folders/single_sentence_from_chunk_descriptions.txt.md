@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing the contents of a folder in a software codebase into a single sentence based on detailed descriptions of its subcomponents.
+Instructions for summarizing folder contents based on detailed descriptions of its subcomponents.
 
 # Purpose
-The provided content outlines a task for a software engineering expert to create a concise, single-sentence summary of a folder's contents within a software codebase. This task involves analyzing a series of detailed descriptions that cover slightly overlapping subsets of the folder's contents. The expert's role is to distill these detailed descriptions into a coherent and comprehensive summary that accurately reflects the overall purpose and contents of the folder, without introducing any information not present in the given descriptions. This process ensures that the summary is both precise and informative, providing a clear understanding of the folder's role within the codebase.
+The folder `folder_name` contains various subcomponents, including configuration files for setting up the software environment, scripts for automating tasks, and documentation files that provide guidance on using the software.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

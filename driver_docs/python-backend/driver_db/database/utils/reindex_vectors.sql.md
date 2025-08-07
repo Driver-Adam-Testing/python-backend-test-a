@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `reindex_vectors.sql` file contains a PL/pgSQL script that recalculates and updates the index parameters for a specific vector index in the database if the new calculated list size significantly exceeds the current one.
+Reindexes vectors in a database by recalculating and updating index parameters if necessary.
 
 # Purpose
-This code is a PL/pgSQL script designed to manage and optimize an index on a PostgreSQL database table named "chunkandembedding". The script's primary function is to dynamically adjust the number of "lists" used in an index, specifically for a vector-based index using the ivfflat algorithm, which is often employed for efficient similarity searches in high-dimensional spaces. The script calculates the optimal number of lists based on the current number of records in the table, and if the new calculated value significantly exceeds the current value, it proceeds to rebuild the index with the updated configuration.
+The code is a PL/pgSQL script designed to manage and potentially rebuild an index on a PostgreSQL database table named `chunkandembedding`. The script performs several operations to determine if the index needs to be rebuilt based on the number of lists used in the index definition. It retrieves the current number of lists from the index definition using a regular expression and compares it to a newly calculated number of lists, which is derived from the square root of the row count in the `chunkandembedding` table.
 
-The script begins by retrieving the current number of lists from the existing index definition. It then calculates a new target number of lists as the floor of the square root of the total number of records in the "chunkandembedding" table. Additionally, it computes a new value for "probes", which is a parameter that affects the performance of the ivfflat index, as the floor of the square root of half the new lists. If the new lists exceed the current lists by more than 20%, the script sets a high maintenance memory setting, creates a new index with the updated lists value, drops the old index, and renames the new index to the original name. It also updates the ivfflat.probes setting to the newly calculated value.
+If the new number of lists exceeds the current number by more than 20%, the script proceeds to rebuild the index. It sets a high maintenance memory setting, creates a new index with the updated number of lists, and then drops the old index. The new index is renamed to match the original index name, ensuring continuity in index usage. Additionally, the script calculates a new value for `probes`, which is set as a parameter for the `ivfflat` index type, optimizing the index's performance.
 
-This script is a specialized utility for maintaining the performance of a specific type of index in a PostgreSQL database. It automates the process of index optimization based on the size of the data, ensuring that the index remains efficient as the dataset grows. The script is not a general-purpose library or API but rather a targeted maintenance tool for database administrators managing vector-based indexes in PostgreSQL.
+The script includes notices to inform the user about the actions being taken, such as whether a rebuild is necessary and the success of the index rebuild. This script is intended to be executed within a PostgreSQL environment and is focused on maintaining optimal index performance by dynamically adjusting index parameters based on the data distribution in the table.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

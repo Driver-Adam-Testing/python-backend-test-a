@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders for enumerations, system messages, response type handling, and utility tools with specific Python files.
+Enums, message classes, response type management, and tools for summaries and file handling.
 
 ## Folders
-- **[enums](enums/README.md)**: The `enums` folder in the `python-backend` codebase contains the `format_kinds.py` file, which defines the `FormatKind` enumeration for categorizing various content formats.
-- **[messages](messages/README.md)**: Python files that define classes and system messages for document summarization, technical editing, driver application functionality, format-specific messaging, inline editing, mermaid code review, smart instruction input, and software expertise.
-- **[response_types](response_types/README.md)**: Defines classes for handling specific response types, including information set definitions and list formatting.
-- **[tools](tools/README.md)**: Python files that implement utility classes for generating folder summaries, performing hybrid searches, and opening files with content retrieval and formatting capabilities.
+- **[enums](enums/README.md)**: Defines the `FormatKind` enumeration for format types such as CODE_EXAMPLE, DIAGRAM, and TEXT.
+- **[messages](messages/README.md)**: Classes for creating and defining system and user messages for various contexts and applications.
+- **[response_types](response_types/README.md)**: Classes for managing information set definitions, retrieval parameters, and markdown list formatting.
+- **[tools](tools/README.md)**: Tools for generating folder summaries, hybrid search, and opening files with large text handling.
 
 
 ---

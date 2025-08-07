@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `actions` folder in the `python-backend` codebase contains configurations for GitHub Actions, specifically including a setup for deploying a modal package.
+GitHub Action for deploying a modal package with specified inputs and environment variables.
 
 ## Folders
-- **[modal-deploy](modal-deploy/README.md)**: The `modal-deploy` folder in the `python-backend` codebase contains a GitHub Action configuration file, `action.yml`, which is used for deploying a modal package by specifying steps for installation, testing, and deployment.
+- **[modal-deploy](modal-deploy/README.md)**: GitHub Action for deploying a modal package with specified inputs and environment variables.
 
 
 ---

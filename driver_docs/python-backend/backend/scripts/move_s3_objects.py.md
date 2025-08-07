@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `move_s3_objects.py` file in the `python-backend` codebase is a script that updates S3 object keys for codebase files associated with primary assets and versions, using concurrent processing to handle multiple updates simultaneously.
+Script to update S3 object keys for codebase versions using concurrent processing and SQL database queries.
 
 # Purpose
-This Python script is designed to update Amazon S3 keys for codebase files associated with different versions of primary assets stored in a database. It connects to a database using SQLAlchemy and SQLModel to retrieve information about primary assets and their versions, specifically those of the kind "CODEBASE". The script then uses the AWS SDK for Python (Boto3) to interact with S3, checking for the existence of specific S3 buckets and keys, and updating the keys as necessary. The update process involves copying files from old S3 key prefixes to new ones, ensuring that the files are organized under a new versioning scheme.
+The code is a script designed to update Amazon S3 keys for codebase files associated with primary assets and their versions. It connects to a database using SQLAlchemy and retrieves information about primary assets of the kind `CODEBASE`, their versions, and associated nodes. The script uses the `boto3` library to interact with S3, checking for the existence of specific buckets and keys. It updates the S3 keys by copying files from old key prefixes to new ones, based on the primary asset and version identifiers. The script handles different scenarios for key prefixes, including pre-versioning and post-versioning styles, and logs the process, including any edge cases where expected keys are not found.
 
-The script employs concurrent processing using Python's `concurrent.futures` module to handle multiple primary assets and their versions in parallel, improving efficiency. It defines a single main function, [`update_s3_keys`](<#update_s3_keys>), which is responsible for the core logic of checking and updating S3 keys. The script is structured to be executed as a standalone script rather than a library, as it does not define any public APIs or external interfaces. The primary focus is on data migration and organization within S3, ensuring that codebase files are correctly versioned and accessible under the new key structure.
+The script uses a `ThreadPoolExecutor` to perform the S3 key updates concurrently, improving efficiency by processing multiple primary assets and their versions in parallel. It defines a function [`update_s3_keys`](<#update_s3_keys>) that performs the key update logic for each version of a primary asset. The script retrieves primary assets and their versions from the database, then submits tasks to the executor to update the S3 keys for each version. The script logs the number of keys updated, existing keys, and any edge cases encountered during the process.
 # Imports and Dependencies
 
 ---
@@ -33,41 +33,41 @@ The script employs concurrent processing using Python's `concurrent.futures` mod
 
 ---
 ### database\_url
-- **Type**: `str`
-- **Description**: The `database_url` variable is a string that holds the URL of the source database. It is retrieved from the environment variable `SOURCE_DATABASE_URL` using the `os.getenv` function.
-- **Use**: This variable is used to create a SQLAlchemy engine for database connections.
+- **Type**: ``str``
+- **Description**: Represents the URL of the source database. It is obtained from the environment variable `SOURCE_DATABASE_URL`. This URL is used to establish a connection to the database.
+- **Use**: Used to create a database engine with the `create_engine` function.
 
 
 ---
 ### engine
-- **Type**: `Engine`
-- **Description**: The `engine` variable is an instance of a SQLAlchemy Engine created using the `create_engine` function with a database URL obtained from the environment variable `SOURCE_DATABASE_URL`. This engine serves as the core interface to the database, allowing for the execution of SQL statements and management of database connections.
-- **Use**: The `engine` is used to create sessions for database operations throughout the code, enabling interaction with the database.
+- **Type**: ``Engine``
+- **Description**: Represents a SQLAlchemy `Engine` object that is created using the `create_engine` function with a database URL obtained from the environment variable `SOURCE_DATABASE_URL`. This object is responsible for managing the connection to the database and executing SQL statements.
+- **Use**: Used to create sessions for database operations within the application.
 
 
 # Functions
 
 ---
 ### update\_s3\_keys<!-- {{#callable:python-backend/backend/scripts/move_s3_objects.update_s3_keys}} -->
-The `update_s3_keys` function updates S3 keys for a given primary asset and version by copying files to a new versioned key structure, handling various prefix styles and edge cases.
+[View Source →](<../../../../backend/scripts/move_s3_objects.py#L22>)
+
+Updates S3 keys for nodes associated with a given primary asset and version, handling different prefix styles and potential edge cases.
 - **Inputs**:
-    - `primary_asset_id`: A string representing the ID of the primary asset to update.
-    - `version_id`: A string representing the version ID associated with the primary asset.
-    - `codebase_id`: A string representing the codebase ID, which can be None if not applicable.
-- **Control Flow**:
-    - Establish a database session and query for nodes associated with the given version ID and of kind CODEBASE_FILE.
-    - If no nodes are found, print a message and return early with zero counts.
-    - Initialize an S3 resource using credentials from environment variables and compute a hashed organization ID from the first node's organization ID.
-    - Check if the S3 bucket with the hashed organization ID exists; if not, print a message and return early.
-    - Define prefix paths for pre-version and post-version styles for both primary asset and codebase.
-    - Check if a new key already exists in the bucket; if so, print a message and return early.
-    - Determine the finalized prefix by checking for existing keys in the bucket using various prefix styles, prioritizing post-version styles.
-    - Iterate over each node, constructing source and destination keys based on the finalized prefix and new prefix.
-    - For each node, check if the destination key already exists, if the source key exists, or if neither exists, updating counters and printing messages accordingly.
-    - Copy the source key to the destination key in the S3 bucket if the source key exists.
-    - Print a summary of the update process, including counts of updated keys, existing keys, and edge cases.
-    - Return a tuple containing the primary asset ID, version ID, total nodes, and edge case count.
-- **Output**: The function returns a tuple containing the primary asset ID, version ID, the number of nodes processed, and the count of edge cases encountered.
+    - `primary_asset_id`: The identifier for the primary asset.
+    - `version_id`: The identifier for the version of the asset.
+    - `codebase_id`: The identifier for the codebase, which can be None.
+- **Logic and Control Flow**:
+    - Open a database session and select nodes with the specified version ID and kind 'CODEBASE_FILE'.
+    - If no nodes are found, print a message and return the primary asset ID, version ID, and zero counts for nodes and edge cases.
+    - Initialize an S3 resource using credentials from environment variables and compute a hashed organization ID.
+    - Check if the S3 bucket for the hashed organization ID exists; if not, print a message and return the primary asset ID, version ID, and zero counts.
+    - Define prefix strings for pre-version and post-version styles for both primary asset and codebase.
+    - Check if a new key already exists in the bucket; if so, print a message and return the primary asset ID, version ID, and node count with zero edge cases.
+    - Determine the finalized prefix by checking for existing keys in the bucket using different prefix styles, prioritizing post-version styles.
+    - If no known case is found, print a warning and return the primary asset ID, version ID, and zero nodes with the total node count as edge cases.
+    - Iterate over each node to construct source and destination keys, checking for existing keys and copying if necessary.
+    - Print the number of updated keys, existing keys, and edge cases, and return the primary asset ID, version ID, node count, and edge case count.
+- **Output**: Returns a tuple containing the primary asset ID, version ID, the number of nodes processed, and the count of edge cases encountered.
 
 
 

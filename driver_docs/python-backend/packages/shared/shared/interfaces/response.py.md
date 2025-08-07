@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `response.py` file defines a Pydantic model `DriverResponse` and a subclass `DriverModalResponse` that includes a `call_id` attribute.
+Defines `DriverResponse` and `DriverModalResponse` classes using Pydantic for data validation.
 
 # Purpose
-This code defines a simple data model using the Pydantic library, which is used for data validation and settings management in Python. It provides narrow functionality by defining a base class `DriverResponse` and a subclass `DriverModalResponse` that extends it. The `DriverModalResponse` class includes a single attribute, `call_id`, which is a string. This setup suggests that the code is likely part of a larger system where structured data responses are required, possibly in an API or a service that handles driver-related operations. The use of Pydantic ensures that the data conforms to the specified schema, providing type safety and validation.
+The code defines a data model using the Pydantic library, which is used for data validation and settings management in Python. It includes a base class `DriverResponse` that inherits from `BaseModel`, serving as a foundation for other response models. The `DriverModalResponse` class extends `DriverResponse` and introduces an attribute `call_id` of type `str`. This structure provides a narrow functionality focused on modeling and validating data related to driver responses, specifically including a call identifier.
 # Imports and Dependencies
 
 ---
@@ -17,18 +17,22 @@ This code defines a simple data model using the Pydantic library, which is used 
 
 ---
 ### DriverResponse<!-- {{#class:python-backend/packages/shared/shared/interfaces/response.DriverResponse}} -->
-- **Description**: The `DriverResponse` class is a subclass of Pydantic's `BaseModel` and serves as a base class for driver-related response models, but it currently does not define any additional attributes or functionality.
+[View Source →](<../../../../../../packages/shared/shared/interfaces/response.py#L4>)
+
+- **Description**: Inherits from `BaseModel` and serves as a base class for driver-related responses.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DriverModalResponse<!-- {{#class:python-backend/packages/shared/shared/interfaces/response.DriverModalResponse}} -->
+[View Source →](<../../../../../../packages/shared/shared/interfaces/response.py#L8>)
+
 - **Members**:
-    - `call_id`: A string representing the call identifier.
-- **Description**: The DriverModalResponse class extends the DriverResponse class and includes an additional attribute, call_id, which is used to store a unique identifier for a call. This class is likely part of a system that handles driver-related operations, where each response needs to be associated with a specific call through the call_id.
+    - `call_id`: Stores the call identifier as a string.
+- **Description**: Inherits from `DriverResponse` and adds a `call_id` attribute to store the call identifier.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<#DriverResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<#driverresponse>)
 
 
 

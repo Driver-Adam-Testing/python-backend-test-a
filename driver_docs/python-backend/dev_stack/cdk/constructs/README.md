@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-CDK constructs for deploying AWS Lambda functions for asset onboarding and metrics processing.
+AWS Lambda constructs for asset onboarding and metrics processing with SNS, S3, and CloudWatch integration.
 
 
 ## Files
-- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: The `asset_onboarding_lambda.py` file defines a CDK construct for deploying an AWS Lambda function that handles asset onboarding, including configuration for environment variables, secret management, and event sources.
-- **[metrics_lambda.py](metrics_lambda.py.md)**: The `metrics_lambda.py` file defines a CDK construct for deploying a Lambda function that processes metrics, including configuration for event buses, dead-letter queues, and CloudWatch alarms for monitoring in different environments.
+- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: Defines an AWS Lambda construct for asset onboarding with SNS event source and S3 bucket access.
+- **[metrics_lambda.py](metrics_lambda.py.md)**: Defines a CDK construct for a Lambda function with CloudWatch alarms and event handling for metrics processing.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

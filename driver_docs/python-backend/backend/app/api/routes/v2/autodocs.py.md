@@ -3,15 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `autodocs.py` file defines API routes for generating, checking the status of, and canceling autodoc page generation using FastAPI, with integration to a database for managing document sources and status histories.
+API routes for generating, checking the status of, and canceling autodoc generation using FastAPI.
 
 # Purpose
-This Python file defines a FastAPI router that provides an API for managing the generation of "autodocs" for specific pages within an application. The code is structured around three main endpoints: generating autodocs, retrieving the current status of autodoc generation, and canceling an ongoing autodoc generation process. The primary functionality revolves around handling requests to generate documentation based on different configuration kinds, such as ADI_DRIVER, ARCHITECTURE, and CUSTOM, and ensuring that the necessary conditions are met before proceeding with the generation. The code also includes mechanisms to check the status of the generation process and to cancel it if needed.
+The code defines a FastAPI router that provides endpoints for managing the generation of autodoc pages. It includes three main endpoints: `/generate`, `/current_status/{page_id}`, and `/cancel`. The `/generate` endpoint initiates the autodoc generation process for a specified page, using the `AutoDocRequest` model to validate input parameters. The `/current_status/{page_id}` endpoint retrieves the current status of the autodoc generation for a given page, while the `/cancel` endpoint allows users to cancel an ongoing autodoc generation process.
 
-The file imports several modules and classes, including those for database models, enums, and authentication, indicating its integration with a larger application ecosystem. The use of SQLAlchemy and SQLModel for database interactions suggests that the application relies on a relational database to store and manage data related to nodes, versions, and document sources. The code also utilizes Pydantic models to validate and structure incoming request data, ensuring that the API endpoints receive the correct input. Overall, this file serves as a critical component of a documentation generation system, providing a structured and secure way to manage the lifecycle of autodoc generation tasks.
+The code uses several imported modules and classes to manage database interactions and validate input data. It employs SQLAlchemy and SQLModel for database operations, and Pydantic for data validation. The `AutoDocSize` enumeration defines possible sizes for the autodoc, and the [`_autodoc_size_to_user_context`](<#_autodoc_size_to_user_context>) function maps these sizes to user context descriptions. The code also includes error handling using HTTP exceptions to manage invalid requests and states. The integration with the `modal` library allows for asynchronous function calls to handle the autodoc generation process.
 # Imports and Dependencies
 
 ---
+- `enum.StrEnum`
 - `uuid.UUID`
 - `modal`
 - `database.models_v1.DocumentSource`
@@ -26,6 +27,7 @@ The file imports several modules and classes, including those for database model
 - `fastapi.APIRouter`
 - `fastapi.HTTPException`
 - `pydantic.BaseModel`
+- `pydantic.model_validator`
 - `sqlalchemy.orm.selectinload`
 - `sqlmodel.select`
 - `app.api.auth.UserToken`
@@ -38,45 +40,73 @@ The file imports several modules and classes, including those for database model
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a group of related API endpoints, allowing for modular and organized route management within the application.
-- **Use**: This variable is used to register and manage API routes for the autodoc generation and status retrieval functionalities.
+- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage the API routes for the application.
+- **Use**: Used to register and handle API endpoints for the application.
 
 
 # Classes
 
 ---
+### AutoDocSize<!-- {{#class:python-backend/backend/app/api/routes/v2/autodocs.AutoDocSize}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L27>)
+
+- **Description**: Defines enumeration values for document size options, including `SHORT`, `MEDIUM`, `LONG`, and `UNBOUND`, to categorize the size of an autodoc.
+- **Inherits From**:
+    - `StrEnum`
+
+
+---
 ### AutoDocRequest<!-- {{#class:python-backend/backend/app/api/routes/v2/autodocs.AutoDocRequest}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L34>)
+
 - **Members**:
-    - `page_id`: A unique identifier for the page associated with the autodoc request.
-    - `config_kind`: Specifies the configuration kind for the autodoc request, indicating the type of documentation to generate.
-- **Description**: The AutoDocRequest class is a data model used to encapsulate the necessary information for initiating an autodoc generation process. It includes a unique page identifier and a configuration kind that determines the type of documentation to be generated. This class is utilized in the API endpoint to trigger the autodoc generation workflow.
+    - `page_id`: Stores the unique identifier for the page.
+    - `config_kind`: Indicates the configuration type for the autodoc process.
+    - `document_goal`: Specifies the goal of the document, if applicable.
+    - `autodoc_size`: Defines the size of the autodoc, if applicable.
+- **Description**: Defines the structure and validation logic for an autodoc request, including attributes for page identification, configuration type, document goal, and autodoc size. It includes a validation method to ensure required fields are present based on the configuration type.
+- **Methods**:
+    - [`python-backend/backend/app/api/routes/v2/autodocs.AutoDocRequest.validate`](<#autodocrequestvalidate>)
 - **Inherits From**:
     - `BaseModel`
+
+**Methods**
+
+---
+#### AutoDocRequest\.validate<!-- {{#callable:python-backend/backend/app/api/routes/v2/autodocs.AutoDocRequest.validate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L40>)
+
+Validates the `AutoDocRequest` instance based on its `config_kind` attribute.
+- **Decorators**: `@model_validator`
+- **Inputs**: None
+- **Logic and Control Flow**:
+    - Checks if `config_kind` is `AutoDocConfigKind.FROM_DOCUMENT_GOAL`.
+    - If `config_kind` is `FROM_DOCUMENT_GOAL`, verifies that `document_goal` is not `None`; raises `ValueError` if it is `None`.
+    - If `config_kind` is `FROM_DOCUMENT_GOAL`, verifies that `autodoc_size` is not `None`; raises `ValueError` if it is `None`.
+    - Returns the `AutoDocRequest` instance if all validations pass.
+- **Output**: Returns the `AutoDocRequest` instance after validation.
+- **See also**: [`python-backend/backend/app/api/routes/v2/autodocs.AutoDocRequest`](<#autodocrequest>)  (Base Class)
+
 
 
 ---
 ### AutoDocCancelRequest<!-- {{#class:python-backend/backend/app/api/routes/v2/autodocs.AutoDocCancelRequest}} -->
-- **Members**:
-    - `page_id`: A UUID representing the unique identifier for the page to be canceled.
-- **Description**: The `AutoDocCancelRequest` class is a data model used to encapsulate the request data for canceling an autodoc generation process. It inherits from `BaseModel` and contains a single attribute, `page_id`, which is a UUID that uniquely identifies the page for which the autodoc generation is to be canceled.
-- **Inherits From**:
-    - `BaseModel`
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L54>)
 
-
----
-### AutoDocResponse<!-- {{#class:python-backend/backend/app/api/routes/v2/autodocs.AutoDocResponse}} -->
 - **Members**:
-    - `status`: Represents the history of the autodoc status.
-- **Description**: The `AutoDocResponse` class is a Pydantic model that encapsulates the status history of an autodoc operation, providing a structured way to return this information in API responses.
+    - `page_id`: Stores the unique identifier for a page.
+- **Description**: Represents a request to cancel an autodoc operation for a specific page, identified by its UUID.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### AutoDocCancelResponse<!-- {{#class:python-backend/backend/app/api/routes/v2/autodocs.AutoDocCancelResponse}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L58>)
+
 - **Members**:
-    - `status`: A string indicating the status of the autodoc cancellation.
-- **Description**: The AutoDocCancelResponse class is a simple data model used to represent the response of an autodoc cancellation request, containing a single status field that indicates the result of the cancellation operation.
+    - `status`: Indicates the status of the autodoc cancellation response.
+- **Description**: Represents the response returned when an autodoc generation process is cancelled, containing the status of the cancellation.
 - **Inherits From**:
     - `BaseModel`
 
@@ -84,65 +114,88 @@ The file imports several modules and classes, including those for database model
 # Functions
 
 ---
+### \_autodoc\_size\_to\_user\_context<!-- {{#callable:python-backend/backend/app/api/routes/v2/autodocs._autodoc_size_to_user_context}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L62>)
+
+Converts an `AutoDocSize` enum value to a user context string describing the required number of sections in a TOML configuration file.
+- **Inputs**:
+    - `autodoc_size`: An `AutoDocSize` enum value that specifies the size category of the autodoc, which can be `SHORT`, `MEDIUM`, `LONG`, or `UNBOUND`.
+- **Logic and Control Flow**:
+    - Define a base string `USER_CONTEXT_BASE` that describes the minimum requirement for sections in the TOML configuration file.
+    - Check if `autodoc_size` is `AutoDocSize.UNBOUND`; if true, return `USER_CONTEXT_BASE`.
+    - Use a match-case statement to determine the range of sections based on the `autodoc_size` value: `SHORT` maps to (1, 3), `MEDIUM` maps to (4, 6), and `LONG` maps to (7, 10).
+    - Return a string that combines `USER_CONTEXT_BASE` with the specific section range for the given `autodoc_size`.
+- **Output**: A string that describes the required number of sections in the TOML configuration file based on the `autodoc_size`.
+
+
+---
 ### run\_autodoc<!-- {{#callable:python-backend/backend/app/api/routes/v2/autodocs.run_autodoc}} -->
-The `run_autodoc` function initiates the generation of an autodoc page based on the provided configuration and user session, handling various validation checks and spawning a background task for the generation process.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L79>)
+
+Initiates the autodoc generation process for a specified page and manages its status.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `session`: An instance of `CurrentSession` representing the current database session for executing queries.
-    - `input`: An instance of `AutoDocRequest` containing the `page_id` and `config_kind` for the autodoc generation request.
-- **Control Flow**:
-    - Retrieve the `Node` object associated with the `page_id` and ensure it belongs to the user's organization.
-    - Fetch all `DocumentSource` objects linked to the `page_id` and raise a 404 error if none are found.
-    - Check if the node's version status is already `GENERATING` and raise a 400 error if true.
-    - Based on the `config_kind`, perform specific validation checks on the document sources, raising 400 errors for invalid configurations.
-    - Look up the `run_autodoc` function in the `modal` environment and set the node's version status to `GENERATING`.
-    - Spawn a background task to run the autodoc generation using the `run_autodoc` function, passing the `page_id` and `config_kind`.
-    - Create and add a new [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>) entry to the session, indicating the start of source retrieval.
-    - Commit the session changes and refresh the `autodoc_status` object.
-    - Return the `autodoc_status` object.
-- **Output**: Returns an [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>) object representing the status of the autodoc generation process.
+    - `user`: A `UserToken` object representing the authenticated user.
+    - `session`: A `CurrentSession` object for database operations.
+    - `input`: An `AutoDocRequest` object containing the page ID, configuration kind, document goal, and autodoc size.
+- **Logic and Control Flow**:
+    - Selects a `Node` from the database that matches the user's organization ID and the input page ID.
+    - Retrieves all `DocumentSource` objects related to the input page ID.
+    - Raises an HTTP 404 error if no document sources are found.
+    - Raises an HTTP 400 error if the node's version status is already 'GENERATING'.
+    - Checks the `config_kind` of the input and performs specific validations based on its value.
+    - Raises an HTTP 400 error if the configuration is invalid or if the document sources do not meet specific criteria.
+    - Looks up the `run_autodoc` function using the `modal.Function.lookup` method.
+    - Sets the node's version status to 'GENERATING' and adds it to the session.
+    - Spawns a new autodoc generation process using the `run_autodoc.spawn` method with the input parameters.
+    - Creates a new [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>) entry with the status 'RETRIEVING_SOURCES' and adds it to the session.
+    - Commits the session and refreshes the `autodoc_status` object.
+- **Output**: An [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>) object representing the current status of the autodoc generation process.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>)
+    - [`python-backend/driver_db/database/models_v2.AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>)
 
 
 ---
 ### get\_autodoc\_current\_status<!-- {{#callable:python-backend/backend/app/api/routes/v2/autodocs.get_autodoc_current_status}} -->
-The `get_autodoc_current_status` function retrieves the most recent autodoc status for a given page ID or returns a default status if none exists.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L194>)
+
+Retrieves the current autodoc status for a given page ID.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `user`: An instance of UserToken representing the authenticated user making the request.
-    - `session`: An instance of CurrentSession used to interact with the database.
-    - `page_id`: A UUID representing the unique identifier of the page for which the autodoc status is being requested.
-- **Control Flow**:
-    - The function executes a database query to select the most recent AutoDocStatusHistory record for the given page_id, ordered by creation date in descending order.
-    - If no autodoc status is found, it returns a new AutoDocStatusHistory object with a status indicating that autodoc generation has not started for the page.
-    - If an autodoc status is found, it returns the most recent status.
-- **Output**: Returns an instance of AutoDocStatusHistory representing the current status of autodoc generation for the specified page.
+    - `user`: A `UserToken` object representing the authenticated user.
+    - `session`: A `CurrentSession` object representing the current database session.
+    - `page_id`: A `UUID` representing the unique identifier of the page for which to retrieve the autodoc status.
+- **Logic and Control Flow**:
+    - Execute a database query to select the [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>) for the given `page_id`, ordered by `created_at` in descending order, and retrieve the first result.
+    - If no autodoc status is found, return a new [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>) object with `status_kind` set to `AutoDocStatusMessageKind.NOT_STARTED` and a message indicating that autodoc generation has not started.
+    - If an autodoc status is found, return it.
+- **Output**: An [`AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>) object representing the current status of autodoc generation for the specified page.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>)
+    - [`python-backend/driver_db/database/models_v2.AutoDocStatusHistory`](<../../../../../driver_db/database/models_v2.py.md#autodocstatushistory>)
 
 
 ---
 ### cancel<!-- {{#callable:python-backend/backend/app/api/routes/v2/autodocs.cancel}} -->
-The `cancel` function cancels an ongoing autodoc generation process for a specified page if it is currently generating.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/autodocs.py#L216>)
+
+Cancels an ongoing autodoc generation process for a specified page.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: An instance of UserToken representing the authenticated user making the request.
-    - `session`: An instance of CurrentSession used to interact with the database.
-    - `input`: An instance of AutoDocCancelRequest containing the page_id of the page for which autodoc generation is to be cancelled.
-- **Control Flow**:
-    - Retrieve the Node associated with the given page_id and the user's organization from the database.
-    - Check if the Node's version status is not GENERATING; if not, raise an HTTPException with status code 400.
-    - Set the Node's version status to GENERATION_COMPLETE to indicate the page is no longer generating.
-    - Commit the updated version status to the database.
-    - Retrieve the most recent AutoDocStatusHistory entry for the given page_id.
-    - If no AutoDocStatusHistory is found, raise an HTTPException with status code 404.
-    - Retrieve the call_id from the AutoDocStatusHistory and use it to cancel the corresponding modal function call.
-    - Return an AutoDocCancelResponse indicating the cancellation of autodoc generation.
-- **Output**: An AutoDocCancelResponse object indicating that the autodoc generation has been cancelled.
+    - `user`: A `UserToken` object representing the authenticated user making the request.
+    - `session`: A `CurrentSession` object representing the current database session.
+    - `input`: An `AutoDocCancelRequest` object containing the `page_id` of the page for which the autodoc generation should be cancelled.
+- **Logic and Control Flow**:
+    - Selects a `Node` from the database where the `organization_id` matches the user's organization and the `Node.id` matches the `page_id` from the input.
+    - Checks if the `Node`'s version status is not `VersionStatus.GENERATING`. If true, raises an `HTTPException` with status code 400.
+    - Sets the `Node`'s version status to `VersionStatus.GENERATION_COMPLETE` to indicate the page is back to its normal state.
+    - Adds the updated `Node` version to the session and commits the changes to the database.
+    - Selects the most recent `AutoDocStatusHistory` entry for the given `page_id`. If none is found, raises an `HTTPException` with status code 404.
+    - Retrieves the `call_id` from the `AutoDocStatusHistory` entry and uses it to get a `FunctionCall` object from `modal`.
+    - Cancels the `FunctionCall` using the `cancel` method.
+    - Returns an [`AutoDocCancelResponse`](<#autodoccancelresponse>) with the status message 'Autodocs generation cancelled'.
+- **Output**: An [`AutoDocCancelResponse`](<#autodoccancelresponse>) object indicating the cancellation status of the autodoc generation.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/v2/autodocs.AutoDocCancelResponse`](<#AutoDocCancelResponse>)
+    - [`python-backend/backend/app/api/routes/v2/autodocs.AutoDocCancelResponse`](<#autodoccancelresponse>)
 
 
 

@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Modules and utilities for parsing, resolving, and managing symbols across various programming languages.
+Import resolvers, language providers, symbol parsers, and utilities for symbol table construction and management.
 
 ## Folders
-- **[import_resolvers](import_resolvers/README.md)**: Various resolver implementations for handling import statements in C/C++, C#, Java, JavaScript/TypeScript, and Python, plus unit tests for the JavaScript/TypeScript resolver.
-- **[providers](providers/README.md)**: Various language provider modules defining classes and methods for parsing and resolving C/C++, C#, Java, JavaScript/TypeScript, and Python.
-- **[symbol_parsers](symbol_parsers/README.md)**: Parser classes for C/C++, C#, Java, JavaScript/TypeScript, and Python using tree-sitter and other drivers.
+- **[import_resolvers](import_resolvers/README.md)**: C/C++, C#, Java, JavaScript/TypeScript, and Python import resolvers with tests for JavaScript/TypeScript.
+- **[providers](providers/README.md)**: Language providers for C, C++, CSharp, Java, JavaScript, TypeScript, and Python with parsers and resolvers.
+- **[symbol_parsers](symbol_parsers/README.md)**: Parsers for C, C++, C#, Java, JavaScript, TypeScript, and Python code using various drivers.
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `symbol_table` module by importing and exposing functions for getting supported languages, building a symbol table, and printing a summary.
-- **[base.py](base.py.md)**: The `base.py` file defines abstract base classes for language-specific symbol parsing, import resolution, and language implementation within the `python-backend` codebase.
-- **[comparison.py](comparison.py.md)**: The `comparison.py` file in the `python-backend` codebase provides utilities for timing and comparing different symbol table approaches, including functions to compare visibility maps, calculate statistics, and print formatted results and timing comparisons.
-- **[core.py](core.py.md)**: The `core.py` file in the `python-backend` codebase provides classes and methods for parsing project files to extract and link symbols, compute file visibility using various algorithms, and create a reified project index with fully linked symbols.
-- **[language_utils.py](language_utils.py.md)**: The `language_utils.py` file defines functions to retrieve language providers and supported languages for various programming languages, including Python, C/C++, Java, C#, and JavaScript/TypeScript.
-- **[orchestrator.py](orchestrator.py.md)**: The `orchestrator.py` file in the `python-backend` codebase provides functionality to build and print a symbol table for various programming languages by grouping files, building language-specific symbol tables, and returning a unified mapping of file paths to symbols, with optional timing information.
-- **[utils.py](utils.py.md)**: The `utils.py` file in the `python-backend` codebase provides utility functions for handling symbol data, including caching mechanisms, candidate mapping, and disambiguation of function calls using a language model.
+- **[__init__.py](__init__.py.md)**: Exports functions for language support, symbol table construction, and summary printing.
+- **[base.py](base.py.md)**: Abstract base classes for language-specific symbol parsing, import resolution, and language implementation.
+- **[comparison.py](comparison.py.md)**: Utilities for timing, comparing, and reporting on symbol table construction and visibility map approaches.
+- **[core.py](core.py.md)**: Implements classes and methods for parsing, linking, and computing visibility of symbols in a project.
+- **[language_utils.py](language_utils.py.md)**: Defines language providers and retrieves supported programming languages.
+- **[orchestrator.py](orchestrator.py.md)**: Builds and prints a symbol table for various programming languages, with timing and summary options.
+- **[utils.py](utils.py.md)**: Utilities for symbol disambiguation and management using caching and optional LLM assistance.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files, utility scripts, and Python modules for automated documentation, OpenAI API, and Modal, supported by `poetry.lock` and `pyproject.toml` for package management and project metadata.
+Configuration files, utilities for OpenAI chat models, scripts for automated documentation, and Poetry dependency management.
 
 ## Folders
-- **[src](src/README.md)**: Configuration files, utility scripts, and Python modules for automated documentation, OpenAI API, and Modal.
+- **[src](src/README.md)**: Configuration files, utilities for OpenAI chat models, and scripts for automated documentation generation.
 
 ## Files
-- **[poetry.lock](poetry.lock.md)**: Manages Python project dependencies and metadata, ensuring consistent environments with locked package versions.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for Poetry dependencies and build system for the autodocs project.
+- **[poetry.lock](poetry.lock.md)**: Locks specific dependency versions for consistent Python project environments using Poetry.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for the Poetry package manager, specifying project metadata and dependencies.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `router.py` file initializes an API router using FastAPI's `APIRouter` for the application.
+Defines an API router using FastAPI's APIRouter.
 
 # Purpose
-This code defines a basic setup for a FastAPI application by creating an instance of `APIRouter`, which is used to define a group of related endpoints or routes. The functionality provided is narrow, as it primarily serves as a foundational component for organizing and managing API routes within a FastAPI application. This snippet is part of a larger application structure, where additional routes and endpoints would be added to the `router` instance to handle specific HTTP requests. It acts as a modular and reusable component, allowing for clean separation and organization of API logic.
+The code defines an `APIRouter` instance using the FastAPI framework. This instance, named `router`, is used to create and manage a group of related API endpoints. The `APIRouter` allows for modular organization of routes, which can be included in a larger FastAPI application. This setup is typically used to separate different parts of an API into distinct modules, improving maintainability and clarity.
 # Imports and Dependencies
 
 ---
@@ -17,9 +17,9 @@ This code defines a basic setup for a FastAPI application by creating an instanc
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define a set of routes that can be included in a FastAPI application. This allows for modular and organized route management within the application.
-- **Use**: The `router` is used to register and manage API routes in a FastAPI application.
+- **Type**: ``APIRouter``
+- **Description**: Creates an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage routes in a FastAPI application.
+- **Use**: Used to register and organize route handlers for the application.
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `js_ts.py` file in the `python-backend` codebase provides utilities for extracting and documenting JavaScript and TypeScript symbols, such as variables, functions, classes, interfaces, and types, using static analysis and structured prompting.
+Classes and functions for extracting and processing JavaScript and TypeScript symbols using static analysis.
 
 # Purpose
-This Python source code file is designed to facilitate the extraction and documentation of JavaScript and TypeScript code components. It provides a comprehensive framework for parsing and analyzing JavaScript and TypeScript source files, focusing on identifying and documenting various code elements such as variables, functions, classes, interfaces, and types. The file defines a series of classes and methods that utilize static analysis to extract these elements and generate structured documentation prompts. These prompts are tailored for different code components, ensuring detailed and contextually appropriate documentation.
+The code defines a set of classes and functions for processing and documenting JavaScript and TypeScript code. It uses static analysis to extract symbols such as variables, functions, classes, interfaces, and types from source code files. The extracted symbols are then used to generate structured documentation. The code includes classes like `JsTsVariableData`, `JsTsFnData`, `JsTsClassData`, `JsTsInterfaceData`, and `JsTsTypeData`, which represent different types of symbols and their associated metadata. These classes provide methods to create prompts for language models to generate documentation, and they define how to handle child symbols and their relationships.
 
-The file is structured around several key classes, each responsible for handling a specific type of code element. For instance, `JsTsVariableData`, `JsTsFnData`, `JsTsClassData`, `JsTsInterfaceData`, and `JsTsTypeData` are classes that define the structure and methods for documenting variables, functions, classes, interfaces, and types, respectively. Each class includes methods for generating system and user prompts, which are used to guide the documentation process. Additionally, the file includes collections such as `JsTsVariableCollection` and `JsTsFnCollection`, which aggregate data for each type of code element. The use of static analysis, facilitated by the `JsTsDriverTree` and other utility classes, ensures that the documentation process is both accurate and efficient, making this file a crucial component in a larger system for automated code documentation.
+The code also includes collections such as `JsTsVariableCollection`, `JsTsFnCollection`, `JsTsClassCollection`, `JsTsInterfaceCollection`, and `JsTsTypeCollection`, which manage groups of symbols. The [`from_static_analysis`](<#jstsvariablerawsymbolcollectionfrom_static_analysis>) methods in these collections use a `JsTsDriverTree` to parse the source code and extract relevant symbols. The code is designed to be part of a larger system that automates the generation of technical documentation for JavaScript and TypeScript codebases, focusing on providing clear and structured information about the code's components and their interactions.
 # Imports and Dependencies
 
 ---
@@ -44,107 +44,107 @@ The file is structured around several key classes, each responsible for handling
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_JS\_TS
-- **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JS_TS` is a string that contains a detailed prompt intended for a large language model. This prompt is designed to instruct the model to act as an expert in JavaScript and TypeScript programming and documentation. It emphasizes the model's ability to explain technical details and articulate the key components and purpose of software.
-- **Use**: This variable is used to provide a detailed prompt for a language model to generate expert-level documentation for JavaScript and TypeScript code.
+- **Type**: ``str``
+- **Description**: A string variable that contains a prompt for a system designed to assist in writing documentation for JavaScript and TypeScript code. The prompt instructs the system to focus on explaining technical details and recognizing key components and purposes of the software.
+- **Use**: Used as a system prompt to guide the generation of documentation for JavaScript and TypeScript code.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_JS\_TS
-- **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_JS_TS` is a string that contains a detailed prompt intended for a language model or AI system. This prompt is designed to instruct the AI to act as an expert in JavaScript and TypeScript programming, focusing on writing concise and clear documentation for small and simple source code files.
-- **Use**: This variable is used to provide a system prompt for AI to generate documentation for small JavaScript and TypeScript code files.
+- **Type**: ``str``
+- **Description**: This variable is a string that contains a system prompt for a JavaScript and TypeScript documentation expert. It instructs the expert to write detailed documentation for small and short source code files in JavaScript or TypeScript. The prompt emphasizes the need for clarity and brevity in the documentation.
+- **Use**: Used as a system prompt to guide documentation experts in writing concise and clear documentation for small JavaScript or TypeScript files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string variable that contains a template prompt for explaining the purpose of a large source code file. The prompt guides the user to write a detailed explanation in 1 or 2 paragraphs, focusing on the functionality, technical components, and overall purpose of the code file.
-- **Use**: This variable is used to provide a structured prompt for users to generate detailed explanations of large source code files.
+- **Type**: ``str``
+- **Description**: A string variable that contains a user prompt for explaining the purpose of a source code file. It provides guidance on how to write a summary of the file's purpose, focusing on the scope, components, and type of code.
+- **Use**: Used to instruct users on how to describe the purpose of a source code file.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string variable that contains a template for generating a user prompt. This prompt is designed to guide users in explaining the purpose of a source code file in a concise manner, specifically in a single paragraph of 3 to 5 sentences. The prompt includes questions to consider, such as the scope of functionality and the type of code being described.
-- **Use**: This variable is used to provide a structured prompt for users to describe the purpose of small source code files.
+- **Type**: ``str``
+- **Description**: This variable is a string that contains a prompt for users to explain the purpose of a source code file. It instructs users to provide a single paragraph explanation, focusing on the scope and type of functionality the code provides.
+- **Use**: Used to guide users in summarizing the purpose of a source code file.
 
 
 ---
 ### TECHNICAL\_CONCEPTS
-- **Type**: `str`
-- **Description**: The `TECHNICAL_CONCEPTS` variable is a string that provides a template or guideline for describing the important technical features and their interactions within a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific classes, functions, or variables.
-- **Use**: This variable is used as a prompt or instruction for generating detailed technical descriptions of source code files.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for describing the important technical features and their interactions in a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific classes, functions, or variables.
+- **Use**: Used to guide the writing of technical descriptions for source code files.
 
 
 ---
 ### CLASSES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `string`
-- **Description**: The `CLASSES_FOUND_SYSTEM_PROMPT_JSON` variable is a multi-line string that serves as a template for generating JSON-based documentation for JavaScript and TypeScript classes. It provides detailed instructions on how to document classes, focusing on instance and class variables, and specifies the format for listing decorators and members. The template emphasizes the use of a specific JSON schema for the output.
-- **Use**: This variable is used as a system prompt template for generating structured documentation of JavaScript and TypeScript classes.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for documenting JavaScript and TypeScript classes. It includes guidelines for listing class members and decorators, and specifies the JSON schema to use for the documentation.
+- **Use**: Used as a template or prompt for generating documentation for JavaScript and TypeScript classes.
 
 
 ---
 ### CLASSES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `CLASSES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for a user prompt. This prompt is designed to guide users in summarizing classes in provided code, emphasizing the need for detail proportional to the complexity of the class.
-- **Use**: This variable is used as a template for generating user prompts to assist in documenting classes.
+- **Description**: This is a multi-line string variable that contains a user prompt template for summarizing classes in a given code. The prompt instructs the user to provide details about the class based on its complexity, with longer explanations for complex classes and shorter ones for simpler classes.
+- **Use**: Used as a template for generating user prompts to summarize classes in code.
 
 
 ---
 ### INTERFACES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `INTERFACES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating documentation prompts for TypeScript interfaces. It outlines the structure and content expected in the documentation, including a JSON schema that specifies how to describe the members and purpose of an interface.
-- **Use**: This variable is used to provide a consistent and structured prompt for documenting TypeScript interfaces, ensuring that the output follows a specific format.
+- **Description**: This variable is a multi-line string that provides a template for generating JSON documentation for TypeScript interfaces. It includes instructions for describing the members and purpose of an interface using a specific JSON schema.
+- **Use**: Used to guide the generation of JSON documentation for TypeScript interfaces.
 
 
 ---
 ### INTERFACES\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: The `INTERFACES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing interfaces in JavaScript or TypeScript code. It provides instructions on how to describe an interface, emphasizing the need to match the complexity of the interface with the level of detail in the explanation.
-- **Use**: This variable is used as a template for generating user prompts to document interfaces in JavaScript or TypeScript code.
+- **Type**: ``str``
+- **Description**: This variable is a multi-line string that provides instructions for summarizing an interface in a code file. It guides the user to provide details that match the complexity of the interface and to explain the contract or shape the interface defines for objects.
+- **Use**: Used to prompt users to document interfaces in code files.
 
 
 ---
 ### TYPES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: The `TYPES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string variable that contains a detailed system prompt for documenting TypeScript types. It instructs the user to provide documentation for a given type using a specific JSON schema, focusing on the members and description of the type.
-- **Use**: This variable is used as a template or guideline for generating documentation for TypeScript types, ensuring consistency and completeness in the documentation process.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides a system prompt for documenting TypeScript types. It instructs the user to write detailed documentation for types in TypeScript using a specific JSON schema.
+- **Use**: Used as a template for generating documentation for TypeScript types.
 
 
 ---
 ### TYPES\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: `TYPES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for a user prompt. This prompt is designed to guide users in summarizing a type in a given code snippet, with instructions to provide details based on the complexity of the type and to explain the contract or shape the type defines for objects.
-- **Use**: This variable is used as a template for generating user prompts to document types in code.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for summarizing a type in a given code. It includes guidelines on how to describe the type based on its complexity and what contract or shape it defines for objects.
+- **Use**: Used as a template for generating user prompts to document types in code.
 
 
 ---
 ### FUNCTIONS\_OR\_METHODS\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `string`
-- **Description**: The `FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a detailed system prompt for documenting functions or methods in JavaScript and TypeScript. It provides instructions for generating JSON documentation, including a single sentence description, decorators, inputs, control flow, and output of the function or method. This prompt is designed to guide the documentation process by specifying the format and content required for each component of the function or method documentation.
-- **Use**: This variable is used to provide a structured prompt for generating documentation of JavaScript and TypeScript functions or methods.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for documenting functions or methods in JavaScript or TypeScript. It includes guidelines for describing the function or method, listing decorators, inputs, control flow, and output using a specific JSON schema.
+- **Use**: Used as a template or prompt for generating documentation for functions or methods in JavaScript or TypeScript.
 
 
 ---
 ### FUNCTIONS\_OR\_METHODS\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: The `FUNCTIONS_OR_METHODS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing functions or methods in a given code. It instructs the user to describe the inputs, control flow, logic, and output of the function or method, with the level of detail matching the complexity of the function or method body.
-- **Use**: This variable is used as a template prompt for users to provide detailed summaries of functions or methods in code.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for summarizing a function or method in a given code. It includes guidelines on describing inputs, control flow, logic, and output, with emphasis on matching the detail to the complexity of the function or method.
+- **Use**: Used as a template or prompt for generating summaries of functions or methods in code.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string variable that contains a detailed system prompt for documenting JavaScript and TypeScript variables. It provides instructions on how to describe a variable using a specific JSON schema, focusing on technical details and the purpose of the variable.
-- **Use**: This variable is used as a template or guideline for generating documentation for JavaScript and TypeScript variables.
+- **Type**: ``str``
+- **Description**: A string variable that contains a JSON schema for documenting variables in JavaScript or TypeScript code. The schema specifies the structure for describing a variable's type, description, and use.
+- **Use**: Used to provide a template for generating JSON documentation for variables.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing a variable in a given code. It provides instructions on how to describe a global variable, emphasizing the need for detail proportional to the complexity of the variable.
-- **Use**: This variable is used as a template prompt for generating documentation or summaries of global variables in code.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for summarizing a variable in a given code. It includes guidelines on identifying global variables and the level of detail required based on the complexity of the variable.
+- **Use**: Used as a prompt or template for users to document variables in code.
 
 
 # Classes
@@ -153,14 +153,14 @@ The file is structured around several key classes, each responsible for handling
 ### JsTsVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L233>)
 
-- **Description**: The `JsTsVariableData` class is a specialized subclass of `VariableData` designed to handle JavaScript and TypeScript variable data within a structured prompting system. It provides class methods to generate system and user prompts for variables, ensuring that the prompts are formatted according to specific style instructions. The class also explicitly disallows the concept of child elements for variables, as indicated by the `NotImplementedError` raised in the `child_to_ir` and `child_to_field_name` methods.
+- **Description**: Extends `VariableData` to provide class methods for generating system and user prompts related to JavaScript and TypeScript variables. It uses structured prompting to create these prompts and raises `NotImplementedError` for methods related to child handling, indicating that variables should not have children.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.system_prompt`](<#JsTsVariableDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.user_prompt`](<#JsTsVariableDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.child_to_ir`](<#JsTsVariableDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.child_to_field_name`](<#JsTsVariableDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.system_prompt`](<#jstsvariabledatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.user_prompt`](<#jstsvariabledatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.child_to_ir`](<#jstsvariabledatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.child_to_field_name`](<#jstsvariabledatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#variabledata>)
 
 **Methods**
 
@@ -168,74 +168,74 @@ The file is structured around several key classes, each responsible for handling
 #### JsTsVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L234>)
 
-The `system_prompt` method constructs and returns a formatted string prompt for documenting JavaScript and TypeScript variables.
+Generates a system prompt string for a given symbol using predefined components and instructions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty `Prompt` object.
-    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` string to the `Prompt`.
-    - It appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - It appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Finally, it converts the `Prompt` into a string using `into_str()` and returns it.
-- **Output**: A string representing the formatted system prompt for documenting JavaScript and TypeScript variables.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the system prompt for the given symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#JsTsVariableData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#jstsvariabledata>)  (Base Class)
 
 
 ---
 #### JsTsVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L244>)
 
-The `user_prompt` method generates a user-facing prompt string based on the provided `RawSymbolData` object, including the symbol's name, code, and optionally the full file code.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a component with the user prompt and symbol name.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a component with the user prompt and symbol name.
     - Append a component with a no-restatement style instruction for symbols.
-    - Append a component with the symbol's code.
+    - Append a component with the variable code from the symbol data.
     - Check if the symbol has associated file code; if so, append a component with the full file code.
     - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt, which includes the symbol's name, code, and optionally the full file code.
+- **Output**: A string representing the constructed user prompt.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#JsTsVariableData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#jstsvariabledata>)  (Base Class)
 
 
 ---
 #### JsTsVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L258>)
 
-The `child_to_ir` method raises a NotImplementedError indicating that variables should not have children.
+Raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of RawSymbolData representing a symbol.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Variables should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#JsTsVariableData>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Variables should not have children'.
+- **Output**: None, as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#jstsvariabledata>)  (Base Class)
 
 
 ---
 #### JsTsVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L262>)
 
-The `child_to_field_name` method raises a `NotImplementedError` indicating that variables should not have children.
+Raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with the message 'Variables should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#JsTsVariableData>)  (Base Class)
+    - `child`: An instance of RawSymbolData representing a child symbol.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Variables should not have children'.
+- **Output**: This method does not return a value; it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableData`](<#jstsvariabledata>)  (Base Class)
 
 
 
@@ -244,12 +244,12 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L267>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to JsTsVariableData or lists of JsTsVariableData.
-- **Description**: The JsTsVariableCollection class is a specialized collection that extends the IrCollection class, designed to manage JavaScript and TypeScript variable data. It holds a dictionary where each key is a string representing a variable name, and the value is either a JsTsVariableData instance or a list of such instances. This class provides a class method, from_llm, to create an instance from a language model and a collection of raw symbols, facilitating the integration of language model outputs with intermediate representation data.
+    - `data`: Stores a dictionary mapping strings to `JsTsVariableData` or lists of `JsTsVariableData`.
+- **Description**: Manages a collection of JavaScript and TypeScript variable data, allowing for the organization and retrieval of variable information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance from a language model and a raw symbol collection.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableCollection.from_llm`](<#JsTsVariableCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableCollection.from_llm`](<#jstsvariablecollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -257,18 +257,17 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 #### JsTsVariableCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L270>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of raw symbols.
+Creates an instance of the class using LLM and symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A RawSymbolCollection object containing a collection of raw symbols to be processed.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `JsTsVariableData`, `llm`, and `symbols_list` as arguments.
-    - The result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method call is returned as the output of the `from_llm` method.
-- **Output**: An instance of the class, initialized with data processed from the language model and raw symbols.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to use.
+    - `symbols_list`: An instance of `RawSymbolCollection`, representing a collection of raw symbols.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `JsTsVariableData`, `llm`, and `symbols_list` as arguments.
+- **Output**: Returns an instance of the class (`Self`) initialized with the provided LLM and symbol data.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableCollection`](<#JsTsVariableCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableCollection`](<#jstsvariablecollection>)  (Base Class)
 
 
 
@@ -277,20 +276,20 @@ The `from_llm` method creates an instance of the class using data from a languag
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L275>)
 
 - **Members**:
-    - `single_sentence`: Holds a single sentence of raw content.
-    - `decorators`: Stores a list of decorators as raw content.
-    - `inputs`: Contains a list of input names and their raw content, allowing for None values.
-    - `control_flow`: Represents control flow elements as a list of raw content, allowing for None values.
-    - `output`: Holds the output field name with raw content.
-- **Description**: The JsTsFnData class is a specialized data structure that extends IrData, designed to encapsulate information about JavaScript and TypeScript functions or methods. It includes attributes for storing a single sentence description, decorators, inputs, control flow, and output, all represented as various forms of raw content. This class provides class methods to generate default instances and prompts for system and user interactions, but does not support child elements, as functions should not have children.
+    - `single_sentence`: Holds a single sentence as `RawContent`.
+    - `decorators`: Stores a list of decorators as `ListedCommaCombinedBackTickRawContentNoNone`.
+    - `inputs`: Contains input data as `ListedBacktickNameRawContentWithNone`.
+    - `control_flow`: Represents control flow data as `ListedRawContentWithNone`.
+    - `output`: Defines the output as `FieldNameWithRawContent`.
+- **Description**: Manages data related to JavaScript and TypeScript functions, including single sentence descriptions, decorators, inputs, control flow, and output. It provides class methods to create default instances and generate system and user prompts for function documentation. The class does not support child elements, as functions should not have children.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.default_instance`](<#JsTsFnDatadefault_instance>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.system_prompt`](<#JsTsFnDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.user_prompt`](<#JsTsFnDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.child_to_ir`](<#JsTsFnDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.child_to_field_name`](<#JsTsFnDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.default_instance`](<#jstsfndatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.system_prompt`](<#jstsfndatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.user_prompt`](<#jstsfndatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.child_to_ir`](<#jstsfndatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.child_to_field_name`](<#jstsfndatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -298,95 +297,94 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### JsTsFnData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L282>)
 
-The `default_instance` method creates and returns a default instance of the `JsTsFnData` class with empty content for all its fields.
+Creates and returns a default instance of the `JsTsFnData` class with empty content fields.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, which means it is called on the class itself rather than an instance.
-    - It returns a new instance of the `JsTsFnData` class.
-    - The instance is initialized with default values: empty strings or empty lists for all its fields.
-- **Output**: A new instance of the `JsTsFnData` class with default values for all its fields.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls` with default empty values for all fields.
+    - Returns the newly created instance of `JsTsFnData`.
+- **Output**: A new instance of `JsTsFnData` with all fields initialized to empty values.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<ir_common.py.md#RawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#ListedCommaCombinedBackTickRawContentNoNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#ListedBacktickNameRawContentWithNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#ListedRawContentWithNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#JsTsFnData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.RawContent`](<ir_common.py.md#rawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#listedcommacombinedbacktickrawcontentnonone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#listedrawcontentwithnone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#jstsfndata>)  (Base Class)
 
 
 ---
 #### JsTsFnData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L292>)
 
-The `system_prompt` method constructs and returns a formatted string prompt for documenting functions or methods in JavaScript or TypeScript.
+Generates a system prompt string for documenting functions or methods in JavaScript or TypeScript.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty Prompt object.
-    - It appends a component containing a predefined JSON string for functions or methods found system prompt.
-    - It appends a general style instruction component.
-    - It appends a style instruction component for using backticks.
-    - Finally, it converts the constructed prompt into a string and returns it.
-- **Output**: A string representing the constructed system prompt for documenting functions or methods.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()` and return it.
+- **Output**: A string representing the system prompt for documenting functions or methods.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#JsTsFnData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#jstsfndata>)  (Base Class)
 
 
 ---
 #### JsTsFnData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L302>)
 
-The `user_prompt` method generates a user-facing prompt string based on the provided symbol's data, including its code and potentially its parent class code.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, code, and potentially its parent class code.
-- **Control Flow**:
-    - Check if the symbol has a reified symbol, a parent, and if the parent's raw symbol code is not None.
-    - If the above condition is true, create a prompt with the symbol's name, method code, and parent class code.
-    - If the above condition is false, create a prompt with the symbol's name and function code.
-    - If the symbol has file code, append the full file code to the prompt.
-- **Output**: Returns a string representation of the constructed user prompt.
+    - `symbol`: An instance of `RawSymbolData` containing information about the symbol to document.
+- **Logic and Control Flow**:
+    - Check if `symbol.reified_symbol`, `symbol.reified_symbol.parent`, and `symbol.reified_symbol.parent.raw.symbol_code` are not `None`.
+    - If the above condition is true, create a `user_prompt` with the method code and parent class code.
+    - If the above condition is false, create a `user_prompt` with the function code.
+    - If `symbol.file_code` is present, append the full file code to `user_prompt`.
+- **Output**: A string representation of the constructed user prompt.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#JsTsFnData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#jstsfndata>)  (Base Class)
 
 
 ---
 #### JsTsFnData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L342>)
 
-The `child_to_ir` method raises a NotImplementedError indicating that functions should not have children.
+Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the IR data is being requested.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#JsTsFnData>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#jstsfndata>)  (Base Class)
 
 
 ---
 #### JsTsFnData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L346>)
 
-The `child_to_field_name` method raises a `NotImplementedError` indicating that functions should not have children.
+Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with the message 'Functions should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#JsTsFnData>)  (Base Class)
+    - `child`: An instance of RawSymbolData representing a child symbol.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Functions should not have children'.
+- **Output**: Does not return a value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnData`](<#jstsfndata>)  (Base Class)
 
 
 
@@ -395,12 +393,12 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L351>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to either a JsTsFnData instance or a list of JsTsFnData instances.
-- **Description**: The JsTsFnCollection class is a specialized collection that extends the IrCollection class, designed to manage and organize JavaScript and TypeScript function data. It holds a dictionary where keys are strings representing function names, and values are either a single JsTsFnData object or a list of such objects, encapsulating detailed information about each function. This class provides a class method, from_llm, to instantiate itself using data from a language model and a collection of raw symbols, facilitating the integration of function data into a structured format.
+    - `data`: Holds a dictionary mapping strings to `JsTsFnData` or lists of `JsTsFnData`.
+- **Description**: Manages a collection of JavaScript and TypeScript function data, inheriting from `IrCollection`. It stores function data in a dictionary where keys are strings and values are either `JsTsFnData` instances or lists of such instances. The class provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnCollection.from_llm`](<#JsTsFnCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnCollection.from_llm`](<#jstsfncollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -408,18 +406,18 @@ The `child_to_field_name` method raises a `NotImplementedError` indicating that 
 #### JsTsFnCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L354>)
 
-The `from_llm` method creates an instance of the class using a language model and a collection of symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `JsTsFnData`, `llm`, and `symbols_list` as arguments.
-    - The result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method call is returned as the output of the `from_llm` method.
-- **Output**: Returns an instance of the class created using the specified language model and symbols list.
+    - `llm`: An instance of `ChatOpenAI` representing the language model.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be used.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `JsTsFnData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class (`Self`) created using the provided language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnCollection`](<#JsTsFnCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnCollection`](<#jstsfncollection>)  (Base Class)
 
 
 
@@ -429,18 +427,18 @@ The `from_llm` method creates an instance of the class using a language model an
 
 - **Members**:
     - `decorators`: Holds a list of decorators applied to the class.
-    - `members`: Contains a list of instance or class variables.
+    - `members`: Contains a list of instance and class variables.
     - `description`: Provides a description of the class.
     - `_supported_child_ordering`: Defines the order of supported child elements like methods and nested classes.
-- **Description**: The JsTsClassData class is a specialized data structure that extends IrData, designed to encapsulate metadata about JavaScript and TypeScript classes. It includes attributes for storing decorators, class members, and a description, along with a private attribute to manage the ordering of child elements such as methods and nested classes. The class provides class methods to generate default instances and prompts for system and user interactions, facilitating the documentation and analysis of class structures in JavaScript and TypeScript codebases.
+- **Description**: Represents a data structure for JavaScript and TypeScript class information, including decorators, members, and a description. It supports child ordering for methods and nested classes. The class provides methods to generate default instances and prompts for system and user interactions, and it maps child symbols to their respective internal representations.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.default_instance`](<#JsTsClassDatadefault_instance>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.system_prompt`](<#JsTsClassDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.user_prompt`](<#JsTsClassDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.child_to_ir`](<#JsTsClassDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.child_to_field_name`](<#JsTsClassDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.default_instance`](<#jstsclassdatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.system_prompt`](<#jstsclassdatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.user_prompt`](<#jstsclassdatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.child_to_ir`](<#jstsclassdatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.child_to_field_name`](<#jstsclassdatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -448,98 +446,94 @@ The `from_llm` method creates an instance of the class using a language model an
 #### JsTsClassData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L367>)
 
-The `default_instance` method creates a default instance of the `JsTsClassData` class with empty decorators and members, and a placeholder description.
+Creates and returns a default instance of the `JsTsClassData` class with empty decorators and members, and a placeholder description.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, which means it is called on the class itself rather than an instance.
-    - It returns a new instance of the `JsTsClassData` class.
-    - The instance is initialized with empty lists for `decorators` and `members`, and a description set to 'Implemented elsewhere'.
-- **Output**: A new instance of the `JsTsClassData` class with default values for its attributes.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls` with default values for `decorators`, `description`, and `members`.
+- **Output**: A new instance of `JsTsClassData` with default values for its attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#ListedCommaCombinedBackTickRawContentNoNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#JsTsClassData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedCommaCombinedBackTickRawContentNoNone`](<ir_common.py.md#listedcommacombinedbacktickrawcontentnonone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#listedbackticknamerawcontentnonone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#jstsclassdata>)  (Base Class)
 
 
 ---
 #### JsTsClassData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L375>)
 
-The `system_prompt` method constructs and returns a formatted string prompt for documenting JavaScript and TypeScript classes.
+Generates a system prompt string for documenting JavaScript and TypeScript classes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty Prompt object.
-    - It appends a component containing a predefined JSON string for class documentation prompts.
-    - It appends general style instructions for structured prompting.
-    - It appends instructions to use backticks for style.
-    - Finally, it converts the constructed Prompt object into a string and returns it.
-- **Output**: A string representing the formatted system prompt for documenting JavaScript and TypeScript classes.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `CLASSES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()` and return it.
+- **Output**: A string representing the system prompt for documenting JavaScript and TypeScript classes.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#JsTsClassData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#jstsclassdata>)  (Base Class)
 
 
 ---
 #### JsTsClassData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L385>)
 
-The `user_prompt` method generates a formatted string prompt for a given symbol, including its name, class code, and optionally, the full file code.
+Generates a user prompt string based on the provided `RawSymbolData`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing information about the symbol, including its name, symbol code, and optionally, file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a component with the user prompt and symbol name.
-    - Append a component with a no-restatement style instruction for symbols.
-    - Append a component with the class code of the symbol.
-    - Check if the symbol has associated file code; if so, append a component with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt for the given symbol.
+    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally file code.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes `CLASSES_FOUND_USER_PROMPT` and the symbol's name.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS` to the `Prompt`.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the class code from `symbol.symbol_code`.
+    - Check if `symbol.file_code` is not empty; if true, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the full file code from `symbol.file_code`.
+    - Convert the `Prompt` object into a string using `into_str()` and return it.
+- **Output**: A string that represents the user prompt, constructed from the symbol's data.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#JsTsClassData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#jstsclassdata>)  (Base Class)
 
 
 ---
 #### JsTsClassData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L399>)
 
-The `child_to_ir` method maps a given symbol's kind to a corresponding intermediate representation (IR) data type or returns None if no mapping is applicable.
+Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `symbol_kind`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol whose kind is to be mapped to an IR data type.
-- **Control Flow**:
-    - A dictionary named `mapping` is defined to associate specific SymbolKind values with corresponding IR data types or None.
-    - The method attempts to retrieve the IR data type from the `mapping` dictionary using the `symbol_kind` attribute of the provided `symbol`.
-    - If a match is found in the dictionary, the corresponding IR data type is returned; otherwise, None is returned.
-- **Output**: The method returns a type of IrData corresponding to the symbol's kind or None if no mapping is found.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#JsTsClassData>)  (Base Class)
+    - `symbol`: An instance of `RawSymbolData` that contains information about a symbol, including its kind.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind` values with corresponding `IrData` types or `None`.
+    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding `IrData` type from the mapping dictionary.
+- **Output**: Returns a type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#jstsclassdata>)  (Base Class)
 
 
 ---
 #### JsTsClassData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L408>)
 
-The `child_to_field_name` method maps a `RawSymbolData` child's symbol kind to a corresponding `ScopeRelation` field name.
+Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol whose field name is to be determined.
-- **Control Flow**:
-    - A dictionary `mapping` is defined to map `SymbolKind` values to `ScopeRelation` values.
-    - The method retrieves the `symbol_kind` of the `child` and uses it to look up the corresponding `ScopeRelation` in the `mapping` dictionary.
-    - The method returns the result of the dictionary lookup, which is the `ScopeRelation` corresponding to the `child`'s `symbol_kind`.
-- **Output**: A string representing the `ScopeRelation` field name corresponding to the `child`'s `symbol_kind`, or `None` if the `symbol_kind` is not in the mapping.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#JsTsClassData>)  (Base Class)
+    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` is to be mapped.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind` values to `ScopeRelation` values.
+    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` value corresponding to the `child.symbol_kind`.
+- **Output**: Returns a `ScopeRelation` value as a string that corresponds to the `child.symbol_kind`, or `None` if no match is found.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassData`](<#jstsclassdata>)  (Base Class)
 
 
 
@@ -548,12 +542,12 @@ The `child_to_field_name` method maps a `RawSymbolData` child's symbol kind to a
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L418>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to either JsTsClassData or a list of JsTsClassData.
-- **Description**: The JsTsClassCollection class is a specialized collection class that extends IrCollection, designed to manage and organize JavaScript and TypeScript class data. It holds a dictionary where keys are strings and values are either a single JsTsClassData instance or a list of such instances. This class provides a class method, from_llm, to create an instance of JsTsClassCollection from a language model and a collection of raw symbols, facilitating the integration of language model outputs with internal representation data.
+    - `data`: Stores a dictionary mapping strings to `JsTsClassData` or lists of `JsTsClassData`.
+- **Description**: Manages a collection of JavaScript and TypeScript class data, allowing for the creation of instances from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassCollection.from_llm`](<#JsTsClassCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassCollection.from_llm`](<#jstsclasscollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -561,18 +555,18 @@ The `child_to_field_name` method maps a `RawSymbolData` child's symbol kind to a
 #### JsTsClassCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L421>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `JsTsClassData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call.
-- **Output**: An instance of the class that is created using the provided language model and symbols list.
+    - `llm`: An instance of `ChatOpenAI` representing the language model.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be used.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `JsTsClassData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class (`Self`) created using the provided language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassCollection`](<#JsTsClassCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassCollection`](<#jstsclasscollection>)  (Base Class)
 
 
 
@@ -581,18 +575,18 @@ The `from_llm` method creates an instance of the class using data from a languag
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L426>)
 
 - **Members**:
-    - `members`: Holds a list of instance or class variables.
-    - `description`: Provides a description of the interface data.
-    - `_supported_child_ordering`: Defines the order of supported child elements, such as methods and nested classes.
-- **Description**: The JsTsInterfaceData class is a specialized data structure that extends IrData, designed to represent interface data in JavaScript and TypeScript. It includes members for storing interface variables and a description, and it supports ordering of child elements like methods and nested classes. The class provides class methods for creating default instances and generating system and user prompts for interface documentation.
+    - `members`: Holds a list of members with no `None` values.
+    - `description`: Contains a description of the interface data.
+    - `_supported_child_ordering`: Defines the order of supported child elements as a list of strings.
+- **Description**: Represents JavaScript and TypeScript interface data, extending `IrData`, and includes members, a description, and supported child ordering. It provides class methods for creating default instances, generating system and user prompts, and mapping child symbols to intermediate representations or field names.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.default_instance`](<#JsTsInterfaceDatadefault_instance>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.system_prompt`](<#JsTsInterfaceDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.user_prompt`](<#JsTsInterfaceDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.child_to_ir`](<#JsTsInterfaceDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.child_to_field_name`](<#JsTsInterfaceDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.default_instance`](<#jstsinterfacedatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.system_prompt`](<#jstsinterfacedatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.user_prompt`](<#jstsinterfacedatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.child_to_ir`](<#jstsinterfacedatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.child_to_field_name`](<#jstsinterfacedatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -600,99 +594,95 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### JsTsInterfaceData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L433>)
 
-The `default_instance` method creates a default instance of the `JsTsInterfaceData` class with predefined empty or placeholder values for its attributes.
+Creates a default instance of the `JsTsInterfaceData` class with predefined attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`, which can be used to provide additional context or data for the instance creation.
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, which means it is called on the class itself rather than an instance.
-    - It returns a new instance of the class `JsTsInterfaceData` by calling the class constructor `cls()` with specific arguments.
-    - The `description` attribute is set to a [`FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>) object with a placeholder content 'Implemented elsewhere'.
-    - The `members` attribute is initialized as an empty [`ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>) object.
-    - The `extends` attribute is initialized as an empty [`ListedRawContentWithNone`](<ir_common.py.md#ListedRawContentWithNone>) object.
-- **Output**: A new instance of `JsTsInterfaceData` with default values for its attributes.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls` with specific default values for `description`, `members`, and `extends`.
+- **Output**: Returns an instance of `JsTsInterfaceData` with default values for its attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#ListedRawContentWithNone>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#JsTsInterfaceData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#listedbackticknamerawcontentnonone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#listedrawcontentwithnone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#jstsinterfacedata>)  (Base Class)
 
 
 ---
 #### JsTsInterfaceData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L441>)
 
-The `system_prompt` method constructs and returns a formatted string prompt for documenting TypeScript interfaces.
+Generates a system prompt string for documenting JavaScript and TypeScript interfaces.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty `Prompt` object.
-    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the `INTERFACES_FOUND_SYSTEM_PROMPT_JSON` string to the `Prompt`.
-    - It appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - It appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Finally, it converts the `Prompt` into a string using `into_str()` and returns it.
-- **Output**: A string representing the formatted system prompt for documenting TypeScript interfaces.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to document.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `INTERFACES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Appends `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Converts the `Prompt` into a string using `into_str()`.
+- **Output**: A string representing the system prompt for documenting interfaces.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#JsTsInterfaceData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#jstsinterfacedata>)  (Base Class)
 
 
 ---
 #### JsTsInterfaceData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L451>)
 
-The `user_prompt` method constructs a user-facing prompt string based on the provided `RawSymbolData` object, including interface and file code details.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a component with the user prompt message and the symbol's name.
-    - Append a component with a no-restatement style instruction for symbols.
-    - Append a component with the interface code from the `symbol.symbol_code`.
-    - Check if `symbol.file_code` is present; if so, append a component with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt, including the interface code and optionally the full file code.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the user prompt and the symbol's name.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the interface code from the symbol's symbol code.
+    - Check if the symbol has file code; if it does, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the full file code.
+    - Convert the `Prompt` object into a string and return it.
+- **Output**: A string that represents the user prompt, constructed from the symbol's data.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#JsTsInterfaceData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#jstsinterfacedata>)  (Base Class)
 
 
 ---
 #### JsTsInterfaceData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L465>)
 
-The `child_to_ir` method maps a given symbol's kind to a corresponding intermediate representation (IR) data type or returns None if no mapping exists.
+Maps a `RawSymbolData` instance to a corresponding `IrData` type based on its `symbol_kind`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol whose kind is to be mapped to an IR data type.
-- **Control Flow**:
-    - A dictionary named `mapping` is defined to associate specific SymbolKind values with corresponding IR data types or None.
-    - The method attempts to retrieve the IR data type from the `mapping` dictionary using the `symbol.symbol_kind` as the key.
-- **Output**: The method returns a type of IrData corresponding to the symbol's kind or None if no mapping is found.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#JsTsInterfaceData>)  (Base Class)
+    - `symbol`: An instance of `RawSymbolData` representing a symbol with a specific kind.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `JsTsFnData` and `SymbolKind.INTERFACE` with `None`.
+    - Uses the `symbol_kind` attribute of the `symbol` input to retrieve the corresponding value from the mapping dictionary.
+    - Returns the value from the mapping dictionary, which is either a type of `IrData` or `None`.
+- **Output**: A type of `IrData` corresponding to the `symbol_kind` of the input `symbol`, or `None` if no mapping exists.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#jstsinterfacedata>)  (Base Class)
 
 
 ---
 #### JsTsInterfaceData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L473>)
 
-The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` to a corresponding `ScopeRelation` field name.
+Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a symbol with a specific kind.
-- **Control Flow**:
-    - A dictionary `mapping` is defined to map `SymbolKind` values to `ScopeRelation` values.
-    - The method retrieves the `symbol_kind` from the `child` parameter and uses it to look up the corresponding `ScopeRelation` in the `mapping` dictionary.
-    - The method returns the result of the dictionary lookup, which is the `ScopeRelation` associated with the `child`'s `symbol_kind`.
-- **Output**: The method returns a string representing the `ScopeRelation` field name corresponding to the `child`'s `symbol_kind`, or `None` if no match is found.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#JsTsInterfaceData>)  (Base Class)
+    - `child`: A `RawSymbolData` object representing a child symbol whose `symbol_kind` is to be mapped.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `ScopeRelation.METHOD` and `SymbolKind.INTERFACE` with `ScopeRelation.NESTED_CLASS`.
+    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` corresponding to the `child.symbol_kind`.
+- **Output**: Returns a `ScopeRelation` field name as a string, or `None` if the `symbol_kind` is not in the mapping.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceData`](<#jstsinterfacedata>)  (Base Class)
 
 
 
@@ -701,12 +691,12 @@ The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` t
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L482>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to JsTsInterfaceData or lists of JsTsInterfaceData.
-- **Description**: The JsTsInterfaceCollection class is a specialized collection that extends the IrCollection class, designed to manage and store JavaScript and TypeScript interface data. It holds a dictionary where keys are strings and values are either JsTsInterfaceData instances or lists of such instances. This class provides a class method, from_llm, which facilitates the creation of a JsTsInterfaceCollection instance from a language model and a collection of raw symbols, leveraging the JsTsInterfaceData class for data representation.
+    - `data`: Stores a dictionary mapping strings to `JsTsInterfaceData` or lists of `JsTsInterfaceData`.
+- **Description**: Manages a collection of JavaScript and TypeScript interface data, allowing for the organization and retrieval of interface-related information. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceCollection.from_llm`](<#JsTsInterfaceCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceCollection.from_llm`](<#jstsinterfacecollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -714,18 +704,18 @@ The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` t
 #### JsTsInterfaceCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L485>)
 
-The `from_llm` class method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `JsTsInterfaceData`, `llm`, and `symbols_list` as arguments.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `JsTsInterfaceData`, `llm`, and `symbols_list` as arguments.
-    - The [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method is expected to handle the creation of the class instance using the provided data.
-- **Output**: Returns an instance of the class created using the specified language model and symbol collection.
+    - `llm`: An instance of `ChatOpenAI` used for language model operations.
+    - `symbols_list`: A `RawSymbolCollection` containing symbols to be processed.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `JsTsInterfaceData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class (`Self`) initialized with the provided language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceCollection`](<#JsTsInterfaceCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceCollection`](<#jstsinterfacecollection>)  (Base Class)
 
 
 
@@ -734,18 +724,18 @@ The `from_llm` class method creates an instance of the class using data from a l
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L490>)
 
 - **Members**:
-    - `members`: Holds a list of members with specific content structure.
-    - `description`: Contains a detailed description of the type data.
-    - `_supported_child_ordering`: Defines the order of supported child elements, such as methods and nested classes.
-- **Description**: The JsTsTypeData class is a specialized data structure that extends IrData, designed to represent JavaScript and TypeScript type data within a structured format. It includes members for holding detailed descriptions and lists of type members, and it supports specific child ordering for methods and nested classes. This class provides class methods for generating default instances and prompts for system and user interactions, facilitating the documentation and analysis of type data in JavaScript and TypeScript codebases.
+    - `members`: Holds a list of members with no `None` values.
+    - `description`: Contains a description of the type data.
+    - `_supported_child_ordering`: Defines the order of supported child elements as a list of strings.
+- **Description**: Represents JavaScript and TypeScript type data, extending `IrData`, and includes methods for creating default instances and generating prompts for system and user interactions. It manages members and descriptions, and supports child ordering for methods and nested classes.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.default_instance`](<#JsTsTypeDatadefault_instance>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.system_prompt`](<#JsTsTypeDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.user_prompt`](<#JsTsTypeDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.child_to_ir`](<#JsTsTypeDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.child_to_field_name`](<#JsTsTypeDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.default_instance`](<#jststypedatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.system_prompt`](<#jststypedatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.user_prompt`](<#jststypedatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.child_to_ir`](<#jststypedatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.child_to_field_name`](<#jststypedatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -753,95 +743,93 @@ The `from_llm` class method creates an instance of the class using data from a l
 #### JsTsTypeData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L497>)
 
-The `default_instance` method creates a default instance of the `JsTsTypeData` class with predefined empty or placeholder values for its attributes.
+Creates a default instance of the `JsTsTypeData` class with predefined attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None` and is not used in the method body.
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
-    - It returns a new instance of the class `JsTsTypeData` with specific default values for its attributes.
-- **Output**: A new instance of `JsTsTypeData` with default values for `description`, `members`, and `extends` attributes.
+    - `reified_symbol`: An optional `ReifiedSymbol` object that defaults to `None`.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls` with specific default values for `description`, `members`, and `extends`.
+- **Output**: A new instance of the `JsTsTypeData` class with default attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#ListedRawContentWithNone>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#JsTsTypeData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#listedbackticknamerawcontentnonone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#listedrawcontentwithnone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#jststypedata>)  (Base Class)
 
 
 ---
 #### JsTsTypeData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L505>)
 
-The `system_prompt` method generates a system prompt string for documenting JavaScript and TypeScript types.
+Generates a system prompt string for a given symbol using predefined components and instructions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty Prompt object.
-    - It appends a Component with a string containing the JSON schema for types found system prompt.
-    - It appends general style instructions and instructions to use backticks for style.
-    - Finally, it converts the Prompt object into a string and returns it.
-- **Output**: A string representing the system prompt for documenting JavaScript and TypeScript types.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `TYPES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` to a string using `into_str()` and return it.
+- **Output**: A string representing the system prompt for the given symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#JsTsTypeData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#jststypedata>)  (Base Class)
 
 
 ---
 #### JsTsTypeData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L515>)
 
-The `user_prompt` method generates a user-facing prompt string based on the provided `RawSymbolData` object.
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name, symbol code, and optionally, file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a component with the user prompt type and the symbol's name.
-    - Append another component with the type alias code from the symbol's `symbol_code`.
-    - Check if the symbol has `file_code`; if so, append a component with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt based on the symbol's data.
+    - `symbol`: An instance of `RawSymbolData` containing the symbol's name, symbol code, and optionally file code.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the `TYPES_FOUND_USER_PROMPT` and the symbol's name.
+    - Append another [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the symbol's type alias code.
+    - Check if the symbol has file code; if true, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code.
+    - Convert the `Prompt` object into a string and return it.
+- **Output**: A string representing the user prompt.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#JsTsTypeData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#jststypedata>)  (Base Class)
 
 
 ---
 #### JsTsTypeData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L528>)
 
-The `child_to_ir` method maps a given `RawSymbolData` symbol to a corresponding `IrData` type based on its `SymbolKind`.
+Maps a `RawSymbolData` instance to a corresponding `IrData` type or returns `None` based on the symbol kind.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol whose `SymbolKind` is to be mapped to an `IrData` type.
-- **Control Flow**:
-    - A dictionary `mapping` is defined to associate `SymbolKind` values with corresponding `IrData` types.
-    - The method attempts to retrieve the `IrData` type from the `mapping` dictionary using the `symbol.symbol_kind` as the key.
-    - If the `symbol.symbol_kind` is not found in the `mapping`, the method returns `None`.
-- **Output**: The method returns a type of `IrData` corresponding to the `symbol.symbol_kind`, or `None` if no mapping exists.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#JsTsTypeData>)  (Base Class)
+    - `symbol`: An instance of `RawSymbolData` representing a symbol with a specific kind.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `JsTsFnData` and `SymbolKind.INTERFACE` with `None`.
+    - Uses the `get` method on the mapping dictionary to retrieve the corresponding `IrData` type for the `symbol.symbol_kind`.
+- **Output**: Returns a type of `IrData` corresponding to the `symbol.symbol_kind` or `None` if no mapping exists.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#jststypedata>)  (Base Class)
 
 
 ---
 #### JsTsTypeData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L536>)
 
-The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` to a corresponding `ScopeRelation` field name.
+Maps a `RawSymbolData` child's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: A `RawSymbolData` object representing a symbol with a specific kind.
-- **Control Flow**:
-    - A dictionary `mapping` is defined to map `SymbolKind` values to `ScopeRelation` values.
-    - The method retrieves the `symbol_kind` of the `child` input and uses it to look up the corresponding `ScopeRelation` in the `mapping` dictionary.
-    - The method returns the result of the dictionary lookup, which is the corresponding `ScopeRelation` value.
-- **Output**: The method returns a string representing the `ScopeRelation` field name corresponding to the `symbol_kind` of the input `child`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#JsTsTypeData>)  (Base Class)
+    - `child`: A `RawSymbolData` object representing a child symbol with a `symbol_kind` attribute.
+- **Logic and Control Flow**:
+    - Defines a mapping dictionary that associates `SymbolKind.CALLABLE` with `ScopeRelation.METHOD` and `SymbolKind.INTERFACE` with `ScopeRelation.NESTED_CLASS`.
+    - Uses the `get` method on the mapping dictionary to retrieve the `ScopeRelation` corresponding to the `child.symbol_kind`.
+- **Output**: Returns a `ScopeRelation` field name as a string, or `None` if the `symbol_kind` is not in the mapping.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeData`](<#jststypedata>)  (Base Class)
 
 
 
@@ -850,12 +838,12 @@ The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` t
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L545>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to JsTsTypeData or lists of JsTsTypeData.
-- **Description**: The JsTsTypeCollection class is a specialized collection that extends the IrCollection class, designed to manage and organize JavaScript and TypeScript type data. It holds a dictionary where each key is a string and the value is either a JsTsTypeData instance or a list of such instances. This class provides a class method, from_llm, which facilitates the creation of a JsTsTypeCollection instance from a language model and a collection of raw symbols, leveraging the JsTsTypeData class for data representation.
+    - `data`: Stores a dictionary mapping string keys to `JsTsTypeData` or lists of `JsTsTypeData`.
+- **Description**: Manages a collection of JavaScript and TypeScript type data, allowing for the storage and retrieval of type information. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeCollection.from_llm`](<#JsTsTypeCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeCollection.from_llm`](<#jststypecollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -863,18 +851,18 @@ The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` t
 #### JsTsTypeCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L548>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `JsTsTypeData`, `llm`, and `symbols_list` as arguments.
-    - The result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method call is returned as the output of the `from_llm` method.
-- **Output**: Returns an instance of the class created using the specified language model and symbols list.
+    - `llm`: An instance of `ChatOpenAI` representing the language model.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be used.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method of the class with `JsTsTypeData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class created using the provided language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeCollection`](<#JsTsTypeCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeCollection`](<#jststypecollection>)  (Base Class)
 
 
 
@@ -883,14 +871,14 @@ The `from_llm` method creates an instance of the class using data from a languag
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L554>)
 
 - **Members**:
-    - `data`: A dictionary mapping variable names to their corresponding RawSymbolData.
-- **Description**: The JsTsVariableRawSymbolCollection class is a specialized collection for handling raw symbol data related to JavaScript and TypeScript variables. It extends the RawSymbolCollection class and provides functionality to populate its data through static analysis of code, using a JsTsDriverTree to extract variable symbols. The class is designed to facilitate the organization and retrieval of variable-related symbol data, but it does not support creation from language model (LLM) analysis, emphasizing its reliance on static code analysis.
+    - `data`: Stores a dictionary mapping variable names to `RawSymbolData` instances.
+- **Description**: Collects raw symbol data for JavaScript and TypeScript variables using static analysis. It uses a `JsTsDriverTree` to extract variable symbols from the provided code and path, and stores them in a dictionary. The class provides a method to convert the collected data into a dictionary format. Static analysis is the primary method for data extraction, and the class does not support LLM-based extraction.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.from_static_analysis`](<#JsTsVariableRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.from_llm`](<#JsTsVariableRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.to_dict`](<#JsTsVariableRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.from_static_analysis`](<#jstsvariablerawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.from_llm`](<#jstsvariablerawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.to_dict`](<#jstsvariablerawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -898,53 +886,53 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### JsTsVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L557>)
 
-The `from_static_analysis` method extracts variable symbols from JavaScript or TypeScript code and returns a collection of these symbols as `RawSymbolData` objects, or `None` if no symbols are found.
+Creates an instance of `JsTsVariableRawSymbolCollection` from static analysis of JavaScript or TypeScript code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-- **Control Flow**:
-    - A `JsTsDriverTree` object is created from the provided code and path using `JsTsDriverTree.from_code` method.
-    - An empty dictionary `variable_raw_symbol_data` is initialized to store the extracted symbols.
-    - The [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function is called to determine if the code is considered a large file, affecting symbol extraction.
-    - The method iterates over each variable symbol extracted by `driver_tree.extract_variables()`.
-    - For each symbol with a non-None name, a `RawSymbolData` object is created using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including the symbol, path, and code.
-    - The created `RawSymbolData` object is stored in `variable_raw_symbol_data` with the symbol's name as the key.
-    - If `variable_raw_symbol_data` is empty, the method returns `None`; otherwise, it returns an instance of the class with `variable_raw_symbol_data` as its data.
-- **Output**: Returns an instance of `JsTsVariableRawSymbolCollection` containing the extracted variable symbols as `RawSymbolData` objects, or `None` if no symbols are found.
+    - `code`: A string containing the JavaScript or TypeScript code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
+- **Logic and Control Flow**:
+    - Call `JsTsDriverTree.from_code` with `code` and `root_rel_path` to get a `driver_tree` object.
+    - Initialize an empty dictionary `variable_raw_symbol_data` to store raw symbol data.
+    - Determine if the code is a large file by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with `code`.
+    - Iterate over each `ts_symbol` extracted from `driver_tree.extract_variables()`.
+    - For each `ts_symbol` with a non-None name, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` and add it to `variable_raw_symbol_data`.
+    - Return `None` if `variable_raw_symbol_data` is empty; otherwise, return an instance of `JsTsVariableRawSymbolCollection` initialized with `variable_raw_symbol_data`.
+- **Output**: Returns an instance of `JsTsVariableRawSymbolCollection` if symbols are found; otherwise, returns `None`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](<../treesitter_drivers/js_ts_driver.py.md#JsTsDriverTreeextract_variables>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection`](<#JsTsVariableRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_variables`](<../treesitter_drivers/js_ts_driver.py.md#jstsdrivertreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection`](<#jstsvariablerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L587>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript variables instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript variables.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript variables.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection`](<#JsTsVariableRawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the code to analyze.
+    - `root_rel_path`: A string representing the root relative path of the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a specific message.
+- **Output**: No output is produced as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection`](<#jstsvariablerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L591>)
 
-The `to_dict` method returns the `data` attribute of the `JsTsVariableRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection`](<#JsTsVariableRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsVariableRawSymbolCollection`](<#jstsvariablerawsymbolcollection>)  (Base Class)
 
 
 
@@ -953,14 +941,14 @@ The `to_dict` method returns the `data` attribute of the `JsTsVariableRawSymbolC
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L595>)
 
 - **Members**:
-    - `data`: A dictionary mapping function names to their corresponding RawSymbolData.
-- **Description**: The JsTsFnRawSymbolCollection class is a specialized collection for handling raw symbol data related to JavaScript and TypeScript functions. It extends the RawSymbolCollection class and provides functionality to populate its data through static analysis of code, specifically targeting callable symbols that are not methods of classes or interfaces. The class includes methods to convert the collection to a dictionary and to create instances from static analysis, ensuring that only relevant function symbols are included in the collection.
+    - `data`: Stores a dictionary mapping function names to `RawSymbolData` instances.
+- **Description**: Collects raw symbol data for JavaScript and TypeScript functions. It uses static analysis to extract function symbols from code, filtering out methods of classes or interfaces. The class provides a method to convert the collected data into a dictionary format.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.from_static_analysis`](<#JsTsFnRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.from_llm`](<#JsTsFnRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.to_dict`](<#JsTsFnRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.from_static_analysis`](<#jstsfnrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.from_llm`](<#jstsfnrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.to_dict`](<#jstsfnrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -968,50 +956,53 @@ The `to_dict` method returns the `data` attribute of the `JsTsVariableRawSymbolC
 #### JsTsFnRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L598>)
 
-The `from_static_analysis` method creates an instance of `JsTsFnRawSymbolCollection` from static analysis of JavaScript or TypeScript code, focusing on callable symbols that are not methods of classes or interfaces.
+Creates an instance of `JsTsFnRawSymbolCollection` from static analysis of JavaScript or TypeScript code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript source code to be analyzed.
+    - `code`: A string representing the JavaScript or TypeScript source code to analyze.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols extracted from the code.
-- **Control Flow**:
-    - Filter `reified_symbols` to include only those with a `SymbolKind.CALLABLE` kind.
-    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - Iterate over the filtered callable symbols and check if they are not methods of classes, interfaces, or data structures.
-    - For each valid symbol, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` and add it to `function_raw_symbol_data` dictionary.
-    - Return `None` if `function_raw_symbol_data` is empty, otherwise return an instance of `JsTsFnRawSymbolCollection` initialized with `function_raw_symbol_data`.
-- **Output**: Returns an instance of `JsTsFnRawSymbolCollection` containing raw symbol data for functions, or `None` if no valid symbols are found.
+- **Logic and Control Flow**:
+    - Filters `reified_symbols` to include only those with a `symbol_kind` of `SymbolKind.CALLABLE`.
+    - Initializes an empty dictionary `function_raw_symbol_data` to store raw symbol data for functions.
+    - Determines if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Iterates over each `reified_sym` in `func_symbols` to process callable symbols.
+    - Checks if the symbol is not a method of a class, interface, or data structure by examining `symbol_parent_kind`.
+    - Creates `RawSymbolData` for each valid function symbol and adds it to `function_raw_symbol_data`.
+    - Returns `None` if `function_raw_symbol_data` is empty, otherwise returns an instance of `JsTsFnRawSymbolCollection` with the collected data.
+- **Output**: An instance of `JsTsFnRawSymbolCollection` containing raw symbol data for functions, or `None` if no such data is found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection`](<#JsTsFnRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection`](<#jstsfnrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsFnRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L643>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript functions instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript functions.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection`](<#JsTsFnRawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the JavaScript or TypeScript code.
+    - `root_rel_path`: A string representing the root relative path.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript functions.
+- **Output**: No output is returned as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection`](<#jstsfnrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsFnRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L647>)
 
-The `to_dict` method returns the `data` attribute of the `JsTsFnRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection`](<#JsTsFnRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsFnRawSymbolCollection`](<#jstsfnrawsymbolcollection>)  (Base Class)
 
 
 
@@ -1020,14 +1011,14 @@ The `to_dict` method returns the `data` attribute of the `JsTsFnRawSymbolCollect
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L651>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The `JsTsClassRawSymbolCollection` class is a specialized collection for handling raw symbol data specifically related to JavaScript and TypeScript classes. It extends the `RawSymbolCollection` and provides functionality to populate its data from static analysis of code, focusing on class symbols and their associated methods. The class is designed to handle large files efficiently and supports the extraction of class-related symbols, including methods that may not be defined in the same file as their parent class or interface.
+    - `data`: Stores a dictionary mapping class names to `RawSymbolData` instances.
+- **Description**: Collects and organizes raw symbol data for JavaScript and TypeScript classes. It uses static analysis to extract class symbols and their associated methods from the provided code. The class can handle large files and ensures that methods belonging to classes or interfaces are correctly associated, even if the parent class or interface is not in the same file. The `data` attribute holds the mapping of class names to their corresponding `RawSymbolData`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.from_static_analysis`](<#JsTsClassRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.from_llm`](<#JsTsClassRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.to_dict`](<#JsTsClassRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.from_static_analysis`](<#jstsclassrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.from_llm`](<#jstsclassrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.to_dict`](<#jstsclassrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -1035,54 +1026,56 @@ The `to_dict` method returns the `data` attribute of the `JsTsFnRawSymbolCollect
 #### JsTsClassRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L654>)
 
-The `from_static_analysis` method constructs a `JsTsClassRawSymbolCollection` instance from static analysis of JavaScript or TypeScript code, focusing on class and method symbols.
+Creates an instance of `JsTsClassRawSymbolCollection` from static analysis of JavaScript or TypeScript code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript source code to be analyzed.
-    - `root_rel_path`: A `Path` object indicating the root relative path of the source code file.
+    - `cls`: The class `JsTsClassRawSymbolCollection` itself.
+    - `code`: A string containing the JavaScript or TypeScript code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
-- **Control Flow**:
-    - Filter `reified_symbols` to identify class definitions and store them in `ds_symbols`.
-    - Initialize an empty dictionary `data_structure_raw_symbol_data` to store raw symbol data for each class.
-    - Determine if the file is large using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) and store the result in `is_large_file`.
-    - Iterate over each class symbol in `ds_symbols` to create [`RawSymbolData`](<symbol_common.py.md#RawSymbolData>) objects and populate their children with method symbols.
-    - Filter `reified_symbols` to identify callable symbols with a parent and store them in `callable_symbols_with_parent`.
-    - Iterate over each callable symbol to ensure its parent class/interface is represented in `data_structure_raw_symbol_data` and add the callable as a child if necessary.
-    - Return `None` if `data_structure_raw_symbol_data` is empty; otherwise, return a new `JsTsClassRawSymbolCollection` instance with the collected data.
-- **Output**: Returns a `JsTsClassRawSymbolCollection` instance containing the raw symbol data for classes and their methods, or `None` if no relevant symbols are found.
+- **Logic and Control Flow**:
+    - Filters `reified_symbols` to find class definitions and stores them in `ds_symbols`.
+    - Initializes an empty dictionary `data_structure_raw_symbol_data` to store raw symbol data.
+    - Determines if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Iterates over `ds_symbols` to create [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) for each class and its methods, storing them in `data_structure_raw_symbol_data`.
+    - Handles methods whose parent classes/interfaces might not be in the same file by checking `callable_symbols_with_parent`.
+    - Adds missing parent class/interface entries to `data_structure_raw_symbol_data` if necessary.
+    - Returns `None` if `data_structure_raw_symbol_data` is empty, otherwise returns an instance of `JsTsClassRawSymbolCollection` with the collected data.
+- **Output**: Returns an instance of `JsTsClassRawSymbolCollection` with the collected raw symbol data or `None` if no data is collected.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#RawSymbolData>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection`](<#JsTsClassRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#rawsymboldata>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection`](<#jstsclassrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsClassRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L768>)
 
-The `from_llm` method is a class method that raises a NotImplementedError, indicating that static analysis should be used for JavaScript/TypeScript classes instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript classes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript classes.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection`](<#JsTsClassRawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the code to analyze.
+    - `root_rel_path`: A string representing the root relative path of the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a specific message.
+- **Output**: No output is returned as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection`](<#jstsclassrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsClassRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L772>)
 
-The `to_dict` method returns the `data` attribute of the `JsTsClassRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection`](<#JsTsClassRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsClassRawSymbolCollection`](<#jstsclassrawsymbolcollection>)  (Base Class)
 
 
 
@@ -1091,14 +1084,14 @@ The `to_dict` method returns the `data` attribute of the `JsTsClassRawSymbolColl
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L776>)
 
 - **Members**:
-    - `data`: A dictionary mapping interface names to their corresponding RawSymbolData.
-- **Description**: The JsTsInterfaceRawSymbolCollection class is responsible for collecting and organizing raw symbol data specifically for JavaScript and TypeScript interfaces. It extends the RawSymbolCollection class and provides a method to populate its data from static analysis of code, focusing on interface symbols and their method signatures. This class is designed to handle large files and ensures that method signatures are correctly associated with their parent interfaces, even if they are not in the same file.
+    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` instances.
+- **Description**: Collects and manages raw symbol data for JavaScript and TypeScript interfaces. It uses static analysis to extract interface symbols and their associated method signatures from the provided code. The class can handle large files by determining if multi-prompt processing is necessary. It organizes the extracted data into a dictionary, where each key is the name of an interface, and the value is the corresponding `RawSymbolData` object. The class does not support instantiation from a language model and raises an error if attempted.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.from_static_analysis`](<#JsTsInterfaceRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.from_llm`](<#JsTsInterfaceRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.to_dict`](<#JsTsInterfaceRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.from_static_analysis`](<#jstsinterfacerawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.from_llm`](<#jstsinterfacerawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.to_dict`](<#jstsinterfacerawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -1106,54 +1099,56 @@ The `to_dict` method returns the `data` attribute of the `JsTsClassRawSymbolColl
 #### JsTsInterfaceRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L779>)
 
-The `from_static_analysis` method constructs a `JsTsInterfaceRawSymbolCollection` instance from static analysis of JavaScript or TypeScript code, focusing on interface symbols and their method signatures.
+Creates an instance of `JsTsInterfaceRawSymbolCollection` from static analysis of JavaScript or TypeScript code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
+    - `cls`: The class `JsTsInterfaceRawSymbolCollection` itself.
+    - `code`: A string containing the JavaScript or TypeScript code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
-- **Control Flow**:
-    - Filter `reified_symbols` to identify interface symbols that are definitions.
-    - Initialize an empty dictionary `interface_raw_symbol_data` to store raw symbol data for interfaces.
-    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - Iterate over each interface symbol, creating [`RawSymbolData`](<symbol_common.py.md#RawSymbolData>) for each and adding method signatures as children if applicable.
-    - Handle method signatures whose parent interfaces might not be in the same file by checking `callable_symbols_with_parent`.
-    - Add method signatures to their respective parent interface in `interface_raw_symbol_data` if not already present.
-    - Return `None` if `interface_raw_symbol_data` is empty, otherwise return a new instance of `JsTsInterfaceRawSymbolCollection` with the collected data.
-- **Output**: Returns a `JsTsInterfaceRawSymbolCollection` instance containing the raw symbol data for interfaces, or `None` if no interface data is found.
+- **Logic and Control Flow**:
+    - Filters `reified_symbols` to find interface symbols that are definitions.
+    - Initializes an empty dictionary `interface_raw_symbol_data` to store raw symbol data for interfaces.
+    - Determines if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - Iterates over each interface symbol, creating [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) for each and adding method signatures as children if applicable.
+    - Handles method signatures whose parent interfaces might not be in the same file by checking `callable_symbols_with_parent`.
+    - Adds missing parent interfaces to `interface_raw_symbol_data` if they are not already present.
+    - Returns `None` if `interface_raw_symbol_data` is empty, otherwise returns an instance of `JsTsInterfaceRawSymbolCollection` with the collected data.
+- **Output**: Returns an instance of `JsTsInterfaceRawSymbolCollection` containing the raw symbol data for interfaces, or `None` if no interfaces are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#RawSymbolData>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection`](<#JsTsInterfaceRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#rawsymboldata>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection`](<#jstsinterfacerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsInterfaceRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L888>)
 
-The `from_llm` method is a class method that raises a NotImplementedError, indicating that static analysis should be used for JavaScript/TypeScript interfaces instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript interfaces.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path for the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript interfaces.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection`](<#JsTsInterfaceRawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the code to analyze.
+    - `root_rel_path`: A string representing the root relative path of the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a specific message.
+- **Output**: No output is produced as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection`](<#jstsinterfacerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsInterfaceRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L892>)
 
-The `to_dict` method returns the `data` attribute of the `JsTsInterfaceRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance without any additional processing.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection`](<#JsTsInterfaceRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsInterfaceRawSymbolCollection`](<#jstsinterfacerawsymbolcollection>)  (Base Class)
 
 
 
@@ -1162,14 +1157,14 @@ The `to_dict` method returns the `data` attribute of the `JsTsInterfaceRawSymbol
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L896>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData instances.
-- **Description**: The JsTsTypeRawSymbolCollection class is a specialized collection for handling raw symbol data related to JavaScript and TypeScript data structures. It extends the RawSymbolCollection class and provides functionality to populate its data from static analysis of code, specifically focusing on data structures and their associated method signatures. This class is designed to facilitate the organization and retrieval of symbol data, particularly for large files, by leveraging static analysis techniques.
+    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` instances.
+- **Description**: Manages a collection of raw symbol data for JavaScript and TypeScript types. It uses static analysis to extract and organize symbols related to data structures, including their method signatures, from the provided code. The class can handle large files by determining if multi-prompt processing is necessary. It also ensures that method signatures are correctly associated with their parent data structures, even if they are not in the same file.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.from_static_analysis`](<#JsTsTypeRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.from_llm`](<#JsTsTypeRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.to_dict`](<#JsTsTypeRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.from_static_analysis`](<#jststyperawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.from_llm`](<#jststyperawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.to_dict`](<#jststyperawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -1177,52 +1172,57 @@ The `to_dict` method returns the `data` attribute of the `JsTsInterfaceRawSymbol
 #### JsTsTypeRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L899>)
 
-The `from_static_analysis` method constructs a `JsTsTypeRawSymbolCollection` instance from static analysis of code, focusing on data structures and their associated methods.
+Creates a collection of raw symbol data from static analysis of JavaScript or TypeScript code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A `Path` object indicating the root relative path of the source code file.
+    - `code`: A string representing the source code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
     - `reified_symbols`: A list of `ReifiedSymbol` objects representing the symbols extracted from the code.
-- **Control Flow**:
-    - Filter `reified_symbols` to identify data structure symbols that are definitions.
-    - Determine if the code requires multi-prompt processing based on its size.
-    - For each identified data structure symbol, create a [`RawSymbolData`](<symbol_common.py.md#RawSymbolData>) instance and populate it with method signatures as children if applicable.
-    - Handle method signatures whose parent data structures might not be in the same file by checking and adding them to the `interface_raw_symbol_data` dictionary.
-    - Return `None` if no data structures are found, otherwise return a `JsTsTypeRawSymbolCollection` instance with the collected data.
-- **Output**: Returns a `JsTsTypeRawSymbolCollection` instance containing the raw symbol data for data structures and their methods, or `None` if no relevant data structures are found.
+- **Logic and Control Flow**:
+    - Filter `reified_symbols` to get interface symbols that are data structures and definitions.
+    - Initialize an empty dictionary `interface_raw_symbol_data` to store raw symbol data.
+    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
+    - For each interface symbol, create a [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) object and add method signatures as children if applicable.
+    - Store the [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) object in `interface_raw_symbol_data` using the symbol's name as the key.
+    - Filter `reified_symbols` to get callable symbols with a parent that is a data structure.
+    - For each callable symbol, check if its parent is not in `interface_raw_symbol_data` and add it if necessary.
+    - Add the callable symbol as a child to its parent's [`RawSymbolData`](<symbol_common.py.md#rawsymboldata>) if it is not already present.
+    - Return `None` if `interface_raw_symbol_data` is empty, otherwise return an instance of the class with the data.
+- **Output**: An instance of the class containing the raw symbol data or `None` if no data is found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#RawSymbolData>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection`](<#JsTsTypeRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#rawsymboldata>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection`](<#jststyperawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsTypeRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L1008>)
 
-The `from_llm` class method raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript types instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript types.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the code to be analyzed.
+    - `code`: A string representing the code to analyze.
     - `root_rel_path`: A string representing the root relative path of the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript types.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection`](<#JsTsTypeRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a specific message.
+- **Output**: No output is returned as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection`](<#jststyperawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsTypeRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L1012>)
 
-The `to_dict` method returns the `data` attribute of the `JsTsTypeRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance without any additional processing.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection`](<#JsTsTypeRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsTypeRawSymbolCollection`](<#jststyperawsymbolcollection>)  (Base Class)
 
 
 
@@ -1231,14 +1231,14 @@ The `to_dict` method returns the `data` attribute of the `JsTsTypeRawSymbolColle
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L1016>)
 
 - **Members**:
-    - `data`: A dictionary mapping import symbol names to their corresponding RawSymbolData.
-- **Description**: The JsTsImportRawSymbolCollection class is responsible for collecting and managing raw symbol data related to JavaScript and TypeScript import statements. It extends the RawSymbolCollection class and provides a method to perform static analysis on code to extract import symbols and their associated data. The class stores this information in a dictionary, allowing for easy access and manipulation of import-related symbol data.
+    - `data`: Stores a dictionary mapping import symbol names to `RawSymbolData` instances.
+- **Description**: Manages a collection of raw import symbols extracted from JavaScript or TypeScript code. It uses static analysis to populate the collection with `RawSymbolData` instances, which represent the details of each import symbol. The class provides a method to convert the collection into a dictionary format for further processing or analysis.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.from_static_analysis`](<#JsTsImportRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.from_llm`](<#JsTsImportRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.to_dict`](<#JsTsImportRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.from_static_analysis`](<#jstsimportrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.from_llm`](<#jstsimportrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.to_dict`](<#jstsimportrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -1246,53 +1246,54 @@ The `to_dict` method returns the `data` attribute of the `JsTsTypeRawSymbolColle
 #### JsTsImportRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L1019>)
 
-The `from_static_analysis` method performs static analysis on JavaScript or TypeScript code to extract import symbols and returns a collection of these symbols as `RawSymbolData`.
+Analyzes JavaScript or TypeScript code to extract import symbols and returns a collection of these symbols as `RawSymbolData`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-- **Control Flow**:
-    - Create a `JsTsDriverTree` object from the provided code and path using `JsTsDriverTree.from_code`.
-    - Determine if the code is considered a large file using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
-    - Initialize an empty dictionary `import_dict` to store import symbols.
-    - Iterate over each import symbol extracted from the driver tree using `driver_tree.extract_imports()`.
-    - For each import symbol, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including the symbol, path, and code.
-    - Store each `RawSymbolData` object in `import_dict` with the symbol's name as the key.
-    - Return `None` if `import_dict` is empty, otherwise return an instance of the class with `import_dict` as its data.
-- **Output**: Returns an instance of the class containing a dictionary of import symbols as `RawSymbolData` if any imports are found, otherwise returns `None`.
+    - `code`: A string containing the JavaScript or TypeScript code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code file.
+- **Logic and Control Flow**:
+    - Create a `JsTsDriverTree` object from the given code and path.
+    - Determine if the code requires multiple prompts based on its size.
+    - Initialize an empty dictionary to store import symbols.
+    - Iterate over each import symbol extracted from the `driver_tree`.
+    - For each import symbol, create a `RawSymbolData` object with relevant attributes.
+    - Store each `RawSymbolData` object in the dictionary using the symbol's name as the key.
+    - Return `None` if no import symbols are found, otherwise return an instance of the class with the import dictionary.
+- **Output**: Returns an instance of `JsTsImportRawSymbolCollection` containing a dictionary of import symbols as `RawSymbolData`, or `None` if no imports are found.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports`](<../treesitter_drivers/js_ts_driver.py.md#JsTsDriverTreeextract_imports>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection`](<#JsTsImportRawSymbolCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/js_ts_driver.JsTsDriverTree.extract_imports`](<../treesitter_drivers/js_ts_driver.py.md#jstsdrivertreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#rawsymboldatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection`](<#jstsimportrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsImportRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L1043>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript imports instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for JavaScript/TypeScript imports.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the JavaScript or TypeScript code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path of the code file.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for JS/TS imports.
-- **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection`](<#JsTsImportRawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the code to analyze.
+    - `root_rel_path`: A string representing the root relative path for the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with a message indicating that static analysis should be used for JavaScript/TypeScript imports.
+- **Output**: This method does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection`](<#jstsimportrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### JsTsImportRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/js_ts.py#L1047>)
 
-The `to_dict` method returns the `data` attribute of the `JsTsImportRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance without any additional processing.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection`](<#JsTsImportRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/js_ts.JsTsImportRawSymbolCollection`](<#jstsimportrawsymbolcollection>)  (Base Class)
 
 
 

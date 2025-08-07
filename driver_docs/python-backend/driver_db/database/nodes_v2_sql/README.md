@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-SQL migration scripts for transitioning codebases, pages, templates, PDFs, tags, and top-level content.
+SQL scripts for migrating codebases, pages, templates, PDFs, tags, and top-level content.
 
 
 ## Files
-- **[migrate_codebases.py](migrate_codebases.py.md)**: The `migrate_codebases.py` file contains a SQL script for migrating codebase data, including preparing and inserting primary assets and versions, inserting nodes, and updating derived contents in a database.
-- **[migrate_pages_and_templates.py](migrate_pages_and_templates.py.md)**: The `migrate_pages_and_templates.py` file contains a SQL script for migrating pages and templates by inserting and updating records across multiple tables, including `v2_primary_asset`, `v2_version`, and `v2_node`, while handling duplicate content names with row numbers.
-- **[migrate_pdfs.py](migrate_pdfs.py.md)**: The `migrate_pdfs.py` file contains a SQL migration script that processes and migrates PDF records from a legacy system to a new database schema, involving steps to gather, distinctify, insert, bridge, and update records across multiple tables.
-- **[migrate_tags.py](migrate_tags.py.md)**: The `migrate_tags.py` file contains a SQL script for migrating tag data by associating tags with primary asset IDs and inserting them into the `v2_primary_asset_tag` table.
-- **[migrate_top_level_content.py](migrate_top_level_content.py.md)**: The `migrate_top_level_content.py` file contains SQL commands to update the `content_kind` of entries in the `derived_contents` table to various 'TOP_LEVEL' types based on their current `content_kind` and a relationship to a 'codebase' entry.
+- **[migrate_codebases.py](migrate_codebases.py.md)**: SQL script for migrating codebases, including asset preparation, node insertion, and content updates.
+- **[migrate_pages_and_templates.py](migrate_pages_and_templates.py.md)**: SQL script for migrating pages and templates to new database tables with versioning and node updates.
+- **[migrate_pdfs.py](migrate_pdfs.py.md)**: SQL script for migrating PDF data by creating and linking new asset, version, and node records.
+- **[migrate_tags.py](migrate_tags.py.md)**: SQL script for migrating tags to associate them with primary asset IDs in a database.
+- **[migrate_top_level_content.py](migrate_top_level_content.py.md)**: SQL script to update content kinds in the `derived_contents` table to top-level descriptions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

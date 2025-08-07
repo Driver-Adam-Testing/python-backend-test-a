@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase initializes the `symbol_table` module by importing and exposing functions for getting supported languages, building a symbol table, and printing a summary.
+Exports functions for language support, symbol table construction, and summary printing.
 
 # Purpose
-This code is a module-level script that defines the public API for a Python package by specifying which functions are accessible when the module is imported. It imports three functions: `get_supported_languages` from a module named `language_utils`, and `build_symbol_table` and `print_summary` from a module named `orchestrator`. The `__all__` list explicitly declares these functions as the public interface of the module, meaning they are the only components that will be exposed when using `from module import *`. This script provides narrow functionality, focusing on controlling the visibility of specific functions within the package, which is a common practice for maintaining clean and manageable codebases.
+This code defines the public API of a module by specifying which functions are accessible when the module is imported. It imports three functions: `get_supported_languages` from the `language_utils` module, and `build_symbol_table` and `print_summary` from the `orchestrator` module. The `__all__` list explicitly declares these three functions as the public interface of the module, indicating that they are intended for use by external code. This approach helps manage the namespace and control which components are exposed to users of the module.
 # Imports and Dependencies
 
 ---
@@ -19,9 +19,9 @@ This code is a module-level script that defines the public API for a Python pack
 
 ---
 ### \_\_all\_\_
-- **Type**: `list`
-- **Description**: The `__all__` variable is a list that defines the public interface of the module by specifying which functions are available for import when the module is imported using a wildcard import statement (e.g., `from module import *`). In this case, it includes the functions `get_supported_languages`, `build_symbol_table`, and `print_summary`. This helps in controlling the namespace and preventing the import of unintended functions or variables.
-- **Use**: This variable is used to control which functions are exposed when the module is imported with a wildcard import.
+- **Type**: ``list``
+- **Description**: A list that defines the public API of the module by specifying which functions are available for import when using `from <module> import *`. It includes the functions `get_supported_languages`, `build_symbol_table`, and `print_summary`.
+- **Use**: Controls the functions that are accessible when the module is imported using a wildcard import.
 
 
 

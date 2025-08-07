@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `autodocs_prototype.py` file in the `python-backend` codebase provides a comprehensive implementation for generating and managing automated documentation, including configuration validation, section generation, and document assembly, with support for both local and remote execution using Modal.
+A comprehensive script for generating and managing automated documentation using various models and configurations, supporting local and remote execution.
 
 # Purpose
-The provided Python code is a comprehensive script designed to automate the generation of technical documentation using machine learning models. It is structured to handle various tasks such as validating configuration files, executing content generation, resuming previous executions, and executing tasks remotely using the Modal platform. The script is built around a modular architecture, utilizing classes and functions to manage different aspects of the documentation process, including configuration parsing, document generation, and section management.
+The code is a comprehensive script designed for generating technical documentation using a combination of local and remote resources. It leverages various Python libraries and services, such as `boto3`, `modal`, `openai`, and `pymupdf4llm`, to facilitate the process of creating detailed documentation from source code and PDF files. The script is structured to handle different execution modes, including local and remote (via Modal), and supports both initial document generation and resuming from a previous state.
 
-Key components of the script include the use of the `argparse` library for command-line argument parsing, the `asyncio` library for asynchronous operations, and integration with external services like OpenAI and Modal for AI-driven content generation. The script defines several classes, such as `AutoDocCfg`, `AutoDocInitState`, and `SectionCfg`, which encapsulate the configuration and state management for the documentation process. The script also includes functions for handling PDF conversion, file annotation, and section updates, demonstrating a robust approach to automating the creation of technical documentation. The script is intended to be executed as a standalone application, with options for local and remote execution, making it versatile for different deployment scenarios.
+Key components of the code include classes and functions for managing document configuration (`AutoDocCfg`), initializing and updating document sections (`AutoDocInitState`), and handling different types of content sources, such as code files and PDFs. The script also includes functionality for annotating files and PDFs to determine their relevance to specific document sections, and it uses OpenAI's language models to generate and refine document content. The script is designed to be executed via command-line arguments, allowing users to validate configurations, execute document generation, resume previous sessions, or run the process remotely.
 # Imports and Dependencies
 
 ---
@@ -71,72 +71,72 @@ Key components of the script include the use of the `argparse` library for comma
 
 ---
 ### OPENAI\_SEM
-- **Type**: `asyncio.Semaphore`
-- **Description**: `OPENAI_SEM` is a global variable that is an instance of `asyncio.Semaphore` initialized with a value of 300. This semaphore is used to control access to a shared resource by allowing up to 300 concurrent operations.
-- **Use**: It is used to limit the number of concurrent asynchronous tasks that can interact with the OpenAI API, ensuring that no more than 300 tasks are executed simultaneously.
+- **Type**: ``asyncio.Semaphore``
+- **Description**: Limits the number of concurrent tasks that can access a shared resource to 300.
+- **Use**: Used to control the concurrency level of tasks accessing OpenAI resources.
 
 
 ---
 ### PDF\_DOWNLOAD\_DIR
 - **Type**: ``str``
-- **Description**: `PDF_DOWNLOAD_DIR` is a global variable that specifies the directory path where PDF files are downloaded and stored. It is set to the string "pdfs/", indicating that the PDFs will be stored in a folder named 'pdfs' relative to the current working directory.
-- **Use**: This variable is used to define the location for storing downloaded PDF files within the application.
+- **Description**: Specifies the directory path where PDF files are downloaded and stored. The value is set to the string `"pdfs/"`, indicating a relative path to a folder named `pdfs`.
+- **Use**: Used to define the location for storing downloaded PDF files in the application.
 
 
 ---
 ### OPENAI\_LIMITER
-- **Type**: `AsyncLimiter`
-- **Description**: `OPENAI_LIMITER` is an instance of the `AsyncLimiter` class, which is used to control the rate of requests to the OpenAI API. It is configured to allow up to 100 requests per second.
-- **Use**: This variable is used to ensure that the application does not exceed the rate limit when making requests to the OpenAI API, by limiting the number of requests to 100 per second.
+- **Type**: ``AsyncLimiter``
+- **Description**: Limits the number of requests to the OpenAI API to 100 requests per second. This helps to prevent exceeding the API rate limits.
+- **Use**: Used to control the rate of requests to the OpenAI API in asynchronous operations.
 
 
 ---
 ### generate\_image
-- **Type**: `modal.Image`
-- **Description**: The `generate_image` variable is an instance of a `modal.Image` object configured with a Debian Slim base image and Python 3.12. It includes local directories and Python packages necessary for building and running a specific application.
-- **Use**: This variable is used to define the environment for a Modal function, specifying the base image, directories, and dependencies required for execution.
+- **Type**: ``modal.Image``
+- **Description**: Creates a `modal.Image` object based on a Debian Slim image with Python 3.12. It adds local directories and installs specific Python packages to the image.
+- **Use**: Used to define the environment for the `llm_generate_modal` function by specifying the base image, directories, and packages needed.
 
 
 ---
 ### GREEN
-- **Type**: `str`
-- **Description**: The variable `GREEN` is a string that contains the ANSI escape code for setting the text color to green in a terminal. It is defined as `"\033[92m"`, where `\033` is the escape character and `[92m` is the code for green text.
-- **Use**: This variable is used to change the text color to green in terminal outputs.
+- **Type**: ``str``
+- **Description**: The `GREEN` variable is a string that contains the ANSI escape code for the color green. This escape code is used to change the text color in terminal outputs to green.
+- **Use**: Used to format text output in the terminal with a green color.
 
 
 ---
 ### RED
-- **Type**: `str`
-- **Description**: The `RED` variable is a string that contains the ANSI escape code for setting the text color to red in terminal outputs. It is defined as `"\033[91m"`, where `\033` is the escape character and `[91m` is the code for red text.
-- **Use**: This variable is used to change the text color to red in terminal outputs for highlighting or emphasis.
+- **Type**: ``str``
+- **Description**: The variable `RED` is a string that contains the ANSI escape code for the color red. This escape code is used to change the text color in terminal outputs to red.
+- **Use**: Used to format text output in the terminal with a red color.
 
 
 ---
 ### CYAN
-- **Type**: `str`
-- **Description**: The variable `CYAN` is a string that contains the ANSI escape code for the cyan color. This escape code is used to change the text color in terminal outputs to cyan.
-- **Use**: This variable is used to apply cyan color formatting to text output in terminal applications.
+- **Type**: ``str``
+- **Description**: A string that represents the ANSI escape code for the cyan color in terminal output. The value `"\033[96m"` is used to change the text color to cyan in compatible terminal environments.
+- **Use**: Used to format text output in the terminal with the cyan color.
 
 
 ---
 ### BLUE
-- **Type**: `str`
-- **Description**: The variable `BLUE` is a string that contains the ANSI escape code for setting the text color to blue in terminal outputs. It is defined as `"\033[94m"`, where `\033` is the escape character and `[94m` specifies the blue color code.
-- **Use**: This variable is used to change the text color to blue in terminal outputs for better visual distinction or emphasis.
+- **Type**: ``str``
+- **Description**: This variable is a string that contains the ANSI escape code for the color blue. The escape code `\033[94m` is used to change the text color in terminal outputs to blue.
+- **Use**: Used to format text output in the terminal with a blue color.
 
 
 ---
 ### ORANGE
-- **Type**: `str`
-- **Description**: The `ORANGE` variable is a string that contains an ANSI escape code for setting the text color to orange in terminal outputs. The escape code `\033[38;5;214m` is used to change the text color to a specific shade of orange.
-- **Use**: This variable is used to apply orange color formatting to text output in terminal applications.
+- **Type**: ``str``
+- **Description**: A string that represents the ANSI escape code for the color orange in terminal output. The escape code `\033[38;5;214m` sets the text color to orange when printed in a terminal that supports ANSI color codes.
+- **Use**: Used to change the text color to orange in terminal output.
 
 
 ---
 ### RESET
 - **Type**: `str`
-- **Description**: The `RESET` variable is a string that contains the ANSI escape code `"\033[0m"`. This code is used to reset the terminal text color to its default setting after it has been changed.
-- **Use**: This variable is used to reset the terminal text color to default after applying color changes.
+- **Description**: The `RESET` variable is a string that contains the ANSI escape code `"\033[0m"`. This escape code is used to reset the terminal text color to its default setting.
+- **Use**: Used to reset the terminal text color to default after applying color changes.
 
 
 # Classes
@@ -145,13 +145,9 @@ Key components of the script include the use of the `argparse` library for comma
 ### Category<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.Category}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L112>)
 
-- **Members**:
-    - `HighlyRelevant`: Represents a category with a value of 0 indicating high relevance.
-    - `SomewhatRelevant`: Represents a category with a value of 1 indicating some relevance.
-    - `Irrelevant`: Represents a category with a value of 2 indicating irrelevance.
-- **Description**: The `Category` class is an enumeration that categorizes items into three levels of relevance: HighlyRelevant, SomewhatRelevant, and Irrelevant, each associated with an integer value. It provides a method to convert a string representation of a category to its corresponding enum value.
+- **Description**: Defines categories of relevance with integer values for classification purposes.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str`](<#Categoryfrom_str>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str`](<#categoryfrom_str>)
 - **Inherits From**:
     - `IntEnum`
 
@@ -161,16 +157,16 @@ Key components of the script include the use of the `argparse` library for comma
 #### Category\.from\_str<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L117>)
 
-The `from_str` method converts a string representation of an integer to a `Category` enum member.
+Creates an instance of the `Category` class from a string representation of an integer.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `s`: A string representing an integer that corresponds to a `Category` enum value.
-- **Control Flow**:
-    - The method takes a string `s` as input.
-    - It converts the string `s` to an integer using `int(s)`.
-    - It returns the corresponding `Category` enum member by passing the integer to the `cls` constructor.
-- **Output**: The method returns a `Category` enum member corresponding to the integer value of the input string.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.Category`](<#Category>)  (Base Class)
+    - `cls`: The class `Category` itself, used to create a new instance.
+    - `s`: A string that represents an integer, which corresponds to a value in the `Category` enumeration.
+- **Logic and Control Flow**:
+    - Converts the input string `s` to an integer using the `int()` function.
+    - Uses the integer to create and return an instance of the `Category` class by calling `cls(int(s))`.
+- **Output**: An instance of the `Category` class corresponding to the integer value parsed from the input string.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.Category`](<#category>)  (Base Class)
 
 
 
@@ -179,9 +175,9 @@ The `from_str` method converts a string representation of an integer to a `Categ
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L122>)
 
 - **Members**:
-    - `LOCAL`: Represents the local execution mode as a string value 'local'.
-    - `MODAL`: Represents the modal execution mode as a string value 'modal'.
-- **Description**: The `ExecutionMode` class is an enumeration that extends `StrEnum` to define different modes of execution, specifically 'local' and 'modal'. It provides a clear and type-safe way to handle execution modes within the application, allowing for easy comparison and assignment of these modes as string values.
+    - `LOCAL`: Represents the local execution mode.
+    - `MODAL`: Represents the modal execution mode.
+- **Description**: Defines different modes of execution as string enumerations.
 - **Inherits From**:
     - `StrEnum`
 
@@ -192,10 +188,10 @@ The `from_str` method converts a string representation of an integer to a `Categ
 
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `index`: An integer representing the index of the flag.
-    - `name`: A string representing the name of the flag.
-    - `flag`: A boolean indicating the state of the flag.
-- **Description**: The `NamedFlag` class is a data model that represents a flag with an associated index and name, using the Pydantic `BaseModel` for data validation and management. It is designed to encapsulate a flag's state along with its identifying information, making it useful for scenarios where flags need to be tracked or managed by name and index.
+    - `index`: Stores the index of the flag.
+    - `name`: Stores the name of the flag.
+    - `flag`: Stores the boolean value of the flag.
+- **Description**: Represents a named flag with an index, a name, and a boolean flag value.
 - **Inherits From**:
     - `BaseModel`
 
@@ -205,10 +201,10 @@ The `from_str` method converts a string representation of an integer to a `Categ
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L133>)
 
 - **Members**:
-    - `sections`: A list of NamedFlag objects representing different sections and their flags.
-- **Description**: The SectionFlags class is a subclass of BaseModel that holds a list of NamedFlag objects, each representing a section with a flag indicating its relevance. It provides a class method, from_llm, which asynchronously generates a decision on the relevance of sections based on input from a language model, using a system prompt template and user prompt to guide the decision-making process.
+    - `sections`: Holds a list of `NamedFlag` objects.
+- **Description**: Represents a model for managing section flags, which are used to determine the relevance of sections in a document based on input from a language model.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags.from_llm`](<#SectionFlagsfrom_llm>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags.from_llm`](<#sectionflagsfrom_llm>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -218,29 +214,29 @@ The `from_str` method converts a string representation of an integer to a `Categ
 #### SectionFlags\.from\_llm<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags.from_llm}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L136>)
 
-The `from_llm` class method asynchronously generates a `SectionFlags` instance by evaluating the relevance of optional document sections using a language model.
+Creates an instance of the class by using a language model to evaluate the relevance of optional sections for a document based on provided descriptions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `SectionFlags` to which this method belongs.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model used to generate responses.
+    - `cls`: The class itself, used to create an instance.
+    - `llm`: An instance of `ChatOpenAI`, representing the language model to use for generating responses.
     - `goal`: A string describing the goal of the document being written.
-    - `preamble`: A string providing additional context about the document being written.
-    - `optional_sections`: A list of tuples, each containing a section index, section name, and section description, representing optional sections to be evaluated for inclusion.
-    - `long_descriptions`: A string containing long descriptions of files and folders associated with the code, used as context for evaluating section relevance.
-- **Control Flow**:
-    - A system prompt template is defined to instruct the language model on how to evaluate the relevance of optional sections based on the document goal and preamble.
-    - A user prompt is constructed using the provided long descriptions to give context for the evaluation.
-    - The preamble content is conditionally appended to the system prompt if it is not empty.
-    - The optional sections are formatted into a string with their index, name, and description for inclusion in the system prompt.
-    - The system prompt is formatted with the goal, preamble content, and optional section descriptions.
-    - The method awaits a response from the language model using the [`generate_response`](<utils/models.py.md#ChatOpenAIgenerate_response>) method of the `llm` instance, passing the system and user prompts.
-    - The response is validated and converted into a `SectionFlags` instance using the `model_validate_json` method of the class.
-- **Output**: A `SectionFlags` instance containing the evaluated relevance of each optional section as a boolean flag.
+    - `preamble`: A string providing additional context about the document.
+    - `optional_sections`: A list of tuples, each containing a section index, section name, and section description.
+    - `long_descriptions`: A string containing long descriptions of the source code files and folders.
+- **Logic and Control Flow**:
+    - Constructs a `system_prompt_template` with instructions for the language model to evaluate the relevance of optional sections based on the document goal and preamble.
+    - Formats the `user_prompt` with the provided `long_descriptions` to give context for the evaluation.
+    - Generates a formatted string `preamble_content` if the `preamble` is not empty, to provide additional context.
+    - Iterates over `optional_sections` to create a formatted string `optional_section_descriptions` with section details.
+    - Formats the `system_prompt` by inserting the `goal`, `preamble_content`, and `optional_section_descriptions` into the `system_prompt_template`.
+    - Calls `llm.generate_response` with the `system_prompt` and `user_prompt` to get a JSON response indicating which sections are relevant.
+    - Uses `cls.model_validate_json` to validate and return the response as an instance of the class.
+- **Output**: An instance of the class with evaluated section relevance based on the language model's response.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/content_services/autodocs/src/utils/models.ChatOpenAI.generate_response`](<utils/models.py.md#ChatOpenAIgenerate_response>)
-    - [`python-backend/content_services/autodocs/src/utils/models.OutputConfig`](<utils/models.py.md#OutputConfig>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags`](<#SectionFlags>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../../inspector/src/utils/models.py.md#chatopenaigenerate_response>)
+    - [`python-backend/content_services/inspector/src/utils/models.OutputConfig`](<../../inspector/src/utils/models.py.md#outputconfig>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags`](<#sectionflags>)  (Base Class)
 
 
 
@@ -250,12 +246,12 @@ The `from_llm` class method asynchronously generates a `SectionFlags` instance b
 
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `name`: The name of the technical document content.
-    - `source`: The source of the document content, which can be a string or None.
-    - `short_sentence_description`: A brief description of the document content in a single sentence.
-    - `long_description`: A detailed description of the document content.
-    - `short_paragraph_description`: A concise paragraph describing the document content.
-- **Description**: The `TechDocsContent` class is a data model that represents the content of a technical document. It includes various descriptive fields such as the name, source, and different levels of descriptions (short sentence, long, and short paragraph) to provide a comprehensive overview of the document's content. This class is used to encapsulate and manage the information related to technical documentation within the application.
+    - `name`: Stores the name of the content.
+    - `source`: Stores the source of the content, which can be a string or None.
+    - `short_sentence_description`: Stores a short sentence description of the content.
+    - `long_description`: Stores a long description of the content.
+    - `short_paragraph_description`: Stores a short paragraph description of the content.
+- **Description**: Represents a content model with various descriptions and an optional source.
 - **Inherits From**:
     - `BaseModel`
 
@@ -265,17 +261,17 @@ The `from_llm` class method asynchronously generates a `SectionFlags` instance b
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L269>)
 
 - **Members**:
-    - `codebase_name`: The name of the codebase associated with the documentation content.
-    - `version_id`: The identifier for the version of the codebase.
-    - `dag`: A directed acyclic graph representing the file dependencies in the codebase.
-    - `content`: A dictionary mapping file paths to their corresponding technical documentation content.
-    - `topo_order`: A list of file paths ordered topologically based on the DAG.
-- **Description**: The `DriverDocsContent` class is a data model for managing and storing documentation content related to a specific version of a codebase. It includes information about the codebase's name, version, and a directed acyclic graph (DAG) that represents file dependencies. The class also maintains a mapping of file paths to their respective technical documentation content and provides a topological order of these files. It offers methods to serialize and deserialize the content to and from disk, as well as to construct an instance from a database, facilitating the management of documentation content across different storage mediums.
+    - `codebase_name`: Stores the name of the codebase.
+    - `version_id`: Stores the version identifier.
+    - `dag`: Stores a directed acyclic graph (DAG) representing file dependencies.
+    - `content`: Stores a dictionary mapping file paths to `TechDocsContent` objects.
+    - `topo_order`: Stores a list of file paths in topological order.
+- **Description**: Represents a model for managing and processing documentation content related to a specific codebase version. It includes methods to serialize and deserialize the content to and from disk, as well as to load content from a database. The class also provides functionality to traverse the documentation content in topological order.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.to_disk`](<#DriverDocsContentto_disk>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#DriverDocsContentfrom_disk>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db`](<#DriverDocsContentfrom_db>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.walk_topo`](<#DriverDocsContentwalk_topo>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.to_disk`](<#driverdocscontentto_disk>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#driverdocscontentfrom_disk>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db`](<#driverdocscontentfrom_db>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.walk_topo`](<#driverdocscontentwalk_topo>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -285,117 +281,110 @@ The `from_llm` class method asynchronously generates a `SectionFlags` instance b
 #### DriverDocsContent\.to\_disk<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.to_disk}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L276>)
 
-The `to_disk` method serializes the `DriverDocsContent` object to JSON and writes it to a specified file path.
+Writes the JSON representation of the `DriverDocsContent` instance to a specified file path.
 - **Inputs**:
     - `p`: A `Path` object representing the file path where the JSON data will be written.
-- **Control Flow**:
-    - Call the `model_dump_json` method on the `DriverDocsContent` instance to serialize its data to a JSON string.
-    - Open the file at the specified path `p` in write mode.
-    - Write the JSON string to the file.
-- **Output**: The method does not return any value; it writes the serialized JSON data to a file.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#DriverDocsContent>)  (Base Class)
+- **Logic and Control Flow**:
+    - Calls `self.model_dump_json()` to get the JSON representation of the `DriverDocsContent` instance.
+    - Opens the file at the specified path `p` in write mode.
+    - Writes the JSON data to the file.
+- **Output**: No output is returned as the function returns `None`.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#driverdocscontent>)  (Base Class)
 
 
 ---
 #### DriverDocsContent\.from\_disk<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L281>)
 
-The `from_disk` class method reads a JSON file from a given path and returns an instance of the class by validating the JSON content.
+Creates an instance of the class by reading JSON data from a file on disk and validating it.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `p`: A `Path` object representing the file path from which to read the JSON data.
-- **Control Flow**:
-    - Open the file at the given path `p` for reading.
-    - Read the entire content of the file into a string `json_raw`.
-    - Call the `model_validate_json` method of the class with `json_raw` to create and return an instance of the class.
-- **Output**: An instance of the class, created by validating the JSON content read from the file.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#DriverDocsContent>)  (Base Class)
+- **Logic and Control Flow**:
+    - Opens the file at the given path `p` for reading.
+    - Reads the entire content of the file into the variable `json_raw`.
+    - Calls the class method `model_validate_json` with `json_raw` to validate and create an instance of the class.
+- **Output**: Returns an instance of the class created from the validated JSON data.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#driverdocscontent>)  (Base Class)
 
 
 ---
 #### DriverDocsContent\.from\_db<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L288>)
 
-The `from_db` method retrieves and constructs a `DriverDocsContent` object from a database using a specified version ID and relative path.
+Creates an instance of `DriverDocsContent` from a database using the specified `version_id` and `relative_path`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `version_id`: A string representing the unique identifier of the version to retrieve from the database.
-    - `relative_path`: A string representing the relative path used to filter derived contents.
-- **Control Flow**:
-    - The method begins by establishing a database session using [`get_session`](<../../../driver_db/database/db.py.md#get_session>) and retrieves a `Version` object based on the `version_id`, including its primary asset using `selectinload` for eager loading.
-    - It extracts the `codebase_name`, `primary_asset_id`, and `organization_id` from the retrieved `Version` object.
-    - A bucket name is generated by hashing the `organization_id` and taking the first 63 characters of the hash.
-    - The method retrieves derived contents for short sentence, long, and short paragraph descriptions using [`_get_derived_contents`](<#_get_derived_contents>) with the `version_id`, `relative_path`, and respective `ContentKind` values.
-    - A temporary directory is created to download files from S3 using a `ThreadPoolExecutor` to parallelize the downloads, storing the results in a `content` dictionary.
-    - For each derived content key, it attempts to download the source from S3 and constructs a [`TechDocsContent`](<#TechDocsContent>) object, handling any exceptions by setting the source to `None`.
-    - A directed acyclic graph (DAG) is built using [`build_file_tree_dag`](<#build_file_tree_dag>) with the downloaded content, and a topological sort is performed on the DAG.
-    - Finally, a `DriverDocsContent` object is returned, containing the `codebase_name`, `version_id`, DAG, content, and topological order.
-- **Output**: A `DriverDocsContent` object containing the codebase name, version ID, DAG, content, and topological order of the files.
+    - `relative_path`: A string representing the relative path to the content within the version.
+- **Logic and Control Flow**:
+    - Opens a database session using [`get_session`](<../../../driver_db/database/db.py.md#get_session>) to retrieve the `Version` object corresponding to `version_id` with its primary asset loaded.
+    - Extracts `codebase_name`, `primary_asset_id`, and `organization_id` from the `Version` object.
+    - Computes a `bucket` name by hashing the `organization_id`.
+    - Retrieves derived contents for short sentence, long, and short paragraph descriptions using [`_get_derived_contents`](<#_get_derived_contents>) for the given `version_id` and `relative_path`.
+    - Creates a temporary directory for downloading files from S3.
+    - Uses a `ThreadPoolExecutor` to download files from S3 in parallel, storing the results in a `content` dictionary.
+    - Handles exceptions during download by logging errors and storing entries with `None` as the source in `content`.
+    - Builds a file tree DAG using [`build_file_tree_dag`](<#build_file_tree_dag>) and performs a topological sort on it.
+    - Returns a `DriverDocsContent` object initialized with the retrieved and processed data.
+- **Output**: Returns an instance of `DriverDocsContent` containing the codebase name, version ID, DAG, content, and topological order of files.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](<../../../packages/shared/shared/v3/interfaces/llm_stream_response.py.md#LlmStreamResponseencode>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](<../../../packages/shared/shared/v3/interfaces/llm_stream_response.py.md#llmstreamresponseencode>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_derived_contents`](<#_get_derived_contents>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.TechDocsContent`](<#TechDocsContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData.Config`](<../../inspector/src/utils/lang_specialization/symbol_common.py.md#config>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.TechDocsContent`](<#techdocscontent>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_file_tree_dag`](<#build_file_tree_dag>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#DriverDocsContent>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#driverdocscontent>)  (Base Class)
 
 
 ---
 #### DriverDocsContent\.walk\_topo<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.walk_topo}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L388>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L389>)
 
-The `walk_topo` method generates tuples of path and content in topological order from the `DriverDocsContent` class.
+Generates a topologically ordered sequence of tuples containing a string and a `TechDocsContent` object from the `content` dictionary.
 - **Inputs**: None
-- **Control Flow**:
-    - The method uses a generator expression to iterate over `self.topo_order`.
-    - For each path `p` in `self.topo_order`, it yields a tuple containing the path `p` and the corresponding content from `self.content[p]`.
-- **Output**: A generator that yields tuples, each containing a string path and a `TechDocsContent` object, in topological order.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#DriverDocsContent>)  (Base Class)
+- **Logic and Control Flow**:
+    - Iterates over the `topo_order` list, which contains strings representing keys in the `content` dictionary.
+    - For each key in `topo_order`, retrieves the corresponding `TechDocsContent` object from the `content` dictionary.
+    - Yields a tuple containing the key and the `TechDocsContent` object.
+- **Output**: A generator that yields tuples, each containing a string and a `TechDocsContent` object.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent`](<#driverdocscontent>)  (Base Class)
 
 
 
 ---
 ### DocKind<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.DocKind}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L516>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L518>)
 
-- **Members**:
-    - `DEFINED_SECTIONS`: Represents a document kind with defined sections.
-    - `UNDEFINED`: Represents a document kind that is undefined.
-    - `FROM_EXAMPLE`: Represents a document kind derived from an example.
-    - `ARCHITECTURE`: Represents a document kind related to architecture.
-- **Description**: The `DocKind` class is an enumeration that extends `StrEnum` to define different types of document kinds. It categorizes documents into four distinct types: 'defined_sections', 'undefined', 'from_example', and 'architecture'. Each member of this enumeration is associated with a string value that describes the nature or source of the document kind, providing a structured way to handle different document types in the application.
+- **Description**: Defines different kinds of document types as string enumeration values, such as `DEFINED_SECTIONS`, `UNDEFINED`, `FROM_EXAMPLE`, and `ARCHITECTURE`.
 - **Inherits From**:
     - `StrEnum`
 
 
 ---
 ### SectionCreationMethod<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCreationMethod}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L523>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L525>)
 
-- **Members**:
-    - `SEQUENTIAL_EDIT`: Represents the 'sequential_edit' section creation method.
-    - `SCATTER_GATHER`: Represents the 'scatter_gather' section creation method.
-    - `ONLY_PDFS`: Represents the 'only_pdfs' section creation method.
-    - `CODE_EXAMPLE`: Represents the 'code_example' section creation method.
-- **Description**: The `SectionCreationMethod` class is an enumeration that defines different methods for creating sections in a document. It extends the `StrEnum` class, allowing each method to be represented as a string. The available methods include 'sequential_edit', 'scatter_gather', 'only_pdfs', and 'code_example', each corresponding to a specific strategy for section creation.
+- **Description**: Defines different methods for creating sections in a document, represented as string enumeration values.
 - **Inherits From**:
     - `StrEnum`
 
 
 ---
 ### LlmCfg<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.LlmCfg}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L530>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L532>)
 
 - **Members**:
-    - `tag_model`: Specifies the model used for tagging.
-    - `section_init_model`: Specifies the model used for initializing sections.
-    - `section_update_model`: Specifies the model used for updating sections.
-    - `section_format_model`: Specifies the model used for formatting sections.
-    - `assembly_model`: Specifies the model used for assembling the document.
-    - `copy_editor_model`: Specifies the model used for copy editing the document.
-- **Description**: The `LlmCfg` class is a configuration class that extends `BaseModel` and is used to define various model settings for different stages of document processing, such as tagging, section initialization, updating, formatting, assembly, and copy editing. It provides a class method `default` to return a default configuration with pre-defined model names for each stage.
+    - `tag_model`: Stores the model identifier for tagging.
+    - `section_init_model`: Stores the model identifier for section initialization.
+    - `section_update_model`: Stores the model identifier for section updates.
+    - `section_format_model`: Stores the model identifier for section formatting.
+    - `assembly_model`: Stores the model identifier for assembly.
+    - `copy_editor_model`: Stores the model identifier for copy editing.
+- **Description**: Defines configuration settings for different models used in various stages of document processing, such as tagging, section initialization, updates, formatting, assembly, and copy editing.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.LlmCfg.default`](<#LlmCfgdefault>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.LlmCfg.default`](<#llmcfgdefault>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -403,33 +392,33 @@ The `walk_topo` method generates tuples of path and content in topological order
 
 ---
 #### LlmCfg\.default<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.LlmCfg.default}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L538>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L540>)
 
-The `default` class method creates and returns an instance of the `LlmCfg` class with predefined model configurations.
+Creates a default instance of the `LlmCfg` class with predefined model configurations.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `LlmCfg`, which is used to create a new instance.
-- **Control Flow**:
-    - The method directly returns a new instance of the `LlmCfg` class using the `cls` parameter.
-    - The instance is initialized with specific string values for each of its attributes, representing different model configurations.
-- **Output**: An instance of the `LlmCfg` class with predefined model configurations.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.LlmCfg`](<#LlmCfg>)  (Base Class)
+    - `cls`: The class itself, `LlmCfg`, used to create a new instance.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls()` with predefined model configurations.
+    - Returns a new instance of `LlmCfg` with the specified default values for each model attribute.
+- **Output**: A new instance of the `LlmCfg` class with default model configurations.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.LlmCfg`](<#llmcfg>)  (Base Class)
 
 
 
 ---
 ### DocumentCfg<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.DocumentCfg}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L550>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L552>)
 
 - **Members**:
-    - `goal`: The goal or purpose of the document configuration.
-    - `fmt`: The format of the document, represented by the DocKind enum.
-    - `use_tagging`: A boolean indicating whether tagging is used in the document configuration.
-    - `config_name`: The name of the document configuration.
-    - `config_version`: The version of the document configuration.
-- **Description**: The DocumentCfg class is a configuration model for document generation, inheriting from BaseModel. It defines the structure and settings for a document, including its goal, format, tagging usage, and configuration details such as name and version. The class provides a class method 'default' to return a default instance with predefined values.
+    - `goal`: Stores the goal of the document configuration.
+    - `fmt`: Specifies the document format as a `DocKind`.
+    - `use_tagging`: Indicates if tagging is used in the document configuration.
+    - `config_name`: Holds the name of the configuration.
+    - `config_version`: Contains the version of the configuration.
+- **Description**: Defines the configuration for a document, including its goal, format, tagging usage, name, and version. Provides a class method `default` to return a default configuration instance.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DocumentCfg.default`](<#DocumentCfgdefault>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DocumentCfg.default`](<#documentcfgdefault>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -437,57 +426,60 @@ The `default` class method creates and returns an instance of the `LlmCfg` class
 
 ---
 #### DocumentCfg\.default<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.DocumentCfg.default}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L557>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L559>)
 
-The `default` class method creates and returns a new instance of the `DocumentCfg` class with default configuration values.
+Creates a default instance of the `DocumentCfg` class with predefined attribute values.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself (`DocumentCfg`) to instantiate.
-- **Control Flow**:
-    - The method is decorated with `@classmethod`, allowing it to be called on the class itself rather than an instance.
-    - The method returns a new instance of the `DocumentCfg` class.
-    - The instance is initialized with default values: an empty string for `goal`, `DocKind.DEFINED_SECTIONS` for `fmt`, `True` for `use_tagging`, and empty strings for `config_name` and `config_version`.
-- **Output**: A new instance of the `DocumentCfg` class with default values for its attributes.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DocumentCfg`](<#DocumentCfg>)  (Base Class)
+    - `cls`: The class itself, `DocumentCfg`, used to create a new instance.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls()` with specific default values for each attribute.
+    - Sets `goal` to an empty string.
+    - Sets `fmt` to `DocKind.DEFINED_SECTIONS`.
+    - Sets `use_tagging` to `True`.
+    - Sets `config_name` to an empty string.
+    - Sets `config_version` to an empty string.
+    - Returns the newly created instance of `DocumentCfg`.
+- **Output**: A new instance of `DocumentCfg` with default attribute values.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.DocumentCfg`](<#documentcfg>)  (Base Class)
 
 
 
 ---
 ### FullyQualifiedDriverPathPdf<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.FullyQualifiedDriverPathPdf}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L568>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L570>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
-    - `version_id`: A string representing the version identifier.
-    - `pdf_name`: A string representing the name of the PDF file.
-- **Description**: The `FullyQualifiedDriverPathPdf` class is a data model that represents a fully qualified path to a PDF file associated with a specific version. It inherits from `BaseModel` and includes two attributes: `version_id`, which identifies the version, and `pdf_name`, which specifies the name of the PDF file. This class is likely used to manage and reference PDF files in a version-controlled environment.
+    - `version_id`: Stores the version identifier as a string.
+    - `pdf_name`: Stores the name of the PDF as a string.
+- **Description**: Represents a data structure that holds information about a PDF file, including its version identifier and name.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### FullyQualifiedDriverPathCode<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.FullyQualifiedDriverPathCode}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L573>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L575>)
 
 - **Members**:
-    - `version_id`: A string representing the version identifier.
-    - `node_path`: A string representing the path to the node.
-- **Description**: The `FullyQualifiedDriverPathCode` class is a simple data model that extends `BaseModel` from Pydantic. It is designed to store information about a specific version of a driver path in a codebase, encapsulating a version identifier and a node path. This class is likely used in contexts where tracking or referencing specific paths in a codebase is necessary, particularly in systems that manage or document code versions.
+    - `version_id`: Stores the version identifier as a string.
+    - `node_path`: Stores the node path as a string.
+- **Description**: Represents a data structure that holds a version identifier and a node path, both as strings, for a fully qualified driver path in a codebase.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### Scope<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.Scope}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L578>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L580>)
 
 - **Members**:
-    - `preamble`: A string representing the introductory text or context for the scope.
-    - `pdfs`: A list of FullyQualifiedDriverPathPdf objects representing PDF paths associated with the scope.
-    - `code`: A list of FullyQualifiedDriverPathCode objects representing code paths associated with the scope.
-- **Description**: The Scope class is a data model that represents a collection of resources, including introductory text, PDF paths, and code paths, which are used to define a particular scope of work or context. It provides a method to create a default instance with empty values for its attributes.
+    - `preamble`: Stores a string that serves as an introductory or contextual preface.
+    - `pdfs`: Holds a list of `FullyQualifiedDriverPathPdf` objects representing PDF paths.
+    - `code`: Contains a list of `FullyQualifiedDriverPathCode` objects representing code paths.
+- **Description**: Defines a data structure that encapsulates a preamble, a list of PDF paths, and a list of code paths, providing a default method to initialize these attributes with empty values.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Scope.default`](<#Scopedefault>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Scope.default`](<#scopedefault>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -495,36 +487,36 @@ The `default` class method creates and returns a new instance of the `DocumentCf
 
 ---
 #### Scope\.default<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.Scope.default}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L583>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L585>)
 
-The `default` class method creates and returns a new instance of the `Scope` class with default values for its attributes.
+Creates a default instance of the `Scope` class with empty attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself (`Scope`), used to create a new instance.
-- **Control Flow**:
-    - The method is decorated with `@classmethod`, allowing it to be called on the class itself rather than an instance.
-    - The method returns a new instance of the `Scope` class.
-    - The new instance is initialized with default values: an empty string for `preamble`, and empty lists for `pdfs` and `code`.
+    - `cls`: The class itself, `Scope`, used to create a new instance.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls()` with default values for its attributes.
+    - Sets `preamble` to an empty string, `pdfs` to an empty list, and `code` to an empty list.
+    - Returns the newly created instance of the `Scope` class.
 - **Output**: A new instance of the `Scope` class with default attribute values.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.Scope`](<#Scope>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.Scope`](<#scope>)  (Base Class)
 
 
 
 ---
 ### SectionCfg<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCfg}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L592>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L594>)
 
 - **Members**:
-    - `title`: The title of the section.
-    - `level`: The hierarchical level of the section.
-    - `required`: Indicates if the section is mandatory, ignored if committed_with is not None.
-    - `instruction`: Instructions or guidelines for the section.
-    - `content_structure`: The structure or format of the section's content.
-    - `section_creation_method`: The method used to create the section, defined by SectionCreationMethod.
-    - `committed_with`: Specifies another section with which this section is committed, or None if not applicable.
-- **Description**: The SectionCfg class is a configuration model for defining sections within a document, specifying attributes such as title, level, and content structure. It includes a method to create a default instance with pre-defined values. The class is designed to be used in the context of document generation, where sections can be marked as required or optional, and can be linked to other sections through the committed_with attribute. The section_creation_method attribute determines how the section is constructed, allowing for different strategies in document assembly.
+    - `title`: Stores the title of the section.
+    - `level`: Indicates the hierarchical level of the section.
+    - `required`: Specifies if the section is mandatory, ignored if `committed_with` is not `None`.
+    - `instruction`: Contains instructions for the section.
+    - `content_structure`: Defines the structure of the section's content.
+    - `section_creation_method`: Determines the method used to create the section.
+    - `committed_with`: Indicates the section with which this section is committed, or `None` if not applicable.
+- **Description**: Defines the configuration for a document section, including its title, level, and creation method, and provides a default configuration method.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCfg.default`](<#SectionCfgdefault>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCfg.default`](<#sectioncfgdefault>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -532,55 +524,55 @@ The `default` class method creates and returns a new instance of the `Scope` cla
 
 ---
 #### SectionCfg\.default<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCfg.default}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L601>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L603>)
 
-The `default` class method creates and returns a default instance of the `SectionCfg` class with predefined attribute values.
+Creates a default instance of the `SectionCfg` class with predefined attribute values.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `SectionCfg`, which is used to create a new instance.
-- **Control Flow**:
-    - The method is decorated with `@classmethod`, allowing it to be called on the class itself rather than an instance.
-    - The method returns a new instance of the class `SectionCfg` with specific default values for its attributes.
-- **Output**: A new instance of the `SectionCfg` class with default values for its attributes.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCfg`](<#SectionCfg>)  (Base Class)
+    - `cls`: The class itself, `SectionCfg`, used to create a new instance.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls()` with specific default values for each attribute.
+    - Sets `title` to an empty string, `level` to 1, `required` to `True`, `instruction` to an empty string, `content_structure` to an empty string, `section_creation_method` to `SectionCreationMethod.SCATTER_GATHER`, and `committed_with` to `None`.
+- **Output**: Returns a new instance of `SectionCfg` with the specified default values.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCfg`](<#sectioncfg>)  (Base Class)
 
 
 
 ---
 ### SectionCommitted<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L614>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L616>)
 
 - **Members**:
-    - `title`: The title of the section.
-    - `level`: The level of the section in the document hierarchy.
-    - `instruction`: Instructions or guidelines for writing the section.
-    - `content_structure`: The structure or format of the content for the section.
-    - `section_creation_method`: The method used to create the section, such as sequential edit or scatter-gather.
-- **Description**: The `SectionCommitted` class is a data model that represents a committed section of a document, encapsulating details such as the section's title, level, instructions, content structure, and the method used for its creation. It provides various methods to generate system prompts for different stages of document creation and editing, including annotation, drafting, updating, and final formatting, tailored to both code and PDF content. This class is designed to facilitate the structured and iterative development of document sections, ensuring that each section is relevant and well-formed according to specified guidelines.
+    - `title`: Stores the title of the section.
+    - `level`: Indicates the level of the section in the document hierarchy.
+    - `instruction`: Contains instructions for writing the section.
+    - `content_structure`: Defines the structure of the content for the section.
+    - `section_creation_method`: Specifies the method used to create the section.
+- **Description**: Represents a committed section of a document with attributes for title, level, instructions, content structure, and creation method. It provides methods to generate system prompts for various document-related tasks, such as annotation, drafting, updating, and final formatting.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.from_section_cfg`](<#SectionCommittedfrom_section_cfg>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.annotation_system_prompt`](<#SectionCommittedannotation_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.pdf_annotation_system_prompt`](<#SectionCommittedpdf_annotation_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_code`](<#SectionCommittedinit_draft_system_prompt_code>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_pdf`](<#SectionCommittedinit_draft_system_prompt_pdf>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_file_system_prompt`](<#SectionCommittedupdate_from_file_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_pdf_system_prompt`](<#SectionCommittedupdate_from_pdf_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_folder_system_prompt`](<#SectionCommittedupdate_from_folder_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.final_output_format`](<#SectionCommittedfinal_output_format>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_system_prompt`](<#SectionCommittedscatter_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_system_prompt`](<#SectionCommittedgather_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_multiple_system_prompt`](<#SectionCommittedgather_multiple_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_system_prompt`](<#SectionCommittedcode_example_single_pass_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_aggregate_pass`](<#SectionCommittedcode_example_single_pass_aggregate_pass>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_few_shot_generator`](<#SectionCommittedcode_example_few_shot_generator>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_section_scatter_gather`](<#SectionCommittedcreate_section_scatter_gather>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_node_sections`](<#SectionCommittedcreate_node_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_node_sections`](<#SectionCommittedaggregate_node_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_aggregate_sections`](<#SectionCommittedaggregate_aggregate_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_user_prompt_constructor`](<#SectionCommittedscatter_user_prompt_constructor>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.source_code_aggregation_user_prompt_constructor`](<#SectionCommittedsource_code_aggregation_user_prompt_constructor>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_user_prompt_constructor`](<#SectionCommittedgather_user_prompt_constructor>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_aggregate_user_prompt_constructor`](<#SectionCommittedgather_aggregate_user_prompt_constructor>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.from_section_cfg`](<#sectioncommittedfrom_section_cfg>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.annotation_system_prompt`](<#sectioncommittedannotation_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.pdf_annotation_system_prompt`](<#sectioncommittedpdf_annotation_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_code`](<#sectioncommittedinit_draft_system_prompt_code>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_pdf`](<#sectioncommittedinit_draft_system_prompt_pdf>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_file_system_prompt`](<#sectioncommittedupdate_from_file_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_pdf_system_prompt`](<#sectioncommittedupdate_from_pdf_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_folder_system_prompt`](<#sectioncommittedupdate_from_folder_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.final_output_format`](<#sectioncommittedfinal_output_format>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_system_prompt`](<#sectioncommittedscatter_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_system_prompt`](<#sectioncommittedgather_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_multiple_system_prompt`](<#sectioncommittedgather_multiple_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_system_prompt`](<#sectioncommittedcode_example_single_pass_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_aggregate_pass`](<#sectioncommittedcode_example_single_pass_aggregate_pass>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_few_shot_generator`](<#sectioncommittedcode_example_few_shot_generator>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_section_scatter_gather`](<#sectioncommittedcreate_section_scatter_gather>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_node_sections`](<#sectioncommittedcreate_node_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_node_sections`](<#sectioncommittedaggregate_node_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_aggregate_sections`](<#sectioncommittedaggregate_aggregate_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_user_prompt_constructor`](<#sectioncommittedscatter_user_prompt_constructor>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.source_code_aggregation_user_prompt_constructor`](<#sectioncommittedsource_code_aggregation_user_prompt_constructor>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_user_prompt_constructor`](<#sectioncommittedgather_user_prompt_constructor>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_aggregate_user_prompt_constructor`](<#sectioncommittedgather_aggregate_user_prompt_constructor>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -588,590 +580,596 @@ The `default` class method creates and returns a default instance of the `Sectio
 
 ---
 #### SectionCommitted\.from\_section\_cfg<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.from_section_cfg}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L621>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L623>)
 
-The `from_section_cfg` class method creates an instance of `SectionCommitted` from a `SectionCfg` configuration object.
+Creates an instance of the class using a configuration object of type `SectionCfg`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `SectionCommitted` itself, used to create a new instance.
-    - `cfg`: An instance of `SectionCfg` containing configuration details for creating a `SectionCommitted` object.
-- **Control Flow**:
-    - The method receives a class reference `cls` and a configuration object `cfg` of type `SectionCfg`.
-    - It returns a new instance of `cls` (which is `SectionCommitted`) by passing the attributes of `cfg` to the constructor of `SectionCommitted`.
-- **Output**: A new instance of `SectionCommitted` initialized with the attributes from the `cfg` object.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - `cfg`: A `SectionCfg` object that contains configuration data for creating a `SectionCommitted` instance.
+- **Logic and Control Flow**:
+    - Uses the `cfg` parameter to extract values for `title`, `level`, `instruction`, `content_structure`, and `section_creation_method`.
+    - Calls the class constructor `cls` with the extracted values to create a new instance.
+- **Output**: Returns an instance of the class `SectionCommitted` initialized with the values from the `cfg` object.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.annotation\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.annotation_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L631>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L633>)
 
-The `annotation_system_prompt` method generates a system prompt template for annotating code files based on their relevance to a specific document section.
+Generates a system prompt for annotating codebase files and folders based on their relevance to a specific document section.
 - **Inputs**:
-    - `goal`: A string representing the goal of the specific document being written.
-    - `preamble`: A string providing additional context or preamble for the document.
-- **Control Flow**:
-    - A multi-line string `system_prompt_template` is defined, which includes placeholders for `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
-    - The `preamble_content` is conditionally constructed based on whether the `preamble` is non-empty, adding additional context if applicable.
-    - The `heading` is generated by repeating the '#' character based on the `level` attribute of the class instance.
-    - The method returns the formatted `system_prompt_template` with the placeholders replaced by the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
-- **Output**: A formatted string that serves as a system prompt for annotating code files.
+    - `goal`: A string that describes the goal of the specific document being written.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template string `system_prompt_template` for the system prompt with placeholders for `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Checks if the `preamble` is not empty and constructs `preamble_content` accordingly.
+    - Calculates `heading` based on the `level` attribute of the class instance.
+    - Formats the `system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction` to generate the final system prompt.
+- **Output**: Returns a formatted string that serves as a system prompt for annotating files and folders.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.pdf\_annotation\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.pdf_annotation_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L673>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L675>)
 
-The `pdf_annotation_system_prompt` method generates a system prompt template for annotating PDF pages based on their relevance to a specific document section.
+Generates a system prompt for annotating PDF pages based on their relevance to a specific document section.
 - **Inputs**:
-    - `goal`: A string representing the goal of the specific document being written.
-    - `preamble`: A string providing additional context or preamble for the document.
-- **Control Flow**:
-    - A template string `system_prompt_template` is defined, which includes placeholders for `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
-    - The `preamble_content` is conditionally constructed based on whether the `preamble` is non-empty, adding additional context if applicable.
-    - The `heading` is determined by the `level` attribute of the class instance, using a number of '#' characters corresponding to the level.
-    - The method returns the formatted `system_prompt_template` with the placeholders replaced by the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
-- **Output**: A formatted string representing the system prompt for annotating PDF pages.
+    - `goal`: A string that describes the goal of the document being written.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template string `system_prompt_template` that describes the task of annotating PDF pages for relevance to a document section.
+    - Checks if the `preamble` is not empty and constructs `preamble_content` accordingly.
+    - Generates a heading string `heading` based on the `level` attribute of the class instance.
+    - Formats the `system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction` attributes to create the final system prompt.
+- **Output**: Returns a formatted string that serves as a system prompt for annotating PDF pages.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.init\_draft\_system\_prompt\_code<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_code}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L715>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L717>)
 
-The `init_draft_system_prompt_code` method generates a system prompt for drafting a section of a document based on a given goal and preamble, formatted in Markdown.
+Generates an initial draft of a document section using a system prompt template and provided goal and preamble.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document or section being drafted.
-    - `preamble`: A string providing additional context or introduction for the document or section.
-- **Control Flow**:
-    - A template string for the system prompt is defined, which includes placeholders for the goal, preamble content, heading, title, and instruction.
-    - The preamble content is conditionally formatted to include additional context if the preamble is not empty.
-    - The heading level is determined by the `self.level` attribute, which is used to format the heading in Markdown.
-    - A `Prompt` object is created, and the formatted system prompt template is appended to it as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>).
-    - Additional style instructions (`GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION`) are appended to the `Prompt`.
-    - The `Prompt` is converted to a string and returned as the output.
-- **Output**: A string representing the formatted system prompt for drafting a document section, ready to be used in further processing.
+    - `goal`: A string that specifies the goal of the document section.
+    - `preamble`: A string that provides additional context or introduction for the document section.
+- **Logic and Control Flow**:
+    - Defines a template string `system_prompt_template` for the system prompt with placeholders for `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Checks if the `preamble` is not empty and constructs `preamble_content` accordingly.
+    - Determines the heading level using `self.level` and assigns it to `heading`.
+    - Formats the `system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Creates a `Prompt` object, appends the formatted system prompt, and additional style instructions.
+    - Converts the `Prompt` object to a string and returns it.
+- **Output**: Returns a string that represents the initial draft of the document section formatted according to the system prompt template.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.init\_draft\_system\_prompt\_pdf<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_pdf}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L759>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L761>)
 
-The `init_draft_system_prompt_pdf` method generates a system prompt for drafting a document section based on PDF content, formatted in Markdown.
+Generates a draft system prompt for writing a document section based on PDF content.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or introduction for the document.
-- **Control Flow**:
-    - A template string `system_prompt_template` is defined to structure the system prompt for drafting a document section.
-    - The `preamble_content` is conditionally constructed based on whether the `preamble` is non-empty, adding further context if applicable.
-    - The `heading` is determined by the `level` attribute of the class instance, using it to create a Markdown header.
-    - A `Prompt` object is created, and the formatted system prompt is appended to it using the [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) class.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The final prompt is converted to a string using the [`into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>) method and returned.
-- **Output**: The method returns a string that is a formatted system prompt for drafting a document section based on PDF content, ready for use in a Markdown document.
+    - `goal`: A string that describes the goal of the document.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template for the system prompt with placeholders for goal, preamble content, heading, title, instruction, and content structure.
+    - Checks if the preamble is not empty and formats it with additional context if necessary.
+    - Determines the heading level based on the instance's level attribute.
+    - Formats the system prompt template with the provided goal, preamble content, heading, title, instruction, and content structure.
+    - Creates a new empty `Prompt` object and appends the formatted system prompt as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>).
+    - Appends general style instructions for STE and Markdown formatting to the `Prompt`.
+    - Converts the `Prompt` object into a string and returns it.
+- **Output**: Returns a string that represents the formatted system prompt for writing a document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.update\_from\_file\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_file_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L804>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L806>)
 
-The `update_from_file_system_prompt` method generates a system prompt for updating a document section based on the content of a specific file, incorporating technical details from the file's source code.
+Generates a system prompt for updating a document section based on a file's content.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or introduction for the document.
-- **Control Flow**:
-    - A template string `system_prompt_template` is defined to guide the update process, including placeholders for dynamic content.
-    - The `preamble_content` is constructed based on whether the `preamble` is non-empty, adding additional context if needed.
-    - The `heading` is determined by the level of the section, represented by a number of '#' characters.
-    - A `Prompt` object is created, starting empty, and then appended with a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the formatted `system_prompt_template`.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The final prompt string is generated by converting the `Prompt` object to a string using `into_str()`.
-- **Output**: A string representing the complete system prompt for updating a document section based on a file's content.
+    - `goal`: A string that describes the goal of the document.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template for a system prompt that instructs a user to update a document section based on a file's content.
+    - Formats the `preamble` to include additional context if it is not empty.
+    - Determines the heading level based on the `level` attribute of the class instance.
+    - Creates a `Prompt` object and appends a formatted string using the system prompt template with the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Appends general style instructions to the `Prompt` object.
+    - Converts the `Prompt` object to a string and returns it.
+- **Output**: A string representing the formatted system prompt for updating a document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.update\_from\_pdf\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_pdf_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L852>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L854>)
 
-The `update_from_pdf_system_prompt` method generates a system prompt for updating a document section based on content from a PDF page.
+Updates a document section using details from a PDF page.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or preamble for the document.
-- **Control Flow**:
-    - A template string for the system prompt is defined, which includes placeholders for the goal, preamble content, heading, title, and instruction.
-    - The preamble content is conditionally formatted based on whether the preamble string is empty or not.
-    - The heading level is determined by the `self.level` attribute of the class instance.
-    - A `Prompt` object is created and appended with a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the formatted system prompt string.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The final prompt string is returned by converting the `Prompt` object to a string.
-- **Output**: A string representing the complete system prompt for updating a document section based on a PDF page.
+    - `goal`: The goal of the document being updated.
+    - `preamble`: Additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template for a system prompt that instructs an expert to update a document section using details from a PDF page.
+    - Formats the `preamble` into `preamble_content` if it is not empty.
+    - Generates a Markdown heading based on the level of the section.
+    - Creates a `Prompt` object and appends a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the formatted system prompt.
+    - Appends general style instructions to the `Prompt`.
+    - Converts the `Prompt` into a string and returns it.
+- **Output**: A string containing the formatted system prompt for updating a document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.update\_from\_folder\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_folder_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L900>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L902>)
 
-The `update_from_folder_system_prompt` method generates a system prompt for updating a document section based on folder content summaries.
+Updates a document section based on folder content details.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or preamble for the document.
-- **Control Flow**:
-    - A template string for the system prompt is defined, which includes placeholders for the goal, preamble content, heading, title, and instruction.
-    - The `preamble_content` is conditionally constructed based on whether the `preamble` is non-empty, adding additional context if needed.
-    - The `heading` is determined by the level of the section, represented by a number of '#' characters.
-    - A `Prompt` object is created, starting with an empty prompt, and the formatted system prompt template is appended to it.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The final prompt is converted to a string using the [`into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>) method and returned.
-- **Output**: A string representing the complete system prompt for updating a document section based on folder content.
+    - `goal`: The goal of the document being written.
+    - `preamble`: Additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template for a system prompt that instructs an expert to update a document section based on folder content.
+    - Formats the `preamble` into `preamble_content` if `preamble` is not empty.
+    - Determines the heading level based on the `level` attribute of the class instance.
+    - Creates a `Prompt` object and appends a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the formatted system prompt.
+    - Appends general style instructions to the `Prompt` object.
+    - Converts the `Prompt` object into a string and returns it.
+- **Output**: A string representing the full content for the document section with updates based on folder content.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.final\_output\_format<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.final_output_format}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L948>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L950>)
 
-The `final_output_format` method generates a final formatted section of a document using a given goal and preamble, structured according to specified content and title, and returns it as a string.
+Formats the final output of a document section using a specified template and structure.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document section to be formatted.
-    - `preamble`: A string providing additional context or introduction for the document section.
-- **Control Flow**:
-    - A template string `system_prompt_template` is defined to guide the formatting of the document section.
-    - The `preamble_content` is conditionally constructed based on whether the `preamble` is non-empty, adding additional context if needed.
-    - The `heading` is determined by the level of the section, represented by a number of '#' characters.
-    - A `Prompt` object is created and appended with a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the formatted `system_prompt_template`.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The `Prompt` object is converted to a string and returned as the final output.
-- **Output**: A string representing the final formatted content of the document section, structured according to the provided goal, preamble, and section details.
+    - `goal`: A string that describes the goal of the document.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template string `system_prompt_template` for the final output format, which includes placeholders for `goal`, `preamble_content`, `heading`, `title`, and `content_structure`.
+    - Constructs `preamble_content` by checking if `preamble` is not empty and appending additional context if necessary.
+    - Determines the `heading` level by repeating the '#' character based on `self.level`.
+    - Formats the `system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `title`, and `content_structure`.
+    - Creates a `Prompt` object, appends the formatted `system_prompt_template`, and additional style instructions.
+    - Converts the `Prompt` object into a string and returns it.
+- **Output**: A string representing the formatted final output of the document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.scatter\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L986>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L988>)
 
-The `scatter_system_prompt` method generates a system prompt for writing a document section based on a specific goal and preamble, using content from a relevant file or PDF page.
+Generates a system prompt for writing a document section using context from a file, PDF page, or folder.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document section to be written.
-    - `preamble`: A string providing additional context or introduction for the document section.
-- **Control Flow**:
-    - A template string for the system prompt is defined, which includes placeholders for various components like goal, preamble, title, and instruction.
-    - The preamble content is conditionally formatted and included if the preamble is not empty.
-    - The heading level is determined by the instance's `level` attribute.
-    - A `Prompt` object is created and appended with a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the formatted system prompt template.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The final prompt is converted to a string and returned.
-- **Output**: A string representing the complete system prompt for writing a document section.
+    - `goal`: A string that specifies the goal of the document being written.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template for the system prompt with placeholders for `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Constructs `preamble_content` by checking if `preamble` is not empty and formatting it accordingly.
+    - Determines the heading level using the `level` attribute of the class instance.
+    - Formats the system prompt template with the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Creates a `Prompt` object, appends the formatted system prompt, and additional style instructions.
+    - Converts the `Prompt` object into a string and returns it.
+- **Output**: Returns a formatted string that serves as a system prompt for writing a document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.gather\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1036>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1038>)
 
-The `gather_system_prompt` method generates a system prompt for aggregating information from multiple sections into a single document section, formatted in Markdown.
+Aggregates information from multiple file-specific sections to generate a document section with technical details using Markdown syntax.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or preamble for the document.
-- **Control Flow**:
-    - Defines a template string `aggregate_system_prompt_template` for the system prompt, which includes placeholders for various document details.
-    - Constructs `preamble_content` by checking if the `preamble` is not empty and formatting it accordingly.
-    - Determines the heading level using the `self.level` attribute to create a Markdown heading.
-    - Formats the `aggregate_system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `self.title`, and `self.instruction`.
-    - Creates a `Prompt` object, appends the formatted system prompt, and additional style instructions to it.
-    - Converts the `Prompt` object into a string and returns it.
-- **Output**: Returns a string that is a formatted system prompt for aggregating document sections, ready to be used in a larger document generation process.
+    - `goal`: A string that specifies the goal of the document being written.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template string `aggregate_system_prompt_template` for the system prompt with placeholders for `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Checks if `preamble` is not empty and constructs `preamble_content` accordingly.
+    - Determines the heading level using the `level` attribute of the class instance.
+    - Formats the `aggregate_system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `title`, and `instruction`.
+    - Creates a `Prompt` object, appends the formatted template as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>), and adds style instructions.
+    - Converts the `Prompt` object to a string and returns it.
+- **Output**: Returns a formatted string that serves as a system prompt for generating a document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.gather\_multiple\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_multiple_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1084>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1086>)
 
-The `gather_multiple_system_prompt` method generates a system prompt for aggregating information from multiple sections of highly relevant files to create a document section.
+Aggregates information from multiple sections related to a document's goal and preamble to generate a comprehensive section using a predefined template.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or introduction for the document.
-- **Control Flow**:
-    - Define a template string `aggregate_system_prompt_template` for the system prompt with placeholders for various document details.
-    - Check if the `preamble` is not empty and format it into `preamble_content` with additional context text.
-    - Determine the heading level using the `self.level` attribute and store it in `heading`.
-    - Format the `aggregate_system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `self.title`, and `self.instruction`.
-    - Create a `Prompt` object, append the formatted system prompt as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>), and add general style instructions.
-    - Convert the `Prompt` object to a string and return it.
-- **Output**: A string representing the complete system prompt for aggregating information from multiple sections.
+    - `goal`: A string that specifies the goal of the document being written.
+    - `preamble`: A string that provides additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template string `aggregate_system_prompt_template` that outlines the structure and content of the document section to be generated.
+    - Checks if the `preamble` is not empty and constructs `preamble_content` accordingly.
+    - Determines the heading level using the `self.level` attribute and assigns it to `heading`.
+    - Formats the `aggregate_system_prompt_template` with the provided `goal`, `preamble_content`, `heading`, `self.title`, and `self.instruction`.
+    - Creates a `Prompt` object, appends the formatted template as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>), and adds general style instructions.
+    - Converts the `Prompt` object into a string and returns it.
+- **Output**: A string representing the formatted system prompt for generating a document section.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.code\_example\_single\_pass\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1132>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1134>)
 
-The `code_example_single_pass_system_prompt` method generates a system prompt for drafting a code example based on provided goals and preamble.
+Generates a system prompt for drafting a code example based on provided goals and preamble.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document or section being written.
-    - `preamble`: A string providing additional context or introductory information for the document or section.
-- **Control Flow**:
-    - A template string `system_prompt_template` is defined to structure the system prompt for drafting a code example.
-    - The `preamble_content` is conditionally constructed based on whether the `preamble` is non-empty, adding additional context if applicable.
-    - The `heading` is determined by the level of the section, represented by a number of '#' characters.
-    - A `Prompt` object is created, and the formatted `system_prompt_template` is appended to it as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>).
-    - Additional style instructions are appended to the `Prompt` object to ensure proper formatting.
-    - The `Prompt` object is converted to a string and returned as the output.
-- **Output**: A string representing the complete system prompt for drafting a code example, formatted with the provided goal, preamble, and other section-specific details.
+    - `goal`: A string representing the goal of the document.
+    - `preamble`: A string providing additional context or introduction for the document.
+- **Logic and Control Flow**:
+    - Defines a template for the system prompt with placeholders for goal, preamble content, heading, title, instruction, and content structure.
+    - Checks if the preamble is not empty and formats it with additional context if necessary.
+    - Calculates the heading level based on the instance's level attribute.
+    - Formats the system prompt template with the provided goal, preamble content, heading, title, instruction, and content structure.
+    - Creates a new `Prompt` object and appends the formatted system prompt as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>).
+    - Appends style instructions for general STE style, using backticks, and using triple backticks for code blocks.
+    - Converts the `Prompt` object into a string and returns it.
+- **Output**: A string containing the formatted system prompt for drafting a code example.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.code\_example\_single\_pass\_aggregate\_pass<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_aggregate_pass}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1180>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1182>)
 
-The `code_example_single_pass_aggregate_pass` method generates a coherent code example by aggregating multiple code examples from different files relevant to a specific document section.
+Combines multiple code examples into a single coherent example for a document section.
 - **Inputs**:
-    - `goal`: A string representing the goal of the document or section being written.
-    - `preamble`: A string providing additional context or introduction for the document or section.
-- **Control Flow**:
+    - `goal`: A string that describes the goal of the document section for which the code example is being written.
+    - `preamble`: A string that provides additional context or introduction for the document being written.
+- **Logic and Control Flow**:
     - Defines a template for a system prompt that instructs the user to combine code examples into a coherent example.
-    - Checks if the preamble is not empty and appends additional context to it if necessary.
-    - Determines the heading level based on the object's level attribute.
-    - Formats the system prompt template with the provided goal, preamble content, heading, title, instruction, and content structure.
-    - Creates a new Prompt object and appends the formatted system prompt to it.
-    - Appends style instructions for general style, using backticks, and using triple backticks for code blocks to the Prompt object.
-    - Converts the Prompt object into a string and returns it.
-- **Output**: Returns a string that is a formatted system prompt for aggregating code examples into a coherent example.
+    - Formats the `system_prompt_template` with the provided `goal`, `preamble`, and other attributes of the class instance.
+    - Creates a `preamble_content` string if the `preamble` is not empty, otherwise sets it to an empty string.
+    - Determines the heading level based on the `level` attribute of the class instance.
+    - Returns a string by appending several components to an empty `Prompt` object, including the formatted `system_prompt_template` and style instructions.
+- **Output**: Returns a string that is a formatted system prompt for combining code examples.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.code\_example\_few\_shot\_generator<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_few_shot_generator}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1231>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1233>)
 
-The `code_example_few_shot_generator` method generates code examples for a document section using a few-shot learning approach with an LLM, potentially aggregating multiple examples into a coherent single example.
+Generates code examples using a few-shot approach based on provided document goals and preambles.
+- **Decorators**: `@app.function`
 - **Inputs**:
-    - `document_goal`: A string representing the goal of the document for which code examples are being generated.
-    - `document_preamble`: A string providing additional context or preamble for the document.
-    - `reverse_topos`: A list of reverse topological orderings of nodes, where each node is a tuple containing a path and its associated `TechDocsContent`.
-    - `tagged_nodes`: An optional dictionary mapping node paths to lists of `Category` objects, indicating the relevance of each node to different sections.
-    - `tag_idx`: An optional integer index indicating which tag to use from the `tagged_nodes` for filtering relevant nodes.
-- **Control Flow**:
-    - Initialize a ChatOpenAI instance with a specific model and configuration.
-    - Construct user prompts using the [`source_code_aggregation_user_prompt_constructor`](<#SectionCommittedsource_code_aggregation_user_prompt_constructor>) method, based on the provided reverse topological orderings and tagged nodes.
-    - Create a list of coroutines for generating code examples using the [`llm_generate`](<#llm_generate>) function, with each coroutine corresponding to a user prompt.
-    - Execute all coroutines concurrently using `asyncio.gather` to obtain responses from the LLM.
-    - Check if multiple responses were obtained; if so, aggregate them into a single coherent example using another LLM call.
-    - Return the single aggregated response or the first response if only one was obtained.
-- **Output**: Returns a string containing the generated code example, either as a single example or an aggregated one from multiple examples.
+    - `document_goal`: The goal of the document for which code examples are being generated.
+    - `document_preamble`: The preamble or introductory text for the document.
+    - `reverse_topos`: A list of reverse topological orderings of nodes, where each node is a tuple containing a path and its associated technical documentation content.
+    - `tagged_nodes`: A dictionary mapping node paths to lists of categories indicating their relevance, or None if not provided.
+    - `tag_idx`: An optional index indicating which tag to use from the tagged_nodes.
+- **Logic and Control Flow**:
+    - Initializes a ChatOpenAI instance with a specific model and settings.
+    - Constructs user prompts using the [`source_code_aggregation_user_prompt_constructor`](<#sectioncommittedsource_code_aggregation_user_prompt_constructor>) method based on the provided reverse topological orderings and annotations.
+    - Creates a list of coroutines for generating code examples using the [`llm_generate`](<#llm_generate>) function with the constructed user prompts.
+    - Awaits the completion of all coroutines using `asyncio.gather` to collect responses.
+    - Checks if multiple responses are received and aggregates them if necessary using another call to [`llm_generate`](<#llm_generate>).
+    - Returns the aggregated response or the single response if only one is received.
+- **Output**: Returns a string containing the generated code example or aggregated code examples.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.source_code_aggregation_user_prompt_constructor`](<#SectionCommittedsource_code_aggregation_user_prompt_constructor>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.source_code_aggregation_user_prompt_constructor`](<#sectioncommittedsource_code_aggregation_user_prompt_constructor>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_system_prompt`](<#SectionCommittedcode_example_single_pass_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_aggregate_pass`](<#SectionCommittedcode_example_single_pass_aggregate_pass>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_system_prompt`](<#sectioncommittedcode_example_single_pass_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_single_pass_aggregate_pass`](<#sectioncommittedcode_example_single_pass_aggregate_pass>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.create\_section\_scatter\_gather<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_section_scatter_gather}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1284>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1286>)
 
-The `create_section_scatter_gather` method asynchronously creates and aggregates document sections based on provided goals, preambles, and content sources, returning a single aggregated document section.
+Creates a document section by generating and aggregating content from various sources.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `goal`: A string representing the goal of the document section being created.
-    - `preamble`: A string providing additional context or introduction for the document section.
-    - `reverse_topos`: A list of tuples, each containing a path and its associated content, representing the reverse topological order of nodes to process.
-    - `pdf_pages_dict`: An optional dictionary mapping PDF file paths to lists of page contents, used for processing PDF content.
-    - `tagged_nodes`: An optional dictionary containing nodes tagged with relevance categories for the document section.
-    - `pdf_tagged_nodes`: An optional dictionary containing PDF pages tagged with relevance categories for the document section.
-    - `tag_idx`: An optional integer index indicating which tag to use for filtering relevant nodes or pages.
-    - `section_name`: A string representing the name of the section being created.
-- **Control Flow**:
-    - Prints a message indicating the start of section creation for the given section name.
-    - Calls [`create_node_sections`](<#SectionCommittedcreate_node_sections>) to generate content for each node based on the provided inputs and stores the result in `file_by_file_content`.
-    - Calls [`aggregate_node_sections`](<#SectionCommittedaggregate_node_sections>) to aggregate the node sections into a single document and stores the result in `aggregate_docs`.
-    - Enters a loop to further aggregate the document sections if there is more than one document in `aggregate_docs`.
-    - Returns the first (and only) document from `aggregate_docs` after aggregation is complete.
-- **Output**: Returns a string representing the final aggregated document section.
+    - `goal`: The goal of the document being created.
+    - `preamble`: An introductory text or context for the document.
+    - `reverse_topos`: A list of topologically sorted nodes in reverse order.
+    - `pdf_pages_dict`: A dictionary mapping PDF file names to lists of page contents.
+    - `tagged_nodes`: A dictionary of nodes with their associated tags.
+    - `pdf_tagged_nodes`: A dictionary of PDF nodes with their associated tags.
+    - `tag_idx`: An optional index for tagging.
+    - `section_name`: The name of the section being created.
+- **Logic and Control Flow**:
+    - Prints a message indicating the start of section creation for the given `section_name`.
+    - Calls [`create_node_sections`](<#sectioncommittedcreate_node_sections>) to generate content for each node based on the provided inputs.
+    - Calls [`aggregate_node_sections`](<#sectioncommittedaggregate_node_sections>) to combine the generated node content into a single document.
+    - Enters a loop to further aggregate the document until only one document remains.
+    - Returns the final aggregated document as a string.
+- **Output**: A string representing the final aggregated document section.
 - **Functions Called**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_node_sections`](<#SectionCommittedcreate_node_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_node_sections`](<#SectionCommittedaggregate_node_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_aggregate_sections`](<#SectionCommittedaggregate_aggregate_sections>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_node_sections`](<#sectioncommittedcreate_node_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_node_sections`](<#sectioncommittedaggregate_node_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_aggregate_sections`](<#sectioncommittedaggregate_aggregate_sections>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.create\_node\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_node_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1322>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1324>)
 
-The `create_node_sections` method generates sections for nodes and PDFs using a language model based on their relevance to a specified goal and preamble.
+Generates sections of a document based on provided goals, preambles, and content from reverse topological orderings and PDF pages.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or introduction for the document.
-    - `reverse_topos`: A list of lists, where each sublist contains tuples of node paths and their corresponding content, representing the reverse topological order of nodes.
-    - `pdf_pages_dict`: A dictionary mapping PDF file paths to lists of strings, where each string represents the content of a page in the PDF.
-    - `tagged_nodes`: An optional dictionary mapping node paths to lists of categories indicating their relevance.
-    - `pdf_tagged_nodes`: An optional dictionary mapping PDF paths to dictionaries, which map page indices to lists of categories indicating their relevance.
-    - `tag_idx`: An optional integer index used to access specific tags in the tagged_nodes and pdf_tagged_nodes dictionaries.
-- **Control Flow**:
-    - Initialize a language model with specific parameters.
-    - Create empty dictionaries and lists to store file content, coroutines, and ordered nodes.
-    - Iterate over each reverse_topo in reverse_topos to process nodes.
-    - For each node, construct a user prompt and append a coroutine for generating a section using the language model.
-    - Check the relevance of each node using tagged_nodes and tag_idx, and append relevant nodes to ordered_nodes.
-    - Iterate over each PDF path in pdf_pages_dict to process PDF pages.
-    - For each page, check its relevance using pdf_tagged_nodes and tag_idx, and append relevant pages to ordered_nodes.
-    - Gather all node responses asynchronously using asyncio.gather.
-    - Map each ordered node to its corresponding response and store in file_by_file_content.
-    - Print the number of created node sections and return the file_by_file_content dictionary.
-- **Output**: A dictionary mapping each node or PDF page to its generated section content.
+    - `goal`: A string representing the goal of the document section.
+    - `preamble`: A string representing the preamble or introductory content for the document section.
+    - `reverse_topos`: A list of reverse topological orderings, where each ordering is a list of tuples containing a path and its associated content.
+    - `pdf_pages_dict`: A dictionary mapping PDF file paths to lists of page contents, or None if not applicable.
+    - `tagged_nodes`: A dictionary mapping node paths to their relevance categories, or None if not applicable.
+    - `pdf_tagged_nodes`: A dictionary mapping PDF paths to their page relevance categories, or None if not applicable.
+    - `tag_idx`: An integer index for tagging, or None if not applicable.
+- **Logic and Control Flow**:
+    - Initializes a language model with a specific configuration.
+    - Creates empty dictionaries and lists to store content and coroutines.
+    - Iterates over each reverse topological ordering to generate user prompts and append them to the list of coroutines.
+    - Checks the relevance of nodes and PDFs based on tags and indices before adding them to the ordered nodes and coroutines.
+    - Uses asyncio to gather responses from all coroutines.
+    - Maps the responses to their corresponding nodes and stores them in a dictionary.
+    - Prints the number of created node sections and returns the dictionary of file content.
+- **Output**: A dictionary mapping node paths to their generated content sections.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_user_prompt_constructor`](<#SectionCommittedscatter_user_prompt_constructor>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_user_prompt_constructor`](<#sectioncommittedscatter_user_prompt_constructor>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_system_prompt`](<#SectionCommittedscatter_system_prompt>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_system_prompt`](<#sectioncommittedscatter_system_prompt>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.aggregate\_node\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_node_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1402>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1404>)
 
-The `aggregate_node_sections` method aggregates content from multiple file sections into a cohesive document section using asynchronous operations.
+Aggregates content from multiple node sections into a list of documents using an asynchronous process.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `goal`: A string representing the goal of the document being written.
     - `preamble`: A string providing additional context or introduction for the document.
-    - `file_by_file_content`: A dictionary where keys are file paths and values are the content of each file, used to construct user prompts.
+    - `file_by_file_content`: A dictionary where keys are file or folder paths and values are their respective content.
     - `section_name`: A string representing the name of the section being aggregated.
-- **Control Flow**:
-    - Initialize a language model `llm` with specific parameters for generating responses.
-    - Construct user prompts using the [`gather_user_prompt_constructor`](<#SectionCommittedgather_user_prompt_constructor>) method with the provided file content and section name.
-    - Create a list of coroutines for generating responses from the language model using the constructed user prompts.
-    - Print a message indicating the number of coroutines being aggregated for the specified section name.
-    - Use `asyncio.gather` to execute all coroutines concurrently and collect their responses.
-    - Append each response to the `aggregate_docs` list.
-    - Return the list `aggregate_docs` containing the aggregated document sections.
-- **Output**: A list of aggregated document sections, each generated from the content of individual files.
+- **Logic and Control Flow**:
+    - Initializes a language model `llm` with a specified model name and configuration.
+    - Calls [`gather_user_prompt_constructor`](<#sectioncommittedgather_user_prompt_constructor>) to create user prompts based on `file_by_file_content` and `section_name`.
+    - Creates a list `aggregate_coroutines` to store coroutines for generating responses from the language model.
+    - Iterates over each user prompt, appending a coroutine to `aggregate_coroutines` that calls [`llm_generate`](<#llm_generate>) with the language model, system prompt, and user prompt.
+    - Prints a message indicating the number of coroutines being aggregated for the given section name.
+    - Uses `asyncio.gather` to execute all coroutines in `aggregate_coroutines` concurrently, collecting their responses.
+    - Appends each response from `aggregate_responses` to `aggregate_docs`.
+    - Returns the list `aggregate_docs` containing the aggregated documents.
+- **Output**: A list of aggregated documents generated from the node sections.
 - **Functions Called**:
-    - [`python-backend/content_services/autodocs/src/utils/models.ChatOpenAI`](<utils/models.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_user_prompt_constructor`](<#SectionCommittedgather_user_prompt_constructor>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_user_prompt_constructor`](<#sectioncommittedgather_user_prompt_constructor>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_system_prompt`](<#SectionCommittedgather_system_prompt>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_system_prompt`](<#sectioncommittedgather_system_prompt>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.aggregate\_aggregate\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.aggregate_aggregate_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1434>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1436>)
 
-The `aggregate_aggregate_sections` method asynchronously aggregates multiple document sections into a single list of new aggregated documents using a language model.
+Aggregates multiple document sections asynchronously using a language model and returns the aggregated results.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `goal`: A string representing the goal of the document being written.
-    - `preamble`: A string providing additional context or introduction for the document.
-    - `aggregate_docs`: A list of document sections that need to be aggregated.
-    - `section_name`: A string representing the name of the section being processed.
-- **Control Flow**:
-    - Initialize a language model `llm` with specific parameters such as model type, request timeout, and temperature.
-    - Construct user prompts for each document section using [`gather_aggregate_user_prompt_constructor`](<#SectionCommittedgather_aggregate_user_prompt_constructor>).
-    - Create a list of coroutines for generating responses from the language model using [`llm_generate`](<#llm_generate>).
-    - Print a message indicating the aggregation process and the number of coroutines created.
-    - Use `asyncio.gather` to execute all coroutines concurrently and collect their responses.
-    - Append each response to the `new_aggregate_docs` list.
-    - Return the list `new_aggregate_docs` containing the aggregated document sections.
-- **Output**: A list of new aggregated document sections.
+    - `preamble`: A string representing the preamble or introductory content for the document.
+    - `aggregate_docs`: A list of document sections to be aggregated.
+    - `section_name`: A string representing the name of the section being aggregated.
+- **Logic and Control Flow**:
+    - Initializes a language model with a specified model name and configuration.
+    - Constructs user prompts for each document section using the [`gather_aggregate_user_prompt_constructor`](<#sectioncommittedgather_aggregate_user_prompt_constructor>) method.
+    - Creates a list of coroutines for generating responses from the language model for each user prompt.
+    - Prints a message indicating the number of coroutines and the section name being processed.
+    - Uses `asyncio.gather` to execute all coroutines concurrently and collect their responses.
+    - Appends each response to a new list of aggregated documents.
+    - Returns the list of new aggregated documents.
+- **Output**: A list of aggregated document sections.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_aggregate_user_prompt_constructor`](<#SectionCommittedgather_aggregate_user_prompt_constructor>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_aggregate_user_prompt_constructor`](<#sectioncommittedgather_aggregate_user_prompt_constructor>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_multiple_system_prompt`](<#SectionCommittedgather_multiple_system_prompt>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_multiple_system_prompt`](<#sectioncommittedgather_multiple_system_prompt>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.scatter\_user\_prompt\_constructor<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.scatter_user_prompt_constructor}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1464>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1466>)
 
-The `scatter_user_prompt_constructor` method constructs a user prompt string based on the provided root and node content, including descriptions and source code, and handles potential context window issues by splitting the text into chunks.
+Constructs a user prompt string based on the provided technical documentation content and node path.
 - **Inputs**:
-    - `root_content`: An instance of `TechDocsContent` representing the root content of the codebase, containing descriptions and possibly source code.
-    - `node_content`: An instance of `TechDocsContent` representing the specific node content, containing descriptions and possibly source code.
-    - `node_path`: A string representing the path of the node within the codebase.
-- **Control Flow**:
+    - `root_content`: An instance of `TechDocsContent` representing the root content of the codebase.
+    - `node_content`: An instance of `TechDocsContent` representing the content of the specific node or file.
+    - `node_path`: A string representing the path of the node or file.
+- **Logic and Control Flow**:
     - Initialize `user_prompt` with a short description of the full codebase from `root_content`.
     - Append a detailed description of the node specified by `node_path` from `node_content`.
-    - Check if `node_content.source` is not `None` and not empty; if so, append the source code to `user_prompt`, otherwise indicate the file is empty.
-    - Split the `user_prompt` into chunks using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) with a specified chunk size and overlap.
-    - Return the first chunk's text if multiple chunks are created, otherwise return the full `user_prompt`.
-- **Output**: A string representing the constructed user prompt, potentially truncated to fit within a context window.
+    - Check if `node_content.source` is not `None` and not empty; if so, append the source code to `user_prompt`, otherwise append 'Empty file'.
+    - Split `user_prompt` into chunks with a maximum size of 96,000 characters and no overlap.
+    - If more than one chunk is created, return the text of the first chunk; otherwise, return the full `user_prompt`.
+- **Output**: A string representing the constructed user prompt.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.source\_code\_aggregation\_user\_prompt\_constructor<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.source_code_aggregation_user_prompt_constructor}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1487>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1489>)
 
-The `source_code_aggregation_user_prompt_constructor` method constructs user prompts by aggregating source code from a list of reverse topological orderings, considering annotations and chunk size constraints.
+Constructs user prompts by aggregating source code from files based on relevance annotations and splits them into chunks if necessary.
 - **Inputs**:
-    - `reverse_topos`: A list of reverse topological orderings, where each element is a list of tuples containing a file path and its associated `TechDocsContent`.
-    - `annotations`: An optional dictionary mapping file paths to lists of `Category` annotations, indicating the relevance of each file for different sections.
-    - `tag_idx`: An optional integer index used to access specific annotations for each file.
-    - `chunk_size`: An integer specifying the maximum size of each text chunk, defaulting to 100,000 characters.
-- **Control Flow**:
+    - `reverse_topos`: A list of lists, where each inner list contains tuples of file paths and their corresponding `TechDocsContent` objects.
+    - `annotations`: A dictionary mapping file paths to lists of `Category` annotations, indicating the relevance of each file for a specific tag index.
+    - `tag_idx`: An optional integer representing the index of the tag to consider when filtering files based on annotations.
+    - `chunk_size`: An integer specifying the maximum size of each chunk of the user prompt, defaulting to 100,000 characters.
+- **Logic and Control Flow**:
     - Initialize an empty string `user_prompt` to accumulate source code content.
     - Iterate over each `reverse_topo` in `reverse_topos`.
     - For each file path `p` and its `tech_docs` in `reverse_topo`, check if the file should be included based on `tag_idx`, `annotations`, and the presence of source code.
-    - If the file is included, append its source code to `user_prompt` with a formatted string.
-    - Split `user_prompt` into chunks using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) with the specified `chunk_size`.
+    - If the file is relevant, append its source code to `user_prompt`.
+    - Split `user_prompt` into chunks using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) if it exceeds `chunk_size`.
     - If multiple chunks are required, calculate a `token_threshold` to balance the content across chunks.
     - Iterate over `reverse_topos` again to distribute source code into `user_prompts` based on the `token_threshold`.
     - Return the list of `user_prompts`, each containing a portion of the aggregated source code.
-- **Output**: A list of strings, where each string is a user prompt containing a portion of the aggregated source code, split according to the specified chunk size.
+- **Output**: A list of strings, where each string is a chunk of the user prompt containing aggregated source code.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.get_num_tokens`](<../../../packages/shared/shared/chunking/text_splitter.py.md#get_num_tokens>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.gather\_user\_prompt\_constructor<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_user_prompt_constructor}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1541>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1543>)
 
-The `gather_user_prompt_constructor` method constructs a list of user prompts by aggregating content from multiple files or folders, ensuring the prompts fit within a specified token limit.
+Constructs user prompts by aggregating content from multiple files or folders and splitting them into manageable chunks if necessary.
 - **Inputs**:
     - `file_by_file_content`: A dictionary where keys are file or folder paths and values are their respective content.
-    - `section_name`: A string representing the name of the section to be included in the user prompt.
-- **Control Flow**:
-    - Initialize variables for chunk size, overlap, and user prompts.
-    - Iterate over each file or folder in `file_by_file_content`, appending its content to a single user prompt string.
-    - Split the aggregated user prompt into chunks based on the specified chunk size and overlap using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>).
-    - If multiple chunks are required, calculate a token threshold and attempt to distribute content across multiple user prompts without exceeding this threshold.
-    - If only one chunk is needed, use the single aggregated user prompt.
-- **Output**: A list of user prompts, each containing content from one or more files or folders, formatted to fit within token constraints.
+    - `section_name`: A string representing the name of the section to include in the user prompt.
+- **Logic and Control Flow**:
+    - Initialize `chunk_size` to 64,000 and `chunk_overlap` to 0.
+    - Initialize `user_prompt` as an empty string and `user_prompts` as a list containing an empty string.
+    - Iterate over each file or folder path and its content in `file_by_file_content`.
+    - Append the section name, file or folder path, and content to `user_prompt`.
+    - Split `user_prompt` into chunks using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) with the specified `chunk_size` and `chunk_overlap`.
+    - If more than one chunk is required, calculate `token_threshold` as the number of tokens in `user_prompt` divided by the number of chunks.
+    - Reinitialize `user_prompts` as a list containing an empty string.
+    - Iterate over each file or folder path and its content again to create new prompts.
+    - For each new prompt, calculate the number of tokens and try to add it to an existing prompt in `user_prompts` without exceeding `token_threshold`.
+    - If a new prompt cannot be added to any existing prompt, append it as a new entry in `user_prompts`.
+    - If only one chunk is required, set `user_prompts` to contain just `user_prompt`.
+- **Output**: A list of user prompts, each as a string, constructed from the provided file or folder content.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.get_num_tokens`](<../../../packages/shared/shared/chunking/text_splitter.py.md#get_num_tokens>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 ---
 #### SectionCommitted\.gather\_aggregate\_user\_prompt\_constructor<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.gather_aggregate_user_prompt_constructor}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1584>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1586>)
 
-The `gather_aggregate_user_prompt_constructor` method constructs a list of user prompts by aggregating document content for a specified section name, ensuring the prompt does not exceed a token limit.
+Constructs a list of user prompts by aggregating document content with section names.
 - **Inputs**:
-    - `aggregate_docs`: A list of document contents to be aggregated into the user prompt.
-    - `section_name`: A string representing the name of the section for which the user prompt is being constructed.
-- **Control Flow**:
-    - Initialize a list `user_prompts` with an empty string as its first element.
-    - Iterate over the `aggregate_docs` list with an index `idx` and document `doc`.
+    - `self`: Refers to the instance of the class `SectionCommitted`.
+    - `aggregate_docs`: A list of document contents to aggregate into user prompts.
+    - `section_name`: The name of the section to include in the user prompts.
+- **Logic and Control Flow**:
+    - Initialize an empty list `user_prompts` with a single empty string element.
+    - Iterate over `aggregate_docs` with an index `idx` and document `doc`.
     - For each document, append a formatted string containing the `section_name`, index, and document content to the first element of `user_prompts`.
     - Check if the number of tokens in the first element of `user_prompts` exceeds 100,000 using [`get_num_tokens`](<../../../packages/shared/shared/chunking/text_splitter.py.md#get_num_tokens>).
-    - If the token count exceeds 100,000, return the current `user_prompts` list immediately.
-    - If the loop completes without exceeding the token limit, return the `user_prompts` list.
-- **Output**: A list containing a single string, which is the aggregated user prompt for the given section name.
+    - If the token count exceeds 100,000, return `user_prompts` immediately.
+    - If the loop completes without exceeding the token limit, return `user_prompts`.
+- **Output**: A list containing a single string that aggregates the document contents with section names.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.get_num_tokens`](<../../../packages/shared/shared/chunking/text_splitter.py.md#get_num_tokens>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#SectionCommitted>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted`](<#sectioncommitted>)  (Base Class)
 
 
 
 ---
 ### AutoDocCfg<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1598>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1600>)
 
+- **Decorators**: `@classmethod`
 - **Members**:
-    - `llm`: An instance of LlmCfg representing the language model configuration.
-    - `document`: An instance of DocumentCfg representing the document configuration.
-    - `scope`: An instance of Scope representing the scope of the document.
-    - `sections`: A list of SectionCfg instances representing the sections of the document.
-- **Description**: The AutoDocCfg class is a configuration model for automated document generation, inheriting from BaseModel. It encapsulates configurations for language models, document settings, scope, and sections, allowing for the creation and validation of document configurations from a file. The class provides methods to load configurations from a TOML file, validate them, and handle optional sections based on the document's goal and scope. It is designed to facilitate the generation of structured documents by integrating various configuration components.
+    - `llm`: Stores configuration for the language model.
+    - `document`: Stores configuration for the document.
+    - `scope`: Defines the scope of the document.
+    - `sections`: Contains a list of section configurations.
+- **Description**: Represents a configuration for automatic document generation, including language model settings, document settings, scope, and sections.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.from_file`](<#AutoDocCfgfrom_file>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.eval_optional_sections`](<#AutoDocCfgeval_optional_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.from_file`](<#autodoccfgfrom_file>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.eval_optional_sections`](<#autodoccfgeval_optional_sections>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -1179,559 +1177,592 @@ The `gather_aggregate_user_prompt_constructor` method constructs a list of user 
 
 ---
 #### AutoDocCfg\.from\_file<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.from_file}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1604>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1606>)
 
-The `from_file` class method reads a TOML file, merges its data with default configurations, validates the resulting configuration, and returns an `AutoDocCfg` instance.
+Loads configuration data from a TOML file and returns an instance of `AutoDocCfg` with default values for missing sections.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `toml_file`: A string representing the path to the TOML file to be read and processed.
-- **Control Flow**:
-    - Open the specified TOML file in binary read mode.
-    - Load the contents of the file using the `tomllib.load` function into a dictionary called `raw_data`.
-    - Retrieve default configurations for `llm`, `document`, `scope`, and `sections` using their respective [`default`](<../../../packages/shared/shared/agent/chat_openai.py.md#OutputConfigdefault>) methods and `model_dump`.
-    - Merge the default configurations with the corresponding sections in `raw_data`, ensuring that any missing sections in `raw_data` are filled with defaults.
-    - Validate the merged configuration data using `AutoDocCfg.model_validate`.
-    - Check if the `document.goal` is empty and raise a `ValueError` if it is.
-    - Iterate over each section in `cfg.sections` to ensure that `title`, `instruction`, and `content_structure` are not empty, raising a `ValueError` if any are.
-    - If `substitutions` exist in `raw_data`, create a mapping of keys to values and format the `instruction` and `content_structure` of each section using this mapping.
-    - Return the validated `cfg` object.
-- **Output**: An instance of `AutoDocCfg` containing the validated and possibly modified configuration data from the TOML file.
+    - `toml_file`: A string representing the path to the TOML file to read.
+- **Logic and Control Flow**:
+    - Opens the specified TOML file in binary read mode.
+    - Loads the raw data from the TOML file using `tomllib.load`.
+    - Retrieves default configurations for `llm`, `document`, `scope`, and `sections` using their respective [`default`](<../../../packages/shared/shared/v3/utils/encoder.py.md#uuidencoderdefault>) methods and `model_dump`.
+    - Merges the default configurations with the loaded raw data, ensuring that any missing sections in the raw data are filled with default values.
+    - Validates the merged configuration data using `AutoDocCfg.model_validate`.
+    - Checks if the `document.goal` is empty and raises a `ValueError` if it is.
+    - Iterates over each section in `cfg.sections` to ensure that `title`, `instruction`, and `content_structure` are not empty, raising a `ValueError` if any are.
+    - Checks for a `substitutions` key in the raw data and applies any substitutions to `instruction` and `content_structure` fields in each section.
+    - Returns the validated `cfg` object.
+- **Output**: Returns an instance of `AutoDocCfg` with the configuration data loaded and validated from the TOML file.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](<../../../packages/shared/shared/agent/chat_openai.py.md#OutputConfigdefault>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg`](<#AutoDocCfg>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder.default`](<../../../packages/shared/shared/v3/utils/encoder.py.md#uuidencoderdefault>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg`](<#autodoccfg>)  (Base Class)
 
 
 ---
 #### AutoDocCfg\.eval\_optional\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.eval_optional_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1657>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1659>)
 
-The `eval_optional_sections` method evaluates optional sections of a document configuration to determine which should be included based on relevance.
-- **Decorators**: `@staticmethod`
+Evaluates optional sections for inclusion in a document based on their relevance and dependencies.
+- **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to generate responses for evaluating sections.
-    - `long_descriptions`: A string containing long descriptions of the source code to provide context for evaluating the optional sections.
-- **Control Flow**:
-    - Identify optional sections from the document configuration that are not required and not committed with any other section.
-    - If there are optional sections, print their titles and initiate an evaluation process using the `SectionFlags.from_llm` method to determine their relevance.
-    - Iterate over the optional sections and their corresponding flags to check for mismatches and determine which sections should be included based on the flag value.
-    - For sections that are committed with other sections, check if their parent sections are required or included, and add them to the included sections if so.
-    - Return a list of `SectionCommitted` objects for sections that are required or have been determined to be included.
-- **Output**: A list of `SectionCommitted` objects representing the sections that are required or have been determined to be included based on the evaluation.
+    - `llm`: An instance of `ChatOpenAI` used for language model operations.
+    - `long_descriptions`: A string containing long descriptions of the source code to help evaluate the relevance of optional sections.
+- **Logic and Control Flow**:
+    - Collects optional sections that are not required and not yet committed.
+    - If there are optional sections, it prints their titles and evaluates them using the `SectionFlags.from_llm` method.
+    - Iterates over the optional sections and their flags to check for mismatches and determine which sections to include based on the flag.
+    - Checks for sections that are committed with other sections and includes them if their parent sections are included.
+    - Returns a list of `SectionCommitted` objects for sections that are required or included based on the evaluation.
+- **Output**: A list of `SectionCommitted` objects representing the sections to include in the document.
 - **Functions Called**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags.from_llm`](<#SectionFlagsfrom_llm>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.from_section_cfg`](<#SectionCommittedfrom_section_cfg>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg`](<#AutoDocCfg>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionFlags.from_llm`](<#sectionflagsfrom_llm>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.from_section_cfg`](<#sectioncommittedfrom_section_cfg>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg`](<#autodoccfg>)  (Base Class)
 
 
 
 ---
 ### AutoDocInitState<!-- {{#class:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1741>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1743>)
 
 - **Members**:
-    - `llm`: An instance of LlmCfg that holds configuration for language models used in the document generation process.
-    - `document`: An instance of DocumentCfg that contains the document's goal, format, and configuration details.
-    - `scope`: An instance of Scope that defines the preamble, PDFs, and code paths relevant to the document.
-    - `sections`: A list of SectionCommitted objects representing the sections to be included in the document.
-- **Description**: The AutoDocInitState class is responsible for managing the state and process of generating a document based on a given configuration. It utilizes language models to annotate, draft, and refine sections of the document, ensuring that the final output is cohesive and well-structured. The class handles tasks such as loading and saving state, annotating files and PDFs for relevance, initializing and updating document sections, and assembling the final document. It is designed to work with both local and remote execution modes, supporting iterative development and refinement of technical documentation.
+    - `llm`: Stores the configuration for the language model.
+    - `document`: Holds the configuration for the document being generated.
+    - `scope`: Defines the scope of the document, including preamble and source paths.
+    - `sections`: Contains a list of committed sections for the document.
+    - `_source_list`: Stores a dictionary mapping section titles to their source paths.
+- **Description**: Represents the initial state for generating a document, including configurations for language models, document settings, and sections.
 - **Methods**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.assembly_system_prompt`](<#AutoDocInitStateassembly_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.final_copy_editor_system_prompt`](<#AutoDocInitStatefinal_copy_editor_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.to_disk`](<#AutoDocInitStateto_disk>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_disk`](<#AutoDocInitStatefrom_disk>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg`](<#AutoDocInitStatefrom_cfg>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_state`](<#AutoDocInitStatesave_state>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_annotations`](<#AutoDocInitStatesave_annotations>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.write_final_output_to_markdown`](<#AutoDocInitStatewrite_final_output_to_markdown>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_state`](<#AutoDocInitStateload_state>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_annotations`](<#AutoDocInitStateload_annotations>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_file`](<#AutoDocInitState_annotate_file>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_pdf_page`](<#AutoDocInitState_annotate_pdf_page>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_nodes`](<#AutoDocInitState_annotate_nodes>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._initialize_sections`](<#AutoDocInitState_initialize_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections`](<#AutoDocInitState_update_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections_with_pdf`](<#AutoDocInitState_update_sections_with_pdf>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._final_section_format`](<#AutoDocInitState_final_section_format>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.generate`](<#AutoDocInitStategenerate>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.section_sources`](<#autodocinitstatesection_sources>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.assembly_system_prompt`](<#autodocinitstateassembly_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.final_copy_editor_system_prompt`](<#autodocinitstatefinal_copy_editor_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._generate_sources_list`](<#autodocinitstate_generate_sources_list>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.to_disk`](<#autodocinitstateto_disk>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_disk`](<#autodocinitstatefrom_disk>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg`](<#autodocinitstatefrom_cfg>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_state`](<#autodocinitstatesave_state>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_annotations`](<#autodocinitstatesave_annotations>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.write_final_output_to_markdown`](<#autodocinitstatewrite_final_output_to_markdown>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_state`](<#autodocinitstateload_state>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_annotations`](<#autodocinitstateload_annotations>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_file`](<#autodocinitstate_annotate_file>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_pdf_page`](<#autodocinitstate_annotate_pdf_page>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_nodes`](<#autodocinitstate_annotate_nodes>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._initialize_sections`](<#autodocinitstate_initialize_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections`](<#autodocinitstate_update_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections_with_pdf`](<#autodocinitstate_update_sections_with_pdf>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._final_section_format`](<#autodocinitstate_final_section_format>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.generate`](<#autodocinitstategenerate>)
 - **Inherits From**:
     - `BaseModel`
 
 **Methods**
 
 ---
-#### AutoDocInitState\.assembly\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.assembly_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1747>)
+#### AutoDocInitState\.section\_sources<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.section_sources}} -->
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1750>)
 
-The `assembly_system_prompt` method generates a system prompt for assembling a final document draft by consolidating section content into a cohesive Markdown document.
+Provides access to the `_source_list` attribute as a string.
+- **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - A template string `system_prompt_template` is defined to outline the structure and instructions for the document assembly process.
-    - An empty string `sections` is initialized to accumulate formatted section details.
-    - A loop iterates over `self.sections`, formatting each section's title, instruction, and content structure into Markdown headers and appending them to `sections`.
-    - A conditional check adds additional preamble content if `self.scope.preamble` is not empty.
-    - A `Prompt` object is created and populated with the formatted `system_prompt_template`, including the document goal, preamble content, and sections.
-    - Additional style instructions are appended to the `Prompt` object.
-    - The `Prompt` object is converted to a string and returned as the final system prompt.
-- **Output**: The method returns a string representing the complete system prompt for document assembly.
+- **Logic and Control Flow**:
+    - Returns the `_source_list` attribute.
+- **Output**: A string representation of the `_source_list` attribute.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
+
+
+---
+#### AutoDocInitState\.assembly\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.assembly_system_prompt}} -->
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1754>)
+
+Generates a system prompt for assembling a final document draft by consolidating section content.
+- **Inputs**: None
+- **Logic and Control Flow**:
+    - Defines a template string `system_prompt_template` for the system prompt with placeholders for `goal`, `preamble_content`, and `sections`.
+    - Initializes an empty string `sections` to accumulate formatted section details.
+    - Iterates over `self.sections` to construct the `sections` string with each section's level, title, instruction, and content structure.
+    - Checks if `self.scope.preamble` is not empty and assigns `preamble_content` accordingly.
+    - Formats the `system_prompt_template` with the document's goal, preamble content, and sections to create the final system prompt.
+    - Uses `Prompt.empty()` to create a new prompt, appends the formatted system prompt, and additional style instructions.
+    - Converts the prompt to a string using `into_str()` and returns it.
+- **Output**: A string representing the complete system prompt for document assembly.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.final\_copy\_editor\_system\_prompt<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.final_copy_editor_system_prompt}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1793>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1800>)
 
-The `final_copy_editor_system_prompt` method generates a system prompt for a copy editor to finalize a document draft using Markdown syntax.
+Generates a final system prompt for a copy editor to polish a document draft using Markdown syntax.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize a template string `system_prompt_template` with instructions for a copy editor.
-    - Create a string `sections` by iterating over `self.sections`, formatting each section's title and level into Markdown headers.
-    - Construct `preamble_content` based on the presence of `self.scope.preamble`.
-    - Format the `system_prompt_template` with `goal`, `preamble_content`, and `sections`.
-    - Create a `Prompt` object, append the formatted string as a [`Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>), and add style instructions.
-    - Convert the `Prompt` object to a string and return it.
-- **Output**: A string containing the formatted system prompt for the copy editor.
+- **Logic and Control Flow**:
+    - Defines a template string `system_prompt_template` for the copy editor's task.
+    - Initializes an empty string `sections` to accumulate section headers.
+    - Iterates over `self.sections` to append each section's header to `sections`.
+    - Checks if `self.scope.preamble` is not empty and assigns `preamble_content` accordingly.
+    - Formats the `system_prompt_template` with `goal`, `preamble_content`, and `sections`.
+    - Creates a `Prompt` object, appends formatted components, and converts it to a string.
+    - Returns the final formatted string.
+- **Output**: A string representing the final system prompt for the copy editor.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#LogFormatterformat>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/content_services/auto_toml/src/logger._setup_logger.LogFormatter.format`](<../../auto_toml/src/logger.py.md#logformatterformat>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
+
+
+---
+#### AutoDocInitState\.\_generate\_sources\_list<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._generate_sources_list}} -->
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1854>)
+
+Generates a dictionary mapping section titles to lists of source paths that are highly relevant to each section.
+- **Inputs**:
+    - `annotations`: A dictionary mapping file paths to lists of `Category` objects, indicating the relevance of each file to different sections.
+    - `pdf_annotations`: A dictionary mapping PDF paths to lists of `Category` objects, indicating the relevance of each PDF page to different sections.
+- **Logic and Control Flow**:
+    - Initialize an empty dictionary `sources_dict` to store the results.
+    - Check if both `annotations` and `pdf_annotations` are `None` or empty; if so, return the empty `sources_dict`.
+    - Iterate over each section in `self.sections` using an index `idx` and the section object `section`.
+    - For each section, initialize an empty list `sources` to collect relevant source paths.
+    - If `annotations` is not `None`, extend `sources` with paths from `annotations` where the category at index `idx` is `Category.HighlyRelevant`.
+    - If `pdf_annotations` is not `None`, extend `sources` with formatted strings of PDF paths and page numbers where the category at index `idx` is `Category.HighlyRelevant`.
+    - Assign the list `sources` to the key `section.title` in `sources_dict`.
+    - Return the populated `sources_dict`.
+- **Output**: A dictionary where keys are section titles and values are lists of source paths that are highly relevant to each section.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.to\_disk<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.to_disk}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1847>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1885>)
 
-The `to_disk` method writes the JSON representation of the current object's state to a specified file path.
+Writes the JSON representation of the current object to a specified file path.
 - **Inputs**:
-    - `json_p`: A `Path` object representing the file path where the JSON representation of the object's state will be written.
-- **Control Flow**:
-    - Open the file at the specified path `json_p` for writing.
-    - Write the JSON representation of the object's state, obtained from `self.model_dump_json()`, to the file.
-- **Output**: The method does not return any value (returns `None`).
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - `json_p`: A `Path` object representing the file path where the JSON data will be written.
+- **Logic and Control Flow**:
+    - Opens the file at the specified path `json_p` for writing.
+    - Writes the JSON representation of the object, obtained from `self.model_dump_json()`, to the file.
+- **Output**: No output is returned as the function returns `None`.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.from\_disk<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_disk}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1851>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1889>)
 
-The `from_disk` class method loads an instance of `AutoDocInitState` from a JSON file located at the specified path.
+Loads an instance of the class from a JSON file on disk.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `AutoDocInitState` itself, used to create an instance.
-    - `json_p`: A `Path` object representing the file path to the JSON file from which the state is to be loaded.
-- **Control Flow**:
-    - Open the file at the path specified by `json_p` for reading.
-    - Load the JSON content from the file into a Python dictionary named `state`.
-    - Use the `state['cfg']` dictionary to instantiate and return a new `AutoDocInitState` object using the class constructor `cls`.
-- **Output**: Returns an instance of `AutoDocInitState` initialized with the configuration data loaded from the JSON file.
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - `json_p`: A `Path` object representing the path to the JSON file on disk.
+- **Logic and Control Flow**:
+    - Opens the file at the path specified by `json_p` for reading.
+    - Loads the JSON content from the file into a Python dictionary using `json.load`.
+    - Extracts the configuration data from the dictionary using the key `"cfg"`.
+    - Creates and returns an instance of the class using the extracted configuration data as keyword arguments.
+- **Output**: An instance of the class initialized with the configuration data from the JSON file.
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.from\_cfg<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1857>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1895>)
 
-The `from_cfg` method asynchronously initializes an instance of the class using a configuration object, execution mode, and optional page ID, processing document sections based on the configuration.
-- **Decorators**: `@classmethod`
+Creates an instance of `AutoDocInitState` from a given configuration and execution mode.
+- **Decorators**: `@classmethod`, `@async`
 - **Inputs**:
-    - `cls`: The class itself, used to create an instance.
-    - `cfg`: An instance of `AutoDocCfg` containing configuration details for document generation.
+    - `cls`: The class `AutoDocInitState` itself, used to create an instance.
+    - `cfg`: An instance of `AutoDocCfg` containing the configuration for the document generation.
     - `execution_mode`: An instance of `ExecutionMode` indicating the mode of execution, either LOCAL or MODAL.
     - `page_id`: An optional string representing the page ID, defaulting to an empty string.
-- **Control Flow**:
-    - Check if `cfg.scope.preamble` is not empty and prepare `preamble_content` accordingly.
-    - Print the document goal, configuration name, version, and page ID.
-    - Match the document format (`cfg.document.fmt`) to determine the processing path.
-    - For `DocKind.DEFINED_SECTIONS`, build targets and process based on `execution_mode` (LOCAL or MODAL) to retrieve `DriverDocsContent`.
-    - Construct subgraphs and perform topological sorting on them.
-    - Iterate over reverse topological order to build a user prompt with descriptions of root folders and files.
-    - Split the user prompt into chunks if necessary and initialize a [`ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>) instance.
-    - Evaluate optional sections using the LLM and return a new class instance with committed sections.
-    - For `DocKind.UNDEFINED`, call [`_autogen_sections`](<#_autogen_sections>) to generate sections and return a new class instance.
-    - Raise `NotImplementedError` for unsupported document formats.
-- **Output**: Returns an instance of the class initialized with the LLM configuration, document configuration, scope, and committed sections.
+- **Logic and Control Flow**:
+    - Checks if `cfg.scope.preamble` is not empty and sets `preamble_content` accordingly.
+    - Prints the document goal and configuration details.
+    - Matches the document format specified in `cfg.document.fmt`.
+    - If the format is `DocKind.DEFINED_SECTIONS`, it processes the code scope to build subgraphs and topological sorts.
+    - Depending on `execution_mode`, it loads driver documents from disk or database.
+    - Builds subgraphs for each code configuration and raises an error if no subgraphs are built.
+    - Generates a user prompt by iterating over reverse topological sorts and appending descriptions.
+    - Splits the user prompt into chunks if it exceeds a certain size.
+    - Initializes a [`ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>) instance with the model specified in `cfg.llm.tag_model`.
+    - Evaluates optional sections using `cfg.eval_optional_sections` with the first chunk of long descriptions.
+    - Returns an instance of `AutoDocInitState` with the evaluated sections.
+- **Output**: Returns an instance of `AutoDocInitState` with the evaluated sections based on the configuration and execution mode.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_codebase_name`](<#_get_codebase_name>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#DriverDocsContentfrom_disk>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#driverdocscontentfrom_disk>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_path_on_disk`](<#_get_path_on_disk>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db`](<#DriverDocsContentfrom_db>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db`](<#driverdocscontentfrom_db>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_subgraph`](<#build_subgraph>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.eval_optional_sections`](<#AutoDocCfgeval_optional_sections>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocCfg.eval_optional_sections`](<#autodoccfgeval_optional_sections>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._autogen_sections`](<#_autogen_sections>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.save\_state<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_state}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1957>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2001>)
 
-The `save_state` method saves the current state of the document generation process to a JSON file.
+Saves the current state of the document processing, including initial state, revisions, and final document revisions, to a file.
 - **Inputs**:
-    - `revisions`: A list of dictionaries representing the revisions made during the document generation process.
-    - `init_state`: A dictionary representing the initial state of the document generation process, including information like appended reverse topological order and initial node set.
-    - `final_doc_revisions`: An optional list of strings representing the final document revisions, if available.
-- **Control Flow**:
-    - Builds a filename for the state file using the [`build_state_filename`](<#build_state_filename>) function with the scope roots and document format.
-    - Creates a deep copy of the `init_state` to avoid modifying the original input.
-    - Transforms the `appended_reverse_topo` in `init_state` by converting each tuple's second element to JSON format using `model_dump_json`.
-    - Converts the `init_node_set` in `init_state` to a list.
-    - Initializes a new dictionary `state` to store the state information.
-    - Adds `init_state` to the `state` dictionary.
-    - If `final_doc_revisions` is provided, adds it to the `state` dictionary under the key `final_doc_revisions`.
-    - Adds `revisions` to the `state` dictionary.
-    - Adds the current configuration of the object (using `self.model_dump()`) to the `state` dictionary under the key `cfg`.
-    - Opens the file with the constructed filename in write mode and writes the JSON representation of the `state` dictionary to it.
-- **Output**: The method does not return any value; it writes the state information to a file.
+    - `revisions`: A list of dictionaries, each representing a revision of the document state.
+    - `init_state`: A dictionary representing the initial state of the document processing.
+    - `final_doc_revisions`: An optional list of strings representing the final document revisions.
+- **Logic and Control Flow**:
+    - Builds a filename for the state file using [`build_state_filename`](<#build_state_filename>) with the scope roots and document format.
+    - Creates a deep copy of `init_state` to avoid modifying the original input.
+    - Transforms `init_state['appended_reverse_topo']` into a list of tuples with JSON-dumped model data.
+    - Converts `init_state['init_node_set']` to a list.
+    - Initializes a dictionary `state` to store the state data.
+    - Adds `init_state`, `revisions`, and `cfg` (configuration) to the `state` dictionary.
+    - Includes `final_doc_revisions` in the `state` dictionary if it is not `None`.
+    - Opens the file with the constructed filename in write mode and writes the JSON-dumped `state` to it.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_state_filename`](<#build_state_filename>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.save\_annotations<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_annotations}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1980>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2024>)
 
-The `save_annotations` method saves a dictionary of annotations and the current configuration state to a JSON file.
+Saves the provided annotations and configuration state to a file.
 - **Inputs**:
-    - `annotations`: A dictionary where keys are strings and values are lists of `Category` objects, representing annotations to be saved.
-- **Control Flow**:
-    - The method constructs a filename using [`build_annotations_filename`](<#build_annotations_filename>) with the current scope roots and document format.
-    - An empty dictionary `state` is initialized to store the annotations and configuration.
-    - The `annotations` input is added to the `state` dictionary under the key 'annotations'.
-    - The current configuration is dumped using `self.model_dump()` and added to the `state` dictionary under the key 'cfg'.
-    - The `state` dictionary is serialized to a JSON string and written to a file with the constructed filename.
-- **Output**: The method does not return any value (returns `None`).
+    - `annotations`: A dictionary where keys are strings and values are lists of `Category` objects, representing annotations.
+- **Logic and Control Flow**:
+    - Builds a filename for saving annotations using [`build_annotations_filename`](<#build_annotations_filename>) with `scope_roots` and `fmt` from the instance's `scope` and `document` attributes.
+    - Creates a dictionary `state` to store the annotations and the current configuration state obtained from `self.model_dump()`.
+    - Opens a file with the constructed filename in write mode.
+    - Writes the JSON representation of the `state` dictionary to the file.
+- **Output**: No output is returned as the function returns `None`.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_annotations_filename`](<#build_annotations_filename>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.write\_final\_output\_to\_markdown<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.write_final_output_to_markdown}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1993>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2037>)
 
-The `write_final_output_to_markdown` method writes a given string output to a Markdown file with a filename derived from the current scope and format.
+Writes the given output string to a Markdown file with a filename based on the current state.
 - **Inputs**:
-    - `output`: A string representing the content to be written to the Markdown file.
-- **Control Flow**:
-    - The method sets the format to 'document'.
-    - It calls [`build_state_filename`](<#build_state_filename>) to generate a filename based on the current scope and format, with a '.md' extension.
-    - The method opens the generated filename in write mode.
-    - It writes the provided `output` string to the file.
-- **Output**: The method does not return any value; it writes the output to a file.
+    - `output`: A string containing the content to write to the Markdown file.
+- **Logic and Control Flow**:
+    - Sets the format to 'document'.
+    - Builds a state filename using the current scope and format, with a '.md' extension.
+    - Opens the file with the generated state filename in write mode.
+    - Writes the provided output string to the file.
+- **Output**: No output is returned as the function writes directly to a file.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_state_filename`](<#build_state_filename>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.load\_state<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_state}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2003>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2047>)
 
-The `load_state` method loads and processes a saved state from a JSON file, transforming certain elements for further use.
+Loads and processes the state from a JSON file, transforming certain elements based on configuration settings.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Builds the state filename using [`build_state_filename`](<#build_state_filename>) with `scope_roots` and `fmt` from the instance's `scope` and `document` attributes.
     - Opens the file with the constructed filename and loads its JSON content into the `state` variable.
-    - If `use_tagging` is enabled in the document configuration, it processes the `annotations` in `state['init_state']` by converting each annotation into a [`Category`](<#Category>) object.
-    - Transforms `state['init_state']['appended_reverse_topo']` by validating each entry using `TechDocsContent.model_validate_json`.
-    - Converts `state['init_state']['init_node_set']` from a list to a set for efficient membership testing.
-    - Returns the modified `state` dictionary.
+    - If `use_tagging` is enabled in the `document`, transforms the `annotations` in `state['init_state']` by converting each annotation to a [`Category`](<#category>) object; otherwise, sets it to `None`.
+    - Transforms `appended_reverse_topo` in `state['init_state']` by validating each `TechDocsContent` JSON using `model_validate_json`.
+    - Converts `init_node_set` in `state['init_state']` to a set.
+    - Returns the modified `state`.
 - **Output**: A list of dictionaries, each representing a part of the loaded and processed state.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_state_filename`](<#build_state_filename>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category`](<#Category>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category`](<#category>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.load\_annotations<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_annotations}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2026>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2070>)
 
-The `load_annotations` method loads and returns the configuration and annotations from a JSON file based on the current document's format and scope.
+Loads annotations from a JSON file and returns them along with a configuration object.
 - **Inputs**: None
-- **Control Flow**:
-    - Builds the filename for the annotations JSON file using the current document's format and scope.
-    - Opens the JSON file and loads its content into a dictionary called `state`.
-    - Checks if tagging is used in the document; if so, processes the annotations by converting them into [`Category`](<#Category>) objects.
-    - Extracts the configuration (`cfg`) from the state and initializes an `AutoDocInitState` object with it.
-    - Returns a tuple containing the `AutoDocInitState` object and the processed annotations.
-- **Output**: A tuple containing an `AutoDocInitState` object and a dictionary of annotations, or `None` if tagging is not used.
+- **Logic and Control Flow**:
+    - Builds the filename for the annotations using [`build_annotations_filename`](<#build_annotations_filename>) with `scope_roots` and `fmt` from `self.scope.code` and `self.document.fmt`.
+    - Opens the file with the constructed filename and loads its content as JSON into `state`.
+    - Checks if `self.document.use_tagging` is true; if so, converts the `state['annotations']` into a dictionary of lists of [`Category`](<#category>) objects, otherwise sets `annotations` to `None`.
+    - Extracts the configuration from `state['cfg']` and initializes an `AutoDocInitState` object with it.
+    - Returns a tuple containing the `cfg_cls` (configuration object) and `annotations`.
+- **Output**: A tuple containing an `AutoDocInitState` object and a dictionary of annotations or `None`.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_annotations_filename`](<#build_annotations_filename>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category`](<#Category>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category`](<#category>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_annotate\_file<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_file}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2043>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2087>)
 
-The `_annotate_file` method asynchronously annotates a file for its relevance to document sections using a language model.
-- **Decorators**: `@app.function`
+Asynchronously annotates a file with categories based on its content and a given language model.
+- **Decorators**: `@staticmethod`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used to generate annotations.
-    - `node`: A tuple containing a string identifier and a `TechDocsContent` object representing the file to be annotated.
-- **Control Flow**:
-    - The method starts by extracting the `TechDocsContent` from the `node` tuple and asserts that the `source` attribute is not `None`.
-    - It splits the source code into chunks using the [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) function, with a specified chunk size and overlap.
-    - A user prompt is constructed using the short paragraph description and the first chunk of the source code.
-    - An asynchronous task group is created to handle multiple annotation tasks concurrently.
-    - For each section in `self.sections`, a task is created to generate an annotation using the [`llm_generate`](<#llm_generate>) function with the appropriate system and user prompts.
-    - The results of the annotation tasks are collected and converted into `Category` objects, which are then added to the `node_list`.
-    - If an exception occurs, an error message is printed, and the method returns the node identifier with a list of `Category.Irrelevant` for each section.
-    - Finally, the method returns the node identifier and the list of annotations.
-- **Output**: A tuple containing the node identifier and a list of `Category` objects representing the annotations for each section.
+    - `node`: A tuple containing a string identifier and a `TechDocsContent` object representing the file to annotate.
+- **Logic and Control Flow**:
+    - Extracts `TechDocsContent` from the `node` tuple and asserts that `tech_docs.source` is not `None`.
+    - Splits the source code of the file into chunks using [`split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) with a specified chunk size and overlap.
+    - Creates a user prompt using the short paragraph description and the first chunk of the source code.
+    - Uses an asynchronous task group to create tasks for generating annotations for each section using the [`llm_generate`](<#llm_generate>) function.
+    - Collects the results of the annotation tasks and converts them into `Category` objects.
+    - Handles exceptions by printing an error message and returning a tuple with the node identifier and a list of `Category.Irrelevant` for each section.
+- **Output**: Returns a tuple containing the node identifier and a list of `Category` objects representing the annotations.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.annotation_system_prompt`](<#SectionCommittedannotation_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str`](<#Categoryfrom_str>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptextend>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.annotation_system_prompt`](<#sectioncommittedannotation_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str`](<#categoryfrom_str>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_annotate\_pdf\_page<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_pdf_page}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2084>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2128>)
 
-The `_annotate_pdf_page` method asynchronously annotates a PDF page by generating category annotations for its content using a language model.
+Annotates a PDF page by generating category annotations for each section using an LLM.
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI`, which is a language model used to generate annotations.
-    - `pdf_text`: A string containing the text content of the PDF page to be annotated.
-    - `page_idx`: An integer representing the index of the page within the PDF document.
-- **Control Flow**:
-    - Constructs a user prompt with the PDF page content for categorization.
-    - Initializes an empty list `annotation_task_list` to store asynchronous tasks.
-    - Creates an asynchronous task group using `asyncio.TaskGroup`.
-    - Iterates over each section in `self.sections` to create a task for generating annotations using [`llm_generate`](<#llm_generate>).
-    - Appends each created task to `annotation_task_list`.
-    - Waits for all tasks in `annotation_task_list` to complete and collects their results.
-    - Converts the results into a list of `Category` objects using `Category.from_str`.
-    - Returns a tuple containing the page index and the list of category annotations.
-- **Output**: A tuple containing the page index and a list of `Category` objects representing the annotations for the PDF page.
+    - `llm`: An instance of `ChatOpenAI` used to generate annotations.
+    - `pdf_text`: The text content of the PDF page to annotate.
+    - `page_idx`: The index of the page in the PDF document.
+- **Logic and Control Flow**:
+    - Creates a user prompt with the PDF page content for categorization.
+    - Initializes an empty list `annotation_task_list` to store tasks.
+    - Uses an asynchronous task group to create tasks for each section in `self.sections`.
+    - For each section, creates a task to generate an annotation using [`llm_generate`](<#llm_generate>) with the section's system prompt and the user prompt.
+    - Appends each task to `annotation_task_list`.
+    - Waits for all tasks to complete and collects their results.
+    - Converts the results into `Category` objects and stores them in `annotations_list`.
+    - Returns a tuple containing `page_idx` and `annotations_list`.
+- **Output**: A tuple containing the page index and a list of `Category` objects representing the annotations for the page.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.pdf_annotation_system_prompt`](<#SectionCommittedpdf_annotation_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str`](<#Categoryfrom_str>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.pdf_annotation_system_prompt`](<#sectioncommittedpdf_annotation_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.Category.from_str`](<#categoryfrom_str>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_annotate\_nodes<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_nodes}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2108>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2152>)
 
-The `_annotate_nodes` method asynchronously annotates nodes and PDFs for their relevance to document sections using a language model.
+Annotates nodes and PDFs for relevance to document sections using a language model.
 - **Decorators**: `@app.function`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for language model operations.
     - `topo`: A list of tuples, each containing a string and a `TechDocsContent` object, representing the topological order of nodes.
-    - `graph`: A dictionary mapping node identifiers to sets of child node identifiers, representing the graph structure.
-    - `execution_mode`: An `ExecutionMode` enum indicating the mode of execution (e.g., local or modal).
+    - `graph`: A dictionary mapping strings to sets of strings, representing the graph structure of nodes.
+    - `execution_mode`: An `ExecutionMode` enum indicating the mode of execution (e.g., LOCAL or MODAL).
     - `pdf_pages_dict`: A dictionary mapping PDF file paths to lists of strings, where each string represents the content of a PDF page.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Prints a message indicating the start of file annotation using the language model.
-    - Initializes variables for tracking progress and storing results of node annotations.
-    - Creates a list of coroutines for annotating files with non-null sources and gathers their results asynchronously.
-    - Processes the results to populate the `tagged_nodes` dictionary with annotations for each node.
-    - Iterates over the topological order to annotate folders based on the relevance of their child nodes.
-    - If PDFs are present, prints a message indicating the start of PDF annotation and initializes variables for tracking progress.
-    - Iterates over each PDF path, creating coroutines for annotating each page and gathering their results asynchronously.
-    - Populates the `tagged_pdfs` dictionary with annotations for each PDF page.
-    - Returns a tuple containing the `tagged_nodes` and `tagged_pdfs` dictionaries.
-- **Output**: A tuple containing two dictionaries: `tagged_nodes` mapping node identifiers to lists of `Category` annotations, and `tagged_pdfs` mapping PDF paths to dictionaries of page indices and their `Category` annotations.
+    - Initializes variables for tracking progress and results, including `tagged_nodes` and `tagged_pdfs`.
+    - Creates coroutines for annotating files by checking if the node's source is not `None` and appending tasks to a list.
+    - Uses `tqdm_asyncio.gather` to execute the file annotation coroutines and stores the results in `tagged_nodes`.
+    - Iterates over the topological order to annotate folders based on the relevance of their child nodes, updating `tagged_nodes`.
+    - Checks if there are any PDFs to annotate and prints a message if so, then iterates over `pdf_pages_dict` to create coroutines for each PDF page.
+    - Uses `tqdm_asyncio.gather` to execute the PDF annotation coroutines and stores the results in `tagged_pdfs`.
+    - Returns a tuple containing `tagged_nodes` and `tagged_pdfs`.
+- **Output**: A tuple containing two dictionaries: `tagged_nodes` and `tagged_pdfs`, which map node identifiers and PDF paths to lists of `Category` annotations, respectively.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_file`](<#AutoDocInitState_annotate_file>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_pdf_page`](<#AutoDocInitState_annotate_pdf_page>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_file`](<#autodocinitstate_annotate_file>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_pdf_page`](<#autodocinitstate_annotate_pdf_page>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_initialize\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._initialize_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2174>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2218>)
 
-The `_initialize_sections` method initializes document sections based on various section creation methods and returns a set of initialized nodes and a list of section content.
-- **Decorators**: `@staticmethod`
+Initializes sections of a document based on various section creation methods and returns a set of initialized nodes and a list of section information.
+- **Decorators**: `@asyncio.coroutine`
 - **Inputs**:
     - `llm`: An instance of `ChatOpenAI` used for generating content.
     - `reverse_topos_from_start`: A list of lists containing reversed topological orderings of nodes.
-    - `driver_docs`: A list of `DriverDocsContent` objects representing the documentation content for each driver.
-    - `annotations`: A dictionary mapping node identifiers to lists of `Category` objects for tagging nodes.
+    - `driver_docs`: A list of `DriverDocsContent` objects representing document content.
+    - `annotations`: A dictionary mapping strings to lists of `Category` objects for annotations.
     - `pdf_annotations`: A dictionary for PDF annotations.
-    - `execution_mode`: An `ExecutionMode` enum indicating the mode of execution (e.g., LOCAL or MODAL).
-    - `pdf_pages_dict`: A dictionary mapping PDF paths to lists of page content strings.
-- **Control Flow**:
-    - Check if any sections require PDF-only content and upload PDFs if necessary.
-    - Initialize empty dictionaries and sets for sections and nodes.
-    - For sections with `SEQUENTIAL_EDIT` method, build a user prompt from root and child nodes, split it into chunks, and generate initial section drafts using LLM tasks.
-    - For sections with `SCATTER_GATHER` method, create scatter-gather tasks for each section and gather results asynchronously.
-    - For sections with `CODE_EXAMPLE` method, generate code examples using few-shot generation and gather results asynchronously.
-    - For sections with `ONLY_PDFS` method, generate content using PDF handles and a specific model.
-    - Compile the results into a list of section information dictionaries.
-    - Ensure the number of initialized sections matches the number of sections in the class.
-- **Output**: Returns a tuple containing a set of initialized node identifiers and a list of dictionaries with section order, title, and content.
+    - `execution_mode`: An `ExecutionMode` enum indicating the mode of execution.
+    - `pdf_pages_dict`: A dictionary mapping PDF paths to lists of page content.
+- **Logic and Control Flow**:
+    - Checks if PDFs are in scope and if any section uses the `ONLY_PDFS` method, then uploads PDFs to a client and stores handles.
+    - Initializes empty dictionaries and sets for sections and nodes.
+    - If any section uses the `SEQUENTIAL_EDIT` method, constructs a user prompt from root and child nodes, splits it into chunks, and generates initial section drafts using asynchronous tasks.
+    - If any section uses the `SCATTER_GATHER` method, creates tasks for each section using this method and gathers results asynchronously.
+    - If any section uses the `CODE_EXAMPLE` method, creates tasks for generating code examples and gathers results asynchronously.
+    - For sections using the `ONLY_PDFS` method, generates content using a client model and PDF handles.
+    - Compiles the results into a list of section information and returns it along with the set of initialized nodes.
+- **Output**: Returns a tuple containing a set of initialized node paths and a list of dictionaries with section order, title, and content.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_pdf_paths`](<#_get_pdf_paths>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_code`](<#SectionCommittedinit_draft_system_prompt_code>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_code`](<#sectioncommittedinit_draft_system_prompt_code>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_section_scatter_gather`](<#SectionCommittedcreate_section_scatter_gather>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_few_shot_generator`](<#SectionCommittedcode_example_few_shot_generator>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_pdf`](<#SectionCommittedinit_draft_system_prompt_pdf>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptextend>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.create_section_scatter_gather`](<#sectioncommittedcreate_section_scatter_gather>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.code_example_few_shot_generator`](<#sectioncommittedcode_example_few_shot_generator>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.init_draft_system_prompt_pdf`](<#sectioncommittedinit_draft_system_prompt_pdf>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<../../../packages/shared/shared/prompts/structured_prompting.py.md#promptextend>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_update\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2351>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2395>)
 
-The `_update_sections` method updates document sections based on new content from a specified node, using an LLM to generate updated content for each section.
-- **Decorators**: `@asyncio.coroutine`
+Updates document sections based on detailed content from a specified node.
+- **Decorators**: `@asyncio`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to generate responses for updating sections.
-    - `node_name`: A string representing the name of the node whose content is used to update the sections.
-    - `previous_state`: A list of dictionaries, each containing the current state of a section with keys 'order_idx', 'title', and 'content'.
-    - `tech_docs`: An instance of `TechDocsContent` containing the long description and source code of the node.
-    - `annotations`: An optional list of `Category` enums indicating the relevance of each section to the node content.
-- **Control Flow**:
-    - The method starts by asserting that the length of `previous_state` matches the number of sections.
-    - It constructs common prompts for updating and describing the node content.
-    - If the node's source is empty, it returns the `previous_state` without changes.
-    - For each section, it constructs a user prompt with the current section content, update prompt, and description prompt.
-    - If the node has a source, it generates a system prompt and splits the source code into chunks, adding the first chunk to the user prompt.
-    - It creates tasks for sections that are relevant and use the `SEQUENTIAL_EDIT` method, using the LLM to generate updated content.
-    - The method collects results from the tasks and updates the section content accordingly.
-    - Finally, it returns the updated state of the sections.
-- **Output**: A list of dictionaries representing the updated state of each section, with keys 'order_idx', 'title', and 'content'.
+    - `llm`: An instance of `ChatOpenAI` used for generating responses.
+    - `node_name`: The name of the node from which detailed content is derived.
+    - `previous_state`: A list of dictionaries representing the previous state of document sections.
+    - `tech_docs`: An instance of `TechDocsContent` containing detailed content and source code for the node.
+    - `annotations`: A list of `Category` instances indicating the relevance of each section, or `None` if not provided.
+- **Logic and Control Flow**:
+    - Asserts that the length of `previous_state` matches the number of sections.
+    - Checks if `tech_docs.source` is not empty; if empty, returns `previous_state`.
+    - Iterates over each section to create prompts for updating sections based on the node's content.
+    - Uses `asyncio.TaskGroup` to manage asynchronous tasks for updating sections.
+    - Checks if a section is relevant and uses `SEQUENTIAL_EDIT` method before creating a task to update it.
+    - Appends the result of each task to `new_state`, maintaining the order and title from `previous_state`.
+- **Output**: Returns a list of dictionaries representing the updated state of document sections.
 - **Functions Called**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_file_system_prompt`](<#SectionCommittedupdate_from_file_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_file_system_prompt`](<#sectioncommittedupdate_from_file_system_prompt>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_folder_system_prompt`](<#SectionCommittedupdate_from_folder_system_prompt>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_folder_system_prompt`](<#sectioncommittedupdate_from_folder_system_prompt>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_update\_sections\_with\_pdf<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections_with_pdf}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2441>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2485>)
 
-The `_update_sections_with_pdf` method updates document sections based on content from a PDF file, using an LLM to generate new content for each section.
-- **Decorators**: `@asyncio.coroutine`
+Updates document sections with content from a PDF file.
+- **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to generate responses based on prompts.
-    - `previous_state`: A list of dictionaries representing the current state of each document section, with keys 'order_idx', 'title', and 'content'.
-    - `pdf_path`: A string representing the file path of the PDF being processed.
-    - `pdf_pages`: A list of strings, each representing the content of a page from the PDF.
+    - `llm`: An instance of `ChatOpenAI` used for generating responses.
+    - `previous_state`: A list of dictionaries representing the previous state of document sections, each with keys 'order_idx', 'title', and 'content'.
+    - `pdf_path`: A string representing the file path of the PDF document.
+    - `pdf_pages`: A list of strings, each representing the content of a page in the PDF.
     - `pdf_annotations`: An optional list of `Category` objects indicating the relevance of each PDF page to the document sections.
-- **Control Flow**:
-    - Assert that the length of `previous_state` matches the number of sections in `self.sections`.
-    - Initialize `temp_results` with the current content of each section from `previous_state`.
-    - Iterate over each page in `pdf_pages`, creating prompt pairs for each section based on the current section content and the PDF page content.
-    - For each section, determine if the PDF page is relevant based on `pdf_annotations` and the section's creation method.
-    - If relevant, create a task to generate new content for the section using the LLM with the constructed prompts.
-    - Update `temp_results` with the results of the LLM tasks, or retain the current content if no task was created.
-    - Construct `new_state` by combining the updated content with the original order and title from `previous_state`.
-- **Output**: A list of dictionaries representing the updated state of each document section, with keys 'order_idx', 'title', and 'content'.
+- **Logic and Control Flow**:
+    - Asserts that the length of `previous_state` matches the number of sections in `self.sections`.
+    - Initializes `temp_results` with the content of each section from `previous_state`.
+    - Iterates over each page in `pdf_pages`, creating prompts for each section based on the current state and PDF page content.
+    - Uses an `asyncio.TaskGroup` to concurrently generate updates for each section if the page is highly relevant and the section's creation method is `SEQUENTIAL_EDIT`.
+    - Updates `temp_results` with the results of the tasks, or retains the previous content if no task was executed.
+    - Constructs a new state by combining the updated content with the original order and title from `previous_state`.
+- **Output**: Returns a new state as a list of dictionaries, each containing 'order_idx', 'title', and updated 'content' for each section.
 - **Functions Called**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_pdf_system_prompt`](<#SectionCommittedupdate_from_pdf_system_prompt>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.update_from_pdf_system_prompt`](<#sectioncommittedupdate_from_pdf_system_prompt>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.\_final\_section\_format<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._final_section_format}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2512>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2556>)
 
-The `_final_section_format` method formats the final output of document sections using a language model.
-- **Decorators**: `@asyncio.coroutine`
+Formats the final sections of a document using an LLM based on previous state data.
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to generate responses for formatting the document sections.
-    - `previous_state`: A list of dictionaries, each containing the 'order_idx', 'title', and 'content' of a document section, representing the current state of the document sections.
-- **Control Flow**:
-    - Assert that the length of `previous_state` matches the number of sections in `self.sections`.
-    - Initialize an empty list `prompt_pairs` to store tuples of system and user prompts for each section.
-    - Iterate over each section in `previous_state`, asserting that the section titles match those in `self.sections`.
-    - For each section, create a `user_prompt` with detailed content and a `system_prompt` using the section's [`final_output_format`](<#SectionCommittedfinal_output_format>) method.
-    - Append the tuple of `system_prompt` and `user_prompt` to `prompt_pairs`.
-    - Create an asynchronous task group to handle the generation of formatted content for each section.
-    - For each pair in `prompt_pairs`, create a task to generate the formatted content using [`llm_generate`](<#llm_generate>) and add it to `section_tasks`.
-    - Initialize an empty list `new_state` to store the updated section states.
-    - Iterate over `section_tasks`, appending a dictionary with the updated content to `new_state` for each completed task.
-    - Return `new_state`, which contains the formatted content for each section.
-- **Output**: A list of dictionaries, each containing the 'order_idx', 'title', and 'content' of a document section, with the content formatted according to the final output structure.
+    - `llm`: An instance of `ChatOpenAI` used to generate responses.
+    - `previous_state`: A list of dictionaries, each containing 'order_idx', 'title', and 'content' for each section.
+- **Logic and Control Flow**:
+    - Asserts that the length of `previous_state` matches the number of sections in `self.sections`.
+    - Initializes an empty list `prompt_pairs` to store tuples of system and user prompts.
+    - Iterates over each index in `previous_state`, asserting that the section titles match.
+    - For each section, constructs a `user_prompt` and a `system_prompt` using the section's content and formatting instructions.
+    - Appends the tuple of `system_prompt` and `user_prompt` to `prompt_pairs`.
+    - Creates an asynchronous task group to handle LLM generation tasks for each prompt pair.
+    - For each prompt pair, creates a task to generate a response using [`llm_generate`](<#llm_generate>) and appends it to `section_tasks`.
+    - Initializes an empty list `new_state` to store the updated section states.
+    - Iterates over `section_tasks`, appending the result of each task to `new_state` with the corresponding order index and title.
+    - Returns `new_state`, which contains the formatted content for each section.
+- **Output**: A list of dictionaries, each containing 'order_idx', 'title', and 'content' for each section, with the content formatted by the LLM.
 - **Functions Called**:
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.final_output_format`](<#SectionCommittedfinal_output_format>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.SectionCommitted.final_output_format`](<#sectioncommittedfinal_output_format>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate`](<#llm_generate>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 ---
 #### AutoDocInitState\.generate<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.generate}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2552>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2596>)
 
-The `generate` method orchestrates the process of generating a document by processing code and PDF inputs, updating sections iteratively, and assembling the final document using various language models.
+Generates a document by processing PDFs and code, optionally resuming from a saved state, and returns the final document as a string.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `execution_mode`: Specifies the mode of execution, either LOCAL or MODAL, which affects how resources are accessed and processed.
+    - `execution_mode`: Specifies the mode of execution, either 'local' or 'modal', using the `ExecutionMode` enum.
     - `resume`: A boolean flag indicating whether to resume from a previously saved state.
-    - `page_id`: An optional string representing the page ID, used for updating status messages during the document generation process.
-- **Control Flow**:
-    - Initialize various language models for different stages of document processing.
-    - If execution_mode is MODAL, download PDFs from S3 and convert them to markdown.
-    - If resume is True, load the previous state and continue from there; otherwise, initialize the document generation process.
-    - Create path traversal state and build subgraphs for code processing based on the execution mode.
-    - Annotate nodes and PDFs for relevance if tagging is enabled, and save annotations if necessary.
-    - Generate initial section drafts using the initialized language models and save the state.
-    - Iteratively update sections with content from code and PDFs, saving the state after each update.
-    - Optimize the section structure and format the final output using the section format language model.
-    - Assemble the final document by combining all sections and perform a final copy editing pass.
-    - Save the final document state and write the output to a markdown file.
-    - Return the final document as a string.
+    - `page_id`: An optional string representing the page ID for tracking document generation status.
+- **Logic and Control Flow**:
+    - Imports necessary modules and initializes language models for different tasks.
+    - Checks if execution mode is 'MODAL' and downloads PDFs if needed.
+    - Converts PDFs to markdown format and stores them in a dictionary.
+    - Handles resume logic by loading the saved state if 'resume' is True, otherwise initializes a new state.
+    - Creates path traversal state and builds subgraphs for code processing.
+    - Annotates nodes with tags if tagging is enabled, otherwise sets annotations to None.
+    - Generates initial section drafts using the initialized language model and saves the state.
+    - Iteratively updates sections with content from code and PDFs, saving the state after each update.
+    - Optimizes section structure and formats the final section output.
+    - Assembles the final document by combining all sections and performs a copy editing pass.
+    - Saves the final document state and writes the final output to a markdown file.
+    - Returns the final document as a string.
 - **Output**: Returns the final document as a string after processing and assembling all sections.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._download_pdf_from_s3`](<#_download_pdf_from_s3>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_pdf_paths`](<#_get_pdf_paths>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_markdown`](<../../../packages/shared/shared/v3/interfaces/llm_response_type.py.md#LlmResponseTypeto_markdown>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_state`](<#AutoDocInitStateload_state>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_response_type.LlmResponseType.to_markdown`](<../../../packages/shared/shared/v3/interfaces/llm_response_type.py.md#llmresponsetypeto_markdown>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.load_state`](<#autodocinitstateload_state>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_codebase_name`](<#_get_codebase_name>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#DriverDocsContentfrom_disk>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#driverdocscontentfrom_disk>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_path_on_disk`](<#_get_path_on_disk>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db`](<#DriverDocsContentfrom_db>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_db`](<#driverdocscontentfrom_db>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_subgraph`](<#build_subgraph>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#autotomlappend>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.update_autodocs_status`](<#update_autodocs_status>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_nodes`](<#AutoDocInitState_annotate_nodes>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._initialize_sections`](<#AutoDocInitState_initialize_sections>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_state`](<#AutoDocInitStatesave_state>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections`](<#AutoDocInitState_update_sections>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections_with_pdf`](<#AutoDocInitState_update_sections_with_pdf>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._final_section_format`](<#AutoDocInitState_final_section_format>)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.assembly_system_prompt`](<#AutoDocInitStateassembly_system_prompt>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.final_copy_editor_system_prompt`](<#AutoDocInitStatefinal_copy_editor_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._annotate_nodes`](<#autodocinitstate_annotate_nodes>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._generate_sources_list`](<#autodocinitstate_generate_sources_list>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._initialize_sections`](<#autodocinitstate_initialize_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.save_state`](<#autodocinitstatesave_state>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections`](<#autodocinitstate_update_sections>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._update_sections_with_pdf`](<#autodocinitstate_update_sections_with_pdf>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState._final_section_format`](<#autodocinitstate_final_section_format>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../../inspector/src/utils/models.py.md#chatopenaigenerate_response>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.assembly_system_prompt`](<#autodocinitstateassembly_system_prompt>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.final_copy_editor_system_prompt`](<#autodocinitstatefinal_copy_editor_system_prompt>)
     - [`python-backend/packages/shared/shared/v3/utils/post_processing/mermaid.fix_mermaid_syntax_in_response`](<../../../packages/shared/shared/v3/utils/post_processing/mermaid.py.md#fix_mermaid_syntax_in_response>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.write_final_output_to_markdown`](<#AutoDocInitStatewrite_final_output_to_markdown>)
-- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#AutoDocInitState>)  (Base Class)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.write_final_output_to_markdown`](<#autodocinitstatewrite_final_output_to_markdown>)
+- **See also**: [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState`](<#autodocinitstate>)  (Base Class)
 
 
 
@@ -1741,65 +1772,66 @@ The `generate` method orchestrates the process of generating a document by proce
 ### llm\_generate\_modal<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate_modal}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L75>)
 
-The `llm_generate_modal` function asynchronously generates a response from a language model using provided system and user prompts.
+Generates a response from a language model using provided prompts and handles errors.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `model`: A string representing the model name to be used for generating the response.
-    - `system_prompt`: A string containing the system prompt to guide the language model's response.
-    - `user_prompt`: A string containing the user prompt to guide the language model's response.
-- **Control Flow**:
-    - The function attempts to create an instance of [`ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>) with the specified model, a temperature of 0, and a request timeout of 900 seconds.
-    - It then awaits the [`generate_response`](<utils/models.py.md#ChatOpenAIgenerate_response>) method of the [`ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>) instance, passing the `system_prompt` and `user_prompt` as arguments.
-    - If a `BadRequestError` is raised by the OpenAI API, it catches the exception, prints an error message with the first 1000 characters of the `user_prompt`, and returns an empty string.
-- **Output**: The function returns a string, which is the generated response from the language model, or an empty string if an error occurs.
+    - `model`: The name of the language model to use for generating a response.
+    - `system_prompt`: The system prompt to provide context to the language model.
+    - `user_prompt`: The user prompt to provide specific input to the language model.
+- **Logic and Control Flow**:
+    - Attempts to create an instance of [`ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>) with the specified model and a fixed temperature and timeout.
+    - Calls the [`generate_response`](<../../inspector/src/utils/models.py.md#chatopenaigenerate_response>) method on the [`ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>) instance with the provided prompts.
+    - Catches `openai.BadRequestError` exceptions, logs an error message, and returns an empty string.
+- **Output**: A string containing the generated response from the language model or an empty string if an error occurs.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#LlmConfigfrom_name>)
-    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/autodocs/src/utils/models.ChatOpenAI.generate_response`](<utils/models.py.md#ChatOpenAIgenerate_response>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#llmconfigfrom_name>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../../inspector/src/utils/models.py.md#chatopenai>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../../inspector/src/utils/models.py.md#chatopenaigenerate_response>)
 
 
 ---
 ### llm\_generate<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.llm_generate}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L97>)
 
-The `llm_generate` function asynchronously generates a response from a language model using provided system and user prompts.
+Generates a response from a language model using provided prompts and model configuration.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class representing the language model to be used for generating the response.
-    - `system_prompt`: A string containing the system prompt to guide the language model's response generation.
-    - `user_prompt`: A string containing the user prompt to guide the language model's response generation.
-- **Control Flow**:
-    - The function begins by entering an asynchronous context with `OPENAI_SEM` and `OPENAI_LIMITER`, which likely manage concurrency and rate limiting for OpenAI API requests.
-    - Within this context, the function calls `llm_generate_modal.remote.aio` with the model, system prompt, and user prompt as arguments to generate a response asynchronously.
-- **Output**: The function returns a string, which is the generated response from the language model.
+    - `llm`: An instance of `ChatOpenAI` representing the language model to use for generating the response.
+    - `system_prompt`: A string containing the system prompt to guide the language model's response.
+    - `user_prompt`: A string containing the user prompt to guide the language model's response.
+- **Logic and Control Flow**:
+    - Enters an asynchronous context with `OPENAI_SEM` and `OPENAI_LIMITER` to control concurrency and rate limiting.
+    - Calls the `llm_generate_modal.remote.aio` method with the model, system prompt, and user prompt to generate a response asynchronously.
+    - Returns the generated response as a string.
+- **Output**: A string containing the generated response from the language model.
 
 
 ---
 ### \_get\_path\_on\_disk<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._get_path_on_disk}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L184>)
 
-The function `_get_path_on_disk` constructs a file path for a JSON file associated with a given codebase name using a predefined local file mapping.
+Constructs a file path on disk for a given codebase name by appending ".json" to the root location path.
 - **Inputs**:
-    - `codebase_name`: A string representing the name of the codebase for which the file path is to be constructed.
-- **Control Flow**:
-    - The function retrieves the absolute path of the root location for the given codebase name from the `LOCAL_FILES` dictionary.
-    - It constructs a `Path` object by appending the codebase name with a ".json" extension to the retrieved root location path.
-- **Output**: A `Path` object representing the constructed file path for the specified codebase's JSON file.
+    - `codebase_name`: A string representing the name of the codebase for which to construct the file path.
+- **Logic and Control Flow**:
+    - Retrieve the absolute path of the root location for the given `codebase_name` from the `LOCAL_FILES` dictionary.
+    - Append the string ".json" to the `codebase_name`.
+    - Combine the root location path and the modified `codebase_name` to form a complete file path.
+- **Output**: Returns a `Path` object representing the constructed file path on disk.
 
 
 ---
 ### \_get\_pdf\_paths<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._get_pdf_paths}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L190>)
 
-The `_get_pdf_paths` function generates a list of file paths for PDF files based on the provided execution mode and PDF names.
+Generates a list of file paths for PDF files based on the execution mode.
 - **Inputs**:
-    - `pdf_names`: A list of strings representing the names of the PDF files.
+    - `pdf_names`: A list of PDF file names as strings.
     - `execution_mode`: An instance of the `ExecutionMode` enum indicating the mode of execution, either `LOCAL` or `MODAL`.
-- **Control Flow**:
-    - The function uses a match-case statement to determine the execution mode.
-    - If the execution mode is `ExecutionMode.LOCAL`, it constructs paths by combining the local root path from `LOCAL_FILES` with each PDF name.
-    - If the execution mode is `ExecutionMode.MODAL`, it constructs paths by combining the `PDF_DOWNLOAD_DIR` with each PDF name.
-    - The constructed list of paths is stored in the `pdf_paths` variable.
-    - The function returns the `pdf_paths` list.
+- **Logic and Control Flow**:
+    - Use a match-case statement to determine the execution mode.
+    - If the execution mode is `ExecutionMode.LOCAL`, construct file paths by combining the local root path from `LOCAL_FILES` with each PDF name.
+    - If the execution mode is `ExecutionMode.MODAL`, construct file paths by combining `PDF_DOWNLOAD_DIR` with each PDF name.
+    - Return the list of constructed file paths.
 - **Output**: A list of `Path` objects representing the file paths for the specified PDF files.
 
 
@@ -1807,13 +1839,12 @@ The `_get_pdf_paths` function generates a list of file paths for PDF files based
 ### \_get\_target\_name<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._get_target_name}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L202>)
 
-The function `_get_target_name` extracts and returns the name of the file or directory from a given file path.
+Extracts and returns the name of the file or directory from a given path.
 - **Inputs**:
-    - `path`: A string representing the file path from which the target name is to be extracted.
-- **Control Flow**:
-    - The function uses the `Path` class from the `pathlib` module to create a `Path` object from the input string `path`.
-    - It then accesses the `name` attribute of the `Path` object, which provides the final component of the path (i.e., the file or directory name).
-    - The function returns this name as a string.
+    - `path`: A string representing the file or directory path from which to extract the name.
+- **Logic and Control Flow**:
+    - Uses the `Path` class from the `pathlib` module to create a `Path` object from the input `path`.
+    - Calls the `name` attribute of the `Path` object to get the final component of the path, which is the name of the file or directory.
 - **Output**: A string representing the name of the file or directory extracted from the given path.
 
 
@@ -1821,72 +1852,72 @@ The function `_get_target_name` extracts and returns the name of the file or dir
 ### \_get\_codebase\_name<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._get_codebase_name}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L206>)
 
-The function `_get_codebase_name` extracts the first non-separator component of a given file path as the codebase name.
+Extracts the first non-separator component of a given file path as the codebase name.
 - **Inputs**:
     - `path`: A string representing the file path from which to extract the codebase name.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Iterates over each part of the path using `Path(path).parts`.
-    - Checks if the part is not equal to the OS path separator `os.sep`.
-    - Returns the first part that is not a path separator.
+    - Checks if the current part is not equal to the path separator `os.sep`.
+    - Returns the first part that is not a path separator as the codebase name.
     - Raises a `ValueError` if no valid codebase name can be constructed from the path.
-- **Output**: Returns a string representing the first non-separator component of the path, which is considered the codebase name.
+- **Output**: A string representing the first non-separator component of the path, which is considered the codebase name.
 
 
 ---
 ### update\_autodocs\_status<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.update_autodocs_status}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L214>)
 
-The `update_autodocs_status` function asynchronously updates the status of an AutoDoc page in the database with a new status message.
+Updates the status of an AutoDoc page in the database with the given status kind and content.
 - **Inputs**:
-    - `page_id`: A string representing the unique identifier of the page whose status is being updated.
-    - `status_kind`: An instance of `AutoDocStatusMessageKind` indicating the type of status message to be recorded.
-    - `content`: A string containing the content of the status message to be stored.
-- **Control Flow**:
-    - Import necessary modules and classes such as `modal`, `async_engine`, [`AutoDocStatusHistory`](<../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>), and `AsyncSession`.
-    - Retrieve the current function call ID using `modal.current_function_call_id()`.
-    - Create an asynchronous session with the database using `AsyncSession` and begin a transaction.
-    - Instantiate an [`AutoDocStatusHistory`](<../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>) object with the provided `page_id`, `status_kind`, `content`, and `call_id`.
-    - Add the `status_update` object to the session.
-    - Commit the transaction to save the changes to the database.
-- **Output**: The function does not return any value; it performs a database update operation asynchronously.
+    - `page_id`: A string representing the unique identifier of the page whose status is to be updated.
+    - `status_kind`: An instance of `AutoDocStatusMessageKind` indicating the type of status update to apply.
+    - `content`: A string containing the content or message associated with the status update.
+- **Logic and Control Flow**:
+    - Imports necessary modules and classes such as `modal`, `async_engine`, [`AutoDocStatusHistory`](<../../../driver_db/database/models_v2.py.md#autodocstatushistory>), and `AsyncSession`.
+    - Retrieves the current function call ID using `modal.current_function_call_id()`.
+    - Creates an asynchronous session with the database using `AsyncSession` and begins a transaction.
+    - Creates an instance of [`AutoDocStatusHistory`](<../../../driver_db/database/models_v2.py.md#autodocstatushistory>) with the provided `page_id`, `status_kind`, `content`, and `call_id`.
+    - Adds the `status_update` instance to the session.
+    - Commits the transaction to save the changes to the database.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.AutoDocStatusHistory`](<../../../driver_db/database/models_v2.py.md#AutoDocStatusHistory>)
+    - [`python-backend/driver_db/database/models_v2.AutoDocStatusHistory`](<../../../driver_db/database/models_v2.py.md#autodocstatushistory>)
 
 
 ---
 ### get\_autodoc\_elapsed\_time<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.get_autodoc_elapsed_time}} -->
 [View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L235>)
 
-The function `get_autodoc_elapsed_time` calculates the elapsed time in seconds between the first and last status updates for a specific page and call ID in the AutoDocStatusHistory database.
+Calculates the elapsed time in seconds between the first and last status updates for a given page ID and call ID.
+- **Decorators**: `@app.function`
 - **Inputs**:
-    - `page_id`: A string representing the unique identifier of the page for which the elapsed time is being calculated.
-- **Control Flow**:
-    - Import necessary modules and classes such as `modal`, `async_engine`, `AutoDocStatusHistory`, `select`, and `AsyncSession`.
-    - Retrieve the current function call ID using `modal.current_function_call_id()`.
-    - Create an asynchronous session with the database using `AsyncSession` and `async_engine`.
-    - Execute a SQL query to select all records from `AutoDocStatusHistory` where `page_node_id` matches `page_id` and `call_id` matches the current call ID, ordering the results by `created_at` in ascending order.
-    - Retrieve all matching records into a list called `states`.
-    - Identify the first and last records in `states` as `start_state` and `end_state`, respectively.
-    - Calculate the elapsed time by subtracting `start_state.created_at` from `end_state.created_at`.
-    - Return the total elapsed time in seconds using `elapsed_time.total_seconds()`.
-- **Output**: A float representing the total elapsed time in seconds between the first and last status updates for the specified page and call ID.
+    - `page_id`: A string representing the unique identifier of the page for which to calculate the elapsed time.
+- **Logic and Control Flow**:
+    - Imports necessary modules and classes for database interaction and asynchronous session management.
+    - Retrieves the current function call ID using `modal.current_function_call_id()`.
+    - Creates an asynchronous session with the database using `AsyncSession` and `async_engine`.
+    - Executes a SQL query to select all records from `AutoDocStatusHistory` where `page_node_id` matches `page_id` and `call_id` matches the current call ID, ordering them by `created_at` in ascending order.
+    - Retrieves all matching records into the `states` list.
+    - Identifies the first and last records in `states` as `start_state` and `end_state`, respectively.
+    - Calculates the time difference between `end_state.created_at` and `start_state.created_at`.
+- **Output**: Returns the elapsed time in seconds as a float.
 
 
 ---
 ### \_get\_derived\_contents<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._get_derived_contents}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L392>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L393>)
 
-The `_get_derived_contents` function retrieves derived content from a database based on a specified version ID, relative path, and content kind.
+Retrieves derived content from the database based on version ID, relative path, and content kind.
 - **Inputs**:
-    - `version_id`: A string representing the version ID to filter the nodes in the database.
-    - `relative_path`: A string representing the relative path to filter the nodes, using a SQL LIKE pattern.
-    - `dc_kind`: An instance of `ContentKind` that specifies the kind of derived content to retrieve.
-- **Control Flow**:
-    - Import necessary modules and functions from the database and SQLModel.
-    - Establish a session with the database using `get_session()`.
-    - Construct a SQL query to select `DerivedContent` records joined with `Node` records, filtered by `version_id`, `relative_path`, and `dc_kind`.
-    - Execute the query using the session and retrieve all matching records.
-    - Return a dictionary mapping each derived content's relative path to its content.
+    - `version_id`: A string representing the version ID to filter the nodes.
+    - `relative_path`: A string representing the relative path to filter the nodes.
+    - `dc_kind`: An instance of `ContentKind` representing the kind of derived content to retrieve.
+- **Logic and Control Flow**:
+    - Imports necessary modules and functions for database interaction and querying.
+    - Opens a session with the database using `get_session()`.
+    - Constructs a query to select `DerivedContent` records joined with `Node` records where the `Node` matches the given `version_id` and `relative_path`, and the `DerivedContent` matches the given `dc_kind`.
+    - Executes the query and retrieves all matching records.
+    - Returns a dictionary mapping each `DerivedContent`'s `relative_path` to its `content`.
 - **Output**: A dictionary mapping relative paths to their corresponding derived content as strings.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
@@ -1894,138 +1925,139 @@ The `_get_derived_contents` function retrieves derived content from a database b
 
 ---
 ### \_get\_source\_from\_s3<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._get_source_from_s3}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L414>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L415>)
 
-The `_get_source_from_s3` function downloads a file from an S3 bucket and returns its content as a string.
+Downloads a file from an S3 bucket and returns its content as a string.
 - **Inputs**:
-    - `s3_client`: A Boto3 S3 client used to interact with the S3 service.
-    - `version_id`: A string representing the version ID of the asset to be downloaded.
+    - `s3_client`: A Boto3 S3 client instance used to interact with the S3 service.
+    - `version_id`: A string representing the version ID of the file to download.
     - `primary_asset_id`: A string representing the primary asset ID, used as part of the S3 key.
     - `relative_path`: A string representing the relative path of the file within the S3 bucket.
     - `bucket`: A string representing the name of the S3 bucket from which to download the file.
     - `download_dir`: A string representing the local directory path where the file will be downloaded.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Constructs the S3 key using `primary_asset_id`, `version_id`, and `relative_path`.
-    - Creates the local directory path for the download, ensuring parent directories exist.
+    - Creates the local directory path for the download, ensuring all parent directories exist.
     - Downloads the file from the specified S3 bucket using the constructed key and saves it to the local path.
-    - Opens the downloaded file and reads its content into a string.
-    - Returns the file content as a string.
-    - If an exception occurs during the process, returns `None`.
-- **Output**: Returns the content of the downloaded file as a string, or `None` if an exception occurs.
+    - Opens the downloaded file and reads its content as a string.
+    - Returns the file content if successful, or `None` if an exception occurs during the process.
+- **Output**: Returns the content of the downloaded file as a string, or `None` if an error occurs.
 
 
 ---
 ### \_download\_pdf\_from\_s3<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._download_pdf_from_s3}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L436>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L437>)
 
-The function `_download_pdf_from_s3` downloads a PDF file from an S3 bucket using a specified version ID.
+Downloads a PDF file from an S3 bucket using a given version ID.
 - **Inputs**:
-    - `version_id`: A string representing the version ID of the PDF to be downloaded from S3.
-- **Control Flow**:
+    - `version_id`: A string representing the version ID of the PDF to download.
+- **Logic and Control Flow**:
     - Import necessary modules and functions for database access and S3 interaction.
-    - Establish a session with the database to retrieve the `Version` object associated with the given `version_id`.
-    - Load the `primary_asset` of the `Version` using `selectinload` to avoid lazy loading issues.
-    - Retrieve the `primary_asset_id`, `pdf_name`, and `organization_id` from the `Version` object.
-    - Retrieve the `Node` object associated with the `version_id` to get the `relative_path`.
+    - Open a session with the database using `get_session()`.
+    - Query the `Version` table to get the version object associated with the given `version_id`.
+    - Retrieve the `primary_asset_id`, `pdf_name`, and `organization_id` from the version object.
+    - Query the `Node` table to get the node object associated with the given `version_id`.
     - Compute the S3 bucket name by hashing the `organization_id` and taking the first 63 characters of the hash.
-    - Ensure the local download directory exists, creating it if necessary.
-    - Construct the local file path for the PDF using the `pdf_name`.
-    - Initialize an S3 client using `boto3`.
+    - Create a directory for PDF downloads if it does not exist.
+    - Construct the local download path for the PDF using the `pdf_name`.
+    - Initialize an S3 client using `boto3.client('s3')`.
     - Construct the S3 download key using `primary_asset_id`, `version_id`, and `node.relative_path`.
-    - Download the file from the S3 bucket to the local path using the S3 client's `download_file` method.
-- **Output**: The function does not return any value; it performs a side effect by downloading a PDF file to a local directory.
+    - Download the file from the S3 bucket to the local path using `s3_client.download_file()`.
+- **Output**: Returns nothing explicitly, but downloads the PDF file to a local directory.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](<../../../packages/shared/shared/v3/interfaces/llm_stream_response.py.md#LlmStreamResponseencode>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.LlmStreamResponse.encode`](<../../../packages/shared/shared/v3/interfaces/llm_stream_response.py.md#llmstreamresponseencode>)
 
 
 ---
 ### build\_file\_tree\_dag<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.build_file_tree_dag}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L462>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L463>)
 
-The `build_file_tree_dag` function constructs a directed acyclic graph (DAG) representing the file structure of a codebase, filtered by a given set of content nodes.
+Builds a directed acyclic graph (DAG) representing the file tree structure of a codebase.
 - **Inputs**:
-    - `codebase_name`: A string representing the name of the codebase.
-    - `content`: A dictionary mapping file paths (as strings) to `TechDocsContent` objects, representing the content to be included in the DAG.
-    - `codebase_root`: An optional string representing the root directory of the codebase; if `None`, it is determined based on the execution mode.
-    - `exeuction_mode`: An `ExecutionMode` enum value indicating whether the function is running in local or modal mode.
-- **Control Flow**:
-    - Check if the execution mode is LOCAL and `codebase_root` is None, then set `codebase_root` using a predefined path from `LOCAL_FILES`.
-    - Convert `codebase_root` to a `Path` object if it is not None.
-    - Create a set `included_nodes` containing the keys from the `content` dictionary, representing the nodes to be included in the DAG.
+    - `codebase_name`: The name of the codebase to process.
+    - `content`: A dictionary mapping file paths to `TechDocsContent` objects, representing the content of each file.
+    - `codebase_root`: The root directory of the codebase, or `None` if not specified.
+    - `exeuction_mode`: The mode of execution, either `ExecutionMode.LOCAL` or `ExecutionMode.MODAL`.
+- **Logic and Control Flow**:
+    - If `exeuction_mode` is `ExecutionMode.LOCAL` and `codebase_root` is `None`, set `codebase_root` to the local path of the codebase root from `LOCAL_FILES`.
+    - If `codebase_root` is not `None`, convert it to a `Path` object.
+    - Create a set `included_nodes` containing the string representation of keys from `content`.
     - Initialize an empty dictionary `dag` to store the DAG structure.
-    - Iterate over the directory structure of the codebase using `os.walk`, starting from `codebase_root / codebase_name`.
+    - Use `os.walk` to traverse the directory tree starting from `codebase_root / codebase_name`.
     - For each directory, add its relative path to `children` if it is in `included_nodes`.
     - For each file, add its relative path to `dag` with an empty set and to `children` if it is in `included_nodes`.
     - Add the current directory's relative path to `dag` with its `children` if it is in `included_nodes`.
-- **Output**: A dictionary where keys are file or directory paths (as strings) and values are sets of strings representing the children of each node in the DAG.
+- **Output**: A dictionary representing the DAG, where keys are file or directory paths and values are sets of child paths.
 
 
 ---
 ### build\_subgraph<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.build_subgraph}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L497>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L498>)
 
-The `build_subgraph` function constructs a subgraph from a directed acyclic graph (DAG) starting from a specified node.
+Builds a subgraph from a directed acyclic graph (DAG) starting from a specified node.
 - **Inputs**:
     - `dag`: A dictionary representing a directed acyclic graph (DAG) where keys are node identifiers and values are sets of child node identifiers.
-    - `start`: A string representing the starting node from which the subgraph will be built.
-- **Control Flow**:
-    - Check if the start node is present in the DAG; if not, raise a ValueError.
-    - Initialize an empty dictionary `subgraph` to store the resulting subgraph.
-    - Define a recursive helper function `dfs` to perform a depth-first search starting from the given node.
-    - In `dfs`, check if the node is already in `subgraph`; if so, return to avoid reprocessing.
-    - Add the node to `subgraph` with its children copied from `dag`.
-    - Iterate over each child of the current node and recursively call `dfs` on each child.
-    - Call `dfs` starting from the `start` node to populate the `subgraph`.
-- **Output**: A dictionary representing the subgraph of the DAG starting from the specified node, including all reachable nodes and their children.
+    - `start`: A string representing the starting node from which to build the subgraph.
+- **Logic and Control Flow**:
+    - Check if the `start` node is in the `dag`; if not, print a message and return `None`.
+    - Initialize an empty dictionary `subgraph` to store the subgraph.
+    - Define a nested function `dfs` for depth-first search to traverse the graph.
+    - In `dfs`, check if the current node is already in `subgraph`; if so, return to avoid revisiting.
+    - Add the current node and its children to `subgraph`.
+    - Recursively call `dfs` on each child of the current node.
+    - Call `dfs` starting from the `start` node.
+    - Return the constructed `subgraph`.
+- **Output**: A dictionary representing the subgraph starting from the `start` node, or `None` if the `start` node is not in the `dag`.
 
 
 ---
 ### \_autogen\_sections<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype._autogen_sections}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1715>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1717>)
 
-The `_autogen_sections` function is intended to automatically generate sections based on a given configuration, but it is currently not implemented.
+Raises a NotImplementedError indicating that the function is a placeholder for future implementation.
 - **Inputs**:
-    - `cfg`: An instance of `AutoDocCfg`, which contains configuration details for generating sections.
-- **Control Flow**:
-    - The function immediately raises a `NotImplementedError`, indicating that the functionality is yet to be implemented.
-- **Output**: The function is supposed to return a list of `SectionCfg` objects, but currently, it does not return anything due to the raised exception.
+    - `cfg`: An instance of the `AutoDocCfg` class, which contains configuration settings for automatic documentation generation.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'TODO', indicating that the function is not yet implemented.
+- **Output**: The function is intended to return a list of `SectionCfg` objects, but currently, it does not return anything due to the raised exception.
 
 
 ---
 ### build\_state\_filename<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.build_state_filename}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1719>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1721>)
 
-The `build_state_filename` function constructs a filename for a state file based on a list of scope roots, a format string, and an optional file extension.
+Generates a filename for a state file based on the provided scope roots, format, and optional extension.
 - **Inputs**:
     - `scope_roots`: A list of strings representing the root paths of the scope.
-    - `fmt`: A string representing the format to be included in the filename.
-    - `ext`: An optional string representing the file extension, defaulting to ".json".
-- **Control Flow**:
-    - Extracts the target names from the `scope_roots` by calling [`_get_target_name`](<#_get_target_name>) on each `code_cfg.node_path` and removes duplicates while preserving order.
+    - `fmt`: A string representing the format to include in the filename.
+    - `ext`: An optional string representing the file extension, defaulting to '.json'.
+- **Logic and Control Flow**:
+    - Extracts target names from the `scope_roots` by calling [`_get_target_name`](<#_get_target_name>) on each `node_path` in `scope_roots`.
+    - Removes duplicate target names while preserving order using `dict.fromkeys`.
     - Limits the list of target names to the first three elements.
-    - Joins the target names with underscores to form the base of the filename.
-    - Constructs the final filename by appending the format string, the string '_iterations', and the file extension.
-- **Output**: Returns a string representing the constructed filename.
+    - Joins the target names with underscores to form a base name.
+    - Returns a formatted string combining the base name, format, and extension.
+- **Output**: A string representing the constructed filename.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_target_name`](<#_get_target_name>)
 
 
 ---
 ### build\_annotations\_filename<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.build_annotations_filename}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1729>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L1731>)
 
-The `build_annotations_filename` function constructs a filename for annotations based on a list of code paths and a specified format.
+Generates a filename for annotations based on the provided scope roots and format.
 - **Inputs**:
-    - `scope_roots`: A list of `FullyQualifiedDriverPathCode` objects representing the root paths of the code scope.
-    - `fmt`: A string representing the format to be included in the filename.
+    - `scope_roots`: A list of `FullyQualifiedDriverPathCode` objects representing the root paths of the scope.
+    - `fmt`: A string representing the format of the annotations.
     - `ext`: An optional string representing the file extension, defaulting to ".json".
-- **Control Flow**:
-    - Extracts the codebase names from the `node_path` attribute of each `FullyQualifiedDriverPathCode` object in `scope_roots` using the [`_get_codebase_name`](<#_get_codebase_name>) function.
-    - Removes duplicate codebase names while preserving order using `dict.fromkeys` and limits the list to the first three names.
-    - Joins the selected codebase names with underscores to form the base of the filename.
-    - Constructs the final filename by appending the format string, the suffix '_annotations', and the file extension to the base name.
-    - Returns the constructed filename as a string.
+- **Logic and Control Flow**:
+    - Extracts the codebase names from the `node_path` attribute of each `FullyQualifiedDriverPathCode` in `scope_roots`.
+    - Removes duplicate codebase names while preserving order using `dict.fromkeys`.
+    - Limits the list of unique codebase names to the first three elements.
+    - Joins the selected codebase names with underscores to form a base name.
+    - Constructs the final filename by appending the format and extension to the base name.
 - **Output**: A string representing the constructed filename for annotations.
 - **Functions Called**:
     - [`python-backend/content_services/autodocs/src/autodocs_prototype._get_codebase_name`](<#_get_codebase_name>)
@@ -2033,26 +2065,26 @@ The `build_annotations_filename` function constructs a filename for annotations 
 
 ---
 ### main<!-- {{#callable:python-backend/content_services/autodocs/src/autodocs_prototype.main}} -->
-[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2847>)
+[View Source →](<../../../../../content_services/autodocs/src/autodocs_prototype.py#L2904>)
 
-The `main` function processes command-line arguments to either validate, execute, resume, or remotely execute a document generation process based on a given configuration file.
+Executes different actions based on command-line arguments for validating, executing, resuming, or remotely running a document generation process.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `args`: An `argparse.Namespace` object containing command-line arguments for the function.
-- **Control Flow**:
-    - Check if `args.validate` is provided; if so, validate the configuration file and print the validation result if not in quiet mode.
-    - If `args.execute` is provided, initialize the document generation state from the configuration file and generate the document, printing it if not in quiet mode.
-    - If `args.resume` is provided, load the previous state from disk and resume document generation, printing the result if not in quiet mode.
-    - If `args.remote` is provided, execute the document generation process remotely using Modal, reading the configuration and writing the output to a specified file.
-    - If none of the above conditions are met, do nothing.
-- **Output**: The function does not return any value; it performs actions based on the command-line arguments.
+    - `args`: An `argparse.Namespace` object containing command-line arguments that specify the operation to perform, such as validate, execute, resume, or remote.
+- **Logic and Control Flow**:
+    - Checks if `args.validate` is provided; if so, it validates the configuration file specified by `args.validate` and prints the configuration if `args.quiet` is not set.
+    - If `args.execute` is provided, it initializes the document generation state from the configuration file and generates the document, printing it if `args.quiet` is not set.
+    - If `args.resume` is provided, it resumes the document generation process from a saved state and prints the document if `args.quiet` is not set.
+    - If `args.remote` is provided, it uses the `modal` library to execute the document generation process remotely, reading the configuration from `args.config` and writing the output to `args.output`.
+    - If none of the above conditions are met, the function does nothing.
+- **Output**: The function does not return any value; it performs actions based on the command-line arguments and may print output to the console or write to a file.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#LlmConfigfrom_file>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg`](<#AutoDocInitStatefrom_cfg>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<../../auto_toml/src/auto_toml.py.md#AutoTomlgenerate>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#llmconfigfrom_file>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.AutoDocInitState.from_cfg`](<#autodocinitstatefrom_cfg>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.generate`](<../../auto_toml/src/auto_toml.py.md#autotomlgenerate>)
     - [`python-backend/content_services/autodocs/src/autodocs_prototype.build_state_filename`](<#build_state_filename>)
-    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#DriverDocsContentfrom_disk>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#LlmConfigfrom_name>)
+    - [`python-backend/content_services/autodocs/src/autodocs_prototype.DriverDocsContent.from_disk`](<#driverdocscontentfrom_disk>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<../../../packages/shared/shared/v3/llms/config/llm_config.py.md#llmconfigfrom_name>)
 
 
 

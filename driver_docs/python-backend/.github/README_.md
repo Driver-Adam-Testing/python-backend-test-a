@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configurations for GitHub Actions, workflows for automation, and Dependabot for update management.
+GitHub Actions for deployment, workflows for updates and testing, and Dependabot configuration.
 
 ## Folders
-- **[actions](actions/README.md)**: The `actions` folder in the `python-backend` codebase contains configurations for GitHub Actions, specifically including a setup for deploying a modal package.
-- **[workflows](workflows/README.md)**: GitHub Actions workflow configuration files for automating dependency updates, deployments, and unit testing.
+- **[actions](actions/README.md)**: GitHub Action for deploying a modal package with specified inputs and environment variables.
+- **[workflows](workflows/README.md)**: GitHub Actions workflows for package updates, environment deployments, and unit testing.
 
 ## Files
-- **[dependabot.yml](dependabot.yml.md)**: The `dependabot.yml` file in the `python-backend` codebase configures Dependabot to automatically check for updates to GitHub Actions and Python packages on a weekly schedule every Wednesday at 09:00 AM in the America/Los_Angeles timezone.
+- **[dependabot.yml](dependabot.yml.md)**: Configures Dependabot to update GitHub Actions and pip packages weekly on Wednesdays at 09:00 PT.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

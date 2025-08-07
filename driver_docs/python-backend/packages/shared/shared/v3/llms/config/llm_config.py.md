@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_config.py` file defines the configuration structure for large language models, including model providers, API versions, and supported models, and provides methods to load these configurations from a TOML file.
+Configuration management for large language models using Pydantic and TOML files.
 
 # Purpose
-This Python code file is designed to manage configurations for various Large Language Models (LLMs) using a structured approach. It defines several enumerations and a data model to represent different LLM providers, API kinds, and supported models. The core component is the `LlmConfig` class, which extends Pydantic's `BaseModel` to ensure data validation and type checking. This class encapsulates the configuration details for an LLM, such as the model's name, provider, context window sizes, and API kind. The configuration data is expected to be stored in a TOML file, and the code provides methods to load these configurations either by model name or directly from the file. The use of Pydantic ensures that the configurations are validated against the expected schema, providing robustness against malformed data.
+The code defines a configuration management system for Large Language Models (LLMs) using the `pydantic` library for data validation. It includes several enumerations (`LlmProvider`, `ApiKind`, and `SupportedModels`) to specify different LLM providers, API kinds, and supported model names. The `LlmConfig` class, which inherits from `BaseModel`, represents the configuration for an LLM. It includes fields such as `name`, `llm_model_id`, `provider`, `max_context_window`, `optimal_context_window`, `max_output_tokens`, and `api_kind`, each with specific validation rules and descriptions.
 
-The file serves as a library module intended to be imported and used in other parts of a software system that requires LLM configurations. It provides a public API through class methods that allow users to retrieve default configurations or specific model configurations by name. The code also includes logging for error handling, particularly when loading and parsing the TOML configuration file. This setup allows for easy management and retrieval of LLM configurations, making it a crucial component for applications that need to interface with multiple LLM providers and models.
+The code provides methods to load configurations from a TOML file, which is expected to contain model specifications. The [`from_file`](<#llmconfigfrom_file>) method reads and validates the TOML file, while the [`from_name`](<#llmconfigfrom_name>) method retrieves a specific model configuration by name. The class also includes several class methods to quickly access predefined model configurations, such as [`gpt_4o`](<#llmconfiggpt_4o>) and [`claude_sonnet_3_5`](<#llmconfigclaude_sonnet_3_5>). The configuration file path is defined as `CONFIG_PATH`, and logging is set up to handle errors during file parsing. This code is intended to be part of a larger system where LLM configurations are needed, and it provides a structured way to manage and access these configurations.
 # Imports and Dependencies
 
 ---
@@ -24,23 +24,29 @@ The file serves as a library module intended to be imported and used in other pa
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the name of the current module (`__name__`) as its logger name, which helps in identifying the source of log messages.
-- **Use**: This variable is used to log messages, such as errors or informational messages, throughout the module, aiding in debugging and monitoring.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of Python's `Logger` class, obtained by calling `logging.getLogger(__name__)`. This creates a logger object that is specific to the module where it is defined, using the module's `__name__` attribute as its name.
+- **Use**: Used to log messages, errors, and other information within the module.
 
 
 ---
 ### CONFIG\_PATH
-- **Type**: `str`
-- **Description**: `CONFIG_PATH` is a string variable that holds the file path to the 'llm_config.toml' configuration file. It is constructed by joining the directory of the current file with the filename 'llm_config.toml', ensuring that the path is correctly resolved relative to the script's location.
-- **Use**: This variable is used to specify the location of the TOML configuration file for loading model configurations.
+- **Type**: ``str``
+- **Description**: The `CONFIG_PATH` variable is a string that represents the file path to the 'llm_config.toml' configuration file. It is constructed by joining the directory of the current file with the filename 'llm_config.toml'.
+- **Use**: Used to specify the location of the TOML configuration file for loading model configurations.
 
 
 # Classes
 
 ---
 ### LlmProvider<!-- {{#class:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmProvider}} -->
-- **Description**: The `LlmProvider` class is an enumeration that inherits from both `str` and `Enum`, representing different large language model providers. It defines three possible values: `OPENAI`, `ANTHROPIC`, and `GOOGLE`, each corresponding to a string identifier for a specific provider. This class is used to standardize and manage the selection of LLM providers within the application.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L15>)
+
+- **Members**:
+    - `OPENAI`: Represents the 'openai' provider.
+    - `ANTHROPIC`: Represents the 'anthropic' provider.
+    - `GOOGLE`: Represents the 'google' provider.
+- **Description**: Defines an enumeration for different large language model providers, including 'openai', 'anthropic', and 'google', allowing for easy reference and comparison within the code.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -48,7 +54,14 @@ The file serves as a library module intended to be imported and used in other pa
 
 ---
 ### ApiKind<!-- {{#class:python-backend/packages/shared/shared/v3/llms/config/llm_config.ApiKind}} -->
-- **Description**: The `ApiKind` class is an enumeration that defines different types of API versions or modes for interacting with language model providers, such as OpenAI and Claude. It inherits from both `str` and `Enum`, allowing each member to be used as a string while also providing enumeration capabilities. The class includes specific API kinds like `OPENAI_CHAT_WITH_TOOLS`, `OPENAI_STRICT`, `OPENAI_O1`, and `CLAUDE`, each represented by a string value.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L21>)
+
+- **Members**:
+    - `OPENAI_CHAT_WITH_TOOLS`: Represents the API kind for OpenAI chat with tools.
+    - `OPENAI_STRICT`: Represents the API kind for OpenAI strict mode.
+    - `OPENAI_O1`: Represents the API kind for OpenAI O1.
+    - `CLAUDE`: Represents the API kind for Claude.
+- **Description**: Defines different kinds of APIs as enumeration values, each represented as a string, to specify the type of API interaction available.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -56,22 +69,24 @@ The file serves as a library module intended to be imported and used in other pa
 
 ---
 ### SupportedModels<!-- {{#class:python-backend/packages/shared/shared/v3/llms/config/llm_config.SupportedModels}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L28>)
+
 - **Members**:
-    - `DEFAULT`: Represents the default model configuration.
-    - `GPT_4O`: Represents the GPT-4O model configuration.
-    - `GPT_4O_CHAT`: Represents the GPT-4O chat model configuration.
-    - `GPT_4O_MINI`: Represents the GPT-4O mini model configuration.
-    - `GPT_4O_MINI_CHAT`: Represents the GPT-4O mini chat model configuration.
-    - `O1`: Represents the O1 model configuration.
-    - `O1_MINI`: Represents the O1 mini model configuration.
-    - `O3_MINI`: Represents the O3 mini model configuration.
-    - `CLAUDE_SONNET_3_5`: Represents the Claude Sonnet 3.5 model configuration.
-    - `CLAUDE_SONNET_3_7`: Represents the Claude Sonnet 3.7 model configuration.
-    - `CLAUDE_HAIKU_3_5`: Represents the Claude Haiku 3.5 model configuration.
-    - `GPT_4_1`: Represents the GPT-4.1 model configuration.
-    - `GPT_4_1_MINI`: Represents the GPT-4.1 mini model configuration.
-    - `O4_MINI`: Represents the O4 mini model configuration.
-- **Description**: The SupportedModels class is an enumeration that defines a set of string constants representing different model configurations for a Large Language Model (LLM) configuration. Each member of this enumeration corresponds to a specific model name that should match the entries in a TOML configuration file, ensuring consistency between the code and the configuration file.
+    - `DEFAULT`: Represents the default model.
+    - `GPT_4O`: Represents the 'gpt_4o' model.
+    - `GPT_4O_CHAT`: Represents the 'gpt_4o_chat' model.
+    - `GPT_4O_MINI`: Represents the 'gpt_4o_mini' model.
+    - `GPT_4O_MINI_CHAT`: Represents the 'gpt_4o_mini_chat' model.
+    - `O1`: Represents the 'o1' model.
+    - `O1_MINI`: Represents the 'o1_mini' model.
+    - `O3_MINI`: Represents the 'o3_mini' model.
+    - `CLAUDE_SONNET_3_5`: Represents the 'claude_sonnet_3_5' model.
+    - `CLAUDE_SONNET_3_7`: Represents the 'claude_sonnet_3_7' model.
+    - `CLAUDE_HAIKU_3_5`: Represents the 'claude_haiku_3_5' model.
+    - `GPT_4_1`: Represents the 'gpt_4_1' model.
+    - `GPT_4_1_MINI`: Represents the 'gpt_4_1_mini' model.
+    - `O4_MINI`: Represents the 'o4_mini' model.
+- **Description**: Defines a set of supported model names for the LLM configuration, ensuring consistency with the names in the TOML configuration file.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -79,32 +94,35 @@ The file serves as a library module intended to be imported and used in other pa
 
 ---
 ### LlmConfig<!-- {{#class:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L50>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
-    - `name`: Internal name for the model (e.g. 'default', 'chat_gpt4').
-    - `llm_model_id`: Provider-specific model identifier (e.g. 'gpt-4').
-    - `provider`: Which LLM provider to use (openai, anthropic, google, etc.).
+    - `name`: Internal name for the model.
+    - `llm_model_id`: Provider-specific model identifier.
+    - `provider`: LLM provider to use.
     - `max_context_window`: Max context window size the model supports.
     - `optimal_context_window`: Optimal context window size for cost/performance.
     - `max_output_tokens`: Max tokens the model can generate in a single response.
     - `api_kind`: API version to use for the LLM provider.
-- **Description**: The `LlmConfig` class is a configuration model for Large Language Models (LLMs), providing essential parameters such as the model's internal name, provider-specific identifier, and the LLM provider to use. It also specifies the maximum and optimal context window sizes, the maximum number of tokens the model can generate in a single response, and the API version to be used. The class includes methods to load configurations from a TOML file, either by default or by specific model names, and handles various predefined model configurations.
+- **Description**: Represents configuration for a Large Language Model, including details such as the model's internal name, provider-specific identifier, provider type, context window sizes, maximum output tokens, and API version. This configuration can be loaded from a TOML file and supports various predefined model configurations.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.default`](<#LlmConfigdefault>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file`](<#LlmConfigfrom_file>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o`](<#LlmConfiggpt_4o>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_chat`](<#LlmConfiggpt_4o_chat>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini`](<#LlmConfiggpt_4o_mini>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini_chat`](<#LlmConfiggpt_4o_mini_chat>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1`](<#LlmConfigo1>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1_mini`](<#LlmConfigo1_mini>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o3_mini`](<#LlmConfigo3_mini>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_sonnet_3_5`](<#LlmConfigclaude_sonnet_3_5>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_sonnet_3_7`](<#LlmConfigclaude_sonnet_3_7>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_haiku_3_5`](<#LlmConfigclaude_haiku_3_5>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<#LlmConfiggpt_4_1>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1_mini`](<#LlmConfiggpt_4_1_mini>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o4_mini`](<#LlmConfigo4_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.default`](<#llmconfigdefault>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file`](<#llmconfigfrom_file>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o`](<#llmconfiggpt_4o>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_chat`](<#llmconfiggpt_4o_chat>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini`](<#llmconfiggpt_4o_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini_chat`](<#llmconfiggpt_4o_mini_chat>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1`](<#llmconfigo1>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1_mini`](<#llmconfigo1_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o3_mini`](<#llmconfigo3_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_sonnet_3_5`](<#llmconfigclaude_sonnet_3_5>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_sonnet_3_7`](<#llmconfigclaude_sonnet_3_7>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_haiku_3_5`](<#llmconfigclaude_haiku_3_5>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1`](<#llmconfiggpt_4_1>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1_mini`](<#llmconfiggpt_4_1_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o4_mini`](<#llmconfigo4_mini>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -112,256 +130,275 @@ The file serves as a library module intended to be imported and used in other pa
 
 ---
 #### LlmConfig\.default<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.default}} -->
-The `default` method returns the default configuration for a Large Language Model by loading it from a TOML file's 'default' model entry.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L77>)
+
+Returns the default configuration for a Large Language Model by loading it from a TOML file's 'default' model entry.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `LlmConfig` itself, used to call class methods and access class-level attributes.
-- **Control Flow**:
-    - The method calls `cls.from_name` with the argument 'default' to load the configuration for the default model.
+    - `cls`: Reference to the class `LlmConfig` itself, used to call class methods.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) class method with the argument 'default' to load the default model configuration.
 - **Output**: An instance of `LlmConfig` representing the default model configuration.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.from\_file<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file}} -->
-The `from_file` method loads and returns a dictionary of models from a specified TOML configuration file, handling errors if the file or required sections are missing or invalid.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L85>)
+
+Safely loads and returns the 'models' dictionary from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `file_path`: An optional string representing the path to the TOML file; if not provided, a default configuration path is used.
-- **Control Flow**:
-    - Check if `file_path` is None and set it to a default configuration path if so.
-    - Verify if the file exists at the specified `file_path`; if not, raise a `FileNotFoundError`.
-    - Attempt to load the TOML file using `toml.load`; if an error occurs, log the error and raise a `ValueError`.
-    - Define a key (e.g., 'llms') to access the models section in the parsed TOML data.
-    - Check if the key exists in the parsed TOML data and if it is a dictionary; if not, raise a `ValueError`.
-    - Return the dictionary corresponding to the key from the parsed TOML data.
-- **Output**: A dictionary containing the models data from the TOML file, structured as `dict[str, dict[str, any]]`.
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - `cls`: The class itself, used to call class methods.
+    - `file_path`: The path to the TOML file to load, or None to use the default configuration path.
+- **Logic and Control Flow**:
+    - If `file_path` is None, set `file_path` to `CONFIG_PATH`.
+    - Check if the file at `file_path` exists; if not, raise `FileNotFoundError`.
+    - Attempt to load the TOML file using `toml.load`; if an error occurs, log the error and raise `ValueError`.
+    - Check if the key 'llms' exists in the parsed TOML data and is a dictionary; if not, raise `ValueError`.
+    - Return the dictionary associated with the 'llms' key from the parsed TOML data.
+- **Output**: A dictionary containing the 'llms' section from the TOML file.
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.from\_name<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name}} -->
-The `from_name` class method loads a configuration for a specified model name from a TOML file, raising a ValueError if the model is not found or if required fields are missing.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L115>)
+
+Loads a configuration for a specified model name from a TOML file and returns an `LlmConfig` instance.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `name`: A string representing the model name to load the configuration for, defaulting to 'default'.
-- **Control Flow**:
-    - Call `cls.from_file` to load the models dictionary from the TOML file specified by `CONFIG_PATH`.
-    - Check if the provided `name` is a key in the `models_dict`.
-    - If `name` is not a direct key, iterate over `models_dict` to find a match by `llm_model_id`.
+    - `name`: A string representing the model name to load, defaulting to 'default'.
+- **Logic and Control Flow**:
+    - Call `cls.from_file` with `CONFIG_PATH` to load the models dictionary from the TOML file.
+    - Check if `name` is a key in `models_dict`. If not, iterate over `models_dict` to find a matching `llm_model_id`.
     - If no match is found, raise a `ValueError` indicating the model configuration is not found.
-    - Retrieve the model details from `models_dict` using the `name`.
+    - Retrieve the model details from `models_dict` using `name`.
     - Attempt to create and return an `LlmConfig` instance using the retrieved details.
-    - If any required field is missing in the details, catch the `KeyError` and raise a `ValueError` indicating the missing field.
-- **Output**: Returns an instance of `LlmConfig` initialized with the configuration details for the specified model name.
+    - If a required field is missing in `details`, catch the `KeyError` and raise a `ValueError` indicating the missing field.
+- **Output**: An instance of `LlmConfig` initialized with the configuration details for the specified model name.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file`](<#LlmConfigfrom_file>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_file`](<#llmconfigfrom_file>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.gpt\_4o<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o}} -->
-The `gpt_4o` method returns a configuration for the GPT-4O model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L152>)
+
+Loads the configuration for the GPT-4O model from a TOML file.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.GPT_4O` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration for 'gpt_4o' from a TOML file.
-    - If the model configuration is found, it returns an instance of `LlmConfig` with the specified parameters.
-    - If the model configuration is not found, a `ValueError` is raised.
-- **Output**: An instance of `LlmConfig` representing the configuration for the GPT-4O model.
+- **Inputs**:
+    - `cls`: Reference to the class `LlmConfig` itself.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.GPT_4O` as the argument.
+    - The [`from_name`](<#llmconfigfrom_name>) method retrieves the configuration for the specified model name from a TOML file.
+    - If the model name is not found, [`from_name`](<#llmconfigfrom_name>) raises a `ValueError`.
+- **Output**: An instance of `LlmConfig` configured for the GPT-4O model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.gpt\_4o\_chat<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_chat}} -->
-The `gpt_4o_chat` method returns a configuration for the GPT-4O Chat model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L156>)
+
+Returns the configuration for the GPT-4O Chat model.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.GPT_4O_CHAT` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
-- **Output**: An instance of `LlmConfig` representing the configuration for the GPT-4O Chat model.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.GPT_4O_CHAT` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call.
+- **Output**: An instance of `LlmConfig` for the GPT-4O Chat model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.gpt\_4o\_mini<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini}} -->
-The `gpt_4o_mini` method returns a configuration for the GPT-4O Mini model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L160>)
+
+Loads the configuration for the 'gpt_4o_mini' model from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `LlmConfig` itself, used to call class methods and access class-level data.
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.GPT_4O_MINI` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
-- **Output**: An instance of `LlmConfig` representing the configuration for the GPT-4O Mini model.
+    - `cls`: Reference to the class `LlmConfig` itself.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.GPT_4O_MINI` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call.
+- **Output**: An instance of `LlmConfig` configured for the 'gpt_4o_mini' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.gpt\_4o\_mini\_chat<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini_chat}} -->
-The `gpt_4o_mini_chat` method returns a configuration for the GPT-4O Mini Chat model by loading it from a predefined set of supported models.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L164>)
+
+Loads the configuration for the 'gpt_4o_mini_chat' model from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.GPT_4O_MINI_CHAT` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
-- **Output**: An instance of `LlmConfig` representing the configuration for the GPT-4O Mini Chat model.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.GPT_4O_MINI_CHAT` as the argument.
+    - The [`from_name`](<#llmconfigfrom_name>) method retrieves the model configuration from a TOML file using the specified model name.
+- **Output**: An instance of `LlmConfig` for the 'gpt_4o_mini_chat' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.o1<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1}} -->
-The `o1` class method returns an `LlmConfig` instance for the 'O1' model configuration.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L168>)
+
+Returns the LLM configuration for the model identified by `SupportedModels.O1`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `LlmConfig` itself, used to call class methods.
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.O1` as the argument.
-    - `cls.from_name` retrieves the configuration for the 'O1' model from a TOML file.
-    - If the 'O1' model configuration is found, it returns an `LlmConfig` instance with the corresponding details.
-- **Output**: An `LlmConfig` instance for the 'O1' model configuration.
+    - `cls`: Reference to the class `LlmConfig` itself, used to call other class methods.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) class method with `SupportedModels.O1` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call, which is an instance of `LlmConfig`.
+- **Output**: An instance of `LlmConfig` configured for the model identified by `SupportedModels.O1`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.o1\_mini<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1_mini}} -->
-The `o1_mini` method returns a configuration for the 'O1_MINI' model by loading it from a predefined set of supported models.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L172>)
+
+Returns the configuration for the 'O1_MINI' model.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.O1_MINI` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method loads the model configuration from a TOML file using the provided model name.
-    - If the model name is not found in the TOML file, a `ValueError` is raised.
-    - If the model configuration is found, it is returned as an instance of `LlmConfig`.
-- **Output**: An instance of `LlmConfig` representing the configuration for the 'O1_MINI' model.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method of the `LlmConfig` class with `SupportedModels.O1_MINI` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call.
+- **Output**: An instance of `LlmConfig` for the 'O1_MINI' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.o3\_mini<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o3_mini}} -->
-The `o3_mini` method returns a configuration for the 'O3_MINI' model by invoking the [`from_name`](<#LlmConfigfrom_name>) method with the corresponding model name.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L176>)
+
+Loads the configuration for the 'O3_MINI' model from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.O3_MINI` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the model's details.
-- **Output**: An `LlmConfig` instance for the 'O3_MINI' model.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.O3_MINI` as the argument.
+    - The [`from_name`](<#llmconfigfrom_name>) method retrieves the model configuration from a TOML file using the specified model name.
+    - If the model name is not found, [`from_name`](<#llmconfigfrom_name>) raises a `ValueError`.
+    - If the model configuration is found, [`from_name`](<#llmconfigfrom_name>) returns an instance of `LlmConfig` with the configuration details.
+- **Output**: An instance of `LlmConfig` for the 'O3_MINI' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.claude\_sonnet\_3\_5<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_sonnet_3_5}} -->
-The `claude_sonnet_3_5` method returns a configuration for the 'claude_sonnet_3_5' model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L180>)
+
+Loads the configuration for the 'claude_sonnet_3_5' model from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.CLAUDE_SONNET_3_5` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is not found, a `ValueError` is raised.
-    - If the model configuration is found, it is returned as an instance of `LlmConfig`.
-- **Output**: An instance of `LlmConfig` representing the configuration for the 'claude_sonnet_3_5' model.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.CLAUDE_SONNET_3_5` as the argument.
+    - The [`from_name`](<#llmconfigfrom_name>) method retrieves the model configuration from a TOML file using the specified model name.
+- **Output**: An instance of `LlmConfig` for the 'claude_sonnet_3_5' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.claude\_sonnet\_3\_7<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_sonnet_3_7}} -->
-The `claude_sonnet_3_7` method returns a configuration for the CLAUDE_SONNET_3_7 model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L184>)
+
+Loads the configuration for the 'CLAUDE_SONNET_3_7' model from a TOML file.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.CLAUDE_SONNET_3_7` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
-- **Output**: An instance of `LlmConfig` representing the configuration for the CLAUDE_SONNET_3_7 model.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.CLAUDE_SONNET_3_7` as the argument.
+    - The [`from_name`](<#llmconfigfrom_name>) method retrieves the model configuration from a TOML file using the specified model name.
+- **Output**: An instance of `LlmConfig` representing the configuration for the 'CLAUDE_SONNET_3_7' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.claude\_haiku\_3\_5<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.claude_haiku_3_5}} -->
-The `claude_haiku_3_5` method returns a configuration for the CLAUDE_HAIKU_3_5 model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L188>)
+
+Returns the configuration for the 'claude_haiku_3_5' model.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.CLAUDE_HAIKU_3_5` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method loads the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
-    - If the model name is not found, a `ValueError` is raised.
-- **Output**: An instance of `LlmConfig` representing the configuration for the CLAUDE_HAIKU_3_5 model.
+- **Inputs**:
+    - `cls`: Reference to the class `LlmConfig` itself.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) class method with `SupportedModels.CLAUDE_HAIKU_3_5` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call.
+- **Output**: An instance of `LlmConfig` configured for the 'claude_haiku_3_5' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.gpt\_4\_1<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1}} -->
-The `gpt_4_1` method returns a configuration for the GPT-4.1 model by loading it from a predefined set of model configurations.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L192>)
+
+Loads the configuration for the GPT-4.1 model from a TOML file.
 - **Decorators**: `@classmethod`
-- **Inputs**:
-    - `cls`: The class `LlmConfig` itself, used to call class methods and access class-level data.
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.GPT_4_1` as the argument.
-    - `cls.from_name` retrieves the model configuration for 'gpt_4_1' from a TOML file.
-    - If the model configuration is found, it returns an instance of `LlmConfig` initialized with the model's details.
-- **Output**: An instance of `LlmConfig` representing the configuration for the GPT-4.1 model.
+- **Inputs**: None
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.GPT_4_1` as the argument.
+    - Returns the `LlmConfig` instance for the GPT-4.1 model.
+- **Output**: An instance of `LlmConfig` for the GPT-4.1 model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.gpt\_4\_1\_mini<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4_1_mini}} -->
-The `gpt_4_1_mini` method returns a configuration for the GPT-4.1 Mini model by invoking the [`from_name`](<#LlmConfigfrom_name>) method with the appropriate model identifier.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L196>)
+
+Returns the configuration for the GPT-4.1 Mini model.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `LlmConfig` itself, used to call class methods.
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.GPT_4_1_MINI` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
+    - `cls`: Reference to the class `LlmConfig` itself.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method of the `LlmConfig` class with `SupportedModels.GPT_4_1_MINI` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call.
 - **Output**: An instance of `LlmConfig` configured for the GPT-4.1 Mini model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 ---
 #### LlmConfig\.o4\_mini<!-- {{#callable:python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o4_mini}} -->
-The `o4_mini` method returns a configuration for the 'O4_MINI' model by loading it from a predefined set of supported models.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/llms/config/llm_config.py#L200>)
+
+Loads the configuration for the 'O4_MINI' model from the TOML file.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
-- **Control Flow**:
-    - The method calls `cls.from_name` with `SupportedModels.O4_MINI` as the argument.
-    - The [`from_name`](<#LlmConfigfrom_name>) method retrieves the model configuration from a TOML file using the provided model name.
-    - If the model name is found, it constructs and returns an `LlmConfig` instance with the corresponding configuration details.
-- **Output**: An instance of `LlmConfig` representing the configuration for the 'O4_MINI' model.
+- **Inputs**:
+    - `cls`: Reference to the class `LlmConfig` itself.
+- **Logic and Control Flow**:
+    - Calls the [`from_name`](<#llmconfigfrom_name>) method with `SupportedModels.O4_MINI` as the argument.
+    - Returns the result of the [`from_name`](<#llmconfigfrom_name>) method call.
+- **Output**: An instance of `LlmConfig` configured for the 'O4_MINI' model.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#LlmConfigfrom_name>)
-- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#LlmConfig>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.from_name`](<#llmconfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig`](<#llmconfig>)  (Base Class)
 
 
 

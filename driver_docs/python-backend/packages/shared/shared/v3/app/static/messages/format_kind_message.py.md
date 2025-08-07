@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `format_kind_message.py` file defines the `FormatKindMessage` class, which generates specific message content based on different `FormatKind` types, such as code examples, diagrams, text, tables, lists, and any format, ensuring responses adhere to strict formatting guidelines.
+Defines the `FormatKindMessage` class to generate specific message content based on `FormatKind`.
 
 # Purpose
-This Python code defines a class `FormatKindMessage` that extends `LlmMessage` to provide specialized message content based on different `FormatKind` values. It offers narrow functionality by generating specific instructions for formatting responses in various styles, such as code blocks, diagrams, text, tables, and lists, depending on the `FormatKind` provided. The class method [`from_context`](<#FormatKindMessagefrom_context>) is used to create instances of `FormatKindMessage` with content tailored to the specified format, ensuring that responses adhere strictly to the guidelines for each format type. This code is part of a larger system, likely used in a context where automated or structured responses are required, such as in a chatbot or an AI-driven content generation tool.
+The code defines a class `FormatKindMessage` that extends `LlmMessage` and is used to generate specific message content based on the `FormatKind` enumeration. The class includes a class method [`from_context`](<#formatkindmessagefrom_context>) that takes a `format_kind` parameter and returns an instance of `FormatKindMessage` with content tailored to the specified format kind. The method handles different `FormatKind` values such as `CODE_EXAMPLE`, `DIAGRAM`, `TEXT`, `TABLE`, `LIST`, and `ANY`, each associated with a distinct set of instructions for formatting responses. This code provides narrow functionality focused on generating structured message content for different output formats.
 # Imports and Dependencies
 
 ---
@@ -19,31 +19,35 @@ This Python code defines a class `FormatKindMessage` that extends `LlmMessage` t
 
 ---
 ### FormatKindMessage<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/format_kind_message.py#L5>)
+
 - **Members**:
-    - `message_kind`: Specifies the kind of message, set to MessageKind.DEVELOPER.
-- **Description**: The `FormatKindMessage` class extends `LlmMessage` and is designed to generate specific message content based on the `FormatKind` provided. It includes a class method `from_context` that returns a `FormatKindMessage` instance with content tailored to different format kinds such as code examples, diagrams, text, tables, lists, or any format. Each format kind dictates a specific structure and style for the message content, ensuring that the response adheres to the required format without additional narrative or formatting outside the specified structure.
+    - `message_kind`: Specifies the kind of message as `MessageKind.DEVELOPER`.
+- **Description**: Extends `LlmMessage` to provide specific message content based on the `FormatKind` context, such as code examples, diagrams, text, tables, or lists. The class method `from_context` generates a `FormatKindMessage` instance with content tailored to the specified `FormatKind`, ensuring the response format adheres to predefined guidelines for each kind.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage.from_context`](<#FormatKindMessagefrom_context>)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage.from_context`](<#formatkindmessagefrom_context>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
 **Methods**
 
 ---
 #### FormatKindMessage\.from\_context<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage.from_context}} -->
-The `from_context` class method creates a `FormatKindMessage` instance with content tailored to the specified `FormatKind`.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/format_kind_message.py#L8>)
+
+Creates a `FormatKindMessage` instance based on the specified `FormatKind`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `format_kind`: An instance of the `FormatKind` enumeration that specifies the type of format for which the message content should be generated.
-- **Control Flow**:
-    - The method checks if `format_kind` is `FormatKind.CODE_EXAMPLE` and returns a `FormatKindMessage` with instructions for creating a fenced code block.
-    - If `format_kind` is `FormatKind.DIAGRAM`, it returns a `FormatKindMessage` with instructions for creating a Mermaid diagram.
-    - If `format_kind` is `FormatKind.TEXT`, it returns a `FormatKindMessage` with instructions for writing a prose answer.
-    - If `format_kind` is `FormatKind.TABLE`, it returns a `FormatKindMessage` with instructions for creating a Markdown table.
-    - If `format_kind` is `FormatKind.LIST`, it returns a `FormatKindMessage` with instructions for creating a Markdown list.
-    - If `format_kind` is `FormatKind.ANY`, it returns a `FormatKindMessage` with a generic instruction to satisfy the request without additional commentary.
-- **Output**: A `FormatKindMessage` instance with content specific to the provided `format_kind`.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage`](<#FormatKindMessage>)  (Base Class)
+    - `format_kind`: An instance of `FormatKind` that specifies the type of message format to create.
+- **Logic and Control Flow**:
+    - Checks if `format_kind` is `FormatKind.CODE_EXAMPLE` and returns a `FormatKindMessage` with instructions for a code block response.
+    - Checks if `format_kind` is `FormatKind.DIAGRAM` and returns a `FormatKindMessage` with instructions for a Mermaid diagram response.
+    - Checks if `format_kind` is `FormatKind.TEXT` and returns a `FormatKindMessage` with instructions for a prose response.
+    - Checks if `format_kind` is `FormatKind.TABLE` and returns a `FormatKindMessage` with instructions for a Markdown table response.
+    - Checks if `format_kind` is `FormatKind.LIST` and returns a `FormatKindMessage` with instructions for a Markdown list response.
+    - Checks if `format_kind` is `FormatKind.ANY` and returns a `FormatKindMessage` with a generic instruction.
+- **Output**: A `FormatKindMessage` instance with content tailored to the specified `FormatKind`.
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/format_kind_message.FormatKindMessage`](<#formatkindmessage>)  (Base Class)
 
 
 

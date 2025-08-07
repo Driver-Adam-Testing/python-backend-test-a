@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `aws_s3.py` file provides utility functions for interacting with AWS S3, including generating presigned URLs, retrieving object metadata, and checking for specific GuardDuty malware scan status tags.
+Utilities for interacting with AWS S3, including generating presigned URLs and checking object tags.
 
 # Purpose
-This Python code file is designed to interact with Amazon S3, providing specific functionalities related to object management and security tagging. It initializes an S3 client using the `boto3` library, which is configured with a region and an optional custom endpoint URL sourced from a settings module. The file defines three main functions: [`generate_get_presigned_url`](<#generate_get_presigned_url>), [`head_object`](<#head_object>), and [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>). The [`generate_get_presigned_url`](<#generate_get_presigned_url>) function creates a presigned URL for accessing an S3 object, allowing temporary access without requiring AWS credentials. The [`head_object`](<#head_object>) function retrieves metadata for a specified S3 object, which can be useful for checking object properties without downloading the object itself. The [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>) function checks if an S3 object has a specific security tag, indicating whether the object has been scanned for malware threats by AWS GuardDuty and found to be either threat-free or unsupported due to size or complexity.
+This code provides functionality for interacting with Amazon S3 using the `boto3` library. It initializes an S3 client with specific configuration settings, such as the AWS region and an optional endpoint URL, which are imported from a configuration module. The code defines three main functions: [`generate_get_presigned_url`](<#generate_get_presigned_url>), [`head_object`](<#head_object>), and [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>). 
 
-This code is structured as a utility module, likely intended to be imported and used within a larger application that requires S3 interaction and security checks. It provides a narrow but essential set of functionalities focused on S3 object access and security verification, making it a valuable component for applications that need to manage and secure data stored in S3. The functions defined in this file serve as a public API for other parts of the application to leverage S3 capabilities, particularly in scenarios where security and access control are critical.
+The [`generate_get_presigned_url`](<#generate_get_presigned_url>) function creates a presigned URL for accessing an S3 object, allowing temporary access to the object without requiring AWS credentials. The [`head_object`](<#head_object>) function retrieves metadata for a specified S3 object, which can be useful for checking the existence or properties of the object. The [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>) function checks if an S3 object has a specific tag related to AWS GuardDuty malware scan status, ensuring that the object is either free of threats or marked as unsupported due to size or file count limitations. This code is likely intended to be part of a larger application or library that requires interaction with S3 objects, particularly in contexts where security and access control are important.
 # Imports and Dependencies
 
 ---
@@ -20,51 +20,58 @@ This code is structured as a utility module, likely intended to be imported and 
 
 ---
 ### s3\_client
-- **Type**: `boto3.client`
-- **Description**: The `s3_client` is an instance of the Boto3 S3 client, configured to interact with the Amazon S3 service. It is initialized with a specific region ('us-east-1') and optionally uses a custom endpoint URL if specified in the application settings. This client is used to perform various operations on S3, such as generating presigned URLs, retrieving object metadata, and checking object tags.
-- **Use**: The `s3_client` is used to interact with Amazon S3 for operations like generating presigned URLs, retrieving object metadata, and checking object tags.
+- **Type**: ``boto3.client``
+- **Description**: Creates an Amazon S3 client using the `boto3` library. The client is configured with a specific AWS region and an optional endpoint URL, which are retrieved from the `settings` module.
+- **Use**: Used to interact with Amazon S3 services, such as generating presigned URLs, retrieving object metadata, and checking object tags.
 
 
 # Functions
 
 ---
 ### generate\_get\_presigned\_url<!-- {{#callable:python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.generate_get_presigned_url}} -->
-The function generates a presigned URL for accessing an S3 object with a specified expiration time.
+[View Source →](<../../../../../../content_services/onboarding_event_handler/src/utils/aws_s3.py#L12>)
+
+Generates a presigned URL for accessing an S3 object with a specified expiration time.
 - **Inputs**:
     - `bucket`: The name of the S3 bucket where the object is stored.
     - `key`: The key (path) of the object within the S3 bucket.
     - `expires`: The time in seconds for which the presigned URL is valid, defaulting to 3600 seconds (1 hour).
-- **Control Flow**:
-    - The function calls the `generate_presigned_url` method of the `s3_client` object.
-    - It specifies the `ClientMethod` as 'get_object' to indicate the URL is for retrieving an object.
-    - The `Params` dictionary is populated with the `Bucket` and `Key` values provided as arguments.
-    - The `ExpiresIn` parameter is set to the `expires` argument to define the URL's validity period.
-- **Output**: A string representing the presigned URL for accessing the specified S3 object.
+- **Logic and Control Flow**:
+    - Calls the `generate_presigned_url` method on the `s3_client` object.
+    - Specifies the `ClientMethod` as `get_object` to indicate the operation for which the URL is generated.
+    - Passes the `bucket` and `key` as parameters to identify the S3 object.
+    - Sets the `ExpiresIn` parameter to the `expires` value to define the URL's validity period.
+- **Output**: A presigned URL as a string that allows access to the specified S3 object.
 
 
 ---
 ### head\_object<!-- {{#callable:python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.head_object}} -->
-The `head_object` function retrieves metadata of an S3 object specified by its bucket and key.
+[View Source →](<../../../../../../content_services/onboarding_event_handler/src/utils/aws_s3.py#L23>)
+
+Retrieves metadata of an S3 object from a specified bucket and key.
 - **Inputs**:
-    - `bucket`: The name of the S3 bucket containing the object.
+    - `bucket`: The name of the S3 bucket where the object is stored.
     - `key`: The key (path) of the object within the S3 bucket.
-- **Control Flow**:
-    - Calls the `head_object` method of the `s3_client` with the specified bucket and key to retrieve the object's metadata.
+- **Logic and Control Flow**:
+    - Calls the `head_object` method of the `s3_client` to get metadata of the specified S3 object.
+    - Passes the `bucket` and `key` as parameters to the `head_object` method.
 - **Output**: A dictionary containing the metadata of the specified S3 object.
 
 
 ---
 ### has\_allowed\_guard\_duty\_tag<!-- {{#callable:python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.has_allowed_guard_duty_tag}} -->
-The function checks if an S3 object has a specific tag indicating a safe or unsupported status for GuardDuty malware scanning.
+[View Source →](<../../../../../../content_services/onboarding_event_handler/src/utils/aws_s3.py#L27>)
+
+Checks if an S3 object has a specific tag with allowed values.
 - **Inputs**:
     - `bucket`: The name of the S3 bucket where the object is stored.
-    - `key`: The key (or path) of the object within the S3 bucket.
-- **Control Flow**:
-    - Retrieve the tags of the specified S3 object using the `get_object_tagging` method of the S3 client.
-    - Define a list of supported tag values: 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
-    - Iterate over the tags of the object to check if there is a tag with the key 'GuardDutyMalwareScanStatus' and a value in the supported tags list.
-    - Return True if exactly one such tag is found, otherwise return False.
-- **Output**: A boolean value indicating whether the S3 object has the 'GuardDutyMalwareScanStatus' tag with a value of 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    - `key`: The key (path) of the S3 object within the bucket.
+- **Logic and Control Flow**:
+    - Retrieve the tags of the specified S3 object using `s3_client.get_object_tagging` with the given `bucket` and `key`.
+    - Define a list `supported_tags` containing the values 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
+    - Iterate over the tags in the `TagSet` of the object to check if there is a tag with the key 'GuardDutyMalwareScanStatus' and a value in `supported_tags`.
+    - Return `True` if exactly one tag matches the criteria, otherwise return `False`.
+- **Output**: A boolean value indicating whether the S3 object has the 'GuardDutyMalwareScanStatus' tag with an allowed value.
 
 
 

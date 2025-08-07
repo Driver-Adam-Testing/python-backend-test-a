@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_cs.py` file defines a template for processing large C# source code, including handling prompts, imports, classes, structs, and interfaces.
+Templates for generating structured prompts and analyzing C# source code components like classes, structs, and interfaces.
 
 # Purpose
-This Python code file is designed to facilitate structured prompting and analysis of C# source code. It imports various components and utilities from shared and specialized modules to create a template, `SOURCE_CODE_LARGE_TEMPLATE_CS`, which is used to generate structured prompts for analyzing C# code. The template is composed of several tuples, each representing a different aspect of the C# code, such as its purpose, imports and dependencies, classes, structs, and interfaces. These tuples utilize components like `Prompt` and `Component` to build strings that guide the analysis process, and they employ functions from the `utils.lang_specialization.c_sharp` module to handle specific C# constructs.
+The code defines a template for generating structured documentation for C# source code. It imports several components and utilities from different modules to facilitate this process. The primary purpose is to create a structured format for documenting the purpose, imports, classes, structs, and interfaces found in C# code. The template uses a combination of static analysis and language model (LLM) outputs to gather information about the C# code components.
 
-The file serves as a library module that can be imported and used in other parts of a larger system, particularly those that require detailed analysis and documentation of C# code. It does not define public APIs or external interfaces directly but rather provides a structured approach to generating prompts and analyzing code. The use of specialized collections and static analysis functions indicates that the file is part of a broader system aimed at automating or assisting in the understanding and documentation of C# source code, leveraging language-specific utilities to achieve this goal.
+The `SOURCE_CODE_LARGE_TEMPLATE_CS` variable is a list of tuples, each representing a section of the documentation. Each tuple contains a section identifier, a title, and a series of instructions or functions to generate the content for that section. The sections include "Purpose," "Imports and Dependencies," "Classes," "Structs," and "Interfaces." The code uses various imported functions and classes, such as `Prompt`, `Component`, and collections for C# classes, structs, and interfaces, to build the documentation content. This setup allows for the automated generation of detailed and structured documentation for C# source code files.
 # Imports and Dependencies
 
 ---
@@ -33,9 +33,9 @@ The file serves as a library module that can be imported and used in other parts
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_CS
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_CS` is a list of tuples, each representing a different section of a C# source code template. Each tuple contains a section identifier, a section title, and various components or functions that define the content and behavior of that section. The sections include purpose, imports and dependencies, classes, structs, and interfaces, with each section utilizing specific prompts and collections to structure the information.
-- **Use**: This variable is used to define a structured template for generating or analyzing C# source code, with each tuple providing the necessary components and instructions for a specific section of the code.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section title, and a series of instructions or functions related to C# code analysis and transformation. Each tuple is designed to handle a specific aspect of C# code, such as purpose, imports, classes, structs, and interfaces.
+- **Use**: Used to define a structured template for processing and analyzing large C# source code files.
 
 
 

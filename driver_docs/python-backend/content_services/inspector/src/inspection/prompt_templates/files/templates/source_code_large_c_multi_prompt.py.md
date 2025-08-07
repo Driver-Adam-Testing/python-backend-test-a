@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_c_multi_prompt.py` file defines a template for generating structured prompts related to C source code, including sections for purpose, imports, global variables, data structures, functions, and function declarations.
+Templates for generating structured prompts and analyzing C source code components.
 
 # Purpose
-This Python code file is designed to facilitate structured prompting and analysis of C source code, particularly in the context of large systems. It serves as a configuration or template file that defines a series of structured prompts and data extraction processes for analyzing C code. The file imports various components and utilities from other modules, indicating that it is part of a larger system or framework. The primary functionality revolves around creating prompts for different aspects of C code, such as imports, global variables, data structures, functions, and function declarations, which are likely used to guide a language model or similar tool in understanding and processing C code.
+The code defines a structured template for generating prompts related to C source code analysis. It imports several components and utilities from different modules, which are used to create a multi-prompt template named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C`. This template is designed to facilitate the analysis and documentation of C source code by organizing information into specific categories such as imports and dependencies, global variables, data structures, functions, and function declarations. Each category is associated with a specific function or collection that processes the relevant data, often using static analysis or language model (LLM) outputs.
 
-The file defines a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C`, which is a collection of tuples. Each tuple represents a specific aspect of C code analysis, such as imports, global variables, data structures, functions, and public API declarations. These tuples specify how to generate prompts and extract relevant information using static analysis and language model (LLM) capabilities. The use of components like `Prompt`, `Component`, and various collections for C code elements suggests that this file is part of a system that automates the analysis and documentation of C codebases, providing structured insights into the code's structure and functionality. This makes it a specialized tool for developers or systems that need to process and understand large C codebases efficiently.
+The template is structured to support the generation of documentation or analysis reports by providing a systematic approach to extract and organize information from C source code. It uses components like `Prompt` and `Component` to build strings that represent different sections of the documentation. The template also includes instructions for adhering to specific style guidelines, such as using Simplified Technical English and enclosing code references in backticks. This structured approach ensures that the generated documentation is consistent and follows predefined standards.
 # Imports and Dependencies
 
 ---
@@ -38,8 +38,8 @@ The file defines a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C`, which 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_C
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C` is a list of tuples, each containing structured data for generating prompts related to different aspects of C source code analysis. Each tuple includes a type identifier, a description string, and various components or functions that are used to construct or process the prompt content.
-- **Use**: This variable is used to define a template for generating structured prompts for analyzing and documenting C source code, covering areas such as purpose, imports, global variables, data structures, functions, and public API declarations.
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of `Prompt` objects or functions related to code analysis and documentation. Each tuple represents a different aspect of code documentation, such as purpose, imports, global variables, data structures, functions, and function declarations.
+- **Use**: Used to define a structured template for generating documentation prompts for C source code.
 
 
 

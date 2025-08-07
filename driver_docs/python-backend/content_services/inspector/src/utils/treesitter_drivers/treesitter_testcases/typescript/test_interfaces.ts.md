@@ -3,157 +3,196 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_interfaces.ts` file is a test file for TypeScript interfaces and type aliases, covering various features such as optional properties, readonly properties, index signatures, inheritance, generics, nested interfaces, interface merging, module and global augmentation, ambient interfaces, and type-only exports.
+Test file for TypeScript interfaces and type aliases, including inheritance, generics, and augmentations.
 
 # Purpose
-This TypeScript file serves as a comprehensive test suite for various interface and type alias features, showcasing a wide range of TypeScript capabilities. It includes examples of basic interfaces with optional properties and methods, readonly properties, and index signatures, demonstrating how interfaces can be used to define object shapes with varying levels of flexibility and constraints. The file also illustrates interface inheritance, both single and multiple, to show how complex types can be constructed by extending existing ones. Additionally, it covers advanced topics such as generic interfaces, nested interfaces, interface merging, and module augmentation, which are crucial for extending third-party libraries and global objects. The inclusion of ambient interfaces and type-only exports further highlights the file's role in exploring the breadth of TypeScript's type system, making it a valuable resource for understanding and testing interface-related features in TypeScript.
+This code is a TypeScript test file that demonstrates various uses of interfaces and type aliases. It provides narrow functionality by defining multiple interfaces to illustrate different TypeScript features, such as optional properties and methods, readonly properties, index signatures, interface inheritance, and multiple inheritance. The file also includes examples of generic interfaces, nested interfaces, interface merging, and module augmentation, specifically augmenting the 'express' module and the global `Window` and `Array` interfaces. Additionally, it defines an ambient interface and a type-only export. This file serves as a comprehensive reference for understanding how to use and extend interfaces in TypeScript.
 # Interfaces
 
 ---
 ### InterfaceWithOptional<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.InterfaceWithOptional}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L4>)
+
 - **Members**:
-    - `required`: A mandatory string property that must be present in any object implementing this interface.
-    - `optional`: An optional number property that may or may not be present in objects implementing this interface.
-    - `optionalMethod`: An optional method that, if present, should be a function returning void.
-- **Description**: The `InterfaceWithOptional` defines a contract for objects that must include a required string property, and may optionally include a number property and a method. This interface is useful for scenarios where certain properties or methods are not always necessary, allowing for more flexible object structures.
+    - `required`: A mandatory string property.
+    - `optional`: An optional number property.
+    - `optionalMethod`: An optional method that returns void.
+- **Description**: Defines a contract for objects that must have a `required` string property and may optionally include a `optional` number property and an `optionalMethod` that returns void.
 
 
 ---
 ### ReadonlyInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ReadonlyInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L11>)
+
 - **Members**:
-    - `id`: A readonly string property representing a unique identifier.
-    - `data`: A readonly array of numbers.
-    - `nested`: A readonly object containing a readonly string property 'value'.
-- **Description**: The ReadonlyInterface defines a contract for objects that ensures immutability of its properties. It includes a readonly string 'id', a readonly array of numbers 'data', and a readonly nested object with a string property 'value'. This interface is useful for scenarios where data integrity and prevention of accidental modifications are critical.
+    - `id`: A read-only string identifier.
+    - `data`: A read-only array of numbers.
+    - `nested`: A read-only object with a read-only string property `value`.
+- **Description**: Defines a contract for objects with read-only properties, including a string `id`, an array of numbers `data`, and a nested object with a string `value`.
 
 
 ---
 ### StringIndex<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.StringIndex}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L20>)
+
 - **Members**:
-    - `[key: string]`: Defines an index signature allowing any string key to map to a value of any type.
-- **Description**: The `StringIndex` interface defines a contract for objects that can have any number of properties with string keys, where each key maps to a value of any type. This interface is useful for creating flexible data structures where the exact properties are not known at compile time, allowing for dynamic assignment and retrieval of values using string keys.
+    - `[key: string]`: Defines an index signature that allows any string key to map to a value of any type.
+- **Description**: Defines a contract for objects where any string key can map to a value of any type, allowing for flexible and dynamic property assignment.
 
 
 ---
 ### NumberIndex<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.NumberIndex}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L24>)
+
 - **Members**:
-    - `[index: number]`: Defines an index signature where the index is a number and the value is a string.
-- **Description**: The NumberIndex interface defines a contract for objects that can be indexed using numeric keys, with each key corresponding to a string value. This interface is useful for scenarios where an object needs to behave like an array or a list, allowing access to its elements via numeric indices.
+    - `[index: number]`: Defines an index signature that maps a number to a string.
+- **Description**: Defines a contract for objects where numeric indices map to string values, allowing access to string elements using number-based keys.
 
 
 ---
 ### MixedIndex<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.MixedIndex}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L28>)
+
 - **Members**:
-    - `[key: string]`: Allows access to properties with string keys, which can be either a string or a number.
-    - `[index: number]`: Allows access to properties with numeric indices, which must be strings.
-    - `length`: Specifies the number of elements in the object, similar to an array length.
-- **Description**: The MixedIndex interface defines a contract for objects that can be accessed using both string and numeric keys. It allows for properties with string keys to hold either string or number values, while properties with numeric indices must hold string values. Additionally, it includes a length property, indicating the number of elements, similar to an array. This interface is useful for structures that need flexible key access and a defined length, such as hybrid data structures combining characteristics of both arrays and objects.
+    - `[key: string]`: Defines an index signature for string keys with values of type `string` or `number`.
+    - `[index: number]`: Defines an index signature for numeric indices with values of type `string`.
+    - `length`: Specifies the length of the object as a number.
+- **Description**: Defines a contract for objects that can be indexed by both string and numeric keys, where string keys map to values of type `string` or `number`, and numeric indices map to values of type `string`. It also includes a `length` property to indicate the number of elements.
 
 
 ---
 ### Animal<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Animal}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L35>)
+
 - **Members**:
-    - `name`: A string representing the name of the animal.
-    - `age`: A number representing the age of the animal.
-- **Description**: The `Animal` interface defines a simple contract for objects representing animals, specifying that they must have a `name` property of type string and an `age` property of type number. This interface serves as a basic blueprint for more complex animal-related interfaces, such as `Dog` and `Duck`, which extend `Animal` to include additional properties and methods specific to those types.
+    - `name`: Specifies the name of the animal as a string.
+    - `age`: Specifies the age of the animal as a number.
+- **Description**: Defines the structure for an animal object with properties for the animal's name and age.
 
 
 ---
 ### Dog<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Dog}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L40>)
+
 - **Members**:
-    - `breed`: A string property representing the breed of the dog.
-    - `bark`: A method that, when called, makes the dog bark.
-- **Description**: The Dog interface extends the Animal interface, adding specific properties and behaviors that are unique to dogs. It includes a 'breed' property to specify the dog's breed and a 'bark' method to simulate the dog's barking behavior. This interface defines a contract for objects representing dogs, ensuring they have both the general characteristics of an animal and the specific traits of a dog.
+    - `breed`: Specifies the breed of the dog as a string.
+    - `bark`: Defines a method that makes the dog bark, returning no value.
+- **Description**: Extends the `Animal` interface to include specific properties and behaviors of a dog, such as its breed and the ability to bark.
 - **Extends/Implements**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Animal`](<#Animal>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Animal`](<#animal>)
 
 
 ---
 ### Flyable<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Flyable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L46>)
+
 - **Members**:
-    - `fly`: A method that, when implemented, should define the action of flying for the object.
-    - `altitude`: A numeric property representing the altitude at which the object is flying.
-- **Description**: The Flyable interface defines a contract for objects that have the capability to fly. It requires implementing objects to have a 'fly' method, which encapsulates the flying behavior, and an 'altitude' property, which indicates the height at which the object operates. This interface is useful for ensuring that any object claiming to be 'flyable' adheres to a standard structure, facilitating polymorphism and code consistency in systems dealing with flying entities.
+    - `fly`: Defines a method that does not return a value.
+    - `altitude`: Specifies a number representing the altitude.
+- **Description**: Defines a contract for objects that can fly, requiring them to implement a `fly` method and have an `altitude` property.
 
 
 ---
 ### Swimmable<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Swimmable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L51>)
+
 - **Members**:
-    - `swim`: A method that allows an object to perform a swimming action.
-    - `depth`: A numeric property indicating the depth at which the object can swim.
-- **Description**: The Swimmable interface defines a contract for objects that have the capability to swim. It includes a method `swim` for performing the swimming action and a property `depth` to specify the depth at which the object can swim. This interface is useful for ensuring that any object implementing it can be expected to have these swimming-related functionalities.
+    - `swim`: Defines a method that does not return a value.
+    - `depth`: Specifies the depth as a number.
+- **Description**: Defines a contract for objects that can swim, requiring them to implement a `swim` method and have a `depth` property.
 
 
 ---
 ### Duck<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Duck}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L56>)
+
 - **Members**:
-    - `quack`: Defines a method for the duck to quack.
-- **Description**: The Duck interface extends the Animal, Flyable, and Swimmable interfaces, defining a contract for objects that represent a duck. This interface requires that any implementing object must have the properties and methods of an Animal (such as name and age), the ability to fly and swim (as defined by Flyable and Swimmable interfaces), and additionally, it must implement a quack method. This interface is used to ensure that any duck-like object can perform actions typical of a duck, such as quacking, flying, and swimming, while also maintaining the basic characteristics of an animal.
+    - `quack`: Defines a method that makes the duck quack.
+- **Description**: Defines a contract for a duck object that extends the capabilities of an `Animal` with the ability to fly and swim, as well as quack.
 - **Extends/Implements**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Animal`](<#Animal>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Flyable`](<#Flyable>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Swimmable`](<#Swimmable>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Animal`](<#animal>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Flyable`](<#flyable>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Swimmable`](<#swimmable>)
 
 
 ---
 ### Pair<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Pair}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L61>)
+
 - **Members**:
-    - `first`: The first element of the pair, of generic type T.
-    - `second`: The second element of the pair, of generic type U.
-- **Description**: The Pair interface defines a generic structure for a pair of values, where the first and second elements can be of any types specified by the generic parameters T and U, respectively. This interface provides a simple way to group two related values together, allowing for flexible and type-safe handling of paired data.
+    - `first`: Represents the first element of the pair with a generic type `T`.
+    - `second`: Represents the second element of the pair with a generic type `U`.
+- **Description**: Defines a generic structure for a pair of values, where `first` and `second` are elements of types `T` and `U`, respectively. This interface allows the creation of objects that hold two related values of potentially different types.
 
 
 ---
 ### OuterInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.OuterInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L67>)
+
 - **Members**:
-    - `outer`: A string property representing the outer level of the interface.
-    - `inner`: An object containing a nested structure with a string and a deeper object.
-- **Description**: The OuterInterface defines a contract for objects that have a hierarchical structure with an outer string property and an inner object. The inner object itself contains a nested string property and a deep object with a numeric value. This interface is useful for representing complex data structures with multiple levels of nesting.
+    - `outer`: Defines a string property at the top level of the interface.
+    - `inner`: Defines a nested object with a `nested` string property and a `deep` object.
+    - `inner.nested`: Defines a string property within the `inner` object.
+    - `inner.deep`: Defines an object within `inner` that contains a `value` property.
+    - `inner.deep.value`: Defines a number property within the `deep` object.
+- **Description**: Defines a structure for objects with a top-level string property `outer` and a nested object `inner` that contains a string property `nested` and another nested object `deep` with a number property `value`.
 
 
 ---
 ### MergedInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.MergedInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L86>)
+
 - **Members**:
-    - `property1`: A string property defined in the MergedInterface.
-    - `property2`: A number property defined in the MergedInterface.
-    - `method`: A method that takes no arguments and returns void.
-- **Description**: The MergedInterface is a TypeScript interface that demonstrates interface merging, where multiple declarations of the same interface name are combined into a single interface. This interface defines a contract for objects that must include two properties, 'property1' of type string and 'property2' of type number, as well as a method named 'method' that returns void. This allows for flexible and modular design by enabling the extension of interfaces across different parts of the codebase.
+    - `property1`: Defines a string property named `property1`.
+    - `property2`: Defines a number property named `property2`.
+    - `method`: Declares a method named `method` that returns void.
+- **Description**: Defines a contract for objects that must include a string property `property1`, a number property `property2`, and a method `method` that returns void. This interface demonstrates TypeScript's interface merging feature, where multiple declarations of the same interface are combined into a single interface.
 
 
 ---
 ### Request<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.'express'.Request}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L94>)
+
 - **Members**:
-    - `user`: An optional property that may contain an object with 'id' and 'name' fields, representing a user.
-- **Description**: The 'Request' interface is an augmentation of the existing 'Request' interface from the 'express' module, adding an optional 'user' property. This property, if present, is an object containing 'id' and 'name' fields, which are both strings. This interface is typically used in web applications to represent the shape of a request object that may include user information, allowing for type-safe access to user details within request handling logic.
+    - `user`: An optional object with `id` and `name` properties of type `string`.
+- **Description**: Defines an augmentation for the `Request` interface in the 'express' module, adding an optional `user` object with `id` and `name` properties.
 
 
 ---
 ### Window<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Window}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L104>)
+
 - **Members**:
-    - `myGlobal`: A string property added to the global Window interface.
-- **Description**: The `Window` interface in this context is an augmentation of the global `Window` interface, adding a custom property `myGlobal` of type string. This allows developers to extend the standard `Window` object with additional properties, providing a way to store global variables or settings that can be accessed throughout the application.
+    - `myGlobal`: A string property that is added to the global `Window` interface.
+- **Description**: Defines a contract for the global `Window` object to include a `myGlobal` property of type string, allowing for the extension of the standard `Window` interface with custom properties.
 
 
 ---
 ### Array<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.Array}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L108>)
+
 - **Members**:
-    - `customMethod`: A method that returns an array of type T.
-- **Description**: The `Array<T>` interface is an augmentation of the global Array interface in TypeScript, adding a custom method `customMethod` that returns an array of the same type T. This interface allows for extending the functionality of arrays by providing additional methods that can operate on the array elements, while maintaining the type safety and structure of the original array.
+    - `customMethod`: Returns an array of type `T`.
+- **Description**: Defines a contract for array objects that includes a `customMethod` which returns an array of the same type `T` as the array itself.
 
 
 ---
 ### AmbientInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.AmbientInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L114>)
+
 - **Members**:
-    - `ambientProperty`: A string property that represents some ambient data.
-    - `ambientMethod`: A method that performs an action without returning a value.
-- **Description**: The AmbientInterface defines a contract for objects that require an ambient property of type string and a method named ambientMethod that performs an action without returning any value. This interface is typically used in scenarios where ambient declarations are needed, such as in module or global augmentations, to extend existing types or modules with additional properties or methods.
+    - `ambientProperty`: A string property that is part of the interface.
+    - `ambientMethod`: A method that does not return a value.
+- **Description**: Defines a contract for objects with a string property `ambientProperty` and a method `ambientMethod` that returns void.
 
 
 ---
 ### ExportedInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ExportedInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_interfaces.ts#L120>)
+
 - **Members**:
-    - `exported`: A boolean property that is always true.
-- **Description**: The `ExportedInterface` is a simple TypeScript interface that defines a contract for objects to have a single property `exported`, which is a boolean set to true. This interface can be used to ensure that any object adhering to it will have this specific property with a constant value, potentially serving as a marker or flag within a larger system.
+    - `exported`: Indicates that the object is exported with a constant value of `true`.
+- **Description**: Defines a contract for objects that must have an `exported` property set to `true`, indicating that the object is intended for export.
 
 
 

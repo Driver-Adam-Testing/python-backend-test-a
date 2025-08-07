@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `csharp_resolver.py` file implements a C# import resolver that handles the resolution of import statements and namespace declarations to project files within a Python backend.
+A C# import resolver that handles namespace and global using declarations to map them to project files.
 
 # Purpose
-This Python code defines a class `CSharpResolver` that extends the `ImportResolver` class, providing specialized functionality for resolving C# import statements and namespace declarations within a project. The primary purpose of this code is to map C# import symbols to their corresponding file paths in a project, facilitating the resolution of dependencies and namespaces. The code leverages the `RawTreeSitterSymbolData` and `CSharpImportScopeKind` classes to identify and categorize symbols as either namespaces or global using directives. The `CSharpResolver` class includes methods such as [`_namespace_resolver`](<#CSharpResolver_namespace_resolver>) and [`_global_using_resolver`](<#CSharpResolver_global_using_resolver>) to pre-compute and cache namespace and global using data, optimizing the resolution process.
+The code defines a class `CSharpResolver` that extends `ImportResolver` to handle the resolution of C# import statements and namespace declarations within a project. The primary function of this class is to map C# import symbols to their corresponding project files. It achieves this by analyzing the project's symbol data and determining the scope and kind of each symbol, specifically focusing on namespaces and global using directives. The class uses helper methods [`_namespace_resolver`](<#csharpresolver_namespace_resolver>) and [`_global_using_resolver`](<#csharpresolver_global_using_resolver>) to pre-compute and cache namespace and global using data, which are then used in the [`resolve_import`](<#csharpresolverresolve_import>) method to resolve import symbols to file paths.
 
-The [`resolve_import`](<#CSharpResolverresolve_import>) method is the core function of this class, which orchestrates the resolution process by first ensuring that namespace and global using data are cached. It then resolves the import symbols by checking against the cached data, determining the appropriate file paths for the given import symbol. This code is part of a broader system, likely a library or tool, that deals with language-specific import resolution, and it is designed to be integrated into a larger framework that handles multiple programming languages. The code does not define public APIs or external interfaces directly but provides a specialized implementation for C# import resolution within the context of the system it is part of.
+The `CSharpResolver` class is part of a broader system that likely deals with language-specific import resolution, as indicated by its inheritance from `ImportResolver` and its use of `RawTreeSitterSymbolData` and `CSharpImportScopeKind`. The class provides a specialized mechanism for handling C# language constructs, such as namespaces and using directives, by leveraging the Tree-sitter parsing library. The code is structured to be part of a library or framework, as it defines a class with methods intended to be used by other components, rather than being a standalone script.
 # Imports and Dependencies
 
 ---
@@ -24,81 +24,89 @@ The [`resolve_import`](<#CSharpResolverresolve_import>) method is the core funct
 
 ---
 ### CSharpResolver<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver}} -->
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.py#L19>)
+
 - **Members**:
     - `language`: Specifies the programming language as 'csharp'.
-    - `_cached_namespace_data`: Caches pre-computed namespace data for efficient import resolution.
-    - `_cached_global_using_data`: Caches pre-computed global using data for efficient import resolution.
-- **Description**: The CSharpResolver class is a specialized import resolver for C# projects, extending the ImportResolver base class. It is designed to handle the resolution of C# import statements and namespace declarations by leveraging pre-computed data for namespaces and global using directives. The class maintains cached data to optimize the resolution process, ensuring that import statements are accurately mapped to the corresponding project files. This functionality is crucial for managing dependencies and organizing code in C# projects.
+    - `_cached_namespace_data`: Stores pre-computed namespace data as a tuple or None.
+    - `_cached_global_using_data`: Stores pre-computed global using data as a list of paths or None.
+- **Description**: Handles the resolution of C# import statements and namespace declarations to project files. It uses cached data to optimize the resolution process and supports both global and local using statements. The class extends the `ImportResolver` base class and provides methods to resolve namespaces and global using directives within a C# project.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._namespace_resolver`](<#CSharpResolver_namespace_resolver>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._global_using_resolver`](<#CSharpResolver_global_using_resolver>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver.resolve_import`](<#CSharpResolverresolve_import>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._namespace_resolver`](<#csharpresolver_namespace_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._global_using_resolver`](<#csharpresolver_global_using_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver.resolve_import`](<#csharpresolverresolve_import>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<../base.py.md#ImportResolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<../base.py.md#importresolver>)
 
 **Methods**
 
 ---
 #### CSharpResolver\.\_namespace\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._namespace_resolver}} -->
-The `_namespace_resolver` method identifies and maps namespaces from a given project files-to-symbols mapping.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.py#L26>)
+
+Resolves namespaces from a map of project files to their symbols.
 - **Inputs**:
-    - `project_files_to_symbols_map`: A dictionary mapping file paths (Path) to lists of RawTreeSitterSymbolData, representing symbols found in each file.
-- **Control Flow**:
-    - Initialize an empty defaultdict `namespaces_map` to store lists of file paths for each namespace name.
+    - `project_files_to_symbols_map`: A dictionary mapping file paths to lists of `RawTreeSitterSymbolData` objects, representing symbols in each file.
+- **Logic and Control Flow**:
+    - Initialize `namespaces_map` as a `defaultdict` with lists as default values.
     - Iterate over each file path and its associated symbols in `project_files_to_symbols_map`.
-    - For each symbol, check if it is of kind `IMPORT` and represents a namespace using the [`_is_namespace`](<#_is_namespace>) function.
+    - For each symbol, check if it is of kind `IMPORT` and is a namespace using [`_is_namespace`](<#_is_namespace>).
     - If the symbol is a namespace, append the file path to the list in `namespaces_map` under the symbol's name.
-    - Create a set `namespaces_set` containing all the keys (namespace names) from `namespaces_map`.
-    - Return the `namespaces_set` and `namespaces_map` as a tuple.
-- **Output**: A tuple containing a set of namespace names and a defaultdict mapping namespace names to lists of file paths.
+    - Create a set `namespaces_set` containing all keys from `namespaces_map`.
+    - Return `namespaces_set` and `namespaces_map`.
+- **Output**: A tuple containing a set of namespace names and a `defaultdict` mapping namespace names to lists of file paths.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver._is_namespace`](<#_is_namespace>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<#CSharpResolver>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<#csharpresolver>)  (Base Class)
 
 
 ---
 #### CSharpResolver\.\_global\_using\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._global_using_resolver}} -->
-The `_global_using_resolver` method identifies and returns a list of file paths associated with global using directives in a C# project.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.py#L38>)
+
+Resolves global using directives in a C# project to their corresponding file paths.
 - **Inputs**:
-    - `project_files_to_symbols_map`: A dictionary mapping file paths to lists of `RawTreeSitterSymbolData` symbols, representing the symbols found in each file.
-    - `namespaces_set`: A set of strings representing the namespaces that have been identified in the project.
-    - `namespaces_map`: A defaultdict mapping namespace names to lists of `RawTreeSitterSymbolData` symbols, representing the symbols associated with each namespace.
-- **Control Flow**:
-    - Initialize an empty list `global_paths_list` to store paths associated with global using directives.
+    - `project_files_to_symbols_map`: A dictionary mapping file paths to lists of `RawTreeSitterSymbolData` objects, representing symbols in each file.
+    - `namespaces_set`: A set of namespace names that have been identified in the project.
+    - `namespaces_map`: A defaultdict mapping namespace names to lists of `RawTreeSitterSymbolData` objects associated with those namespaces.
+- **Logic and Control Flow**:
+    - Initialize an empty list `global_paths_list` to store paths related to global using directives.
     - Iterate over each list of symbols in `project_files_to_symbols_map`.
-    - For each symbol, check if it is an import and has a scoping kind of `GLOBAL_USING`.
-    - If the symbol's name is in `namespaces_set`, extend `global_paths_list` with paths from `namespaces_map` corresponding to the symbol's name.
-    - If the symbol's name is not in `namespaces_set`, split the name by its delimiter, remove the last part, and check if the resulting stripped name is in `namespaces_set`.
-    - If the stripped name is in `namespaces_set`, extend `global_paths_list` with paths from `namespaces_map` corresponding to the stripped name.
-    - Return the `global_paths_list` containing all paths associated with global using directives.
-- **Output**: A list of `Path` objects representing the file paths associated with global using directives in the project.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<#CSharpResolver>)  (Base Class)
+    - For each symbol, check if it is an import with a scoping kind of `GLOBAL_USING`.
+    - If the symbol's name is in `namespaces_set`, extend `global_paths_list` with paths from `namespaces_map` for that name.
+    - If the symbol's name is not in `namespaces_set`, split the name by its delimiter, remove the last part, and check if the stripped name is in `namespaces_set`.
+    - If the stripped name is in `namespaces_set`, extend `global_paths_list` with paths from `namespaces_map` for the stripped name.
+    - Return the `global_paths_list` containing all resolved paths for global using directives.
+- **Output**: A list of `Path` objects representing file paths associated with global using directives.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<#csharpresolver>)  (Base Class)
 
 
 ---
 #### CSharpResolver\.resolve\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver.resolve_import}} -->
-The `resolve_import` method resolves C# import statements and namespace declarations to corresponding project files by utilizing pre-computed namespace and global using data.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.py#L63>)
+
+Resolves C# import statements and namespace declarations to corresponding project files.
 - **Inputs**:
-    - `current_file`: The current file path as a `Path` object where the import statement is being resolved.
-    - `import_sym`: An instance of `RawTreeSitterSymbolData` representing the import symbol to be resolved.
-    - `project_files_to_symbols_map`: A dictionary mapping file paths to lists of `RawTreeSitterSymbolData`, representing the project's symbol data.
-- **Control Flow**:
-    - Check if cached namespace data is available; if not, compute it using [`_namespace_resolver`](<#CSharpResolver_namespace_resolver>).
-    - Retrieve the namespace set and map from the cached namespace data.
-    - Check if cached global using data is available; if not, compute it using [`_global_using_resolver`](<#CSharpResolver_global_using_resolver>).
+    - `current_file`: The path to the current file being processed.
+    - `import_sym`: The symbol data for the import statement to resolve.
+    - `project_files_to_symbols_map`: A dictionary mapping file paths to lists of symbol data for the project.
+- **Logic and Control Flow**:
+    - Check if cached namespace data is available; if not, compute it using [`_namespace_resolver`](<#csharpresolver_namespace_resolver>).
+    - Retrieve the set and map of namespaces from the cached data.
+    - Check if cached global using data is available; if not, compute it using [`_global_using_resolver`](<#csharpresolver_global_using_resolver>).
     - Initialize an empty list `visible_paths` to store resolved paths.
-    - Extend `visible_paths` with cached global using data.
+    - Add all paths from cached global using data to `visible_paths`.
     - Check if `import_sym` is a namespace using [`_is_namespace`](<#_is_namespace>).
-    - If `import_sym` is not a namespace, check if its name is in the namespace set and extend `visible_paths` with corresponding paths from the namespace map.
-    - If `import_sym` is not found, attempt to resolve by stripping the last part of the name and checking again.
-    - If `import_sym` is a namespace, check if its name is in the namespace set and extend `visible_paths` with corresponding paths.
-    - Return the `visible_paths` list containing resolved paths.
-- **Output**: A list of `Path` objects representing the resolved file paths for the given import symbol, or `None` if no paths are resolved.
+    - If `import_sym` is not a namespace, check if its name is in the namespace set; if so, add corresponding paths to `visible_paths`.
+    - If `import_sym` is not found, strip the last part of its name and check again; if found, add corresponding paths to `visible_paths`.
+    - If `import_sym` is a namespace, retrieve paths from the namespace map and add them to `visible_paths`.
+    - If no paths are found for a namespace, print a message indicating an untracked namespace declaration.
+- **Output**: A list of paths corresponding to the resolved import statement, or `None` if no paths are found.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._namespace_resolver`](<#CSharpResolver_namespace_resolver>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._global_using_resolver`](<#CSharpResolver_global_using_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._namespace_resolver`](<#csharpresolver_namespace_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver._global_using_resolver`](<#csharpresolver_global_using_resolver>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver._is_namespace`](<#_is_namespace>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<#CSharpResolver>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.CSharpResolver`](<#csharpresolver>)  (Base Class)
 
 
 
@@ -106,12 +114,14 @@ The `resolve_import` method resolves C# import statements and namespace declarat
 
 ---
 ### \_is\_namespace<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver._is_namespace}} -->
-The function `_is_namespace` checks if a given symbol represents a namespace declaration in C# code.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/csharp_resolver.py#L10>)
+
+Checks if a given symbol represents a namespace declaration in C#.
 - **Inputs**:
-    - `sym`: An instance of `RawTreeSitterSymbolData` representing a symbol in the code, which contains information about its scoping kind.
-- **Control Flow**:
-    - The function evaluates whether the `scoping_kind` of the `bespoke_data` attribute of the `sym` object is equal to `CSharpImportScopeKind.NAMESPACE_BLOCK_SCOPE_DECL` or `CSharpImportScopeKind.NAMESPACE_FILE_SCOPE_DECL`.
-    - It returns `True` if either condition is met, indicating that the symbol is a namespace declaration; otherwise, it returns `False`.
+    - `sym`: An instance of `RawTreeSitterSymbolData` representing a symbol to check.
+- **Logic and Control Flow**:
+    - Compares the `scoping_kind` attribute of `sym.bespoke_data` with `CSharpImportScopeKind.NAMESPACE_BLOCK_SCOPE_DECL` and `CSharpImportScopeKind.NAMESPACE_FILE_SCOPE_DECL`.
+    - Returns `True` if `scoping_kind` matches either of the namespace declaration kinds, otherwise returns `False`.
 - **Output**: A boolean value indicating whether the symbol is a namespace declaration.
 
 

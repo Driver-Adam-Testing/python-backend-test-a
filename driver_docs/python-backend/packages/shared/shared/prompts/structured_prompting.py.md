@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `structured_prompting.py` file defines a system for creating and manipulating structured prompts using components, with various style instructions for technical documentation.
+Defines `Component` and `Prompt` classes for managing and manipulating structured text components.
 
 # Purpose
-The code defines a set of classes using the Pydantic library to model and manipulate text components. The `Component` class represents a text string with automatic whitespace stripping through a field validator. It includes methods for string representation and addition, allowing concatenation of `Component` instances. The `Prompt` class manages a collection of `Component` objects, providing methods to append, extend, and prepend components, as well as convert the collection into a single string with a specified separator. The `Prompt` class also supports addition, enabling the combination of two `Prompt` instances.
+The code defines two classes, `Component` and `Prompt`, which are used to manage and manipulate text components. The `Component` class inherits from `BaseModel` and represents a single text string. It includes a field validator to automatically strip whitespace from the `string` attribute. The class also defines methods for string representation and addition, allowing two `Component` instances to be concatenated.
 
-The file includes several predefined `Component` instances containing style and documentation instructions, which suggest its use in a context where consistent documentation practices are enforced. These instructions emphasize the use of Simplified Technical English, avoidance of speculative language, and specific formatting guidelines for technical documentation. The code is structured as a library file intended to be imported and used in other parts of a software system, providing a clear API for managing and manipulating text components in a structured manner.
+The `Prompt` class also inherits from `BaseModel` and manages a list of `Component` instances. It provides methods to append, extend, and prepend components to the list, as well as a method to convert the list of components into a single string with a specified separator. The class includes a class method to create an empty `Prompt` and an addition method to combine two `Prompt` instances. This code is structured to be part of a library, providing functionality for text manipulation and composition.
 # Imports and Dependencies
 
 ---
@@ -21,72 +21,86 @@ The file includes several predefined `Component` instances containing style and 
 
 ---
 ### GENERAL\_STE\_STYLE\_INSTRUCTION
-- **Type**: `Component`
-- **Description**: `GENERAL_STE_STYLE_INSTRUCTION` is an instance of the `Component` class, containing a string that outlines specific style and copy editing instructions. These instructions emphasize adherence to ASD-STE100 Simplified Technical English, avoidance of subjective and speculative language, and a focus on clear communication of technical details.
-- **Use**: This variable is used to provide standardized style guidelines for content creation, ensuring consistency and clarity in technical documentation.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance that contains a string with style and copy editing instructions. These instructions ensure that content adheres to ASD-STE100 Simplified Technical English (STE) and avoids subjective or speculative language.
+- **Use**: Used to provide consistent style guidelines for content generation.
 
 
 ---
 ### NO\_RESTATEMENT\_STYLE\_INSTRUCTION\_FOR\_NODES
-- **Type**: `Component`
-- **Description**: The variable `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES` is an instance of the `Component` class, which contains a string that provides guidelines for writing technical documentation without restating the identity of the component being documented. It includes examples of how to phrase documentation more directly and concisely.
-- **Use**: This variable is used to enforce a specific style of documentation that avoids redundant restatements of component identities.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains instructions on how to avoid restating the identity of components in technical documentation. The `string` provides examples and guidance on how to phrase documentation more directly.
+- **Use**: Used to store and convey specific style instructions for writing technical documentation.
 
 
 ---
 ### NO\_RESTATEMENT\_STYLE\_INSTRUCTION\_FOR\_SYMBOLS
-- **Type**: `Component`
-- **Description**: The `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS` variable is an instance of the `Component` class, containing a string that provides guidelines for writing technical documentation without restating the identity of the component being documented. It includes examples to illustrate how to directly describe the functionality of methods, functions, and classes without unnecessary repetition.
-- **Use**: This variable is used to guide the writing of technical documentation by providing style instructions for avoiding restatement of component identities.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains instructions on how to document code without restating the identity of components. The `string` attribute provides examples and guidelines for concise and direct documentation.
+- **Use**: Used to store and convey documentation style instructions within the codebase.
 
 
 ---
 ### TERSE\_TWITTER\_SINGLE\_SENTENCE\_STYLE\_INSTRUCTION
-- **Type**: `Component`
-- **Description**: `TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION` is an instance of the `Component` class, initialized with a string that instructs the user to produce an output that is a single, extremely terse sentence. The sentence is intended to fit on a single line in various media and must not exceed 100 characters.
-- **Use**: This variable is used to enforce a concise output style for content that needs to be brief and fit within a limited character count.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains a concise instruction for output formatting. The instruction specifies that the output must be a single sentence, no longer than 100 characters, suitable for display in various media.
+- **Use**: Used to enforce a specific style of output formatting in documentation or communication.
 
 
 ---
 ### NO\_RESTATEMENT\_STYLE\_INSTRUCTION\_FOR\_CODE\_PURPOSE
-- **Type**: `Component`
-- **Description**: `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE` is an instance of the `Component` class, which contains a string providing instructions for writing technical documentation without restating the identity of the code component being documented. The string emphasizes starting directly with the purpose or functionality of the code, avoiding phrases like "The provided module...".
-- **Use**: This variable is used to guide the style of technical documentation writing.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains a specific instruction for writing technical documentation. The `string` is processed to remove leading and trailing whitespace using the `strip_string` method.
+- **Use**: Used to store and manage a specific instruction for technical documentation purposes.
+
+
+---
+### DESCRIBE\_WITH\_CATEGORY\_AND\_ACTION\_VERB
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains a detailed instruction for technical documentation. The instruction emphasizes the importance of identifying the kind or category of the subject being described, followed by an action verb or relevant content.
+- **Use**: Used to provide guidance on how to start technical documentation with more information density.
 
 
 ---
 ### NO\_RESTATEMENT\_STYLE\_INSTRUCTION\_FOR\_METADATA\_PURPOSE
-- **Type**: `Component`
-- **Description**: The `NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE` variable is an instance of the `Component` class, initialized with a string that provides guidelines for writing technical documentation without restating the identity of the content being documented. It emphasizes starting explanations directly without referring to the content as 'provided' or using indirect language.
-- **Use**: This variable is used to guide the creation of technical documentation for metadata content, ensuring clarity and directness.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains instructions for technical documentation. The `string` provides guidelines on how to document metadata content without restating the identity of the component.
+- **Use**: Used to store and manage documentation instructions for metadata content.
 
 
 ---
 ### USE\_BACKTICKS\_STYLE\_INSTRUCTION
-- **Type**: `Component`
-- **Description**: The `USE_BACKTICKS_STYLE_INSTRUCTION` variable is an instance of the `Component` class, which contains a string that instructs users to enclose references to source code contents or symbols in single backticks. This ensures clarity and consistency in technical documentation by using a standard format for code references.
-- **Use**: This variable is used to provide a style instruction for formatting code references in documentation.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains instructions for using backticks in code documentation. The `string` attribute is validated to remove leading and trailing whitespace.
+- **Use**: Used to store and manage a specific instruction for formatting code references in documentation.
 
 
 ---
 ### USE\_TRIPLE\_BACKTICS\_FOR\_CODE\_BLOCKS\_STYLE\_INSTRUCTION
-- **Type**: `Component`
-- **Description**: The `USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION` is a global variable of type `Component` that contains a string with instructions for formatting code blocks in Markdown. It specifies that code blocks should be enclosed in triple backticks and annotated with the language identifier, while general Markdown prose should not be enclosed in code fences.
-- **Use**: This variable is used to provide style instructions for formatting code blocks in Markdown documentation.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains instructions for using triple backticks in code blocks. The `string` attribute is validated to remove leading and trailing whitespace.
+- **Use**: Used to store and manage style instructions for code block formatting.
 
 
 ---
 ### RETURN\_UNEDITED\_CONTENT\_IF\_NO\_SUBSTANTIAL\_CHANGES\_FOLDERS
-- **Type**: `Component`
-- **Description**: `RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS` is an instance of the `Component` class, initialized with a string that provides instructions on handling content for a folder. The string advises returning the content unchanged if it still applies, or updating it if there are changes in the folder structure or contents.
-- **Use**: This variable is used to manage content updates by determining whether existing content can be reused or needs modification based on folder changes.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance that contains a string message. The message provides instructions on how to handle content for a folder based on whether there are substantial changes or not.
+- **Use**: Used to determine if folder content should be returned unchanged or updated based on changes.
 
 
 ---
 ### GENERIC\_MARKDOWN\_OUTPUT\_INSTRUCTION
-- **Type**: `Component`
-- **Description**: The `GENERIC_MARKDOWN_OUTPUT_INSTRUCTION` is an instance of the `Component` class, which contains a string providing instructions on formatting output in Markdown. It emphasizes the use of Markdown syntax for headings, lists, and code references, with single backticks for inline code and triple backticks for code blocks.
-- **Use**: This variable is used to guide the formatting of output content in Markdown.
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains Markdown formatting instructions. The `string` attribute provides guidelines for formatting output in Markdown, including the use of headings, lists, and code references.
+- **Use**: Used to store and convey Markdown formatting instructions for output.
+
+
+---
+### NO\_MARKDOWN\_ONLY\_RAW\_TEXT\_FORMATTING
+- **Type**: ``Component``
+- **Description**: Represents a `Component` instance with a `string` attribute that contains instructions to avoid using special formatting in text output. The `string` attribute is validated to remove leading and trailing whitespace.
+- **Use**: Used to store and manage text instructions without special formatting.
 
 
 # Classes
@@ -96,12 +110,12 @@ The file includes several predefined `Component` instances containing style and 
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L6>)
 
 - **Members**:
-    - `string`: A string attribute that holds the main content of the component.
-- **Description**: The `Component` class is a Pydantic model that represents a component with a single string attribute, providing functionality to automatically strip whitespace from the string and allowing concatenation of two `Component` instances.
+    - `string`: A string attribute that stores text data.
+- **Description**: Represents a component with a string attribute, providing functionality to strip whitespace from the string and support addition of two `Component` instances by concatenating their strings.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component.strip_string`](<#Componentstrip_string>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component.__str__`](<#Component__str__>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component.__add__`](<#Component__add__>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component.strip_string`](<#componentstrip_string>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component.__str__`](<#component__str__>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component.__add__`](<#component__add__>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -111,16 +125,15 @@ The file includes several predefined `Component` instances containing style and 
 #### Component\.strip\_string<!-- {{#callable:python-backend/packages/shared/shared/prompts/structured_prompting.Component.strip_string}} -->
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L9>)
 
-Strips leading and trailing whitespace from a string.
+Removes leading and trailing whitespace from a string.
 - **Decorators**: `@field_validator`, `@classmethod`
 - **Inputs**:
-    - `s`: A string from which leading and trailing whitespace will be removed.
-- **Control Flow**:
-    - The method receives a string input 's'.
-    - It applies the 'strip' method to remove any leading and trailing whitespace from 's'.
-    - The stripped string is returned as the output.
+    - `s`: A string from which to remove leading and trailing whitespace.
+- **Logic and Control Flow**:
+    - Uses the `strip` method on the input string `s` to remove whitespace from both ends.
+    - Returns the modified string.
 - **Output**: A string with leading and trailing whitespace removed.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<#Component>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<#component>)  (Base Class)
 
 
 ---
@@ -128,27 +141,27 @@ Strips leading and trailing whitespace from a string.
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L14>)
 
 Returns the `string` attribute of the `Component` instance as a string.
-- **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `string` attribute of the `Component` instance.
-- **Output**: A string representation of the `Component` instance, specifically the `string` attribute.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<#Component>)  (Base Class)
+- **Inputs**:
+    - `self`: The instance of the `Component` class.
+- **Logic and Control Flow**:
+    - Accesses the `string` attribute of the `Component` instance.
+    - Returns the value of the `string` attribute.
+- **Output**: The `string` attribute of the `Component` instance as a string.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<#component>)  (Base Class)
 
 
 ---
 #### Component\.\_\_add\_\_<!-- {{#callable:python-backend/packages/shared/shared/prompts/structured_prompting.Component.__add__}} -->
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L17>)
 
-Implements addition of two `Component` objects by concatenating their `string` attributes.
+Adds two `Component` objects by concatenating their `string` attributes.
 - **Inputs**:
-    - `other`: Another `Component` instance to be added to the current instance.
-- **Control Flow**:
-    - Takes the `string` attribute of the current instance and the `string` attribute of the `other` instance.
-    - Concatenates these two strings together.
-    - Creates a new `Component` instance with the concatenated string.
-    - Returns the new `Component` instance.
-- **Output**: A new `Component` instance with the concatenated `string` attributes of the two `Component` instances.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<#Component>)  (Base Class)
+    - `other`: A `Component` object to add to the current instance.
+- **Logic and Control Flow**:
+    - Concatenates the `string` attribute of the current instance with the `string` attribute of the `other` instance.
+    - Creates a new `Component` object with the concatenated string.
+- **Output**: A new `Component` object with the concatenated `string` attributes.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<#component>)  (Base Class)
 
 
 
@@ -158,15 +171,15 @@ Implements addition of two `Component` objects by concatenating their `string` a
 
 - **Decorators**: `@classmethod`
 - **Members**:
-    - `components`: A list of `Component` objects that make up the prompt.
-- **Description**: The `Prompt` class is a data structure that represents a collection of `Component` objects, allowing for operations such as appending, prepending, and extending the list of components, as well as converting the entire collection into a string with a specified separator.
+    - `components`: A list of `Component` objects.
+- **Description**: Represents a collection of `Component` objects with methods to manipulate and convert them into a string.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<#Promptextend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.prepend`](<#Promptprepend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<#Promptinto_str>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.__add__`](<#Prompt__add__>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.extend`](<#promptextend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.prepend`](<#promptprepend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<#promptinto_str>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.__add__`](<#prompt__add__>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -176,14 +189,15 @@ Implements addition of two `Component` objects by concatenating their `string` a
 #### Prompt\.empty<!-- {{#callable:python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty}} -->
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L24>)
 
-Creates an empty `Prompt` instance with no components.
+Creates and returns an instance of `Prompt` with an empty `components` list.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create a new instance.
-- **Control Flow**:
-    - Calls the class constructor `cls()` with an empty list for `components`.
+    - `cls`: The class `Prompt` itself, used to create a new instance.
+- **Logic and Control Flow**:
+    - Calls the constructor of `Prompt` with an empty list for the `components` attribute.
+    - Returns the newly created `Prompt` instance.
 - **Output**: An instance of `Prompt` with an empty `components` list.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#Prompt>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#prompt>)  (Base Class)
 
 
 ---
@@ -192,12 +206,12 @@ Creates an empty `Prompt` instance with no components.
 
 Appends a `Component` to the `components` list and returns the `Prompt` instance.
 - **Inputs**:
-    - `component`: A `Component` object to be appended to the `components` list.
-- **Control Flow**:
-    - The method appends the provided `component` to the `components` list of the `Prompt` instance.
-    - It then returns the `Prompt` instance itself.
-- **Output**: The `Prompt` instance with the new `Component` appended.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#Prompt>)  (Base Class)
+    - `component`: A `Component` object to append to the `components` list.
+- **Logic and Control Flow**:
+    - Appends the given `component` to the `components` list of the `Prompt` instance.
+    - Returns the `Prompt` instance itself after appending the component.
+- **Output**: The `Prompt` instance with the new component appended.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#prompt>)  (Base Class)
 
 
 ---
@@ -207,57 +221,57 @@ Appends a `Component` to the `components` list and returns the `Prompt` instance
 Extends the current `Prompt` instance's components with those from another `Prompt` instance.
 - **Inputs**:
     - `other`: Another `Prompt` instance whose components will be added to the current instance.
-- **Control Flow**:
-    - Accesses the `components` attribute of the current `Prompt` instance.
-    - Calls the `extend` method on the current instance's `components` list, passing the `components` list of the `other` `Prompt` instance.
-    - Returns the current `Prompt` instance after extending its components.
-- **Output**: Returns the current `Prompt` instance with its components extended by those of the `other` instance.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#Prompt>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `components` attribute of the current instance and the `other` instance.
+    - Uses the `extend` method of the list to add all components from `other.components` to `self.components`.
+    - Returns the current instance (`self`) after modification.
+- **Output**: The modified `Prompt` instance with extended components.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#prompt>)  (Base Class)
 
 
 ---
 #### Prompt\.prepend<!-- {{#callable:python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.prepend}} -->
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L36>)
 
-Inserts a `Component` at the beginning of the `components` list and returns the `Prompt` instance.
+Inserts a `Component` at the start of the `components` list and returns the `Prompt` instance.
 - **Inputs**:
-    - `component`: A `Component` object to be inserted at the start of the `components` list.
-- **Control Flow**:
+    - `component`: A `Component` object to insert at the start of the `components` list.
+- **Logic and Control Flow**:
     - Inserts the `component` at index 0 of the `components` list.
-    - Returns the `Prompt` instance (`self`).
-- **Output**: The method returns the `Prompt` instance (`self`) after modifying the `components` list.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#Prompt>)  (Base Class)
+    - Returns the `Prompt` instance after insertion.
+- **Output**: The `Prompt` instance with the `component` prepended to the `components` list.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#prompt>)  (Base Class)
 
 
 ---
 #### Prompt\.into\_str<!-- {{#callable:python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str}} -->
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L40>)
 
-Converts the list of components into a single string separated by a specified delimiter.
+Converts the list of `Component` objects in `components` to a single string, separated by `sep`.
 - **Inputs**:
-    - `sep`: A string delimiter used to separate the components in the resulting string, defaulting to two newline characters.
-- **Control Flow**:
-    - Iterates over each component in the `components` list.
-    - Converts each component to a string using the `str()` function.
-    - Joins all the string representations of components using the specified `sep` delimiter.
-- **Output**: A single string composed of all component strings joined by the specified separator.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#Prompt>)  (Base Class)
+    - `sep`: A string separator used to join the string representations of `Component` objects; defaults to two newline characters (`"\n\n"`).
+- **Logic and Control Flow**:
+    - Converts each `Component` object in `self.components` to its string representation using a list comprehension.
+    - Joins the resulting list of strings into a single string, using the `sep` as the separator.
+- **Output**: A single string that is the concatenation of the string representations of all `Component` objects in `components`, separated by `sep`.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#prompt>)  (Base Class)
 
 
 ---
 #### Prompt\.\_\_add\_\_<!-- {{#callable:python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.__add__}} -->
 [View Source →](<../../../../../../packages/shared/shared/prompts/structured_prompting.py#L43>)
 
-Implements addition of two `Prompt` objects by combining their components.
+Adds two `Prompt` objects by combining their `components` lists.
 - **Inputs**:
-    - `other`: Another `Prompt` object to be added to the current instance.
-- **Control Flow**:
-    - Takes the `components` list from the current `Prompt` instance.
-    - Takes the `components` list from the `other` `Prompt` instance.
-    - Concatenates the two `components` lists.
-    - Creates a new `Prompt` instance with the concatenated list.
-- **Output**: A new `Prompt` object with combined components from both `Prompt` instances.
-- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#Prompt>)  (Base Class)
+    - `other`: A `Prompt` object to add to the current `Prompt` object.
+- **Logic and Control Flow**:
+    - Takes the `components` list from the current `Prompt` object.
+    - Takes the `components` list from the `other` `Prompt` object.
+    - Combines both `components` lists using the `+` operator.
+    - Creates a new `Prompt` object with the combined `components` list.
+    - Returns the new `Prompt` object.
+- **Output**: A new `Prompt` object with combined `components` from both `Prompt` objects.
+- **See also**: [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt`](<#prompt>)  (Base Class)
 
 
 

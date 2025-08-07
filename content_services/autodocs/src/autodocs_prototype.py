@@ -59,7 +59,7 @@ generate_image = (
     )
     .pip_install(
         [
-            "openai>=1.40.2",
+            "openai==1.99.1",
             "pydantic>=2.8.2",
             "/shared_pkg",
             "pymupdf4llm==0.0.17",

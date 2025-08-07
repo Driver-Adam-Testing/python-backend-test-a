@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mermaid_python_test.py` file contains a function to check if a given Mermaid diagram code can be rendered using the Mermaid CLI, along with examples of testing valid and invalid Mermaid diagrams.
+Tests if Mermaid code blocks can be rendered using the Mermaid CLI.
 
 # Purpose
-This Python script provides a narrow functionality focused on verifying the renderability of Mermaid diagram code using the Mermaid CLI. It defines a function, [`is_mermaid_renderable`](<#is_mermaid_renderable>), which takes a string of Mermaid code and attempts to render it by creating temporary files for input and output, leveraging the `subprocess` module to execute the Mermaid CLI command. If the rendering is successful, the function returns `True`; otherwise, it returns `False` and prints any errors encountered. The script includes a main block with examples of both valid and invalid Mermaid diagrams to demonstrate the function's usage and output. This code is a utility script designed for testing and validating Mermaid diagram syntax in an automated manner.
+This script checks if a given Mermaid diagram code block can be rendered using the Mermaid CLI. It defines a function [`is_mermaid_renderable`](<#is_mermaid_renderable>) that takes a string of Mermaid code as input and returns `True` if the code is renderable, or `False` otherwise. The function creates temporary files to store the Mermaid code and the output, and it uses the `subprocess` module to execute the Mermaid CLI command. If the command fails, it captures and prints the error output. The script includes example Mermaid diagrams to demonstrate the function's usage, testing both valid and invalid Mermaid code.
 # Imports and Dependencies
 
 ---
@@ -19,17 +19,20 @@ This Python script provides a narrow functionality focused on verifying the rend
 
 ---
 ### is\_mermaid\_renderable<!-- {{#callable:python-backend/content_services/agent/tests/mermaid_python_test.is_mermaid_renderable}} -->
-The function checks if a given Mermaid diagram code can be rendered using the Mermaid CLI.
+[View Source →](<../../../../../content_services/agent/tests/mermaid_python_test.py#L6>)
+
+Checks if a given Mermaid code block can be rendered by the Mermaid CLI.
 - **Inputs**:
-    - `mermaid_code`: The Mermaid diagram source code provided as a string.
-- **Control Flow**:
-    - A temporary file is created to store the Mermaid code with a '.mmd' extension.
-    - Another temporary file is created to serve as the output path for the rendering process, with a '.svg' extension.
-    - The function attempts to render the Mermaid code using the 'mmdc' command-line tool, capturing any errors.
-    - If the rendering is successful, the function returns True.
-    - If a CalledProcessError is raised, indicating a rendering failure, the function prints the error message and returns False.
-    - Finally, the function ensures that all temporary files are deleted, regardless of success or failure.
-- **Output**: The function returns a boolean value: True if the Mermaid code is renderable, and False otherwise.
+    - `mermaid_code`: The Mermaid diagram source as a string.
+- **Logic and Control Flow**:
+    - Create a temporary file with a '.mmd' suffix to store the Mermaid code.
+    - Write the provided `mermaid_code` to the temporary file and flush the contents to disk.
+    - Create another temporary file with a '.svg' suffix to serve as the output path for the Mermaid CLI.
+    - Use `subprocess.check_output` to call the Mermaid CLI (`mmdc`) with the input and output file paths.
+    - If the CLI call is successful, return `True`, indicating the code is renderable.
+    - If a `subprocess.CalledProcessError` is raised, print the error output and return `False`.
+    - In the `finally` block, remove the temporary files created for input and output.
+- **Output**: Returns `True` if the Mermaid code is renderable, otherwise returns `False`.
 
 
 

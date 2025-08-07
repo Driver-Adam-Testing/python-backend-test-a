@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-GitHub Actions workflow configuration files for automating dependency updates, deployments, and unit testing.
+GitHub Actions workflows for package updates, environment deployments, and unit testing.
 
 
 ## Files
-- **[dependabot.yml](dependabot.yml.md)**: The `dependabot.yml` file in the `python-backend` codebase configures a GitHub Actions workflow to automatically update and commit changes to interdependent packages and lock files when Dependabot opens or synchronizes a pull request.
-- **[develop.yaml](develop.yaml.md)**: The `develop.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend development environment, triggered by successful unit tests or manual dispatch, and includes steps for setting up Node.js, Python, AWS credentials, and deploying various services using Poetry and Modal.
-- **[main.yaml](main.yaml.md)**: The `main.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to production upon pushes to the main branch, including setting up Node.js and Python environments, configuring AWS credentials, and deploying various content services using Poetry and Modal.
-- **[ops.yaml](ops.yaml.md)**: The `ops.yaml` file defines a GitHub Actions workflow for deploying backend operations, triggered by pushes to the "ops" branch, and includes steps for setting up Node.js, Python, and AWS credentials, as well as deploying with CDK.
-- **[staging.yaml](staging.yaml.md)**: The `staging.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to a staging environment, triggered by pushes to branches prefixed with 'release/' or manually from the Actions tab.
-- **[unittest.yml](unittest.yml.md)**: The `unittest.yml` file in the `python-backend` codebase defines a GitHub Actions workflow for running unit tests on the `develop` and `staging` branches, setting up the environment, installing dependencies, executing tests, and archiving code coverage results.
+- **[dependabot.yml](dependabot.yml.md)**: GitHub Actions workflow for automatically updating interdependent packages with Dependabot.
+- **[develop.yaml](develop.yaml.md)**: GitHub Actions workflow for deploying the Python backend to the development environment after successful tests.
+- **[main.yaml](main.yaml.md)**: GitHub Actions workflow for deploying the backend to the production environment.
+- **[ops.yaml](ops.yaml.md)**: GitHub Actions workflow for deploying backend operations with Node.js, Python, and AWS configuration.
+- **[staging.yaml](staging.yaml.md)**: GitHub Actions workflow for deploying the backend to a staging environment on specific branch events.
+- **[unittest.yml](unittest.yml.md)**: GitHub Actions workflow for running Python backend unit tests on specific branches with code coverage reporting.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

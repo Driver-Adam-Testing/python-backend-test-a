@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_symbol_description.txt` file provides instructions for writing a concise paragraph description of a symbol in a source file, including details such as the source file path, file description, symbol name, symbol kind, and code context.
+Instructions for writing a single paragraph description of a symbol in a source file.
 
 # Purpose
-The provided content appears to be a set of instructions for generating documentation for symbols within a source file. It outlines a structured approach to describe a symbol, such as a function or variable, by providing the source file path, a description of the file's purpose, the symbol's name and kind, and the relevant lines of code where the symbol is defined. The instructions emphasize the importance of deriving information directly from the given data without making assumptions. An example is provided to illustrate how to construct a concise and informative paragraph that explains the function `generate_response`, detailing its parameters and return value based on the code context. This approach ensures clarity and accuracy in documenting software components.
+The `Makefile` is used to automate the build process of a software project. It defines a set of tasks to be executed, such as compiling source code, linking binaries, and cleaning up build artifacts. Each task is specified as a target, which can have dependencies and associated commands. When a target is invoked, the `make` utility checks if the target is up-to-date by comparing timestamps of the target and its dependencies. If the target is not up-to-date, `make` executes the commands to update it. This process ensures that only the necessary parts of the project are rebuilt, optimizing the build process.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

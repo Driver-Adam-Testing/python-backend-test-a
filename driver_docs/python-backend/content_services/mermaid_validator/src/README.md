@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains the `main.py` file, which is responsible for setting up a Modal app to validate Mermaid diagram syntax using a Node.js environment with the Mermaid CLI.
+Validates Mermaid diagram syntax and checks CLI version using a Modal app with Node.js and Chromium.
 
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase sets up a Modal app to validate Mermaid diagram syntax using a Node.js environment with the Mermaid CLI, and provides functions to check the version and syntax of Mermaid diagrams, including a local entry point to test various diagram examples.
+- **[main.py](main.py.md)**: Validates Mermaid diagram syntax and checks CLI version using a Modal app with Node.js and Chromium.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files for deploying GitLab Enterprise Edition with Docker, including setup instructions.
+Configuration files and setup instructions for deploying and managing a GitLab service with Docker.
 
 ## Folders
-- **[gitlab](gitlab/README.md)**: Configuration files for deploying GitLab Enterprise Edition with Docker, including setup instructions.
+- **[gitlab](gitlab/README.md)**: Configuration files and setup instructions for deploying and managing a GitLab service with Docker.
 
 
 ---

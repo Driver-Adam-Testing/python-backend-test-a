@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_10_16_1131-785ce738f845_add_missing_pdf_summary_record_if_needed.py` file is an Alembic migration script that adds a missing `pdf_summary` record to the `derived_content_types` table if it does not already exist, and provides a downgrade function to remove it.
+Alembic migration script to add or remove a 'pdf_summary' record in the database.
 
 # Purpose
-This code is an Alembic migration script designed to manage changes to a database schema, specifically focusing on the `derived_content_types` table. The script's primary purpose is to ensure that a record with the type name 'pdf_summary' exists in the table. The [`upgrade`](<#upgrade>) function checks if the 'pdf_summary' type is already present; if not, it inserts this record into the table. Conversely, the [`downgrade`](<#downgrade>) function removes the 'pdf_summary' record, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function. This script is part of a version control system for database schemas, allowing developers to apply and revert changes systematically.
+This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. The script's primary purpose is to manage the presence of a record in the `derived_content_types` table with the `type_name` of `'pdf_summary'`. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), which are standard in Alembic migrations to apply and revert changes, respectively.
 
-The script uses SQLAlchemy and Alembic, which are common tools for database migrations in Python applications. The revision identifiers at the top of the file, such as `revision` and `down_revision`, are used by Alembic to track the order of migrations and dependencies between them. This script is not intended to be a standalone application but rather a component of a larger system that manages database schema evolution. It does not define public APIs or external interfaces but instead provides a specific functionality within the context of database management.
+The [`upgrade`](<#upgrade>) function checks if a record with the `type_name` `'pdf_summary'` exists in the `derived_content_types` table. If the record does not exist, it inserts a new record with this `type_name`. The [`downgrade`](<#downgrade>) function removes the record with the `type_name` `'pdf_summary'` from the table. The script uses raw SQL queries executed through SQLAlchemy's connection object to perform these operations. The revision identifiers `revision` and `down_revision` are used by Alembic to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -20,55 +20,60 @@ The script uses SQLAlchemy and Alembic, which are common tools for database migr
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the specific migration script when applying or rolling back database changes.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the immediate predecessor of the current migration, ensuring that migrations are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, ensuring a sequential order of migrations.
+- **Use**: Indicates the immediate predecessor revision in the migration history.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_10_16_1131-785ce738f845_add_missing_pdf_summary_record_if_needed.upgrade}} -->
-The `upgrade` function checks for the existence of a 'pdf_summary' record in the 'derived_content_types' table and inserts it if it does not exist.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_10_16_1131-785ce738f845_add_missing_pdf_summary_record_if_needed.py#L17>)
+
+Adds a 'pdf_summary' record to the 'derived_content_types' table if it does not already exist.
 - **Inputs**: None
-- **Control Flow**:
-    - Establish a database connection using Alembic's `op.get_bind()` method.
-    - Execute a SQL query to check if a record with `type_name` 'pdf_summary' exists in the `derived_content_types` table.
-    - Convert the result of the query to a list and check its length.
-    - If the list is empty, indicating the record does not exist, execute an SQL insert statement to add the 'pdf_summary' record to the table.
-- **Output**: The function does not return any value; it performs a database operation to ensure a specific record exists.
+- **Logic and Control Flow**:
+    - Execute a SQL query to select 'type_name' from 'derived_content_types' where 'type_name' is 'pdf_summary'.
+    - Get a database connection using 'op.get_bind()'.
+    - Execute the query using the connection and store the result.
+    - Check if the result is empty by converting it to a list and checking its length.
+    - If the result is empty, execute an SQL insert query to add 'pdf_summary' to 'derived_content_types'.
+- **Output**: No output is returned as the function returns 'None'.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_10_16_1131-785ce738f845_add_missing_pdf_summary_record_if_needed.downgrade}} -->
-The `downgrade` function removes the 'pdf_summary' record from the 'derived_content_types' table in the database.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_10_16_1131-785ce738f845_add_missing_pdf_summary_record_if_needed.py#L31>)
+
+Removes the 'pdf_summary' record from the 'derived_content_types' table.
 - **Inputs**: None
-- **Control Flow**:
-    - Define a SQL delete query to remove the 'pdf_summary' record from the 'derived_content_types' table.
-    - Obtain a database connection using Alembic's `op.get_bind()` method.
-    - Execute the delete query using the connection's `execute` method with SQLAlchemy's `text` function.
-- **Output**: The function does not return any output; it performs a database operation to delete a specific record.
+- **Logic and Control Flow**:
+    - Defines a SQL delete query to remove the 'pdf_summary' record from the 'derived_content_types' table.
+    - Gets a database connection using `op.get_bind()`.
+    - Executes the delete query using the connection.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

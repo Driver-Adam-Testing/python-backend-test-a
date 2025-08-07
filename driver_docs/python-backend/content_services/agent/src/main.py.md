@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.py` file in the `python-backend` codebase sets up a modal interface for the agent package, configuring an application with specific image and secret settings, and defining a function to execute various block kind agents based on input.
+Exposes a modal interface for the agent package, configuring and executing various block kind agents.
 
 # Purpose
-This Python file is designed to set up and expose a modal interface for an agent package, utilizing the Modal platform to manage and execute containerized applications. The file defines a `modal.App` instance named "agent" and configures a Docker image based on a slim Debian distribution with Python 3.12. It installs necessary packages like Node.js and npm, and includes local directories into the image for shared resources and database drivers. The configuration also specifies secrets for secure access to external services such as OpenAI, a database, and AWS S3, and sets a maximum of 36 containers for scalability. The file is structured to adapt to different environments (development, staging, production) by conditionally adding a proxy configuration.
+The code defines a configuration and execution environment for an agent package using the Modal platform. It sets up a `modal.App` named `agent` and configures a `modal.Image` based on a Debian Slim image with Python 3.12. The image is further customized by installing Node.js and npm, and by adding local directories to the remote environment. The code also installs dependencies specified in a `pyproject.toml` file using Poetry. The `agent_model_config` dictionary specifies the image, secrets, and container limits for the application, and conditionally adds a proxy configuration based on the environment.
 
-The core functionality is encapsulated in the [`run`](<#run>) function, which is decorated with `@app.function` to define it as a callable function within the Modal app. This function processes input data, which is expected to be a dictionary or a `PipelineInput` object, and executes different types of block agents based on the `block_kind` attribute of the input. It imports and utilizes various execution functions from shared pipelines to handle different block types, such as lists, tables, diagrams, and code. The function is designed to handle a variety of input formats and execute corresponding sequences, returning the results in a structured format. This setup indicates that the file serves as a critical component in a larger system, likely part of a microservices architecture, where it acts as an interface for executing complex workflows in a scalable and secure manner.
+The [`run`](<#run>) function is decorated with `@app.function`, which configures it to run with specific parameters such as a timeout and a minimum number of containers. The function takes a dictionary input, which it parses into a `PipelineInput` object. It then executes different agent functions based on the `block_kind` attribute of the input. These functions include `execute_list_block_agent`, `execute_table_block_agent`, `execute_diagram_block_agent`, and `execute_code_block_agent`, each corresponding to different types of processing tasks. The function returns the result of the executed task, formatted as a model dump. This setup allows the agent to process various types of input blocks and execute corresponding tasks in a scalable and configurable environment.
 # Imports and Dependencies
 
 ---
@@ -27,46 +27,49 @@ The core functionality is encapsulated in the [`run`](<#run>) function, which is
 
 ---
 ### app
-- **Type**: `modal.App`
-- **Description**: The `app` variable is an instance of the `modal.App` class, initialized with the name 'agent'. This variable represents the main application interface for the agent package, allowing for the configuration and execution of functions within the Modal framework.
-- **Use**: The `app` variable is used to define and manage the lifecycle of functions and resources within the Modal application, such as the `run` function.
+- **Type**: ``modal.App``
+- **Description**: Represents an instance of a `modal.App` with the name 'agent'. This instance is used to define and manage the application configuration and execution environment within the Modal framework.
+- **Use**: Used to configure and run functions and services in the Modal environment.
 
 
 ---
 ### image
-- **Type**: `modal.Image`
-- **Description**: The `image` variable is an instance of a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It installs Node.js and npm, adds local directories to specified remote paths, and installs dependencies from a `pyproject.toml` file using Poetry.
-- **Use**: This variable is used to define the Docker-like environment configuration for the `agent_model_config`, which is then applied to the `run` function in the modal application.
+- **Type**: ``modal.Image``
+- **Description**: The `image` variable is an instance of the `modal.Image` class, specifically configured using the `debian_slim` base image with Python version 3.12. It installs Node.js and npm, adds local directories to specified remote paths, and installs dependencies from a `pyproject.toml` file using Poetry.
+- **Use**: Used to define the container image configuration for the `agent_model_config` in the application.
 
 
 ---
 ### agent\_model\_config
-- **Type**: `dictionary`
-- **Description**: The `agent_model_config` is a dictionary that configures the environment for running a function within the modal application. It includes an image configuration, a list of secrets for accessing various services, and a maximum number of containers allowed for execution.
-- **Use**: This variable is used to pass configuration settings to the `@app.function` decorator, which defines the execution environment for the `run` function.
+- **Type**: ``dict``
+- **Description**: Contains configuration settings for the agent model, including the Docker image, secrets, and maximum number of containers. The `image` key references a `modal.Image` object configured with Debian Slim and additional packages and directories. The `secrets` key holds a list of `modal.Secret` objects for accessing various services. The `max_containers` key specifies the maximum number of containers allowed.
+- **Use**: Used to configure the `@app.function` decorator for the `run` function, providing necessary settings for execution.
 
 
 # Functions
 
 ---
 ### run<!-- {{#callable:python-backend/content_services/agent/src/main.run}} -->
-The `run` function processes input data based on its block kind and executes the corresponding agent pipeline, returning the result.
+[View Source →](<../../../../../content_services/agent/src/main.py#L36>)
+
+Executes a sequence of operations based on the block kind specified in the input.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `input`: A dictionary representing the input data, which is expected to be or can be converted into a [`PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>) object.
-- **Control Flow**:
-    - The function first checks if the input is an instance of [`PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>); if not, it converts the input dictionary into a [`PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>) object.
-    - It uses a match-case statement to determine the block kind of the parsed input and executes the corresponding block agent function.
-    - For `BlockKind.LIST`, it calls [`execute_list_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py.md#execute_list_block_agent>) and returns its result after calling `model_dump()`.
-    - For `BlockKind.TABLE`, it calls [`execute_table_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/table.py.md#execute_table_block_agent>) and returns its result after calling `model_dump()`.
-    - For `BlockKind.DIAGRAM`, it calls [`execute_diagram_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/diagram.py.md#execute_diagram_block_agent>) and returns its result after calling `model_dump()`.
-    - For `BlockKind.CODE`, it modifies the prompt to include language identifiers and calls [`execute_code_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/code.py.md#execute_code_block_agent>), returning its result after calling `model_dump()`.
-    - For `BlockKind.TEXT`, it modifies the prompt to specify that the content should be a single paragraph of text.
-    - For `BlockKind.ANY`, it sets the response format to `None`.
-    - If none of the specific block kinds match, it defaults to calling [`execute_sequence`](<../../../packages/shared/shared/pipelines/agents/execute.py.md#execute_sequence>) with the parsed input and returns its result after calling `model_dump()`.
-- **Output**: The function returns the result of the executed block agent or sequence, which is a model-dumped representation of the output.
+    - `input`: A dictionary that contains the input data, which can be converted to a [`PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>) object.
+- **Logic and Control Flow**:
+    - Import necessary modules and functions for execution based on block kind.
+    - Check if `input` is an instance of [`PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>); if not, convert it to [`PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>).
+    - Use a match-case statement to determine the block kind of `parsed_input`.
+    - For `BlockKind.LIST`, execute [`execute_list_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py.md#execute_list_block_agent>) and return its result.
+    - For `BlockKind.TABLE`, execute [`execute_table_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/table.py.md#execute_table_block_agent>) and return its result.
+    - For `BlockKind.DIAGRAM`, execute [`execute_diagram_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/diagram.py.md#execute_diagram_block_agent>) and return its result.
+    - For `BlockKind.CODE`, modify the prompt to include language identifiers and execute [`execute_code_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/code.py.md#execute_code_block_agent>), then return its result.
+    - For `BlockKind.TEXT`, modify the prompt to specify that the content should be a single paragraph of text.
+    - For `BlockKind.ANY`, set `parsed_input.response_format` to `None`.
+    - Execute [`execute_sequence`](<../../../packages/shared/shared/pipelines/agents/execute.py.md#execute_sequence>) with `parsed_input` and return its result.
+- **Output**: The output is the result of the executed block agent or sequence, returned as a model dump.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#PipelineInput>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineInput`](<../../../packages/shared/shared/interfaces/agents/pipeline_configuration.py.md#pipelineinput>)
     - [`python-backend/packages/shared/shared/pipelines/block_kind_pipelines/list.execute_list_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/list.py.md#execute_list_block_agent>)
     - [`python-backend/packages/shared/shared/pipelines/block_kind_pipelines/table.execute_table_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/table.py.md#execute_table_block_agent>)
     - [`python-backend/packages/shared/shared/pipelines/block_kind_pipelines/diagram.execute_diagram_block_agent`](<../../../packages/shared/shared/pipelines/block_kind_pipelines/diagram.py.md#execute_diagram_block_agent>)

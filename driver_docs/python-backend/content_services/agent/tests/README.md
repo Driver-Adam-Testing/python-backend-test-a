@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test files, including a script for testing Mermaid diagram rendering with the Mermaid CLI.
+Tests for rendering Mermaid code blocks using the Mermaid CLI.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[mermaid_python_test.py](mermaid_python_test.py.md)**: The `mermaid_python_test.py` file contains a function to check if a given Mermaid diagram code can be rendered using the Mermaid CLI, along with examples of testing valid and invalid Mermaid diagrams.
+- **[mermaid_python_test.py](mermaid_python_test.py.md)**: Tests if Mermaid code blocks can be rendered using the Mermaid CLI.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

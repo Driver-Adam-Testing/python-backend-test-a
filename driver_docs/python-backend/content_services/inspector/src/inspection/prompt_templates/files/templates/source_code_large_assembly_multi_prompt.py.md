@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_assembly_multi_prompt.py` file defines a template for generating multi-prompt assembly code inspections, focusing on aspects such as purpose, imports, global variables, data structures, subroutines, and macros.
+Defines a template for assembling multi-prompt source code with sections for imports, variables, data structures, subroutines, and macros.
 
 # Purpose
-This Python code file is designed to define a structured template for analyzing and documenting assembly source code. It imports various components from utility modules that specialize in language-specific processing, particularly for assembly language. The primary purpose of this file is to create a multi-prompt template that guides the extraction and organization of information from assembly code, such as its purpose, imports, dependencies, global variables, data structures, subroutines, and macros. The template is structured as a list of tuples, each representing a different aspect of the assembly code to be documented, using specific prompts and functions to extract and format the information.
+The code defines a template for processing and analyzing assembly source code using multiple prompts. It imports several components from the `utils.lang_specialization.assembly` and `utils.lang_specialization.default_multi_context` modules, which are used to handle different aspects of assembly code, such as data structures, macros, subroutines, and variables. The template, named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY`, is a list of tuples, each representing a specific task or analysis to be performed on the assembly code. These tasks include identifying the purpose of the code, checking imports and dependencies, and extracting global variables, data structures, subroutines, and macros.
 
-The file is not a standalone script but rather a configuration or template definition that is likely used within a larger system for code analysis or documentation generation. It leverages a series of specialized collections and functions to process and categorize different elements of assembly code, indicating that it is part of a broader framework for code analysis. The use of multi-prompt and conditional JSON structures suggests that the system is designed to interact with language models or other automated systems to generate detailed documentation or analysis reports. This file does not define public APIs or external interfaces directly but rather sets up the internal logic for how assembly code should be processed and documented within the system.
+The template uses a combination of predefined prompts and functions to process the assembly code. It leverages the `S` class from the `utils.templates` module to define the structure of each task. The tasks are executed in a sequence, where each task is responsible for a specific aspect of the code analysis. The use of lambda functions and conditional JSON processing indicates that the template is designed to interact with a language model or similar system to extract and process information from the assembly code. This code is likely intended to be part of a larger system for analyzing and understanding assembly source code, providing a structured approach to extract meaningful information from it.
 # Imports and Dependencies
 
 ---
@@ -31,9 +31,9 @@ The file is not a standalone script but rather a configuration or template defin
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_ASSEMBLY
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY` is a list of tuples, each representing a different section of a multi-prompt template for assembly language code. Each tuple contains a prompt type, a section header, and various functions or constants that are used to process or generate content for that section. The list is structured to cover different aspects of assembly code, such as purpose, imports, global variables, data structures, subroutines, and macros.
-- **Use**: This variable is used to define a structured template for generating or processing assembly language code prompts, facilitating the organization and handling of different code components.
+- **Type**: ``list``
+- **Description**: A list of tuples that define a multi-prompt template for assembly code processing. Each tuple contains a prompt type, a description, and a series of functions or constants related to assembly code components such as purpose, imports, global variables, data structures, subroutines, and macros.
+- **Use**: Used to organize and define the structure of prompts for processing assembly code components.
 
 
 

@@ -7,7 +7,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
     ParsedChatCompletionMessage,
 )
-from openai.types.chat.chat_completion_message_tool_call import (
+from openai.types.chat.chat_completion_message_function_tool_call import (
     Function as OpenAIFunction,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind

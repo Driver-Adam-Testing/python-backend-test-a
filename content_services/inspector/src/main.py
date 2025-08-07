@@ -22,7 +22,7 @@ inspection_image = (
         [
             "boto3",
             "requests",
-            "openai>=1.40.2",
+            "openai>=1.99.2",
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",

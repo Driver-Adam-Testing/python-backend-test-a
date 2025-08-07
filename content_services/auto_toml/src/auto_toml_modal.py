@@ -17,7 +17,7 @@ image = (
             "sqlalchemy",
             "toml",
             "aiolimiter",
-            "openai",
+            "openai>=1.99.2",
             "tiktoken",
         ]
     )

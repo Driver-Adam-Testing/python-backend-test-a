@@ -25,7 +25,7 @@ image = (
             "httpx==0.28.1",
             "pyjwt==2.10.1",
             "requests==2.32.3",
-            "openai>=1.40.2",
+            "openai>=1.99.2",
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",

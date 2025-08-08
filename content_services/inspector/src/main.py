@@ -415,6 +415,9 @@ async def inspect_db(
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise
     else:
+        # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
+        # architecture, then uncomment the following line to represent completion of
+        # stage 1.
         # set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
@@ -422,9 +425,11 @@ async def inspect_db(
         else:
             print("No changes detected skipping tech doc export.")
         print("Spawning off deep context docs generation...")
-        await deep_context_docs.remote.aio(
+        # TODO: do deep context doc specific I/O or further analysis.
+        _completed_docs = await deep_context_docs.remote.aio(
             version_id
         )  # TODO: switch to spawn. Using remote for testing purposes
+        # do stuff here with `completed_docs`
 
 
 def hash_file(file_path: Path) -> str:

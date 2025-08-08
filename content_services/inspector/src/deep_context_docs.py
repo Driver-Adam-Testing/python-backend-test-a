@@ -98,7 +98,7 @@ async def deep_context_docs(
                 doc_kind=DeepContextDocKind.from_content_kind(
                     content_kind=content_kind
                 ),
-                title=title,
+                name=title,
                 user_context={"desired_length": user_context_str}
                 if user_context_str
                 else None,

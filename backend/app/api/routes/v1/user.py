@@ -35,12 +35,12 @@ def change_password(
 
 
 class Branding(BaseModel):
-    logo_url: str
-    colors: dict[str, str]
+    logo_url: None | str = None
+    colors: None | dict[str, str] = None
 
 
 class Metadata(BaseModel):
-    org_logo_url: str
+    org_logo_url: None | str = None
 
 
 class Organization(BaseModel):
@@ -61,6 +61,6 @@ def get_organizations(user: UserToken) -> OrganizationsResponse:
     auth0_service = Auth0Service()
     organizations_data = auth0_service.list_user_organizations(user)
     return OrganizationsResponse(
-        results=organizations_data["organizations"],
-        total_count=organizations_data["total"],
+        results=organizations_data.get("organizations", []),
+        total_count=organizations_data.get("total", 0),
     )

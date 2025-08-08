@@ -17,6 +17,7 @@ from autodocs_prototype import (
     update_autodocs_status,
 )
 from common import app, wait_for_guard_duty_tag
+from database.models_v2_enums import ContentKind
 
 image = inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -89,8 +90,7 @@ async def run_autodoc(
     config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
     document_goal: str | None = None,
     user_context: str | None = None,
-    is_page: bool = True,
-    deep_context_kind: str | None = None,
+    content_kind: ContentKind | None = None,
 ) -> None:
     import hashlib
 
@@ -107,6 +107,8 @@ async def run_autodoc(
     )
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
+
+    is_page = content_kind == ContentKind.application_note
 
     toml_content = ""
 
@@ -250,12 +252,31 @@ async def run_autodoc(
             status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
             content=doc,
         )
+
+        sections = []
+        section_refs = []
+        for (
+            section_title,
+            source_list,
+        ) in init_state.section_sources.items():
+            section = f"{section_title}\n\n" + "\n".join(source_list)
+            sections.append(section)
+            section_refs.append((section_title, source_list))
+        source_string = "\n\n".join(sections)
+
+        # dataset to return
+        name = None
+        user_context_str = user_context
+        sources = section_refs
+        config_content = toml_content
+        doc_content = doc
+
         if is_page:
             with get_session() as session, session.begin():
                 derived_content = session.exec(
                     select(DerivedContent).where(
                         DerivedContent.node_id == page_node_id,
-                        DerivedContent.content_kind == ContentKind.application_note,
+                        DerivedContent.content_kind == content_kind,
                     )
                 ).first()
                 if not derived_content:
@@ -282,22 +303,12 @@ async def run_autodoc(
 
                 env = os.environ.get("MODAL_ENVIRONMENT")
 
+                name = derived_content.content_name if derived_content else "UNKNOWN"
                 if env in ["prod", "staging"]:
                     print("Writing AutoDoc log to Notion")
 
-                    sections = []
-                    for (
-                        section_title,
-                        source_list,
-                    ) in init_state.section_sources.items():
-                        section = f"{section_title}\n\n" + "\n".join(source_list)
-                        sections.append(section)
-                    source_string = "\n\n".join(sections)
-
                     log = AutoDocLog(
-                        title=derived_content.content_name
-                        if derived_content
-                        else "UNKNOWN",
+                        title=name,
                         user_email=user_cache.email if user_cache else "UNKNOWN",
                         organization_id=node.version.primary_asset.organization_id
                         if node
@@ -319,11 +330,20 @@ async def run_autodoc(
                 derived_content = DerivedContent(
                     node_id=page_node_id,
                     relative_path=node.relative_path,
-                    content_kind=ContentKind.application_note,  # TODO: doc kind as input
+                    content_kind=content_kind,  # TODO: doc kind as input
                     content=doc,
                     misc_metadata=None,
                 )
                 session.add(derived_content)
+
+        return (
+            content_kind,
+            name,
+            user_context_str,
+            sources,
+            config_content,
+            doc_content,
+        )
 
     except Exception as e:
         print("Error:", e)
@@ -336,6 +356,8 @@ async def run_autodoc(
             node = session.get(Node, page_node_id)
             node.version.status = VersionStatus.GENERATION_ERROR
             session.add(node.version)
+
+        raise
 
 
 @app.local_entrypoint()

@@ -4,6 +4,12 @@ import uuid
 
 import modal
 from common import app
+from database.models_v2_enums import ContentKind
+from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
+from utils.synthesis.deep_context_prompts import (
+    ARCHITECTURE_OVERVIEW_INTENT,
+    LLM_ONBOARDING_INTENT,
+)
 
 deep_context_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -51,7 +57,7 @@ deep_context_image = (
 )
 async def deep_context_docs(
     version_id: uuid.UUID,
-) -> None:
+) -> list[DeepContextDoc]:
     from database.models_v2_enums import AutoDocConfigKind, VersionStatus
     from utils.db import get_version_by_id
 
@@ -65,21 +71,42 @@ async def deep_context_docs(
         run_autodoc.remote.aio(
             page_node_id=str(root_node_id),
             config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-            document_goal="Architecture document",
+            document_goal=ARCHITECTURE_OVERVIEW_INTENT,
             user_context="SHORT",
-            is_page=False,
-            deep_context_kind="architecture",  # TODO: enum
+            content_kind=ContentKind.DEEP_CONTEXT_ARCHITECTURE,
         ),
         run_autodoc.remote.aio(
             page_node_id=str(root_node_id),
             config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-            document_goal="LLM overview",
+            document_goal=LLM_ONBOARDING_INTENT,
             user_context="SHORT",
-            is_page=False,
-            deep_context_kind="overview",  # TODO: enum
+            content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
         ),
     ]
-    await asyncio.gather(*deep_context_doc_tasks)
+    completed_docs = []
+
+    for (
+        content_kind,
+        title,
+        user_context_str,
+        sources,
+        config_content,
+        doc_content,
+    ) in await asyncio.gather(*deep_context_doc_tasks):
+        completed_docs.append(
+            DeepContextDoc(
+                doc_kind=DeepContextDocKind.from_content_kind(
+                    content_kind=content_kind
+                ),
+                title=title,
+                user_context={"desired_length": user_context_str}
+                if user_context_str
+                else None,
+                sources=sources,
+                config_content=config_content,
+                doc_content=doc_content,
+            )
+        )
 
     status_func = modal.Function.from_name(
         app_name="inspector-v2", name="set_codebase_status_in_container"
@@ -88,3 +115,5 @@ async def deep_context_docs(
         version_id=version_id,
         status=VersionStatus.GENERATION_COMPLETE,
     )
+
+    return completed_docs

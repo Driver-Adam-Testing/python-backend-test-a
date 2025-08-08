@@ -42,7 +42,7 @@ class DeepContextDoc(BaseModel):
     doc_kind: DeepContextDocKind
     name: str | None
     user_context: dict[str, str] | None
-    sources: dict[str, list[str]]
+    sources: list[tuple[str, list[str]]]
     config_content: str  # TODO: keep in structured format
     doc_content: str
 

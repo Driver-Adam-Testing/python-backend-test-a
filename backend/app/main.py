@@ -95,7 +95,6 @@ def _unique_id(route: APIRoute) -> str:  # pragma: no cover - deterministic IDs
 
 
 # we should probably be documenting the api router, not the studio router
-
 mcp_app = my_mcp.http_app(path="/v1")
 
 app = FastAPI(

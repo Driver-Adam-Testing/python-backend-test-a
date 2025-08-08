@@ -1,5 +1,3 @@
-# TODO !!!!!!!!!!!!! NOTE THIS FILE IS NOT CURRENTLY PICKED UP BY MODAL !!!!!!!!!!!!
-# COPIED deep_context_docs function to main.py for testing purposes
 import asyncio
 import os
 import uuid
@@ -7,7 +5,7 @@ import uuid
 import modal
 from common import app
 
-inspection_image = (
+deep_context_image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("git")
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
@@ -16,25 +14,15 @@ inspection_image = (
     )
     .pip_install(
         [
-            "boto3",
-            "requests",
             "openai==1.99.1",
             "pydantic>=2.8.2",
-            "tiktoken",
             "/shared_pkg",
-            "tree-sitter==0.24.0",
-            "tree-sitter-c==0.23.4",
-            "tree-sitter-cpp==0.23.2",
-            "tree-sitter-java==0.23.5",
-            "tree-sitter-python==0.23.6",
-            "tree-sitter-c-sharp==0.23.1",
-            "tree-sitter-typescript==0.23.2",
-            "chardet",
         ]
     )
     .add_local_python_source(
         "inspection",
         "modal_funcs",
+        "main",
         "onboarding",
         "shared",
         "tasks",
@@ -48,7 +36,7 @@ inspection_image = (
 
 
 @app.function(
-    image=inspection_image,
+    image=deep_context_image,
     secrets=[
         modal.Secret.from_name("db"),
     ],
@@ -70,7 +58,7 @@ async def deep_context_docs(
     version = await get_version_by_id(version_id)
     root_node_id = version.root_node.id
 
-    run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodocs")
+    run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodoc")
 
     print("Creating deep context docs for version:", version_id)
     deep_context_doc_tasks = [

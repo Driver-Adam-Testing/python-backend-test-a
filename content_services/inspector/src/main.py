@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import modal
+from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
@@ -39,6 +40,7 @@ inspection_image = (
     .add_local_python_source(
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -653,6 +655,7 @@ def get_file_content(path: Path) -> str:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -749,6 +752,7 @@ def run_connect_unconnected_repos() -> None:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -777,60 +781,3 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Email sent: {response.status_code}")
     except Exception as e:
         print(f"Error sending email: {e}")
-
-
-@app.function(
-    image=inspection_image,
-    secrets=[
-        modal.Secret.from_name("db"),
-    ],
-    proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
-    else None,
-    memory=4096,
-    timeout=3600 * 12,
-    region="us-east",
-    max_containers=5,
-    cpu=1.0,
-)
-async def deep_context_docs(
-    version_id: uuid.UUID,
-) -> None:
-    import asyncio
-
-    from database.models_v2_enums import AutoDocConfigKind, VersionStatus
-    from utils.db import get_version_by_id
-
-    version = await get_version_by_id(version_id)
-    root_node_id = version.root_node.id
-
-    run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodoc")
-
-    print("Creating deep context docs for version:", version_id)
-    deep_context_doc_tasks = [
-        run_autodoc.remote.aio(
-            page_node_id=str(root_node_id),
-            config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-            document_goal="Architecture document",
-            user_context="SHORT",
-            is_page=False,
-            deep_context_kind="architecture",  # TODO: enum
-        ),
-        run_autodoc.remote.aio(
-            page_node_id=str(root_node_id),
-            config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-            document_goal="LLM overview",
-            user_context="SHORT",
-            is_page=False,
-            deep_context_kind="overview",  # TODO: enum
-        ),
-    ]
-    await asyncio.gather(*deep_context_doc_tasks)
-
-    status_func = modal.Function.from_name(
-        app_name="inspector-v2", name="set_codebase_status_in_container"
-    )
-    await status_func.remote.aio(
-        version_id=version_id,
-        status=VersionStatus.GENERATION_COMPLETE,
-    )

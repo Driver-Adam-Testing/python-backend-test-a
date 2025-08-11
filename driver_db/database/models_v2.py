@@ -468,3 +468,4 @@ class ApiKey(SQLModel, table=True):
         ),
         default=None,
     )
+    last_used_at: None | datetime

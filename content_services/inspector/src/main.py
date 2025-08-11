@@ -712,14 +712,21 @@ def cleanup_old_versions(new_version_id: str) -> None:
         ]
         versions_to_keep.extend(versions_with_sources)
 
+        # Remove duplicates from versions_to_keep
+        versions_to_keep = list(set(versions_to_keep))
+
         # Delete all versions except the 10 most recent
-        print(f"DEBUG: Keeping {len(versions_to_keep)} versions")
+        print(f"DEBUG: Keeping {len(versions_to_keep)} unique versions")
         print(f"DEBUG: Deleting {len(versions) - len(versions_to_keep)} versions")
 
         versions_to_delete = [v for v in versions if v not in versions_to_keep]
+        for version in versions_to_keep:
+            print(
+                f"DEBUG: KEEPING version: {version.id} which was created at {version.created_at}"
+            )
         for version in versions_to_delete:
             print(
-                f"DEBUG: Deleting version: {version} (deletion is not implemented yet)"
+                f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
             )
             # TODO delete all derived content for this version
             # This will switch to happen once we can test this function

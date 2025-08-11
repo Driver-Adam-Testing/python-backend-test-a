@@ -415,12 +415,12 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        cleanup_old_versions.remote(version_id)
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
+        cleanup_old_versions.remote(version_id)
 
 
 def hash_file(file_path: Path) -> str:

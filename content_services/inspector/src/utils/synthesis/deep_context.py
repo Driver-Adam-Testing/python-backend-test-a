@@ -48,4 +48,4 @@ class DeepContextDoc(BaseModel):
 
     @property
     def sections(self) -> list[str]:
-        return list(self.sources.keys())
+        return [s for (s, _) in self.sources]

@@ -1,4 +1,6 @@
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app.auth.models import User
 from app.services.auth0_service import Auth0Service
@@ -34,7 +36,6 @@ def _is_member_of_org(user_id: str, org_id: str) -> bool:
 
 @cached(cache=TTLCache(maxsize=1000, ttl=600))  # 1000 Users get a cache of 5 minutes
 def verify_api_key(raw_key: str) -> dict:
-    print(f"UNCACHED: raw_key: {raw_key}")
     """
     Validate *raw_key* against the v2_api_key table and return a
     JWT-shaped payload so downstream code can treat it like a user JWT.
@@ -52,6 +53,9 @@ def verify_api_key(raw_key: str) -> dict:
             raise HTTPException(401, "User does not belong to this organization")
         now = int(time.time())
         # Shape chosen to match Auth0 tokens consumed elsewhere
+        api_key.last_used_at = datetime.now(ZoneInfo("UTC"))
+        db.add(api_key)
+        db.commit()
         return {
             "org_id": api_key.organization_id,
             "org_name": "",  # TODO: populate when available

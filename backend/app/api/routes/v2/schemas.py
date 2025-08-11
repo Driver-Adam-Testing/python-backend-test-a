@@ -45,6 +45,7 @@ class VersionRead(BaseModel):
     updated_at: datetime | None
     status: str | None
     browsable: bool
+    vcs_metadata: dict | None
 
     class Config:
         from_attributes = True

@@ -105,6 +105,31 @@ def get_codebase_entry_points(ctx: Context, codebase_name: str) -> str:
     )
     return dc.content or str(dc.misc_metadata)
 
+@my_mcp.tool()
+def get_changelog(ctx: Context, codebase_name: str) -> str:
+    """
+    Fetch the complete high-level changelog for a codebase, broken down by year and month.
+    """
+    org_id = get_organization_id(ctx)
+    dc = _get_root_node_content(
+        org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
+    )
+    return dc.content or str(dc.misc_metadata)
+
+@my_mcp.tool()
+def get_detailed_changelog(ctx: Context, codebase_name: str, year: str, month: str) -> str:
+    """
+    Fetch the detailed changelog for a specific year and month of the given codebase.
+    Args:
+        codebase_name (str): The name of the codebase.
+        year (str): The year of the changelog. (e.g. 2023)
+        month (str): The month of the changelog. (e.g. 01, 02, ..., 12)
+    """
+    org_id = get_organization_id(ctx)
+    dc = _get_root_node_content(
+        org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
+    )
+    return dc.misc_metadata.get(f"{year}-{month}", "No detailed changelog available for this month.")
 
 def _get_codebase_names_for_org(org_id: str) -> list[str]:
     """

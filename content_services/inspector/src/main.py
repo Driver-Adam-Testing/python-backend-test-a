@@ -427,7 +427,8 @@ async def inspect_db(
         print("Spawning off deep context docs generation...")
         # TODO: do deep context doc specific I/O or further analysis.
         _completed_docs = await deep_context_docs.remote.aio(
-            version_id
+            version_id,
+            install_id,
         )  # TODO: switch to spawn. Using remote for testing purposes
         # do stuff here with `completed_docs`
 

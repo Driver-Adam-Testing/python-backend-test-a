@@ -101,14 +101,21 @@ async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) ->
                 model=llm.model, system_prompt=system_prompt, user_prompt=user_prompt
             )
     except modal.exception.FunctionTimeoutError as e:
+        token_ct = get_num_tokens(system_prompt + user_prompt)
         try:
-            print(f"retrying llm_generate because of the following exception:\n\n{e}")
+            print(
+                f"retrying llm_generate because of the following exception:\n\n{e}\n\ntoken count = {token_ct}"
+            )
             async with OPENAI_SEM, OPENAI_LIMITER:
                 return await llm_generate_modal.remote.aio(
-                    model=llm.model, system_prompt=system_prompt, user_prompt=user_prompt
+                    model=llm.model,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
                 )
         except modal.exception.FunctionTimeoutError as e:
-            print(f"retrying llm_generate failed because of the following exception:\n\n{e}")
+            print(
+                f"retrying llm_generate failed because of the following exception:\n\n{e}\n\ntoken count = {token_ct}"
+            )
             raise
 
 

@@ -1,12 +1,15 @@
 import os
+from typing import Any
 
 from database.models_v2_enums import PrimaryAssetKind
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
 FASTMCP_STATELESS_HTTP = True
 FASTMCP_MASK_ERROR_DETAILS = True
+MCP_TRACE_LIST_OPERATIONS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
+os.environ["MCP_TRACE_LIST_OPERATIONS"] = str(MCP_TRACE_LIST_OPERATIONS)
 
 import fastmcp
 from database.db import get_session
@@ -18,6 +21,7 @@ from sqlmodel import select
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
 from .auth_middleware import get_user as get_user_from_ctx
+from .code_map import get_codemap_for_path
 
 my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False)
 assert (
@@ -134,3 +138,41 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
     """
     org_id = get_organization_id(ctx)
     return _get_codebase_names_for_org(org_id)
+
+
+@my_mcp.tool(
+    name="get_code_map",
+    description="""Get hierarchical view of the codebase structure optimized for LLM exploration.
+    Shows which files have documentation with _has_driver_doc flags.
+
+    OPTIMAL USAGE FOR LLMs:
+    - Default max_depth is 5 for focused exploration
+    - Use max_depth=5-10 for deeper understanding when needed
+    - Process entire structures before making conclusions
+    - Explore multiple paths in PARALLEL
+
+    Examples:
+    - Full codebase: get_code_map("", max_depth=5)
+    - Deeper service analysis: get_code_map("services", max_depth=7)
+    - API mapping: get_code_map("api", max_depth=5)
+
+    Remember: Start with focused exploration and expand as needed.""",
+)
+def get_code_map(
+    ctx: Context, path: str, max_depth: int, include_driver_docs: bool = False
+) -> dict[str, Any]:
+    """
+    Get a hierarchical view of the codebase structure optimized for LLM exploration.
+    Arguments:
+        path (str): The path to the codebase or subdirectory to explore.
+        max_depth (int): The maximum depth to explore in the codebase structure.
+        include_driver_docs (bool): Whether to include files with Driver documentation.
+    """
+
+    code_map = get_codemap_for_path(
+        org_id=get_organization_id(ctx),
+        target_path=f"python-backend/{path}",
+        max_depth=max_depth,
+        version_id="bb0745be-99b6-4f4b-aca3-f878c7afa135",  # need to resolve this
+    )
+    return code_map

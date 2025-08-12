@@ -1,11 +1,12 @@
 import logging
 
+# TODO DO NOT LEAK STACK TRACES TO CLIENTS!!!!!!!!!!!!!!!!!!!!!!!!!!! Figure out
 from fastmcp import Context
 from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 
-from app.auth.api_key_middleware import verify_api_key
-from app.services.auth0_service import Auth0Service
+from app.auth.api_key_async import verify_api_key_async
+from app.services.auth0_async import AsyncAuth0Service
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +14,8 @@ logger = logging.getLogger(__name__)
 class McpAuthMiddleware(Middleware):
     def __init__(self) -> None:
         super().__init__()
-        self.auth0 = Auth0Service()
+        self.auth0 = AsyncAuth0Service()
 
-    # TODO: !!!! we are using sync in async context here, which is not ideal!!!!
-    # May need to reimplement with async db client
     async def on_message(self, context: MiddlewareContext, call_next: any) -> any:
         try:
             # NOTE: Only works with http transport!
@@ -25,7 +24,7 @@ class McpAuthMiddleware(Middleware):
             if not api_key:
                 raise AuthenticationError("Missing API key")
 
-            user_data = verify_api_key(api_key)
+            user_data = await verify_api_key_async(api_key, self.auth0)
 
             # Store auth data in FastMCP context
             # This makes it available to all downstream tools
@@ -39,13 +38,17 @@ class McpAuthMiddleware(Middleware):
             )
 
         except Exception as e:
-            # TODO this can be tightened up to only catch specific exceptions
-            # TODO need to figure out proper exceptions if we use http transport
-            logger.error(f"Authentication failed: {e!s}")
+            # Log full traceback for debugging
+            logger.exception("Authentication failed with exception:")
+
             # Convert FastAPI HTTPException to MCP-appropriate error
             if hasattr(e, "status_code") and e.status_code == 401:
+                # Expected auth failures - just log the message
+                logger.info(f"Authentication rejected: {e.detail}")
                 raise AuthenticationError(str(e.detail))
-            raise AuthenticationError(f"Authentication failed: {e!s}")
+
+            # For unexpected errors, don't leak internal details to client
+            raise AuthenticationError("Authentication failed due to internal error")
 
         return await call_next(context)
 

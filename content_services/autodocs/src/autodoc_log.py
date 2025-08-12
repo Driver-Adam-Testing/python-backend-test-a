@@ -29,13 +29,19 @@ class AutoDocLog:
 
     def _split_into_rich_text_array(self, content: str) -> list:
         MAX_NOTION_BLOCK_UPDATE_LENGTH = 2000
+        MAX_NOTION_ARRAY_LENGTH = 100
         if content:
-            return [
+            text_array = [
                 {"text": {"content": content[i : i + MAX_NOTION_BLOCK_UPDATE_LENGTH]}}
                 for i in range(0, len(content), MAX_NOTION_BLOCK_UPDATE_LENGTH)
             ]
+            if len(text_array) > MAX_NOTION_ARRAY_LENGTH:
+                text_array = text_array[:MAX_NOTION_ARRAY_LENGTH-1]
+                text_array.append({"text": {"content": "\n\nTRUNCATED"}})
         else:
-            return [{"text": {"content": "N/A"}}]
+            text_array = [{"text": {"content": "N/A"}}]
+
+        return text_array
 
     def to_dict(self) -> dict:
         return {

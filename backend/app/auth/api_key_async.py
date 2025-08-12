@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.auth.api_key_common import create_api_key_payload
 from app.auth.async_cache import AsyncTTLCache
@@ -61,8 +61,7 @@ async def verify_api_key_async(raw_key: str, auth0_service: AsyncAuth0Service) -
         ):
             raise HTTPException(401, "User does not belong to this organization")
 
-        # TODO change back after Neil's fix to db column type
-        api_key.last_used_at = datetime.now()  # datetime.now(ZoneInfo("UTC"))
+        api_key.last_used_at = datetime.now(tz=UTC)
         session.add(api_key)
         await session.commit()
         await session.refresh(api_key)

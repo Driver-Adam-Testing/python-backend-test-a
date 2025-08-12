@@ -10,6 +10,7 @@ import modal
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
+from sqlmodel import select
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -419,6 +420,7 @@ async def inspect_db(
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
+        cleanup_old_versions.remote(version_id)
 
 
 def hash_file(file_path: Path) -> str:
@@ -674,6 +676,61 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         version = session.get(Version, version_id)
         version.status = VersionStatus(status)
         session.add(version)
+
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .pip_install("/driver_db")
+    .add_local_python_source(
+        "database",
+        copy=True,
+        ignore=lambda p: False,
+    ),
+)
+def cleanup_old_versions(new_version_id: str) -> None:
+    from database.db import engine
+    from database.models_v1 import DocumentSource
+    from database.models_v2 import Node, Version
+    from sqlmodel import Session
+
+    with Session(engine) as session, session.begin():
+        # Get all versions
+        primary_asset_id = session.get(Version, new_version_id).primary_asset_id
+        versions = session.exec(
+            select(Version).where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        versions_with_sources = session.exec(
+            select(Version)
+            .join(Node)
+            .outerjoin(DocumentSource)
+            .where(DocumentSource.source_node_id == Node.id)
+            .where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        # Sort versions by creation date or any other criteria if needed
+        versions_to_keep = sorted(versions, key=lambda v: v.created_at, reverse=True)[
+            :10
+        ]
+        versions_to_keep.extend(versions_with_sources)
+
+        # Remove duplicates from versions_to_keep
+        versions_to_keep = list(set(versions_to_keep))
+
+        # Delete all versions except the 10 most recent
+        print(f"DEBUG: Keeping {len(versions_to_keep)} unique versions")
+        print(f"DEBUG: Deleting {len(versions) - len(versions_to_keep)} versions")
+
+        versions_to_delete = [v for v in versions if v not in versions_to_keep]
+        for version in versions_to_keep:
+            print(
+                f"DEBUG: KEEPING version: {version.id} which was created at {version.created_at}"
+            )
+        for version in versions_to_delete:
+            print(
+                f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
+            )
+            # TODO delete all derived content for this version
+            # This will switch to happen once we can test this function
+            # session.delete(version)
 
 
 @app.local_entrypoint()

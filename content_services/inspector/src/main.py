@@ -687,7 +687,14 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .pip_install("/driver_db")
     .add_local_python_source(
+        "common",
         "database",
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
         copy=True,
         ignore=lambda p: False,
     ),

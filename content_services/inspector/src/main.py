@@ -420,7 +420,11 @@ async def inspect_db(
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
-        cleanup_old_versions.remote(version_id)
+        try:
+            cleanup_old_versions.remote(version_id)
+        except Exception as e:
+            print(f"Error while cleaning up old versions: {e}")
+            raise
 
 
 def hash_file(file_path: Path) -> str:
@@ -680,12 +684,26 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
 
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .pip_install("/driver_db")
     .add_local_python_source(
+        "common",
         "database",
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
         copy=True,
         ignore=lambda p: False,
     ),
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
+    else None,
 )
 def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine

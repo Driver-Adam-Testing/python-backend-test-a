@@ -86,7 +86,7 @@ def async_retry_with_exponential_backoff(
 
                 except errors:
                     exception_str = traceback.format_exc()
-                    logging.debug(f"Retrying with exception {exception_str}")
+                    print(f"Retrying with exception {exception_str}")
 
                     num_retries += 1
 
@@ -97,8 +97,9 @@ def async_retry_with_exponential_backoff(
 
                     delay *= exponential_base * (1 + jitter * random.random())
 
-                    msg = "Retrying '%s' in %d sec with args=%s kwargs=%s"
-                    logging.debug(msg, func.__name__, delay, args, kwargs)
+                    print(
+                        f"Retrying {func.__name__} in {delay} sec with args={args} kwargs={kwargs}"
+                    )
 
                     time.sleep(delay)
 

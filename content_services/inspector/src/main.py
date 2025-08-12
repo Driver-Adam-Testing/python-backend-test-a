@@ -651,7 +651,14 @@ def get_file_content(path: Path) -> str:
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .pip_install("/driver_db")
     .add_local_python_source(
+        "common",
         "database",
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
         copy=True,
         ignore=lambda p: False,
     ),
@@ -687,7 +694,9 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     secrets=[
         modal.Secret.from_name("db"),
     ],
-    proxy=modal.Proxy.from_name("my-proxy"),
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
+    else None,
 )
 def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine

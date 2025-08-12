@@ -287,17 +287,6 @@ def get_code_map(
 def get_codemap_for_path(
     org_id: str, target_path: str, max_depth: int, version_id: str
 ) -> dict[str, Any] | dict[str, str]:
-    """
-    Get codemap for a specific path with depth limiting.
-
-    Args:
-        target_path: Target path to get codemap for
-        max_depth: Maximum depth to traverse
-        version_id: Version ID for the nodes
-
-    Returns:
-        Codemap tree structure or error response
-    """
     # Normalize path filter
     if not target_path.endswith("%"):
         target_path = f"{target_path}%"
@@ -320,11 +309,42 @@ def get_codemap_for_path(
         return full_tree
 
     # Apply depth limiting if needed
-    # if max_depth > 0:
-    #     limited_tree = self._limit_tree_depth(full_tree, max_depth)
-    #     return limited_tree
-
+    if max_depth > 0:
+        limited_tree = _limit_tree_depth(full_tree, max_depth)
+        return limited_tree
+    #
     return full_tree
+
+def _limit_tree_depth(self, tree: dict[str, Any], max_depth: int, current_depth: int = 0) -> dict[str, Any]:
+    if current_depth >= max_depth:
+        return {}
+
+    limited = {}
+    for key, node in tree.items():
+        if key.startswith("_"):
+            # Copy metadata as-is
+            limited[key] = node
+        elif isinstance(node, dict):
+            # Recursively limit child nodes
+            limited_child = {
+                "_type": node.get("_type", "directory"),
+                "_has_driver_doc": node.get("_has_driver_doc", False),
+                "_description": node.get("_description")
+            }
+
+            # Add child nodes if we haven't hit depth limit
+            if current_depth + 1 < max_depth:
+                child_nodes = {k: v for k, v in node.items() if not k.startswith("_")}
+                if child_nodes:
+                    child_limited = self._limit_tree_depth(child_nodes, max_depth, current_depth + 1)
+                    limited_child.update(child_limited)
+
+            limited[key] = limited_child
+        else:
+            # Copy non-dict values as-is
+            limited[key] = node
+
+    return limited
 
 
 def main():

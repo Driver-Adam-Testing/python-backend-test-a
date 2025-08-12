@@ -740,11 +740,17 @@ def main(
 ) -> None:
     """Resume or rerun inspector given a version"""
     inspection_mode = InspectionMode.from_str(mode)
-
-    inspect_db.remote(
-        version_id,
-        inspection_mode,
-    )
+    try:
+        inspect_db.remote(
+            version_id,
+            inspection_mode,
+        )
+    except Exception as e:
+        print(f"Error while processing version {version_id}: {e}")
+        set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
+        raise
+    else:
+        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
 
 
 @app.local_entrypoint()

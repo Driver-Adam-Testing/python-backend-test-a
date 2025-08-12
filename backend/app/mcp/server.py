@@ -159,3 +159,29 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
     """
     org_id = get_organization_id(ctx)
     return _get_codebase_names_for_org(org_id)
+
+@my_mcp.tool()
+def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
+    """
+    Get an architectural overview for the specified codebase
+    Args:
+        codebase_name (str): The name of the codebase.
+    """
+    org_id = get_organization_id(ctx)
+    dc = _get_root_node_content(
+        org_id, codebase_name, ContentKind.DEEP_CONTEXT_ARCHITECTURE
+    )
+    return dc.content
+
+@my_mcp.tool()
+def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
+    """
+    Get an LLM onboarding guide for the specified codebase
+    Args:
+        codebase_name (str): The name of the codebase.
+    """
+    org_id = get_organization_id(ctx)
+    dc = _get_root_node_content(
+        org_id, codebase_name, ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
+    )
+    return dc.content

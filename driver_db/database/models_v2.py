@@ -468,4 +468,10 @@ class ApiKey(SQLModel, table=True):
         ),
         default=None,
     )
-    last_used_at: None | datetime
+    last_used_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=True,
+        ),
+        default=None,
+    )

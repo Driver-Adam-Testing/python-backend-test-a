@@ -20,7 +20,6 @@ class AsyncTTLCache:
                 if time.time() < expiry:
                     return value
                 else:
-                    # Clean up expired entry
                     del self._cache[key]
             return None
 

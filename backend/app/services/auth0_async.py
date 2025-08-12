@@ -20,7 +20,6 @@ class AsyncAuth0Service(Auth0Service):
         try:
             mgmt_token = self.get_mgmt_api_token()
 
-            # Make async request to Auth0
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"https://{self.auth0_mgmt_domain}/api/v2/users/{user_id}/organizations",

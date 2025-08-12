@@ -43,9 +43,6 @@ async def _is_member_of_org_async(
 async def verify_api_key_async(raw_key: str, auth0_service: AsyncAuth0Service) -> dict:
     """
     Async version of verify_api_key that returns identical results.
-
-    Validates raw_key against the v2_api_key table and returns a
-    JWT-shaped payload so downstream code can treat it like a user JWT.
     """
     cached_result = await _api_key_cache.get(raw_key)
     if cached_result:
@@ -64,23 +61,15 @@ async def verify_api_key_async(raw_key: str, auth0_service: AsyncAuth0Service) -
         ):
             raise HTTPException(401, "User does not belong to this organization")
 
-        # Store the values we need before modifying the object
-        # This ensures we have all data loaded before the session closes
-        _ = api_key.organization_id
-        _ = api_key.user_id
-
         # TODO change back after Neil's fix to db column type
         api_key.last_used_at = datetime.now()  # datetime.now(ZoneInfo("UTC"))
         session.add(api_key)
         await session.commit()
-
-        # Refresh to ensure the object is fully loaded with updated values
         await session.refresh(api_key)
 
         # Create payload within the session context
         payload = create_api_key_payload(api_key)
 
-    # Cache outside the session to avoid any session issues
     await _api_key_cache.set(raw_key, payload)
 
     return payload

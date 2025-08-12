@@ -83,7 +83,6 @@ class TestAsyncTTLCache:
 
     @pytest.mark.asyncio
     async def test_concurrent_access(self) -> None:
-        """Test that concurrent access is thread-safe."""
         cache = AsyncTTLCache(ttl=10, max_size=100)
 
         async def set_values(start: int, count: int) -> None:

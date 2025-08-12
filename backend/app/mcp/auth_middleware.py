@@ -1,6 +1,5 @@
 import logging
 
-# TODO DO NOT LEAK STACK TRACES TO CLIENTS!!!!!!!!!!!!!!!!!!!!!!!!!!! Figure out
 from fastmcp import Context
 from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.middleware import Middleware, MiddlewareContext
@@ -64,7 +63,6 @@ class AuthenticationError(Exception):
     """Custom exception for authentication failures"""
 
 
-# TODO move these elsewhere, not part of middleware directly.
 def get_organization_id(ctx: Context) -> str:
     org_id = ctx.get_state("organization_id")
     if not org_id:

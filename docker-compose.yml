@@ -2,7 +2,7 @@ services:
   db:
     image: pgvector/pgvector:pg16
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
     env_file:
@@ -32,7 +32,7 @@ services:
     platform: linux/arm64
     image: "backend:latest"
     ports:
-      - "8888:8888"
+      - "4000:4000"
     volumes:
       - ./backend/:/app
       - ./driver_db/:/driver_db
@@ -67,7 +67,7 @@ services:
       - AWS_REGION=${AWS_REGION?Variable not set}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable not set}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable not set}
-      - PORT=8888
+      - PORT=4000
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
       - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}

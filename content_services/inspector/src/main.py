@@ -420,7 +420,11 @@ async def inspect_db(
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
-        cleanup_old_versions.remote(version_id)
+        try:
+            cleanup_old_versions.remote(version_id)
+        except Exception as e:
+            print(f"Error while cleaning up old versions: {e}")
+            raise
 
 
 def hash_file(file_path: Path) -> str:
@@ -680,12 +684,19 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
 
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .pip_install("/driver_db")
     .add_local_python_source(
         "database",
         copy=True,
         ignore=lambda p: False,
     ),
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
+    else None,
 )
 def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine
@@ -702,8 +713,7 @@ def cleanup_old_versions(new_version_id: str) -> None:
         versions_with_sources = session.exec(
             select(Version)
             .join(Node)
-            .outerjoin(DocumentSource)
-            .where(DocumentSource.source_node_id == Node.id)
+            .join(DocumentSource, DocumentSource.source_node_id == Node.id)
             .where(Version.primary_asset_id == primary_asset_id)
         ).all()
         # Sort versions by creation date or any other criteria if needed
@@ -713,7 +723,7 @@ def cleanup_old_versions(new_version_id: str) -> None:
         versions_to_keep.extend(versions_with_sources)
 
         # Remove duplicates from versions_to_keep
-        versions_to_keep = list(set(versions_to_keep))
+        versions_to_keep = list({v.id: v for v in versions_to_keep}.values())
 
         # Delete all versions except the 10 most recent
         print(f"DEBUG: Keeping {len(versions_to_keep)} unique versions")
@@ -770,6 +780,13 @@ def test_connection() -> None:
         provider=provider,
         version_id=version_id,
     )
+
+
+@app.local_entrypoint()
+def test_cleanup_old_versions(
+    version_id: str,
+) -> None:
+    cleanup_old_versions.remote(version_id)
 
 
 @app.local_entrypoint()

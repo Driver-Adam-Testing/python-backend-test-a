@@ -169,15 +169,17 @@ class BitbucketProvider(GitProviderInterface):
             for repo in repos_data:
                 # Fetch latest commit for each repo if needed
                 latest_commit = None
-                try:
-                    commit_hash = self.api_strategy.get_latest_commit(
-                        workspace, repo["slug"], access_token
-                    )
-                    latest_commit = {"id": commit_hash}
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to fetch latest commit for {repo['name']}: {e}"
-                    )
+                # TODO: This seemed to be causing a 429 for workspaces with
+                # many repos. Additional testing is needed to confirm this.
+                # try:
+                #     commit_hash = self.api_strategy.get_latest_commit(
+                #         workspace, repo["slug"], access_token
+                #     )
+                #     latest_commit = {"id": commit_hash}
+                # except Exception as e:
+                #     logger.warning(
+                #         f"Failed to fetch latest commit for {repo['name']}: {e}"
+                #     )
 
                 repos.append(
                     GitRepository(

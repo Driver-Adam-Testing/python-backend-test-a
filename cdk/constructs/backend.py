@@ -1,11 +1,10 @@
 from aws_cdk import (
+    CfnOutput,
     Duration,
     Stack,
-    CfnOutput,
     aws_ec2,
-    aws_ecs,
     aws_ecr,
-    aws_ecr_assets,
+    aws_ecs,
     aws_ecs_patterns,
     aws_elasticloadbalancingv2,
     aws_events,
@@ -35,7 +34,7 @@ class BackendParams:
         use_legacy_dropzone: bool,
         metrics_bus: aws_events.EventBus,
         aws_region: str,
-        aws_account: str
+        aws_account: str,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
@@ -159,7 +158,7 @@ class Backend(Construct):
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
-            "AWS_REGION": params.aws_region
+            "AWS_REGION": params.aws_region,
         }
 
         container_secrets = {
@@ -175,6 +174,9 @@ class Backend(Construct):
             ),
             "POSTGRES_PASSWORD": aws_ecs.Secret.from_secrets_manager(
                 postgres_secret, "PASSWORD"
+            ),
+            "ASYNC_DATABASE_URL": aws_ecs.Secret.from_secrets_manager(
+                postgres_secret, "ASYNC_DATABASE_URL"
             ),
             "AUTH0_DOMAIN": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "AUTH0_DOMAIN"
@@ -235,9 +237,11 @@ class Backend(Construct):
                 sentry_secret, "SENTRY_DSN"
             ),
         }
-        
-        repository = aws_ecr.Repository.from_repository_name(self,"PythonBackendRepo","python-backend")
-           
+
+        repository = aws_ecr.Repository.from_repository_name(
+            self, "PythonBackendRepo", "python-backend"
+        )
+
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
             image=aws_ecs.ContainerImage.from_ecr_repository(repository, tag="latest"),
             secrets=container_secrets,
@@ -305,11 +309,20 @@ class Backend(Construct):
         )
 
         # Output ECS Cluster ARN
-        CfnOutput(self, "EcsClusterArn", export_name="EcsClusterArn", value=cluster.cluster_arn)
+        CfnOutput(
+            self,
+            "EcsClusterArn",
+            export_name="EcsClusterArn",
+            value=cluster.cluster_arn,
+        )
 
         # Output ECS Service ARN
-        CfnOutput(self, "EcsServiceArn", export_name="EcsServiceArn", value=self.service.service.service_arn)
-
+        CfnOutput(
+            self,
+            "EcsServiceArn",
+            export_name="EcsServiceArn",
+            value=self.service.service.service_arn,
+        )
 
         # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         # response = client.put_events(

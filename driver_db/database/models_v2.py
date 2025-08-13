@@ -12,6 +12,7 @@ from database.models_v2_enums import (
     NodeKind,
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    VcsAutoUpdatePolicy,
     VersionStatus,
 )
 from sqlalchemy import (
@@ -101,6 +102,9 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     tags: list["Tag"] = Relationship(
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
+    )
+    vcs_auto_update_policy: VcsAutoUpdatePolicy | None = Field(
+        sa_column=Column(String, nullable=True)
     )
 
 

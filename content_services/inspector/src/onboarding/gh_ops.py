@@ -8,6 +8,7 @@ from uuid import UUID
 import httpx
 import jwt
 import requests
+from database.models_v2 import VcsAutoUpdatePolicy
 from onboarding.onboard_utils import AccessTokenError
 from onboarding.vcs_utils import (
     AuthorInfo,
@@ -365,6 +366,7 @@ def download_and_upload_repo(
                     repository_id=repo["id"],
                     codebase_settings_auto_commit_docs=False,
                     provider=PrimaryAssetProvider.GITHUB,
+                    vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id

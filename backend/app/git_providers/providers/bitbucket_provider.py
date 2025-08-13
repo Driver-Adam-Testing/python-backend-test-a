@@ -44,7 +44,9 @@ class BitbucketProvider(GitProviderInterface):
     ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
-        self.api_strategy = BitbucketAPIResources(config.base_url)
+        self.api_strategy = (
+            BitbucketAPIResources()
+        )  # config.base_url) < TODO this class has a hardcoded base URL...
 
     @classmethod
     def from_config(

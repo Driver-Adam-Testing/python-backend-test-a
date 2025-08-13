@@ -1,6 +1,8 @@
 import os
+from typing import Annotated, Any
 
 from database.models_v2_enums import PrimaryAssetKind
+from pydantic import Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
 FASTMCP_STATELESS_HTTP = True
@@ -18,6 +20,7 @@ from sqlmodel import select
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
 from .auth_middleware import get_user as get_user_from_ctx
+from .code_map_v2 import get_code_map_simple
 
 my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False)
 assert (
@@ -105,6 +108,7 @@ def get_codebase_entry_points(ctx: Context, codebase_name: str) -> str:
     )
     return dc.content or str(dc.misc_metadata)
 
+
 @my_mcp.tool()
 def get_changelog(ctx: Context, codebase_name: str) -> str:
     """
@@ -116,8 +120,11 @@ def get_changelog(ctx: Context, codebase_name: str) -> str:
     )
     return dc.content or str(dc.misc_metadata)
 
+
 @my_mcp.tool()
-def get_detailed_changelog(ctx: Context, codebase_name: str, year: str, month: str) -> str:
+def get_detailed_changelog(
+    ctx: Context, codebase_name: str, year: str, month: str
+) -> str:
     """
     Fetch the detailed changelog for a specific year and month of the given codebase.
     Args:
@@ -129,7 +136,10 @@ def get_detailed_changelog(ctx: Context, codebase_name: str, year: str, month: s
     dc = _get_root_node_content(
         org_id, codebase_name, ContentKind.DEEP_CONTEXT_CHANGELOG
     )
-    return dc.misc_metadata.get(f"{year}-{month}", "No detailed changelog available for this month.")
+    return dc.misc_metadata.get(
+        f"{year}-{month}", "No detailed changelog available for this month."
+    )
+
 
 def _get_codebase_names_for_org(org_id: str) -> list[str]:
     """
@@ -160,6 +170,7 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
     org_id = get_organization_id(ctx)
     return _get_codebase_names_for_org(org_id)
 
+
 @my_mcp.tool()
 def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
     """
@@ -173,6 +184,7 @@ def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
     )
     return dc.content
 
+
 @my_mcp.tool()
 def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
     """
@@ -185,3 +197,53 @@ def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
         org_id, codebase_name, ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
     )
     return dc.content
+
+
+@my_mcp.tool(
+    name="get_code_map",
+    description="""Get a flat list of files and directories, with descriptions, under a given directory path.
+
+    This tool explores directory structure - provide a directory path (not a file path).
+
+    Returns an object with:
+    - payload: List of nodes, each containing:
+      - path: The file/directory path
+      - type: "file" or "directory"
+      - description: A short sentence describing what the file/directory contains
+    - errors: List of helpful error messages if no results found
+
+    OPTIMAL USAGE:
+    - Use max_depth=5 for initial exploration
+    - Increase max_depth for deeper analysis
+    - Provide directory paths only (e.g., "src", "src/utils", not "src/main.py")
+
+    Examples:
+    - List all top-level items: get_code_map("my-codebase", "", 5)
+    - Explore services: get_code_map("my-codebase", "services", 7)
+    - Deep dive into API: get_code_map("my-codebase", "api/handlers", 10)""",
+)
+def get_code_map(
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase to explore")
+    ],
+    path: Annotated[
+        str,
+        Field(
+            description="The directory path to explore (e.g., 'src', 'src/utils'). Use empty string for root."
+        ),
+    ] = "",
+    max_depth: Annotated[
+        int,
+        Field(
+            description="Maximum depth to traverse in the directory tree", ge=0, le=20
+        ),
+    ] = 5,
+) -> dict[str, Any]:
+    response = get_code_map_simple(
+        org_id=get_organization_id(ctx),
+        codebase_name=codebase_name,
+        path=path,
+        max_depth=max_depth,
+    )
+    return response.model_dump()

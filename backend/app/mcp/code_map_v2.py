@@ -4,7 +4,7 @@ from pathlib import Path
 from database.db import get_session
 from database.models_v1 import DerivedContent
 from database.models_v2 import Node
-from database.models_v2_enums import ContentKind
+from database.models_v2_enums import ContentKind, NodeKind
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
@@ -112,16 +112,13 @@ def _build_flat_node_list(
     result = []
 
     for node, content in nodes_with_content:
-        if not node.relative_path:
-            logger.debug("Skipping node with empty relative_path")
-            continue
 
         logger.debug(f"Adding node: path='{node.relative_path}', kind='{node.kind}'")
 
         result.append(
             CodeMapNode(
                 path=node.relative_path,
-                type="file" if node.kind == "CODEBASE_FILE" else "directory",
+                type="file" if node.kind == NodeKind.CODEBASE_FILE else "directory",
                 description=content.content,
             )
         )

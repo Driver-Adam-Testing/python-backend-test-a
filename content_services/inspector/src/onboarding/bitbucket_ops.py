@@ -170,9 +170,11 @@ def download_repo(
             raise
 
 
-def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
+def get_latest_commit(
+    workspace: str, repo_slug: str, access_token: str, default_branch: str
+) -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits"
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits/{default_branch}"
 
     response = requests.get(url, headers=headers, params={"pagelen": 1})
     response.raise_for_status()
@@ -180,7 +182,7 @@ def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
     commits = response.json().get("values", [])
     if commits:
         return commits[0]["hash"]
-    raise ValueError("No commits found")
+    raise ValueError(f"No commits found on default branch '{default_branch}'")
 
 
 def fetch_vcs_info(
@@ -317,7 +319,9 @@ def download_and_upload_repo(
 
     if not commit:
         try:
-            commit = get_latest_commit(workspace, repo_slug, access_token)
+            commit = get_latest_commit(
+                workspace, repo_slug, access_token, repo["default_branch"]
+            )
         except Exception as e:
             print(f"Failed to get latest commit for {repo_name}: {e}")
             return repo_name

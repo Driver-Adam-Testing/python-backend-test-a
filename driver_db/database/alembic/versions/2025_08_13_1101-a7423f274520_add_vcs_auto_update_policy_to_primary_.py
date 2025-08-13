@@ -1,7 +1,7 @@
 """add_vcs_auto_update_policy_to_primary_asset
 
-Revision ID: e61f9f2b487b
-Revises: 0d8a28ac87e5
+Revision ID: a7423f274520
+Revises: 9eafc58194c2
 Create Date: 2025-08-08 15:59:33.147946
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "e61f9f2b487b"
-down_revision = "0d8a28ac87e5"
+revision = "a7423f274520"
+down_revision = "9eafc58194c2"
 branch_labels = None
 depends_on = None
 

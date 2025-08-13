@@ -34,19 +34,6 @@ auth_middleware = McpAuthMiddleware()
 my_mcp.add_middleware(auth_middleware)
 
 
-@my_mcp.tool()
-def add(a: int, b: int) -> int:
-    """Add two numbers"""
-    return a + b
-
-
-@my_mcp.tool(exclude_args=["dummy"])
-def get_user(ctx: Context, dummy: str | None = None) -> dict:
-    """Get the authenticated user (Who I am!)"""
-    authd_user = get_user_from_ctx(ctx)
-    return authd_user
-
-
 def _get_root_node_content(
     org_id: str, codebase_name: str, content_kind: ContentKind
 ) -> DerivedContent | None:
@@ -81,6 +68,8 @@ def _get_root_node_content(
 def get_codebase_audiences(ctx: Context, codebase_name: str) -> str:
     """
     Get the target audiences for a codebase.
+
+    The codebase must be specified by name and a list of relevant audience categories is returned.
     """
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(org_id, codebase_name, ContentKind.CODEBASE_AUDIENCES)
@@ -91,6 +80,8 @@ def get_codebase_audiences(ctx: Context, codebase_name: str) -> str:
 def get_codebase_domains(ctx: Context, codebase_name: str) -> str:
     """
     Get the domains/areas that a codebase covers.
+
+    The codebase must be specified by name and a list of domains is returned. Use to quickly understand what kind of codebase you are dealing with (e.g., embedded, web application, etc.).
     """
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(org_id, codebase_name, ContentKind.CODEBASE_DOMAINS)
@@ -101,6 +92,10 @@ def get_codebase_domains(ctx: Context, codebase_name: str) -> str:
 def get_codebase_entry_points(ctx: Context, codebase_name: str) -> str:
     """
     Get the entry points for a codebase.
+
+   The codebase must be specified by name and a list of relevant entry points with path and a short description provided.
+
+   This can help orient you with important logical starting points for interacting with the codebase.
     """
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -113,6 +108,10 @@ def get_codebase_entry_points(ctx: Context, codebase_name: str) -> str:
 def get_changelog(ctx: Context, codebase_name: str) -> str:
     """
     Fetch the complete high-level changelog for a codebase, broken down by year and month.
+
+    The codebase must be specified by name.
+
+    Helpful for orienting and reasoning about a codebase -- use this in any context where the historical development process and decisions might be helpful. Prioritize calling this at the beginning of a task.
     """
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -127,10 +126,13 @@ def get_detailed_changelog(
 ) -> str:
     """
     Fetch the detailed changelog for a specific year and month of the given codebase.
+
     Args:
         codebase_name (str): The name of the codebase.
         year (str): The year of the changelog. (e.g. 2023)
         month (str): The month of the changelog. (e.g. 01, 02, ..., 12)
+
+    Use this when more detailed information about the development process of the codebase at a specific time might be helpful.
     """
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -161,11 +163,10 @@ def _get_codebase_names_for_org(org_id: str) -> list[str]:
 @my_mcp.tool(exclude_args=["dummy"])
 def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
     """
-    Get names of all codebases we have Driver content for.
+    Get names of all codebases supported by the Driver MCP.
     Only returns codebases belonging to the authenticated user's Driver organization.
 
-    You must call this tool to get the list of valid codebase names. You can provide this to further Driver MCP tool calls.
-    To get your own codebase name, you may want to check git so you can pick a pertient result from the result of this tool.
+    All other Driver MCP tools will generally require a codebase name parameter. You must call this tool to get the list of valid codebase names. To resolve which codebase name is relevant for your tasks, you may want to use local tools such as `git` and facilities that print the name of the working directory. You can then cross-reference this with the list provided by this tool to ensure you pick the right one and properly call the other Driver MCP tools.
     """
     org_id = get_organization_id(ctx)
     return _get_codebase_names_for_org(org_id)
@@ -174,7 +175,8 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
 @my_mcp.tool()
 def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
     """
-    Get an architectural overview for the specified codebase
+    Get a complete architectural overview document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
+
     Args:
         codebase_name (str): The name of the codebase.
     """
@@ -188,7 +190,8 @@ def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
 @my_mcp.tool()
 def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
     """
-    Get an LLM onboarding guide for the specified codebase
+    Get an LLM onboarding guide document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
+
     Args:
         codebase_name (str): The name of the codebase.
     """
@@ -220,7 +223,13 @@ def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
     Examples:
     - List all top-level items: get_code_map("my-codebase", "", 5)
     - Explore services: get_code_map("my-codebase", "services", 7)
-    - Deep dive into API: get_code_map("my-codebase", "api/handlers", 10)""",
+    - Deep dive into API: get_code_map("my-codebase", "api/handlers", 10)
+
+    Further usage advice:
+    - Prioritize using the `get_architecture_overview` and `get_llm_onboarding_guide` tools to get oriented with non-trivial tasks as a first step.
+    - Then prioritize this tool when you want to subsequently explore parts of the codebase relevant to your task at hand.
+    - Use this in tandem with `fetch_tech_doc`, where the latter can be used to return detailed symbol-level documentation for files of interest from using `code_map`.
+    """,
 )
 def get_code_map(
     ctx: Context,
@@ -247,3 +256,10 @@ def get_code_map(
         max_depth=max_depth,
     )
     return response.model_dump()
+
+
+@my_mcp.tool()
+def fetch_tech_doc(ctx: Context, codebase_name: str) -> str:
+    # TODO
+    pass
+

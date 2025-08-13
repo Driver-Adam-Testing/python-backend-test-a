@@ -3,10 +3,12 @@ from pathlib import Path
 
 from database.db import get_session
 from database.models_v1 import DerivedContent
-from database.models_v2 import Node, PrimaryAsset, Version
-from database.models_v2_enums import ContentKind, PrimaryAssetKind, VersionStatus
+from database.models_v2 import Node
+from database.models_v2_enums import ContentKind
 from pydantic import BaseModel
 from sqlmodel import Session, select
+
+from .mcp_helpers import get_latest_version_for_codebase
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ def get_code_map_simple(
     )
 
     with get_session() as db:
-        version = _get_latest_version(db, org_id, codebase_name)
+        version = get_latest_version_for_codebase(db, org_id, codebase_name)
         if not version:
             logger.warning(
                 f"No version found for codebase '{codebase_name}' in org '{org_id}'"
@@ -70,18 +72,6 @@ def get_code_map_simple(
             )
 
         return CodeMapResponse(payload=nodes, errors=[])
-
-
-def _get_latest_version(db: Session, org_id: str, codebase_name: str) -> Version | None:
-    return db.exec(
-        select(Version)
-        .join(PrimaryAsset, PrimaryAsset.id == Version.primary_asset_id)
-        .where(PrimaryAsset.display_name == codebase_name)
-        .where(PrimaryAsset.organization_id == org_id)
-        .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-        .where(Version.status == VersionStatus.GENERATION_COMPLETE)
-        .order_by(Version.updated_at.desc())
-    ).first()
 
 
 def _fetch_nodes_with_descriptions(

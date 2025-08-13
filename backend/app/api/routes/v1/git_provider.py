@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import logging
+from datetime import datetime
 from itertools import groupby
 from uuid import UUID
 
@@ -14,7 +15,7 @@ from database.models_v1 import (
     GitProviderKind,
 )
 from database.models_v2 import PrimaryAsset
-from database.models_v2_enums import PrimaryAssetKind
+from database.models_v2_enums import PrimaryAssetKind, VcsAutoUpdatePolicy
 from fastapi import (
     APIRouter,
     Depends,
@@ -27,6 +28,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from shared.interfaces.aws_client_config import AWSClientConfig
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.api.auth import (
@@ -533,6 +535,17 @@ def handle_installation_modified_event(
     )
 
 
+def _seconds_since_last_version_created(
+    push_event_body: dict, codebase_asset: PrimaryAsset
+) -> int:
+    new_commit_timestamp = datetime.fromisoformat(
+        push_event_body["head_commit"]["timestamp"]
+    )
+    previous_update_timestamp = codebase_asset.versions[0].created_at
+
+    return int((new_commit_timestamp - previous_update_timestamp).total_seconds())
+
+
 def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     repository = body["repository"]
     org_name = repository.get("owner", {}).get("login", "unknown")
@@ -602,6 +615,40 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             content={"message": ""},
         )
 
+    match codebase_asset.vcs_auto_update_policy:
+        case VcsAutoUpdatePolicy.NEVER:
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (updates are disabled)"},
+            )
+        case VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT:
+            pass
+        case (
+            VcsAutoUpdatePolicy.AFTER_ONE_DAY_OR_MORE
+            | VcsAutoUpdatePolicy.AFTER_THREE_DAYS_OR_MORE
+            | VcsAutoUpdatePolicy.AFTER_ONE_WEEK_OR_MORE
+            | VcsAutoUpdatePolicy.AFTER_TWO_WEEKS_OR_MORE
+            | VcsAutoUpdatePolicy.AFTER_FOUR_WEEKS_OR_MORE
+        ):
+            if not codebase_asset.versions:
+                pass
+            elif _seconds_since_last_version_created(
+                push_event_body=body,
+                codebase_asset=codebase_asset
+                < codebase_asset.vcs_auto_update_policy.to_seconds(),
+            ):
+                return JSONResponse(
+                    status_code=status.HTTP_202_ACCEPTED,
+                    content={
+                        "message": f"Push event ignored (new push has not occurred {codebase_asset.vcs_auto_update_policy} since the previous update)"
+                    },
+                )
+        case _:
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not a valid policy)"},
+            )
+
     repos_added = []
     repos_deleted = []
     repos_pushed = [
@@ -638,11 +685,13 @@ def get_codebase_asset(
     session: CurrentSession, org_id: str, repo_name: str
 ) -> PrimaryAsset:
     primary_asset = session.exec(
-        select(PrimaryAsset).where(
+        select(PrimaryAsset)
+        .where(
             PrimaryAsset.organization_id == org_id,
             PrimaryAsset.display_name == repo_name,
             PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
         )
+        .options(selectinload(PrimaryAsset.versions))
     ).one_or_none()
     return primary_asset
 

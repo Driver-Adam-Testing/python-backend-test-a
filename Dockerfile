@@ -47,4 +47,12 @@ RUN apt-get purge -y --auto-remove build-essential curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Capture Git info at build time
+ARG GIT_COMMIT
+ARG GIT_BRANCH
+
+# Set environment variables
+ENV GIT_COMMIT=${GIT_COMMIT}
+ENV GIT_BRANCH=${GIT_BRANCH}
+
 CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]

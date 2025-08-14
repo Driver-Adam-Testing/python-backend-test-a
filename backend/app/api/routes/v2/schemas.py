@@ -61,6 +61,8 @@ class NodeRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     depth: int
+    misc_metadata: dict | None
+    total_files: int | None
 
     class Config:
         from_attributes = True

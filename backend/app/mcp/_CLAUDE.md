@@ -28,7 +28,7 @@ These are static documents (typically 1 -- 2 pages in length) that provide dense
 
 ### get_changelog
 - **Purpose**: returns a document with an exhaustive change log, broken down by year and month, describing the development process for this codebase over time. This can provide rich information about intent and "the why" for components of the codebase that are not possible to understand looking at any single state/snapshot of the codebase.
-- **When to Use**: At the beginning of a workflow triggered by user input in which information about the historical development of the codebase could be useful.
+- **When to Use**: At the beginning of a workflow triggered by user input in which information about the historical development of the codebase could be useful. Examples include if the user is asking you to think about how a new feature should be implemented or extended or refactored. By consulting the change log and historical development first, you will be better positioned to reason about these kind of decisions.
 
 ## Grangular Navigation Tools
 

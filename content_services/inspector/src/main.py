@@ -701,6 +701,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     secrets=[
         modal.Secret.from_name("db"),
     ],
+    timeout=60 * 60,
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,

@@ -78,8 +78,13 @@ def _fetch_nodes_with_descriptions(
     db: Session, version_id: str, path: str, max_depth: int
 ) -> list[tuple[Node, DerivedContent]]:
     path_filter = _normalize_path_filter(path)
+
+    # Calculate base depth: number of path components in the search path
+    # e.g., "codebase-name/src" has base_depth of 1 (counting after codebase-name/)
+    base_depth = len(Path(path).parts) - 1 if path else 0
+
     logger.info(
-        f"Fetching nodes with path filter '{path_filter}' and max_depth {max_depth}"
+        f"Fetching nodes with path filter '{path_filter}', base_depth {base_depth}, max_depth {max_depth}"
     )
 
     result = db.exec(
@@ -87,7 +92,7 @@ def _fetch_nodes_with_descriptions(
         .join(DerivedContent, DerivedContent.node_id == Node.id)
         .where(Node.version_id == version_id)
         .where(Node.relative_path.like(path_filter))
-        .where(Node.depth <= max_depth)
+        .where(Node.depth <= base_depth + max_depth)
         .where(DerivedContent.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION)
         .order_by(Node.relative_path)
     ).all()
@@ -100,7 +105,6 @@ def _normalize_path_filter(path: str) -> str:
     if not path:
         return "%"
 
-    # Ensure path ends with / for directory search
     normalized = path.rstrip("/") + "/%"
     logger.debug(f"Normalized path filter: '{path}' -> '{normalized}'")
     return normalized
@@ -112,7 +116,6 @@ def _build_flat_node_list(
     result = []
 
     for node, content in nodes_with_content:
-
         logger.debug(f"Adding node: path='{node.relative_path}', kind='{node.kind}'")
 
         result.append(

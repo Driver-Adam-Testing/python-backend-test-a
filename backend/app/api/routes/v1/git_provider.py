@@ -632,10 +632,13 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         ):
             if not codebase_asset.versions:
                 pass
-            elif _seconds_since_last_version_created(
-                push_event_body=body,
-                codebase_asset=codebase_asset
-                < codebase_asset.vcs_auto_update_policy.to_seconds(),
+            elif (
+                _seconds_since_last_version_created(
+                    push_event_body=body, codebase_asset=codebase_asset
+                )
+                < VcsAutoUpdatePolicy(
+                    codebase_asset.vcs_auto_update_policy
+                ).to_seconds()
             ):
                 return JSONResponse(
                     status_code=status.HTTP_202_ACCEPTED,

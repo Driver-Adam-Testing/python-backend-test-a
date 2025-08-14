@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+import os
 
 router = APIRouter()
 
@@ -7,7 +8,7 @@ router = APIRouter()
 class HealthCheck(BaseModel):
     """Response model to validate and return when performing a health check."""
 
-    status: str = "OK"
+    status: str = "OK" + " git_commit:" +  os.getenv("GIT_COMMIT", "unknown") + " git_branch:" + os.getenv("GIT_BRANCH", "unknown")
 
 
 @router.get(

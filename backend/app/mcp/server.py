@@ -1,5 +1,5 @@
-from inspect import cleandoc
 import os
+from inspect import cleandoc
 from typing import Annotated, Any
 
 from database.models_v2_enums import PrimaryAssetKind
@@ -20,17 +20,16 @@ from fastmcp import Context, FastMCP
 from sqlmodel import select
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
-from .auth_middleware import get_user as get_user_from_ctx
 from .code_map_v2 import get_code_map_simple
 from .mcp_helpers import get_latest_version_for_codebase
 
 my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False)
-assert fastmcp.settings.stateless_http is True, (
-    "FastMCP must be configured with stateless HTTP enabled."
-)
-assert fastmcp.settings.mask_error_details is True, (
-    "FastMCP must be configured to mask error details."
-)
+assert (
+    fastmcp.settings.stateless_http is True
+), "FastMCP must be configured with stateless HTTP enabled."
+assert (
+    fastmcp.settings.mask_error_details is True
+), "FastMCP must be configured to mask error details."
 
 auth_middleware = McpAuthMiddleware()
 my_mcp.add_middleware(auth_middleware)
@@ -76,7 +75,12 @@ def _get_root_node_content(
         This can help orient you with important logical starting points for interacting with the codebase.
     """),
 )
-def get_codebase_entry_points(ctx: Context, codebase_name: str) -> str:
+def get_codebase_entry_points(
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase, as it exists in Driver.")
+    ],
+) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
         org_id, codebase_name, ContentKind.CODEBASE_ENTRY_POINTS
@@ -94,7 +98,12 @@ def get_codebase_entry_points(ctx: Context, codebase_name: str) -> str:
         Helpful for orienting and reasoning about a codebase -- use this in any context where the historical development process and decisions might be helpful. Prioritize calling this at the beginning of a task.
     """),
 )
-def get_changelog(ctx: Context, codebase_name: str) -> str:
+def get_changelog(
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase, as it exists in Driver.")
+    ],
+) -> str:
     """ """
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -108,16 +117,18 @@ def get_changelog(ctx: Context, codebase_name: str) -> str:
     description=cleandoc("""
         Fetch the detailed changelog for a specific year and month of the given codebase.
 
-        Args:
-            codebase_name (str): The name of the codebase.
-            year (str): The year of the changelog. (e.g. 2023)
-            month (str): The month of the changelog. (e.g. 01, 02, ..., 12)
-
         Use this when more detailed information about the development process of the codebase at a specific time might be helpful.
     """),
 )
 def get_detailed_changelog(
-    ctx: Context, codebase_name: str, year: str, month: str
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase, as it exists in Driver.")
+    ],
+    year: Annotated[str, Field(description="The year of the changelog. (e.g. 2023)")],
+    month: Annotated[
+        str, Field(description="The month of the changelog. (e.g. 01, 02, ..., 12)")
+    ],
 ) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -164,12 +175,14 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
     name="get_architecture_overview",
     description=cleandoc("""
     Get a complete architectural overview document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
-
-    Args:
-        codebase_name (str): The name of the codebase.
     """),
 )
-def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
+def get_architecture_overview(
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase, as it exists in Driver.")
+    ],
+) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
         org_id, codebase_name, ContentKind.DEEP_CONTEXT_ARCHITECTURE
@@ -181,12 +194,14 @@ def get_architecture_overview(ctx: Context, codebase_name: str) -> str:
     name="get_llm_onboarding_guide",
     description=cleandoc("""
     Get an LLM onboarding guide document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
-
-    Args:
-        codebase_name (str): The name of the codebase.
     """),
 )
-def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
+def get_llm_onboarding_guide(
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase, as it exists in Driver.")
+    ],
+) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
         org_id, codebase_name, ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
@@ -200,21 +215,17 @@ def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
         Get detailed symbol-level documentation for a specific file in a codebase.
 
         Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
-
-        Args:
-            codebase_name (str): The name of the codebase.
-            path (str): The file path to get documentation.
     """),
 )
 def get_file_documentation(
     ctx: Context,
     codebase_name: Annotated[
-        str, Field(description="The name of the codebase to explore")
+        str, Field(description="The name of the codebase, as it exists in Driver.")
     ],
     path: Annotated[
         str,
         Field(
-            description="The file or folder path to get documentation for (e.g., 'src/my_file.py', 'src/utils/open.c')."
+            description="The file path to get documentation. This should NOT include the codebase name (e.g., 'src/my_file.py' NOT 'codebase-name/src/utils/open.c').')."
         ),
     ],
 ) -> str:
@@ -263,39 +274,46 @@ def get_file_documentation(
           - description: A short sentence describing what the file/directory contains
         - errors: List of helpful error messages if no results found
 
-        OPTIMAL USAGE:
-        - Use max_depth=5 for initial exploration
-        - Increase max_depth for deeper analysis
+        USAGE:
+        - Use max_depth=0 to see only the directory itself
+        - Use max_depth=1 to see the directory and its immediate children
+        - Use max_depth=2 to include grandchildren
+        - max_depth is relative to the specified path, not the codebase root
         - Provide directory paths only (e.g., "src", "src/utils", not "src/main.py")
 
         Examples:
-        - List all top-level items: get_code_map("my-codebase", "", 5)
-        - Explore services: get_code_map("my-codebase", "services", 7)
-        - Deep dive into API: get_code_map("my-codebase", "api/handlers", 10)
+        - List all top-level items: get_code_map("my-codebase", "", 1)
+        - See what's in a directory: get_code_map("my-codebase", "services", 1)
+        - Explore deeper: get_code_map("my-codebase", "api/handlers", 2)
 
         Further usage advice:
         - Prioritize using the `get_architecture_overview` and `get_llm_onboarding_guide` tools to get oriented with non-trivial tasks as a first step.
         - Then prioritize this tool when you want to subsequently explore parts of the codebase relevant to your task at hand.
-        - Use this in tandem with `fetch_tech_doc`, where the latter can be used to return detailed symbol-level documentation for files of interest from using `code_map`.
+        - Use this in tandem with `get_file_documentation`, where the latter can be used to return detailed symbol-level documentation for files of interest from using `get_code_map`.
     """),
 )
 def get_code_map(
     ctx: Context,
     codebase_name: Annotated[
-        str, Field(description="The name of the codebase to explore")
+        str,
+        Field(
+            description="The name of the codebase, as it exists in Driver, to explore (e.g., 'my-codebase')"
+        ),
     ],
     path: Annotated[
         str,
         Field(
-            description="The directory path to explore (e.g., 'src', 'src/utils'). Use empty string for root."
+            description="The directory path to explore (e.g., 'src', 'src/utils'). Use empty string for root. Should not include the codebase name (e.g., 'my-codebase/src' is incorrect)."
         ),
     ] = "",
     max_depth: Annotated[
         int,
         Field(
-            description="Maximum depth to traverse in the directory tree", ge=0, le=20
+            description="Maximum depth to traverse relative to the specified path (0 = only the directory itself, 1 = directory + immediate children, etc.)",
+            ge=0,
+            le=20,
         ),
-    ] = 5,
+    ] = 2,
 ) -> dict[str, Any]:
     response = get_code_map_simple(
         org_id=get_organization_id(ctx),

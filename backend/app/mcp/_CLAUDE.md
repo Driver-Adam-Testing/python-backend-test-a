@@ -27,7 +27,7 @@ These are static documents (typically 1 -- 2 pages in length) that provide dense
 - **When to Use**: At the beginning of a session or any query from the user, **especially** if the user's query requires a broader understanding of the codebase and navigating it.
 
 ### get_changelog
-- **Purpose**: returns a document with an exhaustive change log, broken down by year and month, describing the development process for this codebase over time. This can provide rich information about intent and "the why" for components of the codebase that are not possible to understand looking at any single state/snapshot of the codebase.
+- **Purpose**: Returns a document with an exhaustive change log, broken down by year and month, describing the development process for this codebase over time. This can provide rich information about intent and "the why" for components of the codebase that are not possible to understand looking at any single state/snapshot of the codebase.
 - **When to Use**: At the beginning of a workflow triggered by user input in which information about the historical development of the codebase could be useful. Examples include if the user is asking you to think about how a new feature should be implemented or extended or refactored. By consulting the change log and historical development first, you will be better positioned to reason about these kind of decisions.
 
 ## Grangular Navigation Tools
@@ -40,6 +40,10 @@ These are static documents (typically 1 -- 2 pages in length) that provide dense
 - **Purpose**: Fetch complete and exhaustive symbol-level documentation for the file specified by path.
 - **When to Use**: When you need to understand a file at the detailed symbol-level. Very useful in tandem with `get_code_map`, which gives you precise path and purpose information for files and `get_file_documentation` can be used to drill down into the details of the most important files.
 
+### get_detailed_changelog
+- **Purpose**: Fetch detailed change log and commit log-derived information for a particular month and year. This can provide detailed and rich information about intent and the development process.
+- **When to Use**: When detailed historical development information from a particular point in time is helpful. For example, you are working with a user to update, refactor, or modify a major feature in a codebase and knowing the development history may help. You will likely always want to call `get_changelog` first to get your bearings overall on the development history, then use `get_detailed_changelog` to zoom in on the details from a particular time period (e.g., when a relevant part of the codebase was under major development).
+
 ## Other Utility Tools
 
 ### get_codebase_entry_points
@@ -49,4 +53,5 @@ These are static documents (typically 1 -- 2 pages in length) that provide dense
 ## Suggested Workflows Using Multiple Tools in Concert
 
 1. Read Deep Context Docs when you start a session and up front when performing tasks as needed. This can quickly and significantly improve your subsequent planning and execution to solve user tasks.
-2. When detailed discovery is required, use `get_code_map` and `fetch_tech_doc` in tandem to effectively navigate, find, and read detailed information.
+2. When detailed discovery is required, use `get_code_map` and `get_file_documentation` in tandem to effectively navigate, find, and read detailed information.
+3. When the "intent" and "why" of a codebase and its historical development is valuable, use `get_changelog` and `get_detailed_changelog` in tandem as needed tp explore historical development content.

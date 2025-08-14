@@ -2,9 +2,9 @@
 
 ## Available Tools
 
-Driver's tools all work by providing pre-computed and dense information about the codebase. You should use these tools to aid in your navigation, discovery, and reasoning about codebases you are working with. This can ensure you are able to accomplish your tasks much more quickly and more exhaustively, reducing the risk you will miss important context about the codebase. Prioritize use of Driver's tools in this manner.
+Driver is a toolset that provides pre-computed and dense information about codebases, exposed through MCP. You should use these tools to aid in your navigation, discovery, and reasoning about codebases you are working with. This can ensure you are able to accomplish your tasks much more quickly and more exhaustively, reducing the risk you will miss important context about the codebase. Prioritize use of Driver's MCP tools in this manner.
 
-Almost all of these tools require you to provide the name of the codebase as input. You will need to understand the context you are running in (e.g., what local codebase you are being asked to work with) and match that with the codebase supported by the Driver MCP.
+Almost all of these tools require you to provide the name of the codebase as input. You will need to understand the context you are running in (e.g., what local codebase you are being asked to work with) and match that with the codebase supported by Driver.
 
 - Use the `get_codebase_names` tool to get a list of codebases supported by Driver.
 - If needed, use local tools such as `git` or OS-level directory tools like the `pwd` (Unix-like contexts) to look for the name of the codebase you are working with locally.
@@ -12,11 +12,11 @@ Almost all of these tools require you to provide the name of the codebase as inp
 
 There are two major categories of tools in the Driver MCP service:
 
-1. Deep Context Documents: static documents that provide dense and complete compilations, such as architecture, onboarding guides, and 
-2. Granular Navigational Tools
+1. Deep Context Documents: static documents that provide dense and complete compilations, such as architecture, onboarding guides, and change logs.
+2. Granular Navigational Tools: More granular and structured tools to aid in navigation, discovery, and surface lower-level documentation.
 
 ## Deep Context Tools
-These are static documents (typically 1 -- 2 pages in length) that provide dense and complete compilations of critical information. Use and read these documents early in your workflows to immediately get critical context and best plan your next steps given holistic and exhauxtive context.
+These are static documents (typically 1 -- 2 pages in length) that provide dense and complete compilations of critical information. Use and read these documents early in your workflows to immediately get critical context and best plan your next steps given holistic and exhauxtive context. At the beginning of a session, always read each of the deep context documents to get oriented with the codebase well for all future tasks.
 
 ### get_architecture_guide
 - **Purpose**: Returns a one page document describing, exhuastively and densely, the architecture of the whole codebase, optimized to inform an LLM agent.
@@ -36,17 +36,17 @@ These are static documents (typically 1 -- 2 pages in length) that provide dense
 - **Purpose**: A navigable tree structure for the codebase queryable at any place in the directory structure that will return terse descriptions and metadata for that node and children up to a specified depth.
 - **When to Use**: Anywhere in your workflow where detailed understanding about various parts of the codebase is useful. Use this to understand important files/folders and then you can call other tools to read documentation for these files/folders or directly read the source material.
 
-### fetch_tech_doc
-- **Purpose**: Fetch complete and exhaustive documentation for the file or folder specified by path. For files, this will include detailed symbol-level documentation.
-- **When to Use**: When you want to understand a file at the detailed symbol-level but without looking at the raw source code.
+### get_file_documentation
+- **Purpose**: Fetch complete and exhaustive symbol-level documentation for the file specified by path.
+- **When to Use**: When you need to understand a file at the detailed symbol-level. Very useful in tandem with `get_code_map`, which gives you precise path and purpose information for files and `get_file_documentation` can be used to drill down into the details of the most important files.
 
 ## Other Utility Tools
 
 ### get_codebase_entry_points
 - **Purpose**: Returns a list of primary entry points for the codebase, with the path and a short description.
-- **When to Use**: When orienting yourself with a codebase and the critical entry points (such as `main` executable locations, library entry points, or scripts).
+- **When to Use**: When orienting yourself with a codebase and a list of a few of the critical entry points (such as `main` executable locations, library entry points, or scripts) would be usueful.
 
 ## Suggested Workflows Using Multiple Tools in Concert
 
-1. Read Deep Context Docs up front when performing tasks.
+1. Read Deep Context Docs when you start a session and up front when performing tasks as needed. This can quickly and significantly improve your subsequent planning and execution to solve user tasks.
 2. When detailed discovery is required, use `get_code_map` and `fetch_tech_doc` in tandem to effectively navigate, find, and read detailed information.

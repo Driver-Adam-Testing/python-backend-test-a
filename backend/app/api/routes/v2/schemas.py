@@ -33,6 +33,7 @@ class PrimaryAssetRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     repository_id: str | None
+    provider: str | None
 
     class Config:
         from_attributes = True

@@ -21,6 +21,7 @@ from sqlmodel import select
 from .auth_middleware import McpAuthMiddleware, get_organization_id
 from .auth_middleware import get_user as get_user_from_ctx
 from .code_map_v2 import get_code_map_simple
+from .mcp_helpers import get_latest_version_for_codebase
 
 my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False)
 assert (
@@ -200,6 +201,50 @@ def get_llm_onboarding_guide(ctx: Context, codebase_name: str) -> str:
         org_id, codebase_name, ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
     )
     return dc.content
+
+
+@my_mcp.tool(
+    description="Get detailed documentation for a specific file in a codebase."
+)
+def get_file_documentation(
+    ctx: Context,
+    codebase_name: Annotated[
+        str, Field(description="The name of the codebase to explore")
+    ],
+    path: Annotated[
+        str,
+        Field(
+            description="The file path to get documentation for (e.g., 'src/my_file.py', 'src/utils/open.c')."
+        ),
+    ],
+) -> str:
+    org_id = get_organization_id(ctx)
+
+    with get_session() as db:
+        version = get_latest_version_for_codebase(db, org_id, codebase_name)
+        if not version:
+            return f"Error: No completed documentation found for codebase '{codebase_name}'."
+
+        full_path = f"{codebase_name}/{path.strip('/')}"
+
+        node = db.exec(
+            select(Node)
+            .where(Node.version_id == version.id)
+            .where(Node.relative_path == full_path)
+        ).first()
+
+        if not node:
+            return f"Error: File '{path}' not found in codebase '{codebase_name}' documentation. "
+
+        content = db.exec(
+            select(DerivedContent)
+            .where(DerivedContent.node_id == node.id)
+            .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+        ).first()
+
+        if not content or not content.content:
+            return f"No documentation available for '{path}' in codebase '{codebase_name}'. "
+        return content.content
 
 
 @my_mcp.tool(

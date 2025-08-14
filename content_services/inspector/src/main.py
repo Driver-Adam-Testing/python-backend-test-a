@@ -745,9 +745,8 @@ def cleanup_old_versions(new_version_id: str) -> None:
             print(
                 f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
             )
-            # TODO delete all derived content for this version
-            # This will switch to happen once we can test this function
-            # session.delete(version)
+            session.delete(version)
+        session.commit()
 
 
 @app.local_entrypoint()

@@ -34,6 +34,7 @@ ignore = [
     "C901", # Don't check for 'too complex'
     "ANN101", # Ignore missing type annotation for self
     "ANN102", # Ignore missing type annotation for cls
+    "ANN401", # Allow use of typing.Any
     "C408", # Ignore Unnecessary `tuple` call (rewrite as a literal)
 ]
 

@@ -121,6 +121,10 @@ class ContentKind(str, enum.Enum):
     TOP_LEVEL_SHORT_PARAGRAPH = "TOP_LEVEL_SHORT_PARAGRAPH"
     TOP_LEVEL_TERSE_SENTENCE = "TOP_LEVEL_TERSE_SENTENCE"
     TOP_LEVEL_LONG_DESCRIPTION = "TOP_LEVEL_LONG_DESCRIPTION"
+    DEEP_CONTEXT_ARCHITECTURE = "deep-context-architecture"
+    DEEP_CONTEXT_LLM_ONBOARDING = "deep-context-llm-onboarding"
+    DEEP_CONTEXT_CHANGELOG = "deep-context-changelog"
+    DEEP_CONTEXT_BESPOKE = "deep-context-bespoke"
 
 
 class FileTypeEnum(enum.Enum):

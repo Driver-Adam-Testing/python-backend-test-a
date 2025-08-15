@@ -747,7 +747,7 @@ def cleanup_old_versions(new_version_id: str) -> None:
                 f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
             )
             session.delete(version)
-            session.commit()
+        session.commit()
 
 
 @app.local_entrypoint()

@@ -23,6 +23,9 @@ from .auth_middleware import McpAuthMiddleware, get_organization_id
 from .code_map_v2 import get_code_map_simple
 from .mcp_helpers import get_latest_version_for_codebase
 
+CODEBASE_NAME_PARAM_DESCRIPTION = """Name of the Driver supported codebase.  The 'get_codebase_names' tool can be used to generate a list of supported codebases.  Only codebase names returned by this tool are valid for this parameter.
+"""
+
 my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False)
 assert (
     fastmcp.settings.stateless_http is True
@@ -55,31 +58,21 @@ def _get_root_node_content(
         return derived_content
 
 
-# @my_mcp.tool()
-# def get_codebase_history_document(ctx: Context, codebase_name: str) -> str:
-#     """
-#     Get the history document for a codebase.
-#     """
-#     org_id = get_organization_id(ctx)
-#     dc = _get_root_node_content(org_id, codebase_name, ContentKind.CODEBASE)
-#     return dc.content or ""
-
-
 @my_mcp.tool(
     name="get_codebase_entry_points",
-    description=cleandoc("""
+    description=cleandoc(
+        """
         Get the entry points for a codebase.
 
         The codebase must be specified by name and a list of relevant entry points with path and a short description provided.
 
         This can help orient you with important logical starting points for interacting with the codebase.
-    """),
+    """
+    ),
 )
 def get_codebase_entry_points(
     ctx: Context,
-    codebase_name: Annotated[
-        str, Field(description="The name of the codebase, as it exists in Driver.")
-    ],
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -90,19 +83,19 @@ def get_codebase_entry_points(
 
 @my_mcp.tool(
     name="get_changelog",
-    description=cleandoc("""
+    description=cleandoc(
+        """
         Fetch the complete high-level changelog for a codebase, broken down by year and month.
 
         The codebase must be specified by name.
 
         Helpful for orienting and reasoning about a codebase -- use this in any context where the historical development process and decisions might be helpful. Prioritize calling this at the beginning of a task.
-    """),
+    """
+    ),
 )
 def get_changelog(
     ctx: Context,
-    codebase_name: Annotated[
-        str, Field(description="The name of the codebase, as it exists in Driver.")
-    ],
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> str:
     """ """
     org_id = get_organization_id(ctx)
@@ -114,17 +107,17 @@ def get_changelog(
 
 @my_mcp.tool(
     name="get_detailed_changelog",
-    description=cleandoc("""
+    description=cleandoc(
+        """
         Fetch the detailed changelog for a specific year and month of the given codebase.
 
         Use this when more detailed information about the development process of the codebase at a specific time might be helpful.
-    """),
+    """
+    ),
 )
 def get_detailed_changelog(
     ctx: Context,
-    codebase_name: Annotated[
-        str, Field(description="The name of the codebase, as it exists in Driver.")
-    ],
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
     year: Annotated[str, Field(description="The year of the changelog. (e.g. 2023)")],
     month: Annotated[
         str, Field(description="The month of the changelog. (e.g. 01, 02, ..., 12)")
@@ -158,12 +151,14 @@ def _get_codebase_names_for_org(org_id: str) -> list[str]:
 
 @my_mcp.tool(
     name="get_codebase_names",
-    description=cleandoc("""
+    description=cleandoc(
+        """
         Get names of all codebases supported by the Driver MCP.
         Only returns codebases belonging to the authenticated user's Driver organization.
 
         All other Driver MCP tools will generally require a codebase name parameter. You must call this tool to get the list of valid codebase names. To resolve which codebase name is relevant for your tasks, you may want to use local tools such as `git` and facilities that print the name of the working directory. You can then cross-reference this with the list provided by this tool to ensure you pick the right one and properly call the other Driver MCP tools.
-    """),
+    """
+    ),
     exclude_args=["dummy"],
 )
 def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
@@ -173,15 +168,15 @@ def get_codebase_names(ctx: Context, dummy: str | None = None) -> list[str]:
 
 @my_mcp.tool(
     name="get_architecture_overview",
-    description=cleandoc("""
+    description=cleandoc(
+        """
     Get a complete architectural overview document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
-    """),
+    """
+    ),
 )
 def get_architecture_overview(
     ctx: Context,
-    codebase_name: Annotated[
-        str, Field(description="The name of the codebase, as it exists in Driver.")
-    ],
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -192,15 +187,15 @@ def get_architecture_overview(
 
 @my_mcp.tool(
     name="get_llm_onboarding_guide",
-    description=cleandoc("""
+    description=cleandoc(
+        """
     Get an LLM onboarding guide document for the specified codebase. You should prioritize fetching and reading this content at the beginning of any non-trivial task.
-    """),
+    """
+    ),
 )
 def get_llm_onboarding_guide(
     ctx: Context,
-    codebase_name: Annotated[
-        str, Field(description="The name of the codebase, as it exists in Driver.")
-    ],
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
 ) -> str:
     org_id = get_organization_id(ctx)
     dc = _get_root_node_content(
@@ -211,17 +206,17 @@ def get_llm_onboarding_guide(
 
 @my_mcp.tool(
     name="get_file_documentation",
-    description=cleandoc("""
+    description=cleandoc(
+        """
         Get detailed symbol-level documentation for a specific file in a codebase.
 
         Use in tandem with `get_code_map` to effectively navigate a codebase and understand implementation details in files relevant for your tasks.
-    """),
+    """
+    ),
 )
 def get_file_documentation(
     ctx: Context,
-    codebase_name: Annotated[
-        str, Field(description="The name of the codebase, as it exists in Driver.")
-    ],
+    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
     path: Annotated[
         str,
         Field(
@@ -260,7 +255,8 @@ def get_file_documentation(
 
 @my_mcp.tool(
     name="get_code_map",
-    description=cleandoc("""
+    description=cleandoc(
+        """
         Get a flat list of files and directories, with descriptions, under a given directory path.
 
         This tool explores directory structure - provide a directory path (not a file path).
@@ -290,7 +286,8 @@ def get_file_documentation(
         - Prioritize using the `get_architecture_overview` and `get_llm_onboarding_guide` tools to get oriented with non-trivial tasks as a first step.
         - Then prioritize this tool when you want to subsequently explore parts of the codebase relevant to your task at hand.
         - Use this in tandem with `get_file_documentation`, where the latter can be used to return detailed symbol-level documentation for files of interest from using `get_code_map`.
-    """),
+    """
+    ),
 )
 def get_code_map(
     ctx: Context,

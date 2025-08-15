@@ -106,7 +106,7 @@ async def run_autodoc(
         VersionStatus,
     )
     from sqlalchemy.orm import selectinload
-    from sqlmodel import select
+    from sqlmodel import delete, select
 
     is_page = content_kind == ContentKind.application_note
 
@@ -327,6 +327,13 @@ async def run_autodoc(
         else:
             with get_session() as session, session.begin():
                 node = session.get(Node, page_node_id)
+                dc_delete_query = delete(DerivedContent).where(
+                    DerivedContent.node_id == page_node_id,
+                    DerivedContent.content_kind == content_kind,
+                )
+                await session.exec(dc_delete_query)
+                await session.commit()
+
                 derived_content = DerivedContent(
                     node_id=page_node_id,
                     relative_path=node.relative_path,

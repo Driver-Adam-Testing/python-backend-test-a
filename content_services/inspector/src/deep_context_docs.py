@@ -73,6 +73,7 @@ async def make_changelog(
     from database.db import async_engine
     from database.models_v1 import DerivedContent
     from inspection.changelog import create_changelog
+    from sqlmodel import delete
     from sqlmodel.ext.asyncio.session import AsyncSession
     from utils.db import get_version_by_id
 
@@ -93,6 +94,13 @@ async def make_changelog(
     # TODO: IO okay here?
     # TODO: delete old changelog for the node before saving
     async with AsyncSession(async_engine) as session:
+        dc_delete_query = delete(DerivedContent).where(
+            DerivedContent.node_id == root_node_id,
+            DerivedContent.content_kind == content_kind,
+        )
+        await session.exec(dc_delete_query)
+        await session.commit()
+
         derived_content = DerivedContent(
             node_id=root_node_id,
             relative_path=root_node_relative_path,

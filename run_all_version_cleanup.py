@@ -18,9 +18,17 @@ def run_all_version_cleanup():
         ).all()
 
         # Group versions by primary asset and get the most recent one for each
+        version_count_dict = {}
         most_recent_versions_dict = {}
         for version in most_recent_versions:
-            if (
+            # Count versions for each primary asset without hitting the db again
+            if version.primary_asset_id in version_count_dict:
+                version_count_dict[version.primary_asset_id] += 1
+            else:
+                version_count_dict[version.primary_asset_id] = 1
+
+            # Only consider primary assets with more than 10 versions
+            if version_count_dict[version.primary_asset_id] > 10 and (
                 version.primary_asset_id not in most_recent_versions_dict
                 or version.created_at
                 > most_recent_versions_dict[version.primary_asset_id].created_at

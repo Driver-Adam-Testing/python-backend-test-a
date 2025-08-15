@@ -7,6 +7,7 @@ from database.models_v2_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
+    VcsAutoUpdatePolicy,
     VersionStatus,
 )
 from pydantic import BaseModel, computed_field
@@ -45,6 +46,7 @@ class VersionRead(BaseModel):
     updated_at: datetime | None
     status: str | None
     browsable: bool
+    vcs_metadata: dict | None
 
     class Config:
         from_attributes = True
@@ -215,6 +217,7 @@ class PrimaryAssetCreate(BaseModel):
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
     codebase_settings_auto_commit_docs: bool | None = None
+    auto_update_policy: VcsAutoUpdatePolicy | None
 
 
 class VersionUpdate(BaseModel):

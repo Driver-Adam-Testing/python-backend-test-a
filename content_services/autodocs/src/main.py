@@ -363,6 +363,7 @@ async def run_autodoc(
             node = session.get(Node, page_node_id)
             node.version.status = VersionStatus.GENERATION_ERROR
             session.add(node.version)
+        raise e
 
         raise
 

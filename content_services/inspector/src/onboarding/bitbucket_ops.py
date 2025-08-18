@@ -291,7 +291,9 @@ def download_and_upload_repo(
     repo_id = repo.get("repo_id") or metadata.get("id") or metadata.get("uuid")
     repo_name = repo.get("repo_name") or repo.get("name")
     workspace = metadata.get("workspace") or repo.get("workspace")
-    repo_slug = repo_name
+    repo_slug = "-".join(
+        repo_name.split()
+    )  # Bitbucket allows spaces in repo names, which are replaced by dashes in the slug
 
     # Handle missing fields
     if not repo_id:

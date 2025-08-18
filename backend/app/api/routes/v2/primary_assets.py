@@ -154,8 +154,8 @@ def update_primary_asset(
         asset.codebase_settings_auto_commit_docs = (
             payload.codebase_settings_auto_commit_docs
         )
-    if payload.auto_update_policy is not None:
-        asset.vcs_auto_update_policy = payload.auto_update_policy
+    if payload.vcs_auto_update_policy is not None:
+        asset.vcs_auto_update_policy = payload.vcs_auto_update_policy
 
     session.add(asset)
     session.commit()

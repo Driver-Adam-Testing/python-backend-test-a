@@ -669,11 +669,11 @@ class AutoToml:
         encoder = tiktoken.encoding_for_model(
             "gpt-4o"
             if llm and llm.model in ["gpt-4.1", "o3-mini"]
-            else cls.LLM_GATHER_MODEL
+            else cls.LLM_SCATTER_MODEL
         )
         max_tokens = int(
             (
-                ChatOpenAI.get_token_limit(llm.model if llm else cls.LLM_GATHER_MODEL)
+                ChatOpenAI.get_token_limit(llm.model if llm else cls.LLM_SCATTER_MODEL)
                 * 0.7
             )
             // scale_factor

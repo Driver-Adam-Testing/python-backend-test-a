@@ -165,7 +165,7 @@ async def deep_context_docs(
             page_node_id=str(root_node_id),
             config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
             document_goal=LLM_ONBOARDING_INTENT,
-            user_context="SHORT",
+            user_context="MEDIUM",
             content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
         ),
     ]

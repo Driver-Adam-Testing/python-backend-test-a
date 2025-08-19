@@ -2,6 +2,7 @@ import base64
 import hashlib
 import logging
 import os
+import re
 import time
 from uuid import UUID
 
@@ -431,6 +432,101 @@ def get_repo_clone_info_from_id(repo_id: str, github_token: str) -> tuple[str, s
     clone_url = f"https://x-access-token:{github_token}@github.com/{full_name}.git"
     return clone_url, full_name
 
+
+def list_pull_requests(full_name: str, access_token: str) -> list:
+    # Default behavior of Github API fetches only open PRs
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    all_prs = []
+    page_count = 1
+    with httpx.Client() as client:
+        url = f"https://api.github.com/repos/{full_name}/pulls"
+        response = client.get(
+            url,
+            headers=headers,
+        )
+        response.raise_for_status()
+        all_prs.extend(response.json())
+
+        # handle pagination
+        link_header = response.headers.get("link", None) 
+        while link_header is not None:
+            page_count = page_count + 1
+            parts = response.headers["link"].split(",")
+            matches = [
+                re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
+                for part in parts
+            ]
+            has_next = False
+            for match in matches:
+                next_url, rel = match.groups()
+                if rel == "next" and next_url:
+                    has_next = True
+                    response = client.get(next_url, headers=headers)
+                    response.raise_for_status()
+                    all_prs.extend(response.json())
+            if not has_next:
+                break
+    return all_prs
+
+
+def get_pull_request_commits(
+    full_name: str, pr_id: int, access_token: str
+) -> list:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    with httpx.Client() as client:
+        url = f"https://api.github.com/repos/{full_name}/pulls/{pr_id}/commits"
+        response = client.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+
+def close_pull_request(full_name: str, pr_id: int, access_token: str) -> None:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    with httpx.Client() as client:
+        url = f"https://api.github.com/repos/{full_name}/pulls/{pr_id}"
+        response = client.patch(
+            url, headers=headers, json={"state": "closed"}
+        )
+        response.raise_for_status()
+        print(f"✅ Closed pull request {pr_id} for {full_name}")
+
+def create_pull_request_with_bot_cleanup(
+    full_name: str,
+    access_token: str,
+    branch: str,
+    commit_slug: str,
+) -> None:
+    """Create a pull request and close any existing bot PRs from docs_* branches."""
+    BOT_NAME = "docs-bot"
+    BOT_EMAIL = "bot@driverai.com"
+
+    print("Checking for existing bot pull requests...")
+    try:
+        existing_prs = list_pull_requests(full_name, access_token)
+
+        for pr in existing_prs:
+            source_branch = pr["head"]["ref"]
+            if source_branch.startswith("docs_"):
+                try:
+                    pr_id = pr["id"]
+                    commits = get_pull_request_commits(full_name, pr_id, access_token)
+
+                    is_bot_pr = any(
+                        commit["commit"]["author"]["name"] == BOT_NAME
+                        or commit["commit"]["author"]["email"] == BOT_EMAIL
+                        for commit in commits
+                    )
+                    if is_bot_pr:
+                        close_pull_request(full_name, pr_id, access_token)
+
+    except httpx.HTTPError as e:
+        print(f"Error checking for existing bot PRs: {e}")
 
 def create_pull_request(
     full_name: str, branch: str, access_token: str, commit_slug: str

@@ -220,7 +220,7 @@ class PrimaryAssetCreate(BaseModel):
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
     codebase_settings_auto_commit_docs: bool | None = None
-    vcs_auto_update_policy: VcsAutoUpdatePolicy | None
+    vcs_auto_update_policy: VcsAutoUpdatePolicy | None = None
 
 
 class VersionUpdate(BaseModel):

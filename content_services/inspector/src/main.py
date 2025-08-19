@@ -428,7 +428,7 @@ async def inspect_db(
 
         print("Spawning off deep context docs generation...")
         # TODO: do deep context doc specific I/O or further analysis.
-        _completed_docs = await deep_context_docs.spawn(
+        _completed_docs = await deep_context_docs.remote.aio(
             version_id,
             install_id,
         )
@@ -438,7 +438,6 @@ async def inspect_db(
         except Exception as e:
             print(f"Error while cleaning up old versions: {e}")
             raise
-
 
 
 def hash_file(file_path: Path) -> str:
@@ -783,6 +782,23 @@ def main(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+
+
+@app.local_entrypoint()
+def run_deep_context(
+    version_id: str,
+    install_id: str | None = None,
+) -> None:
+    """Run deep context docs generation"""
+    from deep_context_docs import deep_context_docs
+
+    try:
+        deep_context_docs.remote(version_id, install_id)
+    except Exception as e:
+        print(f"Error while generating deep context docs for version {version_id}: {e}")
+        raise
+    else:
+        print(f"Deep context docs generation completed for version {version_id}")
 
 
 @app.local_entrypoint()

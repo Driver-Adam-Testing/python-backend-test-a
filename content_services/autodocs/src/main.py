@@ -87,7 +87,7 @@ image = inspection_image = (
 )
 async def run_autodoc(
     page_node_id: uuid.UUID,  # TODO: naming here
-    config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
+    config_kind: Any,  # TODO: the actual type is a deferred import here, not sure how to resolve?
     document_goal: str | None = None,
     user_context: str | None = None,
     content_kind: ContentKind | None = None,
@@ -331,8 +331,7 @@ async def run_autodoc(
                     DerivedContent.node_id == page_node_id,
                     DerivedContent.content_kind == content_kind,
                 )
-                await session.exec(dc_delete_query)
-                await session.commit()
+                session.exec(dc_delete_query)
 
                 derived_content = DerivedContent(
                     node_id=page_node_id,

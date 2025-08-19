@@ -108,7 +108,7 @@ async def run_autodoc(
     from sqlalchemy.orm import selectinload
     from sqlmodel import delete, select
 
-    is_page = content_kind == ContentKind.application_note
+    is_page = content_kind == ContentKind.application_note or content_kind is None
 
     toml_content = ""
 

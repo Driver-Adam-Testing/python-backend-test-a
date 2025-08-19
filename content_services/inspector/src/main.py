@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import modal
+from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
@@ -40,6 +41,7 @@ inspection_image = (
     .add_local_python_source(
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -414,17 +416,29 @@ async def inspect_db(
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise
     else:
-        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
+        # architecture, then uncomment the following line to represent completion of
+        # stage 1.
+        # set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
+
+        print("Spawning off deep context docs generation...")
+        # TODO: do deep context doc specific I/O or further analysis.
+        _completed_docs = await deep_context_docs.spawn(
+            version_id,
+            install_id,
+        )
+
         try:
             cleanup_old_versions.remote(version_id)
         except Exception as e:
             print(f"Error while cleaning up old versions: {e}")
             raise
+
 
 
 def hash_file(file_path: Path) -> str:
@@ -655,6 +669,7 @@ def get_file_content(path: Path) -> str:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -826,6 +841,7 @@ def run_connect_unconnected_repos() -> None:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",

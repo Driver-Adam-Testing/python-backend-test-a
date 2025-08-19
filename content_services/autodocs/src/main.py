@@ -276,7 +276,6 @@ async def run_autodoc(
                 derived_content = session.exec(
                     select(DerivedContent).where(
                         DerivedContent.node_id == page_node_id,
-                        DerivedContent.content_kind == content_kind,
                     )
                 ).first()
                 if not derived_content:

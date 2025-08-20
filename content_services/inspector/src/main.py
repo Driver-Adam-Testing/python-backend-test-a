@@ -11,7 +11,6 @@ from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
-from sqlmodel import select
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -725,7 +724,7 @@ def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine
     from database.models_v1 import DocumentSource
     from database.models_v2 import Node, Version
-    from sqlmodel import Session
+    from sqlmodel import Session, select
 
     with Session(engine) as session, session.begin():
         # Get all versions

@@ -5,11 +5,6 @@ import uuid
 import modal
 from common import app
 from database.models_v2_enums import ContentKind
-from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
-from utils.synthesis.deep_context_prompts import (
-    ARCHITECTURE_OVERVIEW_INTENT,
-    LLM_ONBOARDING_INTENT,
-)
 
 deep_context_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -143,9 +138,14 @@ async def make_changelog(
 async def deep_context_docs(
     version_id: uuid.UUID,
     install_id: str | None,
-) -> list[DeepContextDoc]:
+) -> list:
     from database.models_v2_enums import AutoDocConfigKind, VersionStatus
     from utils.db import get_version_by_id
+    from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
+    from utils.synthesis.deep_context_prompts import (
+        ARCHITECTURE_OVERVIEW_INTENT,
+        LLM_ONBOARDING_INTENT,
+    )
 
     version = await get_version_by_id(version_id)
     root_node_id = version.root_node.id

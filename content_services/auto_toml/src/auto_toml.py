@@ -100,6 +100,12 @@ class AutoToml:
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )
 
+    @classmethod
+    def from_root_node_id(cls, root_node_id: UUID, enable_auto_scaling: bool) -> Self:
+        return cls._initialize(
+            node_ids=[root_node_id], enable_auto_scaling=enable_auto_scaling
+        )
+
     async def generate(self, document_goal: str, user_context: str = "") -> str:
         logger.info(f"Generating TOML from document goal:\n\n{document_goal}\n")
 

@@ -705,6 +705,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",

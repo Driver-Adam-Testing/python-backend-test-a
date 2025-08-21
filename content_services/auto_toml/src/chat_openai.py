@@ -50,6 +50,7 @@ class ChatOpenAI:
             "gpt-4.1": 1_000_000,
             "o3-mini": 200_000,
             "gpt-4o": 128_000,
+            "gpt-5": 272_000,
         }
         return TOKEN_LIMITS[model]
 
@@ -88,7 +89,7 @@ class ChatOpenAI:
                     },
                 ],
             )
-        elif "o3" in self.model:
+        elif "o3" in self.model or "gpt-5" in self.model:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 response_format=output_cfg.into_openai_response_format(),

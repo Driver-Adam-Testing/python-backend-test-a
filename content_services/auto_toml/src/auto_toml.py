@@ -24,6 +24,7 @@ from prompts import (
     summary_system_prompt,
     summary_user_prompt,
 )
+from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     Prompt,
 )
@@ -59,7 +60,7 @@ class AutoToml:
     LLM_SCATTER_MODEL: ClassVar[str] = (
         "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     )
-    LLM_TOML_MODEL: ClassVar[str] = "gpt-4.1"
+    LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
     SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
@@ -215,12 +216,34 @@ class AutoToml:
 
         print("Summary length before truncation:")
         print(len(summary))
-        new_summary = self._truncate_text(text=summary, llm=self.llm_toml)
-        print("Summary length after truncation:")
+        # new_summary = self._truncate_text(text=summary, llm=self.llm_toml)
+
+        chunks = split_text(summary, chunk_size=64_000, chunk_overlap=0)
+        if len(chunks) > 1:
+            print("Compressing summary...")
+            new_summary = ""
+            chunk_tasks = []
+            for i, chunk in enumerate(chunks):
+                chunk_tasks.append(
+                    self._generate_summary(
+                        path=f"Chunk {i + 1}",
+                        system_prompt=summary_system_prompt(),
+                        user_prompt=summary_user_prompt(
+                            document_goal=document_goal,
+                            user_context=user_context,
+                            source_content=chunk.text,
+                        ),
+                    )
+                )
+            new_summaries = await tqdm_asyncio.gather(*chunk_tasks)
+            new_summary = "\n\n".join(
+                result.strip() for result in new_summaries if result.strip()
+            )
+        print("Summary length after compression:")
         print(len(new_summary))
 
         if new_summary is not summary:
-            logger.error("Truncated content summary to fit within token limits\n")
+            logger.error("Compressed content summary to fit within token limits\n")
             summary = new_summary
 
         return summary

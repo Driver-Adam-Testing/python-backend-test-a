@@ -64,7 +64,7 @@ jobs:
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: pms
-        run: poetry run npx cdk deploy --require-approval never --outputs-file ./cdk-outputs.json --no-rollback
+        run: poetry run npx cdk deploy --require-approval never --outputs-file ./cdk-outputs.json
       - name: Parse CDK Outputs
         id: parse_outputs
         run: |

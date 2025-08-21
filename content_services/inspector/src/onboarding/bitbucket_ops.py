@@ -5,6 +5,7 @@ import os
 from uuid import UUID
 
 import requests
+from database.models_v2 import VcsAutoUpdatePolicy
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
     AuthorInfo,
@@ -170,9 +171,11 @@ def download_repo(
             raise
 
 
-def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
+def get_latest_commit(
+    workspace: str, repo_slug: str, access_token: str, default_branch: str
+) -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits"
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits/{default_branch}"
 
     response = requests.get(url, headers=headers, params={"pagelen": 1})
     response.raise_for_status()
@@ -180,7 +183,7 @@ def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
     commits = response.json().get("values", [])
     if commits:
         return commits[0]["hash"]
-    raise ValueError("No commits found")
+    raise ValueError(f"No commits found on default branch '{default_branch}'")
 
 
 def fetch_vcs_info(
@@ -289,7 +292,9 @@ def download_and_upload_repo(
     repo_id = repo.get("repo_id") or metadata.get("id") or metadata.get("uuid")
     repo_name = repo.get("repo_name") or repo.get("name")
     workspace = metadata.get("workspace") or repo.get("workspace")
-    repo_slug = repo_name
+    repo_slug = "-".join(
+        repo_name.split()
+    )  # Bitbucket allows spaces in repo names, which are replaced by dashes in the slug
 
     # Handle missing fields
     if not repo_id:
@@ -317,7 +322,9 @@ def download_and_upload_repo(
 
     if not commit:
         try:
-            commit = get_latest_commit(workspace, repo_slug, access_token)
+            commit = get_latest_commit(
+                workspace, repo_slug, access_token, repo["default_branch"]
+            )
         except Exception as e:
             print(f"Failed to get latest commit for {repo_name}: {e}")
             return repo_name
@@ -512,6 +519,7 @@ def download_and_upload_repo(
                     installation_id=installation_id,
                     codebase_settings_auto_commit_docs=False,
                     provider=PrimaryAssetProvider.BITBUCKET,
+                    vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id

@@ -25,12 +25,29 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[misc]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn | str:
         if self.DATABASE_URL:
             return self.DATABASE_URL
         else:
             url = MultiHostUrl.build(
                 scheme="postgresql+psycopg2",
+                username=self.POSTGRES_USER,
+                password=quote_plus(self.POSTGRES_PASSWORD),
+                host=self.POSTGRES_SERVER,
+                port=self.POSTGRES_PORT,
+                path=self.POSTGRES_DB,
+                query=self.SSL_MODE,
+            )
+            return url
+
+    @computed_field
+    @property
+    def ASYNC_SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn | str:
+        if self.ASYNC_DATABASE_URL:
+            return self.ASYNC_DATABASE_URL
+        else:
+            url = MultiHostUrl.build(
+                scheme="postgresql+asyncpg",
                 username=self.POSTGRES_USER,
                 password=quote_plus(self.POSTGRES_PASSWORD),
                 host=self.POSTGRES_SERVER,

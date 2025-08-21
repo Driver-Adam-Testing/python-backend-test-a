@@ -1,5 +1,7 @@
-import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
+from app.auth.api_key_common import create_api_key_payload
 from app.auth.models import User
 from app.services.auth0_service import Auth0Service
 from cachetools import TTLCache, cached
@@ -34,7 +36,6 @@ def _is_member_of_org(user_id: str, org_id: str) -> bool:
 
 @cached(cache=TTLCache(maxsize=1000, ttl=600))  # 1000 Users get a cache of 5 minutes
 def verify_api_key(raw_key: str) -> dict:
-    print(f"UNCACHED: raw_key: {raw_key}")
     """
     Validate *raw_key* against the v2_api_key table and return a
     JWT-shaped payload so downstream code can treat it like a user JWT.
@@ -50,31 +51,19 @@ def verify_api_key(raw_key: str) -> dict:
         # -------- new: Auth0 membership check --------
         if not _is_member_of_org(api_key.user_id, api_key.organization_id):
             raise HTTPException(401, "User does not belong to this organization")
-        now = int(time.time())
-        # Shape chosen to match Auth0 tokens consumed elsewhere
-        return {
-            "org_id": api_key.organization_id,
-            "org_name": "",  # TODO: populate when available
-            "sub": api_key.user_id,
-            "iss": "api_key",
-            "aud": [],
-            "iat": now,
-            "exp": now + 10 * 365 * 24 * 3600,  # 10 years
-            "scope": "",
-            "azp": "",
-            "permissions": [],
-            "user_email": "",
-            "user_full_name": "",
-        }
+        api_key.last_used_at = datetime.now(ZoneInfo("UTC"))
+        db.add(api_key)
+        db.commit()
+        return create_api_key_payload(api_key)
 
 
 API_KEY_HEADER_NAME = "X-API-Key"
 
 
-_api_key_scheme = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
+API_KEY_SCHEME = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 
 
-def require_api_key(key: str | None = Depends(_api_key_scheme)) -> dict:
+def require_api_key(key: str | None = Depends(API_KEY_SCHEME)) -> dict:
     """Dependency: assert request carries a valid X-API-Key header."""
     if not key:
         raise HTTPException(401, "Missing X-API-Key header")

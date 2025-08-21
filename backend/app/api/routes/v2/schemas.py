@@ -7,6 +7,7 @@ from database.models_v2_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
+    VcsAutoUpdatePolicy,
     VersionStatus,
 )
 from pydantic import BaseModel, computed_field
@@ -32,6 +33,7 @@ class PrimaryAssetRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     repository_id: str | None
+    provider: str | None
 
     class Config:
         from_attributes = True
@@ -45,6 +47,7 @@ class VersionRead(BaseModel):
     updated_at: datetime | None
     status: str | None
     browsable: bool
+    vcs_metadata: dict | None
 
     class Config:
         from_attributes = True
@@ -58,6 +61,8 @@ class NodeRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     depth: int
+    misc_metadata: dict | None
+    total_files: int | None
 
     class Config:
         from_attributes = True
@@ -215,6 +220,7 @@ class PrimaryAssetCreate(BaseModel):
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
     codebase_settings_auto_commit_docs: bool | None = None
+    vcs_auto_update_policy: VcsAutoUpdatePolicy | None = None
 
 
 class VersionUpdate(BaseModel):

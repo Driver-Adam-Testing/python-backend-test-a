@@ -93,6 +93,13 @@ async def push_docs(version_id: uuid.UUID) -> None:
             gp_install = git_provider_app_installation_by_id(installation_id=install_id)
             workspace = gp_install.git_provider_app.provider_metadata["workspace"]
             repo_slug = version.primary_asset.display_name
+            # Bitbucket allows spaces in repo names, but does not URL encode them
+            # and instead replaces them with hyphens.
+            # We need to replace spaces with hyphens in the repo name.
+            repo_slug = "-".join(
+                repo_name.split()
+            )  # multiple spaces go to single hyphen
+
             clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
                 workspace, repo_slug, access_token
             )
@@ -152,7 +159,6 @@ async def push_docs(version_id: uuid.UUID) -> None:
         if provider == PrimaryAssetProvider.GITHUB:
             gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
         elif provider == PrimaryAssetProvider.BITBUCKET:
-            #
             bitbucket_ops.create_pull_request_with_bot_cleanup(
                 workspace, repo_slug, access_token, branch, commit_slug
             )

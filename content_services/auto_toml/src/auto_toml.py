@@ -218,7 +218,9 @@ class AutoToml:
         print(len(summary))
         # new_summary = self._truncate_text(text=summary, llm=self.llm_toml)
 
-        chunks = split_text(summary, chunk_size=64_000, chunk_overlap=0)
+        chunks = split_text(
+            summary, chunk_size=64_000, chunk_overlap=6_400
+        )  # Using 64k chunks since the "breakdown" point for larger context models is still unknown.
         if len(chunks) > 1:
             print("Compressing summary...")
             new_summary = ""

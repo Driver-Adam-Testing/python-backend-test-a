@@ -561,7 +561,7 @@ class LlmCfg(BaseModel):
             tag_model="gpt-4.1",
             section_init_model="o3-mini",
             section_update_model="gpt-4.1",
-            section_format_model="o3-mini",
+            section_format_model="gpt-5",
             assembly_model="o3-mini",
             copy_editor_model="gpt-4.1",
         )
@@ -1256,7 +1256,7 @@ Your output should be markdown formatted text.
         tagged_nodes: dict[str, list[Category]] | None,
         tag_idx: int | None,
     ) -> str:
-        llm = ChatOpenAI(model="o3-mini", temperature=0, request_timeout=300)
+        llm = ChatOpenAI(model="gpt-5", temperature=0, request_timeout=300)
         # TODO: this is done naively - if we need to do this, we should keep related content together
         # could be useful to leverage symbol table here
         user_prompts = self.source_code_aggregation_user_prompt_constructor(
@@ -1426,7 +1426,7 @@ Your output should be markdown formatted text.
         file_by_file_content: dict,
         section_name: str,
     ) -> list:
-        model = "o3-mini"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
         user_prompts = self.gather_user_prompt_constructor(
             file_by_file_content, section_name
@@ -1458,7 +1458,7 @@ Your output should be markdown formatted text.
         aggregate_docs: list,
         section_name: str,
     ) -> list:
-        model = "o3-mini"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
         user_prompts = self.gather_aggregate_user_prompt_constructor(
             aggregate_docs, section_name

@@ -1,9 +1,12 @@
 import asyncio
 import concurrent.futures
+import os
+import pickle
 import uuid
 from pathlib import Path
 from typing import Optional, Union
 
+import boto3
 from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
@@ -175,12 +178,24 @@ class FileTechDocTask(Task):
         else:
             reified_symbols = None
 
+        if reified_symbols:
+            s3 = boto3.client("s3")
+            sym_table_s3_key = f"symbol_tables/symbol_table_for_{self.db_node_id}.pkl"
+            pickled_data = pickle.dumps(reified_symbols)
+            s3.put_object(
+                Bucket=os.environ["BUCKET_NAME"],
+                Key=sym_table_s3_key,
+                Body=pickled_data,
+            )
+        else:
+            sym_table_s3_key = None
+
         async with tech_docs_sem:
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
                 source_code=self.source_code,
                 codebase_name=self.codebase_name,
-                reified_symbols=reified_symbols,
+                sym_table_s3_key=sym_table_s3_key,
             )
 
         return TaskResult(

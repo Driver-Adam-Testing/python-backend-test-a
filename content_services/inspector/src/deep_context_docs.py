@@ -153,22 +153,22 @@ async def deep_context_docs(
     run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodoc")
 
     print("Creating deep context docs for version:", version_id)
-    deep_context_doc_tasks = [
-        run_autodoc.remote.aio(
-            page_node_id=str(root_node_id),
-            config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-            document_goal=ARCHITECTURE_OVERVIEW_INTENT,
-            user_context="SHORT",
-            content_kind=ContentKind.DEEP_CONTEXT_ARCHITECTURE,
-        ),
-        run_autodoc.remote.aio(
-            page_node_id=str(root_node_id),
-            config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-            document_goal=LLM_ONBOARDING_INTENT,
-            user_context="MEDIUM",
-            content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
-        ),
-    ]
+    deep_context_doc_tasks = []
+    #     run_autodoc.remote.aio(
+    #         page_node_id=str(root_node_id),
+    #         config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
+    #         document_goal=ARCHITECTURE_OVERVIEW_INTENT,
+    #         user_context="SHORT",
+    #         content_kind=ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+    #     ),
+    #     run_autodoc.remote.aio(
+    #         page_node_id=str(root_node_id),
+    #         config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
+    #         document_goal=LLM_ONBOARDING_INTENT,
+    #         user_context="MEDIUM",
+    #         content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+    #     ),
+    # ]
     if install_id is not None:
         deep_context_doc_tasks.append(
             make_changelog.remote.aio(

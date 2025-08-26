@@ -1563,42 +1563,59 @@ Your output should be markdown formatted text.
         file_by_file_content: dict,
         section_name: str,
     ) -> list:
-        chunk_size = 64_000
-        chunk_overlap = 0
-        user_prompt = ""
-        user_prompts = [""]
-        for p, content in file_by_file_content.items():
-            user_prompt += f"{section_name} of file or folder `{p}`:\n\n{content}\n\n"
+        chunk_size = 64_000  # in TOKENS
+        chunk_overlap = 0    # for parity with your original intent (unused here)
 
-        chunks_required = split_text(
-            user_prompt, chunk_size=chunk_size, chunk_overlap=chunk_overlap
-        )
-        if len(chunks_required) > 1:
-            num_tokens = get_num_tokens(user_prompt)
-            token_threshold = num_tokens / len(chunks_required)
-            user_prompts = [""]
-            # print(f"Num Tokens: {num_tokens}. Token threshold: {token_threshold}")
-            for p, content in file_by_file_content.items():
-                new_prompt = f"{section_name} of file or folder `{p}`:\n\n{content}\n\n"
-                new_tokens = get_num_tokens(new_prompt)
-                found_prompt = False
-                for idx, prompt in reversed(
-                    list(enumerate(user_prompts))
-                ):  # Reverse order to find most likely to be able to add to
-                    if new_tokens + get_num_tokens(prompt) > token_threshold:
-                        pass
-                        # print(f"Prompt {idx} is too large to add to. Checking next")
-                    else:
-                        user_prompts[idx] += new_prompt
-                        # print(f"Added {p} content to prompt {idx}")
-                        found_prompt = True
-                        break
-                if not found_prompt:
-                    user_prompts.append(new_prompt)
-                    # print(f"Added {p} content to new prompt")
-        else:
-            user_prompts = [user_prompt]
+        # Pre-format each file's section and compute tokens once per section
+        items = list(file_by_file_content.items())
 
+        formatted_sections = []
+        section_token_counts = []
+        total_tokens = 0
+
+        for p, content in items:
+            s = f"{section_name} of file or folder `{p}`:\n\n{content}\n\n"
+            formatted_sections.append(s)
+            t = get_num_tokens(s)  # one tokenization per file
+            section_token_counts.append(t)
+            total_tokens += t
+
+        # If everything fits in one chunk, just join once and return
+        if total_tokens <= chunk_size:
+            return [''.join(formatted_sections)]
+
+        # Estimate number of chunks exactly as split_text would with overlap=0:
+        # how many chunk_size buckets are needed for total_tokens?
+        chunks_est = total_tokens / chunk_size
+
+        # Match your original idea: distribute roughly evenly by tokens
+        # Use the *average* threshold, but also never exceed chunk_size.
+        token_threshold = total_tokens / chunks_est
+
+        # Build chunks greedily (preserve input order), tracking token sums
+        prompts_parts = [[]]         # list[list[str]]
+        prompts_token_sums = [0]     # parallel list[int]
+
+        for s, t in zip(formatted_sections, section_token_counts):
+            placed = False
+            # Try to place into most recent chunk first
+            for idx in range(len(prompts_parts) - 1, -1, -1):
+                # Don't exceed average threshold AND never exceed hard chunk_size
+                next_sum = prompts_token_sums[idx] + t
+                if next_sum <= token_threshold and next_sum <= chunk_size:
+                    prompts_parts[idx].append(s)
+                    prompts_token_sums[idx] = next_sum
+                    placed = True
+                    break
+
+            if not placed:
+                # Start a new chunk; if a single section is larger than threshold,
+                # it can still occupy its own chunk (up to chunk_size).
+                prompts_parts.append([s])
+                prompts_token_sums.append(t)
+
+        # Join buffers into final strings
+        user_prompts = [''.join(parts) for parts in prompts_parts if parts]
         return user_prompts
 
     def gather_aggregate_user_prompt_constructor(

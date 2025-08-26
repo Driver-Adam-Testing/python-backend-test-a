@@ -374,19 +374,37 @@ def main(
     document_goal = """
 Your task is to build deep context documents for codebases for downstream LLM agent consumption. That is, you will pre-compile information on specific topics ahead of time for codebases so that downstream LLM agent chat/interactions can be greatly improved. A common issue for large codebases an LLM was not trained on, is that LLM agents equipped with only basic file discovery tools or even indexing that supports semantic search cannot effectively or timely navigate to the sets of places in the codebase critical for input tasks. To resolve this, we can pre-compute information about these codebases ahead of time and provide this in the form documents. You will write an exhaustive and information dense document in this manner. Through integrations such as an MCP service, this information can be fetched and referred to trivially quickly when a downstream LLM agent needs to help a user in real time.
 
-Your focus in particular is to build an Onboarding Guide deep context document. The idea is to provide a document that best "onboards" an LLM agent to the codebase, enabling the LLM coding agent to immediately know what to do/where to go next in its workflows to accomplish user's tasks (e.g., as input in an IDE chat experience). You should focus on dense text, and potentially formats such as a table, optimal for use by an LLM agent. Density and exhaustiveness are critical but fundamentally a tradeoff.
+Since you are building dense documents for an entire codebase, it is important to be judicious with what you focus on and how much content you produce for each topic. Look for all opportunities to be brief while making sure importance concepts are covered. Only devote a significant amount of content to topics critically important for the codebase and for a downstream agent to be aware of up front. Focus on text output such as paragraphs, lists, and tables. Do not use diagrams and code blocks unless critically important or useful.
 
-Consider an LLM coding agent given a broad task in the context of a very large codebase (e.g., consider a 10 million line codebase). We want to build a deep context LLM onboarding guide that the LLM agent can refer to first and then be very efficient in subsequent steps because this document provided all of the context needed.
+Your focus in particular is to build an Architecture Overview deep context document. The goal is to provide a document that explains the architecture of the codebase effectively but densely, so that given a broad task (e.g., consider a 10 million line codebase), an LLM agent can refer to this document first and then have a good grasp of the overall architecture. An architecture document can take many forms depending on the context, kind, and size of the codebase, but you should focus on the best dense representation for an LLM to quickly reason appropriately about the architecture of a codebase. Focus more on the conceptual level and be exhaustive -- key components and emergent structure rather than low-level mechanical information such as the directory structure. Major architectural components, functionality provided by the codebase as a whole, and how they fit together are prime topics.
 
-Focus on ways of best describing the contents of the codebase itself (capabilities, critical components, interactions, important components to consider together or cross-reference, etc.) rather than any instruction on anything like what an LLM agent should do in its workflow. The goal is to provide all of the information necessary about the codebase so that an LLM agent is equipped to make these decisions on its own.
-
-Write an LLM onboarding guide for this codebase for the purpose articulated above.
+Write an architecture document for this codebase for the purpose articulated above.
 
 In your document, do not allude to the fact that this is being written for an LLM. Just write the content of the document per the instructions.
 """
-    user_context = "MEDIUM"
+    user_context = "SHORT"
     # Set content_kind to LLM_ONBOARDING or ARCHITECTURE to save it as a deep context doc, if you're using a page id, switch this to ContentKind.application_note
-    content_kind = ContentKind.application_note
+    content_kind = ContentKind.DEEP_CONTEXT_ARCHITECTURE
+
+################ LLM Onboarding example ################
+#     document_goal = """
+# Your task is to build deep context documents for codebases for downstream LLM agent consumption. That is, you will pre-compile information on specific topics ahead of time for codebases so that downstream LLM agent chat/interactions can be greatly improved. A common issue for large codebases an LLM was not trained on, is that LLM agents equipped with only basic file discovery tools or even indexing that supports semantic search cannot effectively or timely navigate to the sets of places in the codebase critical for input tasks. To resolve this, we can pre-compute information about these codebases ahead of time and provide this in the form documents. You will write an exhaustive and information dense document in this manner. Through integrations such as an MCP service, this information can be fetched and referred to trivially quickly when a downstream LLM agent needs to help a user in real time.
+
+# Since you are building dense documents for an entire codebase, it is important to be judicious with what you focus on and how much content you produce for each topic. Look for all opportunities to be brief while making sure importance concepts are covered. Only devote a significant amount of content to topics critically important for the codebase and for a downstream agent to be aware of up front. Focus on text output such as paragraphs, lists, and tables. Do not use diagrams and code blocks unless critically important or useful.
+
+# Your focus in particular is to build an Onboarding Guide deep context document. The idea is to provide a document that best "onboards" an LLM agent to the codebase, enabling the LLM coding agent to immediately know what to do/where to go next in its workflows to accomplish user's tasks (e.g., as input in an IDE chat experience). Density and exhaustiveness are critical but fundamentally a tradeoff.
+
+# Consider an LLM coding agent given a broad task in the context of a very large codebase (e.g., consider a 10 million line codebase). We want to build a deep context LLM onboarding guide that the LLM agent can refer to first and then be very efficient in subsequent steps because this document provided all of the context needed
+
+# Focus on ways of best describing the contents of the codebase itself and how/where to navigate to for more detailed information. Useful topics include capabilities, critical components and where to find their implementations, important components to consider together or in cross-reference and "tips and tricks" for an agent to navigate the codebase. Keep content focused on the codebase and how to navigate it rather than anything else about what an LLM agent should do in its workflow. The goal is to provide all of the information necessary about the codebase so that an LLM agent is equipped to make these decisions on its own.
+
+# Write an LLM onboarding guide for this codebase for the purpose articulated above.
+
+# In your document, do not allude to the fact that this is being written for an LLM. Just write the content of the document per the instructions.
+# """
+#     user_context = "SHORT"
+#     # Set content_kind to LLM_ONBOARDING or ARCHITECTURE to save it as a deep context doc, if you're using a page id, switch this to ContentKind.application_note
+#     content_kind = ContentKind.DEEP_CONTEXT_LLM_ONBOARDING
 
     run_autodoc.remote(
         page_node_id=page_node_id,

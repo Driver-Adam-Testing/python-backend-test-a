@@ -1,7 +1,10 @@
+from typing import Any
+
 from database.models_v1 import DerivedContent
 from database.models_v2 import Node, PrimaryAsset, Version
 from fastapi import Body, HTTPException, Request
-from sqlalchemy.orm import selectinload
+from sqlalchemy import Select
+from sqlalchemy.orm import defer, selectinload
 from sqlmodel import func, select
 
 from app.api.auth import UserToken
@@ -26,8 +29,9 @@ def list_contents(
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
+    include_content: bool = False,
 ) -> ListWithCount[ContentDetailRead]:
-    return _list_contents(request, session, user, pagination)
+    return _list_contents(request, session, user, pagination, include_content)
 
 
 def _list_contents(
@@ -35,25 +39,9 @@ def _list_contents(
     session: CurrentSession,
     user: User,
     pagination: Pagination,
+    include_content: bool = False,
 ) -> ListWithCount[ContentDetailRead]:
-    query = (
-        select(DerivedContent)
-        .options(
-            selectinload(DerivedContent.node)
-            .selectinload(Node.version)
-            .selectinload(Version.primary_asset)
-            .selectinload(PrimaryAsset.tags)
-        )
-        .where(
-            DerivedContent.node.has(
-                Node.version.has(
-                    Version.primary_asset.has(
-                        PrimaryAsset.organization_id == user.organization_id
-                    )
-                )
-            )
-        )
-    )
+    query = _contents_base_query(user.organization_id, include_content)
 
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, DerivedContent)
@@ -65,6 +53,40 @@ def _list_contents(
     contents = result.all()
 
     return ListWithCount(results=contents, total_count=total_count)
+
+
+def _contents_base_query(organization_id: str, include_content: bool) -> Select:
+    """
+    Build base query with conditional content loading.
+
+    HACK: Uses defer() to skip loading content field when include_content=False.
+    This reduces bandwidth for list views where content text can be very large
+    (documents, code files, etc.) but doesn't fix the underlying expensive
+    4-table join required for organization scoping.
+    """
+    base_options = [
+        selectinload(DerivedContent.node)
+        .selectinload(Node.version)
+        .selectinload(Version.primary_asset)
+        .selectinload(PrimaryAsset.tags)
+    ]
+
+    if not include_content:
+        base_options.insert(0, defer(DerivedContent.content))
+
+    return (
+        select(DerivedContent)
+        .options(*base_options)
+        .where(_build_organization_filter(organization_id))
+    )
+
+
+def _build_organization_filter(organization_id: str) -> Any:
+    return DerivedContent.node.has(
+        Node.version.has(
+            Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
+        )
+    )
 
 
 @router.post("/contents", response_model=ContentDetailRead)

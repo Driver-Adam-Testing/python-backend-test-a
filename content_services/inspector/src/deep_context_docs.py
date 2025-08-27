@@ -49,6 +49,7 @@ deep_context_image = (
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
         modal.Secret.from_name("open-ai"),
+        modal.Secret.from_name("aws-inspector-s3"),
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB.
@@ -82,8 +83,7 @@ async def make_changelog(
         print("No repo_id found, skipping changelog generation.")
         return content_kind, "", "", [], "", ""
     print(f"Creating changelog for version {version_id}")
-    changelog = await create_changelog(repo_id=repo_id, install_id=install_id)
-    print(f"Changelog created for version {version_id}")
+    changelog = await create_changelog(version_id=version_id, install_id=install_id)
     print("Changelog content:", changelog["overall_changelog"])
 
     # TODO: IO okay here?
@@ -153,22 +153,22 @@ async def deep_context_docs(
     run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodoc")
 
     print("Creating deep context docs for version:", version_id)
-    deep_context_doc_tasks = []
-    #     run_autodoc.remote.aio(
-    #         page_node_id=str(root_node_id),
-    #         config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-    #         document_goal=ARCHITECTURE_OVERVIEW_INTENT,
-    #         user_context="SHORT",
-    #         content_kind=ContentKind.DEEP_CONTEXT_ARCHITECTURE,
-    #     ),
-    #     run_autodoc.remote.aio(
-    #         page_node_id=str(root_node_id),
-    #         config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
-    #         document_goal=LLM_ONBOARDING_INTENT,
-    #         user_context="MEDIUM",
-    #         content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
-    #     ),
-    # ]
+    deep_context_doc_tasks = [
+        run_autodoc.remote.aio(
+            page_node_id=str(root_node_id),
+            config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
+            document_goal=ARCHITECTURE_OVERVIEW_INTENT,
+            user_context="SHORT",
+            content_kind=ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+        ),
+        run_autodoc.remote.aio(
+            page_node_id=str(root_node_id),
+            config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
+            document_goal=LLM_ONBOARDING_INTENT,
+            user_context="MEDIUM",
+            content_kind=ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+        ),
+    ]
     if install_id is not None:
         deep_context_doc_tasks.append(
             make_changelog.remote.aio(

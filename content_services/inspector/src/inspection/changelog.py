@@ -5,7 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from aiolimiter import AsyncLimiter
-from onboarding.gh_ops import fetch_app_access_token, get_repo_clone_info_from_id
+from onboarding import bitbucket_ops, gh_ops, gitlab_ops
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.prompts.structured_prompting import (
@@ -227,12 +227,53 @@ async def generate_overall_changelog(
 
 
 async def create_changelog(
-    repo_id: str,
+    version_id: str,
     install_id: str,
 ) -> dict:
-    # TODO: Only Github, need to do Gitlab and Bitbucket
-    access_token = fetch_app_access_token(install_id)
-    clone_url, full_name = get_repo_clone_info_from_id(repo_id, access_token)
+    from database.db import engine
+    from database.models_v1 import GitProviderAppInstallation
+    from database.models_v2_enums import PrimaryAssetProvider
+    from sqlmodel import Session, select
+    from utils.db import get_version_by_id, git_provider_app_installation_by_id
+
+    version = await get_version_by_id(version_id)
+    repo_id = version.primary_asset.repository_id
+    repo_name = version.primary_asset.display_name
+    provider = version.primary_asset.provider
+
+    if provider == PrimaryAssetProvider.GITHUB:
+        access_token = gh_ops.fetch_app_access_token(install_id)
+        clone_url, full_name = gh_ops.get_repo_clone_info_from_id(repo_id, access_token)
+    elif provider == PrimaryAssetProvider.BITBUCKET:
+        access_token = bitbucket_ops.fetch_access_token(install_id)
+        gp_install = git_provider_app_installation_by_id(installation_id=install_id)
+        workspace = gp_install.git_provider_app.provider_metadata["workspace"]
+        repo_slug = version.primary_asset.display_name
+        # Bitbucket allows spaces in repo names, but does not URL encode them
+        # and instead replaces them with hyphens.
+        # We need to replace spaces with hyphens in the repo name.
+        repo_slug = "-".join(repo_name.split())  # multiple spaces go to single hyphen
+
+        clone_url, full_name = bitbucket_ops.get_repo_clone_info_from_id(
+            workspace, repo_slug, access_token
+        )
+    elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
+        with Session(engine) as session:
+            installation_id = version.primary_asset.installation_id
+            app_install = session.exec(
+                select(GitProviderAppInstallation).where(
+                    GitProviderAppInstallation.id == installation_id
+                )
+            ).one()
+            if app_install is None:
+                raise ValueError(f"Installation ID {installation_id} not found.")
+            base_url = app_install.git_provider_app.base_url
+        access_token = gitlab_ops.fetch_access_token(install_id)
+        clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
+            base_url, repo_id, access_token
+        )
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_dir = Path(temp_dir) / full_name

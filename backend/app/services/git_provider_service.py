@@ -356,6 +356,7 @@ class GitProviderService:
                 app_id=str(app_install.git_provider_app_id),
                 installation_id=installation_id,
                 organization_id=app_install.organization_id,
+                session=session,
             ),
         )
 

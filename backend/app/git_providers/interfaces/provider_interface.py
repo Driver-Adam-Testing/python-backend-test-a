@@ -5,6 +5,7 @@ from typing import Any
 from app.schemas.git_provider_schema import GitRepository
 from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
+from sqlmodel import Session
 
 
 @dataclass
@@ -24,6 +25,7 @@ class WebhookEventContext:
     app_id: str
     installation_id: str
     organization_id: str
+    session: Session
 
 
 class GitProviderInterface(ABC):

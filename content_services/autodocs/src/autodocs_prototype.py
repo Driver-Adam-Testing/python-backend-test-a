@@ -1564,7 +1564,6 @@ Your output should be markdown formatted text.
         section_name: str,
     ) -> list:
         chunk_size = 64_000  # in TOKENS
-        chunk_overlap = 0    # for parity with your original intent (unused here)
 
         # Pre-format each file's section and compute tokens once per section
         items = list(file_by_file_content.items())
@@ -1582,19 +1581,16 @@ Your output should be markdown formatted text.
 
         # If everything fits in one chunk, just join once and return
         if total_tokens <= chunk_size:
-            return [''.join(formatted_sections)]
+            return ["".join(formatted_sections)]
 
-        # Estimate number of chunks exactly as split_text would with overlap=0:
         # how many chunk_size buckets are needed for total_tokens?
         chunks_est = total_tokens / chunk_size
 
-        # Match your original idea: distribute roughly evenly by tokens
-        # Use the *average* threshold, but also never exceed chunk_size.
         token_threshold = total_tokens / chunks_est
 
         # Build chunks greedily (preserve input order), tracking token sums
-        prompts_parts = [[]]         # list[list[str]]
-        prompts_token_sums = [0]     # parallel list[int]
+        prompts_parts = [[]]  # list[list[str]]
+        prompts_token_sums = [0]  # parallel list[int]
 
         for s, t in zip(formatted_sections, section_token_counts):
             placed = False
@@ -1615,7 +1611,7 @@ Your output should be markdown formatted text.
                 prompts_token_sums.append(t)
 
         # Join buffers into final strings
-        user_prompts = [''.join(parts) for parts in prompts_parts if parts]
+        user_prompts = ["".join(parts) for parts in prompts_parts if parts]
         return user_prompts
 
     def gather_aggregate_user_prompt_constructor(

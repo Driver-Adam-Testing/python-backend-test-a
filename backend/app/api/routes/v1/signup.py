@@ -22,14 +22,13 @@ class SignupResponse(BaseModel):
     organization_id: str
     organization_name: str
     invitation_id: str | None = None
-    invitation_url: str | None = None
     message: str
 
 
 def _generate_org_slug_from_email(email: str) -> str:
     local = email.split("@")[0]
     safe = re.sub(r"[^a-z0-9]+", "-", local.lower()).strip("-")
-    unique_suffix = uuid.uuid4().hex[:8]
+    unique_suffix = uuid.uuid4().hex[:6]
     return f"org-{safe}-{unique_suffix}" if safe else f"org-{unique_suffix}"
 
 
@@ -42,7 +41,7 @@ def signup(request: SignupRequest) -> SignupResponse:
     org_name = _generate_org_slug_from_email(request.email)
     try:
         org = service.create_organization(
-            name=org_name, display_name=request.display_name or f"User - {request.email}"
+            name=org_name, display_name=request.display_name or str(request.email)
         )
     except Exception as e:  # pragma: no cover - pass through as HTTP error
         raise HTTPException(status_code=500, detail="Failed to create organization") from e
@@ -83,7 +82,7 @@ def signup(request: SignupRequest) -> SignupResponse:
 
     try:
         invite = service.invite_email_to_organization(
-            org_id=org["id"], email=request.email, roles=role_ids, inviter_name="System", send_invitation_email=False
+            org_id=org["id"], email=request.email, roles=role_ids, inviter_name="System"
         )
     except Exception as e:
         # Cleanup org on failure
@@ -97,7 +96,6 @@ def signup(request: SignupRequest) -> SignupResponse:
         organization_id=org["id"],
         organization_name=org["name"],
         invitation_id=invite.get("id"),
-        invitation_url=invite.get("invitation_url"),
         message="Organization created and invitation sent.",
     )
 

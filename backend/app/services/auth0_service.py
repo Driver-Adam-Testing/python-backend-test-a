@@ -385,7 +385,7 @@ class Auth0Service:
             "invitee": {"email": email},
             "client_id": settings.AUTH0_CLIENT_ID,
         }
-        # Suppress Auth0 emailing the invite if requested; still returns invitation_url
+        # Suppress Auth0 emailing the invite if requested
         if send_invitation_email is False:
             payload["send_invitation_email"] = False
         if roles:

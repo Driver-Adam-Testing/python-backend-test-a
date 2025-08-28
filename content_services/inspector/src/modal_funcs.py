@@ -53,19 +53,21 @@ image = (
     )
 )
 
-function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
-
 
 @app.function(
     max_containers=72,
     timeout=180 * 60,
-    **function_cfg,
+    secrets=[
+        modal.Secret.from_name("open-ai"),
+        modal.Secret.from_name("aws-inspector-s3"),
+    ],
+    image=image,
 )
 def make_tech_doc(
     node: LiteNode,
     source_code: str,
     codebase_name: str,
-    reified_symbols: dict | None,  # TODO: what is the correct type for reified_symbols?
+    sym_table_s3_key: str | None,
 ) -> tuple[bool, dict, LiteNode]:
     from utils.models import ChatOpenAI
 
@@ -76,6 +78,18 @@ def make_tech_doc(
         temperature=0,
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
+
+    reified_symbols = None
+    if sym_table_s3_key is not None:
+        import pickle
+
+        import boto3
+
+        if sym_table_s3_key is not None:
+            s3 = boto3.client("s3")
+            bucket_name = os.environ["BUCKET_NAME"]
+            obj = s3.get_object(Bucket=bucket_name, Key=sym_table_s3_key)
+            reified_symbols = pickle.loads(obj["Body"].read())
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,
@@ -91,6 +105,14 @@ def make_tech_doc(
     )
     print(f"Tech docs created for ({node})")
     return file_docs_successful, file_doc, node
+
+
+function_cfg = {
+    "secrets": [
+        modal.Secret.from_name("open-ai"),
+    ],
+    "image": image,
+}
 
 
 @app.function(max_containers=72, timeout=120 * 60, **function_cfg)

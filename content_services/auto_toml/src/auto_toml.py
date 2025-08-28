@@ -24,11 +24,13 @@ from prompts import (
     summary_system_prompt,
     summary_user_prompt,
 )
+from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     Prompt,
 )
 from sqlalchemy import func
 from sqlmodel import or_, select
+from tqdm.asyncio import tqdm_asyncio
 
 
 @dataclass
@@ -55,7 +57,10 @@ class AutoToml:
         SCALE_PDF_AND_USE_DIRS = 4
         FAIL = 5
 
-    LLM_MODEL: ClassVar[str] = "gpt-4.1"
+    LLM_SCATTER_MODEL: ClassVar[str] = (
+        "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
+    )
+    LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
     SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
@@ -66,7 +71,8 @@ class AutoToml:
 
     node_ids: list[str]
     enable_auto_scaling: bool
-    llm: ChatOpenAI
+    llm_scatter: ChatOpenAI
+    llm_toml: ChatOpenAI
     code_contents: list[dict[str, str]]
     pdf_contents: list[dict[str, str]]
 
@@ -93,6 +99,12 @@ class AutoToml:
 
         return cls._initialize(
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
+        )
+
+    @classmethod
+    def from_root_node_id(cls, root_node_id: UUID, enable_auto_scaling: bool) -> Self:
+        return cls._initialize(
+            node_ids=[root_node_id], enable_auto_scaling=enable_auto_scaling
         )
 
     async def generate(self, document_goal: str, user_context: str = "") -> str:
@@ -125,7 +137,7 @@ class AutoToml:
 
         # logger.info("Generating new TOML sections...\n")
         print(f"user_context: {user_context}")
-        generated_toml_sections = await self.llm.generate_response(
+        generated_toml_sections = await self.llm_toml.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
         output = (
@@ -165,7 +177,7 @@ class AutoToml:
         )
 
         logger.info("Generating additional TOML sections...\n")
-        generated_toml_sections = await self.llm.generate_response(
+        generated_toml_sections = await self.llm_toml.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
 
@@ -181,39 +193,60 @@ class AutoToml:
         user_context: str,
         source_contents: Iterable[dict[str, str]],
     ) -> str:
-        results = []
+        tasks = []
+        for source_content in source_contents:
+            path = next(iter(source_content.keys()))
+            content = source_content[path]
 
-        async with asyncio.TaskGroup() as tg:
-            for source_content in source_contents:
-                path = next(iter(source_content.keys()))
-                # logger.debug(f"Generating summary for:\n{path}")
-                content = source_content[path]
+            tasks.append(
+                self._generate_summary(
+                    path=path,
+                    system_prompt=summary_system_prompt(),
+                    user_prompt=summary_user_prompt(
+                        document_goal=document_goal,
+                        user_context=user_context,
+                        source_content=content,
+                    ),
+                )
+            )
 
-                task = tg.create_task(
+        summaries = await tqdm_asyncio.gather(*tasks)
+
+        summary = "\n\n".join(result.strip() for result in summaries if result.strip())
+
+        print("Summary length before truncation:")
+        print(len(summary))
+        # new_summary = self._truncate_text(text=summary, llm=self.llm_toml)
+
+        chunks = split_text(
+            summary, chunk_size=64_000, chunk_overlap=6_400
+        )  # Using 64k chunks since the "breakdown" point for larger context models is still unknown.
+        new_summary = summary
+        if len(chunks) > 1:
+            print("Compressing summary...")
+            new_summary = ""
+            chunk_tasks = []
+            for i, chunk in enumerate(chunks):
+                chunk_tasks.append(
                     self._generate_summary(
-                        path=path,
+                        path=f"Chunk {i + 1}",
                         system_prompt=summary_system_prompt(),
                         user_prompt=summary_user_prompt(
                             document_goal=document_goal,
                             user_context=user_context,
-                            source_content=content,
+                            source_content=chunk.text,
                         ),
                     )
                 )
-                results.append(task)
-
-        summary = "\n\n".join(
-            task.result() for task in results if task.result().strip()
-        )
-
-        print("Summary length before truncation:")
-        print(len(summary))
-        new_summary = self._truncate_text(text=summary)
-        print("Summary length after truncation:")
+            new_summaries = await tqdm_asyncio.gather(*chunk_tasks)
+            new_summary = "\n\n".join(
+                result.strip() for result in new_summaries if result.strip()
+            )
+        print("Summary length after compression:")
         print(len(new_summary))
 
         if new_summary is not summary:
-            logger.error("Truncated content summary to fit within token limits\n")
+            logger.error("Compressed content summary to fit within token limits\n")
             summary = new_summary
 
         return summary
@@ -226,7 +259,7 @@ class AutoToml:
             AsyncLimiter(self.REQUESTS_PER_SECOND, 1),
         ):
             try:
-                summary = await self.llm.generate_response(
+                summary = await self.llm_scatter.generate_response(
                     system_prompt=system_prompt, user_prompt=user_prompt
                 )
                 if NO_CONTENT_FOUND_RESPONSE in summary:
@@ -275,8 +308,13 @@ class AutoToml:
 
     @classmethod
     def _initialize(cls, node_ids: list[str], enable_auto_scaling: bool) -> Self:
-        llm = ChatOpenAI(
-            model=cls.LLM_MODEL,
+        llm_scatter = ChatOpenAI(
+            model=cls.LLM_SCATTER_MODEL,
+            temperature=0.0,
+            request_timeout=60 * 5,
+        )
+        llm_toml = ChatOpenAI(
+            model=cls.LLM_TOML_MODEL,
             temperature=0.0,
             request_timeout=60 * 5,
         )
@@ -298,7 +336,8 @@ class AutoToml:
         return cls(
             node_ids=node_ids,
             enable_auto_scaling=enable_auto_scaling,
-            llm=llm,
+            llm_scatter=llm_scatter,
+            llm_toml=llm_toml,
             code_contents=code_content,
             pdf_contents=pdf_content,
         )
@@ -656,12 +695,20 @@ class AutoToml:
             return directory_contents, pdf_contents
 
     @classmethod
-    def _truncate_text(cls, text: str, scale_factor: int = 1) -> str:
+    def _truncate_text(
+        cls, text: str, llm: ChatOpenAI | None, scale_factor: int = 1
+    ) -> str:
         encoder = tiktoken.encoding_for_model(
-            "gpt-4o" if cls.LLM_MODEL == "gpt-4.1" else cls.LLM_MODEL
+            "gpt-4o"
+            if llm and llm.model in ["gpt-4.1", "o3-mini"]
+            else cls.LLM_SCATTER_MODEL
         )
         max_tokens = int(
-            (ChatOpenAI.get_token_limit(cls.LLM_MODEL) * 0.7) // scale_factor
+            (
+                ChatOpenAI.get_token_limit(llm.model if llm else cls.LLM_SCATTER_MODEL)
+                * 0.7
+            )
+            // scale_factor
         )
 
         tokens = encoder.encode(text, disallowed_special=())

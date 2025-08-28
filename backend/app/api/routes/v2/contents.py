@@ -1,3 +1,5 @@
+from typing import Any
+
 from database.models_v1 import DerivedContent
 from database.models_v2 import Node, PrimaryAsset, Version
 from fastapi import Body, HTTPException, Request
@@ -14,20 +16,29 @@ from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ContentCreate,
     ContentDetailRead,
+    ContentDetailReadSkinny,
     ListWithCount,
 )
 from app.api.session import CurrentSession
 from app.auth.models import User
 
 
-@router.get("/contents", response_model=ListWithCount[ContentDetailRead])
+@router.get("/contents")
 def list_contents(
     request: Request,
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
-) -> ListWithCount[ContentDetailRead]:
-    return _list_contents(request, session, user, pagination)
+    include_content: bool = False,
+) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
+    """
+    List contents with optional content field loading.
+
+    By default returns skinny response without content field for efficiency.
+
+    TODO: Add organization_id to DerivedContent model to eliminate joins.
+    """
+    return _list_contents(request, session, user, pagination, include_content)
 
 
 def _list_contents(
@@ -35,25 +46,9 @@ def _list_contents(
     session: CurrentSession,
     user: User,
     pagination: Pagination,
-) -> ListWithCount[ContentDetailRead]:
-    query = (
-        select(DerivedContent)
-        .options(
-            selectinload(DerivedContent.node)
-            .selectinload(Node.version)
-            .selectinload(Version.primary_asset)
-            .selectinload(PrimaryAsset.tags)
-        )
-        .where(
-            DerivedContent.node.has(
-                Node.version.has(
-                    Version.primary_asset.has(
-                        PrimaryAsset.organization_id == user.organization_id
-                    )
-                )
-            )
-        )
-    )
+    include_content: bool = False,
+) -> ListWithCount[ContentDetailReadSkinny] | ListWithCount[ContentDetailRead]:
+    query = _base_content_query(user.organization_id)
 
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, DerivedContent)
@@ -64,7 +59,35 @@ def _list_contents(
     result = session.exec(query)
     contents = result.all()
 
-    return ListWithCount(results=contents, total_count=total_count)
+    if include_content:
+        return ListWithCount[ContentDetailRead](
+            results=contents, total_count=total_count
+        )
+    else:
+        return ListWithCount[ContentDetailReadSkinny](
+            results=contents, total_count=total_count
+        )
+
+
+def _base_content_query(organization_id: str) -> Any:
+    return (
+        select(DerivedContent)
+        .options(
+            selectinload(DerivedContent.node)
+            .selectinload(Node.version)
+            .selectinload(Version.primary_asset)
+            .selectinload(PrimaryAsset.tags)
+        )
+        .where(_org_filter(organization_id))
+    )
+
+
+def _org_filter(organization_id: str) -> Any:
+    return DerivedContent.node.has(
+        Node.version.has(
+            Version.primary_asset.has(PrimaryAsset.organization_id == organization_id)
+        )
+    )
 
 
 @router.post("/contents", response_model=ContentDetailRead)

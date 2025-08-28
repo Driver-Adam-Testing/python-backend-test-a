@@ -2,15 +2,16 @@ import hashlib
 import os
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
 
 import modal
+from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
-from sqlmodel import select
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -40,6 +41,7 @@ inspection_image = (
     .add_local_python_source(
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -69,6 +71,8 @@ with inspection_image.imports():
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
+
+TECH_DOC_THREAD_POOL = ThreadPoolExecutor(max_workers=2)
 
 
 class InspectionMode(Enum):
@@ -414,12 +418,23 @@ async def inspect_db(
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise
     else:
-        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
+        # architecture, then uncomment the following line to represent completion of
+        # stage 1.
+        # set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
+
+        print("Spawning off deep context docs generation...")
+        # TODO: do deep context doc specific I/O or further analysis.
+        _completed_docs = await deep_context_docs.remote.aio(
+            version_id,
+            install_id,
+        )
+
         try:
             cleanup_old_versions.remote(version_id)
         except Exception as e:
@@ -547,6 +562,7 @@ async def inspect_files(
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
                 symbol_table_task=c_symbol_table_task,
+                thread_pool=TECH_DOC_THREAD_POOL,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
@@ -655,6 +671,7 @@ def get_file_content(path: Path) -> str:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -671,6 +688,7 @@ def get_file_content(path: Path) -> str:
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
+
     from database.db import engine
     from database.models_v2 import Version
     from database.models_v2_enums import VersionStatus
@@ -691,6 +709,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -710,7 +729,7 @@ def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine
     from database.models_v1 import DocumentSource
     from database.models_v2 import Node, Version
-    from sqlmodel import Session
+    from sqlmodel import Session, select
 
     with Session(engine) as session, session.begin():
         # Get all versions
@@ -771,6 +790,23 @@ def main(
 
 
 @app.local_entrypoint()
+def run_deep_context(
+    version_id: str,
+    install_id: str | None = None,
+) -> None:
+    """Run deep context docs generation"""
+    from deep_context_docs import deep_context_docs
+
+    try:
+        deep_context_docs.remote(version_id, install_id)
+    except Exception as e:
+        print(f"Error while generating deep context docs for version {version_id}: {e}")
+        raise
+    else:
+        print(f"Deep context docs generation completed for version {version_id}")
+
+
+@app.local_entrypoint()
 def test_connection() -> None:
     from onboarding.onboard import run_codebase_connection
 
@@ -826,6 +862,7 @@ def run_connect_unconnected_repos() -> None:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",

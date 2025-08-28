@@ -334,6 +334,32 @@ class Auth0Service:
     #  Public signup helpers (no existing user context)
     # ------------------------------------------------------------------
 
+    def find_users_by_email(self, email: str) -> list[dict[str, any]]:
+        """
+        Find Auth0 users by email via Management API. Returns a list; empty if not found.
+        Requires scope: read:users or read:users_app_metadata
+        """
+        try:
+            client = self._management_client()
+            # auth0-python exposes `users_by_email(email)` on the Management client
+            lookup = getattr(client.users, "by_email", None) or getattr(client.users, "users_by_email", None)
+            if callable(lookup):
+                results = lookup(email)
+            else:
+                # Fallback to search endpoint
+                # This path is unlikely with current SDKs but keeps compatibility
+                results = client.users.list(q=f"email:\"{email}\"", search_engine="v3")
+                # Normalize different response shapes
+                if isinstance(results, dict):
+                    for key in ("users", "items", "results", "data", "list"):
+                        if isinstance(results.get(key), list):
+                            results = results.get(key)
+                            break
+            return results or []
+        except Exception:
+            logger.error(f"Error finding users by email '{email}'", exc_info=True)
+            return []
+
     def create_organization(self, name: str, display_name: str, metadata: dict[str, any] | None = None) -> dict[str, any]:
         """
         Create an Auth0 Organization.

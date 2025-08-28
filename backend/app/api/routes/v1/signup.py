@@ -96,6 +96,20 @@ async def signup(req: Request, request: SignupRequest) -> SignupResponse:
     remote_ip = req.client.host if req.client else None
     await _verify_turnstile(request.captcha_token, remote_ip=remote_ip)
 
+    # 0c) If this email already exists in Auth0, do not create a new org
+    try:
+        existing_users = service.find_users_by_email(str(request.email))
+        if existing_users:
+            raise HTTPException(
+                status_code=409,
+                detail="A Driver account with this email already exists. Sign in or check your inbox for an invitation.",
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        # Non-fatal: proceed, but prefer safety. If lookup fails we still allow signups.
+        pass
+
 
     # 1) Create a new organization per signup
     org_name = _generate_org_slug_from_email(request.email)

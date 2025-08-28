@@ -334,17 +334,20 @@ class Auth0Service:
     #  Public signup helpers (no existing user context)
     # ------------------------------------------------------------------
 
-    def create_organization(self, name: str, display_name: str) -> dict[str, any]:
+    def create_organization(self, name: str, display_name: str, metadata: dict[str, any] | None = None) -> dict[str, any]:
         """
         Create an Auth0 Organization.
 
         Requires Management API scope: create:organizations
         """
         client = self._management_client()
-        body = jsonable_encoder({
+        body_dict: dict[str, any] = {
             "name": name,
             "display_name": display_name,
-        })
+        }
+        if metadata:
+            body_dict["metadata"] = metadata
+        body = jsonable_encoder(body_dict)
         return client.organizations.create_organization(body)
 
     def delete_organization(self, org_id: str) -> None:

@@ -101,7 +101,9 @@ async def signup(req: Request, request: SignupRequest) -> SignupResponse:
     org_name = _generate_org_slug_from_email(request.email)
     try:
         org = service.create_organization(
-            name=org_name, display_name=request.display_name or str(request.email)
+            name=org_name,
+            display_name=request.display_name or str(request.email),
+            metadata={"self_service": "true"},
         )
     except Exception as e:  # pragma: no cover - pass through as HTTP error
         raise HTTPException(status_code=500, detail="Failed to create organization") from e

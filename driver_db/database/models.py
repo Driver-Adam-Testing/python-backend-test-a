@@ -28,7 +28,7 @@ from sqlalchemy import (
     text,
     update,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import Mapper
 from sqlmodel import JSON, Field, Relationship, SQLModel, select
 
@@ -1054,3 +1054,30 @@ class InspectorRun(SQLModel, table=True):
     )
     call_id: str | None
     version: "Version" = Relationship(back_populates="inspector_runs")
+
+
+class AboutYouSurvey(SQLModel, table=True):
+    __tablename__ = "about_you_survey"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "user_id", name="uq_about_you_survey_org_user"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True, nullable=False)
+    user_id: str = Field(index=True, nullable=False)
+
+    skipped: bool = Field(default=False, nullable=False)
+
+    plans_for_driver: list[str] | None = Field(
+        sa_column=Column(ARRAY(String), nullable=True), default=None
+    )
+    team_size: str | None = Field(default=None, nullable=True)
+    type_of_work: str | None = Field(default=None, nullable=True)
+    type_of_work_other: str | None = Field(default=None, nullable=True)
+
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )

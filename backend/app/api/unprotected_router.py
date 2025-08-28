@@ -43,9 +43,10 @@ unprotected_router.include_router(
 )
 
 # /studio/v1/signup/** -------------------------------------------------
-unprotected_router.include_router(
-    signup.router, prefix="/signup", tags=["signup"]
-)
+if settings.ENABLE_SIGNUP:
+    unprotected_router.include_router(
+        signup.router, prefix="/signup", tags=["signup"]
+    )
 
 
 # Optional local GraphQL sandbox --------------------------------------

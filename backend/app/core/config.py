@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     TURNSTILE_EXPECTED_HOSTNAME: str | None = None
     TURNSTILE_MAX_AGE_SEC: int = 120
 
+    # Feature flags
+    ENABLE_SIGNUP: bool = False
+
     @model_validator(mode="after")
     def _check_non_default_secrets(self) -> Self:
         for field_name, field_info in self.model_fields.items():

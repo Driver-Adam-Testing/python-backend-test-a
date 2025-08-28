@@ -11,6 +11,7 @@ from app.services.auth0_service import Auth0Service
 import time
 from datetime import datetime, timezone
 import httpx
+from disposable_email_domains import blocklist
 
 
 router = APIRouter()
@@ -86,6 +87,10 @@ def _is_disposable(email: str) -> bool:
 @router.post("/", summary="Create org and invite email")
 async def signup(req: Request, request: SignupRequest) -> SignupResponse:
     service = Auth0Service()
+
+    # 0) Disposable email check using disposable_email_domains blocklist
+    if _is_disposable(str(request.email)):
+        raise HTTPException(status_code=400, detail="Use a non-disposable email address.")
 
     # 0b) Turnstile gate
     remote_ip = req.client.host if req.client else None

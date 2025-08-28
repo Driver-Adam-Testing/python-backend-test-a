@@ -2,6 +2,7 @@ import hashlib
 import os
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
@@ -70,6 +71,8 @@ with inspection_image.imports():
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
+
+TECH_DOC_THREAD_POOL = ThreadPoolExecutor(max_workers=2)
 
 
 class InspectionMode(Enum):
@@ -559,6 +562,7 @@ async def inspect_files(
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
                 symbol_table_task=c_symbol_table_task,
+                thread_pool=TECH_DOC_THREAD_POOL,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
@@ -684,6 +688,7 @@ def get_file_content(path: Path) -> str:
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
+
     from database.db import engine
     from database.models_v2 import Version
     from database.models_v2_enums import VersionStatus

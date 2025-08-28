@@ -79,6 +79,10 @@ class Backend(Construct):
             self, "deployment_secrets", secret_name=settings.SECRECTS_NAME
         )
 
+        inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
+        )
+
         self.dropzone_bucket = aws_s3.Bucket(
             self,
             "DropzoneBucket",
@@ -109,7 +113,7 @@ class Backend(Construct):
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
 
-        container_secrets = settings.to_dict()
+        container_environment_vars.update(settings.to_dict())
 
         repository = aws_ecr.Repository.from_repository_name(
             self, "PythonBackendRepo", "python-backend"
@@ -117,7 +121,6 @@ class Backend(Construct):
 
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
             image=aws_ecs.ContainerImage.from_ecr_repository(repository, tag="latest"),
-            secrets=container_secrets,
             environment=container_environment_vars,
             container_port=8000,
             log_driver=aws_ecs.LogDrivers.aws_logs(

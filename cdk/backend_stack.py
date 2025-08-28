@@ -45,7 +45,7 @@ class BackendStack(Stack):
             self,
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
-                environment="development",
+                environment=settings.DEPLOYMENT_ENVIRONMENT,
                 api_url=settings.ONBOARDING_LAMDBA_API_URL,
                 auth0_audience=settings.ONBOARDING_LAMDBA_AUTH0_AUDIENCE,
                 auth0_url=settings.ONBOARDING_LAMDBA_API_URL,

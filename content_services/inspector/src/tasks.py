@@ -153,11 +153,13 @@ class FileTechDocTask(Task):
         task_name: str,
         db_node_id: uuid.UUID,
         symbol_table_task: Optional["CSymbolTableTask"],
+        thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
         self.symbol_table_task = symbol_table_task
+        self.thread_pool = thread_pool
         super().__init__(
             task_name=task_name,
             node=node,
@@ -178,15 +180,27 @@ class FileTechDocTask(Task):
         else:
             reified_symbols = None
 
-        if reified_symbols:
-            s3 = boto3.client("s3")
+        if reified_symbols is not None:
             sym_table_s3_key = f"symbol_tables/symbol_table_for_{self.db_node_id}.pkl"
-            pickled_data = pickle.dumps(reified_symbols)
-            s3.put_object(
-                Bucket=os.environ["BUCKET_NAME"],
-                Key=sym_table_s3_key,
-                Body=pickled_data,
-            )
+
+            def _upload(s3_key: str, reif_symbols: list) -> None:
+                data = pickle.dumps(reif_symbols)
+                boto3.client("s3").put_object(
+                    Bucket=os.environ["BUCKET_NAME"],
+                    Key=s3_key,
+                    Body=data,
+                )
+
+            if self.thread_pool:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    self.thread_pool,
+                    _upload,
+                    sym_table_s3_key,
+                    reified_symbols,
+                )
+            else:
+                _upload(sym_table_s3_key, reified_symbols)
         else:
             sym_table_s3_key = None
 

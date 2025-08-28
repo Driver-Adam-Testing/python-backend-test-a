@@ -115,11 +115,14 @@ class AutoToml:
         logger.info(
             f"Gathering summaries from {len(self.code_contents)} source files/directories and {len(self.pdf_contents)} PDF pages...\n"
         )
-        user_context = (
-            Prompt.empty()
-            .append(_USER_CONTEXT_SIZE_MAP.get(user_context, USER_CONTEXT_BASE))
-            .into_str()
-        )
+
+        if user_context in _USER_CONTEXT_SIZE_MAP:
+            user_context = (
+                Prompt.empty()
+                .append(_USER_CONTEXT_SIZE_MAP.get(user_context, USER_CONTEXT_BASE))
+                .into_str()
+            )
+
         source_summary = await self._gather_summaries(
             document_goal=document_goal,
             user_context=user_context,

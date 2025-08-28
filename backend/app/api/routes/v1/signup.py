@@ -2,11 +2,15 @@ import re
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 
 from app.core.config import settings
 from app.services.auth0_service import Auth0Service
+
+import time
+from datetime import datetime, timezone
+import httpx
 
 
 router = APIRouter()
@@ -16,6 +20,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     # Optional org display name to show in invitations
     display_name: str | None = None
+    captcha_token: str
 
 
 class SignupResponse(BaseModel):
@@ -32,10 +37,60 @@ def _generate_org_slug_from_email(email: str) -> str:
     return f"org-{safe}-{unique_suffix}" if safe else f"org-{unique_suffix}"
 
 
+async def _verify_turnstile(token: str, remote_ip: str | None = None) -> dict[str, Any]:
+    """Verify Cloudflare Turnstile token; enforce hostname/action/freshness if configured."""
+    if not settings.TURNSTILE_SECRET:
+        # Not configured (e.g., local dev) → skip verification
+        return {"success": True, "skipped": True}
+
+    data: dict[str, str] = {"secret": settings.TURNSTILE_SECRET, "response": token}
+    if remote_ip:
+        data["remoteip"] = remote_ip
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+    j = r.json()
+
+    if not j.get("success"):
+        raise HTTPException(status_code=403, detail=f"Bot check failed: {j.get('error-codes')}")
+
+    if settings.TURNSTILE_EXPECTED_HOSTNAME and j.get("hostname") != settings.TURNSTILE_EXPECTED_HOSTNAME:
+        raise HTTPException(status_code=403, detail="Bot check hostname mismatch")
+
+    if j.get("action") and j["action"] != "signup":
+        raise HTTPException(status_code=403, detail="Bot check action mismatch")
+
+    try:
+        ts = j.get("challenge_ts")
+        if ts:
+            issued = datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=timezone.utc).timestamp()
+            if time.time() - issued > settings.TURNSTILE_MAX_AGE_SEC:
+                raise HTTPException(status_code=403, detail="Bot check too old")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    return j
+
+def _is_disposable(email: str) -> bool:
+    domain = email.split("@", 1)[-1].lower()
+    return domain in blocklist
+
+
 @router.post("", include_in_schema=False)
 @router.post("/", summary="Create org and invite email")
-def signup(request: SignupRequest) -> SignupResponse:
+async def signup(req: Request, request: SignupRequest) -> SignupResponse:
     service = Auth0Service()
+
+    # 0b) Turnstile gate
+    remote_ip = req.client.host if req.client else None
+    await _verify_turnstile(request.captcha_token, remote_ip=remote_ip)
+
 
     # 1) Create a new organization per signup
     org_name = _generate_org_slug_from_email(request.email)

@@ -69,6 +69,11 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = DEFAULT_SECRET
 
+    # Turnstile (Cloudflare) CAPTCHA verification settings
+    TURNSTILE_SECRET: str | None = None
+    TURNSTILE_EXPECTED_HOSTNAME: str | None = None
+    TURNSTILE_MAX_AGE_SEC: int = 120
+
     @model_validator(mode="after")
     def _check_non_default_secrets(self) -> Self:
         for field_name, field_info in self.model_fields.items():

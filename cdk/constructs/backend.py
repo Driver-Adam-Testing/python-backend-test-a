@@ -16,7 +16,7 @@ from aws_cdk import (
     aws_ssm,
 )
 from constructs import Construct
-from ..settings import settings
+from cdk.settings import settings
 
 
 # TODO: parameterize task count and container size

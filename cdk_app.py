@@ -4,14 +4,14 @@ import os
 import aws_cdk as cdk
 
 from cdk.backend_stack import BackendStack
-from cdk.settings import Settings
+from cdk.settings import settings
 
 app = cdk.App()
 
 BackendStack(
     app,
     "DriverApiStack",
-    env=cdk.Environment(account=Settings.AWS_ACCOUNT, region=Settings.AWS_REGION),
+    env=cdk.Environment(account=settings.AWS_ACCOUNT, region=settings.AWS_REGION),
 )
 
 app.synth()

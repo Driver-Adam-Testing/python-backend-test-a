@@ -8,7 +8,7 @@ from cdk.constructs.asset_onboarding_lambda import (
 from cdk.constructs.backend import Backend, BackendParams
 from cdk.constructs.inspector import Inspector, InspectorParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
-from settings import settings
+from cdk.settings import settings
 
 
 class BackendStack(Stack):

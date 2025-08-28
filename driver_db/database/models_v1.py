@@ -252,31 +252,6 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     )
 
 
-class InspectorRun(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    version_id: UUID = Field(
-        foreign_key="v2_version.id",
-        nullable=False,
-        ondelete="CASCADE",
-    )
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    call_id: str | None
-    version: "Version" = Relationship(back_populates="inspector_runs")
-
-
 class UsageSessionStatus(str, enum.Enum):
     RUNNING = "running"
     COMPLETED = "completed"

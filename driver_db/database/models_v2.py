@@ -185,7 +185,7 @@ class Version(SQLModel, table=True):  # type: ignore
             "viewonly": True,
         }
     )
-    inspector_runs: list["InspectorRun"] = Relationship(  # noqa: F821
+    inspector_runs: list["InspectorRun"] = Relationship(
         back_populates="version",
         passive_deletes="all",
         sa_relationship_kwargs={
@@ -543,3 +543,28 @@ class Tag(SQLModel, table=True):  # type: ignore
         back_populates="tags",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )
+
+
+class InspectorRun(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    version_id: UUID = Field(
+        foreign_key="v2_version.id",
+        nullable=False,
+        ondelete="CASCADE",
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    call_id: str | None
+    version: "Version" = Relationship(back_populates="inspector_runs")

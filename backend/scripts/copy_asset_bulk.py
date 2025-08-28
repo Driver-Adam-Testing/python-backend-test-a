@@ -18,9 +18,10 @@ import os
 import sys
 from uuid import UUID
 
+from database.models_v2 import InspectorRun
 from sqlmodel import Session, create_engine, select
 
-from driver_db.database.models_v1 import ChunkAndEmbedding, DerivedContent, InspectorRun
+from driver_db.database.models_v1 import ChunkAndEmbedding, DerivedContent
 from driver_db.database.models_v2 import (
     Node,
     NodeKind,

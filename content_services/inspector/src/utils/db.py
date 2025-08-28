@@ -1,7 +1,7 @@
 import uuid
 
-from database.models_v1 import DerivedContent, InspectorRun, GitProviderAppInstallation
-from database.models_v2 import Node, Version
+from database.models_v1 import DerivedContent, GitProviderAppInstallation
+from database.models_v2 import InspectorRun, Node, Version
 from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -160,14 +160,20 @@ def get_usage_balance_in_bytes(
         )
         return usage_balance.balance
 
-def git_provider_app_installation_by_id(installation_id: str) -> GitProviderAppInstallation:
+
+def git_provider_app_installation_by_id(
+    installation_id: str,
+) -> GitProviderAppInstallation:
     from database.db import engine
-    from sqlmodel import Session, select
     from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
     with Session(engine) as session:
-        query = select(
-            GitProviderAppInstallation
-        ).where(
-            GitProviderAppInstallation.id == installation_id,
-        ).options(selectinload(GitProviderAppInstallation.git_provider_app))
+        query = (
+            select(GitProviderAppInstallation)
+            .where(
+                GitProviderAppInstallation.id == installation_id,
+            )
+            .options(selectinload(GitProviderAppInstallation.git_provider_app))
+        )
         return session.exec(query).one()

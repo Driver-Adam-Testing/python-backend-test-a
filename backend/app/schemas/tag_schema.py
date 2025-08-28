@@ -1,9 +1,8 @@
 from typing import Literal
 
-from database.models_v1 import Tag
-from pydantic import BaseModel, field_validator
-
 from app.schemas.content_schema import ListContentResult
+from database.models_v2 import Tag
+from pydantic import BaseModel, field_validator
 
 TagType = Literal["tag", "collection"]
 

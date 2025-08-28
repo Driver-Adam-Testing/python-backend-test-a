@@ -3,9 +3,10 @@ import secrets
 import string
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
+import sqlalchemy
 from database.models_v2_enums import (
     AutoDocStatusMessageKind,
     LlmPipelineKind,
@@ -14,6 +15,9 @@ from database.models_v2_enums import (
     PrimaryAssetProvider,
     VcsAutoUpdatePolicy,
     VersionStatus,
+)
+from sqlalchemy import (
+    UUID as SaUuid,
 )
 from sqlalchemy import (
     Column,
@@ -25,12 +29,10 @@ from sqlalchemy import (
     UniqueConstraint,
     desc,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
-
-if TYPE_CHECKING:
-    from database.models_v2 import Tag
 
 
 class PrimaryAsset(SQLModel, table=True):  # type: ignore
@@ -440,15 +442,16 @@ class AutoDocStatusHistory(SQLModel, table=True):
     call_id: str | None
 
 
+def gen_drv_key() -> str:
+    PREFIX = "drv"
+    ENTROPY = 32
+    ALPHABET = string.ascii_letters + string.digits
+    random_part = "".join(secrets.choice(ALPHABET) for _ in range(ENTROPY))
+    return f"{PREFIX}-{random_part}"
+
+
 class ApiKey(SQLModel, table=True):
     __tablename__ = "v2_api_key"
-
-    def gen_drv_key() -> str:
-        PREFIX = "drv"
-        ENTROPY = 32
-        ALPHABET = string.ascii_letters + string.digits
-        random_part = "".join(secrets.choice(ALPHABET) for _ in range(ENTROPY))
-        return f"{PREFIX}-{random_part}"
 
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     key: str = Field(
@@ -478,4 +481,65 @@ class ApiKey(SQLModel, table=True):
             nullable=True,
         ),
         default=None,
+    )
+
+
+class Tag(SQLModel, table=True):  # type: ignore
+    __tablename__ = "tags"
+    __table_args__ = (
+        UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
+    )
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
+        default=None,
+    )
+    name: str = Field(
+        max_length=255,
+        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+    )
+    hex_color: str = Field(
+        max_length=7,
+        sa_column=sqlalchemy.Column(sqlalchemy.String(7), nullable=False),
+    )
+    organization_id: str
+    type: str = Field(
+        max_length=255,
+        sa_column=sqlalchemy.Column(
+            sqlalchemy.String(255),
+            nullable=False,
+            index=True,
+        ),
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    created_by: str = Field(
+        sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
+    )
+    updated_by: str = Field(
+        sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
+    )
+    # content_links: list["TagContent"] = Relationship(
+    #     back_populates="tag",
+    #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    # )
+    primary_assets: list["PrimaryAsset"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )

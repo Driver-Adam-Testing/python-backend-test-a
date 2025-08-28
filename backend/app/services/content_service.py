@@ -7,9 +7,8 @@ from database.models_v1 import (
     DerivedContent,
     DocumentSource,
     Enum_Derived_Content_Status,
-    Tag,
 )
-from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Version
+from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Tag, Version
 from fastapi import HTTPException, status
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select

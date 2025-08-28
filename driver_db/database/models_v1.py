@@ -213,67 +213,6 @@ event.listen(DerivedContent, "after_update", update_primary_asset_content_timest
 event.listen(DerivedContent, "after_insert", update_primary_asset_content_timestamp)
 
 
-class Tag(SQLModel, table=True):  # type: ignore
-    __tablename__ = "tags"
-    __table_args__ = (
-        UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
-    )
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-    name: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
-    )
-    hex_color: str = Field(
-        max_length=7,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(7), nullable=False),
-    )
-    organization_id: str
-    type: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(
-            sqlalchemy.String(255),
-            nullable=False,
-            index=True,
-        ),
-    )
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    created_by: str = Field(
-        sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-        default=None,
-    )
-    updated_by: str = Field(
-        sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
-    )
-    # content_links: list["TagContent"] = Relationship(
-    #     back_populates="tag",
-    #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
-    # )
-    primary_assets: list["PrimaryAsset"] = Relationship(
-        back_populates="tags",
-        sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
-    )
-
-
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     content_id: UUID = Field(

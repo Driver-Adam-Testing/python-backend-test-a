@@ -5,8 +5,8 @@ from uuid import UUID
 from database.models_v1 import (
     DerivedContent,
     DocumentSource,
-    Tag,
 )
+from database.models_v2 import Tag
 from database.models_v2_enums import VersionStatus
 from pydantic import BaseModel
 from sqlmodel import SQLModel

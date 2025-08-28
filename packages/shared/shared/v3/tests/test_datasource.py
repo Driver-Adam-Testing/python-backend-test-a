@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from database.models_v1 import Tag  # noqa: F401
 from shared.v3.utils.datasource import DataSource
 
 

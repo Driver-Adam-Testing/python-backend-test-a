@@ -18,7 +18,7 @@ from app.schemas.git_provider_schema import (
     GitRepository,
 )
 from app.schemas.secret_management_schema import APP_INSTALL_WAT_NAME_PREFIX
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,

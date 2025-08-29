@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import Node, PrimaryAsset, Version
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select

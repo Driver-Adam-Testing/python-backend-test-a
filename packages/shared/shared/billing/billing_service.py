@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from app.core.logger import logger
-from database.models_v1 import (
+from database.models import (
     BillingFrequency,
     PlanType,
     Subscription,

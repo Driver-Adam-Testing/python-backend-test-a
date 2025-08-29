@@ -2,7 +2,7 @@ import os
 from inspect import cleandoc
 from typing import Annotated, Any
 
-from database.models_v2_enums import PrimaryAssetKind
+from database.models_enums import PrimaryAssetKind
 from pydantic import Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
@@ -13,9 +13,8 @@ os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
 import fastmcp
 from database.db import get_session
-from database.models_v1 import DerivedContent
-from database.models_v2 import Node, PrimaryAsset, Version
-from database.models_v2_enums import ContentKind, VersionStatus
+from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models_enums import ContentKind, VersionStatus
 from fastmcp import Context, FastMCP
 from sqlmodel import select
 

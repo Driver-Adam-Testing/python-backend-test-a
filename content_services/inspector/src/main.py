@@ -163,8 +163,8 @@ async def inspect_db(
     import tempfile
 
     import boto3
-    from database.models_v2_enums import NodeKind as DbNodeKind
-    from database.models_v2_enums import VersionStatus
+    from database.models_enums import NodeKind as DbNodeKind
+    from database.models_enums import VersionStatus
     from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
@@ -690,8 +690,8 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
 
     from database.db import engine
-    from database.models_v2 import Version
-    from database.models_v2_enums import VersionStatus
+    from database.models import Version
+    from database.models_enums import VersionStatus
     from sqlmodel import Session
 
     with Session(engine) as session, session.begin():
@@ -727,8 +727,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
 )
 def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine
-    from database.models_v1 import DocumentSource
-    from database.models_v2 import Node, Version
+    from database.models import DocumentSource, Node, Version
     from sqlmodel import Session, select
 
     with Session(engine) as session, session.begin():

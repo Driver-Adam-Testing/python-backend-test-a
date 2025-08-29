@@ -1,7 +1,7 @@
 import logging
 from typing import ClassVar
 
-from database.models_v1 import (
+from database.models import (
     GitProviderApp,
     GitProviderAppInstallation,
     GitProviderKind,

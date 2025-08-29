@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Self
 
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from pydantic import BaseModel
 
 

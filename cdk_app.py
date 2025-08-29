@@ -8,6 +8,7 @@ from cdk.settings import settings
 
 app = cdk.App()
 
+print("AWS Env " + settings.DEPLOYMENT_ENVIRONMENT + " " + settings.AWS_ACCOUNT + " " + settings.AWS_REGION)
 BackendStack(
     app,
     "DriverApiStack",

@@ -345,20 +345,7 @@ class Auth0Service:
         """
         try:
             client = self._management_client()
-            # auth0-python exposes `users_by_email(email)` on the Management client
-            lookup = getattr(client.users, "by_email", None) or getattr(client.users, "users_by_email", None)
-            if callable(lookup):
-                results = lookup(email)
-            else:
-                # Fallback to search endpoint
-                # This path is unlikely with current SDKs but keeps compatibility
-                results = client.users.list(q=f"email:\"{email}\"", search_engine="v3")
-                # Normalize different response shapes
-                if isinstance(results, dict):
-                    for key in ("users", "items", "results", "data", "list"):
-                        if isinstance(results.get(key), list):
-                            results = results.get(key)
-                            break
+            results = client.users.by_email(email)
             return results or []
         except Exception:
             logger.error(f"Error finding users by email '{email}'", exc_info=True)
@@ -384,16 +371,7 @@ class Auth0Service:
         """Delete an Auth0 Organization. Best-effort; logs errors."""
         try:
             client = self._management_client()
-            delete_method = getattr(client.organizations, "delete_organization", None)
-            if callable(delete_method):
-                delete_method(org_id)
-            else:
-                # Some SDKs use `delete(id=...)` signature
-                generic_delete = getattr(client.organizations, "delete", None)
-                if callable(generic_delete):
-                    generic_delete(id=org_id)
-                else:
-                    raise RuntimeError("auth0-python SDK lacks delete organization method")
+            client.organizations.delete_organization(org_id)
         except Exception:
             logger.error(f"Failed to delete organization {org_id}", exc_info=True)
 

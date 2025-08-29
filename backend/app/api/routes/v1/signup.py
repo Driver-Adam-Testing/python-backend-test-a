@@ -109,30 +109,25 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
 
     # 1) Create a new organization per signup
     org_name = _generate_org_slug_from_email(request.email)
-    try:
-        org = service.create_organization(
-            name=org_name,
-            display_name=request.display_name or str(request.email),
-            metadata={"self_service": "true"},
-        )
-    except Exception as e:  # pragma: no cover - pass through as HTTP error
-        raise HTTPException(status_code=500, detail="Failed to create organization") from e
+    org = service.create_organization(
+        name=org_name,
+        display_name=request.display_name or str(request.email),
+        metadata={"self_service": "true"},
+    )
 
     # 1b) Ensure Username-Password-Authentication connection is enabled on the org
     try:
         conn_id = service.get_connection_id_by_name("Username-Password-Authentication")
         if not conn_id:
-            raise HTTPException(status_code=500, detail="Auth0 connection not found: Username-Password-Authentication")
+            raise Exception("Auth0 connection not found: Username-Password-Authentication")
         service.enable_connection_for_organization(org_id=org["id"], connection_id=conn_id)
-    except Exception as e:
+    except Exception:
         # Cleanup org on failure
         try:
             service.delete_organization(org["id"])
         except Exception:
             pass
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=500, detail="Failed to enable connection for organization") from e
+        raise
 
     # 2) Assign Admin role only. Resolve by name; fallback to env; error if missing.
     admin_role_id = service.get_role_id_by_name("Admin")
@@ -144,11 +139,8 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
             service.delete_organization(org["id"])
         except Exception:
             pass
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Admin role not found in Auth0. Create an 'Admin' role or set AUTH0_ORG_ADMIN_ROLE_ID."
-            ),
+        raise Exception(
+            "Admin role not found in Auth0. Create an 'Admin' role or set AUTH0_ORG_ADMIN_ROLE_ID."
         )
     role_ids: list[str] | None = [admin_role_id]
 
@@ -156,13 +148,13 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         invite = service.invite_email_to_organization(
             org_id=org["id"], email=request.email, roles=role_ids, inviter_name="System"
         )
-    except Exception as e:
+    except Exception:
         # Cleanup org on failure
         try:
             service.delete_organization(org["id"])
         except Exception:
             pass
-        raise HTTPException(status_code=500, detail="Failed to create invitation") from e
+        raise
 
     return SignupResponse(
         organization_id=org["id"],

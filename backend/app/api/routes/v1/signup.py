@@ -129,10 +129,8 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
             pass
         raise
 
-    # 2) Assign Admin role only. Resolve by name; fallback to env; error if missing.
+    # 2) Assign Admin role only. Resolve by name; error if missing.
     admin_role_id = service.get_role_id_by_name("Admin")
-    if not admin_role_id and settings.AUTH0_ORG_ADMIN_ROLE_ID:
-        admin_role_id = settings.AUTH0_ORG_ADMIN_ROLE_ID
     if not admin_role_id:
         # Cleanup org on failure
         try:
@@ -140,7 +138,7 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         except Exception:
             pass
         raise Exception(
-            "Admin role not found in Auth0. Create an 'Admin' role or set AUTH0_ORG_ADMIN_ROLE_ID."
+            "Admin role not found in Auth0. Create an 'Admin' role."
         )
     role_ids: list[str] | None = [admin_role_id]
 

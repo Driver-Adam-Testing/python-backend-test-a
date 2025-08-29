@@ -95,7 +95,20 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
     existing_users = service.find_users_by_email(str(request.email))
     if existing_users:
         # Log the attempt for monitoring but don't reveal the email exists
-        logger.info(f"Signup attempt with existing email: {request.email} from IP: {remote_ip}")
+        email_parts = str(request.email).split('@')
+        if len(email_parts) == 2:
+            local_part = email_parts[0]
+            domain = email_parts[1]
+            if len(local_part) <= 1:
+                masked_local = "*"
+            elif len(local_part) == 2:
+                masked_local = f"{local_part[0]}*"
+            else:
+                masked_local = f"{local_part[0]}***{local_part[-1]}"
+            masked_email = f"{masked_local}@{domain}"
+        else:
+            masked_email = "***@***"
+        logger.info(f"Signup attempt with existing email: {masked_email} from IP: {remote_ip}")
         # Return success to prevent user enumeration
         return SignupResponse(
             success=True

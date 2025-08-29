@@ -38,7 +38,7 @@ def _generate_org_slug_from_email(email: str) -> str:
     return f"org-{safe}-{unique_suffix}" if safe else f"org-{unique_suffix}"
 
 
-async def _verify_turnstile(token: str, remote_ip: str | None = None) -> dict[str, Any]:
+def _verify_turnstile(token: str, remote_ip: str | None = None) -> dict[str, Any]:
     """Verify Cloudflare Turnstile token; enforce hostname/action/freshness if configured."""
     if not settings.TURNSTILE_SECRET:
         # Not configured (e.g., local dev) → skip verification
@@ -48,8 +48,8 @@ async def _verify_turnstile(token: str, remote_ip: str | None = None) -> dict[st
     if remote_ip:
         data["remoteip"] = remote_ip
 
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(
+    with httpx.Client(timeout=10) as client:
+        r = client.post(
             "https://challenges.cloudflare.com/turnstile/v0/siteverify",
             data=data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -85,7 +85,7 @@ def _is_disposable(email: str) -> bool:
 
 @router.post("", include_in_schema=False)
 @router.post("/", summary="Create org and invite email")
-async def signup(req: Request, request: SignupRequest) -> SignupResponse:
+def signup(req: Request, request: SignupRequest) -> SignupResponse:
     service = Auth0Service()
 
     # 0) Disposable email check using disposable_email_domains blocklist
@@ -94,7 +94,7 @@ async def signup(req: Request, request: SignupRequest) -> SignupResponse:
 
     # 0b) Turnstile gate
     remote_ip = req.client.host if req.client else None
-    await _verify_turnstile(request.captcha_token, remote_ip=remote_ip)
+    _verify_turnstile(request.captcha_token, remote_ip=remote_ip)
 
     # 0c) If this email already exists in Auth0, do not create a new org
     try:

@@ -95,23 +95,17 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
     _verify_turnstile(request.captcha_token, remote_ip=remote_ip)
 
     # 0c) Check if email already exists - but don't reveal this information to prevent user enumeration
-    try:
-        existing_users = service.find_users_by_email(str(request.email))
-        if existing_users:
-            # Log the attempt for monitoring but don't reveal the email exists
-            logger.info(f"Signup attempt with existing email: {request.email} from IP: {remote_ip}")
-            # Return success to prevent user enumeration
-            return SignupResponse(
-                organization_id="",
-                organization_name="",
-                invitation_id=None,
-                message="If an account with this email exists, you will receive a sign-in link shortly."
-            )
-    except HTTPException:
-        raise
-    except Exception:
-        # Non-fatal: proceed, but prefer safety. If lookup fails we still allow signups.
-        pass
+    existing_users = service.find_users_by_email(str(request.email))
+    if existing_users:
+        # Log the attempt for monitoring but don't reveal the email exists
+        logger.info(f"Signup attempt with existing email: {request.email} from IP: {remote_ip}")
+        # Return success to prevent user enumeration
+        return SignupResponse(
+            organization_id="",
+            organization_name="",
+            invitation_id=None,
+            message="If an account with this email exists, you will receive a sign-in link shortly."
+        )
 
     # 1) Create a new organization per signup
     org_name = _generate_org_slug_from_email(request.email)

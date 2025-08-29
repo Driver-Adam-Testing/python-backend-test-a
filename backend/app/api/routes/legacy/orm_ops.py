@@ -7,12 +7,6 @@ from database.models import (
 from sqlmodel import Session, select
 
 
-def get_derived_content_by_id(session: Session, id: str) -> DerivedContent | None:
-    statement = select(DerivedContent).where(DerivedContent.id == id)
-    result = session.exec(statement)
-    return result.first()
-
-
 # TODO: do away with this?
 def check_access(
     session: Session,

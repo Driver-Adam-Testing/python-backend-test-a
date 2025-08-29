@@ -120,10 +120,11 @@ class PrimaryAssetTagRead(BaseModel):
         from_attributes = True
 
 
-class ContentRead(BaseModel):
+class ContentReadBase(BaseModel):
+    """Base content fields without content field"""
+
     id: UUID | None
     node_id: UUID | None
-    content: str | None
     content_kind: ContentKind
     misc_metadata: dict | None
     created_at: datetime | None
@@ -131,6 +132,10 @@ class ContentRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ContentRead(ContentReadBase):
+    content: str | None
 
 
 class DocumentSourceRead(BaseModel):
@@ -195,6 +200,17 @@ class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
 
 
 class ContentDetailRead(ContentRead):
+    """Content with content field and node details"""
+
+    node: NodeDetailRead
+
+    class Config:
+        from_attributes = True
+
+
+class ContentDetailReadSkinny(ContentReadBase):
+    """Content without content field but with node details"""
+
     node: NodeDetailRead
 
     class Config:

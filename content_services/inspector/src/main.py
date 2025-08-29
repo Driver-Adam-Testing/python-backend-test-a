@@ -428,13 +428,19 @@ async def inspect_db(
         else:
             print("No changes detected skipping tech doc export.")
 
-        print("Spawning off deep context docs generation...")
+        # print("Spawning off deep context docs generation...")
         # TODO: do deep context doc specific I/O or further analysis.
-        _completed_docs = await deep_context_docs.remote.aio(
-            version_id,
-            install_id,
+        # _completed_docs = await deep_context_docs.remote.aio(
+        #     version_id,
+        #     install_id,
+        # )
+        status_func = modal.Function.from_name(
+            app_name="inspector-v2", name="set_codebase_status_in_container"
         )
-
+        await status_func.remote.aio(
+            version_id=version_id,
+            status=VersionStatus.GENERATION_COMPLETE,
+        )
         try:
             cleanup_old_versions.remote(version_id)
         except Exception as e:
@@ -690,6 +696,9 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
 
     from database.db import engine
+    from database.models_v1 import (
+        Tag,  # noqa: F401  # Import to ensure Tag is available for PrimaryAsset relationship
+    )
     from database.models_v2 import Version
     from database.models_v2_enums import VersionStatus
     from sqlmodel import Session
@@ -795,7 +804,6 @@ def run_deep_context(
     install_id: str | None = None,
 ) -> None:
     """Run deep context docs generation"""
-    from deep_context_docs import deep_context_docs
 
     try:
         deep_context_docs.remote(version_id, install_id)

@@ -471,3 +471,94 @@ def get_gitlab_username(base_url: str, access_token: str) -> str:
     response.raise_for_status()
     print(response.json())
     return response.json()["username"]
+
+
+def list_merge_requests(
+    base_url: str, repo_id: str, access_token: str, state: str = "opened"
+) -> list:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # GitLab supports pagination; fetch all pages
+    url = f"{base_url}/api/v4/projects/{repo_id}/merge_requests"
+    params = {"state": state, "per_page": 100, "order_by": "updated_at", "sort": "desc"}
+    all_mrs: list = []
+    while url:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        all_mrs.extend(response.json())
+        # Pagination: look for next page via Link header
+        link = response.headers.get("Link")
+        next_url = None
+        if link:
+            parts = [p.strip() for p in link.split(",")]
+            for part in parts:
+                if 'rel="next"' in part:
+                    start = part.find("<")
+                    end = part.find(">", start + 1)
+                    if start != -1 and end != -1:
+                        next_url = part[start + 1 : end]
+                        break
+        url = next_url
+        params = {}  # clear params when using absolute next_url
+    return all_mrs
+
+
+def get_merge_request_commits(
+    base_url: str, repo_id: str, mr_iid: int, access_token: str
+) -> list:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{base_url}/api/v4/projects/{repo_id}/merge_requests/{mr_iid}/commits"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
+
+
+def close_merge_request(
+    base_url: str, repo_id: str, mr_iid: int, access_token: str
+) -> None:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{base_url}/api/v4/projects/{repo_id}/merge_requests/{mr_iid}"
+    response = requests.put(url, headers=headers, json={"state_event": "close"})
+    response.raise_for_status()
+    print(f"Closed merge request !{mr_iid}")
+
+
+def create_pull_request_with_bot_cleanup(
+    base_url: str,
+    repo_id: str,
+    access_token: str,
+    branch: str,
+    commit_slug: str,
+) -> None:
+    """Close any existing docs_* MRs authored by docs-bot, then open a new MR.
+
+    Parity with Bitbucket/GitHub cleanup flows.
+    """
+    BOT_NAME = "docs-bot"
+    BOT_EMAIL = "bot@driverai.com"
+
+    try:
+        existing_mrs = list_merge_requests(
+            base_url, repo_id, access_token, state="opened"
+        )
+        for mr in existing_mrs:
+            source_branch = mr.get("source_branch", "")
+            if source_branch.startswith("docs_"):
+                mr_iid = mr.get("iid")  # GitLab uses IID per project
+                try:
+                    commits = get_merge_request_commits(
+                        base_url, repo_id, mr_iid, access_token
+                    )
+                    is_bot_mr = any(
+                        (commit.get("author_email") == BOT_EMAIL)
+                        or (commit.get("author_name") == BOT_NAME)
+                        for commit in commits
+                    )
+                    if is_bot_mr:
+                        close_merge_request(base_url, repo_id, mr_iid, access_token)
+                except Exception as e:
+                    print(f"Warning: Could not evaluate/close MR !{mr_iid}: {e}")
+    except Exception as e:
+        print(f"Error listing merge requests: {e}")
+
+    # Create new MR
+    create_pull_request(base_url, repo_id, access_token, branch, commit_slug)

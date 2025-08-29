@@ -8,6 +8,11 @@ from pydantic import BaseModel, EmailStr
 
 from app.core.config import settings
 from app.services.auth0_service import Auth0Service
+from app.api.session import CurrentSession
+
+from database.models_v1 import UsageEventType
+from shared.usage.usage_service import UsageService
+from shared.usage.utils import sloc_to_bytes
 
 import time
 from datetime import datetime, timezone
@@ -80,7 +85,7 @@ def _is_disposable(email: str) -> bool:
 
 
 @router.post("", summary="Create org and invite email")
-def signup(req: Request, request: SignupRequest) -> SignupResponse:
+def signup(req: Request, request: SignupRequest, session: CurrentSession) -> SignupResponse:
     service = Auth0Service()
 
     # 0) Disposable email check using disposable_email_domains blocklist
@@ -144,6 +149,14 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         except Exception as cleanup_error:
             logger.error(f"Failed to cleanup organization {org['id']} after invitation failure", exc_info=True)
         raise
+
+    # 3) Grant initial platform credits (250k SLoC) to the new organization
+    UsageService(session).issue_usage_credits(
+        organization_id=org["id"],
+        user_id="SYSTEM",
+        event_type=UsageEventType.BASE_PLATFORM_USAGE_CREDIT,
+        credit_amount=sloc_to_bytes(250_000),
+    )
 
     return SignupResponse(
         success=True

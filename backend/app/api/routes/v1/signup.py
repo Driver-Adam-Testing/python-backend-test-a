@@ -157,7 +157,7 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
     return SignupResponse(
         organization_id=org["id"],
         organization_name=org["name"],
-        invitation_id=invite.get("id"),
+        invitation_id=invite["id"],
         message="Organization created and invitation sent.",
     )
 

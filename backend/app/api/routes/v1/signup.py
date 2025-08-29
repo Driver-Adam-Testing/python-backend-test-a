@@ -65,16 +65,11 @@ def _verify_turnstile(token: str, remote_ip: str | None = None) -> dict[str, Any
     if j.get("action") and j["action"] != "signup":
         raise HTTPException(status_code=403, detail="Bot check action mismatch")
 
-    try:
-        ts = j.get("challenge_ts")
-        if ts:
-            issued = datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=timezone.utc).timestamp()
-            if time.time() - issued > settings.TURNSTILE_MAX_AGE_SEC:
-                raise HTTPException(status_code=403, detail="Bot check too old")
-    except HTTPException:
-        raise
-    except Exception:
-        pass
+    ts = j.get("challenge_ts")
+    if ts:
+        issued = datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=timezone.utc).timestamp()
+        if time.time() - issued > settings.TURNSTILE_MAX_AGE_SEC:
+            raise HTTPException(status_code=403, detail="Bot check too old")
 
     return j
 

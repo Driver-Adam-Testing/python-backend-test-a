@@ -29,10 +29,7 @@ class SignupRequest(BaseModel):
 
 
 class SignupResponse(BaseModel):
-    organization_id: str
-    organization_name: str
-    invitation_id: str | None = None
-    message: str
+    success: bool
 
 
 def _generate_org_slug_from_email(email: str) -> str:
@@ -101,10 +98,7 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         logger.info(f"Signup attempt with existing email: {request.email} from IP: {remote_ip}")
         # Return success to prevent user enumeration
         return SignupResponse(
-            organization_id="",
-            organization_name="",
-            invitation_id=None,
-            message="If an account with this email exists, you will receive a sign-in link shortly."
+            success=True
         )
 
     # 1) Create a new organization per signup
@@ -139,10 +133,7 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         raise
 
     return SignupResponse(
-        organization_id=org["id"],
-        organization_name=org["name"],
-        invitation_id=invite["id"],
-        message="Organization created and invitation sent.",
+        success=True
     )
 
 

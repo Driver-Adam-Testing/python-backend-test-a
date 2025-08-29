@@ -344,12 +344,25 @@ class Auth0Service:
         Requires scope: read:users or read:users_app_metadata
         """
         try:
-            client = self._management_client()
-            results = client.users.by_email(email)
-            return results or []
-        except Exception:
-            logger.error(f"Error finding users by email '{email}'", exc_info=True)
-            return []
+            mgmt_token = self.get_mgmt_api_token()
+            url = f"https://{self.auth0_mgmt_domain}/api/v2/users-by-email"
+            params = {"email": email}
+            headers = {
+                "Authorization": f"Bearer {mgmt_token}",
+                "Content-Type": "application/json",
+            }
+
+            resp = requests.get(url, params=params, headers=headers, timeout=15)
+
+            if resp.status_code == 200:
+                users = resp.json()
+                return users if isinstance(users, list) else []
+            else:
+                resp.raise_for_status()
+
+        except Exception as e:
+            logger.error(f"Error finding users by email '{email}': {str(e)}")
+            raise
 
     def create_organization(self, name: str, display_name: str, metadata: dict[str, any] | None = None) -> dict[str, any]:
         """

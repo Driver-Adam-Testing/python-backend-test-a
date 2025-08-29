@@ -38,7 +38,7 @@ def _generate_org_slug_from_email(email: str) -> str:
     return f"org-{safe}-{unique_suffix}" if safe else f"org-{unique_suffix}"
 
 
-def _verify_turnstile(token: str, remote_ip: str | None = None) -> dict[str, Any]:
+def _verify_turnstile(token: str, remote_ip: str | None) -> dict[str, Any]:
     """Verify Cloudflare Turnstile token; enforce hostname/action/freshness if configured."""
     if not settings.TURNSTILE_SECRET:
         # Not configured (e.g., local dev) → skip verification

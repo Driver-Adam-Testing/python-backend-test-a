@@ -1,8 +1,13 @@
 import uuid
 
-from database.models_v1 import DerivedContent, GitProviderAppInstallation
-from database.models_v2 import InspectorRun, Node, Version
-from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
+from database.models import (
+    DerivedContent,
+    GitProviderAppInstallation,
+    InspectorRun,
+    Node,
+    Version,
+)
+from database.models_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 

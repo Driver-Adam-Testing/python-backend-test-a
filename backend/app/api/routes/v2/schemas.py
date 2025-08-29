@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from database.models_v2_enums import (
+from database.models_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,

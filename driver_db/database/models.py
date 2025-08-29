@@ -1,14 +1,41 @@
+import enum
 import hashlib
 import secrets
 import string
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
-import sqlalchemy
-from database.models_v2_enums import (
+import sqlalchemy.dialects.postgresql
+import strawberry
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    UUID as SaUuid,
+)
+from sqlalchemy import (
+    Column,
+    Computed,
+    Connection,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    desc,
+    event,
+    func,
+    text,
+    update,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapper
+from sqlmodel import JSON, Field, Relationship, SQLModel, select
+
+from .custom_types import TSVector
+from .models_enums import (
     AutoDocStatusMessageKind,
+    ContentKind,
     LlmPipelineKind,
     NodeKind,
     PrimaryAssetKind,
@@ -16,23 +43,482 @@ from database.models_v2_enums import (
     VcsAutoUpdatePolicy,
     VersionStatus,
 )
-from sqlalchemy import (
-    UUID as SaUuid,
-)
-from sqlalchemy import (
-    Column,
-    Computed,
-    DateTime,
-    Index,
-    Integer,
-    String,
-    UniqueConstraint,
-    desc,
-    func,
-    text,
-)
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlmodel import Field, Relationship, SQLModel
+
+
+class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    model: str
+    messages: list["RuntimeLogAgentMessage"] = Relationship(
+        back_populates="agent_instance"
+    )
+    organization_id: str | None
+
+
+class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
+    order: int = Field(default=None, sa_column=Column(Integer, autoincrement=True))
+    agent_instance_id: UUID = Field(
+        foreign_key="runtimelogagentinstance.id", nullable=False
+    )
+    agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
+
+
+# TODO: DELETE THIS TABLE
+@strawberry.enum
+class Enum_Derived_Content_Status(str, enum.Enum):
+    generating = "generating"
+    generation_complete = "generation-complete"
+    generation_error = "generation-error"
+
+
+class DocumentSource(SQLModel, table=True):
+    __tablename__ = "document_sources"
+    """Link table between documents and their sources."""
+
+    source_node_id: None | uuid.UUID = Field(
+        default=None,
+        foreign_key="v2_node.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+    page_node_id: None | uuid.UUID = Field(
+        default=None,
+        foreign_key="v2_node.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+    source_node: "Node" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_node_id"},
+    )
+    page_node: "Node" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
+    )
+
+
+# TODO add indexes back
+class DerivedContent(SQLModel, table=True):  # type: ignore
+    __tablename__ = "derived_contents"
+
+    # TODO:
+    # Point tags at node or primary asset
+    # remove derived_content_type
+    # remove workspace
+    # remove codebase
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
+        default=None,
+    )
+
+    # Removing FKs from the following:
+    content_kind: ContentKind | None = Field(
+        sa_column=Column(
+            String,
+            nullable=True,
+            index=True,
+        ),
+        default=None,
+    )
+    # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
+    # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
+    # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
+
+    node_id: None | UUID = Field(
+        default=None,
+        foreign_key="v2_node.id",
+        ondelete="CASCADE",
+        nullable=True,
+        index=True,
+    )
+
+    relative_path: str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+    )
+    content: None | str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
+
+    # TODO: Get rid of this?
+    content_name: None | str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
+    misc_metadata: dict | None = Field(  # type: ignore
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    order: int | None = Field(
+        sa_column=Column(Integer, nullable=True, server_default=text("0"))
+    )
+
+    chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
+        back_populates="content"
+    )
+
+    node: "Node" = Relationship(
+        back_populates="contents",
+        sa_relationship_kwargs={"foreign_keys": "DerivedContent.node_id"},
+    )
+
+
+def update_primary_asset_content_timestamp(
+    mapper: Mapper[Any], connection: Connection, target: DerivedContent
+) -> None:
+    # TODO node_id is nullable today, but once that changes, this should be updated
+    if not target.node_id:
+        return
+
+    primary_asset = (
+        select(PrimaryAsset.id)
+        .join(Version)
+        .join(Node)
+        .where(Node.id == target.node_id)
+    )
+
+    stmt = (
+        update(PrimaryAsset)
+        .where(PrimaryAsset.id.in_(primary_asset))
+        .values(related_content_last_updated=func.now())
+    )
+    connection.execute(stmt)
+
+
+event.listen(DerivedContent, "after_update", update_primary_asset_content_timestamp)
+event.listen(DerivedContent, "after_insert", update_primary_asset_content_timestamp)
+
+
+class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    content_id: UUID = Field(
+        foreign_key="derived_contents.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+    content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
+    text: str
+    text_embedding_3_small: list[float] = Field(
+        sa_column=Column(
+            Vector(1536), nullable=True
+        )  # TODO this column will need to be indexed ONCE POPULATED1
+    )
+    chunk_number: int
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    __ts_vector__: any = Column(
+        "__ts_vector__",
+        TSVector(),
+        Computed("to_tsvector('english', text)", persisted=True),
+        index=Index("ix_chunkandembedding___ts_vector__", postgresql_using="gin"),
+    )
+
+
+class UsageSessionStatus(str, enum.Enum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class UsageSession(SQLModel, table=True):
+    __tablename__ = "usage_sessions"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    status: UsageSessionStatus = Field(default=UsageSessionStatus.RUNNING, index=True)
+    organization_id: str
+    user_id: str
+    session_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    usage_events: list["UsageEvent"] = Relationship(
+        back_populates="session", cascade_delete=True
+    )
+
+
+class UsageEventType(enum.IntEnum):
+    AGENT_PIPELINE_USAGE_DEBIT = 1
+    INSPECTOR_TECH_DOC_USAGE_DEBIT = 2
+    INSPECTOR_CODE_DIFF_USAGE_DEBIT = 3
+    ONBOARDING_USAGE_DEBIT = 4
+    SUMMARIZATION_USAGE_DEBIT = 5
+    BASE_PLATFORM_USAGE_CREDIT = 6
+    ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
+    USER_SEAT_USAGE_DEBIT = 8
+    USER_SEAT_USAGE_CREDIT = 9
+
+    def __str__(self) -> str:
+        # This will return a more human-readable version of the enum name
+        return self.name.replace("_", " ").title()
+
+
+class UsageEvent(SQLModel, table=True):
+    __tablename__ = "usage_events"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_type: UsageEventType = Field(sa_column=Column(Integer, nullable=False))
+    session_id: UUID = Field(
+        foreign_key="usage_sessions.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+    organization_id: str
+    user_id: str
+    event_source: str
+    bytes_in: int = Field(default=0, nullable=False)
+    bytes_out: int = Field(default=0, nullable=False)
+    tokens_in: int = Field(default=0, nullable=False)
+    tokens_out: int = Field(default=0, nullable=False)
+    timestamp: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    event_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    # Relationships
+    session: UsageSession | None = Relationship(back_populates="usage_events")
+
+
+class GithubAppInstallation(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True)
+    github_app_installation_id: str = Field(index=True)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    __tablename__ = "github_app_installations"
+    __table_args__ = (
+        UniqueConstraint(
+            "github_app_installation_id",
+            "organization_id",
+            name="uq_github_app_installation_id_organization_id",
+        ),
+    )
+
+
+class PlanType(str, enum.Enum):
+    CORE = "core"
+    ADVANCED = "advanced"
+    ENTERPRISE = "enterprise"
+
+
+class BillingFrequency(str, enum.Enum):
+    MONTHLY = "monthly"
+    ANNUAL = "annual"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CANCELED = "canceled"
+    SUSPENDED = "suspended"
+
+
+class Subscription(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True)
+    plan_type: PlanType = Field(nullable=False, index=True)
+    status: SubscriptionStatus = Field(default=SubscriptionStatus.ACTIVE)
+    billing_frequency: BillingFrequency = Field(nullable=False)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    __table_args__ = (
+        # Create a partial unique index that enforces uniqueness for active subscriptions only.
+        Index(
+            "unique_active_subscription_per_org",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
+        ),
+    )
+
+
+class GitProviderKind(str, enum.Enum):
+    # GitLab
+    GITLAB = "GITLAB"
+    GITLAB_ENTERPRISE_SELF_MANAGED = "GITLAB_ENTERPRISE_SELF_MANAGED"
+    # Bitbucket
+    BITBUCKET = "BITBUCKET"
+    BITBUCKET_DATA_CENTER = "BITBUCKET_DATA_CENTER"
+    BITBUCKET_SERVER = "BITBUCKET_SERVER"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+#
+class GitProviderApp(SQLModel, table=True):
+    __tablename__ = "git_provider_apps"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    provider_kind: GitProviderKind = Field(nullable=False, index=True)
+    shared_provider: bool
+    owner_organization_id: str = Field(index=True)
+    name: str
+    base_url: str
+    ## This group of fields is used for OAuth
+    client_id: str | None = Field(index=True, unique=True)
+    redirect_uri: str | None
+    scopes: str | None
+    ##
+    # Provider-specific metadata
+    provider_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True, default=None),
+        default_factory=dict,
+    )
+
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    # relationships
+    app_installations: list["GitProviderAppInstallation"] = Relationship(
+        back_populates="git_provider_app", cascade_delete=True
+    )
+
+
+class GitProviderAppInstallation(SQLModel, table=True):
+    __tablename__ = "git_provider_app_installations"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    git_provider_app_id: UUID = Field(
+        foreign_key="git_provider_apps.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+    organization_id: str
+    ## This group of fields is used for OAuth
+    user_id: str | None
+    ##
+    misc_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    # relationships
+    git_provider_app: GitProviderApp | None = Relationship(
+        back_populates="app_installations"
+    )
+    # unique constraint
+    __table_args__ = (
+        UniqueConstraint(
+            "git_provider_app_id",
+            "organization_id",
+            "user_id",
+            name="uq_git_provider_app_id_organization_id_user_id",
+        ),
+    )
 
 
 class PrimaryAsset(SQLModel, table=True):  # type: ignore
@@ -271,7 +757,7 @@ class Node(SQLModel, table=True):  # type: ignore
         default=None,
     )
     version: "Version" = Relationship(back_populates="nodes")
-    contents: list["DerivedContent"] = Relationship(  # noqa: F821
+    contents: list["DerivedContent"] = Relationship(
         back_populates="node",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
@@ -279,7 +765,7 @@ class Node(SQLModel, table=True):  # type: ignore
         },
     )
 
-    document_sources: list["DocumentSource"] = Relationship(  # noqa: F821
+    document_sources: list["DocumentSource"] = Relationship(
         back_populates="source_node",
         sa_relationship_kwargs={
             "foreign_keys": "DocumentSource.source_node_id",
@@ -287,7 +773,7 @@ class Node(SQLModel, table=True):  # type: ignore
             "passive_deletes": True,
         },
     )
-    page_sources: list["DocumentSource"] = Relationship(  # noqa: F821
+    page_sources: list["DocumentSource"] = Relationship(
         back_populates="page_node",
         sa_relationship_kwargs={
             "foreign_keys": "DocumentSource.page_node_id",

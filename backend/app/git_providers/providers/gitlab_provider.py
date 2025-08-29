@@ -21,7 +21,7 @@ from app.schemas.git_provider_schema import (
 from app.schemas.secret_management_schema import (
     APP_INSTALL_GAT_NAME_PREFIX,
 )
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -57,7 +57,6 @@ class GitLabProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
 
         return cls(config, secrets_manager)
-
 
     # TODO: revisit this throw error vs return False
     def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
@@ -120,14 +119,16 @@ class GitLabProvider(GitProviderInterface):
         secret_key = format_secret_name(
             APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
         )
-        
+
         # Fetch existing secrets to preserve webhook secret
         existing_secrets = self.secrets_manager.read_secret(secret_key)
         if not existing_secrets or "secret_token" not in existing_secrets:
-            raise ValueError(f"No existing webhook secret found for installation {installation.id}")
-        
+            raise ValueError(
+                f"No existing webhook secret found for installation {installation.id}"
+            )
+
         webhook_secret = existing_secrets["secret_token"]
-        
+
         # Update only the token, preserve webhook secret
         secret_value = json.dumps(
             GitProviderAppTokenSecret(
@@ -135,7 +136,9 @@ class GitLabProvider(GitProviderInterface):
             ).model_dump()
         )
         self.secrets_manager.write_secret(secret_key, secret_value)
-        logger.info(f"Updated GAT for GitLab installation {installation.id}, webhook secret preserved")
+        logger.info(
+            f"Updated GAT for GitLab installation {installation.id}, webhook secret preserved"
+        )
 
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
         secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, installation.id)

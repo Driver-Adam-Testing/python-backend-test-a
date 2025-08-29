@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Optional, Union
 
 import boto3
-from database.models_v1 import (
+from database.models import (
     ChunkAndEmbedding,
     DerivedContent,
 )
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from modal_funcs import (
     make_codebase_tags,
     make_folder_tech_doc,
@@ -669,7 +669,7 @@ class EmbeddingTask(Task):
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
-        from database.models_v1 import ChunkAndEmbedding
+        from database.models import ChunkAndEmbedding
         from sqlmodel.ext.asyncio.session import AsyncSession
 
         if self.db_node_id:
@@ -767,7 +767,7 @@ class EmbeddingTask(Task):
         content_types: list[str],  # TODO: content_types will be kind
         metadatas: list[dict[str, any]],
     ) -> list[ChunkAndEmbedding]:
-        from database.models_v1 import ChunkAndEmbedding
+        from database.models import ChunkAndEmbedding
         from shared.chunking.text_splitter import split_text
         from shared.embedding.text_embedder import async_batch_embed_text
 

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v2 import Tag
+from database.models import Tag
 from fastapi import Body, HTTPException, Path, Request
 from sqlmodel import func, select
 

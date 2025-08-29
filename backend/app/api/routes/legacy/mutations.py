@@ -10,10 +10,12 @@ from app.api.routes.legacy.orm_ops import (
 from app.api.routes.legacy.scalars import ID, JSON
 from app.core.logger import logger
 from app.utils.aws_s3 import generate_put_presigned_url
-from database.models_v1 import (
+from database.models import (
     DerivedContent,
+    Node,
+    PrimaryAsset,
+    Version,
 )
-from database.models_v2 import Node, PrimaryAsset, Version
 from graphql import GraphQLError
 from strawberry.types import Info
 

@@ -1,10 +1,10 @@
 import logging
 from uuid import UUID
 
-from database.models_v1 import (
+from database.models import (
     DerivedContent,
+    Tag,
 )
-from database.models_v2 import Tag
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session

@@ -1,5 +1,4 @@
-from database.models_v1 import DerivedContent
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import DerivedContent, Node, PrimaryAsset, Version
 from fastapi import Body, HTTPException, Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select

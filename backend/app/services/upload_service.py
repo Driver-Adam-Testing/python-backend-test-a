@@ -3,11 +3,8 @@ import os
 import re
 from urllib.parse import unquote_plus
 
-from database.models_v2 import (
-    PrimaryAsset,
-    Version,
-)
-from database.models_v2_enums import (
+from database.models import PrimaryAsset, Version
+from database.models_enums import (
     PrimaryAssetKind,
     PrimaryAssetProvider,
     VcsAutoUpdatePolicy,

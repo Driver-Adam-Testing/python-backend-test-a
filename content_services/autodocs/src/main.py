@@ -86,7 +86,7 @@ image = inspection_image = (
 )
 async def run_autodoc(
     page_node_id: uuid.UUID,
-    config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
+    config_kind: Any,  # TODO: the actual type is a deferred import here, not sure how to resolve?
     document_goal: str | None = None,
     user_context: str | None = None,
 ) -> None:
@@ -94,9 +94,15 @@ async def run_autodoc(
 
     import boto3
     from database.db import get_session
-    from database.models_v1 import DerivedContent, DocumentSource
-    from database.models_v2 import Node, UserCache, Version, VersionCreator
-    from database.models_v2_enums import (
+    from database.models import (
+        DerivedContent,
+        DocumentSource,
+        Node,
+        UserCache,
+        Version,
+        VersionCreator,
+    )
+    from database.models_enums import (
         AutoDocConfigKind,
         AutoDocStatusMessageKind,
         ContentKind,
@@ -304,7 +310,7 @@ def main(
     document_goal: str,
     size: str,
 ) -> None:
-    from database.models_v2_enums import AutoDocConfigKind
+    from database.models_enums import AutoDocConfigKind
 
     run_autodoc.remote(
         page_node_id=page_node_id,
@@ -331,9 +337,8 @@ def main(
 )
 async def run_autodoc_cli(toml_content: str, page_node_id: str) -> None:
     from database.db import get_session
-    from database.models_v1 import DocumentSource
-    from database.models_v2 import Node, Version
-    from database.models_v2_enums import (
+    from database.models import DocumentSource, Node, Version
+    from database.models_enums import (
         PrimaryAssetKind,
     )
     from sqlalchemy.orm import selectinload

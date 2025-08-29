@@ -8,14 +8,14 @@ from itertools import groupby
 from uuid import UUID
 
 import modal
-from database.models_v1 import (
+from database.models import (
     GithubAppInstallation,
     GitProviderApp,
     GitProviderAppInstallation,
     GitProviderKind,
+    PrimaryAsset,
 )
-from database.models_v2 import PrimaryAsset
-from database.models_v2_enums import PrimaryAssetKind, VcsAutoUpdatePolicy
+from database.models_enums import PrimaryAssetKind, VcsAutoUpdatePolicy
 from fastapi import (
     APIRouter,
     Depends,

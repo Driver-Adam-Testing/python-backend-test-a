@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v1 import GitProviderKind
+from database.models import GitProviderKind
 from pydantic import BaseModel, computed_field
 
 

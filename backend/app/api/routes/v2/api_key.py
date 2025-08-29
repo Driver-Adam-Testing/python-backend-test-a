@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v2 import ApiKey
+from database.models import ApiKey
 from fastapi import APIRouter, HTTPException, Path, Request
 from sqlmodel import func, select
 

@@ -21,6 +21,10 @@ class Auth0Service:
     _mgmt_token: str | None = None
     _mgmt_token_exp: float = 0.0  # epoch seconds
 
+    # Cached values (class-level, shared across instances)
+    _cached_username_password_connection_id: str | None = None
+    _cached_admin_role_id: str | None = None
+
     def __init__(self) -> None:
         self.auth0_mgmt_domain: str = settings.AUTH0_MGMT_API_DOMAIN
         self.auth0_mgmt_client_id: str = settings.AUTH0_MGMT_API_CLIENT_ID
@@ -480,3 +484,33 @@ class Auth0Service:
                 exc_info=True,
             )
             raise
+
+    def get_username_password_connection_id(self) -> str:
+        """Get the Username-Password-Authentication connection ID, caching it on first request."""
+        if Auth0Service._cached_username_password_connection_id is None:
+            # Cache the value on first request
+            conn_id = self.get_connection_id_by_name("Username-Password-Authentication")
+            if not conn_id:
+                raise RuntimeError(
+                    "Auth0 connection 'Username-Password-Authentication' not found. "
+                    "This connection must be configured in Auth0 for the service to operate."
+                )
+            Auth0Service._cached_username_password_connection_id = conn_id
+            logger.info("Cached Username-Password-Authentication connection ID")
+
+        return Auth0Service._cached_username_password_connection_id
+
+    def get_admin_role_id(self) -> str:
+        """Get the Admin role ID, caching it on first request."""
+        if Auth0Service._cached_admin_role_id is None:
+            # Cache the value on first request
+            role_id = self.get_role_id_by_name("Admin")
+            if not role_id:
+                raise RuntimeError(
+                    "Auth0 role 'Admin' not found. "
+                    "This role must be created in Auth0 for the service to operate."
+                )
+            Auth0Service._cached_admin_role_id = role_id
+            logger.info("Cached Admin role ID")
+
+        return Auth0Service._cached_admin_role_id

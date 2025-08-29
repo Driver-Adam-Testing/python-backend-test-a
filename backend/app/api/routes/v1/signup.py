@@ -115,31 +115,14 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         metadata={"self_service": "true"},
     )
 
-    # 1b) Ensure Username-Password-Authentication connection is enabled on the org
-    try:
-        conn_id = service.get_connection_id_by_name("Username-Password-Authentication")
-        if not conn_id:
-            raise Exception("Auth0 connection not found: Username-Password-Authentication")
-        service.enable_connection_for_organization(org_id=org["id"], connection_id=conn_id)
-    except Exception:
-        # Cleanup org on failure
-        try:
-            service.delete_organization(org["id"])
-        except Exception:
-            pass
-        raise
+    # 1b) Enable Username-Password-Authentication connection on the org
+    # This connection is cached on first request, so we can safely use it
+    conn_id = service.get_username_password_connection_id()
+    service.enable_connection_for_organization(org_id=org["id"], connection_id=conn_id)
 
     # 2) Assign Admin role only. Resolve by name; error if missing.
-    admin_role_id = service.get_role_id_by_name("Admin")
-    if not admin_role_id:
-        # Cleanup org on failure
-        try:
-            service.delete_organization(org["id"])
-        except Exception:
-            pass
-        raise Exception(
-            "Admin role not found in Auth0. Create an 'Admin' role."
-        )
+    # This role is cached on first request, so we can safely use it
+    admin_role_id = service.get_admin_role_id()
     role_ids: list[str] | None = [admin_role_id]
 
     try:

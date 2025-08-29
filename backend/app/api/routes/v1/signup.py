@@ -83,8 +83,7 @@ def _is_disposable(email: str) -> bool:
     return domain in blocklist
 
 
-@router.post("", include_in_schema=False)
-@router.post("/", summary="Create org and invite email")
+@router.post("", summary="Create org and invite email")
 def signup(req: Request, request: SignupRequest) -> SignupResponse:
     service = Auth0Service()
 

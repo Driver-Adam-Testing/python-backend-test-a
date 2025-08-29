@@ -368,12 +368,9 @@ class Auth0Service:
         return client.organizations.create_organization(body)
 
     def delete_organization(self, org_id: str) -> None:
-        """Delete an Auth0 Organization. Best-effort; logs errors."""
-        try:
-            client = self._management_client()
-            client.organizations.delete_organization(org_id)
-        except Exception:
-            logger.error(f"Failed to delete organization {org_id}", exc_info=True)
+        """Delete an Auth0 Organization."""
+        client = self._management_client()
+        client.organizations.delete_organization(org_id)
 
     def invite_email_to_organization(
         self,

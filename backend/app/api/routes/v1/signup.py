@@ -133,8 +133,9 @@ def signup(req: Request, request: SignupRequest) -> SignupResponse:
         # Cleanup org on failure
         try:
             service.delete_organization(org["id"])
-        except Exception:
-            pass
+            logger.info(f"Successfully cleaned up organization {org['id']} after invitation failure")
+        except Exception as cleanup_error:
+            logger.error(f"Failed to cleanup organization {org['id']} after invitation failure", exc_info=True)
         raise
 
     return SignupResponse(

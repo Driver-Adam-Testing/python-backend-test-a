@@ -1066,16 +1066,16 @@ class AboutYouSurvey(SQLModel, table=True):
     organization_id: str = Field(index=True, nullable=False)
     user_id: str = Field(index=True, nullable=False)
 
-    skipped: bool = Field(default=False, nullable=False)
+    skipped: bool = Field(nullable=False)
 
     plans_for_driver: list[str] | None = Field(
-        sa_column=Column(ARRAY(String), nullable=True), default=None
+        sa_column=Column(ARRAY(String), nullable=True)
     )
-    team_size: str | None = Field(default=None, nullable=True)
-    type_of_work: str | None = Field(default=None, nullable=True)
-    type_of_work_other: str | None = Field(default=None, nullable=True)
+    team_size: str | None
+    type_of_work: str | None
+    type_of_work_other: str | None
 
-    created_at: None | datetime = Field(
+    created_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
         ),

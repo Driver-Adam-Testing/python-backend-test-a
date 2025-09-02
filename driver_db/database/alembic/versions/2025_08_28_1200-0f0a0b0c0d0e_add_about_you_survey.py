@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("organization_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("user_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("skipped", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("skipped", sa.Boolean(), nullable=False),
         sa.Column("plans_for_driver", postgresql.ARRAY(sa.String()), nullable=True),
         sa.Column("team_size", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column("type_of_work", sqlmodel.sql.sqltypes.AutoString(), nullable=True),

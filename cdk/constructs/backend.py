@@ -204,9 +204,6 @@ class Backend(Construct):
             "TURNSTILE_SECRET": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "TURNSTILE_SECRET"
             ),
-            "TURNSTILE_EXPECTED_HOSTNAME": aws_ecs.Secret.from_secrets_manager(
-                auth0_secret, "TURNSTILE_EXPECTED_HOSTNAME"
-            ),
             "ENABLE_SIGNUP": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "ENABLE_SIGNUP"
             ),

@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.services.auth0_service import Auth0Service
 from app.api.session import CurrentSession
 
-from database.models_v1 import UsageEventType
+from database.models import UsageEventType
 from shared.usage.usage_service import UsageService
 from shared.usage.utils import sloc_to_bytes
 

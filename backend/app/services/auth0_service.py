@@ -426,23 +426,19 @@ class Auth0Service:
 
     def get_connection_id_by_name(self, name: str) -> str | None:
         """Return a connection ID for a given connection name, or None if not found."""
-        try:
-            client = self._management_client()
-            page = 0
-            per_page = 50
-            while True:
-                connections = client.connections.all(page=page, per_page=per_page)
-                if not connections:
-                    return None
-                for conn in connections:
-                    if conn.get("name") == name:
-                        return conn.get("id")
-                if len(connections) < per_page:
-                    return None
-                page += 1
-        except Exception:
-            logger.error("Error listing connections", exc_info=True)
-            return None
+        client = self._management_client()
+        page = 0
+        per_page = 50
+        while True:
+            connections = client.connections.all(page=page, per_page=per_page)
+            if not connections:
+                return None
+            for conn in connections:
+                if conn.get("name") == name:
+                    return conn.get("id")
+            if len(connections) < per_page:
+                return None
+            page += 1
 
     def enable_connection_for_organization(self, org_id: str, connection_id: str) -> None:
         """

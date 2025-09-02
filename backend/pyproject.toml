@@ -35,6 +35,7 @@ sentry-sdk = { version = "^2.22.0", extras = ["fastapi"] }
 cachetools = "^6.0.0"
 httpx = "^0.28.1"
 fastmcp = "^2.10.6"
+disposable-email-domains = "^0.0.132"
 
 
 [tool.poetry.group.dev.dependencies]

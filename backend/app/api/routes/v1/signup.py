@@ -60,6 +60,7 @@ def _verify_turnstile(token: str, remote_ip: str | None) -> dict[str, Any]:
             data=data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
+    r.raise_for_status()
     j = r.json()
 
     if not j.get("success"):

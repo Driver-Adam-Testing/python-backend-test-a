@@ -11,15 +11,15 @@ FASTMCP_MASK_ERROR_DETAILS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
+from pathlib import Path
+
 import fastmcp
 from database.db import get_session
 from database.models import DerivedContent, Node, PrimaryAsset, Version
 from database.models_enums import ContentKind, VersionStatus
 from fastmcp import Context, FastMCP
-from mcp_instructions import MCP_INSTRUCTIONS
+from shared.prompts.structured_prompting import Component, Prompt
 from sqlmodel import select
-
-from backend.app.mcp.mcp_instructions import MCP_INSTRUCTIONS
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
 from .code_map_v2 import get_code_map_simple
@@ -28,7 +28,24 @@ from .mcp_helpers import get_latest_version_for_codebase
 CODEBASE_NAME_PARAM_DESCRIPTION = """Name of the Driver supported codebase.  The 'get_codebase_names' tool can be used to generate a list of supported codebases.  Only codebase names returned by this tool are valid for this parameter.
 """
 
-my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False, instructions=MCP_INSTRUCTIONS)
+
+def _get_instructions_from_file(instructions_file: Path) -> str:
+    try:
+        with open(instructions_file) as f:
+            raw_instructions = f.read()
+    except FileNotFoundError:
+        raise ValueError(f"Instructions file not found: {instructions_file}")
+
+    return Prompt.empty().append(Component(string=raw_instructions)).into_str()
+
+
+INSTRUCTIONS_FILE = Path(__file__).parent / "_AGENTS.md"
+
+my_mcp = FastMCP(
+    "Driver MCP Server",
+    include_fastmcp_meta=False,
+    instructions=_get_instructions_from_file(INSTRUCTIONS_FILE),
+)
 assert (
     fastmcp.settings.stateless_http is True
 ), "FastMCP must be configured with stateless HTTP enabled."

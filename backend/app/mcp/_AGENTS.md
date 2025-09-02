@@ -1,4 +1,3 @@
-MCP_INSTRUCTIONS = """
 # MCP Tools for This Project
 
 ## Available Tools
@@ -67,5 +66,3 @@ Using Driver as part of a checklist/planned approach to solve discovery and cont
 [] Step 2: Highest Level Discovery: Use `get_architecture_guide` and `get_llm_onboarding_guide` to review these codebase-wide reports to immediately gain high level context. If relevant, also use `get_changelog` to familiarize yourself with the development history.
 [] Step 3: Detailed Task-Specific Discovery: use `get_code_map`, `get_file_documentation`, and direct reads of source code files in tandem and iteratively to drill down into detailed aspects of the codebase relevant to the task at hand. 
 [] Step 4: Perform task-specific steps.
-
-"""

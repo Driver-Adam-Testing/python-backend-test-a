@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
 from sqlmodel import select
 
@@ -29,31 +29,23 @@ def submit_survey(
         .where(AboutYouSurvey.organization_id == user.organization_id)
         .where(AboutYouSurvey.user_id == user.user_id)
     ).first()
-    if existing is None:
-        record = AboutYouSurvey(
-            organization_id=user.organization_id,
-            user_id=user.user_id,
-            skipped=payload.skipped,
-            plans_for_driver=None if payload.skipped else payload.plans_for_driver,
-            team_size=None if payload.skipped else payload.team_size,
-            type_of_work=None if payload.skipped else payload.type_of_work,
-            type_of_work_other=None if payload.skipped else payload.type_of_work_other,
+
+    if existing is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Survey already exists for this user. Cannot submit multiple surveys."
         )
-        session.add(record)
-    else:
-        # Overwrite all fields (upsert semantics)
-        existing.skipped = payload.skipped
-        if payload.skipped:
-            existing.plans_for_driver = None
-            existing.team_size = None
-            existing.type_of_work = None
-            existing.type_of_work_other = None
-        else:
-            existing.plans_for_driver = payload.plans_for_driver
-            existing.team_size = payload.team_size
-            existing.type_of_work = payload.type_of_work
-            existing.type_of_work_other = payload.type_of_work_other
-        session.add(existing)
+
+    record = AboutYouSurvey(
+        organization_id=user.organization_id,
+        user_id=user.user_id,
+        skipped=payload.skipped,
+        plans_for_driver=None if payload.skipped else payload.plans_for_driver,
+        team_size=None if payload.skipped else payload.team_size,
+        type_of_work=None if payload.skipped else payload.type_of_work,
+        type_of_work_other=None if payload.skipped else payload.type_of_work_other,
+    )
+    session.add(record)
     session.commit()
 
 

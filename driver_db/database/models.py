@@ -576,6 +576,14 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "cascade": "all, delete-orphan",
         },
     )
+    most_recent_completed_version: Optional["Version"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(PrimaryAsset.id == Version.primary_asset_id, Version.status == 'GENERATION_COMPLETE')",
+            "uselist": False,
+            "order_by": "desc(Version.updated_at)",
+            "cascade": "all, delete-orphan",
+        },
+    )
     versions: list["Version"] = Relationship(
         back_populates="primary_asset",
         sa_relationship_kwargs={
@@ -1059,7 +1067,9 @@ class InspectorRun(SQLModel, table=True):
 class AboutYouSurvey(SQLModel, table=True):
     __tablename__ = "about_you_survey"
     __table_args__ = (
-        UniqueConstraint("organization_id", "user_id", name="uq_about_you_survey_org_user"),
+        UniqueConstraint(
+            "organization_id", "user_id", name="uq_about_you_survey_org_user"
+        ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

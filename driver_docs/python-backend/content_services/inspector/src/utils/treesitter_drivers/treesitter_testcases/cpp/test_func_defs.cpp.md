@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_func_defs.cpp` file in the `python-backend` codebase provides a comprehensive set of C++ function and class examples, including basic and advanced function definitions, class member functions, template functions, lambda expressions, and inheritance with virtual functions.
+Demonstrates various C++ function types, class definitions, templates, and lambda expressions.
 
 # Purpose
-This C++ source code file provides a comprehensive demonstration of various C++ programming concepts and techniques, serving as a broad educational resource. It includes a wide array of functionalities, such as basic function definitions, template functions, constexpr functions, inline functions, and functions utilizing move semantics. The file also explores advanced topics like namespaces, class definitions with constructors, destructors, operator overloading, and inheritance with virtual functions. Additionally, it showcases the use of lambda expressions, function try blocks, specialized template functions, and friend functions. The code is structured to illustrate these concepts through practical examples, making it a valuable reference for understanding C++ programming paradigms.
+The code is a comprehensive C++ source file that demonstrates various programming concepts and techniques. It includes function definitions, class implementations, template usage, and object-oriented programming principles. The file contains a variety of functions, such as [`printMessage`](<#printmessage>), [`multiply`](<#multiply>), and [`divide`](<#divide>), which illustrate basic function definitions, default parameters, and auto return types. It also includes a template function [`maximum`](<#maximum>) and a `constexpr` function [`fibonacci`](<#fibonacci>), showcasing compile-time computations and generic programming.
 
-The file culminates in a [`main`](<#main>) function, which acts as an executable entry point, demonstrating the instantiation and manipulation of objects from the defined classes, such as [`Calculator`](<#CalculatorCalculator>), [`Circle`](<#CircleCircle>), and [`Rectangle`](<#RectangleRectangle>). It also illustrates the use of lambda expressions and the handling of polymorphic objects through a vector of `Shape` pointers. The inclusion of a [`main`](<#main>) function indicates that this file is intended to be compiled and executed directly, rather than serving as a library or header file for importation. Overall, the file serves as a comprehensive showcase of C++ features, providing both foundational and advanced insights into the language's capabilities.
+The file defines several classes, including [`Calculator`](<#calculatorcalculator>), [`Container`](<#containercontainer>), `Shape`, [`Circle`](<#circlecircle>), [`Rectangle`](<#rectanglerectangle>), [`Point`](<#pointpoint>), and [`MyClass`](<#myclassmyclass>), each demonstrating different aspects of class design, such as constructors, destructors, operator overloading, inheritance, and virtual functions. The [`Calculator`](<#calculatorcalculator>) class, for example, includes arithmetic and comparison operator overloads, as well as copy and move semantics. The `Shape` class and its derived classes [`Circle`](<#circlecircle>) and [`Rectangle`](<#rectanglerectangle>) illustrate polymorphism with virtual functions. Additionally, the file includes lambda expressions, function try blocks, and specialized template functions. The [`main`](<#main>) function demonstrates the use of these components, creating instances of the classes and executing various operations to illustrate their functionality.
 # Imports and Dependencies
 
 ---
@@ -21,630 +21,598 @@ The file culminates in a [`main`](<#main>) function, which acts as an executable
 
 ---
 ### Calculator<!-- {{#data_structure:Calculator}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L62>)
+
+- **Type**: ``class``
 - **Members**:
-    - `value`: A private double member variable that stores the current value of the calculator.
-- **Description**: The `Calculator` class is a simple arithmetic calculator that encapsulates a single double value and provides various operations to manipulate this value. It includes constructors for initialization, copy and move semantics, and a destructor. The class supports arithmetic operations through operator overloading, allowing addition, subtraction, multiplication, and division with other `Calculator` instances. It also provides increment operators, comparison operators, and static methods to create specific instances. The class is designed to be flexible and efficient, supporting both copy and move operations to optimize resource management.
-- **Member Functions**:
-    - [`Calculator::Calculator`](<test_func_calls.cpp.md#CalculatorCalculator>)
-    - [`Calculator::getValue`](<test_func_calls.cpp.md#CalculatorgetValue>)
-    - [`Calculator::setValue`](<test_func_calls.cpp.md#CalculatorsetValue>)
-    - [`Calculator::add`](<test_func_calls.cpp.md#Calculatoradd>)
-    - [`Calculator::multiply`](<test_func_calls.cpp.md#Calculatormultiply>)
-    - [`Calculator::operator+`](<test_func_calls.cpp.md#Calculatoroperator>)
-    - [`Calculator::operator-`](<test_func_calls.cpp.md#Calculatoroperator->)
-    - [`Calculator::operator++`](<test_func_calls.cpp.md#Calculatoroperator+>)
-    - [`Calculator::operator++`](<test_func_calls.cpp.md#Calculatoroperator+>)
-    - [`Calculator::operator()`](<test_func_calls.cpp.md#Calculatoroperator)>)
-    - [`Calculator::createZero`](<test_func_calls.cpp.md#CalculatorcreateZero>)
-    - [`Calculator::createOne`](<test_func_calls.cpp.md#CalculatorcreateOne>)
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-    - [`Calculator::~Calculator`](<#CalculatorCalculator>)
-    - [`Calculator::operator=`](<#Calculatoroperator>)
-    - [`Calculator::operator=`](<#Calculatoroperator>)
-    - [`Calculator::getValue`](<#CalculatorgetValue>)
-    - [`Calculator::setValue`](<#CalculatorsetValue>)
-    - [`Calculator::operator+`](<#Calculatoroperator>)
-    - [`Calculator::operator-`](<#Calculatoroperator->)
-    - [`Calculator::operator*`](<#Calculatoroperator*>)
-    - [`Calculator::operator/`](<#Calculatoroperator/>)
-    - [`Calculator::operator-`](<#Calculatoroperator->)
-    - [`Calculator::operator++`](<#Calculatoroperator+>)
-    - [`Calculator::operator++`](<#Calculatoroperator+>)
-    - [`Calculator::operator==`](<#Calculatoroperator=>)
-    - [`Calculator::createZero`](<#CalculatorcreateZero>)
+    - ``value``: Stores the current value of the calculator as a `double`.
+- **Description**: Represents a calculator that can perform basic arithmetic operations. It includes constructors for initialization, operator overloads for arithmetic and comparison, and methods to get and set the value. The class supports copy and move semantics, and provides a static method to create a calculator with a zero value.
 
 **Methods**
 
 ---
 #### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
-The default constructor `Calculator()` initializes a `Calculator` object with a value of 0.0.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L68>)
+
+Initializes a `Calculator` object with a default value of 0.0.
 - **Inputs**: None
-- **Control Flow**:
-    - The constructor is called when a `Calculator` object is instantiated without any arguments.
-    - The member variable `value` is initialized to 0.0.
-- **Output**: A `Calculator` object with its `value` member set to 0.0.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
-
-
----
-#### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
-The `Calculator` constructor initializes a `Calculator` object with a specified initial value.
-- **Inputs**:
-    - `initial_value`: A double representing the initial value to set for the Calculator's internal state.
-- **Control Flow**:
-    - The constructor takes a double parameter `initial_value`.
-    - It initializes the private member `value` with the provided `initial_value`.
-- **Output**: A `Calculator` object initialized with the specified initial value.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
-
-
----
-#### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
-The copy constructor for the `Calculator` class initializes a new `Calculator` object by copying the `value` from another `Calculator` object.
-- **Inputs**:
-    - `other`: A constant reference to another `Calculator` object from which the `value` is copied.
-- **Control Flow**:
-    - The constructor is called when a new `Calculator` object is created as a copy of an existing `Calculator` object.
-    - The `value` of the new object is initialized to the `value` of the `other` object.
-- **Output**: A new `Calculator` object with its `value` initialized to the `value` of the `other` object.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
-
-
----
-#### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
-The move constructor for the `Calculator` class transfers ownership of the `value` from one `Calculator` object to another, leaving the original object in a valid but unspecified state.
-- **Inputs**:
-    - `other`: An rvalue reference to another `Calculator` object from which the `value` will be moved.
-- **Control Flow**:
-    - The constructor initializes the `value` of the current object with the `value` from the `other` object.
-    - The `value` of the `other` object is then set to `0.0`, effectively transferring ownership and leaving `other` in a valid state.
-- **Output**: A new `Calculator` object with the `value` transferred from the `other` object.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Sets the `value` member variable to 0.0.
+- **Output**: A `Calculator` object with its `value` initialized to 0.0.
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::\~Calculator<!-- {{#callable:Calculator::~Calculator}} -->
-The `~Calculator` function is the destructor for the `Calculator` class, responsible for cleaning up resources when a `Calculator` object is destroyed.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L82>)
+
+Destroys a `Calculator` object.
 - **Inputs**: None
-- **Control Flow**:
-    - The destructor `~Calculator()` is called automatically when a `Calculator` object goes out of scope or is explicitly deleted.
-    - Since the destructor is empty, it does not perform any specific cleanup operations.
-- **Output**: There is no output from the destructor as it is used for cleanup purposes only.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+- **Logic and Control Flow**:
+    - The destructor `~Calculator()` is defined but does not perform any specific operations.
+- **Output**: No output is produced as the destructor does not have a return value.
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator=<!-- {{#callable:Calculator::operator=}} -->
-The `operator=` function is a copy assignment operator for the `Calculator` class that assigns the value from another `Calculator` instance to the current instance, ensuring self-assignment safety.
-- **Inputs**:
-    - `other`: A constant reference to another `Calculator` object from which the value is to be copied.
-- **Control Flow**:
-    - Check if the current instance is not the same as the `other` instance to prevent self-assignment.
-    - If not the same, copy the `value` from the `other` instance to the current instance.
-    - Return the current instance by reference.
-- **Output**: A reference to the current `Calculator` instance after assignment.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L85>)
 
-
----
-#### Calculator::operator=<!-- {{#callable:Calculator::operator=}} -->
-The move assignment operator for the Calculator class transfers the value from another Calculator object to the current object, resetting the source object's value to zero.
+Assigns the value from another `Calculator` object to the current object if they are not the same.
 - **Inputs**:
-    - `other`: An rvalue reference to a Calculator object from which the value will be moved.
-- **Control Flow**:
-    - Check if the current object is not the same as the 'other' object to avoid self-assignment.
-    - Assign the value from the 'other' object to the current object's value.
-    - Reset the 'other' object's value to 0.0 to indicate it has been moved from.
+    - `other`: A constant reference to another `Calculator` object from which to copy the value.
+- **Logic and Control Flow**:
+    - Check if the current object is not the same as the `other` object using the address comparison `this != &other`.
+    - If they are not the same, assign the `value` of the `other` object to the `value` of the current object.
     - Return a reference to the current object.
-- **Output**: A reference to the current Calculator object after the move assignment.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+- **Output**: A reference to the current `Calculator` object.
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::getValue<!-- {{#callable:Calculator::getValue}} -->
-The `getValue` function returns the current value stored in the `Calculator` object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L102>)
+
+Returns the current value of the `Calculator` object's `value` attribute.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is a simple getter that accesses the private member `value` of the `Calculator` class.
-    - It is marked as `const`, indicating that it does not modify the state of the object.
-- **Output**: The function returns a `double` representing the current value of the `Calculator` object.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Accesses the private member `value` of the `Calculator` class.
+    - Returns the value of `value`.
+- **Output**: The function returns a `double` representing the current value of the `Calculator` object's `value` attribute.
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::setValue<!-- {{#callable:Calculator::setValue}} -->
-The `setValue` function updates the `value` member variable of the `Calculator` class with a new double value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L107>)
+
+Sets the private member `value` to the specified `new_value`.
 - **Inputs**:
-    - `new_value`: A double representing the new value to be assigned to the `value` member variable of the `Calculator` class.
-- **Control Flow**:
-    - The function takes a single argument `new_value` of type double.
-    - It assigns the `new_value` to the private member variable `value` of the `Calculator` class.
-- **Output**: This function does not return any value; it modifies the internal state of the `Calculator` object by setting its `value` member variable.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - `new_value`: A `double` representing the new value to assign to the private member `value`.
+- **Logic and Control Flow**:
+    - Assigns the input `new_value` to the private member variable `value`.
+- **Output**: No return value (void function).
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\+<!-- {{#callable:Calculator::operator+}} -->
-The `operator+` function in the [`Calculator`](<#CalculatorCalculator>) class adds the values of two [`Calculator`](<#CalculatorCalculator>) objects and returns a new [`Calculator`](<#CalculatorCalculator>) object with the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L112>)
+
+Adds the values of two [`Calculator`](<#calculatorcalculator>) objects and returns a new [`Calculator`](<#calculatorcalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose value is to be added to the current object's value.
-- **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as input.
-    - It adds the `value` of the current [`Calculator`](<#CalculatorCalculator>) object to the `value` of the `other` [`Calculator`](<#CalculatorCalculator>) object.
-    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the addition.
-    - The new [`Calculator`](<#CalculatorCalculator>) object is returned.
-- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object with its `value` set to the sum of the `value` of the current object and the `value` of the `other` object.
+    - `other`: A reference to another [`Calculator`](<#calculatorcalculator>) object whose value will be added to the current object's value.
+- **Logic and Control Flow**:
+    - Access the `value` of the current [`Calculator`](<#calculatorcalculator>) object.
+    - Access the `value` of the `other` [`Calculator`](<#calculatorcalculator>) object.
+    - Add the two values together.
+    - Create a new [`Calculator`](<#calculatorcalculator>) object with the sum of the two values.
+    - Return the new [`Calculator`](<#calculatorcalculator>) object.
+- **Output**: A new [`Calculator`](<#calculatorcalculator>) object with the sum of the values of the two [`Calculator`](<#calculatorcalculator>) objects.
 - **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - [`Calculator::Calculator`](<#calculatorcalculator>)
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\-<!-- {{#callable:Calculator::operator-}} -->
-The `operator-` function in the [`Calculator`](<#CalculatorCalculator>) class overloads the subtraction operator to return a new [`Calculator`](<#CalculatorCalculator>) object with a value that is the difference between the current object's value and another [`Calculator`](<#CalculatorCalculator>) object's value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L116>)
+
+Subtracts the value of another [`Calculator`](<#calculatorcalculator>) object from the current [`Calculator`](<#calculatorcalculator>) object and returns a new [`Calculator`](<#calculatorcalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose value will be subtracted from the current object's value.
-- **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as an argument.
-    - It calculates the difference between the current object's `value` and the `value` of the `other` object.
-    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the subtraction and returned.
-- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object with its `value` set to the difference between the current object's `value` and the `other` object's `value`.
+    - `other`: A constant reference to another [`Calculator`](<#calculatorcalculator>) object whose value will be subtracted from the current object's value.
+- **Logic and Control Flow**:
+    - Subtracts the `value` of the `other` [`Calculator`](<#calculatorcalculator>) object from the `value` of the current [`Calculator`](<#calculatorcalculator>) object.
+    - Creates and returns a new [`Calculator`](<#calculatorcalculator>) object initialized with the result of the subtraction.
+- **Output**: A new [`Calculator`](<#calculatorcalculator>) object with the result of the subtraction.
 - **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - [`Calculator::Calculator`](<#calculatorcalculator>)
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\*<!-- {{#callable:Calculator::operator*}} -->
-The `operator*` function multiplies the values of two [`Calculator`](<#CalculatorCalculator>) objects and returns a new [`Calculator`](<#CalculatorCalculator>) object with the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L120>)
+
+Multiplies the `value` of the current [`Calculator`](<#calculatorcalculator>) object with the `value` of another [`Calculator`](<#calculatorcalculator>) object and returns a new [`Calculator`](<#calculatorcalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose value will be multiplied with the current object's value.
-- **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as an argument.
-    - It multiplies the `value` of the current [`Calculator`](<#CalculatorCalculator>) object with the `value` of the `other` [`Calculator`](<#CalculatorCalculator>) object.
-    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the multiplication and returned.
-- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object initialized with the product of the two [`Calculator`](<#CalculatorCalculator>) objects' values.
+    - `other`: A constant reference to another [`Calculator`](<#calculatorcalculator>) object whose `value` will be multiplied with the `value` of the current object.
+- **Logic and Control Flow**:
+    - Access the `value` of the current [`Calculator`](<#calculatorcalculator>) object.
+    - Access the `value` of the `other` [`Calculator`](<#calculatorcalculator>) object.
+    - Multiply the two `value` attributes together.
+    - Create a new [`Calculator`](<#calculatorcalculator>) object with the result of the multiplication.
+    - Return the new [`Calculator`](<#calculatorcalculator>) object.
+- **Output**: A new [`Calculator`](<#calculatorcalculator>) object with its `value` set to the product of the `value` of the current object and the `value` of the `other` object.
 - **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - [`Calculator::Calculator`](<#calculatorcalculator>)
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator/<!-- {{#callable:Calculator::operator/}} -->
-The `operator/` function overloads the division operator to divide the `value` of one [`Calculator`](<#CalculatorCalculator>) object by the `value` of another [`Calculator`](<#CalculatorCalculator>) object and returns a new [`Calculator`](<#CalculatorCalculator>) object with the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L124>)
+
+Divides the `value` of the current [`Calculator`](<#calculatorcalculator>) object by the `value` of another [`Calculator`](<#calculatorcalculator>) object and returns a new [`Calculator`](<#calculatorcalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose `value` will be used as the divisor.
-- **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as input.
-    - It divides the `value` of the current [`Calculator`](<#CalculatorCalculator>) object by the `value` of the `other` [`Calculator`](<#CalculatorCalculator>) object.
-    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the division and returned.
-- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object containing the result of the division of the two [`Calculator`](<#CalculatorCalculator>) objects' `value` attributes.
+    - `other`: A constant reference to another [`Calculator`](<#calculatorcalculator>) object whose `value` will be used as the divisor.
+- **Logic and Control Flow**:
+    - Access the `value` of the current [`Calculator`](<#calculatorcalculator>) object.
+    - Access the `value` of the `other` [`Calculator`](<#calculatorcalculator>) object.
+    - Divide the current object's `value` by the `other` object's `value`.
+    - Create a new [`Calculator`](<#calculatorcalculator>) object with the result of the division.
+    - Return the new [`Calculator`](<#calculatorcalculator>) object.
+- **Output**: A new [`Calculator`](<#calculatorcalculator>) object containing the result of the division.
 - **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
-
-
----
-#### Calculator::operator\-<!-- {{#callable:Calculator::operator-}} -->
-The unary operator- function returns a new Calculator object with the negated value of the current object.
-- **Inputs**: None
-- **Control Flow**:
-    - The function is a unary operator overload for the '-' operator.
-    - It creates a new Calculator object using the negated value of the current object's 'value' member.
-    - The new Calculator object is returned.
-- **Output**: A new Calculator object with the negated value of the current object's 'value'.
-- **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - [`Calculator::Calculator`](<#calculatorcalculator>)
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\+\+<!-- {{#callable:Calculator::operator++}} -->
-The `operator++` function is a pre-increment operator overload for the `Calculator` class that increments the `value` member by one and returns a reference to the updated object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L134>)
+
+Increments the `value` member of the `Calculator` object by 1 and returns a reference to the updated object.
 - **Inputs**: None
-- **Control Flow**:
-    - The function increments the `value` member of the `Calculator` object by one using the `++` operator.
-    - It then returns a reference to the current object (`*this`).
+- **Logic and Control Flow**:
+    - Increment the `value` member variable of the `Calculator` object by 1 using the pre-increment operator `++`.
+    - Return a reference to the current `Calculator` object using `*this`.
 - **Output**: A reference to the updated `Calculator` object.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
-
-
----
-#### Calculator::operator\+\+<!-- {{#callable:Calculator::operator++}} -->
-The `operator++(int)` function implements the post-increment operation for the `Calculator` class, returning the current state of the object before incrementing its value.
-- **Inputs**: None
-- **Control Flow**:
-    - Create a temporary `Calculator` object `temp` initialized with the current state of the object (`*this`).
-    - Increment the `value` member of the current object.
-    - Return the temporary `Calculator` object `temp`.
-- **Output**: A `Calculator` object representing the state of the object before the increment operation.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator==<!-- {{#callable:Calculator::operator==}} -->
-The `operator==` function checks if two `Calculator` objects have the same value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L146>)
+
+Compares two `Calculator` objects for equality based on their `value` attributes.
 - **Inputs**:
-    - `other`: A reference to another `Calculator` object to compare against the current object.
-- **Control Flow**:
-    - The function compares the `value` member of the current `Calculator` object with the `value` member of the `other` `Calculator` object.
-    - It returns the result of this comparison.
-- **Output**: A boolean value indicating whether the two `Calculator` objects have equal `value` members.
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - `other`: A reference to another `Calculator` object to compare with the current object.
+- **Logic and Control Flow**:
+    - Access the `value` attribute of the current `Calculator` object.
+    - Access the `value` attribute of the `other` `Calculator` object.
+    - Return `true` if both `value` attributes are equal, otherwise return `false`.
+- **Output**: A boolean value indicating whether the two `Calculator` objects have equal `value` attributes.
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::createZero<!-- {{#callable:Calculator::createZero}} -->
-The `createZero` function is a static member function of the [`Calculator`](<#CalculatorCalculator>) class that creates and returns a [`Calculator`](<#CalculatorCalculator>) object initialized with a value of 0.0.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L151>)
+
+Creates a [`Calculator`](<#calculatorcalculator>) object with an initial value of 0.0.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a static member of the [`Calculator`](<#CalculatorCalculator>) class, meaning it can be called without an instance of the class.
-    - It directly returns a new [`Calculator`](<#CalculatorCalculator>) object initialized with the value 0.0 using the parameterized constructor of the [`Calculator`](<#CalculatorCalculator>) class.
-- **Output**: A [`Calculator`](<#CalculatorCalculator>) object with its `value` member set to 0.0.
+- **Logic and Control Flow**:
+    - Call the [`Calculator`](<#calculatorcalculator>) constructor with an argument of `0.0`.
+    - Return the newly created [`Calculator`](<#calculatorcalculator>) object.
+- **Output**: A [`Calculator`](<#calculatorcalculator>) object initialized with a value of 0.0.
 - **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
-- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
+    - [`Calculator::Calculator`](<#calculatorcalculator>)
+- **See also**: [`Calculator`](<test_func_calls.cpp.md#calculator>)  (Data Structure)
 
 
 
 ---
 ### Container<!-- {{#data_structure:Container}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L157>)
+
+- **Type**: ``class``
 - **Members**:
-    - `data`: A private member variable of type T that stores the data within the container.
-- **Description**: The `Container` class is a template class designed to hold a single piece of data of any type specified by the template parameter `T`. It provides basic functionality to get and set the data, as well as a method to convert and set the data from another type using static casting. This class is useful for encapsulating data and providing controlled access and modification through its member functions.
+    - ``data``: Stores the data of type `T`.
+- **Description**: Represents a template class that encapsulates a single data member of type `T`. It provides methods to get and set the data, and a template method to convert and set the data from another type `U` using static casting.
 
 **Methods**
 
 ---
 #### Container::Container<!-- {{#callable:Container::Container}} -->
-The `Container` constructor initializes a `Container` object with a given initial data value of type `T`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L163>)
+
+Initializes a `Container` object with the given initial data.
 - **Inputs**:
-    - `initial_data`: A constant reference to an object of type `T` that is used to initialize the `data` member of the `Container` class.
-- **Control Flow**:
-    - The constructor takes a constant reference to an object of type `T` as its parameter.
-    - It initializes the private member `data` with the provided `initial_data`.
-- **Output**: The function does not return any value as it is a constructor.
-- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
+    - `initial_data`: The initial data of type `T` to store in the `Container`.
+- **Logic and Control Flow**:
+    - Assigns the `initial_data` to the private member `data`.
+- **Output**: A `Container` object initialized with the specified `initial_data`.
+- **See also**: [`Container`](<test_func_calls.cpp.md#container>)  (Data Structure)
 
 
 ---
 #### Container::getData<!-- {{#callable:Container::getData}} -->
-The `getData` function returns the current value of the `data` member variable from a `Container` object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L165>)
+
+Returns the value of the private member `data` from the `Container` class.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is a simple getter that directly returns the `data` member variable of the `Container` class.
-    - It is marked as `const`, indicating that it does not modify the state of the `Container` object.
-- **Output**: The function returns a value of type `T`, which is the template parameter of the `Container` class, representing the stored data.
-- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Accesses the private member `data` of the `Container` class.
+    - Returns the value of `data`.
+- **Output**: The value of the private member `data` of type `T`.
+- **See also**: [`Container`](<test_func_calls.cpp.md#container>)  (Data Structure)
 
 
 ---
 #### Container::setData<!-- {{#callable:Container::setData}} -->
-The `setData` function updates the `data` member of a `Container` object with a new value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L169>)
+
+Sets the `data` member variable to the value of `new_data`.
 - **Inputs**:
-    - `new_data`: A constant reference to a value of type `T` that will replace the current `data` member of the `Container`.
-- **Control Flow**:
-    - The function takes a single argument `new_data` of type `T`.
-    - It assigns the value of `new_data` to the `data` member of the `Container` class.
-- **Output**: The function does not return any value; it modifies the `data` member in place.
-- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
+    - `new_data`: A constant reference to a value of type `T` that will be assigned to the `data` member variable.
+- **Logic and Control Flow**:
+    - Assign the value of `new_data` to the member variable `data`.
+- **Output**: No return value (void function).
+- **See also**: [`Container`](<test_func_calls.cpp.md#container>)  (Data Structure)
 
 
 ---
 #### Container::convertAndSet<!-- {{#callable:Container::convertAndSet}} -->
-The `convertAndSet` function converts a given value to the template type `T` and assigns it to the `data` member of the `Container` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L173>)
+
+Converts a value of type `U` to type `T` and assigns it to the `data` member of the `Container` class.
 - **Inputs**:
-    - `value`: A constant reference to a value of type `U` that is to be converted and assigned to the `data` member.
-- **Control Flow**:
-    - The function takes a single input parameter `value` of type `U`.
-    - It uses `static_cast` to convert `value` to the type `T`.
-    - The converted value is then assigned to the `data` member of the `Container` class.
-- **Output**: The function does not return any value; it modifies the `data` member of the `Container` class.
-- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
+    - ``value``: A constant reference to a value of type `U` that will be converted to type `T`.
+- **Logic and Control Flow**:
+    - Use `static_cast` to convert `value` from type `U` to type `T`.
+    - Assign the converted value to the `data` member of the `Container` class.
+- **Output**: No return value; the function modifies the `data` member of the `Container` class.
+- **See also**: [`Container`](<test_func_calls.cpp.md#container>)  (Data Structure)
 
 
 
 ---
 ### Shape<!-- {{#data_structure:Shape}} -->
-- **Type**: `class`
-- **Description**: The `Shape` class is an abstract base class that defines a common interface for different geometric shapes. It includes a pure virtual function `calculateArea()` that must be implemented by derived classes to calculate the area of the specific shape. Additionally, it provides a virtual function `draw()` with a default implementation that outputs a generic message, which can be overridden by derived classes to provide specific drawing behavior. The class is designed to be inherited by other classes representing specific shapes, such as `Circle` and `Rectangle`, which implement the `calculateArea()` and `draw()` methods.
-- **Member Functions**:
-    - [`Shape::~Shape`](<test_func_declarations.cpp.md#ShapeShape>)
-    - [`Shape::~Shape`](<#ShapeShape>)
-    - [`Shape::draw`](<#Shapedraw>)
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L180>)
+
+- **Type**: ``class``
+- **Description**: Represents an abstract base class for geometric shapes, providing a pure virtual function `calculateArea` for area computation and a virtual function `draw` with a default implementation for drawing the shape.
 
 **Methods**
 
 ---
 #### Shape::\~Shape<!-- {{#callable:Shape::~Shape}} -->
-The `~Shape` function is a virtual destructor for the `Shape` class, ensuring proper cleanup of derived class objects.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L182>)
+
+Defines a virtual destructor for the `Shape` class, allowing derived classes to clean up resources properly.
 - **Inputs**: None
-- **Control Flow**:
-    - The `~Shape` function is declared as a virtual destructor, allowing derived class destructors to be called correctly when an object is deleted through a base class pointer.
-    - The destructor is defined with `= default`, indicating that the compiler should generate the default destructor implementation.
-- **Output**: The function does not return any value as it is a destructor.
-- **See also**: [`Shape`](<#Shape>)  (Data Structure)
+- **Logic and Control Flow**:
+    - The destructor is declared as `virtual`, ensuring that the destructor of the derived class is called when an object is deleted through a base class pointer.
+    - The destructor is defined as `default`, indicating that the compiler should generate the default implementation.
+- **Output**: No return value; it is a destructor.
+- **See also**: [`Shape`](<test_func_declarations.cpp.md#shape>)  (Data Structure)
 
 
 ---
 #### Shape::draw<!-- {{#callable:Shape::draw}} -->
-The `draw` function is a virtual method in the `Shape` class that provides a default implementation for drawing a shape by outputting a message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L184>)
+
+Outputs a message indicating that a shape is being drawn.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is declared as a virtual method, allowing derived classes to override it.
-    - It contains a single statement that outputs the string 'Drawing a shape' to the standard output stream.
-- **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Shape`](<#Shape>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Outputs the string 'Drawing a shape' to the standard output stream `std::cout`.
+- **Output**: No return value (void function).
+- **See also**: [`Shape`](<test_func_declarations.cpp.md#shape>)  (Data Structure)
 
 
 
 ---
 ### Circle<!-- {{#data_structure:Circle}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L189>)
+
+- **Type**: ``class``
 - **Members**:
-    - `radius`: A private double member variable that stores the radius of the circle.
-- **Description**: The `Circle` class is a derived class from the `Shape` base class, representing a geometric circle. It encapsulates a single private member, `radius`, which defines the size of the circle. The class provides a constructor to initialize the radius and overrides two virtual functions from the `Shape` class: `calculateArea`, which computes the area of the circle using the formula π * radius^2, and `draw`, which outputs a message indicating the circle's radius. This class demonstrates inheritance and polymorphism by extending the `Shape` interface and providing specific implementations for circle-related operations.
+    - ``radius``: Stores the radius of the circle.
+- **Description**: Inherits from the `Shape` class and represents a circle with a specific radius. It overrides the `calculateArea` method to compute the area of the circle using the formula π * radius^2, and the `draw` method to output a message indicating the circle's radius.
 - **Inherits From**:
-    - [`Shape`](<#Shape>)
+    - [`Shape`](<#shape>)
 
 **Methods**
 
 ---
 #### Circle::Circle<!-- {{#callable:Circle::Circle}} -->
-The `Circle` constructor initializes a `Circle` object with a specified radius.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L194>)
+
+Initializes a `Circle` object with a specified radius.
 - **Inputs**:
-    - `r`: A double representing the radius of the circle to be initialized.
-- **Control Flow**:
-    - The constructor takes a single argument `r` and assigns it to the private member variable `radius`.
-- **Output**: A `Circle` object with its `radius` member variable set to the provided value `r`.
-- **See also**: [`Circle`](<test_classes.cpp.md#Circle>)  (Data Structure)
+    - `r`: The radius of the circle, a `double` value.
+- **Logic and Control Flow**:
+    - Assigns the input parameter `r` to the private member variable `radius`.
+- **Output**: A `Circle` object with the specified radius.
+- **See also**: [`Circle`](<test_func_declarations.cpp.md#circle>)  (Data Structure)
 
 
 ---
 #### Circle::calculateArea<!-- {{#callable:Circle::calculateArea}} -->
-The `calculateArea` function computes the area of a circle using its radius.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L196>)
+
+Calculates the area of a circle using its radius.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calculates the area by multiplying the constant π (approximated as 3.14159) with the square of the circle's radius.
-    - The radius is accessed from the private member variable of the `Circle` class.
-- **Output**: The function returns a `double` representing the area of the circle.
-- **See also**: [`Circle`](<test_classes.cpp.md#Circle>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Multiplies the constant `3.14159` by the square of the `radius` member variable.
+- **Output**: Returns the calculated area as a `double`.
+- **See also**: [`Circle`](<test_func_declarations.cpp.md#circle>)  (Data Structure)
 
 
 ---
 #### Circle::draw<!-- {{#callable:Circle::draw}} -->
-The `draw` function outputs a message to the console indicating that a circle is being drawn with its radius.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L200>)
+
+Outputs a message to the console indicating that a circle is being drawn with its radius.
 - **Inputs**: None
-- **Control Flow**:
-    - The function uses `std::cout` to print a message to the console.
-    - The message includes the text 'Drawing a circle with radius' followed by the value of the `radius` member variable.
-- **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Circle`](<test_classes.cpp.md#Circle>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Outputs the string 'Drawing a circle with radius ' followed by the value of `radius` to the console.
+- **Output**: No return value; the function outputs to the console.
+- **See also**: [`Circle`](<test_func_declarations.cpp.md#circle>)  (Data Structure)
 
 
 
 ---
 ### Rectangle<!-- {{#data_structure:Rectangle}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L205>)
+
+- **Type**: ``class``
 - **Members**:
-    - `width`: Represents the width of the rectangle.
-    - `height`: Represents the height of the rectangle.
-- **Description**: The `Rectangle` class is a derived class from the `Shape` base class, representing a geometric rectangle with specific width and height dimensions. It encapsulates the properties of a rectangle and provides functionality to calculate its area and draw it. The class overrides the `calculateArea` and `draw` methods from the `Shape` class to provide specific implementations for rectangles.
+    - ``width``: Stores the width of the rectangle.
+    - ``height``: Stores the height of the rectangle.
+- **Description**: Represents a rectangle shape that inherits from the `Shape` class. It contains private member variables `width` and `height` to store the dimensions of the rectangle. The class provides a constructor to initialize these dimensions and overrides the `calculateArea` and `draw` methods from the `Shape` class to compute the area and display the rectangle, respectively.
 - **Member Functions**:
-    - [`Rectangle::Rectangle`](<#RectangleRectangle>)
-    - [`Rectangle::calculateArea`](<#RectanglecalculateArea>)
-    - [`Rectangle::draw`](<#Rectangledraw>)
+    - [`Rectangle::Rectangle`](<#rectanglerectangle>)
+    - [`Rectangle::calculateArea`](<#rectanglecalculatearea>)
+    - [`Rectangle::draw`](<#rectangledraw>)
 - **Inherits From**:
-    - [`Shape`](<#Shape>)
+    - [`Shape`](<#shape>)
 
 **Methods**
 
 ---
 #### Rectangle::Rectangle<!-- {{#callable:Rectangle::Rectangle}} -->
-The `Rectangle` constructor initializes a `Rectangle` object with specified width and height.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L210>)
+
+Initializes a `Rectangle` object with specified width and height.
 - **Inputs**:
-    - `w`: The width of the rectangle, a double value.
-    - `h`: The height of the rectangle, a double value.
-- **Control Flow**:
-    - The constructor takes two parameters, `w` and `h`, representing the width and height of the rectangle, respectively.
-    - It initializes the private member variables `width` and `height` with the provided values `w` and `h`.
-- **Output**: The constructor does not return a value; it initializes a `Rectangle` object.
-- **See also**: [`Rectangle`](<#Rectangle>)  (Data Structure)
+    - `w`: The width of the rectangle.
+    - `h`: The height of the rectangle.
+- **Logic and Control Flow**:
+    - Assigns the value of `w` to the `width` member variable.
+    - Assigns the value of `h` to the `height` member variable.
+- **Output**: A `Rectangle` object with initialized `width` and `height` attributes.
+- **See also**: [`Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle::calculateArea<!-- {{#callable:Rectangle::calculateArea}} -->
-The `calculateArea` function computes the area of a rectangle by multiplying its width and height.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L212>)
+
+Calculates the area of a rectangle by multiplying its width and height.
 - **Inputs**: None
-- **Control Flow**:
-    - The function accesses the private member variables `width` and `height` of the `Rectangle` class.
-    - It multiplies `width` by `height` to calculate the area of the rectangle.
-- **Output**: The function returns a `double` representing the area of the rectangle.
-- **See also**: [`Rectangle`](<#Rectangle>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Accesses the private member variables `width` and `height` of the `Rectangle` class.
+    - Multiplies `width` by `height` to compute the area.
+- **Output**: Returns the calculated area as a `double`.
+- **See also**: [`Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle::draw<!-- {{#callable:Rectangle::draw}} -->
-The `draw` function in the `Rectangle` class outputs a message to the console indicating the dimensions of the rectangle being drawn.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L216>)
+
+Outputs a message to the console indicating the dimensions of the rectangle being drawn.
 - **Inputs**: None
-- **Control Flow**:
-    - The function overrides the `draw` method from the `Shape` base class.
-    - It uses `std::cout` to print a message to the console.
-    - The message includes the dimensions of the rectangle, specifically its width and height.
-- **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Rectangle`](<#Rectangle>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Outputs the string 'Drawing a rectangle ' followed by the rectangle's width and height to the console.
+- **Output**: No return value; the function outputs to the console.
+- **See also**: [`Rectangle`](<#rectangle>)  (Data Structure)
 
 
 
 ---
 ### Point<!-- {{#data_structure:Point}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L254>)
+
+- **Type**: ``class``
 - **Members**:
     - `x`: Represents the x-coordinate of the point.
     - `y`: Represents the y-coordinate of the point.
-- **Description**: The `Point` class is a simple data structure representing a point in a 2D space with x and y coordinates. It provides a constructor for initializing these coordinates and includes friend functions for adding two points and outputting a point to a stream. This class encapsulates the concept of a geometric point and allows for basic operations such as addition and formatted output.
-- **Member Functions**:
-    - [`Point::Point`](<test_variables.cpp.md#PointPoint>)
-    - [`Point::Point`](<#PointPoint>)
-    - [`Point::operator+`](<#Pointoperator>)
-    - [`Point::operator<<`](<#Pointoperator<<>)
+- **Description**: Represents a point in a 2D space with x and y coordinates. Provides a constructor to initialize the coordinates and overloads the addition operator to add two points. Also overloads the stream insertion operator to output the point in a readable format.
 
 **Methods**
 
 ---
 #### Point::Point<!-- {{#callable:Point::Point}} -->
-The `Point` constructor initializes a `Point` object with specified x and y coordinates.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L259>)
+
+Initializes a `Point` object with specified x and y coordinates.
 - **Inputs**:
-    - `x_val`: The x-coordinate value for the point.
-    - `y_val`: The y-coordinate value for the point.
-- **Control Flow**:
-    - The constructor takes two double arguments, `x_val` and `y_val`.
-    - It initializes the private member variables `x` and `y` with the values of `x_val` and `y_val`, respectively.
-- **Output**: A `Point` object with its x and y coordinates set to the provided values.
-- **See also**: [`Point`](<#Point>)  (Data Structure)
+    - `x_val`: The x-coordinate value for the `Point` object.
+    - `y_val`: The y-coordinate value for the `Point` object.
+- **Logic and Control Flow**:
+    - Assigns the value of `x_val` to the private member `x` of the `Point` object.
+    - Assigns the value of `y_val` to the private member `y` of the `Point` object.
+- **Output**: A `Point` object with initialized x and y coordinates.
+- **See also**: [`Point`](<../c/test_structs.c.md#point>)  (Data Structure)
 
 
 ---
 #### Point::operator\+<!-- {{#callable:Point::operator+}} -->
-The `operator+` function for the [`Point`](<#PointPoint>) class adds the coordinates of two [`Point`](<#PointPoint>) objects and returns a new [`Point`](<#PointPoint>) object with the summed coordinates.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L261>)
+
+Adds two [`Point`](<#pointpoint>) objects by summing their respective `x` and `y` coordinates.
 - **Inputs**:
-    - `lhs`: A constant reference to the first [`Point`](<#PointPoint>) object to be added.
-    - `rhs`: A constant reference to the second [`Point`](<#PointPoint>) object to be added.
-- **Control Flow**:
-    - The function takes two [`Point`](<#PointPoint>) objects as input parameters, `lhs` and `rhs`.
-    - It calculates the sum of the `x` coordinates of `lhs` and `rhs`.
-    - It calculates the sum of the `y` coordinates of `lhs` and `rhs`.
-    - A new [`Point`](<#PointPoint>) object is created using the summed `x` and `y` coordinates.
-    - The new [`Point`](<#PointPoint>) object is returned.
-- **Output**: A new [`Point`](<#PointPoint>) object with `x` and `y` coordinates equal to the sum of the corresponding coordinates of the input [`Point`](<#PointPoint>) objects.
+    - `lhs`: A constant reference to the first [`Point`](<#pointpoint>) object.
+    - `rhs`: A constant reference to the second [`Point`](<#pointpoint>) object.
+- **Logic and Control Flow**:
+    - Access the `x` and `y` coordinates of the `lhs` and `rhs` [`Point`](<#pointpoint>) objects.
+    - Sum the `x` coordinates of `lhs` and `rhs`.
+    - Sum the `y` coordinates of `lhs` and `rhs`.
+    - Create a new [`Point`](<#pointpoint>) object with the summed `x` and `y` coordinates.
+    - Return the new [`Point`](<#pointpoint>) object.
+- **Output**: A new [`Point`](<#pointpoint>) object with `x` and `y` coordinates equal to the sum of the `x` and `y` coordinates of `lhs` and `rhs`.
 - **Functions Called**:
-    - [`Point::Point`](<#PointPoint>)
-- **See also**: [`Point`](<#Point>)  (Data Structure)
+    - [`Point::Point`](<#pointpoint>)
+- **See also**: [`Point`](<../c/test_structs.c.md#point>)  (Data Structure)
 
 
 ---
 #### Point::operator<<<!-- {{#callable:Point::operator<<}} -->
-The `operator<<` function overloads the stream insertion operator to output a `Point` object in the format '(x, y)' to an output stream.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L265>)
+
+Overloads the insertion operator to output a `Point` object in the format `(x, y)` to an output stream.
 - **Inputs**:
-    - `os`: A reference to an `std::ostream` object where the `Point` object will be output.
-    - `point`: A constant reference to a `Point` object whose coordinates will be output.
-- **Control Flow**:
-    - The function takes an `std::ostream` reference and a constant `Point` reference as parameters.
-    - It inserts the `Point` object's `x` and `y` coordinates into the stream in the format '(x, y)'.
-    - The function returns the modified `std::ostream` reference.
-- **Output**: A reference to the modified `std::ostream` object, allowing for chaining of stream operations.
-- **See also**: [`Point`](<#Point>)  (Data Structure)
+    - ``os``: A reference to an `std::ostream` object where the `Point` object will be output.
+    - ``point``: A constant reference to a `Point` object whose coordinates will be output.
+- **Logic and Control Flow**:
+    - Insert an opening parenthesis `(` into the output stream `os`.
+    - Insert the `x` coordinate of the `point` object into the output stream `os`.
+    - Insert a comma `,` followed by a space into the output stream `os`.
+    - Insert the `y` coordinate of the `point` object into the output stream `os`.
+    - Insert a closing parenthesis `)` into the output stream `os`.
+    - Return the modified output stream `os`.
+- **Output**: A reference to the modified `std::ostream` object.
+- **See also**: [`Point`](<../c/test_structs.c.md#point>)  (Data Structure)
 
 
 
 ---
 ### MyClass<!-- {{#data_structure:MyClass}} -->
-- **Type**: `class`
-- **Description**: `MyClass` is a simple C++ class that includes a constructor, a destructor, and a few member functions, including an `add` function that takes two integers and returns their sum, and an overloaded `operator+` function. It also contains an inner class `Inner` with a `display` function. The class does not have any data members, focusing instead on demonstrating function declarations and definitions.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L271>)
+
+- **Type**: ``class``
+- **Description**: Defines a class with a constructor, a destructor, and several member functions including `add`, `test`, and an overloaded `operator+`. It also contains a nested `Inner` class with a `display` function. The `add` function is defined outside the class and returns the sum of two integers. The `Inner::display` function outputs a message to the console.
 - **Member Functions**:
-    - [`MyClass::MyClass`](<#MyClassMyClass>)
-    - [`MyClass::test`](<#MyClasstest>)
-    - [`MyClass::~MyClass`](<#MyClassMyClass>)
-    - [`MyClass::operator+`](<#MyClassoperator>)
-    - [`MyClass::add`](<#MyClassadd>)
-    - [`MyClass::~MyClass`](<#MyClassMyClass>)
+    - [`MyClass::MyClass`](<#myclassmyclass>)
+    - [`MyClass::test`](<#myclasstest>)
+    - [`MyClass::~MyClass`](<#myclassmyclass>)
+    - [`MyClass::operator+`](<#myclassoperator>)
+    - [`MyClass::add`](<#myclassadd>)
+    - [`MyClass::~MyClass`](<#myclassmyclass>)
 
 **Methods**
 
 ---
 #### MyClass::MyClass<!-- {{#callable:MyClass::MyClass}} -->
-The `MyClass` constructor initializes an instance of the `MyClass` class without any specific setup or parameters.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L273>)
+
+Represents a class with a constructor, destructor, and several member functions including an addition function and an overloaded operator.
 - **Inputs**: None
-- **Control Flow**:
-    - The constructor is defined as an empty function body, indicating no initialization logic is performed.
-    - The constructor is public, allowing instances of `MyClass` to be created from outside the class.
-- **Output**: An instance of `MyClass` is created with default initialization.
-- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Defines a default constructor `MyClass()` that initializes an instance of the class.
+    - Declares a member function `add(int a, int b)` that is defined outside the class to return the sum of two integers.
+    - Contains an inner class `Inner` with a declared but not defined `display()` function.
+    - Defines a `test()` function that does nothing and returns an integer.
+    - Defines a destructor `~MyClass()` that performs no specific action.
+    - Overloads the `+` operator to take an integer parameter but does not define any specific behavior.
+- **Output**: An instance of `MyClass` with initialized member functions and an inner class.
+- **See also**: [`MyClass`](<#myclass>)  (Data Structure)
 
 
 ---
 #### MyClass::test<!-- {{#callable:MyClass::test}} -->
-The `test` function is a member function of the `MyClass` class that is defined but does not perform any operations.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L278>)
+
+Returns an integer value.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a member of the `MyClass` class.
-    - It has an empty body, meaning it does not execute any code or perform any operations.
-- **Output**: The function does not return any value or perform any operations.
-- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
+- **Logic and Control Flow**:
+    - The function does not contain any logic or control flow statements.
+- **Output**: An integer value, but the function body is empty, so it does not return anything explicitly.
+- **See also**: [`MyClass`](<#myclass>)  (Data Structure)
 
 
 ---
 #### MyClass::\~MyClass<!-- {{#callable:MyClass::~MyClass}} -->
-The destructor `~MyClass` is a default destructor for the `MyClass` class that performs no specific actions upon object destruction.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L279>)
+
+Destroys an instance of `MyClass`.
 - **Inputs**: None
-- **Control Flow**:
-    - The destructor `~MyClass` is defined as an empty function, indicating that it does not perform any specific cleanup or resource deallocation.
-    - When an object of `MyClass` is destroyed, this destructor is called automatically, but since it is empty, it does not alter the default destruction behavior.
-- **Output**: The destructor does not produce any output or perform any operations.
-- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
+- **Logic and Control Flow**:
+    - The destructor `~MyClass()` is called when an object of `MyClass` is destroyed.
+    - The destructor does not perform any specific operations as its body is empty.
+- **Output**: No output is produced.
+- **See also**: [`MyClass`](<#myclass>)  (Data Structure)
 
 
 ---
 #### MyClass::operator\+<!-- {{#callable:MyClass::operator+}} -->
-The `operator+` function in `MyClass` is an overloaded operator that takes an integer as input but does not perform any operations.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L280>)
+
+Defines an overloaded addition operator for `MyClass` that takes an integer as an argument but does not perform any operations.
 - **Inputs**:
-    - `x`: An integer value that is passed to the operator.
-- **Control Flow**:
-    - The function is defined as an overloaded operator within the `MyClass` class.
-    - It takes a single integer parameter `x`.
-    - The function body is empty, meaning it does not perform any operations or return any value.
-- **Output**: The function does not produce any output or return a value.
-- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
+    - `x`: An integer value to be used with the overloaded addition operator.
+- **Logic and Control Flow**:
+    - The function is defined as an overloaded operator `+` for the `MyClass` class.
+    - The function takes a single integer parameter `x`.
+    - The function body is empty, so it does not perform any operations with `x`.
+- **Output**: No output is produced as the function body is empty.
+- **See also**: [`MyClass`](<#myclass>)  (Data Structure)
 
 
 ---
 #### MyClass::add<!-- {{#callable:MyClass::add}} -->
-The `add` function in `MyClass` returns the sum of two integer arguments.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L284>)
+
+Calculates the sum of two integers.
 - **Inputs**:
-    - `a`: An integer value to be added.
-    - `b`: Another integer value to be added.
-- **Control Flow**:
-    - The function takes two integer parameters, `a` and `b`.
-    - It calculates the sum of `a` and `b`.
-    - The result of the addition is returned.
-- **Output**: The function returns an integer which is the sum of the two input integers.
-- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
+    - `a`: The first integer to add.
+    - `b`: The second integer to add.
+- **Logic and Control Flow**:
+    - Add the integer `a` to the integer `b`.
+    - Return the result of the addition.
+- **Output**: The sum of the two input integers.
+- **See also**: [`MyClass`](<#myclass>)  (Data Structure)
 
 
 ---
 #### MyClass::\~MyClass<!-- {{#callable:MyClass::~MyClass}} -->
-The destructor for the MyClass class is defined but does not perform any specific actions.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L292>)
+
+Destroys an instance of `MyClass` and performs any necessary cleanup.
 - **Inputs**: None
-- **Control Flow**:
-    - The destructor is called when an object of MyClass is destroyed.
-    - No specific actions or resource deallocations are performed within the destructor body.
-- **Output**: The destructor does not return any value, as is typical for destructors in C++.
-- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
+- **Logic and Control Flow**:
+    - The destructor `~MyClass()` is called when an object of `MyClass` is destroyed.
+    - The destructor does not contain any specific logic or resource deallocation code.
+- **Output**: No output is produced as the destructor is empty.
+- **See also**: [`MyClass`](<#myclass>)  (Data Structure)
 
 
 
 ---
 ### Inner<!-- {{#data_structure:MyClass::Inner}} -->
-- **Type**: `class`
-- **Description**: The `Inner` class is a nested class within `MyClass` that contains a single member function declaration `display()`. This class does not have any data members or additional functionality defined within the provided code, and its primary purpose appears to be to encapsulate the `display()` function, which is defined outside the class to print a message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L275>)
+
+- **Type**: ``class``
+- **Description**: Defines a nested class within `MyClass` with a single member function `display()`, which is declared within the class and defined outside the class to print "Hello" to the standard output.
 - **Member Functions**:
-    - [`MyClass::Inner::display`](<#Innerdisplay>)
+    - [`MyClass::Inner::display`](<#innerdisplay>)
 
 **Methods**
 
 ---
 #### Inner::display<!-- {{#callable:MyClass::Inner::display}} -->
-The `display` method of the `Inner` class in `MyClass` outputs the string "Hello" to the standard output.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L288>)
+
+Outputs the string 'Hello' to the standard output.
 - **Inputs**: None
-- **Control Flow**:
-    - The method uses `std::cout` to print the string "Hello" followed by a newline character to the standard output.
-- **Output**: There is no return value as the function's return type is `void`.
-- **See also**: [`MyClass::Inner`](<#MyClass::Inner>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Uses `std::cout` to send the string 'Hello' to the standard output stream.
+    - Appends a newline character using `std::endl`.
+- **Output**: No return value; the function performs output to the console.
+- **See also**: [`MyClass::Inner`](<#inner>)  (Data Structure)
 
 
 
@@ -652,178 +620,203 @@ The `display` method of the `Inner` class in `MyClass` outputs the string "Hello
 
 ---
 ### printMessage<!-- {{#callable:printMessage}} -->
-The `printMessage` function outputs a given string message to the standard output stream followed by a newline.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L6>)
+
+Outputs a given message to the standard output stream followed by a newline.
 - **Inputs**:
-    - `message`: A constant reference to a `std::string` that contains the message to be printed.
-- **Control Flow**:
-    - The function takes a single input parameter, `message`, which is a constant reference to a `std::string`.
-    - It uses the `std::cout` stream to print the `message` to the standard output.
-    - The function appends a newline character to the output using `std::endl`.
-- **Output**: The function does not return any value; it performs an output operation.
+    - ``message``: A constant reference to a `std::string` that contains the message to print.
+- **Logic and Control Flow**:
+    - Uses `std::cout` to print the `message` to the standard output.
+    - Appends a newline character to the output using `std::endl`.
+- **Output**: No return value (void function).
 
 
 ---
 ### multiply<!-- {{#callable:multiply}} -->
-The `multiply` function multiplies two double precision floating-point numbers, with the second number having a default value of 1.0.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L11>)
+
+Multiplies two double precision floating-point numbers, with an optional second parameter defaulting to 1.0.
 - **Inputs**:
-    - `a`: The first double precision floating-point number to be multiplied.
-    - `b`: The second double precision floating-point number to be multiplied, with a default value of 1.0.
-- **Control Flow**:
-    - The function takes two parameters, `a` and `b`, where `b` has a default value of 1.0.
-    - It returns the product of `a` and `b`.
-- **Output**: The function returns the result of multiplying the two input double precision floating-point numbers.
+    - `a`: The first double precision floating-point number to multiply.
+    - `b`: The second double precision floating-point number to multiply, defaulting to 1.0 if not provided.
+- **Logic and Control Flow**:
+    - Multiply the value of `a` by the value of `b`.
+    - Return the result of the multiplication.
+- **Output**: A double precision floating-point number that is the product of `a` and `b`.
 
 
 ---
 ### divide<!-- {{#callable:divide}} -->
-The `divide` function performs division of two double precision floating-point numbers and returns the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L16>)
+
+Performs division of two double precision floating-point numbers.
 - **Inputs**:
     - `a`: The dividend, a double precision floating-point number.
     - `b`: The divisor, a double precision floating-point number.
-- **Control Flow**:
-    - The function takes two double arguments, `a` and `b`.
-    - It returns the result of dividing `a` by `b`.
+- **Logic and Control Flow**:
+    - Return the result of dividing `a` by `b`.
 - **Output**: A double precision floating-point number representing the result of the division.
 
 
 ---
 ### maximum<!-- {{#callable:maximum}} -->
-The `maximum` function template returns the greater of two values of the same type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L21>)
+
+Returns the greater of two values of the same type.
 - **Inputs**:
-    - `a`: The first value to compare, of a generic type T.
-    - `b`: The second value to compare, of a generic type T.
-- **Control Flow**:
-    - The function uses the ternary conditional operator to compare the two input values.
-    - If the first value `a` is greater than the second value `b`, the function returns `a`.
-    - Otherwise, the function returns `b`.
-- **Output**: The function returns the greater of the two input values, of the same type T.
+    - ``a``: The first value to compare, of type `T`.
+    - ``b``: The second value to compare, of type `T`.
+- **Logic and Control Flow**:
+    - Compares the two input values `a` and `b` using the greater-than operator (`>`).
+    - If `a` is greater than `b`, returns `a`.
+    - If `b` is greater than or equal to `a`, returns `b`.
+- **Output**: The greater of the two input values, of type `T`.
 
 
 ---
 ### fibonacci<!-- {{#callable:fibonacci}} -->
-The `fibonacci` function calculates the nth Fibonacci number using a recursive approach.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L27>)
+
+Calculates the nth Fibonacci number using recursion.
 - **Inputs**:
-    - `n`: An integer representing the position in the Fibonacci sequence for which the Fibonacci number is to be calculated.
-- **Control Flow**:
-    - The function checks if the input `n` is less than or equal to 1.
-    - If `n` is less than or equal to 1, the function returns `n` as the Fibonacci number.
-    - If `n` is greater than 1, the function recursively calls itself with `n-1` and `n-2` and returns the sum of these two calls.
-- **Output**: The function returns an integer which is the nth Fibonacci number.
+    - `n`: An integer representing the position in the Fibonacci sequence to calculate.
+- **Logic and Control Flow**:
+    - Check if `n` is less than or equal to 1.
+    - If true, return `n` as the Fibonacci number.
+    - If false, recursively call `fibonacci(n - 1)` and `fibonacci(n - 2)` and return their sum.
+- **Output**: The nth Fibonacci number as an integer.
 
 
 ---
 ### square<!-- {{#callable:square}} -->
-The `square` function calculates the square of an integer by multiplying the integer by itself.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L32>)
+
+Calculates the square of an integer.
 - **Inputs**:
-    - `x`: An integer value that is to be squared.
-- **Control Flow**:
-    - The function takes an integer input `x`.
-    - It returns the result of multiplying `x` by itself.
-- **Output**: The function returns an integer which is the square of the input integer `x`.
+    - `x`: An integer to be squared.
+- **Logic and Control Flow**:
+    - Multiplies the input integer `x` by itself.
+- **Output**: Returns the square of the input integer `x` as an integer.
 
 
 ---
 ### swap<!-- {{#callable:swap}} -->
-The `swap` function exchanges the values of two integer variables using reference parameters.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L37>)
+
+Exchanges the values of two integer variables using reference parameters.
 - **Inputs**:
-    - `a`: A reference to the first integer variable whose value is to be swapped.
-    - `b`: A reference to the second integer variable whose value is to be swapped.
-- **Control Flow**:
+    - ``a``: A reference to the first integer variable to swap.
+    - ``b``: A reference to the second integer variable to swap.
+- **Logic and Control Flow**:
     - Declare a temporary integer variable `temp` and assign it the value of `a`.
     - Assign the value of `b` to `a`.
-    - Assign the value of `temp` to `b`, completing the swap of values between `a` and `b`.
-- **Output**: The function does not return a value; it modifies the input variables directly through references.
+    - Assign the value of `temp` to `b`, completing the swap.
+- **Output**: No return value; the function modifies the input variables directly.
 
 
 ---
 ### processVector<!-- {{#callable:processVector}} -->
-The `processVector` function is designed to process a vector of integers that is passed to it using move semantics.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L44>)
+
+Processes a vector using move semantics.
 - **Inputs**:
-    - `vec`: An rvalue reference to a `std::vector<int>`, which allows the function to take ownership of the vector's resources.
-- **Control Flow**:
-    - The function takes an rvalue reference to a vector, indicating that it is intended to take ownership of the vector's resources.
-    - The function body is currently empty, suggesting that the specific processing logic is yet to be implemented.
-- **Output**: The function does not return any value.
+    - ``vec``: An rvalue reference to a `std::vector<int>`, which allows the function to take ownership of the vector's resources.
+- **Logic and Control Flow**:
+    - The function takes an rvalue reference to a `std::vector<int>` as input, indicating that it will use move semantics to process the vector.
+    - The function body is currently empty, so no processing occurs within the function.
+- **Output**: No output is returned from the function.
 
 
 ---
 ### calculateArea<!-- {{#callable:MathUtils::calculateArea}} -->
-The function `calculateArea` computes the area of a circle given its radius.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L50>)
+
+Calculates the area of a circle given its radius.
 - **Inputs**:
-    - `radius`: A double representing the radius of the circle for which the area is to be calculated.
-- **Control Flow**:
-    - The function multiplies the constant 3.14159 (an approximation of π) by the square of the input radius.
-- **Output**: A double representing the calculated area of the circle.
+    - `radius`: The radius of the circle for which to calculate the area.
+- **Logic and Control Flow**:
+    - Multiplies the constant 3.14159 by the square of the `radius` to compute the area.
+- **Output**: Returns the calculated area as a `double`.
 
 
 ---
 ### complexCalculation<!-- {{#callable:MathUtils::Advanced::complexCalculation}} -->
-The `complexCalculation` function computes a result by multiplying two double values and adding the area of a circle with the first value as its radius.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L55>)
+
+Calculates the result of multiplying two numbers and adding the area of a circle with the first number as the radius.
 - **Inputs**:
-    - `x`: A double representing the first operand and the radius for the area calculation.
-    - `y`: A double representing the second operand for multiplication.
-- **Control Flow**:
-    - The function multiplies the input `x` by `y`.
-    - It then calls the [`calculateArea`](<#MathUtilscalculateArea>) function with `x` as the argument to compute the area of a circle with radius `x`.
-    - The result of the multiplication is added to the result of the area calculation.
-    - The final result is returned.
-- **Output**: A double representing the sum of the product of `x` and `y` and the area of a circle with radius `x`.
+    - `x`: The first double precision floating-point number, used as a multiplier and as the radius for area calculation.
+    - `y`: The second double precision floating-point number, used as a multiplier.
+- **Logic and Control Flow**:
+    - Multiply `x` and `y` together.
+    - Call the [`calculateArea`](<#mathutilscalculatearea>) function with `x` as the argument to compute the area of a circle with radius `x`.
+    - Add the result of the multiplication to the result of the area calculation.
+    - Return the final result.
+- **Output**: A double precision floating-point number representing the calculated result.
 - **Functions Called**:
-    - [`MathUtils::calculateArea`](<#MathUtilscalculateArea>)
+    - [`MathUtils::calculateArea`](<#mathutilscalculatearea>)
 
 
 ---
 ### demonstrateLambdas<!-- {{#callable:demonstrateLambdas}} -->
-The `demonstrateLambdas` function showcases the use of lambda expressions in C++ with different capture modes.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L222>)
+
+Defines and demonstrates three lambda expressions with different capture methods.
 - **Inputs**: None
-- **Control Flow**:
-    - Defines a simple lambda `simpleLambda` that prints 'Simple lambda' to the console.
-    - Defines a lambda `lambdaWithCapture` that captures variables by reference and returns the double of its integer parameter `x`.
-    - Defines a lambda `lambdaWithMutableCapture` that captures variables by value and returns the sum of its integer parameter `y` and 10.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Defines a lambda `simpleLambda` that prints 'Simple lambda' to the standard output.
+    - Defines a lambda `lambdaWithCapture` that captures variables by reference and returns the input integer multiplied by 2.
+    - Defines a lambda `lambdaWithMutableCapture` that captures variables by value and returns the input integer incremented by 10.
+- **Output**: No output is returned from the function as it only defines lambda expressions without executing them.
 
 
 ---
 ### safeDivide<!-- {{#callable:safeDivide}} -->
-The `safeDivide` function attempts to divide two double values and returns a [`Calculator`](<#CalculatorCalculator>) object, handling division by zero by catching exceptions and returning a [`Calculator`](<#CalculatorCalculator>) with a value of 0.0.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L237>)
+
+Performs division of two numbers and handles division by zero by returning a [`Calculator`](<#calculatorcalculator>) object with a value of 0.0.
 - **Inputs**:
-    - `a`: The numerator of the division, a double value.
-    - `b`: The denominator of the division, a double value.
-- **Control Flow**:
-    - The function begins with a try block to handle potential exceptions.
-    - It checks if the denominator `b` is zero, and if so, throws a `std::runtime_error` with the message "Division by zero".
-    - If no exception is thrown, it returns a [`Calculator`](<#CalculatorCalculator>) object initialized with the result of `a / b`.
-    - If an exception is caught, it prints an error message to `std::cerr` and returns a [`Calculator`](<#CalculatorCalculator>) object initialized with 0.0.
-- **Output**: A [`Calculator`](<#CalculatorCalculator>) object initialized with the result of the division or 0.0 if division by zero occurs.
+    - `a`: The dividend, a double precision floating-point number.
+    - `b`: The divisor, a double precision floating-point number.
+- **Logic and Control Flow**:
+    - Attempts to divide `a` by `b`.
+    - Checks if `b` is equal to 0.0.
+    - If `b` is 0.0, throws a `std::runtime_error` with the message "Division by zero".
+    - If an exception is caught, prints the error message to standard error output.
+    - Returns a [`Calculator`](<#calculatorcalculator>) object initialized with the result of the division if successful, or 0.0 if an exception occurs.
+- **Output**: A [`Calculator`](<#calculatorcalculator>) object initialized with the result of the division or 0.0 if division by zero occurs.
 - **Functions Called**:
-    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+    - [`Calculator::Calculator`](<#calculatorcalculator>)
 
 
 ---
 ### maximum<bool><!-- {{#callable:maximum<bool>}} -->
-The specialized template function `maximum<bool>` returns the logical OR of two boolean values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L248>)
+
+Returns the logical OR of two boolean values.
 - **Inputs**:
     - `a`: The first boolean value to compare.
     - `b`: The second boolean value to compare.
-- **Control Flow**:
-    - The function takes two boolean inputs, `a` and `b`.
-    - It evaluates the logical OR operation between `a` and `b`.
-    - The result of the OR operation is returned.
-- **Output**: A boolean value that is the result of the logical OR operation between the two input booleans.
+- **Logic and Control Flow**:
+    - Evaluate the logical OR operation between `a` and `b`.
+    - Return the result of the OR operation.
+- **Output**: A boolean value that is `true` if either `a` or `b` is `true`, otherwise `false`.
 
 
 ---
 ### main<!-- {{#callable:main}} -->
-The `main` function demonstrates the use of various classes and features such as operator overloading, lambda expressions, and polymorphism with shapes.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_func_defs.cpp#L295>)
+
+Executes a series of operations involving `Calculator` objects, a lambda function, and polymorphic `Shape` objects.
 - **Inputs**: None
-- **Control Flow**:
-    - Instantiate two `Calculator` objects `calc1` and `calc2` with initial values 10.0 and 5.0, respectively.
-    - Add `calc1` and `calc2` using the overloaded `+` operator to create a new `Calculator` object `result`.
-    - Define a lambda function that squares an integer and apply it to the number 5, storing the result in `squared`.
-    - Create a `Circle` object with radius 5.0 and a `Rectangle` object with width 4.0 and height 6.0.
-    - Create a vector of `unique_ptr` to `Shape` objects and add a `Circle` with radius 3.0 and a `Rectangle` with width 2.0 and height 8.0.
-    - Iterate over the vector of shapes, calling the `draw` method and printing the area of each shape using `calculateArea`.
-- **Output**: The function returns an integer value `0`, indicating successful execution.
+- **Logic and Control Flow**:
+    - Creates two `Calculator` objects `calc1` and `calc2` with initial values 10.0 and 5.0, respectively.
+    - Adds `calc1` and `calc2` using the overloaded `+` operator and stores the result in `result`.
+    - Defines a lambda function that squares an integer and applies it to the integer 5, storing the result in `squared`.
+    - Creates a `Circle` object with radius 5.0 and a `Rectangle` object with width 4.0 and height 6.0.
+    - Initializes a `std::vector` of `std::unique_ptr<Shape>` and adds a `Circle` with radius 3.0 and a `Rectangle` with width 2.0 and height 8.0.
+    - Iterates over the `shapes` vector, calling the `draw` method and printing the area of each shape using `calculateArea`.
+- **Output**: Returns 0 to indicate successful execution.
 
 
 

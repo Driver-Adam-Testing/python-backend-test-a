@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `symbol_common.py` file in the `python-backend` codebase defines classes and functions for handling and analyzing programming language symbols, including language detection, symbol parsing, and symbol data representation using various parsers like ctags and LLMs.
+Defines classes and functions for symbol parsing and analysis, including language detection and symbol data structures.
 
 # Purpose
-This Python source code file is designed to facilitate the analysis and categorization of programming language symbols within source code files. It provides a structured approach to parsing and representing symbols using different parsing techniques, such as UCTAGS, Tree Sitter, and language models (LLMs). The file defines several enumerations and data classes to represent various aspects of symbols, including their language type, parser kind, symbol kind, and scope relations. The `Lang` class, for instance, maps file extensions to specific programming languages, while `SymbolKind` and `ScopeRelation` categorize symbols and their relationships within the code structure.
+The code defines a set of classes and functions for analyzing and categorizing programming symbols within source code files. It includes several enumerations such as `Lang`, `ParserKind`, `SymbolKind`, and `ScopeRelation` to classify languages, parser types, symbol types, and scope relationships, respectively. The `Lang` class, for example, maps file extensions to programming languages, while `SymbolKind` categorizes different types of symbols like variables, classes, and modules.
 
-The file also includes functions for creating and managing symbol data, such as [`create_raw_symbol_via_ctags`](<#create_raw_symbol_via_ctags>) and [`create_raw_symbol_via_llm`](<#create_raw_symbol_via_llm>), which generate `RawSymbolData` instances based on the parsing method used. Additionally, the [`disambiguate_header`](<#disambiguate_header>) function uses a language model to determine whether a header file is written in C or C++. The code is structured to be part of a larger system, likely a library or tool for code analysis, as it imports utility functions and models from other modules and does not contain a main execution block. This file is integral to a system that requires detailed symbol extraction and analysis, providing a robust framework for understanding and manipulating code structures across multiple programming languages.
+The code also defines data structures using `dataclass` and `BaseModel` from the `pydantic` library to represent raw symbol data (`RawTreeSitterSymbolData`, `RawSymbolData`) and reified symbols (`ReifiedSymbol`). These structures store detailed information about symbols, such as their name, location in the file, and relationships to other symbols. Functions like [`create_raw_symbol_via_ctags`](<#create_raw_symbol_via_ctags>) and [`create_raw_symbol_via_llm`](<#create_raw_symbol_via_llm>) are used to generate these data structures from different parsing methods, such as ctags and language models. The code also includes utility functions for handling large files and determining the language of header files. Overall, this code is part of a system for static code analysis, focusing on symbol extraction and classification.
 # Imports and Dependencies
 
 ---
@@ -35,61 +35,48 @@ The file also includes functions for creating and managing symbol data, such as 
 ---
 ### CHUNK\_SIZE
 - **Type**: `int`
-- **Description**: `CHUNK_SIZE` is an integer variable set to 64,000. It represents the size of chunks used in text processing or data handling operations within the code.
-- **Use**: This variable is used to define the maximum size of text chunks when splitting text for processing.
+- **Description**: Defines the size of a chunk of text or data to be processed or split, set to 64,000 bytes.
+- **Use**: Used to determine the maximum size of text chunks when splitting text for processing.
 
 
 ---
 ### CHUNK\_OVERLAP
 - **Type**: `int`
-- **Description**: `CHUNK_OVERLAP` is an integer variable set to 1,000. It represents the number of overlapping characters between chunks when splitting text into smaller parts.
-- **Use**: This variable is used to ensure that there is a consistent overlap between text chunks, which can be important for maintaining context in text processing tasks.
+- **Description**: Defines the number of characters that overlap between consecutive chunks of text when splitting text into smaller parts. This overlap helps maintain context between chunks.
+- **Use**: Used in text splitting operations to ensure continuity and context preservation between text chunks.
 
 
 ---
 ### BLIND\_ADVANCE\_IF\_NO\_END\_LINE
 - **Type**: `int`
-- **Description**: `BLIND_ADVANCE_IF_NO_END_LINE` is an integer constant set to 200. It is used as a default value for the end line of a symbol when the end line is not explicitly provided by the ctags symbol data.
-- **Use**: This variable is used to determine the end line of a symbol in the absence of an explicit end line, providing a default advancement of 200 lines.
+- **Description**: Defines the number of lines to advance when there is no end line specified for a symbol in the code analysis process.
+- **Use**: Used in the `create_raw_symbol_via_ctags` function to determine the end line for a symbol when it is not explicitly provided.
 
 
 ---
 ### BLIND\_PADDING\_TOP
 - **Type**: `int`
-- **Description**: `BLIND_PADDING_TOP` is an integer variable set to 100. It represents the number of lines to be used as padding at the top of a code segment when extracting or processing code symbols.
-- **Use**: This variable is used to determine the starting line for code extraction, ensuring that a buffer of lines is included above the actual code segment.
+- **Description**: Defines the number of lines to add as padding at the top of a code segment when extracting or processing code symbols.
+- **Use**: Used to calculate the starting line of a code segment with additional padding.
 
 
 ---
 ### BLIND\_PADDING\_BOTTOM
 - **Type**: `int`
-- **Description**: `BLIND_PADDING_BOTTOM` is a global integer variable set to the value 10. It is used to define the amount of padding added to the bottom of a code segment when extracting or processing code symbols.
-- **Use**: This variable is used to adjust the end line of a code segment by adding padding when extracting code symbols.
+- **Description**: Defines the bottom padding value used in the code, set to 10.
+- **Use**: Used to determine the amount of padding to apply at the bottom of a section when processing code.
 
 
 # Classes
 
 ---
 ### Lang<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang}} -->
-- **Decorators**: `@classmethod`
-- **Members**:
-    - `C`: Represents the C programming language.
-    - `CPP`: Represents the C++ programming language.
-    - `C_OR_CPP_HEADER`: Represents a C or C++ header file.
-    - `PYTHON`: Represents the Python programming language.
-    - `VERILOG`: Represents the Verilog hardware description language.
-    - `RUST`: Represents the Rust programming language.
-    - `ASSEMBLY`: Represents assembly language.
-    - `JAVA`: Represents the Java programming language.
-    - `RUBY`: Represents the Ruby programming language.
-    - `C_SHARP`: Represents the C# programming language.
-    - `DEFAULT`: Represents the default language type.
-    - `TYPESCRIPT`: Represents the TypeScript programming language.
-    - `JAVASCRIPT`: Represents the JavaScript programming language.
-- **Description**: The Lang class is an enumeration that extends IntEnum to represent various programming languages and file types, each associated with a unique integer value. It provides a class method, from_ext, which maps file extensions to their corresponding language enumeration, allowing for easy identification of a file's language based on its extension. This class is useful for categorizing and handling different programming languages in a consistent manner within a software system.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L20>)
+
+- **Description**: Defines an enumeration for different programming languages, each associated with a unique integer value. Provides a class method `from_ext` to map file extensions to the corresponding language enumeration value. Implements a string representation method to return the name of the language.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.from_ext`](<#Langfrom_ext>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.__str__`](<#Lang__str__>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.from_ext`](<#langfrom_ext>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.__str__`](<#lang__str__>)
 - **Inherits From**:
     - `IntEnum`
 
@@ -97,65 +84,67 @@ The file also includes functions for creating and managing symbol data, such as 
 
 ---
 #### Lang\.from\_ext<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.from_ext}} -->
-The `from_ext` method maps a file extension to a corresponding language enumeration value.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L35>)
+
+Maps a file extension to a corresponding language enumeration value.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `ext`: A string representing the file extension to be mapped to a language.
-- **Control Flow**:
-    - The method uses a match-case statement to compare the input extension against a set of predefined cases.
-    - For each case, it returns a corresponding language enumeration value from the `Lang` class.
-    - If the extension does not match any predefined cases, it returns the `DEFAULT` language enumeration value.
-- **Output**: The method returns a `Lang` enumeration value corresponding to the input file extension.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang`](<#Lang>)  (Base Class)
+    - `ext`: A string representing the file extension to map.
+- **Logic and Control Flow**:
+    - Uses a match-case statement to compare the input `ext` against known file extensions.
+    - Returns the corresponding language enumeration value from the `Lang` class for each matched case.
+    - If no case matches, returns the `Lang.DEFAULT` enumeration value.
+- **Output**: A `Lang` enumeration value corresponding to the input file extension.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang`](<#lang>)  (Base Class)
 
 
 ---
 #### Lang\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang.__str__}} -->
-The `__str__` method returns the name of the enumeration member as a string.
-- **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `name` attribute of the enumeration member.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L71>)
+
+Returns the name of the enumeration member as a string.
+- **Inputs**:
+    - `self`: The instance of the `Lang` enumeration.
+- **Logic and Control Flow**:
+    - Accesses the `name` attribute of the enumeration member.
+    - Returns the value of the `name` attribute.
 - **Output**: A string representing the name of the enumeration member.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang`](<#Lang>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.Lang`](<#lang>)  (Base Class)
 
 
 
 ---
 ### ParserKind<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.ParserKind}} -->
-- **Description**: The `ParserKind` class is an enumeration that defines different types of parsers, specifically `UCTAGS`, `TREE_SITTER`, and `LLM`. These enumerated values are used to categorize or specify the kind of parser being utilized in the context of the application, allowing for clear and consistent reference to these parser types throughout the codebase.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L75>)
+
+- **Description**: Defines different types of parsers using enumeration values: `UCTAGS`, `TREE_SITTER`, and `LLM`.
 - **Inherits From**:
     - `Enum`
 
 
 ---
 ### SymbolKind<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.SymbolKind}} -->
-- **Description**: The `SymbolKind` class is an enumeration that defines various types of symbols that can be identified in a codebase. These symbols include `VARIABLE`, `CALLABLE`, `CALLABLE_DECLARATION`, `CALL`, `DATA_STRUCTURE`, `DATA_STRUCTURE_INSTANCE`, `CLASS`, `INTERFACE`, `MODULE`, and `IMPORT`. Each member of the enumeration is automatically assigned a unique value using the `auto()` function, which simplifies the process of defining enumerations by automatically assigning integer values to each member. This class is useful for categorizing and managing different kinds of symbols in a programming environment, particularly in the context of code analysis or parsing.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L81>)
+
+- **Description**: Defines different types of symbols that can be identified in a codebase, such as variables, callables, data structures, classes, interfaces, modules, and imports.
 - **Inherits From**:
     - `Enum`
 
 
 ---
 ### ScopeRelation<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.ScopeRelation}} -->
-- **Members**:
-    - `METHOD`: Represents a method relationship to the parent scope.
-    - `NESTED_CLASS`: Represents a nested class relationship to the parent scope.
-    - `NESTED_INTERFACE`: Represents a nested interface relationship to the parent scope.
-    - `NESTED_DATA_STRUCTURE`: Represents a nested data structure relationship to the parent scope.
-    - `FIELD`: Represents a field relationship to the parent scope.
-    - `CLASS_METHOD`: Represents a class method relationship to the parent scope.
-    - `INSTANCE_METHOD`: Represents an instance method relationship to the parent scope.
-    - `MODULE_METHOD`: Represents a module method relationship to the parent scope.
-    - `ATTRIBUTE`: Represents an attribute relationship to the parent scope.
-    - `ENUMERATOR`: Represents an enumerator relationship to the parent scope.
-- **Description**: The `ScopeRelation` class is an enumeration that defines various types of relationships a child symbol can have with its parent scope, such as methods, nested classes, fields, and attributes. It is used to categorize and describe the role or type of a symbol within its parent context, providing a structured way to understand the hierarchy and organization of code elements.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L94>)
+
+- **Description**: Defines relationships between a child symbol and its parent scope, such as `METHOD`, `NESTED_CLASS`, `FIELD`, and others, using string enumeration.
 - **Inherits From**:
     - `StrEnum`
 
 
 ---
 ### BespokeMarker<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.BespokeMarker}} -->
-- **Decorators**: `@abc.ABC`
-- **Description**: The `BespokeMarker` class is an abstract base class that inherits from both `abc.ABC` and `BaseModel`. It serves as a marker or placeholder class within the codebase, potentially to be extended or used for type checking or as a base for other classes that require the functionalities of both an abstract base class and a Pydantic model.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L109>)
+
+- **Description**: Serves as an abstract base class that inherits from `abc.ABC` and `BaseModel`, but does not define any additional functionality or attributes.
 - **Inherits From**:
     - `abc.ABC`
     - `BaseModel`
@@ -163,70 +152,79 @@ The `__str__` method returns the name of the enumeration member as a string.
 
 ---
 ### RawTreeSitterSymbolData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L113>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
-    - `name`: The name of the symbol, which can be None.
-    - `start_line`: The starting line number of the symbol in the source file.
-    - `end_line`: The ending line number of the symbol in the source file.
-    - `start_byte`: The starting byte position of the symbol in the source file.
-    - `end_byte`: The ending byte position of the symbol in the source file.
-    - `file_path`: The file path where the symbol is located.
-    - `symbol_kind`: The kind of symbol, represented by the SymbolKind enum.
-    - `fully_qualified_parent_path`: The fully qualified path of the parent symbol, which can be None.
-    - `symbol_code`: The code associated with the symbol, which can be None.
-    - `delimiter`: The delimiter used in the symbol, which can be None.
-    - `base_class_names`: A tuple of base class names, which can be None.
-    - `bespoke_data`: Custom data associated with the symbol, which can be None.
-- **Description**: The RawTreeSitterSymbolData class is a data model that represents detailed information about a symbol extracted from source code using the Tree-sitter parser. It includes attributes such as the symbol's name, location in the file (both line and byte positions), the file path, and the kind of symbol it represents. Additionally, it can store the fully qualified path of its parent, the actual code of the symbol, and any custom data associated with it. The class is designed to be immutable, as indicated by the frozen configuration in its Pydantic model.
+    - `name`: Stores the name of the symbol, which can be `None`.
+    - `start_line`: Indicates the starting line number of the symbol in the source file.
+    - `end_line`: Indicates the ending line number of the symbol in the source file.
+    - `start_byte`: Indicates the starting byte position of the symbol in the source file.
+    - `end_byte`: Indicates the ending byte position of the symbol in the source file.
+    - `file_path`: Stores the path to the file where the symbol is located.
+    - `symbol_kind`: Specifies the kind of symbol, using the `SymbolKind` enumeration.
+    - `fully_qualified_parent_path`: Stores the fully qualified path of the parent symbol, which can be `None`.
+    - `symbol_code`: Contains the code of the symbol, which can be `None`.
+    - `delimiter`: Stores the delimiter used in the symbol, which can be `None`.
+    - `base_class_names`: Contains a tuple of base class names, which can be `None`.
+    - `bespoke_data`: Holds custom data related to the symbol, which can be `None`.
+- **Description**: Represents raw data for a symbol parsed by Tree-sitter, including its name, location, type, and associated code. It extends `BaseModel` and is immutable due to the `frozen` configuration in its `Config` class. The class captures various attributes of a symbol, such as its start and end positions in the file, its kind, and any custom data associated with it.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### Config<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawTreeSitterSymbolData.Config}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L131>)
+
 - **Members**:
-    - `frozen`: Indicates if the configuration is immutable.
-- **Description**: The `Config` class is a simple configuration class that provides a `__hash__` method by setting the `frozen` attribute to `True`, indicating that instances of this class are immutable and can be used as keys in dictionaries or stored in sets.
+    - `frozen`: Indicates if the class is immutable.
+- **Description**: Defines configuration settings for the `RawTreeSitterSymbolData` class, specifically enabling the `__hash__` method by setting the `frozen` attribute to `True`, which makes instances of the class hashable and immutable.
 
 
 ---
 ### ReifiedSymbol<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.ReifiedSymbol}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L139>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
     - `raw`: Holds raw symbol data from a tree-sitter parser.
     - `is_definition`: Indicates if the symbol is a definition.
     - `is_declaration`: Indicates if the symbol is a declaration.
-    - `definition`: References the definition of the symbol if it exists.
-    - `usages`: Lists all usages of the symbol.
-    - `calls`: Lists all calls made by the symbol.
-    - `inherits_from`: Lists symbols from which this symbol inherits.
-    - `declarations`: Lists declarations associated with the symbol.
-    - `parent`: References the parent symbol if it exists.
-    - `children`: Lists child symbols of this symbol.
-- **Description**: The ReifiedSymbol class extends the concept of a LinkedSymbol by incorporating additional metadata about symbol usage, inheritance, and relationships within a codebase. It is designed to hold detailed information about a symbol's definition, declaration, and its interactions with other symbols, such as calls and inheritance. This class is particularly useful for analyzing and representing complex symbol relationships in a programming environment, leveraging tree-sitter data for its raw symbol information.
+    - `definition`: References the definition of the symbol, if any.
+    - `usages`: Contains a list of symbol usages.
+    - `calls`: Contains a list of symbols that this symbol calls.
+    - `inherits_from`: Contains a list of symbols from which this symbol inherits.
+    - `declarations`: Contains a list of declarations related to this symbol.
+    - `parent`: References the parent symbol, if any.
+    - `children`: Contains a list of child symbols.
+- **Description**: Represents a symbol with extended capabilities, including tracking of usages, calls, inheritance, and relationships with other symbols. It extends the functionality of a linked symbol by maintaining lists of related symbols and their interactions, such as definitions, declarations, and parent-child relationships.
 
 
 ---
 ### RawSymbolData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L159>)
+
 - **Members**:
-    - `parser_kind`: Specifies the type of parser used to generate the symbol data.
-    - `symbol_kind`: Indicates the kind of symbol represented, such as variable or class.
+    - `parser_kind`: Specifies the type of parser used.
+    - `symbol_kind`: Indicates the kind of symbol.
     - `name`: Holds the name of the symbol.
-    - `path`: Stores the file path where the symbol is located.
-    - `scope`: Defines the scope in which the symbol exists, if any.
-    - `scope_relation`: Describes the relationship of the symbol to its scope, if applicable.
-    - `children`: Contains a list of child symbols related to this symbol.
-    - `start_line`: Indicates the starting line number of the symbol in the source code.
-    - `end_line`: Indicates the ending line number of the symbol in the source code.
-    - `symbol_code`: Holds the code snippet representing the symbol.
-    - `file_code`: Contains the entire file code if applicable.
-    - `reference_code`: Stores reference code related to the symbol, if any.
-    - `delimiter`: Specifies a delimiter used in parsing, if any.
-    - `is_large_file`: Boolean indicating if the symbol is part of a large file.
-    - `is_overloaded`: Boolean indicating if the symbol is overloaded.
+    - `path`: Stores the file path of the symbol.
+    - `scope`: Defines the scope of the symbol, if any.
+    - `scope_relation`: Describes the relationship of the symbol to its scope.
+    - `children`: Contains a list of child symbols.
+    - `start_line`: Specifies the starting line number of the symbol in the file.
+    - `end_line`: Specifies the ending line number of the symbol in the file.
+    - `symbol_code`: Holds the code representation of the symbol.
+    - `file_code`: Contains the code of the file where the symbol is located.
+    - `reference_code`: Stores reference code related to the symbol.
+    - `delimiter`: Defines the delimiter used in the symbol's scope.
+    - `is_large_file`: Indicates if the symbol is part of a large file.
+    - `is_overloaded`: Indicates if the symbol is overloaded.
     - `reified_symbol`: Holds a reified symbol object, if any.
-- **Description**: The RawSymbolData class is a data model that encapsulates detailed information about a symbol extracted from source code, including its name, kind, scope, and code representation. It is designed to work with different parsing strategies, such as Tree Sitter, and can handle additional attributes like scope relations and child symbols. The class also provides a class method to construct an instance from raw symbol data obtained through Tree Sitter, allowing for flexible symbol data management in code analysis applications.
+- **Description**: Represents raw data for a symbol, including its parser type, kind, name, path, scope, and other attributes. It provides a structure to store and manage symbol information extracted from source code, supporting various parsing and symbol analysis operations.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<#rawsymboldatafrom_tree_sitter_raw_symbol>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -234,46 +232,52 @@ The `__str__` method returns the name of the enumeration member as a string.
 
 ---
 #### RawSymbolData\.from\_tree\_sitter\_raw\_symbol<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol}} -->
-The `from_tree_sitter_raw_symbol` method constructs a `RawSymbolData` object from a `RawTreeSitterSymbolData` instance and additional parameters, handling code extraction and symbol data initialization.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L179>)
+
+Creates a `RawSymbolData` instance from a `RawTreeSitterSymbolData` object and additional parameters.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `ts_symbol`: An instance of `RawTreeSitterSymbolData` containing raw symbol data extracted by Tree-sitter.
-    - `path`: A `Path` object representing the file path associated with the symbol.
-    - `scope`: An optional string representing the scope of the symbol.
-    - `scope_relation`: An optional `ScopeRelation` enum value indicating the relationship of the symbol to its parent scope.
+    - `cls`: The class itself, used to create an instance of `RawSymbolData`.
+    - `ts_symbol`: An instance of `RawTreeSitterSymbolData` containing symbol data from Tree-sitter.
+    - `path`: A `Path` object representing the file path of the symbol.
+    - `scope`: A string or `None` representing the scope of the symbol.
+    - `scope_relation`: An instance of `ScopeRelation` or `None` indicating the relationship of the symbol to its scope.
     - `children`: A list of `RawSymbolData` instances representing child symbols.
-    - `reference_code`: An optional string containing reference code for the symbol.
-    - `delimiter`: An optional string used as a delimiter in the symbol's scope.
-    - `is_large_file`: A boolean indicating if the file is considered large.
+    - `reference_code`: A string or `None` representing reference code for the symbol.
+    - `delimiter`: A string or `None` used as a delimiter in the symbol's code.
+    - `is_large_file`: A boolean indicating if the file is large.
     - `is_overloaded`: A boolean indicating if the symbol is overloaded.
-    - `use_padding`: A boolean indicating whether to use padding when extracting code lines.
-    - `code`: An optional string containing the full code from which the symbol is extracted.
-    - `reified_symbol`: An optional `ReifiedSymbol` instance associated with the symbol.
-- **Control Flow**:
+    - `use_padding`: A boolean indicating if padding should be used when extracting code lines.
+    - `code`: A string or `None` representing the full code from which the symbol is extracted.
+    - `reified_symbol`: An instance of `ReifiedSymbol` or `None`, representing additional symbol data.
+- **Logic and Control Flow**:
     - Initialize `file_code` to `None`.
     - Check if `code` is not `None`.
-    - If `use_padding` is `True`, adjust `start_line` and `end_line` with padding constants; otherwise, use `ts_symbol`'s start and end lines.
-    - Extract the symbol's code from `code` using the calculated line range.
-    - If `is_large_file` or `is_overloaded` is `True`, split the extracted code into chunks and use the first chunk as `symbol_code`; otherwise, use the full extracted code and set `file_code` to `code`.
+    - If `use_padding` is `True`, adjust `start_line` and `end_line` with padding constants.
+    - Extract the code lines from `start_line` to `end_line` from `code`.
+    - If `is_large_file` or `is_overloaded` is `True`, split the extracted code into chunks and use the first chunk as `symbol_code`.
+    - If not, use the extracted code as `symbol_code` and set `file_code` to `code`.
     - If `code` is `None`, use `ts_symbol.symbol_code` as `symbol_code`.
     - Create a `RawSymbolData` instance with the extracted and provided data.
     - Return the created `RawSymbolData` instance.
-- **Output**: A `RawSymbolData` instance initialized with the provided and extracted symbol data.
+- **Output**: A `RawSymbolData` instance representing the symbol with the provided and processed data.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<#RawSymbolData>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<#rawsymboldata>)  (Base Class)
 
 
 
 ---
 ### RawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L244>)
+
 - **Decorators**: `@abc.ABC`
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The RawSymbolCollection class is an abstract base class that extends BaseModel and serves as a container for storing and managing a collection of raw symbol data, represented as a dictionary. It provides an abstract method for creating an instance from a language model (LLM) analysis and another abstract method to convert the collection to a dictionary format. This class is designed to be subclassed to implement specific logic for symbol collection and manipulation.
+    - `data`: Stores a dictionary mapping string keys to `RawSymbolData` objects.
+- **Description**: Defines an abstract base class for a collection of raw symbols, providing a structure to store and manage symbol data extracted from code. It includes abstract methods for creating instances from language model analysis and converting the collection to a dictionary format.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.from_llm`](<#RawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.to_dict`](<#RawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.from_llm`](<#rawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.to_dict`](<#rawsymbolcollectionto_dict>)
 - **Inherits From**:
     - `BaseModel`
     - `abc.ABC`
@@ -282,28 +286,32 @@ The `from_tree_sitter_raw_symbol` method constructs a `RawSymbolData` object fro
 
 ---
 #### RawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.from_llm}} -->
-The `from_llm` method is an abstract class method intended to create an instance of the class from a given code string and a root relative path.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L252>)
+
+Defines an abstract method to create an instance of the class from a language model (LLM) using provided code and a root relative path.
 - **Decorators**: `@classmethod`, `@abc.abstractmethod`
 - **Inputs**:
-    - `code`: A string representing the code from which the class instance should be created.
-    - `root_rel_path`: A Path object representing the root relative path associated with the code.
-- **Control Flow**:
-    - The method is defined as an abstract method, meaning it must be implemented by any non-abstract subclass of RawSymbolCollection.
-    - The method is a class method, which means it is called on the class itself rather than an instance of the class.
-- **Output**: The method is expected to return an instance of the class (Self) or None, but the exact output depends on the implementation in subclasses.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<#RawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the code to process.
+    - `root_rel_path`: A `Path` object representing the root relative path for the code.
+- **Logic and Control Flow**:
+    - The method is abstract and must be implemented by subclasses.
+    - It is a class method, meaning it receives the class as its first argument instead of an instance.
+- **Output**: Returns an instance of the class or `None`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<#rawsymbolcollection>)  (Base Class)
 
 
 ---
 #### RawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection.to_dict}} -->
-The `to_dict` method is an abstract method intended to convert a `RawSymbolCollection` instance into a dictionary mapping strings to `RawSymbolData` objects.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L257>)
+
+Defines an abstract method that should convert the instance data to a dictionary format.
 - **Decorators**: `@abc.abstractmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method is defined as an abstract method, meaning it must be implemented by any non-abstract subclass of `RawSymbolCollection`.
-    - The method does not contain any implementation in the provided code, as it is intended to be overridden.
-- **Output**: The method is expected to return a dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<#RawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - The method is defined as an abstract method using the `@abc.abstractmethod` decorator, indicating that subclasses must implement this method.
+    - The method does not contain any implementation in the base class and is expected to return a dictionary mapping strings to `RawSymbolData` objects.
+- **Output**: A dictionary with string keys and `RawSymbolData` values.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<#rawsymbolcollection>)  (Base Class)
 
 
 
@@ -311,104 +319,114 @@ The `to_dict` method is an abstract method intended to convert a `RawSymbolColle
 
 ---
 ### disambiguate\_header<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.disambiguate_header}} -->
-The `disambiguate_header` function determines whether a given header file code corresponds to C or C++ using a language model, with a fallback option in case of errors.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L262>)
+
+Determines whether a given header file corresponds to C or C++ code using a language model, with a fallback option in case of errors.
 - **Inputs**:
-    - `code`: A string representing the source code of a header file to be analyzed.
-    - `fallback`: An instance of the `Lang` enum that specifies the fallback language to return if the language model fails to provide a valid response.
-- **Control Flow**:
-    - Initialize a ChatOpenAI instance with specific model parameters.
-    - Define a system prompt that instructs the language model to determine if the header file code is C or C++.
-    - Create a user prompt by embedding the provided code into a predefined format.
-    - Attempt to generate a response from the language model using the system and user prompts.
-    - Convert the response to an integer to determine if the code is C (0) or C++ (1).
-    - Use a match-case statement to return the corresponding `Lang` enum value based on the integer result.
-    - Handle OpenAIError exceptions by printing an error message and returning the fallback language.
-    - Handle ValueError exceptions by printing an error message and returning the fallback language.
-- **Output**: Returns a `Lang` enum value indicating whether the code is C, C++, or the fallback language in case of an error.
+    - `code`: A string containing the source code of the header file to analyze.
+    - `fallback`: An instance of the `Lang` enum to use as a fallback if the language model fails to determine the language.
+- **Logic and Control Flow**:
+    - Initializes a [`ChatOpenAI`](<../models.py.md#chatopenai>) instance with specific parameters for model, temperature, and request timeout.
+    - Defines a `system_prompt` that instructs the language model on how to determine if the code is C or C++.
+    - Formats the `user_prompt` with the provided `code`.
+    - Attempts to generate a response from the language model using the `system_prompt` and `user_prompt`.
+    - Converts the response to an integer to determine if the code is C (0) or C++ (1).
+    - Uses a match-case statement to return `Lang.C` if the response is 0, `Lang.CPP` if the response is 1, or the `fallback` if the response is neither.
+    - Catches `OpenAIError` exceptions, logs an error message, and returns the `fallback`.
+    - Catches `ValueError` exceptions if the response cannot be converted to an integer, logs an error message, and returns the `fallback`.
+- **Output**: Returns a `Lang` enum value indicating whether the code is C, C++, or the fallback option.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/chat_openai.ChatOpenAI`](<../../../../auto_toml/src/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/auto_toml/src/chat_openai.ChatOpenAI.generate_response`](<../../../../auto_toml/src/chat_openai.py.md#ChatOpenAIgenerate_response>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI`](<../models.py.md#chatopenai>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<../models.py.md#chatopenaigenerate_response>)
 
 
 ---
 ### code\_requires\_multi\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt}} -->
-The function `code_requires_multi_prompt` determines if a given code string needs to be split into multiple chunks based on predefined chunk size and overlap.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L312>)
+
+Determines if the given code requires multiple prompts by checking if it can be split into more than one chunk.
 - **Inputs**:
-    - `code`: A string representing the code to be analyzed for chunking.
-- **Control Flow**:
-    - Import the [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) function from `shared.chunking.text_splitter`.
-    - Use [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) to divide the input `code` into chunks with a specified `CHUNK_SIZE` and `CHUNK_OVERLAP`.
-    - Check if the number of resulting chunks is greater than one.
-- **Output**: Returns a boolean value indicating whether the code requires multiple prompts (i.e., if it is split into more than one chunk).
+    - `code`: A string representing the code to be analyzed.
+- **Logic and Control Flow**:
+    - Imports the [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) function from `shared.chunking.text_splitter`.
+    - Splits the input `code` into chunks using [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) with predefined `CHUNK_SIZE` and `CHUNK_OVERLAP`.
+    - Checks if the number of chunks is greater than one.
+- **Output**: Returns `True` if the code is split into more than one chunk, otherwise returns `False`.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
 
 
 ---
 ### create\_raw\_symbol\_via\_ctags<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags}} -->
-The function `create_raw_symbol_via_ctags` generates a [`RawSymbolData`](<#RawSymbolData>) object from a ctags symbol dictionary, incorporating various parameters to define the symbol's scope, code, and other attributes.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L323>)
+
+Creates a [`RawSymbolData`](<#rawsymboldata>) object from a ctags symbol dictionary and additional parameters.
 - **Inputs**:
-    - `ctags_symbol`: A dictionary containing information about the symbol extracted by ctags, including its name, line number, and optionally its scope.
+    - `ctags_symbol`: A dictionary containing symbol information extracted by ctags.
     - `root_rel_path`: A `Path` object representing the root-relative path of the file containing the symbol.
-    - `code`: A string containing the source code of the file where the symbol is located.
-    - `symbol_kind`: An instance of `SymbolKind` enum indicating the type of symbol (e.g., VARIABLE, CALLABLE).
-    - `scope_relation`: A string or `None` indicating the relationship of the symbol to its parent scope, such as 'methods'.
-    - `delimiter`: A string or `None` used to split the scope information in the ctags symbol.
-    - `is_multi_prompt`: A boolean indicating whether the file is large enough to require multiple prompts for processing.
-    - `is_overloaded`: A boolean indicating whether the symbol is overloaded, defaulting to `False`.
-    - `use_padding`: A boolean indicating whether to apply padding to the symbol's start and end lines, defaulting to `False`.
-- **Control Flow**:
-    - Check if the ctags symbol has a 'scope' and split it using the delimiter to determine the scope, otherwise set scope to None.
-    - Create a [`RawSymbolData`](<#RawSymbolData>) object with initial values, including parser kind, symbol kind, name, path, scope, and other attributes.
-    - Determine the start and end lines for the symbol code, applying padding if `use_padding` is True.
-    - Extract the symbol code from the provided code string based on the calculated start and end lines.
-    - If `is_multi_prompt` or `is_overloaded` is True, split the symbol code into chunks and assign the first chunk to `symbol_code`, otherwise assign the entire symbol code.
-    - If not `is_multi_prompt` or `is_overloaded`, also assign the entire file code to `file_code`.
-    - Return the constructed [`RawSymbolData`](<#RawSymbolData>) object.
-- **Output**: A [`RawSymbolData`](<#RawSymbolData>) object containing detailed information about the symbol, including its code, scope, and other attributes.
+    - `code`: A string containing the source code of the file.
+    - `symbol_kind`: An instance of `SymbolKind` indicating the type of symbol.
+    - `scope_relation`: A string or `None` indicating the relationship of the symbol to its parent scope.
+    - `delimiter`: A string or `None` used to split the scope information.
+    - `is_multi_prompt`: A boolean indicating if the code requires multiple prompts for processing.
+    - `is_overloaded`: A boolean indicating if the symbol is overloaded, defaulting to `False`.
+    - `use_padding`: A boolean indicating if padding should be used around the symbol's code, defaulting to `False`.
+- **Logic and Control Flow**:
+    - Imports the [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>) function from `shared.chunking.text_splitter`.
+    - Checks if the `ctags_symbol` dictionary contains a 'scope' key and splits it using the `delimiter` to determine the `scope`; otherwise, sets `scope` to `None`.
+    - Creates a [`RawSymbolData`](<#rawsymboldata>) object with the provided parameters and additional default values.
+    - Determines the start and end lines for the symbol's code, adjusting for padding if `use_padding` is `True`.
+    - Extracts the symbol's code from the `code` string using the calculated start and end lines.
+    - If `is_multi_prompt` or `is_overloaded` is `True`, splits the symbol's code into chunks and assigns the first chunk to `raw_symbol_data.symbol_code`; otherwise, assigns the full code to `raw_symbol_data.symbol_code` and `code` to `raw_symbol_data.file_code`.
+    - Returns the `raw_symbol_data` object.
+- **Output**: A [`RawSymbolData`](<#rawsymboldata>) object containing information about the symbol.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<#RawSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<#rawsymboldata>)
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>)
 
 
 ---
 ### create\_raw\_symbol\_via\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_llm}} -->
-The function `create_raw_symbol_via_llm` creates a [`RawSymbolData`](<#RawSymbolData>) object using the provided name, path, code, and symbol kind, with the parser kind set to LLM.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L386>)
+
+Creates a [`RawSymbolData`](<#rawsymboldata>) object using the LLM parser kind with the provided symbol details.
 - **Inputs**:
-    - `name`: A string representing the name of the symbol.
-    - `path`: A `Path` object indicating the file path where the symbol is located.
-    - `code`: A string containing the code associated with the symbol.
-    - `symbol_kind`: An instance of `SymbolKind` enum representing the kind of symbol being created.
-- **Control Flow**:
-    - The function directly returns a [`RawSymbolData`](<#RawSymbolData>) object.
-    - The [`RawSymbolData`](<#RawSymbolData>) object is initialized with the `parser_kind` set to `ParserKind.LLM`.
-    - The `symbol_kind`, `name`, `path`, and `code` are set using the provided arguments.
-    - Other attributes like `scope`, `scope_relation`, `children`, `start_line`, `end_line`, `reference_code`, and `delimiter` are set to `None` or empty lists as appropriate.
-- **Output**: The function returns a [`RawSymbolData`](<#RawSymbolData>) object initialized with the provided parameters and some default values.
+    - `name`: The name of the symbol as a string.
+    - `path`: The file path where the symbol is located, as a `Path` object.
+    - `code`: The code associated with the symbol as a string.
+    - `symbol_kind`: The kind of symbol, represented by the `SymbolKind` enum.
+- **Logic and Control Flow**:
+    - Creates a [`RawSymbolData`](<#rawsymboldata>) object with the `parser_kind` set to `ParserKind.LLM`.
+    - Sets the `symbol_kind`, `name`, `path`, and `symbol_code` fields using the provided arguments.
+    - Initializes `scope`, `scope_relation`, `children`, `start_line`, `end_line`, `reference_code`, and `delimiter` fields to `None`.
+    - Sets the `file_code` field to the provided `code`.
+- **Output**: A [`RawSymbolData`](<#rawsymboldata>) object initialized with the provided symbol details and default values for unspecified fields.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<#RawSymbolData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<#rawsymboldata>)
 
 
 ---
 ### default\_ctags\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis}} -->
-The `default_ctags_analysis` function analyzes code using ctags to extract symbols and returns a collection of these symbols if any are found.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/symbol_common.py#L409>)
+
+Analyzes code using ctags to extract symbols and returns a collection of raw symbols if any are found.
 - **Inputs**:
-    - `collection_cls`: A class type that inherits from `RawSymbolCollection`, used to instantiate the output collection of symbols.
-    - `code`: A string containing the source code to be analyzed.
+    - `collection_cls`: A class type that inherits from `RawSymbolCollection` to store the extracted symbols.
+    - `code`: The source code as a string to analyze for symbols.
     - `root_rel_path`: A `Path` object representing the root-relative path of the file being analyzed.
-    - `symbol_kind`: An instance of `SymbolKind` indicating the type of symbols to be extracted.
-    - `ctags_kinds`: A set of strings representing the kinds of symbols to be extracted by ctags.
-    - `delimiter`: An optional string used to delimit scope in symbol names.
-    - `add_symbol_padding`: A boolean indicating whether to add padding around symbols when extracting code snippets.
-- **Control Flow**:
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<#code_requires_multi_prompt>) with the code.
-    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>), passing the root-relative path and file content.
+    - `symbol_kind`: An instance of `SymbolKind` indicating the type of symbols to extract.
+    - `ctags_kinds`: A set of strings representing the kinds of symbols to filter from the ctags output.
+    - `delimiter`: An optional string used to delimit scopes in the symbol names.
+    - `add_symbol_padding`: A boolean indicating whether to add padding around the symbol code when extracting.
+- **Logic and Control Flow**:
+    - Determine if the code requires multiple prompts by calling [`code_requires_multi_prompt`](<#code_requires_multi_prompt>) with `code`.
+    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>) with `root_rel_path` and `code`.
     - Initialize an empty dictionary `raw_symbol_data` to store symbol data.
-    - Iterate over each symbol extracted by ctags.
-    - For each symbol, check if its kind is in the `ctags_kinds` set.
-    - If the symbol kind is valid, create a `RawSymbolData` object using [`create_raw_symbol_via_ctags`](<#create_raw_symbol_via_ctags>) and store it in `raw_symbol_data` with the symbol's name as the key.
+    - Iterate over each symbol in the extracted symbols.
+    - Check if the symbol's kind is in `ctags_kinds`.
+    - If the symbol's kind is valid, create a raw symbol using [`create_raw_symbol_via_ctags`](<#create_raw_symbol_via_ctags>) and add it to `raw_symbol_data`.
     - If `raw_symbol_data` is empty, set `output` to `None`; otherwise, instantiate `collection_cls` with `raw_symbol_data` and assign it to `output`.
-    - Return the `output`, which is either `None` or an instance of `collection_cls`.
+    - Return `output`.
 - **Output**: Returns an instance of `RawSymbolCollection` containing the extracted symbols, or `None` if no symbols are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<#code_requires_multi_prompt>)

@@ -3,53 +3,64 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `architecture_modal.toml` file in the `python-backend` codebase defines the configuration for generating a detailed architecture document, specifying models, document goals, and structured sections with instructions for content creation.
+Configuration for generating a detailed architecture document with specified sections and models.
 
 # Purpose
-The provided content is a configuration file written in the TOML format, which is used to define the structure and content of an architecture document for a software codebase. This file specifies various models and sections that guide the generation of a comprehensive architecture document, detailing aspects such as the technology stack, system constraints, key architectural decisions, and more. The file is organized into two main conceptual categories: model configurations under the `[llm]` section, which define the language models to be used for different tasks, and document structure under the `[document]` and `[[sections]]` sections, which outline the specific sections to be included in the document, their content structure, and instructions. The relevance of this file to a codebase lies in its role in automating the creation of a detailed and structured architecture document, which is crucial for understanding, maintaining, and developing the software system.
+This configuration file defines the structure and content of an architecture document for a software codebase. It specifies models and methods for generating different sections of the document, such as `tag_model`, `section_init_model`, and `copy_editor_model`, which are used to guide the document creation process. The file outlines the document's goals, format, and version, and includes detailed instructions for each section, such as "Overview," "Technology Stack and Dependencies," and "Key Architectural Decisions." Each section has attributes like `title`, `level`, `required`, `instruction`, and `content_structure`, which dictate the content and format of the section. The file ensures that the document is comprehensive by covering various aspects of the codebase, including architecture, components, constraints, and testing strategies.
 # Content Summary
-This configuration file is structured to guide the creation of a comprehensive architecture document for a software codebase. It is divided into two main sections: `[llm]` and `[document]`, with multiple subsections under the document section.
+This configuration file defines the structure and content requirements for an architecture document related to a software codebase. It specifies the use of different language models for various tasks, such as tagging, section initialization, and copy editing, with models like "gpt-4o" and "o3-mini" being utilized.
 
-### [llm] Section
-The `[llm]` section specifies the language models to be used for various tasks in the document creation process. It includes:
-- `tag_model`, `section_update_model`, and `copy_editor_model` set to "gpt-4o", indicating the use of the GPT-4o model for tagging, updating sections, and copy editing, respectively.
-- `section_init_model`, `section_format_model`, and `assembly_model` set to "o3-mini", indicating the use of the o3-mini model for initializing sections, formatting, and assembly tasks.
+The document's goal is to create a comprehensive architecture document, with a format defined as "defined_sections." Tagging is enabled, and the configuration is named "Architecture" with version "[V1]."
 
-### [document] Section
-The `[document]` section outlines the goal and format of the architecture document. Key attributes include:
-- `goal`: The primary objective is to write a detailed architecture document for the codebase.
-- `fmt`: Specifies the format as "defined_sections", indicating a structured approach to document creation.
-- `use_tagging`: A boolean set to true, enabling tagging within the document.
-- `config_name` and `config_version`: Define the configuration name as "Architecture" and version as "[V1]".
+The file outlines multiple sections, each with specific instructions, content structures, and methods for creation. Key sections include:
 
-### Sections
-The document is further divided into multiple sections, each with specific instructions and content structures. These sections are defined using the `[[sections]]` syntax and include:
+1. **Overview**: Provides an introduction to the library, detailing its purpose, scope, and capabilities in 2-3 paragraphs.
 
-1. **Overview**: A required section providing an introduction to the library, its purpose, scope, and capabilities, structured in 2-3 paragraphs.
-2. **Technology Stack and Dependencies**: A required section detailing the core technology stack and critical dependencies in a tabular format.
-3. **System Constraints and Limitations**: An optional section describing major constraints or limitations in a single paragraph.
-4. **Key Architectural Decisions**: A required section identifying main architectural decisions, each described in a subsection.
-5. **Target Use Cases**: A required section listing typical applications and use cases with brief descriptions.
-6. **Architecture**: A required section providing a single-sentence description of the overarching architecture.
-7. **Architecture Diagram**: A required section with a high-level block diagram and caption.
-8. **Core Components**: A required section identifying and describing core components with code snippets.
-9. **Key Interactions and Data Flow**: A required section describing interactions and data flow with a diagram.
-10. **Code Examples**: A required section with code examples for onboarding new developers.
-11. **Entry Points**: An optional section detailing entry points into the codebase in a tabular format.
-12. **API Specifications**: An optional section describing formal APIs in 2-3 paragraphs.
-13. **Setup and Configuration**: A required section describing setup and configuration in 2-3 sentences.
-14. **Installation Requirements**: An optional section detailing installation requirements in 1-3 paragraphs.
-15. **Hardware Configuration**: An optional section describing necessary hardware configurations.
-16. **Compilation and Build Steps**: An optional section outlining compilation and build steps.
-17. **Global State and Environment Variables**: An optional section listing required global states and environment variables.
-18. **Testing**: An optional section describing the testing strategy in a single sentence.
-19. **Organization of Tests**: An optional section detailing test organization in a paragraph.
-20. **Unit Tests**: An optional section describing unit tests in 2-3 paragraphs.
-21. **Integration Tests**: An optional section describing integration tests in 2-3 paragraphs.
-22. **Invoking and Running Tests**: An optional section listing ways to run tests.
-23. **CI/CD**: An optional section describing CI/CD strategies in a paragraph.
+2. **Technology Stack and Dependencies**: Describes the core technology stack and critical dependencies in a tabular format.
 
-Each section is designed to be created using the "scatter_gather" method, which likely involves collecting and synthesizing information from various sources to form a cohesive section. This configuration file serves as a blueprint for generating a detailed and structured architecture document, ensuring all critical aspects of the codebase are thoroughly documented.
+3. **System Constraints and Limitations**: Identifies major constraints or limitations in a single paragraph.
+
+4. **Key Architectural Decisions**: Details main architectural decisions with subsections for each decision.
+
+5. **Target Use Cases**: Lists typical applications and use cases with brief descriptions.
+
+6. **Architecture**: Describes the overarching architecture in a single sentence.
+
+7. **Architecture Diagram**: Includes a high-level block diagram with a caption.
+
+8. **Core Components**: Identifies and describes core components with code snippets.
+
+9. **Key Interactions and Data Flow**: Describes interactions and data flow with a data flow diagram.
+
+10. **Code Examples**: Provides code examples for new developers.
+
+11. **Entry Points**: Details entry points into the codebase in a table format.
+
+12. **API Specifications**: Describes formal APIs in 2-3 paragraphs.
+
+13. **Setup and Configuration**: Outlines setup and configuration in 2-3 sentences.
+
+14. **Installation Requirements**: Details installation needs in 1-3 paragraphs.
+
+15. **Hardware Configuration**: Describes necessary hardware configurations.
+
+16. **Compilation and Build Steps**: Outlines compilation and build steps.
+
+17. **Global State and Environment Variables**: Lists required global states and environment variables.
+
+18. **Testing**: Describes the testing strategy in a single sentence.
+
+19. **Organization of Tests**: Details test organization in a paragraph.
+
+20. **Unit Tests**: Describes unit tests in 2-3 paragraphs.
+
+21. **Integration Tests**: Details integration tests in 2-3 paragraphs.
+
+22. **Invoking and Running Tests**: Lists ways to run tests with descriptions.
+
+23. **CI/CD**: Describes CI/CD strategies in a paragraph.
+
+Each section is created using the "scatter_gather" method, ensuring a structured and detailed approach to documenting the architecture of the codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README` file in the `python-backend` codebase provides information on a generic single-database configuration.
+Alembic migration scripts, configuration, and templates for database schema changes and migrations.
 
-# Purpose
-This file contains a brief description indicating that it is a configuration file for a generic single-database setup. It likely outlines settings or parameters necessary for connecting to and interacting with a single database instance within a software application.
+## Folders
+- **[versions](versions/README.md)**: Alembic migration scripts for database schema changes, including table modifications, index updates, and enum adjustments.
+
+## Files
+- **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
+- **[env.py](env.py.md)**: Configures and runs database migrations using Alembic in both offline and online modes.
+- **[README]()**: Generic single-database configuration instructions.
+- **[script.py.mako](script.py.mako.md)**: Alembic migration script template for database schema upgrades and downgrades.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.py` file contains an Alembic migration script that updates database tables to use timezone-aware timestamps for `created_at` and `updated_at` columns.
+Alembic migration script to unify timestamps to timezone-aware format in multiple database tables.
 
 # Purpose
-This Python script is an Alembic migration file designed to update database schema and data for a set of tables by ensuring that timestamp columns are timezone-aware. The script defines an [`upgrade`](<#upgrade>) function that performs several operations: it updates `created_at` and `updated_at` columns in specified tables to ensure they are not null and are set to the current UTC time if previously unset. It also alters the column types to be timezone-aware (`sa.DateTime(timezone=True)`) and sets default values to the current time using PostgreSQL's `now()` function. The script includes a [`downgrade`](<#downgrade>) function to reverse these changes, reverting the column types back to non-timezone-aware timestamps and making them nullable.
+This code is an Alembic migration script designed to update database schema and data for several tables. The primary purpose is to ensure that timestamp columns in the specified tables are timezone-aware. The script defines an [`upgrade`](<#upgrade>) function that updates the `created_at` and `updated_at` columns in various tables to be timezone-aware by altering their data types to `sa.DateTime(timezone=True)`. It also ensures that any `NULL` values in these columns are replaced with the current timestamp. The [`upgrade`](<#upgrade>) function uses helper functions [`update_timestamps`](<#update_timestamps>) and [`update_created_at_only`](<#update_created_at_only>) to perform these updates on tables with both `created_at` and `updated_at` columns, as well as those with only `created_at` columns.
 
-The script is structured to handle two categories of tables: those with both `created_at` and `updated_at` columns, and those with only a `created_at` column. It uses helper functions [`update_timestamps`](<#update_timestamps>) and [`update_created_at_only`](<#update_created_at_only>) to execute SQL update statements that fill in missing timestamp values. The migration is identified by a unique revision ID and is part of a sequence of migrations, as indicated by the `down_revision` attribute. This file is intended to be executed as part of a database migration process, ensuring consistency and correctness of timestamp data across the specified tables.
+The script also includes a [`downgrade`](<#downgrade>) function, which reverses the changes made by the [`upgrade`](<#upgrade>) function. It alters the columns back to their original `postgresql.TIMESTAMP` type and sets them to be nullable. This function ensures that the migration can be rolled back if necessary. The script uses SQLAlchemy and Alembic operations to execute these changes, and it includes revision identifiers to track the migration's place in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -22,92 +22,100 @@ The script is structured to handle two categories of tables: those with both `cr
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the specific migration script when applying or rolling back database schema changes.
+- **Type**: ``str``
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration revision. It is used by Alembic to track and apply database schema changes.
+- **Use**: Used to identify the current migration revision in Alembic operations.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, ensuring that this migration is applied after the one identified by `748f419d2d25`. The comment indicates that this migration was created to resolve a merge conflict, suggesting that it is part of a complex migration history.
-- **Use**: This variable is used by Alembic to determine the order of applying database migrations.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
+- **Use**: Indicates the immediate predecessor revision for the current migration script.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to define labels for branching in Alembic migrations, but in this script, it is not utilized and remains `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates that this migration does not depend on any other migrations to be applied first.
-- **Use**: This variable is used to specify dependencies between Alembic migration scripts, but in this case, it indicates no dependencies.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### execute\_update<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.execute_update}} -->
-The `execute_update` function executes a given SQL statement using a database connection and prints the number of rows affected.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.py#L24>)
+
+Executes a SQL update statement and prints the number of rows affected.
 - **Inputs**:
-    - `statement`: A string representing the SQL statement to be executed.
-    - `conn`: A database connection object used to execute the SQL statement.
-- **Control Flow**:
-    - The function calls `conn.execute()` with the SQL statement wrapped in `sa.text()` to execute the statement.
-    - It retrieves the number of rows affected by the execution using `result.rowcount`.
-    - It prints a message indicating the executed statement and the number of rows affected.
-- **Output**: The function does not return any value; it performs an action and prints output to the console.
+    - `statement`: A SQL update statement as a string to execute.
+    - `conn`: A database connection object used to execute the statement.
+- **Logic and Control Flow**:
+    - Execute the SQL statement using the provided connection object.
+    - Retrieve the number of rows affected by the execution.
+    - Print a message indicating the executed statement and the number of rows affected.
+- **Output**: No return value; the function prints the execution result.
 
 
 ---
 ### update\_timestamps<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.update_timestamps}} -->
-The `update_timestamps` function updates the `created_at` and `updated_at` columns in a database table to ensure they are set to a given timestamp if they are currently NULL, and aligns `updated_at` with `created_at` if they differ.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.py#L30>)
+
+Updates the `created_at` and `updated_at` columns in a database table with a given timestamp if they are null, and synchronizes `updated_at` with `created_at` if they differ.
 - **Inputs**:
     - `table`: The name of the database table to update.
     - `created_at_col`: The name of the column representing the creation timestamp.
     - `updated_at_col`: The name of the column representing the update timestamp.
-    - `timestamp`: A `datetime` object representing the timestamp to set for NULL values.
+    - `timestamp`: A `datetime` object representing the timestamp to use for updates.
     - `conn`: The database connection object used to execute SQL statements.
-- **Control Flow**:
-    - Check if `created_at_col` is different from `updated_at_col`.
-    - If they are different, execute an SQL update to set `updated_at_col` to the value of `created_at_col` where `created_at_col` is not NULL and `updated_at_col` is NULL.
-    - Execute an SQL update to set both `created_at_col` and `updated_at_col` to the provided `timestamp` where either column is NULL, using the `COALESCE` function to handle NULL values.
-- **Output**: The function does not return any value; it performs updates directly on the database.
+- **Logic and Control Flow**:
+    - Checks if `created_at_col` is different from `updated_at_col`.
+    - If they are different, executes an SQL update to set `updated_at_col` to the value of `created_at_col` where `created_at_col` is not null and `updated_at_col` is null.
+    - Executes an SQL update to set both `created_at_col` and `updated_at_col` to the given `timestamp` where either column is null, using the `COALESCE` function to handle null values.
+- **Output**: Does not return a value; performs updates directly on the database.
 - **Functions Called**:
     - [`python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.execute_update`](<#execute_update>)
 
 
 ---
 ### update\_created\_at\_only<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.update_created_at_only}} -->
-The `update_created_at_only` function updates the `created_at` column of a specified table to a given timestamp where the column is currently NULL.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.py#L53>)
+
+Updates the 'created_at' column in a specified table with a given timestamp where the column is currently NULL.
 - **Inputs**:
-    - `table`: The name of the database table to update.
-    - `created_at_col`: The name of the column in the table that stores the creation timestamp.
-    - `timestamp`: A `datetime` object representing the timestamp to set for the `created_at` column.
-    - `conn`: The database connection object used to execute the update statement.
-- **Control Flow**:
-    - The function constructs an SQL UPDATE statement to set the `created_at` column to the provided `timestamp` where the column is NULL.
-    - The constructed SQL statement is passed to the [`execute_update`](<#execute_update>) function along with the database connection to perform the update.
-- **Output**: The function does not return any value; it performs an update operation on the database.
+    - `table`: The name of the table to update.
+    - `created_at_col`: The name of the column to update with the timestamp.
+    - `timestamp`: The timestamp value to set in the 'created_at' column.
+    - `conn`: The database connection object used to execute the update.
+- **Logic and Control Flow**:
+    - Formats an SQL UPDATE statement to set the 'created_at' column to the provided timestamp where the column is NULL.
+    - Calls the 'execute_update' function with the formatted SQL statement and the database connection.
+- **Output**: No output is returned as the function returns None.
 - **Functions Called**:
     - [`python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.execute_update`](<#execute_update>)
 
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.upgrade}} -->
-The `upgrade` function updates timestamp columns in various database tables to be timezone-aware and sets default values for missing timestamps.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.py#L66>)
+
+Updates timestamp columns in specified tables to be timezone-aware and sets default values for missing timestamps.
 - **Inputs**: None
-- **Control Flow**:
-    - Retrieve the current UTC time and bind the database connection.
+- **Logic and Control Flow**:
+    - Get the current datetime in UTC and bind the database connection.
     - Define two lists of tables: one with both 'created_at' and 'updated_at' columns, and another with only 'created_at' columns.
-    - Iterate over tables with both 'created_at' and 'updated_at' columns, calling [`update_timestamps`](<#update_timestamps>) to update missing timestamps.
-    - Iterate over tables with only 'created_at' columns, calling [`update_created_at_only`](<#update_created_at_only>) to update missing timestamps.
-    - Alter the column types of 'created_at' and 'updated_at' in various tables to be timezone-aware and set default values.
-- **Output**: The function does not return any value; it performs database schema and data updates.
+    - Iterate over the tables with both 'created_at' and 'updated_at' columns, calling [`update_timestamps`](<#update_timestamps>) to update these columns with the current timestamp if they are NULL.
+    - Iterate over the tables with only 'created_at' columns, calling [`update_created_at_only`](<#update_created_at_only>) to update these columns with the current timestamp if they are NULL.
+    - Alter the column definitions for each table to ensure the timestamps are timezone-aware and set default values to 'now()' if not already set.
+- **Output**: No return value; the function performs database operations to update and alter table columns.
 - **Functions Called**:
     - [`python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.update_timestamps`](<#update_timestamps>)
     - [`python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.update_created_at_only`](<#update_created_at_only>)
@@ -115,19 +123,26 @@ The `upgrade` function updates timestamp columns in various database tables to b
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.downgrade}} -->
-The `downgrade` function reverts database schema changes by altering several timestamp columns to be non-timezone aware and nullable.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_07_1227-1024db830bea_unify_to_tzaware_timestamps.py#L219>)
+
+Reverts database schema changes by altering timestamp columns to be nullable and timezone-unaware.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by altering the 'updated_at' column in the 'workspaces' table to change its type from timezone-aware DateTime to non-timezone-aware TIMESTAMP and make it nullable.
-    - It then alters the 'created_at' column in the 'workspaces' table similarly, also removing the server default of 'now()'.
-    - The function proceeds to alter the 'created_at' column in the 'runtimelogagentmessage' table to make it nullable.
-    - It continues by altering the 'updated_at' and 'created_at' columns in the 'runtimelogagentinstance' table to make them nullable.
-    - The 'created_at' column in the 'runtimelogagenterror' table is altered to be nullable.
-    - The function alters the 'updated_at' and 'created_at' columns in the 'derived_contents' table, changing their types and making them nullable, also removing the server default for 'created_at'.
-    - It alters the 'updated_at' and 'created_at' columns in the 'derived_content_types' table similarly.
-    - The 'updated_at' and 'created_at' columns in the 'contentmetadata' table are altered to be nullable.
-    - Finally, the 'updated_at' and 'created_at' columns in the 'codebases' table are altered to change their types and make them nullable, also removing the server default for 'created_at'.
-- **Output**: The function does not return any value; it performs schema alterations on the database.
+- **Logic and Control Flow**:
+    - Alters the `updated_at` column in the `workspaces` table to be nullable and changes its type to `postgresql.TIMESTAMP()`.
+    - Alters the `created_at` column in the `workspaces` table to be nullable, changes its type to `postgresql.TIMESTAMP()`, and retains the existing server default.
+    - Alters the `created_at` column in the `runtimelogagentmessage` table to be nullable.
+    - Alters the `updated_at` column in the `runtimelogagentinstance` table to be nullable.
+    - Alters the `created_at` column in the `runtimelogagentinstance` table to be nullable.
+    - Alters the `created_at` column in the `runtimelogagenterror` table to be nullable.
+    - Alters the `updated_at` column in the `derived_contents` table to be nullable and changes its type to `postgresql.TIMESTAMP()`.
+    - Alters the `created_at` column in the `derived_contents` table to be nullable, changes its type to `postgresql.TIMESTAMP()`, and retains the existing server default.
+    - Alters the `updated_at` column in the `derived_content_types` table to be nullable and changes its type to `postgresql.TIMESTAMP()`.
+    - Alters the `created_at` column in the `derived_content_types` table to be nullable, changes its type to `postgresql.TIMESTAMP()`, and retains the existing server default.
+    - Alters the `updated_at` column in the `contentmetadata` table to be nullable.
+    - Alters the `created_at` column in the `contentmetadata` table to be nullable.
+    - Alters the `updated_at` column in the `codebases` table to be nullable and changes its type to `postgresql.TIMESTAMP()`.
+    - Alters the `created_at` column in the `codebases` table to be nullable, changes its type to `postgresql.TIMESTAMP()`, and retains the existing server default.
+- **Output**: None
 
 
 

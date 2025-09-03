@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.py` file is an Alembic migration script that creates the `v2_autodoc_status_history` table with various columns and an index in the database.
+Alembic migration script to create and drop the `v2_autodoc_status_history` table with related indices.
 
 # Purpose
-This source code file is an Alembic migration script designed to manage database schema changes for a SQL database using SQLAlchemy and SQLModel. It provides narrow functionality, specifically focusing on creating and managing the "v2_autodoc_status_history" table, which tracks the status history of an auto-documentation process. The script defines the table's columns, including UUIDs for identification, an enumeration for status kinds, and timestamps for record creation. It also establishes a foreign key relationship with another table, "v2_node," and creates an index on the "page_node_id" column to optimize query performance. The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function reverses them, ensuring the database schema can be rolled back if necessary.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade function to create a new table named `v2_autodoc_status_history` with columns for `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id`. The `status_kind` column uses an enumeration type `autodocstatusmessagekind` to represent various document generation statuses. The script also establishes a foreign key constraint on `page_node_id` referencing the `v2_node` table and creates an index on the `page_node_id` column. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the index and the table.
 # Imports and Dependencies
 
 ---
@@ -19,56 +19,59 @@ This source code file is an Alembic migration script designed to manage database
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: A string variable that holds the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of database migrations by specifying the predecessor revision.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to define labels for branching in Alembic migrations, but in this script, it is not utilized and remains set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.upgrade}} -->
-The `upgrade` function creates a new database table `v2_autodoc_status_history` with specified columns and an index using Alembic operations.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.py#L20>)
+
+Creates a new table `v2_autodoc_status_history` with specified columns and an index in the database schema.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by calling `op.create_table` to define a new table named `v2_autodoc_status_history`.
-    - Several columns are added to the table, including `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id`.
-    - The `status_kind` column is defined as an enumeration with several possible values, representing different stages of a document generation process.
-    - A foreign key constraint is added to the `page_node_id` column, linking it to the `id` column of the `v2_node` table, with a cascade delete option.
-    - A primary key constraint is set on the `id` column.
-    - An index is created on the `page_node_id` column of the `v2_autodoc_status_history` table using `op.create_index`.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Calls `op.create_table` to create a new table named `v2_autodoc_status_history`.
+    - Defines columns `id`, `page_node_id`, `status_kind`, `content`, `created_at`, and `call_id` with specified data types and constraints.
+    - Sets a foreign key constraint on `page_node_id` referencing `v2_node.id` with `ondelete` set to `CASCADE`.
+    - Sets a primary key constraint on the `id` column.
+    - Calls `op.create_index` to create an index on the `page_node_id` column of the `v2_autodoc_status_history` table.
+- **Output**: No output is returned as the function modifies the database schema.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.downgrade}} -->
-The `downgrade` function reverses database schema changes by dropping an index and a table related to `v2_autodoc_status_history`.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_04_07_1742-c852fcd10a2f_create_autodocstatushistory.py#L62>)
+
+Reverts the database schema changes by dropping the index and table related to `v2_autodoc_status_history`.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by dropping an index named `ix_v2_autodoc_status_history_page_node_id` from the `v2_autodoc_status_history` table using the `op.drop_index` method.
-    - Next, it drops the `v2_autodoc_status_history` table entirely using the `op.drop_table` method.
-- **Output**: The function does not return any value; it performs schema changes directly on the database.
+- **Logic and Control Flow**:
+    - Calls `op.drop_index` to remove the index `ix_v2_autodoc_status_history_page_node_id` from the table `v2_autodoc_status_history`.
+    - Calls `op.drop_table` to delete the table `v2_autodoc_status_history`.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

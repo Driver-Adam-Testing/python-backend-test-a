@@ -3,14 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various components for managing GitLab integration, including configuration, OAuth, providers, API, and utilities.
+Git provider configuration, interfaces, OAuth strategy, provider functionality, API resource management, and utilities.
 
 ## Folders
-- **[core](core/README.md)**: The `core` folder in the `python-backend` codebase contains configuration-related files for Git provider settings, including a Pydantic model and a configuration loader for GitLab Enterprise Self-Managed providers.
-- **[oauth](oauth/README.md)**: The `oauth` folder in the `python-backend` codebase contains the `gitlab_oauth_strategy.py` file, which implements the GitLab OAuth strategy for managing authorization and token processes.
-- **[providers](providers/README.md)**: The `providers` folder in the `python-backend` codebase contains the `gitlab_provider.py` file, which implements the `GitLabProvider` class for managing GitLab OAuth, access tokens, and repository operations with AWS integration.
-- **[resources](resources/README.md)**: The `resources` folder in the `python-backend` codebase contains a file, `gitlab_resources.py`, which provides functionality for interacting with GitLab through its API.
-- **[utils](utils/README.md)**: Utility files for handling Git provider errors and generating codebase metadata.
+- **[core](core/README.md)**: Defines and loads Git provider configuration for applications with computed authorization and access URLs.
+- **[interfaces](interfaces/README.md)**: Abstract interface for Git providers with methods for configuration, token validation, and more.
+- **[oauth](oauth/README.md)**: Implements GitLab OAuth strategy for token management and user authentication.
+- **[providers](providers/README.md)**: Implements Bitbucket and GitLab provider functionality for token management and repository operations.
+- **[resources](resources/README.md)**: Bitbucket and GitLab API resource management for repositories, commits, webhooks, and archives.
+- **[utils](utils/README.md)**: Custom exception classes for Git provider errors and metadata generation for codebases.
 
 
 ---

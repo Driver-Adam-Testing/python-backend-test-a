@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_code.py` file defines a Pydantic model `BlockKindCopyEditorCodeBlock` that processes code block snippets into markdown formatted code blocks with descriptions, ensuring proper syntax highlighting and formatting.
+A Pydantic model for generating markdown-formatted code blocks with descriptions for a copy editor agent.
 
 # Purpose
-This Python code defines a class `BlockKindCopyEditorCodeBlock` using the Pydantic library, which is a data validation and settings management library. The class is designed to facilitate the generation of structured markdown responses for a copy editor agent that processes code block snippets. The primary functionality of this class is to manage and transform a list of code snippets and their corresponding descriptions into a markdown format, ensuring that each code snippet is properly enclosed within code fences with the appropriate language identifier for syntax highlighting. The class includes attributes for storing the code snippets and their descriptions, and a method [`to_markdown`](<#BlockKindCopyEditorCodeBlockto_markdown>) that converts these snippets into a markdown formatted string.
+The code defines a class `BlockKindCopyEditorCodeBlock` using the `pydantic` library, which is a data validation and settings management library for Python. This class is a model that structures data for a copy editor agent that processes code block snippets. The class includes two main attributes: `code_snippets` and `descriptions`. `code_snippets` is a list of strings, each representing a code snippet enclosed within markdown code fences with a language identifier. `descriptions` is a list of strings providing a one-sentence description for each corresponding code snippet.
 
-The code is structured as a library component intended to be imported and used elsewhere, rather than as a standalone script. It provides a narrow functionality focused on formatting code snippets for markdown rendering, which is particularly useful in contexts where code needs to be presented in a readable and syntactically highlighted manner, such as documentation or educational materials. The use of Pydantic's `BaseModel` ensures that the data is validated and managed efficiently, leveraging Pydantic's capabilities for type checking and data serialization. The class does not define public APIs or external interfaces beyond its method for markdown conversion, indicating its role as a utility within a larger system.
+The class also includes a method [`to_markdown`](<#blockkindcopyeditorcodeblockto_markdown>), which converts each code snippet into a markdown-formatted code block. This method ensures that each snippet is properly wrapped in code block delimiters for markdown rendering and is paired with its description. The method returns a single markdown-formatted string that contains the code blocks and their descriptions in the correct sequence. This code is likely intended to be part of a larger system where markdown formatting of code snippets is required, and it provides a structured way to handle and transform these snippets.
 # Imports and Dependencies
 
 ---
@@ -19,29 +19,31 @@ The code is structured as a library component intended to be imported and used e
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that is initialized as an empty multiline string. It is intended to hold a prompt or template text, but currently, it does not contain any content.
-- **Use**: This variable is used to store a prompt that can be utilized in the `MESSAGE` dictionary for further processing or display.
+- **Type**: ``str``
+- **Description**: A string variable that contains a multi-line string with no content. It is defined as an empty triple-quoted string.
+- **Use**: Used to store an empty prompt string for further processing or assignment.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is assigned the string value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
-- **Use**: This variable is used to define a message structure, likely for communication or configuration purposes, with a predefined role and content.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store a structured message with a role and content, likely for communication or configuration purposes.
 
 
 # Classes
 
 ---
 ### BlockKindCopyEditorCodeBlock<!-- {{#class:python-backend/packages/shared/shared/prompts/block_kind/block_kind_code.BlockKindCopyEditorCodeBlock}} -->
+[View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_code.py#L9>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `code_snippets`: A list containing the code snippets with code fences and a language identifier.
-    - `descriptions`: A corresponding list of one sentence descriptions for each code snippet.
-- **Description**: The BlockKindCopyEditorCodeBlock class is a specialized data model designed to facilitate the generation of structured responses for a copy editor agent that processes code block snippets. It ensures that each code snippet is formatted as a markdown code block with a specified language identifier, which is crucial for syntax highlighting. The class maintains a list of code snippets and their corresponding descriptions, allowing for the transformation of these snippets into markdown format, ensuring proper syntax and indentation for readability and accuracy.
+    - `code_snippets`: A list of code snippets with language identifiers for markdown formatting.
+    - `descriptions`: A list of one-sentence descriptions corresponding to each code snippet.
+- **Description**: Generates a structured response for a copy editor agent by formatting code block snippets into markdown code blocks with language identifiers, ensuring syntactical correctness and proper indentation for readability.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_code.BlockKindCopyEditorCodeBlock.to_markdown`](<#BlockKindCopyEditorCodeBlockto_markdown>)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_code.BlockKindCopyEditorCodeBlock.to_markdown`](<#blockkindcopyeditorcodeblockto_markdown>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -49,16 +51,18 @@ The code is structured as a library component intended to be imported and used e
 
 ---
 #### BlockKindCopyEditorCodeBlock\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_code.BlockKindCopyEditorCodeBlock.to_markdown}} -->
-The `to_markdown` method converts code snippets into markdown formatted code blocks with their descriptions.
+[View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_code.py#L27>)
+
+Transforms code snippets into markdown formatted code blocks with descriptions.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an empty list `markdown_snippets` to store formatted code snippets.
-    - Iterate over pairs of `code_snippets` and `descriptions` using `zip`.
-    - For each `snippet`, strip any leading or trailing whitespace.
-    - Append the stripped snippet to the `markdown_snippets` list.
+    - Iterate over pairs of `snippet` and `_` from `self.code_snippets` and `self.descriptions` using `zip`.
+    - For each `snippet`, remove leading and trailing whitespace using `strip()`.
+    - Append the stripped `snippet` to the `markdown_snippets` list.
     - Join all elements in `markdown_snippets` with newline characters and return the resulting string.
 - **Output**: A single markdown formatted string containing the code blocks and their descriptions.
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_code.BlockKindCopyEditorCodeBlock`](<#BlockKindCopyEditorCodeBlock>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_code.BlockKindCopyEditorCodeBlock`](<#blockkindcopyeditorcodeblock>)  (Base Class)
 
 
 

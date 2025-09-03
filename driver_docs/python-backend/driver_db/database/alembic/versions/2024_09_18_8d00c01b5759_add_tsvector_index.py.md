@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_09_18_8d00c01b5759_add_tsvector_index.py` file contains an Alembic migration script that adds a generated `tsvector` column and its corresponding index to the `chunkandembedding` table in the database.
+Adds a tsvector column and index to the chunkandembedding table for full-text search capabilities.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically for modifying the database schema of a PostgreSQL database. The script adds a new column, `__ts_vector__`, to the `chunkandembedding` table, which is a generated column that stores a text search vector for full-text search capabilities. It also creates a GIN index on this column to optimize search queries. The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function reverses them, ensuring that the migration can be rolled back if necessary. This script is part of a version-controlled series of migrations, as indicated by the `revision` and `down_revision` identifiers.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It adds a new column `__ts_vector__` to the `chunkandembedding` table, which is a `tsvector` type column generated from the `text` column using the `to_tsvector` function with the 'english' configuration. The script also creates a GIN index on the `__ts_vector__` column to optimize text search queries. The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function provides the logic to remove the column and its index if a rollback is necessary. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -17,54 +17,58 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
+- **Use**: Used to identify the current state of the database schema in Alembic migrations.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
-- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Indicates the immediate predecessor revision in the Alembic migration chain.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to manage database schema changes.
-- **Use**: This variable is used to define branch labels for the migration script, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is set to `None`, indicating that there are no dependencies for this Alembic migration script. In Alembic, the `depends_on` variable is used to specify other migration scripts that must be applied before this one.
+- **Use**: Indicates that this migration script does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_18_8d00c01b5759_add_tsvector_index.upgrade}} -->
-The `upgrade` function adds a new tsvector column and an index to the `chunkandembedding` table for full-text search capabilities.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_18_8d00c01b5759_add_tsvector_index.py#L18>)
+
+Adds a generated tsvector column and its index to the 'chunkandembedding' table.
 - **Inputs**: None
-- **Control Flow**:
-    - Execute a SQL command to alter the `chunkandembedding` table by adding a new column `__ts_vector__` of type `tsvector`, which is generated from the `text` column using the `to_tsvector` function with the 'english' configuration.
-    - Create an index on the newly added `__ts_vector__` column using the GIN indexing method for efficient full-text search.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Executes an SQL command to alter the 'chunkandembedding' table by adding a new column '__ts_vector__' of type tsvector, which is generated from the 'text' column using the 'to_tsvector' function with the 'english' configuration.
+    - Creates an index on the newly added '__ts_vector__' column using the GIN indexing method.
+- **Output**: No return value; modifies the database schema by adding a column and an index.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_18_8d00c01b5759_add_tsvector_index.downgrade}} -->
-The `downgrade` function removes the `__ts_vector__` column and its associated index from the `chunkandembedding` table if they exist.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_18_8d00c01b5759_add_tsvector_index.py#L41>)
+
+Removes the `__ts_vector__` column and its associated index from the `chunkandembedding` table if they exist.
 - **Inputs**: None
-- **Control Flow**:
-    - The function executes a SQL block to check if the `__ts_vector__` column exists in the `chunkandembedding` table.
-    - If the column exists, it is dropped from the table.
-    - The function then executes another SQL block to check if the index `ix_chunkandembedding___ts_vector__` exists.
-    - If the index exists, it is dropped.
-- **Output**: The function does not return any value; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Executes a SQL block to check if the `__ts_vector__` column exists in the `chunkandembedding` table.
+    - If the column exists, it executes a command to drop the column.
+    - Executes another SQL block to check if the index `ix_chunkandembedding___ts_vector__` exists.
+    - If the index exists, it executes a command to drop the index.
+- **Output**: No output is returned; the function performs database schema modifications.
 
 
 

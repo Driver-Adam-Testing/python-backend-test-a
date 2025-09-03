@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Comprehensive TypeScript test suites covering function calls, classes, enums, functions, imports, interfaces, methods, modules, object types, and variables.
+TypeScript test cases for functions, classes, enums, imports, interfaces, methods, modules, object types, and variables.
 
 
 ## Files
-- **[test_calls.ts](test_calls.ts.md)**: The `test_calls.ts` file is a comprehensive test suite for various TypeScript function and method call scenarios, including multiple arguments, method chaining, constructor calls, async calls, and more, within the `python-backend` codebase.
-- **[test_classes.ts](test_classes.ts.md)**: The `test_classes.ts` file serves as a comprehensive test suite for various TypeScript class features, including class definitions, properties, methods, inheritance, interfaces, decorators, static members, private fields, mixins, async methods, generators, index signatures, method overloads, namespaces, conditional types, and more.
-- **[test_enums.ts](test_enums.ts.md)**: The `test_enums.ts` file is a test file for TypeScript enum definitions, showcasing various types of enums including basic, explicit values, string, mixed, const, const assertions, ambient, and module-scoped enums.
-- **[test_functions.ts](test_functions.ts.md)**: The `test_functions.ts` file serves as a comprehensive test suite for various TypeScript function definitions, including basic, arrow, generic, overloaded, async, generator, and curried functions, as well as function expressions and immediately invoked function expressions (IIFE).
-- **[test_imports.ts](test_imports.ts.md)**: The `test_imports.ts` file is a comprehensive test suite for various TypeScript import and export statement patterns, including default, named, namespace, type-only, dynamic, and side-effect imports, as well as numerous export scenarios such as default, named, re-exports, and complex patterns.
-- **[test_interfaces.ts](test_interfaces.ts.md)**: The `test_interfaces.ts` file is a test file for TypeScript interfaces and type aliases, covering various features such as optional properties, readonly properties, index signatures, inheritance, generics, nested interfaces, interface merging, module and global augmentation, ambient interfaces, and type-only exports.
-- **[test_methods.ts](test_methods.ts.md)**: The `test_methods.ts` file is a comprehensive test suite for various TypeScript class method features, including access modifiers, static methods, async methods, generators, getters and setters, generics, method overloading, special methods, decorators, abstract methods, private fields, method chaining, complex methods, interface implementation, object literal methods, and mixin methods.
-- **[test_modules.ts](test_modules.ts.md)**: The `test_modules.ts` file is a comprehensive test suite for TypeScript modules and namespaces, demonstrating various features such as nested namespaces, module declarations, namespace merging, global and module augmentation, and more within the `python-backend` codebase.
-- **[test_object_types.ts](test_object_types.ts.md)**: The `test_object_types.ts` file defines a comprehensive set of TypeScript type aliases, including basic, union, intersection, tuple, function, object, mapped, conditional, template literal, intrinsic string manipulation, utility, recursive, discriminated union, type guard, generic constraint, distributive conditional, and complex real-world types.
-- **[test_variables.ts](test_variables.ts.md)**: The `test_variables.ts` file is a TypeScript test file that demonstrates various variable declaration types, including const, let, var, arrays, objects, type annotations, union and intersection types, type aliases, generics, spread operators, template literals, exports, conditional expressions, readonly modifiers, and iterators.
+- **[test_calls.ts](test_calls.ts.md)**: Tests for various TypeScript function and method call scenarios, including async, chaining, and templates.
+- **[test_classes.ts](test_classes.ts.md)**: Test cases for various TypeScript class features, including inheritance, generics, and decorators.
+- **[test_enums.ts](test_enums.ts.md)**: Test cases for various TypeScript enum definitions, including basic, string, and mixed enums.
+- **[test_functions.ts](test_functions.ts.md)**: Test cases for various TypeScript function definitions, including generics, async, and arrow functions.
+- **[test_imports.ts](test_imports.ts.md)**: Test file for various TypeScript import and export statement patterns.
+- **[test_interfaces.ts](test_interfaces.ts.md)**: Test file for TypeScript interfaces and type aliases, including inheritance, generics, and augmentations.
+- **[test_methods.ts](test_methods.ts.md)**: Test cases for various TypeScript class methods, including access modifiers, async, and static methods.
+- **[test_modules.ts](test_modules.ts.md)**: Test cases for TypeScript modules and namespaces, including declarations, merging, and augmentations.
+- **[test_object_types.ts](test_object_types.ts.md)**: TypeScript type definitions for aliases, unions, intersections, tuples, functions, objects, mapped types, and more.
+- **[test_variables.ts](test_variables.ts.md)**: Tests for various TypeScript variable declarations, types, and export statements.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_session.py` file defines the `LLMUsageSession` class, which manages the lifecycle of a usage session for language model interactions, including starting and ending sessions, sending usage events to AWS, and computing usage metrics.
+Manages LLM usage sessions, including starting, ending, and sending usage events to AWS.
 
 # Purpose
-This Python code file defines a class `LLMUsageSession` that manages the lifecycle and tracking of usage sessions for a language model, specifically integrating with AWS services and OpenAI's API. The primary purpose of this code is to facilitate the monitoring and recording of usage metrics for language model interactions, which includes starting and ending sessions, sending usage events to an AWS EventBridge, and computing usage metrics such as token and byte counts. The `LLMUsageSession` class is designed to be used within a context manager, ensuring that sessions are properly initialized and terminated, with status updates reflecting whether the session completed successfully or failed.
+The code defines a system for managing and tracking usage sessions and events related to a language model, specifically OpenAI's chat model. It includes the `LLMUsageSession` class, which represents a session of usage for a language model. This class manages the lifecycle of a session, including starting and ending sessions, sending usage events to an AWS EventBridge, and committing events to a database. The class also provides methods to compute usage metrics based on input prompts and responses from the language model, and to generate responses using the OpenAI API.
 
-The code also includes a custom exception `UsageEventSendError` for handling errors during event transmission, and utility functions for interacting with AWS services. The integration with OpenAI's API is managed through the `ChatOpenAI` client, which is used to generate responses based on provided prompts. The code is structured to be part of a larger system, as indicated by its imports from shared modules and database models, suggesting it is intended to be a component within a broader application rather than a standalone script. The file provides a focused functionality centered around usage tracking and event management for language model interactions, with a clear API for session management and event handling.
+The code integrates with several external systems, including AWS for event handling and a database for session management. It uses SQLAlchemy and SQLModel for database interactions, and boto3 for AWS client interactions. The `UsageEventSendError` exception is defined to handle errors that occur during the sending of usage events. The code is structured to be used as part of a larger application, likely as a library or module that provides functionality for tracking and managing usage of language models in a structured and automated manner.
 # Imports and Dependencies
 
 ---
@@ -41,26 +41,28 @@ The code also includes a custom exception `UsageEventSendError` for handling err
 ---
 ### \_LLMUsageSession
 - **Type**: `TypeVar`
-- **Description**: The variable `_LLMUsageSession` is a type variable that is bound to the `LLMUsageSession` class. This means it is used to represent a generic type that is specifically constrained to be a subtype of `LLMUsageSession`. Type variables are often used in Python to enable generic programming, allowing functions and classes to operate on any data type that meets certain criteria.
-- **Use**: This variable is used to define a generic type for the `LLMUsageSession` class, enabling type-safe operations and method chaining within the class.
+- **Description**: Defines a type variable `_LLMUsageSession` that is bound to the `LLMUsageSession` class. This allows for type hinting and ensures that the variable can only be of the type `LLMUsageSession` or its subclasses.
+- **Use**: Used for type hinting in the `LLMUsageSession` class to ensure type safety and consistency.
 
 
 ---
 ### aws\_client
-- **Type**: `NoneType`
-- **Description**: The `aws_client` variable is initially set to `None` and is intended to hold an instance of a boto3 client for AWS services, specifically for interacting with AWS EventBridge. It is used as a global variable to ensure that the AWS client is instantiated only once and reused across different parts of the application.
-- **Use**: This variable is used to store and manage the AWS client instance for sending events to AWS EventBridge.
+- **Type**: ``NoneType``
+- **Description**: The `aws_client` variable is initialized as `None` and is intended to hold an instance of a Boto3 client for AWS services. It is used to interact with AWS services, specifically the 'events' service in the 'us-east-1' region.
+- **Use**: Used to store and manage the AWS client instance for sending events to AWS EventBridge.
 
 
 # Classes
 
 ---
 ### UsageEventSendError<!-- {{#class:python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError}} -->
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L39>)
+
 - **Members**:
-    - `original_exception`: Stores the original exception that caused the error, if any.
-- **Description**: The `UsageEventSendError` class is a custom exception that is raised when an error occurs during the process of sending a usage event. It extends the base `Exception` class and includes an optional attribute `original_exception` to store the original exception that triggered this error, providing additional context for debugging purposes.
+    - `original_exception`: Stores the original exception that caused the error.
+- **Description**: Represents an exception that is raised when an error occurs during the sending of a usage event. It extends the base `Exception` class and includes an optional `original_exception` attribute to store the original exception that triggered this error.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError.__init__`](<#UsageEventSendError__init__>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError.__init__`](<#usageeventsenderror__init__>)
 - **Inherits From**:
     - `Exception`
 
@@ -68,204 +70,228 @@ The code also includes a custom exception `UsageEventSendError` for handling err
 
 ---
 #### UsageEventSendError\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError.__init__}} -->
-The `__init__` method initializes a `UsageEventSendError` exception with a custom message and an optional original exception.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L44>)
+
+Initializes a `UsageEventSendError` instance with a message and an optional original exception.
 - **Inputs**:
-    - `message`: A string representing the error message, defaulting to 'Error sending usage event'.
-    - `original_exception`: An optional Exception object representing the original exception that caused this error, defaulting to None.
-- **Control Flow**:
-    - Calls the superclass (Exception) initializer with the provided message.
-    - Assigns the original_exception parameter to an instance variable for later reference.
-- **Output**: This method does not return any value; it initializes the exception object.
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError`](<#UsageEventSendError>)  (Base Class)
+    - `message`: A string that represents the error message, defaulting to 'Error sending usage event'.
+    - `original_exception`: An optional `Exception` object that represents the original exception that caused this error.
+- **Logic and Control Flow**:
+    - Calls the parent class `Exception`'s `__init__` method with the `message` argument.
+    - Assigns the `original_exception` argument to the instance variable `self.original_exception`.
+- **Output**: None, as it is a constructor for initializing an instance of `UsageEventSendError`.
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError`](<#usageeventsenderror>)  (Base Class)
 
 
 
 ---
 ### LLMUsageSession<!-- {{#class:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession}} -->
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L53>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `organization_id`: Stores the ID of the organization associated with the session.
-    - `user_id`: Stores the ID of the user associated with the session.
+    - `organization_id`: Stores the organization identifier.
+    - `user_id`: Stores the user identifier.
     - `session_metadata`: Holds metadata related to the usage session.
-    - `session_id`: Uniquely identifies the session, initialized to None by default.
-    - `client`: Represents the ChatOpenAI client used for generating responses, initialized to None.
-    - `events_sent`: Tracks the number of events sent during the session, initialized to 0.
-    - `aws_client`: Holds the AWS client for sending events, initialized to None.
-- **Description**: The LLMUsageSession class manages a session for tracking and recording usage metrics of a language model interaction. It handles session initialization, event sending, and session termination, while also computing usage metrics based on prompts and responses. The class is designed to work with AWS for event handling and integrates with OpenAI's Chat API for generating responses. It uses a dataclass decorator for automatic generation of special methods like __init__.
+    - `session_id`: Stores the unique identifier for the session, defaulting to None.
+    - `client`: Holds the ChatOpenAI client instance, defaulting to None.
+    - `events_sent`: Tracks the number of events sent, initialized to 0.
+    - `aws_client`: Stores the AWS client instance, defaulting to None.
+- **Description**: Manages a usage session for a language model, including session creation, event sending, and usage computation. It initializes with organization and user identifiers, session metadata, and optional session and AWS client identifiers. The class supports context management to automatically start and end sessions, and it provides methods to send events, compute usage metrics, and generate responses using a language model client.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__post_init__`](<#LLMUsageSession__post_init__>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__enter__`](<#LLMUsageSession__enter__>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__exit__`](<#LLMUsageSession__exit__>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._start_session`](<#LLMUsageSession_start_session>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._end_session`](<#LLMUsageSession_end_session>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](<#LLMUsageSessionsend_event>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.commit_event_now`](<#LLMUsageSessioncommit_event_now>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage`](<#LLMUsageSessioncompute_usage>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.generate_response`](<#LLMUsageSessiongenerate_response>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__post_init__`](<#llmusagesession__post_init__>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__enter__`](<#llmusagesession__enter__>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__exit__`](<#llmusagesession__exit__>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._start_session`](<#llmusagesession_start_session>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._end_session`](<#llmusagesession_end_session>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](<#llmusagesessionsend_event>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.commit_event_now`](<#llmusagesessioncommit_event_now>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage`](<#llmusagesessioncompute_usage>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.generate_response`](<#llmusagesessiongenerate_response>)
 
 **Methods**
 
 ---
 #### LLMUsageSession\.\_\_post\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__post_init__}} -->
-The `__post_init__` method initializes the session ID for an `LLMUsageSession` instance if it is not already set by starting a new session.
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L63>)
+
+Initializes the session ID if it is not already set.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if `self.session_id` is `None`.
-    - If `self.session_id` is `None`, call `self._start_session()` to initialize `self.session_id`.
-- **Output**: The method does not return any value; it modifies the `session_id` attribute of the instance in place.
+- **Logic and Control Flow**:
+    - Checks if `self.session_id` is `None`.
+    - If `self.session_id` is `None`, calls `self._start_session()` to initialize it.
+- **Output**: No output is returned as the method returns `None`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._start_session`](<#LLMUsageSession_start_session>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._start_session`](<#llmusagesession_start_session>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.\_\_enter\_\_<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__enter__}} -->
-The `__enter__` method initializes and returns the current instance of the `LLMUsageSession` class when entering a context manager block.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L67>)
+
+Returns the current instance of the class when entering a context manager.
 - **Inputs**:
-    - `self`: An instance of the `_LLMUsageSession` class, which is a type variable bound to `LLMUsageSession`.
-- **Control Flow**:
-    - The method simply returns the `self` instance, allowing the `LLMUsageSession` object to be used within a context manager.
-- **Output**: The method returns the current instance of the `LLMUsageSession` class (`self`).
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - `self`: The instance of the `_LLMUsageSession` class.
+- **Logic and Control Flow**:
+    - Returns the `self` instance, allowing the class to be used as a context manager.
+- **Output**: The current instance of the class (`self`).
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.\_\_exit\_\_<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.__exit__}} -->
-The `__exit__` method finalizes the LLMUsageSession by determining the session status based on the presence of an exception and then ending the session with the appropriate status.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L71>)
+
+Handles the exit of a context manager by ending the session with a status based on the presence of an exception.
 - **Inputs**:
-    - `exc_type`: The type of exception raised, if any, during the session.
-    - `exc_val`: The exception instance raised, if any, during the session.
-    - `exc_tb`: The traceback object associated with the exception, if any, during the session.
-- **Control Flow**:
-    - Check if `exc_type` is `None` to determine if the session completed without exceptions.
-    - Set the session status to `UsageSessionStatus.COMPLETED` if no exception occurred, otherwise set it to `UsageSessionStatus.FAILED`.
-    - Call the [`_end_session`](<#LLMUsageSession_end_session>) method with the determined status to finalize the session.
-- **Output**: The method does not return any value; it performs actions to end the session.
+    - `exc_type`: The type of the exception, if any, that caused the context to exit.
+    - `exc_val`: The exception instance, if any, that caused the context to exit.
+    - `exc_tb`: The traceback object, if any, associated with the exception that caused the context to exit.
+- **Logic and Control Flow**:
+    - Check if `exc_type` is `None` to determine if the context exited without an exception.
+    - Set `status` to `UsageSessionStatus.COMPLETED` if no exception occurred, otherwise set it to `UsageSessionStatus.FAILED`.
+    - Call the [`_end_session`](<#llmusagesession_end_session>) method with the determined `status` to end the session.
+- **Output**: Does not return a value.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._end_session`](<#LLMUsageSession_end_session>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._end_session`](<#llmusagesession_end_session>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.\_start\_session<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._start_session}} -->
-The `_start_session` method initializes a new usage session in the database and returns its unique identifier.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L80>)
+
+Starts a new usage session and returns the session ID.
 - **Inputs**: None
-- **Control Flow**:
-    - A new database session is started using a context manager (`with Session(engine) as session`).
-    - A [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>) object is created with the status set to `RUNNING`, and initialized with the `organization_id`, `user_id`, and serialized `session_metadata`.
-    - The [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>) object is added to the database session.
-    - The database session is committed to save the changes.
-    - The [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>) object is refreshed to update it with the latest data from the database.
-    - The unique identifier (`id`) of the [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>) object is returned.
-- **Output**: The method returns the unique identifier (UUID) of the newly created [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>).
+- **Logic and Control Flow**:
+    - Opens a new database session using `Session(engine)` context manager.
+    - Creates a new [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#usagesession>) object with status set to `UsageSessionStatus.RUNNING`, and initializes it with `organization_id`, `user_id`, and `session_metadata`.
+    - Adds the `usage_session` object to the database session.
+    - Commits the transaction to save the new session to the database.
+    - Refreshes the `usage_session` object to get the updated state from the database.
+    - Returns the `id` of the `usage_session`.
+- **Output**: Returns the `UUID` of the newly created [`UsageSession`](<../../../../driver_db/database/models_v1.py.md#usagesession>).
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.UsageSession`](<../../../../driver_db/database/models_v1.py.md#UsageSession>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/driver_db/database/models_v1.UsageSession`](<../../../../driver_db/database/models_v1.py.md#usagesession>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.\_end\_session<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession._end_session}} -->
-The `_end_session` method finalizes a usage session by updating its status and metadata in the database.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L95>)
+
+Ends the current usage session by updating its status and metadata in the database.
 - **Inputs**:
-    - `status`: A `UsageSessionStatus` object representing the final status of the session (e.g., COMPLETED or FAILED).
-- **Control Flow**:
-    - A new database session is initiated using a context manager (`with Session(engine) as session`).
-    - The current usage session is retrieved from the database using the session ID (`session.get(UsageSession, self.session_id)`).
-    - The status of the usage session is updated to the provided `status`.
-    - The session metadata is retrieved and updated with the number of events sent (`self.events_sent`).
-    - The `flag_modified` function is called to mark the session metadata as modified, ensuring it is updated in the database.
-    - The updated usage session is added back to the session and committed to the database.
-- **Output**: The method does not return any value (`None`).
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - `status`: The new status of the usage session, represented as a `UsageSessionStatus`.
+- **Logic and Control Flow**:
+    - Opens a new database session using `Session(engine)`.
+    - Retrieves the current `UsageSession` object from the database using `session.get` with the `session_id`.
+    - Updates the `status` of the `UsageSession` object to the provided `status`.
+    - Retrieves or initializes the `session_metadata` dictionary from the `UsageSession` object.
+    - Updates the `events_sent` count in the `session_metadata` dictionary.
+    - Assigns the updated `session_metadata` back to the `UsageSession` object.
+    - Marks the `session_metadata` field as modified using `flag_modified`.
+    - Adds the modified `UsageSession` object back to the session.
+    - Commits the transaction to save changes to the database.
+- **Output**: Does not return any value (returns `None`).
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.send\_event<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event}} -->
-The `send_event` method sends a usage metric event to an AWS EventBridge event bus and handles potential exceptions during the process.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L107>)
+
+Sends a usage event to the AWS metrics event bus.
 - **Inputs**:
-    - `usage_metric`: An instance of `UsageMetric` containing the details of the usage event to be sent.
-- **Control Flow**:
-    - Check if an AWS client is provided; if not, obtain one using `get_aws_client()`.
+    - `usage_metric`: An instance of `UsageMetric` containing the details of the usage event to send.
+- **Logic and Control Flow**:
+    - Check if `self.aws_client` is set; if not, use `get_aws_client()` to obtain an AWS client.
     - Create a copy of the `usage_metric` and convert it to a JSON string, adding an empty `event_metadata` field.
-    - Construct an event entry dictionary with details such as time, source, detail type, detail, event bus name, and trace header.
-    - Attempt to send the event using the AWS client's `put_events` method.
-    - If successful, increment the `events_sent` counter and print a success message.
-    - If an exception occurs, print an error message and raise a [`UsageEventSendError`](<#UsageEventSendError>) with the original exception.
-- **Output**: Returns a dictionary response from the AWS client's `put_events` method if the event is sent successfully; otherwise, raises a [`UsageEventSendError`](<#UsageEventSendError>).
+    - Construct an event entry dictionary with the current time, source, detail type, detail, event bus name, and trace header.
+    - Attempt to send the event using `client.put_events()` with the constructed entry.
+    - If successful, increment `self.events_sent` and print the response.
+    - If an exception occurs, print the error message and raise a [`UsageEventSendError`](<#usageeventsenderror>).
+- **Output**: A dictionary containing the response from the AWS `put_events` call.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/llm_session.get_aws_client`](<#get_aws_client>)
-    - [`python-backend/driver_db/database/models_v1.UsageEventType`](<../../../../driver_db/database/models_v1.py.md#UsageEventType>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError`](<#UsageEventSendError>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/driver_db/database/models_v1.UsageEventType`](<../../../../driver_db/database/models_v1.py.md#usageeventtype>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.UsageEventSendError`](<#usageeventsenderror>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.commit\_event\_now<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.commit_event_now}} -->
-The `commit_event_now` method converts a `UsageMetric` into a `UsageEvent` and immediately commits it to the database.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L137>)
+
+Commits a usage event to the database immediately.
 - **Inputs**:
-    - `usage_metric`: An instance of `UsageMetric` that needs to be converted and committed as a `UsageEvent` to the database.
-- **Control Flow**:
-    - Convert the `usage_metric` into a `usage_event` using the [`into_usage_event`](<../interfaces/usage/event_metadata.py.md#UsageMetricinto_usage_event>) method.
+    - `usage_metric`: An instance of `UsageMetric` that contains the data to be converted into a usage event and committed to the database.
+- **Logic and Control Flow**:
+    - Convert the `usage_metric` into a `usage_event` using the [`into_usage_event`](<../interfaces/usage/event_metadata.py.md#usagemetricinto_usage_event>) method.
     - Open a new database session using `Session(engine)`.
     - Add the `usage_event` to the session.
     - Commit the session to save the `usage_event` to the database.
-- **Output**: The method does not return any value; it performs a database commit operation.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric.into_usage_event`](<../interfaces/usage/event_metadata.py.md#UsageMetricinto_usage_event>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric.into_usage_event`](<../interfaces/usage/event_metadata.py.md#usagemetricinto_usage_event>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.compute\_usage<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage}} -->
-The `compute_usage` method calculates and returns a [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>) object based on input prompts, a response from OpenAI, and event type, capturing data such as bytes and tokens used, and metadata about the event.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L143>)
+
+Calculates and returns a usage metric based on input prompts and a response from an AI model.
 - **Inputs**:
-    - `prompts`: A list of strings representing the input prompts to the model.
-    - `response`: An `openai.ChatCompletion` object containing the response from the OpenAI model.
-    - `event_type`: A `UsageEventType` object indicating the type of usage event being recorded.
+    - `prompts`: A list of strings representing the input prompts to the AI model.
+    - `response`: An `openai.ChatCompletion` object containing the response from the AI model.
+    - `event_type`: A `UsageEventType` indicating the type of usage event.
     - `model`: A string specifying the model used, defaulting to 'gpt-4o-2024-08-06'.
     - `provider`: A string specifying the provider of the model, defaulting to 'OpenAI'.
-- **Control Flow**:
-    - Calculate `bytes_in` by summing the UTF-8 encoded byte lengths of all non-empty prompts.
-    - Extract the response message content from the first choice in the response object.
-    - Calculate `bytes_out` as the UTF-8 encoded byte length of the response message, if it exists.
-    - Retrieve `tokens_in` and `tokens_out` from the response's usage data.
-    - Use the `inspect` module to extract function names from the call stack to build the `event_source`.
-    - Create a [`UsageEventMetadata`](<../interfaces/usage/event_metadata.py.md#UsageEventMetadata>) object with model, provider, input prompts, output response, and source lines of code (SLOC) calculated from bytes in and out.
-    - Instantiate a [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>) object with session details, event source, byte and token counts, current timestamp, event type, and event metadata.
-    - Return the [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>) object.
-- **Output**: A [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>) object containing details about the usage event, including byte and token counts, event source, and metadata.
+- **Logic and Control Flow**:
+    - Calculate `bytes_in` by summing the byte length of each prompt in UTF-8 encoding.
+    - Extract the response message content from the `response` object.
+    - Calculate `bytes_out` as the byte length of the response message in UTF-8 encoding, or 0 if the message is empty.
+    - Retrieve `tokens_in` and `tokens_out` from the `response.usage` object.
+    - Extract function names from the call stack to construct the `event_source`.
+    - Create a [`UsageEventMetadata`](<../interfaces/usage/event_metadata.py.md#usageeventmetadata>) object with model, provider, input prompts, output response, and source lines of code (SLOC).
+    - Create a [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#usagemetric>) object with session details, byte and token counts, timestamp, event type, and event metadata.
+    - Return the [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#usagemetric>) object.
+- **Output**: A [`UsageMetric`](<../interfaces/usage/event_metadata.py.md#usagemetric>) object containing details about the usage event, including byte and token counts, event source, and metadata.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageEventMetadata`](<../interfaces/usage/event_metadata.py.md#UsageEventMetadata>)
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageEventMetadata`](<../interfaces/usage/event_metadata.py.md#usageeventmetadata>)
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<utils.py.md#bytes_to_sloc>)
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](<../interfaces/usage/event_metadata.py.md#UsageMetric>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageMetric`](<../interfaces/usage/event_metadata.py.md#usagemetric>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 ---
 #### LLMUsageSession\.generate\_response<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.generate_response}} -->
-The [`generate_response`](<../../../../content_services/auto_toml/src/chat_openai.py.md#ChatOpenAIgenerate_response>) method generates a response from a language model based on system and user prompts, computes usage metrics, and sends an event with these metrics.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L192>)
+
+Generates a response from a language model and logs usage metrics.
 - **Inputs**:
-    - `system_prompt`: A string representing the system prompt to be used in generating the response.
-    - `user_prompt`: A string representing the user prompt to be used in generating the response.
+    - `system_prompt`: A string representing the system prompt to provide context to the language model.
+    - `user_prompt`: A string representing the user's input or query to the language model.
     - `output_cfg`: An instance of `OutputConfig` that specifies the configuration for the output, with a default value of `OutputConfig.default()`.
-    - `model`: A string specifying the model to be used, defaulting to 'gpt-4o-2024-08-06'.
-    - `temperature`: An integer representing the temperature setting for the model, defaulting to 0.
-    - `request_timeout`: An integer specifying the request timeout in seconds, defaulting to 300.
-- **Control Flow**:
-    - Check if the `client` attribute is `None`; if so, initialize it with a [`ChatOpenAI`](<../../../../content_services/auto_toml/src/chat_openai.py.md#ChatOpenAI>) instance using the provided model, temperature, and request timeout.
-    - Call the [`generate_response`](<../../../../content_services/auto_toml/src/chat_openai.py.md#ChatOpenAIgenerate_response>) method on the `client` with the provided system and user prompts and output configuration to obtain a response.
-    - Compute usage metrics by calling [`compute_usage`](<#LLMUsageSessioncompute_usage>) with the prompts, response, and a specified event type.
-    - Send the computed usage metrics as an event using the [`send_event`](<#LLMUsageSessionsend_event>) method.
-    - Return the content of the first choice message from the response.
+    - `model`: A string specifying the model to use, defaulting to 'gpt-4o-2024-08-06'.
+    - `temperature`: An integer representing the randomness of the model's output, defaulting to 0.
+    - `request_timeout`: An integer specifying the timeout duration for the request, defaulting to 300 seconds.
+- **Logic and Control Flow**:
+    - Check if `self.client` is initialized; if not, initialize it with [`ChatOpenAI`](<../agent/chat_openai.py.md#chatopenai>) using the provided model, temperature, and request timeout.
+    - Call [`generate_response`](<../agent/chat_openai.py.md#chatopenaigenerate_response>) on `self.client` with the `system_prompt`, `user_prompt`, and `output_cfg` to get a response.
+    - Compute usage metrics by calling [`compute_usage`](<#llmusagesessioncompute_usage>) with the prompts, response, and a specified event type.
+    - Send the computed usage metrics by calling [`send_event`](<#llmusagesessionsend_event>).
+    - Return the content of the first choice in the response message.
 - **Output**: A string containing the content of the generated response message.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/chat_openai.OutputConfig.default`](<../../../../content_services/auto_toml/src/chat_openai.py.md#OutputConfigdefault>)
-    - [`python-backend/content_services/auto_toml/src/chat_openai.ChatOpenAI`](<../../../../content_services/auto_toml/src/chat_openai.py.md#ChatOpenAI>)
-    - [`python-backend/content_services/auto_toml/src/chat_openai.ChatOpenAI.generate_response`](<../../../../content_services/auto_toml/src/chat_openai.py.md#ChatOpenAIgenerate_response>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage`](<#LLMUsageSessioncompute_usage>)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](<#LLMUsageSessionsend_event>)
-- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#LLMUsageSession>)  (Base Class)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.OutputConfig.default`](<../agent/chat_openai.py.md#outputconfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI`](<../agent/chat_openai.py.md#chatopenai>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../agent/chat_openai.py.md#chatopenaigenerate_response>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage`](<#llmusagesessioncompute_usage>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](<#llmusagesessionsend_event>)
+- **See also**: [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<#llmusagesession>)  (Base Class)
 
 
 
@@ -273,13 +299,15 @@ The [`generate_response`](<../../../../content_services/auto_toml/src/chat_opena
 
 ---
 ### get\_aws\_client<!-- {{#callable:python-backend/packages/shared/shared/usage/llm_session.get_aws_client}} -->
-The `get_aws_client` function initializes and returns a global AWS client for interacting with AWS services, specifically the 'events' service in the 'us-east-1' region.
+[View Source →](<../../../../../../packages/shared/shared/usage/llm_session.py#L32>)
+
+Retrieves or initializes a global AWS client for the 'events' service in the 'us-east-1' region.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if the global variable `aws_client` is `None`.
-    - If `aws_client` is `None`, initialize it using `boto3.client` with the 'events' service and 'us-east-1' region.
-    - Return the `aws_client`.
-- **Output**: The function returns a `boto3.client` object for the AWS 'events' service.
+- **Logic and Control Flow**:
+    - Checks if the global variable `aws_client` is `None`.
+    - If `aws_client` is `None`, initializes it using `boto3.client` with the 'events' service and 'us-east-1' region.
+    - Returns the `aws_client`.
+- **Output**: A `boto3.client` object for the AWS 'events' service.
 
 
 

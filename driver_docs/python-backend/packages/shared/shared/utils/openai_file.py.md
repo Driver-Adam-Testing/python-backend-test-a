@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `openai_file.py` file contains a utility function to upload a file to OpenAI's API and return the file ID.
+Uploads a file to OpenAI and returns the file ID.
 
 # Purpose
-This code is a short script that provides narrow functionality for uploading a file to OpenAI's API. It defines a single function, [`upload_file_to_open_ai`](<#upload_file_to_open_ai>), which takes a file content in the form of an `io.BytesIO` object and uploads it to OpenAI's service with the specified purpose of "assistants". The function utilizes the OpenAI client to create a file on the server and returns the unique identifier (`file.id`) of the uploaded file. This script is likely part of a larger application that interacts with OpenAI's API for tasks involving file management or processing.
+The code defines a function [`upload_file_to_open_ai`](<#upload_file_to_open_ai>) that uploads a file to the OpenAI API. It uses the `OpenAI` class from the `openai` module to create a client instance. The function takes a file content parameter of type `io.BytesIO`, which represents the file to upload. It calls the `create` method on the `files` attribute of the client to upload the file with the specified purpose "assistants". The function returns the ID of the uploaded file.
 # Imports and Dependencies
 
 ---
@@ -18,14 +18,17 @@ This code is a short script that provides narrow functionality for uploading a f
 
 ---
 ### upload\_file\_to\_open\_ai<!-- {{#callable:python-backend/packages/shared/shared/utils/openai_file.upload_file_to_open_ai}} -->
-The function uploads a file to OpenAI's API and returns the file's unique identifier.
+[View Source →](<../../../../../../packages/shared/shared/utils/openai_file.py#L6>)
+
+Uploads a file to OpenAI and returns the file ID.
 - **Inputs**:
-    - `file_content`: A file-like object of type io.BytesIO containing the content to be uploaded.
-- **Control Flow**:
-    - Instantiate an OpenAI client object.
-    - Use the client to create a file on OpenAI's server with the provided file content and a specified purpose of 'assistants'.
-    - Retrieve the unique identifier of the uploaded file.
-- **Output**: The function returns the unique identifier (ID) of the uploaded file as provided by OpenAI's API.
+    - `file_content`: A `BytesIO` object containing the file data to upload.
+- **Logic and Control Flow**:
+    - Creates an instance of the `OpenAI` client.
+    - Calls the `create` method on the `files` attribute of the `OpenAI` client, passing `file_content` and a purpose of 'assistants'.
+    - Stores the result of the `create` method in the `file` variable.
+    - Returns the `id` attribute of the `file` object.
+- **Output**: The ID of the uploaded file as returned by the OpenAI API.
 
 
 

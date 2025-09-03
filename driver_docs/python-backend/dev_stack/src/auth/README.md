@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python scripts for Auth0 authentication mechanisms, including device flow, PKCE-based OAuth2, and CLI tools.
+Auth0 and OAuth2 authentication tools with FastAPI, including CLI interfaces and token management.
 
 
 ## Files
-- **[auth0_device_flow.py](auth0_device_flow.py.md)**: The `auth0_device_flow.py` file implements an Auth0 device flow authenticator that manages device authorization, token retrieval, and caching for a Python backend application.
-- **[auth_cli.py](auth_cli.py.md)**: The `auth_cli.py` file implements a command-line interface for authentication using FastAPI and Auth0 with PKCE, providing commands for login, fetching user profile, and logout.
-- **[auth_flow.py](auth_flow.py.md)**: The `auth_flow.py` file implements an authentication flow using Auth0, including generating PKCE pairs, handling callback requests, and obtaining tokens through a FastAPI server.
-- **[auth_server.py](auth_server.py.md)**: The `auth_server.py` file in the `python-backend` codebase implements an authentication server using FastAPI and Auth0, facilitating PKCE-based OAuth2 login via a web browser and token retrieval.
-- **[cli2.py](cli2.py.md)**: The `cli2.py` file implements a command-line interface for authentication using Auth0's device flow, providing commands to log in, check the current user, and log out.
-- **[token_store.py](token_store.py.md)**: The `token_store.py` file provides functions to save, load, and clear authentication tokens stored in a JSON file located in the user's home directory.
+- **[auth0_device_flow.py](auth0_device_flow.py.md)**: Implements an Auth0 device flow authenticator with token caching and refreshing capabilities.
+- **[auth_cli.py](auth_cli.py.md)**: Command-line interface for authentication using FastAPI and Auth0 with login, whoami, and logout commands.
+- **[auth_flow.py](auth_flow.py.md)**: Implements an OAuth2 authentication flow using FastAPI, PKCE, and Auth0 for token retrieval.
+- **[auth_server.py](auth_server.py.md)**: Implements an Auth0 authentication server using FastAPI and PKCE for token exchange.
+- **[cli2.py](cli2.py.md)**: Command-line interface for authentication using Auth0 device flow with login, whoami, and logout commands.
+- **[token_store.py](token_store.py.md)**: Manages token storage with functions to save, load, and clear tokens in a JSON file.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

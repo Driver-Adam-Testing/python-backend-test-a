@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst_functions.py` file contains a comprehensive suite of test functions demonstrating various Python function features, including parameter types, decorators, async functions, generators, and complex annotations.
+Tests for various Python function types, including async, decorators, and complex annotations.
 
 # Purpose
-This Python source code file is a comprehensive collection of function definitions that demonstrate a wide range of Python programming concepts and techniques. The file includes examples of simple functions, functions with parameters and type hints, asynchronous functions, generator functions, and functions utilizing decorators. It also covers more advanced topics such as nested functions, lambda expressions, recursive functions, and functions with complex default arguments. Additionally, the file illustrates the use of type annotations, including Union and Literal types, generic type parameters, and complex annotations. The inclusion of a context manager function and a property-like function further showcases the versatility of Python functions.
+This code is a test suite for extracting and demonstrating various Python function definitions and their features. It includes a wide range of function types, showcasing different aspects of Python's function capabilities. The functions cover simple definitions, parameter handling, type hints, asynchronous operations, generators, decorators, nested functions, lambda expressions, recursive functions, and more. Each function is designed to illustrate a specific concept or feature, such as the use of decorators, type annotations, and context managers.
 
-The primary purpose of this file is to serve as a reference or educational resource for understanding different aspects of Python function definitions and their applications. It is not intended to be a standalone script or library but rather a demonstration of various function-related features in Python. The file does not define public APIs or external interfaces; instead, it focuses on showcasing the syntax and usage of different function types and decorators, making it a valuable resource for learning and exploring Python's functional programming capabilities.
+The code is organized into distinct sections, each focusing on a particular function type or feature. It includes functions with complex parameter types, default arguments, and various return types. The use of decorators is demonstrated with both custom and built-in decorators, such as `lru_cache` and `staticmethod`. Additionally, the code includes examples of functions with docstrings, demonstrating how to document function parameters and return values. This test suite serves as a comprehensive reference for understanding the diverse ways functions can be defined and used in Python.
 # Imports and Dependencies
 
 ---
@@ -30,299 +30,331 @@ The primary purpose of this file is to serve as a reference or educational resou
 
 ---
 ### simple\_lambda
-- **Type**: `lambda`
-- **Description**: The `simple_lambda` is a lambda function that takes a single argument `x` and returns the result of multiplying `x` by 2. It is a concise way to define a function for doubling a given input.
-- **Use**: This variable is used to quickly define a simple function for doubling a number without the need for a full function definition.
+- **Type**: ``function``
+- **Description**: A lambda function that takes a single argument `x` and returns the result of multiplying `x` by 2. Lambda functions are anonymous functions defined using the `lambda` keyword.
+- **Use**: Used to perform a simple arithmetic operation of doubling the input value.
 
 
 ---
 ### complex\_lambda
-- **Type**: `lambda`
-- **Description**: The `complex_lambda` is a lambda function that takes two parameters, `x` and an optional `y` with a default value of 10. It returns the sum of `x` and `y` if `x` is greater than 0; otherwise, it returns `y`. This lambda function provides a concise way to perform a conditional operation based on the value of `x`. 
-- **Use**: This variable is used to perform a conditional addition operation based on the value of `x`.
+- **Type**: ``lambda``
+- **Description**: Defines an anonymous function that takes two parameters, `x` and `y`, with `y` having a default value of 10. The function returns the sum of `x` and `y` if `x` is greater than 0; otherwise, it returns `y`.
+- **Use**: Used to perform conditional addition based on the value of `x`.
 
 
 ---
 ### T
 - **Type**: `TypeVar`
-- **Description**: `T` is a type variable defined using the `TypeVar` function from the `typing` module. It is used to create generic types in Python, allowing for type-safe operations on data structures that can hold any type.
-- **Use**: `T` is used as a placeholder for any type in generic functions or classes, enabling type flexibility while maintaining type safety.
+- **Description**: Defines a generic type variable `T` that can be used to specify generic types in function signatures or class definitions. `TypeVar` is a utility from the `typing` module that allows for the creation of generic types.
+- **Use**: Used to define generic functions or classes that can operate on any data type, as specified by the `T` type variable.
 
 
 # Functions
 
 ---
 ### simple\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.simple_function}} -->
-The `simple_function` returns a static string 'simple'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L8>)
+
+Returns the string 'simple'.
 - **Inputs**: None
-- **Control Flow**:
-    - The function immediately returns the string 'simple'.
-- **Output**: A string 'simple'.
+- **Logic and Control Flow**:
+    - Returns the string 'simple'.
+- **Output**: A string with the value 'simple'.
 
 
 ---
 ### function\_with\_params<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.function_with_params}} -->
-The function `function_with_params` formats and returns a string composed of its three input parameters.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L12>)
+
+Formats and returns a string that combines the input parameters.
 - **Inputs**:
-    - `a`: An integer that will be included in the formatted string.
-    - `b`: A string that will be included in the formatted string.
-    - `c`: An optional float that will be included in the formatted string; defaults to None if not provided.
-- **Control Flow**:
-    - The function takes three parameters: an integer `a`, a string `b`, and an optional float `c`.
-    - It uses an f-string to format these parameters into a single string, with each parameter separated by a space.
-- **Output**: A string that concatenates the input parameters `a`, `b`, and `c`, separated by spaces.
+    - `a`: An integer that represents the first part of the formatted string.
+    - `b`: A string that represents the second part of the formatted string.
+    - `c`: An optional float that represents the third part of the formatted string; defaults to None if not provided.
+- **Logic and Control Flow**:
+    - Formats the inputs `a`, `b`, and `c` into a single string using an f-string.
+    - Returns the formatted string.
+- **Output**: A string that combines the integer, string, and optional float inputs separated by spaces.
 
 
 ---
 ### complex\_params<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.complex_params}} -->
-The `complex_params` function demonstrates the use of various parameter types in Python, including positional-only, normal, variable positional, keyword-only, and variable keyword arguments, and returns them as a tuple.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L16>)
+
+Returns a tuple containing all types of parameters passed to it.
 - **Inputs**:
-    - `positional_only`: A parameter that must be provided as a positional argument.
-    - `normal_param`: A standard parameter that can be provided either positionally or as a keyword argument.
-    - `*args`: A variable-length argument list that captures additional positional arguments.
-    - `keyword_only`: A parameter that must be provided as a keyword argument.
-    - `**kwargs`: A variable-length keyword argument dictionary that captures additional keyword arguments.
-- **Control Flow**:
-    - The function accepts a positional-only argument, a normal parameter, variable positional arguments, a keyword-only argument, and variable keyword arguments.
-    - It returns a tuple containing all the received arguments in the order they were defined.
-- **Output**: A tuple containing the values of `positional_only`, `normal_param`, `args`, `keyword_only`, and `kwargs`.
+    - `positional_only`: A parameter that must be passed positionally.
+    - `normal_param`: A standard parameter that can be passed either positionally or as a keyword.
+    - `*args`: A variable-length argument list for additional positional arguments.
+    - `keyword_only`: A parameter that must be passed as a keyword argument.
+    - `**kwargs`: A variable-length keyword argument dictionary for additional keyword arguments.
+- **Logic and Control Flow**:
+    - Accepts a positional-only parameter, a normal parameter, additional positional arguments, a keyword-only parameter, and additional keyword arguments.
+    - Returns a tuple containing all the received parameters in the order they are defined.
+- **Output**: A tuple containing the `positional_only`, `normal_param`, `args`, `keyword_only`, and `kwargs`.
 
 
 ---
 ### typed\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.typed_function}} -->
-The function `typed_function` calculates the sum of a list of integers and returns the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L26>)
+
+Calculates the sum of a list of integers.
 - **Inputs**:
-    - `items`: A list of integers that will be summed.
-- **Control Flow**:
-    - The function takes a list of integers as input.
-    - It uses the built-in `sum` function to calculate the total of the integers in the list.
-    - The result of the sum is returned as the output of the function.
-- **Output**: An integer representing the sum of all the integers in the input list.
+    - `items`: A list of integers to sum.
+- **Logic and Control Flow**:
+    - Uses the built-in `sum` function to calculate the total of the integers in the `items` list.
+- **Output**: The sum of the integers in the `items` list as an integer.
 
 
 ---
 ### async\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.async_function}} -->
-The `async_function` is an asynchronous function that pauses execution for a specified delay and then returns a completion message.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L30>)
+
+Executes an asynchronous delay and returns a completion message.
 - **Inputs**:
-    - `delay`: A float representing the number of seconds to pause execution.
-- **Control Flow**:
-    - The function begins by awaiting an asynchronous sleep for the duration specified by the `delay` parameter.
-    - After the sleep period, the function returns the string 'async completed'.
-- **Output**: A string 'async completed' indicating the completion of the asynchronous operation.
+    - `delay`: A float representing the number of seconds to wait asynchronously.
+- **Logic and Control Flow**:
+    - Uses 'await' to pause execution for the specified 'delay' duration using 'asyncio.sleep'.
+    - After the delay, returns the string 'async completed'.
+- **Output**: A string indicating the completion of the asynchronous operation.
 
 
 ---
 ### generator\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.generator_function}} -->
-The `generator_function` yields even numbers up to twice the input integer `n`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L35>)
+
+Generates a sequence of even numbers up to twice the given integer.
 - **Inputs**:
     - `n`: An integer that specifies the number of even numbers to generate.
-- **Control Flow**:
-    - The function enters a for loop that iterates from 0 to n-1.
-    - In each iteration, it calculates the double of the current index `i` and yields it.
-- **Output**: A generator that produces even integers starting from 0 up to 2*(n-1).
+- **Logic and Control Flow**:
+    - Iterates over a range from 0 to n (exclusive).
+    - Yields the product of the current index and 2 for each iteration.
+- **Output**: A generator that yields even integers starting from 0 up to (n-1) * 2.
 
 
 ---
 ### cached\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.cached_function}} -->
-The `cached_function` computes the square of an integer and caches the result to optimize repeated calls with the same argument.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L40>)
+
+Calculates the square of an integer and caches the result for future calls.
 - **Decorators**: `@lru_cache`
 - **Inputs**:
-    - `x`: An integer input for which the square is to be calculated.
-- **Control Flow**:
-    - The function takes an integer input `x`.
-    - It computes the square of `x` by performing `x ** 2`.
-    - The result is cached using the `lru_cache` decorator to optimize performance for repeated calls with the same input.
-- **Output**: The function returns the square of the input integer `x` as an integer.
+    - `x`: An integer input for which the square will be calculated.
+- **Logic and Control Flow**:
+    - Uses the `lru_cache` decorator to cache the result of the function call.
+    - Returns the square of the input integer `x`.
+- **Output**: The square of the input integer `x` as an integer.
 
 
 ---
 ### my\_decorator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.my_decorator}} -->
-The `my_decorator` function is a decorator that wraps a given function to print a message before calling the original function.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L44>)
+
+Applies a wrapper to a function that prints a message before calling the function.
+- **Decorators**: `@wraps`
 - **Inputs**:
-    - `func`: The function to be wrapped by the decorator.
-- **Control Flow**:
-    - The `my_decorator` function takes a function `func` as an argument.
-    - It defines an inner function `wrapper` that uses `*args` and `**kwargs` to accept any arguments and keyword arguments.
-    - The `wrapper` function prints a message indicating the name of the function being called.
-    - The `wrapper` function then calls the original function `func` with the provided arguments and keyword arguments.
-    - The `my_decorator` function returns the `wrapper` function, effectively replacing the original function with the wrapped version.
-- **Output**: A new function `wrapper` that prints a message before executing the original function.
+    - `func`: The function to be wrapped.
+- **Logic and Control Flow**:
+    - Defines a nested function `wrapper` that takes any arguments and keyword arguments.
+    - Prints a message indicating the function name being called.
+    - Calls the original function `func` with the provided arguments and keyword arguments.
+    - Returns the result of the function call.
+    - Returns the `wrapper` function.
+- **Output**: A wrapped version of the input function that includes a print statement before execution.
 
 
 ---
 ### decorated\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.decorated_function}} -->
-The `decorated_function` converts a given string to uppercase and logs its invocation using a custom decorator.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L51>)
+
+Converts the input string to uppercase and applies a decorator that logs the function call.
 - **Decorators**: `@my_decorator`
 - **Inputs**:
-    - `value`: A string input that will be converted to uppercase.
-- **Control Flow**:
-    - The function is decorated with `my_decorator`, which wraps the function to add logging functionality.
-    - The function takes a single string argument `value`.
-    - The function returns the uppercase version of the input string `value`.
-- **Output**: The function returns the uppercase version of the input string.
+    - `value`: A string that the function will convert to uppercase.
+- **Logic and Control Flow**:
+    - The function receives a string input named `value`.
+    - The function converts the input string to uppercase using the `upper()` method.
+    - The function returns the uppercase string.
+- **Output**: An uppercase version of the input string.
 
 
 ---
 ### multiple\_decorators<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.multiple_decorators}} -->
-The `multiple_decorators` function is a static method that returns the sum of two integers, with caching to optimize repeated calls with the same arguments.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L56>)
+
+Adds two integers and caches the result for efficiency.
 - **Decorators**: `@staticmethod`, `@lru_cache`
 - **Inputs**:
-    - `x`: An integer input to be added.
-    - `y`: Another integer input to be added.
-- **Control Flow**:
-    - The function takes two integer inputs, `x` and `y`.
-    - It calculates the sum of `x` and `y`.
-    - The result is returned as the output.
-- **Output**: The function returns an integer which is the sum of the two input integers, `x` and `y`.
+    - `x`: An integer to add.
+    - `y`: Another integer to add.
+- **Logic and Control Flow**:
+    - Uses the `lru_cache` decorator to cache the result of the addition to improve performance for repeated calls with the same arguments.
+    - Returns the sum of `x` and `y`.
+- **Output**: The sum of the two input integers `x` and `y`.
 
 
 ---
 ### outer\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.outer_function}} -->
-The `outer_function` returns a nested function that computes the sum of three integers using closures.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L62>)
+
+Returns a nested function that adds three integers.
 - **Inputs**:
-    - `x`: An integer that serves as the first operand in the nested addition operation.
-- **Control Flow**:
-    - Defines an inner function `inner_function` that takes an integer `y` as an argument.
-    - Within `inner_function`, defines another function `deeply_nested` that takes an integer `z` as an argument.
-    - The `deeply_nested` function returns the sum of `x`, `y`, and `z`.
-    - The `inner_function` returns the `deeply_nested` function.
-    - The `outer_function` returns the `inner_function`.
-- **Output**: A function `inner_function` that takes an integer `y` and returns another function `deeply_nested` which takes an integer `z` and returns the sum of `x`, `y`, and `z`.
+    - `x`: An integer that is used in the nested addition operation.
+- **Logic and Control Flow**:
+    - Defines an `inner_function` that takes an integer `y` as input.
+    - Within `inner_function`, defines a `deeply_nested` function that takes an integer `z` as input.
+    - `deeply_nested` returns the sum of `x`, `y`, and `z`.
+    - `inner_function` returns the `deeply_nested` function.
+    - Returns the `inner_function`.
+- **Output**: A function `inner_function` that takes an integer and returns another function `deeply_nested` which performs the addition of three integers.
 
 
 ---
 ### function\_factory<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.function_factory}} -->
-The `function_factory` function creates and returns a new function that multiplies its input by a specified multiplier.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L74>)
+
+Creates a function that multiplies its input by a specified multiplier.
 - **Inputs**:
-    - `multiplier`: An integer that will be used as the multiplier in the returned function.
-- **Control Flow**:
-    - Defines an inner function `multiplier_func` that takes an integer `x` as input and returns the product of `x` and `multiplier`.
+    - `multiplier`: An integer that specifies the multiplier for the returned function.
+- **Logic and Control Flow**:
+    - Defines an inner function `multiplier_func` that takes an integer `x` and returns the product of `x` and `multiplier`.
     - Returns the `multiplier_func` function.
-- **Output**: A function that takes an integer as input and returns the product of that integer and the specified multiplier.
+- **Output**: A function that takes an integer and returns the product of that integer and the specified multiplier.
 
 
 ---
 ### fibonacci<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.fibonacci}} -->
-The `fibonacci` function calculates the nth Fibonacci number using a recursive approach.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L80>)
+
+Calculates the nth Fibonacci number using recursion.
 - **Inputs**:
     - `n`: An integer representing the position in the Fibonacci sequence to calculate.
-- **Control Flow**:
-    - Check if the input `n` is less than or equal to 1.
-    - If `n` is less than or equal to 1, return `n` as the Fibonacci number.
-    - If `n` is greater than 1, recursively call `fibonacci(n - 1)` and `fibonacci(n - 2)` and return their sum.
+- **Logic and Control Flow**:
+    - Checks if the input `n` is less than or equal to 1; if true, returns `n` as the result.
+    - If `n` is greater than 1, recursively calls `fibonacci` with `n-1` and `n-2` and returns the sum of these two calls.
 - **Output**: An integer representing the nth Fibonacci number.
 
 
 ---
 ### documented\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.documented_function}} -->
-The function `documented_function` processes a string by stripping whitespace and converting it to lowercase.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L86>)
+
+Processes a string by stripping whitespace and converting it to lowercase.
 - **Inputs**:
-    - `param`: A string parameter that will be processed by the function.
-- **Control Flow**:
-    - The function takes a single string parameter `param`.
-    - It applies the `strip()` method to remove any leading or trailing whitespace from the string.
-    - It then converts the resulting string to lowercase using the `lower()` method.
-    - Finally, it returns the processed string.
-- **Output**: A string that has been stripped of whitespace and converted to lowercase.
+    - `param`: A string parameter to process.
+- **Logic and Control Flow**:
+    - Strips leading and trailing whitespace from the input string `param`.
+    - Converts the stripped string to lowercase.
+- **Output**: The processed string with no leading or trailing whitespace and in lowercase.
 
 
 ---
 ### default\_args\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.default_args_function}} -->
-The `default_args_function` calculates the sum of the lengths of a list and a dictionary, applying a callback function to the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L99>)
+
+Executes a callback function with the sum of the lengths of a list and a dictionary, both of which have default values.
 - **Inputs**:
-    - `items`: A list of integers, defaulting to None, which is initialized to an empty list if not provided.
-    - `mapping`: A dictionary, defaulting to None, which is initialized to an empty dictionary if not provided.
-    - `callback`: A callable function that takes a single integer argument and returns a value, defaulting to an identity lambda function.
-- **Control Flow**:
-    - Check if 'items' is None and initialize it to an empty list if true.
-    - Check if 'mapping' is None and initialize it to an empty dictionary if true.
-    - Calculate the sum of the lengths of 'items' and 'mapping'.
-    - Apply the 'callback' function to the calculated sum.
-    - Return the result of the 'callback' function.
-- **Output**: The output is the result of the 'callback' function applied to the sum of the lengths of 'items' and 'mapping'.
+    - `items`: A list of integers, defaulting to an empty list if not provided.
+    - `mapping`: A dictionary, defaulting to an empty dictionary if not provided.
+    - `callback`: A callable function that takes an integer and returns a value, defaulting to a lambda function that returns its input.
+- **Logic and Control Flow**:
+    - Check if `items` is `None` and assign an empty list if true.
+    - Check if `mapping` is `None` and assign an empty dictionary if true.
+    - Calculate the sum of the lengths of `items` and `mapping`.
+    - Call the `callback` function with the calculated sum and return the result.
+- **Output**: The result of the `callback` function applied to the sum of the lengths of `items` and `mapping`.
 
 
 ---
 ### async\_generator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.async_generator}} -->
-The `async_generator` function is an asynchronous generator that yields integers from 0 to n-1, pausing for 0.1 seconds between each yield.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L111>)
+
+Generates integers from 0 to n-1 asynchronously with a delay between each yield.
 - **Inputs**:
-    - `n`: An integer specifying the number of integers to generate and yield.
-- **Control Flow**:
-    - The function enters a for loop that iterates from 0 to n-1.
-    - Within each iteration, the function pauses execution for 0.1 seconds using `await asyncio.sleep(0.1)`.
-    - After the pause, the function yields the current integer `i`.
-- **Output**: The function yields integers from 0 to n-1, one at a time, asynchronously.
+    - `n`: The number of integers to generate, starting from 0.
+- **Logic and Control Flow**:
+    - Iterates over a range from 0 to n.
+    - For each integer in the range, pauses execution for 0.1 seconds using 'await asyncio.sleep(0.1)'.
+    - Yields the current integer after the delay.
+- **Output**: An asynchronous iterator that yields integers from 0 to n-1.
 
 
 ---
 ### union\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.union_function}} -->
-The `union_function` converts an input value, which can be either an integer or a string, into a string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L119>)
+
+Converts an input value of type `int` or `str` to a string.
 - **Inputs**:
-    - `value`: A value that can be either an integer or a string, specified using the Union type hint.
-- **Control Flow**:
-    - The function takes a single argument `value` which is annotated to accept either an integer or a string.
-    - The function immediately converts the input `value` to a string using the `str()` function.
-    - The converted string is returned as the output of the function.
-- **Output**: A string representation of the input value.
+    - `value`: An input value that can be either an integer or a string.
+- **Logic and Control Flow**:
+    - Converts the input `value` to a string using the `str()` function.
+- **Output**: A string representation of the input `value`.
 
 
 ---
 ### literal\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.literal_function}} -->
-The `literal_function` returns a formatted string indicating the mode of operation based on a literal input.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L122>)
+
+Formats a string to indicate the mode of operation.
 - **Inputs**:
-    - `mode`: A string literal that must be one of the following values: 'read', 'write', or 'append'.
-- **Control Flow**:
-    - The function takes a single argument 'mode' which is expected to be a string literal with specific allowed values.
-    - It constructs a formatted string using the provided 'mode' value.
-- **Output**: A string formatted as 'Mode: {mode}', where {mode} is the input argument.
+    - `mode`: A string literal that must be one of 'read', 'write', or 'append'.
+- **Logic and Control Flow**:
+    - Formats the input `mode` into a string prefixed with 'Mode: '.
+- **Output**: A string that indicates the mode of operation, prefixed with 'Mode: '.
 
 
 ---
 ### generic\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.generic_function}} -->
-The `generic_function` returns the input item without modification, supporting any type due to its use of a generic type parameter.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L130>)
+
+Returns the input item without modification.
 - **Inputs**:
-    - `item`: A parameter of any type, denoted by the generic type variable `T`.
-- **Control Flow**:
-    - The function takes a single input parameter `item` of a generic type `T`.
-    - It immediately returns the input `item` without any processing or modification.
-- **Output**: The output is the same as the input `item`, maintaining the same type `T`.
+    - `item`: A generic item of type `T`.
+- **Logic and Control Flow**:
+    - Receives an input `item` of type `T`.
+    - Returns the input `item` without any changes.
+- **Output**: The same item of type `T` that was provided as input.
 
 
 ---
 ### property\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.property_function}} -->
-The `property_function` converts a given function into a property using the `property` built-in.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L134>)
+
+Converts a function into a property.
 - **Inputs**:
-    - `func`: The function to be converted into a property.
-- **Control Flow**:
-    - The function takes a single argument `func`.
-    - It returns the result of calling the `property` built-in with `func` as its argument.
+    - `func`: The function to convert into a property.
+- **Logic and Control Flow**:
+    - Uses the built-in `property` function to convert the input function `func` into a property.
 - **Output**: A property object created from the input function.
 
 
 ---
 ### context\_manager\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.context_manager_function}} -->
-The `context_manager_function` is a context manager that prints messages when entering and exiting a context, and yields a resource string during its execution.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L140>)
+
+Manages a context with entry and exit actions using a context manager.
 - **Decorators**: `@contextmanager`
 - **Inputs**: None
-- **Control Flow**:
-    - Prints 'Entering context' when the context is entered.
+- **Logic and Control Flow**:
+    - Prints 'Entering context' when entering the context.
     - Yields the string 'resource' to the context block.
-    - Ensures 'Exiting context' is printed when the context is exited, regardless of whether an exception occurred.
-- **Output**: The function yields the string 'resource' when the context is active.
+    - Prints 'Exiting context' when exiting the context, regardless of whether an exception occurred.
+- **Output**: A context manager that yields the string 'resource'.
 
 
 ---
 ### complex\_annotations<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.complex_annotations}} -->
-The `complex_annotations` function takes a callable and a list of optional dictionaries, returning a lambda function that calls the provided callable with the length of the list and the string representation of the first dictionary, or None if the list is empty.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_functions.py#L149>)
+
+Returns a lambda function that calls the given function with the length of the data and the string representation of the first element, or None if the data is empty.
 - **Inputs**:
     - `func`: A callable that takes an integer and a string as arguments and returns a boolean.
     - `data`: A list of optional dictionaries.
-- **Control Flow**:
-    - Check if the 'data' list is empty.
-    - If 'data' is empty, return None.
-    - If 'data' is not empty, return a lambda function.
-    - The lambda function calls 'func' with the length of 'data' and the string representation of the first element in 'data'.
-- **Output**: An optional callable that takes no arguments and returns None, or None if the input list is empty.
+- **Logic and Control Flow**:
+    - Check if the `data` list is empty.
+    - If `data` is empty, return `None`.
+    - If `data` is not empty, return a lambda function that calls `func` with the length of `data` and the string representation of the first element in `data`.
+- **Output**: An optional callable that takes no arguments and returns `None`, or `None` if `data` is empty.
 
 
 

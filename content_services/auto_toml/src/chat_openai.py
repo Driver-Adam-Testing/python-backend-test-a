@@ -46,7 +46,12 @@ class ChatOpenAI:
 
     @staticmethod
     def get_token_limit(model: str) -> int:
-        TOKEN_LIMITS = {"gpt-4.1": 1_000_000}
+        TOKEN_LIMITS = {
+            "gpt-4.1": 1_000_000,
+            "o3-mini": 200_000,
+            "gpt-4o": 128_000,
+            "gpt-5": 272_000,
+        }
         return TOKEN_LIMITS[model]
 
     @async_retry_with_exponential_backoff(
@@ -57,7 +62,6 @@ class ChatOpenAI:
             openai.RateLimitError,
             openai.InternalServerError,
             openai.APIConnectionError,
-            openai.BadRequestError,
             ValidationError,
         ),
     )
@@ -73,6 +77,21 @@ class ChatOpenAI:
             response = await self.client.beta.chat.completions.parse(
                 model=self.model,
                 temperature=self.temperature,
+                response_format=output_cfg.into_openai_response_format(),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt,
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt,
+                    },
+                ],
+            )
+        elif "o3" in self.model or "gpt-5" in self.model:
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 response_format=output_cfg.into_openai_response_format(),
                 messages=[
                     {

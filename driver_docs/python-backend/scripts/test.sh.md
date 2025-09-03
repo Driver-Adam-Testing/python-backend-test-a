@@ -3,16 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test.sh` file is a shell script for building, running, and cleaning up Docker Compose environments to execute backend tests in the `python-backend` codebase.
+Shell script to build, run, and test a Docker Compose environment for the backend.
 
 # Purpose
-This script is a shell script designed to automate the process of building, running, and testing a Docker Compose application. It provides narrow functionality focused on managing Docker containers, specifically for a development or testing environment. The script first builds the Docker images defined in the Docker Compose configuration, then ensures any previously running containers are stopped and removed to prevent conflicts. It subsequently starts the containers in detached mode and executes a test script within the 'backend' service container. Finally, it cleans up by stopping and removing the containers and any associated volumes. This script is typically used in a development workflow to streamline testing and ensure a clean environment for each test run.
-# Imports and Dependencies
-
----
-- `docker`
-
-
+This script is a shell script used to manage Docker Compose operations for a development or testing environment. It builds Docker images, ensures that any previous Docker Compose stacks are removed, and then starts the services in detached mode. After starting the services, it executes a test script located at `/app/tests-start.sh` within the `backend` service container. Finally, it cleans up by bringing down the Docker Compose stack and removing any orphaned volumes. The script is designed to automate the setup, execution, and teardown of a Docker-based environment for testing purposes.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

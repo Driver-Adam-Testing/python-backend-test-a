@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `selected_text.py` file defines a system message prompt for generating replacement or appendable text that is cohesive and readable within a markdown context.
+Defines a system message prompt for generating markdown-compatible replacement or appendable text.
 
 # Purpose
-This code defines two global variables, `PROMPT` and `MESSAGE`, which are likely used in a broader context involving text processing or a chatbot system. The `PROMPT` variable contains a string that instructs a system to generate markdown-compatible text that seamlessly integrates with surrounding content. The `MESSAGE` variable is a dictionary with two keys: "role" and "content", where "role" is set to "system" and "content" is assigned the value of `PROMPT`. This setup suggests that the code is part of a configuration or initialization script for a system that processes or generates text, providing narrow functionality focused on defining specific message parameters.
+The code defines two variables, `PROMPT` and `MESSAGE`, which are used for text processing. `PROMPT` is a string that instructs a system to provide replacement or appendable text for a given section, ensuring the output is cohesive and readable in context. `MESSAGE` is a dictionary with two keys: `role` and `content`. The `role` key has the value `"system"`, and the `content` key holds the `PROMPT` string. This setup is likely used in a system that processes or generates text based on specific instructions.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that provides specific instructions for generating text. It specifies that the response should be replacement or appendable text for a given `selected_text`, ensuring it is cohesive and readable within its context.
-- **Use**: This variable is used to define the content of a message that guides text generation processes.
+- **Type**: ``str``
+- **Description**: A string that instructs the system to respond with text that can replace or append to the selected text. The text should be cohesive and readable within the context of the surrounding text.
+- **Use**: Used to guide the system in generating appropriate text responses for selected text.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a string providing instructions for text replacement or appending in markdown format.
-- **Use**: This variable is used to store system-level instructions for processing text, likely in a context where markdown rendering is involved.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds the value of the `PROMPT` variable.
+- **Use**: Used to store system-level message data with a specific prompt content.
 
 
 

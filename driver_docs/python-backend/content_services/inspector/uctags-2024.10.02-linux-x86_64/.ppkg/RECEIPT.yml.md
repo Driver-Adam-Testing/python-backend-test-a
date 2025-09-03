@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `RECEIPT.yml` file specifies the package details for the `uctags` executable, including its version, dependencies, and build environment for the `python-backend` codebase.
+Package metadata for the uctags executable, including version, dependencies, and build details.
 
 # Purpose
-The provided content is a package metadata file for the software package "uctags," which is an executable type of package. This file specifies various attributes of the package, including its name, type, version, and a brief summary indicating that it is a maintained implementation of ctags. It provides URLs for the project's website and GitHub repository, along with a specific Git commit SHA for version tracking. The file lists dependencies required for building and running the package, such as libraries and tools, and specifies the build system and installation instructions, which vary based on the target platform. Additionally, it includes metadata about the build environment, such as the operating system, architecture, and build profile, ensuring that the package is correctly configured and built for the intended platform.
+The metadata file defines the configuration and build details for the `uctags` package, which is an executable (`pkgtype: exe`). It specifies the package version as `2024.10.02` and provides a brief summary indicating that it is a maintained implementation of ctags. The file includes URLs for the project's website and GitHub repository, along with a specific Git commit SHA for reference. It lists dependencies required for building and running the package, such as `libjansson`, `libyaml`, and `libxml2`, as well as build system tools like `git`, `gmake`, and `perl`. The build system is specified as `autogen`, and the installation instructions vary based on the target platform, with a conditional configuration for macOS and OpenBSD. The file also includes metadata about the build environment, such as the operating system, architecture, and other system details, indicating that the package is built for `linux-musl-x86_64` using `ppkg-0.10.0`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

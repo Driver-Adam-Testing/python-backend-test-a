@@ -1,7 +1,9 @@
 from aws_cdk import (
+    CfnOutput,
     Duration,
     Stack,
     aws_ec2,
+    aws_ecr,
     aws_ecs,
     aws_ecs_patterns,
     aws_elasticloadbalancingv2,
@@ -31,12 +33,16 @@ class BackendParams:
         environment: str,
         use_legacy_dropzone: bool,
         metrics_bus: aws_events.EventBus,
+        aws_region: str,
+        aws_account: str,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
         self.use_legacy_dropzone = use_legacy_dropzone
         self.metrics_bus = metrics_bus
+        self.aws_region = aws_region
+        self.aws_account = aws_account
 
 
 class Backend(Construct):
@@ -152,6 +158,7 @@ class Backend(Construct):
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
+            "AWS_REGION": params.aws_region,
         }
 
         container_secrets = {
@@ -167,6 +174,9 @@ class Backend(Construct):
             ),
             "POSTGRES_PASSWORD": aws_ecs.Secret.from_secrets_manager(
                 postgres_secret, "PASSWORD"
+            ),
+            "ASYNC_DATABASE_URL": aws_ecs.Secret.from_secrets_manager(
+                postgres_secret, "ASYNC_DATABASE_URL"
             ),
             "AUTH0_DOMAIN": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "AUTH0_DOMAIN"
@@ -188,6 +198,14 @@ class Backend(Construct):
             ),
             "AUTH0_MGMT_API_AUDIENCE": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "AUTH0_MGMT_API_AUDIENCE"
+            ),
+            # TODO: This is wrong and gross, but we have stuffed TURNSTILE keys into the Auth0 secret to avoid creating
+            # another secret, since we are abandoning this overall approach very soon.
+            "TURNSTILE_SECRET": aws_ecs.Secret.from_secrets_manager(
+                auth0_secret, "TURNSTILE_SECRET"
+            ),
+            "ENABLE_SIGNUP": aws_ecs.Secret.from_secrets_manager(
+                auth0_secret, "ENABLE_SIGNUP"
             ),
             "MODAL_TOKEN_ID": aws_ecs.Secret.from_secrets_manager(
                 modal_secret, "MODAL_TOKEN_ID"
@@ -228,9 +246,12 @@ class Backend(Construct):
             ),
         }
 
-        task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
+        repository = aws_ecr.Repository.from_repository_name(
+            self, "PythonBackendRepo", "python-backend"
+        )
+
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-            image=task_image,
+            image=aws_ecs.ContainerImage.from_ecr_repository(repository, tag="latest"),
             secrets=container_secrets,
             environment=container_environment_vars,
             container_port=8000,
@@ -293,6 +314,22 @@ class Backend(Construct):
                     ]
                 ),
             )
+        )
+
+        # Output ECS Cluster ARN
+        CfnOutput(
+            self,
+            "EcsClusterArn",
+            export_name="EcsClusterArn",
+            value=cluster.cluster_arn,
+        )
+
+        # Output ECS Service ARN
+        CfnOutput(
+            self,
+            "EcsServiceArn",
+            export_name="EcsServiceArn",
+            value=self.service.service.service_arn,
         )
 
         # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html

@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files that define classes and enumerations for managing language model messages, history, parsing, response types, stream responses, and tools.
+Classes and enums for handling LLM messages, responses, tools, and parsing in Python.
 
 
 ## Files
-- **[llm_message.py](llm_message.py.md)**: The `llm_message.py` file defines the `LlmMessage` class, which models messages with various kinds, including tool call requests and responses, and provides methods to create instances from different message formats and to print message details to the console.
-- **[llm_message_history.py](llm_message_history.py.md)**: The `llm_message_history.py` file defines the `LlmMessageHistory` class, which manages a sequence of `LlmMessage` objects representing conversations or instructions, with methods to add, remove, and convert these messages into formats compatible with various APIs like OpenAI and Anthropic.
-- **[llm_message_kind.py](llm_message_kind.py.md)**: The `llm_message_kind.py` file defines an enumeration `MessageKind` that categorizes different types of messages such as user, assistant, developer, and system within the `python-backend` codebase.
-- **[llm_parseable.py](llm_parseable.py.md)**: The `llm_parseable.py` file defines the `LlmParseable` class, which is a Pydantic base model designed to auto-generate instructions for a language model to produce valid JSON for its subclasses, including methods to generate example values and parsing description messages.
-- **[llm_response_type.py](llm_response_type.py.md)**: The `llm_response_type.py` file defines a base class `LlmResponseType` for all response types, providing methods to convert instances to markdown and generate parsing description messages in JSON format.
-- **[llm_stream_response.py](llm_stream_response.py.md)**: The `llm_stream_response.py` file defines various classes for handling different types of LLM stream responses, including session management, response chunks, tool status updates, errors, full responses, and references, with functionality to convert these responses to SSE-formatted strings.
-- **[llm_tool.py](llm_tool.py.md)**: The `llm_tool.py` file defines an abstract base class `LlmTool` for tools that can be called by a language model, including methods for synchronous and asynchronous execution, error handling, and generating response messages.
+- **[llm_message.py](llm_message.py.md)**: Defines the `LlmMessage` class for handling and parsing messages with tool call requests and responses.
+- **[llm_message_history.py](llm_message_history.py.md)**: Implements a class for managing and converting sequential LlmMessage objects in a conversation or instruction sequence.
+- **[llm_message_kind.py](llm_message_kind.py.md)**: Defines the `MessageKind` enum with various message types like USER, ASSISTANT, and SYSTEM.
+- **[llm_parseable.py](llm_parseable.py.md)**: Defines a base model for auto-generating JSON instructions for subclasses using Pydantic and ABC.
+- **[llm_response_type.py](llm_response_type.py.md)**: Base class for LLM response types with methods for markdown conversion and parsing description.
+- **[llm_stream_response.py](llm_stream_response.py.md)**: Defines LLM stream response classes with various kinds and methods for SSE conversion and encoding.
+- **[llm_tool.py](llm_tool.py.md)**: Abstract base class for tools callable by an LLM, with execution and asynchronous execution methods.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

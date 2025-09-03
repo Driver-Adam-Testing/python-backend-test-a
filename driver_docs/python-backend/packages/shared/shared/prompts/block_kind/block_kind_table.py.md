@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_table.py` file defines the `BlockKindCopyEditorTable` class, which represents a structured response for a copy editor agent that handles tables and includes functionality to convert these tables into markdown format.
+A class for a copy editor agent to convert tables with headers and rows into markdown format.
 
 # Purpose
-This Python code defines a class `BlockKindCopyEditorTable` that extends the `BlockResponse` class, providing a narrow functionality specifically for handling and converting table data into markdown format. It is part of a larger system, likely involving agents, as suggested by its import from `shared.interfaces.agents.block_response`. The class is designed to encapsulate a table structure with attributes for headers and rows, and includes a method [`to_markdown`](<#BlockKindCopyEditorTableto_markdown>) that formats the table data into a markdown string. This code is a specialized component intended for use in systems that require structured table data to be presented in markdown, such as documentation or content management systems.
+The code defines a class `BlockKindCopyEditorTable` that extends `BlockResponse` and is used to represent a structured response for a copy editor agent focused on tables. It encapsulates a table structure with attributes `headers` and `rows`, where `headers` is a list of strings representing the column headers, and `rows` is a list of lists representing the table's data rows. The class provides a method [`to_markdown`](<#blockkindcopyeditortableto_markdown>) that converts the table into a markdown format, generating a string with a header row, a separator row, and data rows formatted for markdown display. This functionality is narrow, focusing specifically on converting table data into markdown format for use in agentic systems.
 # Imports and Dependencies
 
 ---
@@ -18,44 +18,48 @@ This Python code defines a class `BlockKindCopyEditorTable` that extends the `Bl
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that is initialized as an empty multi-line string. It is intended to hold a prompt or a block of text, but currently, it is empty.
-- **Use**: `PROMPT` is used to store a string that can be utilized in the `MESSAGE` dictionary, which is likely used for communication or configuration purposes.
+- **Description**: `PROMPT` is a string variable that contains a multi-line string. The string is empty in the provided code.
+- **Use**: Used to store a multi-line string, potentially for use in other parts of the program.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is assigned the string value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
-- **Use**: This variable is used to define a message structure, likely for communication or configuration purposes, where the role is specified as 'system' and the content is dynamically set by the `PROMPT` variable.
+- **Type**: ``dict``
+- **Description**: A dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to define a message structure with a role and content, where the content is dynamically set by the `PROMPT` variable.
 
 
 # Classes
 
 ---
 ### BlockKindCopyEditorTable<!-- {{#class:python-backend/packages/shared/shared/prompts/block_kind/block_kind_table.BlockKindCopyEditorTable}} -->
+[View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_table.py#L9>)
+
 - **Members**:
-    - `headers`: A list of strings representing the column headers of the table.
-    - `rows`: A list of lists, where each inner list represents a row in the table.
-    - `rationale`: A string providing the rationale for the table's content or structure.
-- **Description**: The BlockKindCopyEditorTable class is a specialized subclass of BlockResponse designed to handle structured responses for copy editor agents that work with tables. It encapsulates a table structure with headers and rows, and includes functionality to convert the table into a markdown format. This class is intended for use in agentic systems where the headers and rows are populated to represent tabular data.
+    - `headers`: A list of strings that represent the column headers of the table.
+    - `rows`: A list of lists where each inner list represents a row in the table.
+    - `rationale`: A string that provides the reasoning or explanation for the table's content.
+- **Description**: Encapsulates a table structure with headers and rows for a copy editor agent, and provides functionality to convert the table into markdown format.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_table.BlockKindCopyEditorTable.to_markdown`](<#BlockKindCopyEditorTableto_markdown>)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_table.BlockKindCopyEditorTable.to_markdown`](<#blockkindcopyeditortableto_markdown>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](<../../interfaces/agents/block_response.py.md#BlockResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](<../../interfaces/agents/block_response.py.md#blockresponse>)
 
 **Methods**
 
 ---
 #### BlockKindCopyEditorTable\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_table.BlockKindCopyEditorTable.to_markdown}} -->
-The `to_markdown` method converts a table with headers and rows into a markdown-formatted string.
+[View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_table.py#L28>)
+
+Converts a table with headers and rows into a markdown formatted string.
 - **Inputs**: None
-- **Control Flow**:
-    - Constructs a markdown header row by joining the headers with ' | ' and surrounding with '|'.
-    - Creates a separator row with '---' for each header, joined by ' | ' and surrounded with '|'.
-    - Generates data rows by joining each row's elements with ' | ' and surrounding with '|'.
-    - Concatenates the header row, separator row, and data rows into a single markdown string.
+- **Logic and Control Flow**:
+    - Creates a markdown formatted header row by joining the `headers` attribute with pipe symbols and enclosing them with additional pipe symbols.
+    - Creates a separator row with dashes for each header, formatted similarly to the header row.
+    - Generates markdown formatted data rows by iterating over each row in the `rows` attribute and joining the elements with pipe symbols.
+    - Concatenates the header row, separator row, and data rows into a single markdown formatted string.
 - **Output**: A string representing the table in markdown format.
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_table.BlockKindCopyEditorTable`](<#BlockKindCopyEditorTable>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_table.BlockKindCopyEditorTable`](<#blockkindcopyeditortable>)  (Base Class)
 
 
 

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class BitbucketAPIResources:
     """API resources for Bitbucket using Workspace Access Tokens"""
 
-    def __init__(self, base_url: str = None):
+    def __init__(self) -> None:
         self.api_base = "https://api.bitbucket.org/2.0"
 
     def validate_workspace_access(
@@ -136,23 +136,10 @@ class BitbucketAPIResources:
     def get_latest_commit(
         self, workspace: str, repo_slug: str, access_token: str
     ) -> str:
-        """Get latest commit SHA for main branch"""
-        headers = {"Authorization": f"Bearer {access_token}"}
-        url = f"{self.api_base}/repositories/{workspace}/{repo_slug}/commits"
+        """Get latest commit SHA for default branch"""
 
-        try:
-            with httpx.Client() as client:
-                response = client.get(url, headers=headers, params={"pagelen": 1})
-                response.raise_for_status()
-
-                commits = response.json().get("values", [])
-                if commits:
-                    return commits[0]["hash"]
-                raise ValueError("No commits found")
-
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to fetch commits: {e}")
-            raise
+        # TODO prior implementation was wrong in that default branch was not specified
+        # this codepath is unused right now so the impl is empty :) use git blame
 
     def download_repo(
         self, workspace: str, repo_slug: str, commit: str, access_token: str

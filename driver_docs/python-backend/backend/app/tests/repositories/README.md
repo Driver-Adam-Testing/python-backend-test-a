@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Unit tests for the `BaseRepository` class, focusing on CRUD operations with a mock SQLModel and session.
+Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[test_base_repository.py](test_base_repository.py.md)**: The `test_base_repository.py` file contains unit tests for the `BaseRepository` class, verifying its CRUD operations using a mock SQLModel and a mocked session.
+- **[test_base_repository.py](test_base_repository.py.md)**: Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_child_list.txt` file is a template used in the `python-backend` codebase to guide the creation of a single paragraph description for a software folder based on its child files and folders.
+Instructions for writing a single paragraph description of a software folder based on its child files and folders.
 
 # Purpose
-The provided content appears to be a set of instructions for a software engineering expert tasked with writing documentation for a software folder. The instructions specify that the expert will receive a list of all child files and folders within a given folder, each accompanied by a one-sentence description. The expert's task is to synthesize this information into a single paragraph, no longer than six sentences, that describes the contents and purpose of the folder. The instructions emphasize the importance of being concise and accurate, without speculating or adding information not derived from the provided data.
+```
+{
+  "name": "example-project",
+  "version": "1.0.0",
+  "description": "An example project configuration",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "John Doe",
+  "license": "ISC"
+}
+```
+
+This JSON file is a `package.json` file used in a Node.js project. It defines the project's metadata, including the `name` as "example-project" and the `version` as "1.0.0". The `description` provides a brief overview of the project. The `main` field specifies `index.js` as the entry point of the application. The `scripts` section includes commands for starting the application with `node index.js` and a placeholder for testing. The `author` field lists "John Doe" as the creator, and the `license` field indicates the project is licensed under ISC.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

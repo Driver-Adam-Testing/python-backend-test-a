@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import boto3
-from database.models_v1 import UsageEventType
+from database.models import UsageEventType
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from shared.interfaces.usage.usage_schema import (
@@ -81,7 +81,7 @@ def credit_usage(
 
     aws_client = boto3.client(
         "events",
-        region_name="us-east-1",
+        region_name=settings.AWS_REGION,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     )

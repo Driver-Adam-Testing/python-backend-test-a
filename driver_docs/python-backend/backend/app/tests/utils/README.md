@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains a utility file, `auth.py`, which provides a function to obtain an Auth0 token using client credentials for authentication.
+Fetches an Auth0 access token using client credentials.
 
 
 ## Files
-- **[auth.py](auth.py.md)**: The `auth.py` file contains a utility function to obtain an Auth0 token using client credentials for authentication.
+- **[auth.py](auth.py.md)**: Fetches an Auth0 access token using client credentials.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

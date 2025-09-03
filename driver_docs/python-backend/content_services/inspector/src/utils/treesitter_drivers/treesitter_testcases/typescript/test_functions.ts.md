@@ -3,350 +3,403 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_functions.ts` file serves as a comprehensive test suite for various TypeScript function definitions, including basic, arrow, generic, overloaded, async, generator, and curried functions, as well as function expressions and immediately invoked function expressions (IIFE).
+Test cases for various TypeScript function definitions, including generics, async, and arrow functions.
 
 # Purpose
-This TypeScript file serves as a comprehensive demonstration of various function-related features and syntax in TypeScript. It includes a wide array of function types, such as basic function declarations, arrow functions, generic functions, function overloading, async functions, generator functions, and more. The file illustrates the use of optional and default parameters, type assertions, and tagged template functions. It also covers advanced concepts like curried functions, immediately invoked function expressions (IIFE), and complex arrow function types. The inclusion of these diverse examples makes the file a valuable resource for understanding the breadth of function capabilities in TypeScript.
+The code is a comprehensive test suite for various TypeScript function definitions, demonstrating a wide range of function types and features. It includes basic function declarations, arrow functions, generic functions, function overloading, async functions, generator functions, and function expressions. The code also covers advanced concepts such as immediately invoked function expressions (IIFE), type assertions in parameters, tagged template functions, curried functions, and complex arrow function types. These examples illustrate the flexibility and capabilities of TypeScript in handling different function-related scenarios.
 
-The file is structured as a collection of function definitions, each showcasing different aspects of TypeScript's type system and function syntax. It does not define a public API or external interfaces but rather serves as a reference or educational tool for developers looking to understand or demonstrate the various ways functions can be utilized in TypeScript. The file's focus is on illustrating the syntax and behavior of functions, making it a useful guide for both learning and testing TypeScript's function-related features.
+The code serves as a reference for understanding how to define and use functions in TypeScript, showcasing both standard and advanced techniques. It includes examples of optional and default parameters, single parameter arrow functions, and the use of generics with constraints and defaults. Additionally, the code demonstrates the use of async and generator functions, both regular and arrow forms, as well as async generator functions. The inclusion of function overloading and type assertions highlights TypeScript's ability to handle multiple function signatures and type checking. This test suite is useful for developers looking to explore and understand the diverse ways to implement functions in TypeScript.
 # Global Variables
 
 ---
 ### maybeFunc
-- **Type**: ``() => string | undefined``
-- **Description**: The `maybeFunc` variable is a global variable that is conditionally assigned a function or `undefined` based on a random number. If `Math.random()` returns a value greater than 0.5, `maybeFunc` is assigned an arrow function that returns the string 'exists'; otherwise, it is assigned `undefined`. This variable demonstrates the use of conditional (ternary) operators to dynamically assign values.
-- **Use**: `maybeFunc` is used to potentially hold a function that returns 'exists', or it may be `undefined`, depending on a random condition.
+- **Type**: ``Function | undefined``
+- **Description**: This variable is a conditional assignment that can either be a function or `undefined`. The function, if assigned, returns the string 'exists'.
+- **Use**: Determines if a function should exist based on a random condition.
 
 
 # Interfaces
 
 ---
 ### UIElement<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.UIElement}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L119>)
+
 - **Members**:
-    - `addClickListener`: Defines a method to add a click event listener to the UI element, accepting a function that handles the event.
-- **Description**: The `UIElement` interface defines a contract for objects that represent user interface elements capable of handling click events. It includes a single method, `addClickListener`, which allows the attachment of a click event listener to the element. The listener is a function that takes an `Event` object as a parameter and is executed in a context where `this` is `void`, meaning it does not rely on any specific object context. This interface is useful for ensuring that any UI element implementing it can respond to click interactions in a consistent manner.
+    - `addClickListener`: Adds a click event listener to the UI element.
+- **Description**: Defines a contract for UI elements that can have click event listeners. It includes a method to add a click listener, which takes a function as a parameter. This function is called when a click event occurs on the UI element, and it receives an `Event` object as an argument.
 
 
 # Functions
 
 ---
 ### functionWithTypeParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.functionWithTypeParams}} -->
-The functionWithTypeParams function takes two numbers as input and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L4>)
+
+Calculates the sum of two numbers.
 - **Inputs**:
-    - `a`: The first number to be added.
-    - `b`: The second number to be added.
+    - `a`: The first number to add.
+    - `b`: The second number to add.
 - **Control Flow**:
-    - The function receives two parameters, a and b, both of which are numbers.
-    - It calculates the sum of a and b.
-- **Output**: The function returns the sum of the two input numbers as a number.
+    - Receives two numbers as input parameters `a` and `b`.
+    - Calculates the sum of `a` and `b`.
+- **Output**: Returns the sum of the two input numbers as a number.
 
 
 ---
 ### mixedRest<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.mixedRest}} -->
-The `mixedRest` function concatenates a string with a comma-separated list of numbers.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L9>)
+
+Concatenates a string with a comma-separated list of numbers.
 - **Inputs**:
     - `first`: A string that serves as the initial part of the concatenated result.
-    - `rest`: A rest parameter that collects all additional number arguments into an array.
+    - `rest`: An array of numbers that will be joined into a comma-separated string.
 - **Control Flow**:
     - The function takes a string `first` and a rest parameter `rest` which is an array of numbers.
     - It uses the `join` method on the `rest` array to create a comma-separated string of numbers.
-    - The function concatenates the `first` string with the resulting string from the `rest` array.
-- **Output**: A single string that is the result of concatenating the `first` string with the comma-separated string of numbers from the `rest` array.
+    - The function concatenates the `first` string with the resulting string from the `join` method.
+- **Output**: A single string that combines the `first` string with the comma-separated numbers from the `rest` array.
 
 
 ---
 ### arrowFunction<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.arrowFunction}} -->
-The `arrowFunction` is an arrow function that logs the string 'arrow' to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L14>)
+
+Logs the string 'arrow' to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an arrow function with no parameters.
-    - It calls `console.log` with the string 'arrow' as its argument.
-- **Output**: The function does not return any value; it outputs to the console.
+    - Calls `console.log` with the string 'arrow'.
+- **Output**: No output is returned.
 
 
 ---
 ### arrowWithParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.arrowWithParams}} -->
-The `arrowWithParams` function is an arrow function that takes two numbers as arguments and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L16>)
+
+Calculates the sum of two numbers using an arrow function.
 - **Inputs**:
-    - `a`: The first number to be added.
-    - `b`: The second number to be added.
+    - `a`: The first number to add.
+    - `b`: The second number to add.
 - **Control Flow**:
-    - The function takes two parameters, `a` and `b`.
-    - It computes the sum of `a` and `b`.
-- **Output**: The function returns the sum of the two input numbers.
+    - Takes two input numbers `a` and `b`.
+    - Returns the result of adding `a` and `b`.
+- **Output**: The sum of the two input numbers.
 
 
 ---
 ### arrowWithBlock<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.arrowWithBlock}} -->
-The `arrowWithBlock` function takes a number, doubles it, and returns the result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L18>)
+
+Calculates and returns the double of a given number.
 - **Inputs**:
-    - `x`: A number that will be doubled.
+    - `x`: A number to be doubled.
 - **Control Flow**:
-    - The function receives a single argument `x`.
-    - It calculates the doubled value of `x` by multiplying it by 2 and assigns it to the variable `doubled`.
-    - The function returns the value stored in `doubled`.
-- **Output**: The function returns a number which is the doubled value of the input `x`.
+    - Declare a constant `doubled` and assign it the value of `x` multiplied by 2.
+    - Return the value of `doubled`.
+- **Output**: The doubled value of the input number `x`.
 
 
 ---
 ### arrowWithTypes<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.arrowWithTypes}} -->
-The `arrowWithTypes` function concatenates a number and a string, returning the result as a string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L23>)
+
+Concatenates a number and a string and returns the result as a string.
 - **Inputs**:
-    - `a`: A number that will be concatenated with the string.
-    - `b`: A string that will be concatenated with the number.
+    - `a`: A number to concatenate.
+    - `b`: A string to concatenate.
 - **Control Flow**:
-    - The function takes two parameters: a number `a` and a string `b`.
-    - It concatenates the number `a` with the string `b`.
-- **Output**: A string that is the result of concatenating the number and the string.
+    - Concatenate the number `a` and the string `b`.
+    - Return the concatenated result as a string.
+- **Output**: A string that is the result of concatenating the number `a` and the string `b`.
 
 
 ---
 ### singleParam<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.singleParam}} -->
-The `singleParam` function is an arrow function that takes a single argument and returns its value multiplied by two.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L28>)
+
+Multiplies the input by 2.
 - **Inputs**:
-    - `x`: A single argument of any type, typically a number, to be multiplied by two.
+    - `x`: The input value to be multiplied by 2.
 - **Control Flow**:
-    - The function receives a single argument `x`.
-    - It multiplies `x` by 2.
-- **Output**: The result of multiplying the input `x` by 2.
+    - Takes the input `x`.
+    - Multiplies `x` by 2.
+- **Output**: The result of `x` multiplied by 2.
 
 
 ---
 ### singleParamWithType<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.singleParamWithType}} -->
-The `singleParamWithType` function is an arrow function that takes a single number as input and returns its double.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L29>)
+
+Multiplies the input number by 2.
 - **Inputs**:
-    - `x`: A number that will be doubled.
+    - `x`: A number to multiply by 2.
 - **Control Flow**:
-    - The function receives a single parameter `x`.
-    - It calculates the product of `x` and 2.
-- **Output**: The function returns the result of `x` multiplied by 2, which is a number.
+    - Takes the input `x`.
+    - Multiplies `x` by 2.
+- **Output**: The result of `x` multiplied by 2.
 
 
 ---
 ### genericFunction<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.genericFunction}} -->
-The `genericFunction` is a TypeScript generic function that returns the input value of any type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L32>)
+
+Returns the input value of a generic type.
 - **Inputs**:
-    - `value`: A value of any type `T` that the function will return.
+    - `value`: The input value of a generic type `T`.
 - **Control Flow**:
-    - The function takes a single parameter `value` of generic type `T`.
-    - It immediately returns the input `value` without any modification.
-- **Output**: The output is the same as the input value, of the same type `T`.
+    - The function takes a single input parameter `value` of a generic type `T`.
+    - The function returns the input parameter `value` without modification.
+- **Output**: The output is the same as the input value, of the same generic type `T`.
 
 
 ---
 ### multipleGenerics<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.multipleGenerics}} -->
-The `multipleGenerics` function takes two arguments of potentially different types and returns them as a tuple.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L36>)
+
+Returns a tuple containing the two input arguments of potentially different types.
 - **Inputs**:
-    - `first`: The first argument of generic type T.
-    - `second`: The second argument of generic type U.
+    - `first`: The first input argument of generic type `T`.
+    - `second`: The second input argument of generic type `U`.
 - **Control Flow**:
-    - The function receives two arguments, `first` and `second`, of generic types T and U respectively.
-    - It returns a tuple containing the two arguments in the order they were received.
-- **Output**: A tuple containing the two input arguments, with the first element being of type T and the second of type U.
+    - The function takes two input arguments, `first` and `second`.
+    - It creates a tuple containing `first` and `second`.
+    - The function returns the created tuple.
+- **Output**: A tuple containing the two input arguments, with the first element of type `T` and the second element of type `U`.
 
 
 ---
 ### constrainedGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.constrainedGeneric}} -->
-The function `constrainedGeneric` returns the input value, which is constrained to be either a string or a number.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L40>)
+
+Returns the input value if it is a string or number.
 - **Inputs**:
-    - `value`: A generic input value constrained to be of type string or number.
+    - `value`: A value of type `T` which must extend `string` or `number`.
 - **Control Flow**:
-    - The function takes a single input parameter `value` of a generic type `T` which is constrained to be either a string or a number.
-    - The function immediately returns the input `value`.
-- **Output**: The function returns the input value of the same type `T`.
+    - The function takes a single input parameter `value` of a generic type `T` that is constrained to be either a `string` or `number`.
+    - The function returns the input `value` without any modification.
+- **Output**: The function returns the input value of type `T`, which is constrained to be a `string` or `number`.
 
 
 ---
 ### genericWithDefault<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.genericWithDefault}} -->
-The `genericWithDefault` function is a generic TypeScript function that returns the input value, with a default type of `string` if no type is specified.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L44>)
+
+Returns the input value with a default type of string if no type is specified.
 - **Inputs**:
-    - `value`: A value of generic type `T`, which defaults to `string` if not specified.
+    - `value`: The input value of generic type `T`.
 - **Control Flow**:
     - The function takes a single parameter `value` of generic type `T`.
-    - It directly returns the input `value` without any modification or additional processing.
-- **Output**: The output is the same as the input `value`, of type `T`.
+    - The function returns the `value` parameter without modification.
+- **Output**: The output is the same as the input value, with the type `T`, defaulting to `string` if not specified.
 
 
 ---
 ### genericArrow<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.genericArrow}} -->
-The `genericArrow` function is a generic arrow function that returns the input value of any type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L48>)
+
+Returns the input value of a generic type `T` without modification.
 - **Inputs**:
-    - `value`: The input value of generic type T.
+    - `value`: A value of generic type `T`.
 - **Control Flow**:
-    - The function takes a single argument `value` of type T.
-    - It directly returns the input `value` without any modification.
-- **Output**: The output is the same as the input value, of type T.
+    - Receives a value of type `T`.
+    - Returns the received value without any changes.
+- **Output**: The same value of type `T` that was provided as input.
 
 
 ---
 ### genericArrowConstrained<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.genericArrowConstrained}} -->
-The `genericArrowConstrained` function is a TypeScript arrow function that returns the input object, constrained to be of type `object`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L50>)
+
+Returns the input object without modification.
 - **Inputs**:
-    - `obj`: An object of generic type `T` which extends `object`, meaning it must be an object type.
+    - `obj`: An object of a generic type `T` that extends the `object` type.
 - **Control Flow**:
-    - The function takes a single parameter `obj` of a generic type `T` that extends `object`.
-    - It directly returns the input parameter `obj`.
-- **Output**: The function returns the input object `obj` of the same type `T`.
+    - The function takes an object `obj` as input.
+    - It returns the same object `obj` without any changes.
+- **Output**: The same object `obj` of type `T` that was provided as input.
 
 
 ---
 ### overloaded<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.overloaded}} -->
-The `overloaded` function returns the input value as is, supporting string, number, or boolean types.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L56>)
+
+Returns the input value without modification.
 - **Inputs**:
-    - `value`: A parameter that can be of type string, number, or boolean.
+    - `value`: A value that can be a string, number, or boolean.
 - **Control Flow**:
-    - The function takes a single parameter `value` which can be a string, number, or boolean.
-    - It directly returns the input `value` without any modification or additional processing.
-- **Output**: The output is the same as the input value, maintaining its original type (string, number, or boolean).
+    - Receives an input `value` of type string, number, or boolean.
+    - Returns the input `value` directly without any modification.
+- **Output**: The same value as the input, which can be a string, number, or boolean.
 
 
 ---
 ### asyncWithParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.asyncWithParams}} -->
-The `asyncWithParams` function fetches data from a given URL and returns the parsed JSON response.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L61>)
+
+Fetches data from a given URL and returns the parsed JSON response.
 - **Inputs**:
     - `url`: A string representing the URL from which to fetch data.
 - **Control Flow**:
-    - The function uses the `await` keyword to asynchronously fetch data from the provided URL using the `fetch` API.
-    - It waits for the fetch operation to complete and stores the response in the `response` variable.
-    - The function then calls the `json()` method on the `response` object to parse the response body as JSON.
-    - The parsed JSON data is returned as the result of the function.
+    - Uses the `fetch` function to make an HTTP request to the specified `url`.
+    - Awaits the completion of the `fetch` request to receive the `response`.
+    - Calls the `json` method on the `response` to parse and return the JSON data.
 - **Output**: A promise that resolves to the parsed JSON data from the response.
 
 
 ---
 ### asyncArrowWithReturn<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.asyncArrowWithReturn}} -->
-The `asyncArrowWithReturn` function is an asynchronous arrow function that returns a promise resolving to the number 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L66>)
+
+Returns a resolved promise with the number 42.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an asynchronous arrow function, which means it returns a promise.
-    - The function body contains a single return statement that returns the number 42.
+    - The function is defined as an asynchronous arrow function.
+    - The function immediately returns the number 42 wrapped in a resolved promise.
 - **Output**: A promise that resolves to the number 42.
 
 
 ---
 ### generatorWithReturn<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.generatorWithReturn}} -->
-The `generatorWithReturn` function is a generator that yields two numbers and then returns a string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L71>)
+
+Generates a sequence of numbers and returns a string upon completion.
 - **Inputs**: None
 - **Control Flow**:
-    - The generator function starts execution and yields the number 1.
-    - It resumes execution and yields the number 2.
-    - After yielding the second number, the generator function returns the string 'done', terminating the generator.
-- **Output**: The output is a generator object that yields the numbers 1 and 2 sequentially, and upon completion, returns the string 'done'.
+    - Yields the number 1.
+    - Yields the number 2.
+    - Returns the string 'done'.
+- **Output**: A generator that yields numbers and returns a string.
 
 
 ---
 ### generatorArrow<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.generatorArrow}} -->
-The `generatorArrow` function is a generator function that yields a single string value 'arrow generator'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L77>)
+
+Generates a single string value using a generator function.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as a generator function using the `function*` syntax.
-    - Upon invocation, the generator yields the string 'arrow generator'.
-- **Output**: The output is a generator object that, when iterated, yields the string 'arrow generator'.
+    - The generator function starts execution and reaches the `yield` statement.
+    - The function yields the string `'arrow generator'`.
+    - The generator function pauses after yielding the value.
+- **Output**: Yields the string `'arrow generator'`.
 
 
 ---
 ### asyncGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.asyncGenerator}} -->
-The `asyncGenerator` function is an asynchronous generator that yields resolved promises with values 1 and 2 sequentially.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L82>)
+
+Generates asynchronous values by yielding promises that resolve to numbers.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an asynchronous generator using the `async function*` syntax.
-    - It yields the result of an awaited promise that resolves to the value 1.
-    - It then yields the result of another awaited promise that resolves to the value 2.
-- **Output**: The function outputs an asynchronous generator that yields numbers 1 and 2.
+    - The function starts and enters an asynchronous generator context.
+    - It yields the result of awaiting a promise that resolves to the number 1.
+    - It yields the result of awaiting a promise that resolves to the number 2.
+- **Output**: An asynchronous generator that yields numbers 1 and 2 sequentially.
 
 
 ---
 ### asyncGeneratorWithType<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.asyncGeneratorWithType}} -->
-The `asyncGeneratorWithType` function is an asynchronous generator that yields a sequence of numbers.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L87>)
+
+Generates a sequence of numbers asynchronously.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an asynchronous generator using the `async function*` syntax.
-    - It yields the number 1 using the `yield` keyword.
-    - It then yields the number 2 using the `yield` keyword.
-- **Output**: The function outputs an `AsyncGenerator` that yields numbers, specifically 1 and 2, and completes without returning a final value.
+    - Yields the number 1.
+    - Yields the number 2.
+- **Output**: An `AsyncGenerator` that yields numbers.
 
 
 ---
 ### functionExpression<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.functionExpression}} -->
-The functionExpression is an anonymous function that returns the string 'expression'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L93>)
+
+Returns the string 'expression'.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an anonymous function expression.
-    - When invoked, it immediately returns the string 'expression'.
-- **Output**: The output is a string with the value 'expression'.
+    - Returns the string 'expression'.
+- **Output**: The output is the string 'expression'.
 
 
 ---
 ### namedFunc<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.namedFunc}} -->
-The `namedFunc` function is a named function expression that returns a static string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L97>)
+
+Returns the string 'named expression'.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as a named function expression with the name `namedFunc`.
-    - It immediately returns the string 'named expression'.
-- **Output**: A string 'named expression'.
+    - Returns the string 'named expression'.
+- **Output**: The string 'named expression'.
 
 
 ---
 ### assertionParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.assertionParams}} -->
-The `assertionParams` function checks if a given value is of type string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L115>)
+
+Checks if the given value is of type string.
 - **Inputs**:
-    - `value`: An unknown type value that needs to be checked if it is a string.
+    - `value`: The value to check, of type unknown.
 - **Control Flow**:
-    - The function uses the `typeof` operator to determine if the input `value` is a string.
-    - It returns a boolean result based on the type check.
-- **Output**: A boolean value indicating whether the input is a string.
+    - Check if the type of `value` is 'string'.
+    - Return true if `value` is a string, otherwise return false.
+- **Output**: A boolean indicating whether the input value is a string.
 
 
 ---
 ### taggedTemplate<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.taggedTemplate}} -->
-The `taggedTemplate` function processes a tagged template literal by joining its string components.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L124>)
+
+Joins the elements of a `TemplateStringsArray` into a single string.
 - **Inputs**:
-    - `strings`: An array of string literals from the template.
-    - `values`: An array of values interpolated into the template, though they are not used in this function.
+    - `strings`: An array of string literals from a tagged template.
+    - `values`: An array of values interpolated into the template, but not used in this function.
 - **Control Flow**:
-    - The function takes a `TemplateStringsArray` and additional values as arguments.
-    - It joins the elements of the `strings` array into a single string using the `join` method.
+    - The function receives a `TemplateStringsArray` and additional values as arguments.
+    - It uses the `join` method on the `strings` array to concatenate all its elements into a single string.
 - **Output**: A single string that is the result of joining all elements of the `strings` array.
 
 
 ---
 ### curry<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.curry}} -->
-The `curry` function is a curried function that takes three numbers as arguments and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L129>)
+
+Implements a curried function that takes three numbers and returns their sum.
 - **Inputs**:
-    - `a`: The first number in the curried function.
-    - `b`: The second number in the curried function.
-    - `c`: The third number in the curried function.
+    - `a`: The first number in the sum.
+    - `b`: The second number in the sum.
+    - `c`: The third number in the sum.
 - **Control Flow**:
-    - The function `curry` is defined as an arrow function that takes a single argument `a`.
-    - It returns another arrow function that takes a single argument `b`.
-    - This second function returns another arrow function that takes a single argument `c`.
-    - The innermost function returns the sum of `a`, `b`, and `c`.
-- **Output**: The output is the sum of the three numbers `a`, `b`, and `c`.
+    - The function takes a number `a` and returns a function that takes a number `b`.
+    - The returned function takes a number `b` and returns another function that takes a number `c`.
+    - The innermost function takes a number `c` and returns the sum of `a`, `b`, and `c`.
+- **Output**: The sum of the three numbers `a`, `b`, and `c`.
 
 
 ---
 ### complexArrow<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.complexArrow}} -->
-The `complexArrow` function is a generic arrow function that retrieves the value of a specified key from an object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L162>)
+
+Retrieves the value of a specified key from an object.
 - **Inputs**:
-    - `obj`: An object of a generic type `T` from which a value will be retrieved.
-    - `key`: A key of the object `obj` whose value is to be retrieved, constrained to be a key of `T`.
+    - `obj`: An object of a generic type `T` from which to retrieve a value.
+    - `key`: A key of type `keyof T` that specifies which value to retrieve from the object `obj`.
 - **Control Flow**:
     - The function takes an object `obj` and a key `key` as parameters.
-    - It accesses the value associated with the provided `key` in the `obj`.
-    - The function returns the value found at the specified key in the object.
+    - It accesses the value associated with the specified `key` in the `obj`.
+    - The function returns the value found at the specified `key`.
 - **Output**: The value of the specified key from the object, with the type `T[keyof T]`.
 
 
 ---
 ### createMultiplier<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.createMultiplier}} -->
-The `createMultiplier` function generates a new function that multiplies its input by a specified factor.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_functions.ts#L168>)
+
+Creates a function that multiplies a given number by a specified factor.
 - **Inputs**:
     - `factor`: A number that will be used as the multiplier in the returned function.
 - **Control Flow**:
-    - The function takes a single argument, `factor`, which is a number.
-    - It returns a new function that takes a single argument, `value`, also a number.
+    - The function takes a single argument `factor`.
+    - It returns a new function that takes one argument `value`.
     - The returned function multiplies `value` by `factor` and returns the result.
-- **Output**: A function that takes a number as input and returns the product of that number and the specified factor.
+- **Output**: A function that takes a number `value` and returns the product of `value` and `factor`.
 
 
 

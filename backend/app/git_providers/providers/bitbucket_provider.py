@@ -12,13 +12,14 @@ from app.git_providers.interfaces.provider_interface import (
     WebhookEventContext,
 )
 from app.git_providers.resources.bitbucket_api_resources import BitbucketAPIResources
+from app.git_providers.utils.vcs_auto_update import is_update_required
 from app.schemas.git_provider_schema import (
     AccessTokenData,
     GitProviderAppTokenSecret,
     GitRepository,
 )
 from app.schemas.secret_management_schema import APP_INSTALL_WAT_NAME_PREFIX
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -44,7 +45,9 @@ class BitbucketProvider(GitProviderInterface):
     ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
-        self.api_strategy = BitbucketAPIResources(config.base_url)
+        self.api_strategy = (
+            BitbucketAPIResources()
+        )  # config.base_url) < TODO this class has a hardcoded base URL...
 
     @classmethod
     def from_config(
@@ -169,15 +172,17 @@ class BitbucketProvider(GitProviderInterface):
             for repo in repos_data:
                 # Fetch latest commit for each repo if needed
                 latest_commit = None
-                try:
-                    commit_hash = self.api_strategy.get_latest_commit(
-                        workspace, repo["slug"], access_token
-                    )
-                    latest_commit = {"id": commit_hash}
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to fetch latest commit for {repo['name']}: {e}"
-                    )
+                # TODO: This seemed to be causing a 429 for workspaces with
+                # many repos. Additional testing is needed to confirm this.
+                # try:
+                #     commit_hash = self.api_strategy.get_latest_commit(
+                #         workspace, repo["slug"], access_token
+                #     )
+                #     latest_commit = {"id": commit_hash}
+                # except Exception as e:
+                #     logger.warning(
+                #         f"Failed to fetch latest commit for {repo['name']}: {e}"
+                #     )
 
                 repos.append(
                     GitRepository(
@@ -216,7 +221,10 @@ class BitbucketProvider(GitProviderInterface):
 
     # https://support.atlassian.com/bitbucket-cloud/docs/manage-webhooks/
     def handle_webhook_event(
-        self, headers: dict, payload: dict, webhook_event_ctx: WebhookEventContext
+        self,
+        headers: dict,
+        payload: dict,
+        webhook_event_ctx: WebhookEventContext,
     ) -> dict:
         """Handle Bitbucket webhook events"""
         installation_id = webhook_event_ctx.installation_id
@@ -393,6 +401,8 @@ class BitbucketProvider(GitProviderInterface):
         full_name = repository.get("full_name")
         repo_slug = repository.get("slug", repo_name)  # Use name as fallback
 
+        message = {"message": ""}
+
         # Get access token for API calls
         try:
             secrets = self.fetch_secrets_by_id(installation_id)
@@ -422,6 +432,7 @@ class BitbucketProvider(GitProviderInterface):
                         branch_name,
                         installation_id,
                     )
+                    message = ({"message": "Push event ignored (not default branch)"},)
                     continue
 
                 logger.info(
@@ -432,40 +443,48 @@ class BitbucketProvider(GitProviderInterface):
                     installation_id,
                 )
 
-                repos_pushed = [
-                    {
-                        "repo_id": repo_id,
-                        "repo_name": repo_name,
-                        "full_name": full_name,
-                        "commit": commit_hash,
-                        "metadata": {
-                            "id": repo_id,  # Add the repo UUID to metadata
-                            "uuid": repo_id,  # Also add as uuid for compatibility
-                            "workspace": workspace,
-                            "slug": repo_name,
-                        },
-                        "installation_id": installation_id,
-                        "latest_commit": {
-                            "id": commit_hash,
-                        },
-                        "workspace": workspace,  # Add workspace at top level too
-                    }
-                ]
-
-                handle_bitbucket_events = modal.Function.lookup(
-                    "inspector-v2",
-                    "handle_bitbucket_events",
-                    environment_name=settings.MODAL_ENVIRONMENT,
-                )
-                handle_bitbucket_events.spawn(
-                    installation_id,
-                    organization_id,
-                    [],
-                    [],
-                    repos_pushed,
+                process_update, message = is_update_required(
+                    session=webhook_event_ctx.session,
+                    org_id=organization_id,
+                    repo_name=repo_name,
                 )
 
-        return {"message": "Push event processed"}
+                if process_update:
+                    repos_pushed = [
+                        {
+                            "repo_id": repo_id,
+                            "repo_name": repo_name,
+                            "full_name": full_name,
+                            "commit": commit_hash,
+                            "metadata": {
+                                "id": repo_id,  # Add the repo UUID to metadata
+                                "uuid": repo_id,  # Also add as uuid for compatibility
+                                "workspace": workspace,
+                                "slug": repo_name,
+                            },
+                            "installation_id": installation_id,
+                            "latest_commit": {
+                                "id": commit_hash,
+                            },
+                            "workspace": workspace,  # Add workspace at top level too
+                        }
+                    ]
+
+                    handle_bitbucket_events = modal.Function.lookup(
+                        "inspector-v2",
+                        "handle_bitbucket_events",
+                        environment_name=settings.MODAL_ENVIRONMENT,
+                    )
+                    handle_bitbucket_events.spawn(
+                        installation_id,
+                        organization_id,
+                        [],
+                        [],
+                        repos_pushed,
+                    )
+
+        # NOTE: This message will pertain only to the last 'change' processed
+        return message
 
     def _handle_pull_request_event(
         self, payload: dict, webhook_event_ctx: WebhookEventContext

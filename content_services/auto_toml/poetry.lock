@@ -490,7 +490,7 @@ name = "database"
 version = "0.1.0"
 description = ""
 optional = false
-python-versions = "^3.12"
+python-versions = ">=3.12,<3.13"
 groups = ["main"]
 files = []
 develop = false
@@ -732,7 +732,7 @@ description = "Lightweight in-process concurrent programming"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "python_version < \"3.14\" and (platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\")"
+markers = "platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\""
 files = [
     {file = "greenlet-3.2.3-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:1afd685acd5597349ee6d7a88a8bec83ce13c106ac78c196ee9dde7c04fe87be"},
     {file = "greenlet-3.2.3-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:761917cac215c61e9dc7324b2606107b3b292a8349bdebb31503ab4de3f559ac"},
@@ -1232,25 +1232,24 @@ files = [
 
 [[package]]
 name = "modal"
-version = "0.73.173"
+version = "1.1.1"
 description = "Python client library for Modal"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "modal-0.73.173-py3-none-any.whl", hash = "sha256:b6f2c229d640e9bbb215863a943a105cb78162fe1f6011fc039dbdccdd26747c"},
-    {file = "modal-0.73.173.tar.gz", hash = "sha256:a4fbdf950bad38ceeeb2394835c24424a4cd192febbca6cc52dbdc21843575c6"},
+    {file = "modal-1.1.1-py3-none-any.whl", hash = "sha256:ec2e2f68848a29228b61a646d2af7ac239558c005b66ca996d7c6c5de587ae36"},
+    {file = "modal-1.1.1.tar.gz", hash = "sha256:f353ca3b6151abec0b253c398198261859ceab79dbaa2238a58d068ce889b2c0"},
 ]
 
 [package.dependencies]
 aiohttp = "*"
 certifi = "*"
-click = ">=8.1.0"
-fastapi = "*"
-grpclib = "0.4.7"
-protobuf = ">=3.19,<4.24.0 || >4.24.0,<6.0"
+click = ">=8.1,<9.0"
+grpclib = ">=0.4.7,<0.4.9"
+protobuf = ">=3.19,<4.24.0 || >4.24.0,<7.0"
 rich = ">=12.0.0"
-synchronicity = ">=0.9.10,<0.10.0"
+synchronicity = ">=0.10.1,<0.11.0"
 toml = "*"
 typer = ">=0.9"
 types-certifi = "*"
@@ -1435,14 +1434,14 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.86.0"
+version = "1.99.1"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "openai-1.86.0-py3-none-any.whl", hash = "sha256:c8889c39410621fe955c230cc4c21bfe36ec887f4e60a957de05f507d7e1f349"},
-    {file = "openai-1.86.0.tar.gz", hash = "sha256:c64d5b788359a8fdf69bd605ae804ce41c1ce2e78b8dd93e2542e0ee267f1e4b"},
+    {file = "openai-1.99.1-py3-none-any.whl", hash = "sha256:8eeccc69e0ece1357b51ca0d9fb21324afee09b20c3e5b547d02445ca18a4e03"},
+    {file = "openai-1.99.1.tar.gz", hash = "sha256:2c9d8e498c298f51bb94bcac724257a3a6cac6139ccdfc1186c6708f7a93120f"},
 ]
 
 [package.dependencies]
@@ -1456,6 +1455,7 @@ tqdm = ">4"
 typing-extensions = ">=4.11,<5"
 
 [package.extras]
+aiohttp = ["aiohttp", "httpx-aiohttp (>=0.1.8)"]
 datalib = ["numpy (>=1)", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)"]
 realtime = ["websockets (>=13,<16)"]
 voice-helpers = ["numpy (>=2.0.2)", "sounddevice (>=0.5.1)"]
@@ -2269,7 +2269,7 @@ name = "shared"
 version = "0.1.0"
 description = ""
 optional = false
-python-versions = "^3.12"
+python-versions = ">=3.12,<3.13"
 groups = ["main"]
 files = []
 develop = false
@@ -2279,8 +2279,9 @@ anthropic = "^0.31.2"
 boto3 = "^1.34.149"
 database = {path = "../../driver_db", develop = true}
 markdown = "^3.6"
-modal = "^0.73.74"
-openai = "^1.42.0"
+modal = "^1.0.4"
+openai = "1.99.1"
+pydantic = "^2.11.7"
 pymupdf = "^1.24.9"
 rank-bm25 = "^0.2.2"
 tabula-py = "^2.9.3"
@@ -2544,14 +2545,14 @@ sanic = ["sanic (>=20.12.2)"]
 
 [[package]]
 name = "synchronicity"
-version = "0.9.14"
+version = "0.10.2"
 description = "Export blocking and async library versions from a single async implementation"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "synchronicity-0.9.14-py3-none-any.whl", hash = "sha256:0476de3dbcc841e21087c3bdcd613cc87b22f3bebc85306dcf27eed542e9372b"},
-    {file = "synchronicity-0.9.14.tar.gz", hash = "sha256:5aff1c4120006904ebe1893a64467523d8b8e6a0c5d7e77dbbafc4713e4c7e41"},
+    {file = "synchronicity-0.10.2-py3-none-any.whl", hash = "sha256:4ba1f8c02ca582ef068033300201e3c403e08d81e42553554f4e67b27f0d9bb1"},
+    {file = "synchronicity-0.10.2.tar.gz", hash = "sha256:e0dfd8a2ba4fb89c60ee53365c5fa2d2d69aabce60709055d38f736f6a592c86"},
 ]
 
 [package.dependencies]
@@ -3005,5 +3006,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12,<4.0"
-content-hash = "f1b91cb1161128979116ca1e3d5c1734cf23d25ef2ebaed596e27eed139e54a3"
+python-versions = ">=3.12,<3.13"
+content-hash = "56957db5068d8565fe6749bab61c3ddde5274f1b70d07ec3564e4dd19a99ebc7"

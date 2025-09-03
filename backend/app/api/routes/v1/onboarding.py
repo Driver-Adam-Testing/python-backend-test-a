@@ -1,8 +1,8 @@
 import uuid
 
 import modal
-from database.models_v2 import Version
-from database.models_v2_enums import PrimaryAssetKind, VersionStatus
+from database.models import Version
+from database.models_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy.orm.exc import NoResultFound

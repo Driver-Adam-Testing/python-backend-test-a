@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `cdk_app.py` file in the `python-backend` codebase sets up and synthesizes different AWS CDK stacks based on the deployment environment specified in the environment variables.
+Configures AWS CDK stacks based on the deployment environment variable.
 
 # Purpose
-This Python script is designed to manage the deployment of different infrastructure environments using the AWS Cloud Development Kit (CDK). It imports several stack classes, each corresponding to a specific deployment environment: DevelopmentStack, OpsStack, ProductionStack, StagingStack, and TestInDevStack. The script determines which stack to deploy based on the `DEPLOYMENT_ENVIRONMENT` environment variable. Depending on the value of this variable, it initializes the appropriate stack with specific AWS account and region settings, effectively configuring the infrastructure for that environment. The script concludes by synthesizing the application, which generates the necessary AWS CloudFormation templates.
+This code is a deployment script for an AWS Cloud Development Kit (CDK) application. It defines different deployment environments for an application named `DriverApiStack`. The script imports several stack classes from a `cdk` module, each corresponding to a specific deployment environment: `DevelopmentStack`, `OpsStack`, `ProductionStack`, `StagingStack`, and `TestInDevStack`. The script uses the `DEPLOYMENT_ENVIRONMENT` environment variable to determine which stack to deploy. Depending on the value of this variable, the script initializes the appropriate stack with specific AWS account and region settings.
 
-The code serves as a deployment orchestrator, providing a structured way to manage multiple environments within a single application. It is not a standalone script but rather a part of a larger infrastructure-as-code setup, likely intended to be executed in a controlled environment where the `DEPLOYMENT_ENVIRONMENT` variable is set. The script does not define public APIs or external interfaces; instead, it focuses on internal deployment logic, leveraging the AWS CDK to automate the provisioning of cloud resources.
+The script uses the AWS CDK to define infrastructure as code, allowing for the deployment of cloud resources in a consistent and repeatable manner. The `cdk.App()` object serves as the root of the CDK application, and the `app.synth()` call at the end of the script synthesizes the application into an AWS CloudFormation template. This script is intended to be executed in different environments, such as local development, operations, testing, staging, and production, each with its own configuration and AWS account settings.
 # Imports and Dependencies
 
 ---
@@ -25,16 +25,16 @@ The code serves as a deployment orchestrator, providing a structured way to mana
 
 ---
 ### app
-- **Type**: `cdk.App`
-- **Description**: The `app` variable is an instance of the `cdk.App` class from the AWS Cloud Development Kit (CDK). It serves as the root of the CDK application, which is responsible for synthesizing the cloud infrastructure defined in the stacks. The `app` object is used to manage and synthesize the stacks based on the deployment environment.
-- **Use**: The `app` variable is used to initialize and manage the lifecycle of the CDK application, including the creation and synthesis of various environment-specific stacks.
+- **Type**: ``cdk.App``
+- **Description**: Represents the entry point for the AWS CDK application. It is responsible for managing the lifecycle of the stacks and synthesizing the cloud assembly.
+- **Use**: Used to initialize and manage the deployment of different stacks based on the deployment environment.
 
 
 ---
 ### deployment\_environment
-- **Type**: `str or None`
-- **Description**: The `deployment_environment` variable is a global variable that retrieves the value of the 'DEPLOYMENT_ENVIRONMENT' environment variable using the `os.getenv` function. This variable determines the current deployment environment for the application, such as 'local', 'ops', 'test-in-dev', 'development', 'staging', or 'production'. If the environment variable is not set, `deployment_environment` will be `None`.
-- **Use**: This variable is used to conditionally instantiate different AWS CDK stacks based on the deployment environment.
+- **Type**: ``str` or `NoneType``
+- **Description**: The `deployment_environment` variable retrieves the value of the `DEPLOYMENT_ENVIRONMENT` environment variable using the `os.getenv` function. If the environment variable is not set, `deployment_environment` will be `None`. This variable is used to determine the deployment environment for the application.
+- **Use**: Determines which stack to deploy based on the environment variable value.
 
 
 

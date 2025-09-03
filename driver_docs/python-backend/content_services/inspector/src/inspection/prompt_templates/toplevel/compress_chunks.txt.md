@@ -3,10 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `compress_chunks.txt` file in the `python-backend` codebase is likely a template or configuration file used within the `content_services` module, specifically under the `inspector` service. This file is located in the `prompt_templates/toplevel` directory, suggesting its role in defining or managing templates for compressing data chunks at a high level within the inspection process. The main business logic associated with this file would involve the efficient handling and processing of data chunks, possibly for the purpose of optimizing storage or transmission within the system. While the file itself does not contain executable code, it likely plays a critical role in guiding how data is compressed and managed by the system's backend services.
+Template for summarizing codebase contents and identifying business logic and APIs.
 
 # Purpose
-The provided content appears to be a set of instructions for a software engineering expert tasked with summarizing and analyzing a codebase. The instructions outline a structured approach to synthesizing information from various descriptions of codebase contents. The expert is expected to write one or more paragraphs that encapsulate the essence of the codebase by describing the purpose of its files and subfolders. Additionally, the expert must identify the main business logic, which refers to the core functionalities and processes that the codebase is designed to perform. Furthermore, the expert is required to pinpoint critical APIs, which include public functions, classes, class methods, and data structures that are essential for the codebase's operation. The instructions emphasize the importance of deriving information solely from the provided descriptions, ensuring accuracy and relevance in the summary.
+Chunk of module subset descriptions for codebase `codebase_name`:
+
+Content subset 1 description for codebase `codebase_name`:
+
+The `authentication` module contains functions and classes that manage user login and session handling. It includes the `User` class, which stores user credentials and session information. The `login` function verifies user credentials and initiates a session. The `logout` function terminates the user session. The module also provides a `SessionManager` class to handle session creation, validation, and expiration.
+
+Content subset 2 description for codebase `codebase_name`:
+
+The `database` module is responsible for data storage and retrieval. It includes the `DatabaseConnection` class, which establishes and manages connections to the database. The `execute_query` function allows for executing SQL queries and returning results. The module also contains a `DataModel` class that defines the structure of the data and provides methods for CRUD (Create, Read, Update, Delete) operations.
+
+---
+
+The `authentication` module in the `codebase_name` codebase is designed to manage user authentication and session handling. It includes the `User` class for storing user credentials and session data, and the `SessionManager` class for managing session lifecycle, including creation, validation, and expiration. Key functions such as `login` and `logout` are responsible for verifying user credentials and managing session states.
+
+The `database` module handles data storage and retrieval operations. It features the `DatabaseConnection` class, which manages database connections, and the `execute_query` function for executing SQL queries. The `DataModel` class within this module defines the data structure and provides methods for performing CRUD operations, facilitating interaction with the database. These modules together form the core business logic for user management and data handling in the `codebase_name` codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

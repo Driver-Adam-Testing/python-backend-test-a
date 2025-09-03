@@ -3,11 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `providers` folder in the `python-backend` codebase contains the `gitlab_provider.py` file, which implements the `GitLabProvider` class for managing GitLab OAuth, access tokens, and repository operations with AWS integration.
+Implements Bitbucket and GitLab provider functionality for token management and repository operations.
 
 
 ## Files
-- **[gitlab_provider.py](gitlab_provider.py.md)**: The `gitlab_provider.py` file implements the `GitLabProvider` class, which handles GitLab OAuth authorization, access token management, repository fetching, and cloning operations, integrating with AWS services for secret management and file storage.
+- **[bitbucket_provider.py](bitbucket_provider.py.md)**: Implements a Bitbucket provider for managing access tokens, handling webhooks, and interacting with repositories.
+- **[gitlab_provider.py](gitlab_provider.py.md)**: Implements a GitLab provider for managing Group Access Tokens, installations, and webhook events.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

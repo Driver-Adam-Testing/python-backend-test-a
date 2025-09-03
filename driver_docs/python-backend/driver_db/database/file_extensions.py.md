@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `file_extensions.py` file defines an enumeration of file types and provides a function to map file extensions to these types, returning an appropriate `FileTypeEnum` value or `UNKNOWN` if the extension is not recognized.
+Defines an enumeration for file types and a function to map file extensions to these types.
 
 # Purpose
-This Python code defines an enumeration, `FileTypeEnum`, which categorizes various file types based on their extensions, and provides a function, [`get_file_type`](<#get_file_type>), to map file extensions to these categories. The code offers narrow functionality, specifically for identifying and classifying file types by their extensions, which is useful in applications that need to handle files differently based on their type, such as file management systems or code editors. The `FileTypeEnum` class lists a comprehensive set of file types, including programming languages, markup languages, and configuration files, while the [`get_file_type`](<#get_file_type>) function uses a dictionary to map common file extensions to these enumerated types, defaulting to `UNKNOWN` if an extension is not recognized. This script is a utility module that can be integrated into larger systems requiring file type identification.
+This code defines an enumeration `FileTypeEnum` that categorizes various file types by their extensions. It includes a function [`get_file_type`](<#get_file_type>) that maps file extensions to their corresponding `FileTypeEnum` values. The function uses a dictionary `extension_map` to associate common file extensions with their respective file types, such as `.py` for Python files or `.java` for Java files. If the provided extension does not match any known types, the function returns `FileTypeEnum.UNKNOWN`. This code provides a narrow functionality focused on identifying file types based on their extensions.
 # Imports and Dependencies
 
 ---
@@ -17,69 +17,10 @@ This Python code defines an enumeration, `FileTypeEnum`, which categorizes vario
 
 ---
 ### FileTypeEnum<!-- {{#class:python-backend/driver_db/database/file_extensions.FileTypeEnum}} -->
+[View Source →](<../../../../driver_db/database/file_extensions.py#L4>)
+
 - **Decorators**: `@Enum`
-- **Members**:
-    - `PYTHON`: Represents a Python file type.
-    - `GROOVY`: Represents a Groovy file type.
-    - `C`: Represents a C file type.
-    - `HEADER`: Represents a header file type.
-    - `CPP`: Represents a C++ file type.
-    - `ASSEMBLY`: Represents an assembly file type.
-    - `LINKER_SCRIPT`: Represents a linker script file type.
-    - `ACTIONSCRIPT`: Represents an ActionScript file type.
-    - `HPP`: Represents a C++ header file type.
-    - `JAVA`: Represents a Java file type.
-    - `JAVASCRIPT`: Represents a JavaScript file type.
-    - `TYPESCRIPT`: Represents a TypeScript file type.
-    - `GO`: Represents a Go file type.
-    - `RUST`: Represents a Rust file type.
-    - `SHELL`: Represents a shell script file type.
-    - `BATCH`: Represents a batch script file type.
-    - `TEMPLATE`: Represents a template file type.
-    - `DART`: Represents a Dart file type.
-    - `KOTLIN`: Represents a Kotlin file type.
-    - `SWIFT`: Represents a Swift file type.
-    - `CXX`: Represents a C++ file type.
-    - `OBJECTIVE_C`: Represents an Objective-C file type.
-    - `VERILOG`: Represents a Verilog file type.
-    - `SYSTEM_VERILOG`: Represents a SystemVerilog file type.
-    - `VHDL`: Represents a VHDL file type.
-    - `CSHARP`: Represents a C# file type.
-    - `TERRAFORM`: Represents a Terraform file type.
-    - `SQL`: Represents a SQL file type.
-    - `SAS`: Represents a SAS file type.
-    - `RUBY`: Represents a Ruby file type.
-    - `PERL`: Represents a Perl file type.
-    - `COBOL`: Represents a COBOL file type.
-    - `D`: Represents a D file type.
-    - `NSIS`: Represents a NSIS file type.
-    - `SCSS`: Represents a SCSS file type.
-    - `LESS`: Represents a LESS file type.
-    - `HTML`: Represents an HTML file type.
-    - `CSS`: Represents a CSS file type.
-    - `CRYSTAL`: Represents a Crystal file type.
-    - `TCL`: Represents a TCL file type.
-    - `JSON`: Represents a JSON file type.
-    - `YAML`: Represents a YAML file type.
-    - `TOML`: Represents a TOML file type.
-    - `MARKDOWN`: Represents a Markdown file type.
-    - `TEXT`: Represents a plain text file type.
-    - `RESTRUCTUREDTEXT`: Represents a reStructuredText file type.
-    - `XML`: Represents an XML file type.
-    - `JSX`: Represents a JSX file type.
-    - `INI`: Represents an INI file type.
-    - `CONFIG`: Represents a configuration file type.
-    - `DITA`: Represents a DITA file type.
-    - `ADOC`: Represents an AsciiDoc file type.
-    - `ASPX`: Represents an ASPX file type.
-    - `CMX`: Represents a CMX file type.
-    - `PEP`: Represents a PEP file type.
-    - `APP`: Represents an APP file type.
-    - `PRE`: Represents a PRE file type.
-    - `LST`: Represents a LST file type.
-    - `DRIVER_PAGE`: Represents a driver page file type.
-    - `UNKNOWN`: Represents an unknown file type.
-- **Description**: The `FileTypeEnum` class is an enumeration that defines a comprehensive list of file types, each represented by a unique string identifier. This class is used to categorize and identify different types of files based on their extensions, providing a standardized way to handle various file formats in a program. It includes a wide range of programming, scripting, markup, and configuration file types, as well as a generic 'UNKNOWN' type for unrecognized file extensions.
+- **Description**: Defines an enumeration for different file types, each represented by a string constant. This enumeration includes a wide range of programming, scripting, markup, and configuration file types, providing a standardized way to refer to these file types within the code.
 - **Inherits From**:
     - `Enum`
 
@@ -88,15 +29,16 @@ This Python code defines an enumeration, `FileTypeEnum`, which categorizes vario
 
 ---
 ### get\_file\_type<!-- {{#callable:python-backend/driver_db/database/file_extensions.get_file_type}} -->
-The `get_file_type` function maps a file extension to its corresponding `FileTypeEnum` value, returning `UNKNOWN` if the extension is not recognized.
+[View Source →](<../../../../driver_db/database/file_extensions.py#L67>)
+
+Maps a file extension to its corresponding `FileTypeEnum` value.
 - **Inputs**:
-    - `extension`: A string representing the file extension to be mapped to a `FileTypeEnum`.
-- **Control Flow**:
-    - A dictionary `extension_map` is defined, mapping file extensions (as keys) to `FileTypeEnum` values (as values).
-    - The function attempts to retrieve the `FileTypeEnum` value from `extension_map` using the provided `extension` as the key.
-    - If the `extension` is found in the dictionary, the corresponding `FileTypeEnum` value is returned.
-    - If the `extension` is not found, the function returns `FileTypeEnum.UNKNOWN`.
-- **Output**: The function returns a `FileTypeEnum` value corresponding to the provided file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
+    - `extension`: A string representing the file extension to map.
+- **Logic and Control Flow**:
+    - Defines a dictionary `extension_map` that maps file extensions to `FileTypeEnum` values.
+    - Uses the `get` method of the dictionary to retrieve the `FileTypeEnum` value for the given `extension`.
+    - Returns `FileTypeEnum.UNKNOWN` if the `extension` is not found in the dictionary.
+- **Output**: A `FileTypeEnum` value corresponding to the given file extension, or `FileTypeEnum.UNKNOWN` if the extension is not recognized.
 
 
 

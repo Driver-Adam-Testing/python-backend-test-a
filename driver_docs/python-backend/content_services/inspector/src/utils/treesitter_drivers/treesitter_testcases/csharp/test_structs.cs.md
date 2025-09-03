@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_structs.cs` file contains various test cases for C# struct definitions, demonstrating different struct types, properties, methods, and usage examples.
+Test cases for various C# struct definitions, including simple, readonly, ref, generic, and record structs.
 
 # Purpose
-This C# source code file is a comprehensive demonstration of various struct types and their functionalities within the C# programming language. It defines multiple struct types, each showcasing different features and capabilities of structs, such as simple structs, structs with properties, readonly structs, ref structs, generic structs, and structs implementing interfaces. The file also includes examples of record structs and readonly record structs, which are newer additions to C# as of version 10. Each struct is designed to illustrate specific use cases, such as mathematical operations, data encapsulation, and immutability, providing a broad overview of how structs can be utilized in C#.
+The code defines a collection of C# struct definitions within the `Com.Example.Structs` namespace. These structs demonstrate various features and capabilities of C# structs, including simple structs, structs with properties, readonly structs, ref structs, generic structs, and structs implementing interfaces. Each struct serves a specific purpose, such as representing geometric shapes ([`Point`](<#pointpoint>), [`Rectangle`](<#rectanglerectangle>)), handling complex numbers ([`Complex`](<#complexcomplex>)), or providing mathematical constants ([`MathConstants`](<#mathconstantsmathconstants>)). The code also includes examples of more advanced struct types like record structs and readonly record structs, which are available in C# 10 and later.
 
-The file serves as both an educational resource and a practical reference for developers looking to understand and implement structs in their applications. It includes a variety of technical components, such as operator overloading, computed properties, and nested types, demonstrating the versatility and power of structs. Additionally, the file contains a class, `StructExamples`, which provides usage examples of the defined structs, showcasing how they can be instantiated and used in real-world scenarios. This class highlights the practical application of the structs, making the file a valuable resource for learning and reference.
+The file also contains a class `StructExamples` that provides usage examples for the defined structs. This class demonstrates how to instantiate and use the structs, showcasing their properties, methods, and operator overloads. The examples include creating instances of structs, accessing their properties, performing operations like addition on complex numbers, and demonstrating struct equality. The code is structured to illustrate the versatility and functionality of structs in C#, making it a useful reference for understanding how to implement and use different types of structs in C# applications.
 # Imports and Dependencies
 
 ---
@@ -20,58 +20,69 @@ The file serves as both an educational resource and a practical reference for de
 
 ---
 ### PersonInfo<!-- {{#class:Com.Example.Structs.PersonInfo}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L247>)
+
 - **Type**: `record`
 - **Modifiers**: `public`
-- **Description**: The `PersonInfo` class is a C# record struct that encapsulates information about a person, including their name, age, and email address. It provides a computed property `DisplayName` that formats the person's name and age as a string, and a method `IsAdult` to determine if the person is an adult based on their age. As a record struct, it benefits from value-based equality and immutability features, while also allowing for mutable properties like `Email`. This class is useful for scenarios where lightweight, immutable data structures are needed, with the added flexibility of mutable properties.
+- **Description**: Represents a record struct that holds information about a person, including their name, age, and email. It includes a computed property `DisplayName` that formats the name and age, and a method `IsAdult` that checks if the person is 18 years or older.
 
 
 ---
 ### ImmutablePersonInfo<!-- {{#class:Com.Example.Structs.ImmutablePersonInfo}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L259>)
+
 - **Type**: `record`
 - **Modifiers**: `public`
-- **Description**: The `ImmutablePersonInfo` class is a readonly record struct in C# that encapsulates immutable personal information, specifically a person's name and age. It provides a computed property `DisplayName` that formats the name and age into a string, and a method `IsAdult` that determines if the person is an adult based on their age. Being a record struct, it benefits from value-based equality and immutability, making it suitable for scenarios where a lightweight, immutable data structure is needed.
+- **Description**: Represents an immutable record struct that holds personal information, specifically a name and an age. It provides a computed property `DisplayName` that formats the name and age as a string, and a method `IsAdult` to determine if the age is 18 or older.
 
 
 ---
 ### Employee<!-- {{#class:Com.Example.Structs.Employee}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L266>)
+
 - **Type**: `record`
 - **Modifiers**: `public`
-- **Description**: The `Employee` class is a simple record type in C# that encapsulates two properties: `Name` and `Department`. As a record, it provides built-in functionality for value-based equality, immutability, and concise syntax for creating data-carrying objects. This class is ideal for representing an employee's basic information in a structured and immutable way, leveraging the benefits of C# records for scenarios where data integrity and equality checks are important.
+- **Description**: Represents an employee with a `Name` and a `Department`. This is a simple data structure that uses C#'s record feature to automatically provide value-based equality, immutability, and concise syntax for defining data-carrying types.
 
 
 ---
 ### StructExamples<!-- {{#class:Com.Example.Structs.StructExamples}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L269>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `StructExamples` class serves as a demonstration and usage example of various struct types in C#. It includes a nested struct `MultiModifierStruct` with multiple modifiers, showcasing the use of `ref` and `readonly` keywords. The class contains a method `UseStructs` that demonstrates the instantiation and usage of different struct types, including simple structs, structs with properties, readonly structs, generic structs, structs with operator overloading, record structs, and struct equality. This class is primarily educational, illustrating how different struct features and capabilities can be utilized in C#.
+- **Description**: Provides examples of various struct usages in C#. Contains a nested struct `MultiModifierStruct` with multiple modifiers and a method `UseStructs` that demonstrates the instantiation and usage of different struct types, including simple structs, structs with properties, readonly structs, generic structs, complex structs with operator overloading, record structs, and struct equality.
 - **Methods**:
-    - [`Com.Example.Structs.StructExamples.UseStructs`](<#StructExamplesUseStructs>)
+    - [`Com.Example.Structs.StructExamples.UseStructs`](<#structexamplesusestructs>)
 
 **Methods**
 
 ---
 #### StructExamples\.UseStructs<!-- {{#callable:Com.Example.Structs.StructExamples.UseStructs}} -->
-The `UseStructs` method demonstrates the usage of various struct types in C# by creating instances, performing operations, and displaying results.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L285>)
+
+Demonstrates the usage of various struct types in C# by creating instances, accessing properties, and performing operations.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Instantiate a [`Point`](<#PointPoint>) struct with coordinates (10, 20) and print its string representation.
-    - Create a [`Rectangle`](<#Rectangle>) struct with width 5 and height 10, then print its area using the `Area` property.
-    - Instantiate an [`ImmutablePoint`](<#ImmutablePoint>) struct with coordinates (3, 4) and calculate the distance from the origin using the [`DistanceFromOrigin`](<#ImmutablePointDistanceFromOrigin>) method.
-    - Create a [`GenericPair`](<#GenericPairGenericPair>) struct with an integer and a string, then deconstruct it into separate variables.
-    - Instantiate two [`Complex`](<#ComplexComplex>) structs and add them using the overloaded `+` operator to get their sum.
-    - Create a [`PersonInfo`](<#PersonInfo>) record struct with a name and age, set the email property, and print the display name using the `DisplayName` property.
-    - Instantiate two [`Point`](<#PointPoint>) structs with the same coordinates and check their equality using the `Equals` method.
-- **Output**: The method does not return any value; it performs operations and prints results to the console.
+    - Create an instance of the [`Point`](<#pointpoint>) struct and print its value.
+    - Create an instance of the [`Rectangle`](<#rectanglerectangle>) struct and print its area.
+    - Create an instance of the [`ImmutablePoint`](<#immutablepoint>) struct and calculate the distance from the origin.
+    - Create an instance of the [`GenericPair`](<#genericpairgenericpair>) struct, deconstruct it, and assign the values to variables.
+    - Create instances of the [`Complex`](<#complex>) struct, perform addition using overloaded operators, and store the result.
+    - Create an instance of the [`PersonInfo`](<#personinfo>) record struct, set the `Email` property, and print the display name.
+    - Create two instances of the [`Point`](<#pointpoint>) struct and check for equality using the [`Equals`](<#complexequals>) method.
+- **Output**: No return value; the method performs operations and prints results to the console.
 - **Methods Called**:
-    - [`Com.Example.Structs.Point.Point`](<#PointPoint>)
-    - [`Com.Example.Structs.Rectangle`](<#Rectangle>)
-    - [`Com.Example.Structs.ImmutablePoint`](<#ImmutablePoint>)
-    - [`Com.Example.Structs.ImmutablePoint.DistanceFromOrigin`](<#ImmutablePointDistanceFromOrigin>)
-    - [`Com.Example.Structs.GenericPair.GenericPair`](<#GenericPairGenericPair>)
-    - [`Com.Example.Structs.Complex.Complex`](<#ComplexComplex>)
-    - [`Com.Example.Structs.PersonInfo`](<#PersonInfo>)
-- **See also**: [`Com.Example.Structs.StructExamples`](<#StructExamples>)  (Base Class)
+    - [`Com.Example.Structs.Point.Point`](<#pointpoint>)
+    - [`Com.Example.Structs.Rectangle.Rectangle`](<#rectanglerectangle>)
+    - [`Com.Example.Structs.ImmutablePoint`](<#immutablepoint>)
+    - [`Com.Example.Structs.ImmutablePoint.DistanceFromOrigin`](<#immutablepointdistancefromorigin>)
+    - [`Com.Example.Structs.GenericPair.GenericPair`](<#genericpairgenericpair>)
+    - [`Com.Example.Structs.Complex`](<#complex>)
+    - [`Com.Example.Structs.PersonInfo`](<#personinfo>)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+- **See also**: [`Com.Example.Structs.StructExamples`](<#structexamples>)  (Base Class)
 
 
 
@@ -79,335 +90,380 @@ The `UseStructs` method demonstrates the usage of various struct types in C# by 
 
 ---
 ### ContainerType<!-- {{#data_structure:Com.Example.Structs.Container.ContainerType}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L191>)
+
 - **Type**: `enum`
 - **Modifiers**: `public`
-- **Description**: The `ContainerType` enum is a nested enumeration within the `Container` struct, representing different types of data structures that a `Container` can encapsulate. It defines three possible values: `Array`, `List`, and `Dictionary`, which correspond to common collection types in C#. This enum is used to categorize the type of items stored within a `Container`, providing a way to identify the underlying data structure type for operations or metadata purposes.
+- **Description**: Defines the types of containers available within the `Container` struct. The `ContainerType` enum includes three possible values: `Array`, `List`, and `Dictionary`, which represent different data structures that can be used to store collections of objects.
 
 
 ---
 ### Point<!-- {{#data_structure:Com.Example.Structs.Point}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L8>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `Point` struct is a simple data structure that represents a point in a two-dimensional space with integer coordinates. It contains two public fields, `X` and `Y`, which store the x and y coordinates of the point, respectively. The struct provides a constructor that initializes these coordinates and overrides the `ToString` method to return a string representation of the point in the format "(X, Y)". This struct is useful for basic geometric calculations and representations in applications that require manipulation of 2D points.
+- **Description**: Represents a point in a 2D coordinate system with integer coordinates `X` and `Y`. The `Point` struct provides a constructor to initialize these coordinates and overrides the `ToString` method to return a string representation of the point in the format `(X, Y)`.
 - **Member Functions**:
-    - [`Com.Example.Structs.Point.Point`](<#PointPoint>)
-    - [`Com.Example.Structs.Point.ToString`](<#PointToString>)
+    - [`Com.Example.Structs.Point.Point`](<#pointpoint>)
+    - [`Com.Example.Structs.Point.ToString`](<#pointtostring>)
 
 **Methods**
 
 ---
 #### Point\.Point<!-- {{#callable:Com.Example.Structs.Point.Point}} -->
-This is a constructor for the Point struct that initializes the X and Y fields with the provided integer values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L13>)
+
+Initializes a new instance of the `Point` struct with specified `x` and `y` coordinates; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `x`: An integer representing the x-coordinate of the point.
-    - `y`: An integer representing the y-coordinate of the point.
+    - `x`: The x-coordinate of the point.
+    - `y`: The y-coordinate of the point.
 - **Control Flow**:
-    - The constructor takes two integer parameters, x and y.
-    - It assigns the value of x to the X field of the Point struct.
-    - It assigns the value of y to the Y field of the Point struct.
-- **Output**: This constructor does not return a value as it is used to initialize a new instance of the Point struct.
-- **See also**: [`Com.Example.Structs.Point`](<#Point>)  (Data Structure)
+    - Assigns the value of `x` to the `X` field of the `Point` struct.
+    - Assigns the value of `y` to the `Y` field of the `Point` struct.
+- **Output**: There is no output as this is a constructor for the `Point` struct.
+- **See also**: [`Com.Example.Structs.Point`](<#point>)  (Data Structure)
 
 
 ---
 #### Point\.ToString<!-- {{#callable:Com.Example.Structs.Point.ToString}} -->
-The `ToString` method returns a string representation of a point in the format '(X, Y)'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L19>)
+
+Converts the `X` and `Y` properties of an object to a string representation in the format '(X, Y)'.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - The method constructs a string using string interpolation to format the values of `X` and `Y` into a tuple-like representation.
-    - The method returns the constructed string.
-- **Output**: A string representing the point in the format '(X, Y)'.
-- **See also**: [`Com.Example.Structs.Point`](<#Point>)  (Data Structure)
+    - Return a string that formats the `X` and `Y` properties of the object as '(X, Y)'.
+- **Output**: A string in the format '(X, Y)' representing the `X` and `Y` properties of the object.
+- **See also**: [`Com.Example.Structs.Point`](<#point>)  (Data Structure)
 
 
 
 ---
 ### Rectangle<!-- {{#data_structure:Com.Example.Structs.Rectangle}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L26>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `Rectangle` struct is a simple data structure that represents a rectangle with properties for its width and height. It provides computed properties to calculate the area and perimeter of the rectangle, enhancing its utility for geometric calculations. The struct also includes a constructor for initializing the width and height, and a boolean property `IsSquare` to determine if the rectangle is a square. This struct is designed to encapsulate basic rectangle-related functionality in a compact and efficient manner, suitable for use in various applications requiring geometric computations.
+- **Description**: Represents a rectangle with properties for `Width` and `Height`. It includes computed properties `Area` and `Perimeter` to calculate the area and perimeter of the rectangle, respectively. The constructor initializes the rectangle with specified dimensions. The `IsSquare` property checks if the rectangle is a square by comparing its width and height.
 - **Member Functions**:
-    - [`Com.Example.Structs.Rectangle.Width`](<#RectangleWidth>)
-    - [`Com.Example.Structs.Rectangle.Height`](<#RectangleHeight>)
-    - [`Com.Example.Structs.Rectangle.Area`](<#RectangleArea>)
-    - [`Com.Example.Structs.Rectangle.Perimeter`](<#RectanglePerimeter>)
-    - [`Com.Example.Structs.Rectangle.Rectangle`](<#RectangleRectangle>)
-    - [`Com.Example.Structs.Rectangle.IsSquare`](<#RectangleIsSquare>)
+    - [`Com.Example.Structs.Rectangle.Width`](<#rectanglewidth>)
+    - [`Com.Example.Structs.Rectangle.Height`](<#rectangleheight>)
+    - [`Com.Example.Structs.Rectangle.Area`](<#rectanglearea>)
+    - [`Com.Example.Structs.Rectangle.Perimeter`](<#rectangleperimeter>)
+    - [`Com.Example.Structs.Rectangle.Rectangle`](<#rectanglerectangle>)
+    - [`Com.Example.Structs.Rectangle.IsSquare`](<#rectangleissquare>)
 
 **Methods**
 
 ---
 #### Rectangle\.Width<!-- {{#callable:Com.Example.Structs.Rectangle.Width}} -->
-The `Width` property is an integer property of the `Rectangle` struct that allows getting and setting the width of the rectangle.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L28>)
+
+Represents a property that gets or sets the width of a `Rectangle`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Width` property is defined as an auto-implemented property, which means it has a default backing field created by the compiler.
-    - The property can be accessed to retrieve the current width value of a `Rectangle` instance.
-    - The property can be set to assign a new width value to a `Rectangle` instance.
-- **Output**: The output is the integer value representing the width of the rectangle when the property is accessed.
-- **See also**: [`Com.Example.Structs.Rectangle`](<#Rectangle>)  (Data Structure)
+    - The `Width` property is defined as an auto-implemented property with both `get` and `set` accessors.
+    - The `get` accessor retrieves the current value of the `Width` property.
+    - The `set` accessor assigns a new value to the `Width` property.
+- **Output**: An integer value representing the width of the `Rectangle`.
+- **See also**: [`Com.Example.Structs.Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle\.Height<!-- {{#callable:Com.Example.Structs.Rectangle.Height}} -->
-The `Height` property is an integer property of the `Rectangle` struct that can be both read and modified.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L29>)
+
+Represents a property for getting or setting the height of a `Rectangle`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Height` property is defined as an auto-implemented property, meaning it has a default backing field generated by the compiler.
-    - It allows getting and setting the height value of a `Rectangle` instance.
-- **Output**: The output is an integer value representing the height of the `Rectangle`.
-- **See also**: [`Com.Example.Structs.Rectangle`](<#Rectangle>)  (Data Structure)
+    - The `Height` property is defined as an auto-implemented property with both `get` and `set` accessors.
+    - The `get` accessor retrieves the current value of the `Height` property.
+    - The `set` accessor assigns a new value to the `Height` property.
+- **Output**: An integer value representing the height of a `Rectangle`.
+- **See also**: [`Com.Example.Structs.Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle\.Area<!-- {{#callable:Com.Example.Structs.Rectangle.Area}} -->
-The `Area` property calculates the area of a rectangle by multiplying its width and height.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L32>)
+
+Calculates the area of a rectangle as a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property accesses the `Width` and `Height` properties of the `Rectangle` struct.
-    - It multiplies the `Width` and `Height` values to compute the area.
+    - The property `Area` calculates the product of `Width` and `Height`.
 - **Output**: The output is an integer representing the area of the rectangle.
-- **See also**: [`Com.Example.Structs.Rectangle`](<#Rectangle>)  (Data Structure)
+- **See also**: [`Com.Example.Structs.Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle\.Perimeter<!-- {{#callable:Com.Example.Structs.Rectangle.Perimeter}} -->
-The `Perimeter` property calculates the perimeter of a rectangle by summing the width and height and multiplying by two.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L33>)
+
+Calculates the perimeter of a rectangle as a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property accesses the `Width` and `Height` properties of the `Rectangle` struct.
-    - It calculates the sum of `Width` and `Height`.
-    - The sum is then multiplied by 2 to compute the perimeter.
-- **Output**: The output is an integer representing the perimeter of the rectangle.
-- **See also**: [`Com.Example.Structs.Rectangle`](<#Rectangle>)  (Data Structure)
+    - Accesses the `Width` and `Height` properties of the `Rectangle` struct.
+    - Calculates the perimeter using the formula `2 * (Width + Height)`.
+- **Output**: Returns an integer representing the perimeter of the rectangle.
+- **See also**: [`Com.Example.Structs.Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle\.Rectangle<!-- {{#callable:Com.Example.Structs.Rectangle.Rectangle}} -->
-The `Rectangle` constructor initializes a new instance of the `Rectangle` struct with specified width and height values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L35>)
+
+Initializes a new instance of the `Rectangle` struct with specified width and height, this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `width`: An integer representing the width of the rectangle.
-    - `height`: An integer representing the height of the rectangle.
+    - `width`: The width of the rectangle, an integer value.
+    - `height`: The height of the rectangle, an integer value.
 - **Control Flow**:
-    - Assigns the provided `width` value to the `Width` property of the `Rectangle` instance.
-    - Assigns the provided `height` value to the `Height` property of the `Rectangle` instance.
-- **Output**: This constructor does not return a value as it is used to initialize a new instance of the `Rectangle` struct.
-- **See also**: [`Com.Example.Structs.Rectangle`](<#Rectangle>)  (Data Structure)
+    - Assigns the input parameter `width` to the `Width` property of the `Rectangle` struct.
+    - Assigns the input parameter `height` to the `Height` property of the `Rectangle` struct.
+- **Output**: There is no output as this is a constructor for initializing a `Rectangle` struct.
+- **See also**: [`Com.Example.Structs.Rectangle`](<#rectangle>)  (Data Structure)
 
 
 ---
 #### Rectangle\.IsSquare<!-- {{#callable:Com.Example.Structs.Rectangle.IsSquare}} -->
-The `IsSquare` property determines if a `Rectangle` instance is a square by comparing its width and height.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L41>)
+
+Checks if the `Rectangle` struct is a square by comparing its `Width` and `Height` properties; this is a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property evaluates the expression `Width == Height`.
-- **Output**: The output is a boolean value, `true` if the rectangle is a square (i.e., width equals height), otherwise `false`.
-- **See also**: [`Com.Example.Structs.Rectangle`](<#Rectangle>)  (Data Structure)
+    - Evaluates the expression `Width == Height`.
+- **Output**: Returns `true` if the `Width` and `Height` are equal, otherwise returns `false`.
+- **See also**: [`Com.Example.Structs.Rectangle`](<#rectangle>)  (Data Structure)
 
 
 
 ---
 ### ImmutablePoint<!-- {{#data_structure:Com.Example.Structs.ImmutablePoint}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L45>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`, `readonly`
-- **Description**: The `ImmutablePoint` struct is a readonly structure that represents a point in a 2D space with integer coordinates. It is designed to be immutable, meaning that once an instance is created, its state cannot be modified. This is achieved by declaring the struct as `readonly` and its fields `X` and `Y` as `readonly` as well. The struct provides a constructor to initialize the coordinates and includes methods such as `DistanceFromOrigin`, which calculates the Euclidean distance from the origin, and `Translate`, which returns a new `ImmutablePoint` instance translated by specified offsets without altering the original instance.
+- **Description**: Represents a two-dimensional point with integer coordinates `X` and `Y`. The struct is immutable, meaning its state cannot change after creation. It provides a method `DistanceFromOrigin` to calculate the Euclidean distance from the origin (0,0) and a method `Translate` to create a new `ImmutablePoint` by translating the current point by specified `dx` and `dy` values.
 - **Member Functions**:
-    - [`Com.Example.Structs.ImmutablePoint.ImmutablePoint`](<#ImmutablePointImmutablePoint>)
-    - [`Com.Example.Structs.ImmutablePoint.DistanceFromOrigin`](<#ImmutablePointDistanceFromOrigin>)
-    - [`Com.Example.Structs.ImmutablePoint.Translate`](<#ImmutablePointTranslate>)
+    - [`Com.Example.Structs.ImmutablePoint.ImmutablePoint`](<#immutablepointimmutablepoint>)
+    - [`Com.Example.Structs.ImmutablePoint.DistanceFromOrigin`](<#immutablepointdistancefromorigin>)
+    - [`Com.Example.Structs.ImmutablePoint.Translate`](<#immutablepointtranslate>)
 
 **Methods**
 
 ---
 #### ImmutablePoint\.ImmutablePoint<!-- {{#callable:Com.Example.Structs.ImmutablePoint.ImmutablePoint}} -->
-The `ImmutablePoint` constructor initializes a new instance of the `ImmutablePoint` struct with specified x and y coordinates.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L50>)
+
+Initializes a new instance of the `ImmutablePoint` struct with specified x and y coordinates; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `x`: The x-coordinate of the point, an integer value.
-    - `y`: The y-coordinate of the point, an integer value.
+    - `x`: The x-coordinate of the point.
+    - `y`: The y-coordinate of the point.
 - **Control Flow**:
-    - Assigns the value of the input parameter `x` to the readonly field `X`.
-    - Assigns the value of the input parameter `y` to the readonly field `Y`.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the `ImmutablePoint` struct.
-- **See also**: [`Com.Example.Structs.ImmutablePoint`](<#ImmutablePoint>)  (Data Structure)
+    - Assigns the value of `x` to the `X` field.
+    - Assigns the value of `y` to the `Y` field.
+- **Output**: A new instance of the `ImmutablePoint` struct with the specified coordinates.
+- **See also**: [`Com.Example.Structs.ImmutablePoint`](<#immutablepoint>)  (Data Structure)
 
 
 ---
 #### ImmutablePoint\.DistanceFromOrigin<!-- {{#callable:Com.Example.Structs.ImmutablePoint.DistanceFromOrigin}} -->
-The `DistanceFromOrigin` method calculates the Euclidean distance of an `ImmutablePoint` from the origin (0,0).
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L57>)
+
+Calculates the Euclidean distance of a point from the origin in a 2D plane.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method calculates the square of the X coordinate.
-    - The method calculates the square of the Y coordinate.
-    - The method sums the squares of the X and Y coordinates.
-    - The method returns the square root of the sum, which is the distance from the origin.
-- **Output**: A `double` representing the distance of the point from the origin.
-- **See also**: [`Com.Example.Structs.ImmutablePoint`](<#ImmutablePoint>)  (Data Structure)
+    - Calculate the square of the `X` coordinate.
+    - Calculate the square of the `Y` coordinate.
+    - Sum the squares of the `X` and `Y` coordinates.
+    - Compute the square root of the sum to get the distance from the origin.
+- **Output**: A `double` representing the distance from the origin.
+- **See also**: [`Com.Example.Structs.ImmutablePoint`](<#immutablepoint>)  (Data Structure)
 
 
 ---
 #### ImmutablePoint\.Translate<!-- {{#callable:Com.Example.Structs.ImmutablePoint.Translate}} -->
-The `Translate` method creates a new [`ImmutablePoint`](<#ImmutablePointImmutablePoint>) by adding specified offsets to the current point's coordinates.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L62>)
+
+Creates a new [`ImmutablePoint`](<#immutablepointimmutablepoint>) by translating the current point by specified x and y offsets.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `dx`: The horizontal offset to be added to the X coordinate of the current point.
-    - `dy`: The vertical offset to be added to the Y coordinate of the current point.
+    - `dx`: The x-axis offset to translate the point.
+    - `dy`: The y-axis offset to translate the point.
 - **Control Flow**:
-    - The method takes two integer parameters, `dx` and `dy`, which represent the offsets to be added to the current point's X and Y coordinates, respectively.
-    - A new [`ImmutablePoint`](<#ImmutablePointImmutablePoint>) is instantiated using the sum of the current X coordinate and `dx`, and the sum of the current Y coordinate and `dy`.
-    - The newly created [`ImmutablePoint`](<#ImmutablePointImmutablePoint>) is returned as the result of the method.
-- **Output**: A new [`ImmutablePoint`](<#ImmutablePointImmutablePoint>) instance with updated coordinates based on the provided offsets.
+    - Calculate the new x-coordinate by adding `dx` to the current x-coordinate `X`.
+    - Calculate the new y-coordinate by adding `dy` to the current y-coordinate `Y`.
+    - Return a new [`ImmutablePoint`](<#immutablepointimmutablepoint>) with the calculated x and y coordinates.
+- **Output**: A new [`ImmutablePoint`](<#immutablepointimmutablepoint>) instance with the translated coordinates.
 - **Methods Called**:
-    - [`Com.Example.Structs.ImmutablePoint.ImmutablePoint`](<#ImmutablePointImmutablePoint>)
-- **See also**: [`Com.Example.Structs.ImmutablePoint`](<#ImmutablePoint>)  (Data Structure)
+    - [`Com.Example.Structs.ImmutablePoint.ImmutablePoint`](<#immutablepointimmutablepoint>)
+- **See also**: [`Com.Example.Structs.ImmutablePoint`](<#immutablepoint>)  (Data Structure)
 
 
 
 ---
 ### StackOnlyStruct<!-- {{#data_structure:Com.Example.Structs.StackOnlyStruct}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L69>)
+
 - **Type**: `struct`
 - **Modifiers**: `ref`, `public`
-- **Description**: The `StackOnlyStruct` is a ref struct designed to operate exclusively on the stack, leveraging the `Span<byte>` type to manage a contiguous region of memory. This struct is particularly useful for scenarios where performance and memory efficiency are critical, as it avoids heap allocations. It provides an indexer to access and modify individual bytes within the span, and exposes a `Length` property to retrieve the size of the data span. The use of `ref struct` ensures that instances of `StackOnlyStruct` cannot be boxed, assigned to variables of type `object`, or captured by lambda expressions, thus enforcing stack-only usage.
+- **Description**: Represents a stack-only data structure that encapsulates a `Span<byte>`. The `StackOnlyStruct` provides indexed access to its underlying data and exposes a `Length` property to retrieve the number of elements in the `Span<byte>`. The struct is defined as a `ref struct`, which means it can only be allocated on the stack and cannot be boxed or used in async methods.
 - **Member Functions**:
-    - [`Com.Example.Structs.StackOnlyStruct.StackOnlyStruct`](<#StackOnlyStructStackOnlyStruct>)
+    - [`Com.Example.Structs.StackOnlyStruct.StackOnlyStruct`](<#stackonlystructstackonlystruct>)
     - [`Com.Example.Structs.StackOnlyStruct.[int index]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#callable:Com.Example.Structs.StackOnlyStruct.[int index]>)
-    - [`Com.Example.Structs.StackOnlyStruct.Length`](<#StackOnlyStructLength>)
+    - [`Com.Example.Structs.StackOnlyStruct.Length`](<#stackonlystructlength>)
 
 **Methods**
 
 ---
 #### StackOnlyStruct\.StackOnlyStruct<!-- {{#callable:Com.Example.Structs.StackOnlyStruct.StackOnlyStruct}} -->
-The `StackOnlyStruct` constructor initializes a new instance of the `StackOnlyStruct` ref struct with a given `Span<byte>` data.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L73>)
+
+Initializes a new instance of the `StackOnlyStruct` with a `Span<byte>` data, this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `data`: A `Span<byte>` representing the byte data to be stored in the struct.
+    - `data`: A `Span<byte>` that represents the data to be stored in the struct.
 - **Control Flow**:
-    - Assigns the input `data` to the private readonly field `data` of the struct.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the `StackOnlyStruct`.
-- **See also**: [`Com.Example.Structs.StackOnlyStruct`](<#StackOnlyStruct>)  (Data Structure)
+    - Assigns the input `data` to the private readonly field `data`.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Structs.StackOnlyStruct`](<#stackonlystruct>)  (Data Structure)
 
 
 ---
 #### StackOnlyStruct\.\[int index\]<!-- {{#callable:Com.Example.Structs.StackOnlyStruct.[int index]}} -->
-This is an indexer that provides get and set access to a byte array using an integer index.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L78>)
+
+Provides indexed access to the `data` array, allowing retrieval and assignment of `byte` values at a specified position; this is an indexer.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `index`: An integer representing the position in the byte array to access or modify.
+    - `index`: The zero-based position in the `data` array to access or modify.
 - **Control Flow**:
-    - The 'get' accessor retrieves the byte value at the specified index from the 'data' array.
-    - The 'set' accessor assigns a byte value to the specified index in the 'data' array.
-- **Output**: The output is a byte value from the 'data' array when using the 'get' accessor.
-- **See also**: [`Com.Example.Structs.StackOnlyStruct`](<#StackOnlyStruct>)  (Data Structure)
+    - Uses the `get` accessor to return the `byte` value at the specified `index` from the `data` array.
+    - Uses the `set` accessor to assign a `byte` value to the specified `index` in the `data` array.
+- **Output**: A `byte` value from the `data` array at the specified `index` when using the `get` accessor.
+- **See also**: [`Com.Example.Structs.StackOnlyStruct`](<#stackonlystruct>)  (Data Structure)
 
 
 ---
 #### StackOnlyStruct\.Length<!-- {{#callable:Com.Example.Structs.StackOnlyStruct.Length}} -->
-The `Length` property returns the length of the `data` array.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L84>)
+
+Returns the length of the `data` array, and this is a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property accesses the `Length` property of the `data` array.
-    - It returns the integer value representing the number of elements in the `data` array.
-- **Output**: An integer representing the number of elements in the `data` array.
-- **See also**: [`Com.Example.Structs.StackOnlyStruct`](<#StackOnlyStruct>)  (Data Structure)
+    - Accesses the `data` array.
+    - Returns the `Length` property of the `data` array.
+- **Output**: The length of the `data` array as an integer.
+- **See also**: [`Com.Example.Structs.StackOnlyStruct`](<#stackonlystruct>)  (Data Structure)
 
 
 
 ---
 ### GenericPair<!-- {{#data_structure:Com.Example.Structs.GenericPair}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L88>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `GenericPair<T, U>` struct is a generic data structure designed to hold a pair of values, where the first value is of a value type (`struct`) and the second value is of a reference type (`class`). This struct provides a simple way to associate two related values of different types, offering properties `First` and `Second` to access these values. It includes a constructor for initializing the pair and a `Deconstruct` method to facilitate deconstruction into separate variables, enhancing its usability in tuple-like scenarios.
+- **Description**: Represents a generic pair of values, where the first value is a value type (`struct`) and the second value is a reference type (`class`). The `GenericPair` struct provides properties `First` and `Second` to access these values. It includes a constructor to initialize the pair and a `Deconstruct` method to enable deconstruction into separate variables.
 - **Member Functions**:
-    - [`Com.Example.Structs.GenericPair.First`](<#GenericPairFirst>)
-    - [`Com.Example.Structs.GenericPair.Second`](<#GenericPairSecond>)
-    - [`Com.Example.Structs.GenericPair.GenericPair`](<#GenericPairGenericPair>)
-    - [`Com.Example.Structs.GenericPair.Deconstruct`](<#GenericPairDeconstruct>)
+    - [`Com.Example.Structs.GenericPair.First`](<#genericpairfirst>)
+    - [`Com.Example.Structs.GenericPair.Second`](<#genericpairsecond>)
+    - [`Com.Example.Structs.GenericPair.GenericPair`](<#genericpairgenericpair>)
+    - [`Com.Example.Structs.GenericPair.Deconstruct`](<#genericpairdeconstruct>)
 
 **Methods**
 
 ---
 #### GenericPair\.First<!-- {{#callable:Com.Example.Structs.GenericPair.First}} -->
-The `First` property is a generic property of type `T` in the `GenericPair` struct, allowing for getting and setting its value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L90>)
+
+Provides a property to get or set the first element of a `GenericPair` struct.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `First` property is defined as a public property within the `GenericPair` struct.
-    - It is a generic property, meaning its type `T` is determined when the `GenericPair` is instantiated.
-    - The property has both a getter and a setter, allowing for reading and modifying its value.
-- **Output**: The output is the value of type `T` that is stored in the `First` property.
-- **See also**: [`Com.Example.Structs.GenericPair`](<#GenericPair>)  (Data Structure)
+    - The `First` property is defined as a public property with a getter and setter.
+    - The property is of generic type `T`, which is constrained to be a struct.
+- **Output**: The output is the value of the first element of the `GenericPair` struct, which is of type `T`.
+- **See also**: [`Com.Example.Structs.GenericPair`](<#genericpair>)  (Data Structure)
 
 
 ---
 #### GenericPair\.Second<!-- {{#callable:Com.Example.Structs.GenericPair.Second}} -->
-The `Second` property is a generic property of type `U` in the `GenericPair` struct, allowing for getting and setting a reference type value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L91>)
+
+Provides a property to get or set the second element of a `GenericPair`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Second` property is defined with both `get` and `set` accessors, allowing it to be read from and written to.
-    - The property is part of the `GenericPair<T, U>` struct, where `U` is constrained to be a reference type (`class`).
-- **Output**: The output is the value of type `U` that is stored in the `Second` property.
-- **See also**: [`Com.Example.Structs.GenericPair`](<#GenericPair>)  (Data Structure)
+    - The `Second` property is defined with a getter and a setter, allowing read and write access to the `U` type value.
+- **Output**: The output is the value of type `U` that represents the second element of the `GenericPair`. The property can also be set to a new value of type `U`.
+- **See also**: [`Com.Example.Structs.GenericPair`](<#genericpair>)  (Data Structure)
 
 
 ---
 #### GenericPair\.GenericPair<!-- {{#callable:Com.Example.Structs.GenericPair.GenericPair}} -->
-The `GenericPair` constructor initializes a new instance of the `GenericPair` struct with specified values for its `First` and `Second` properties.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L93>)
+
+Initializes a new instance of the `GenericPair` struct with specified values for `First` and `Second`, this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `first`: The first value of type `T`, which is a value type (struct).
-    - `second`: The second value of type `U`, which is a reference type (class).
+    - `first`: The value to assign to the `First` property, of type `T`.
+    - `second`: The value to assign to the `Second` property, of type `U`.
 - **Control Flow**:
     - Assigns the input parameter `first` to the `First` property of the `GenericPair` instance.
     - Assigns the input parameter `second` to the `Second` property of the `GenericPair` instance.
-- **Output**: This constructor does not return a value as it is used to initialize a new instance of the `GenericPair` struct.
-- **See also**: [`Com.Example.Structs.GenericPair`](<#GenericPair>)  (Data Structure)
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Structs.GenericPair`](<#genericpair>)  (Data Structure)
 
 
 ---
 #### GenericPair\.Deconstruct<!-- {{#callable:Com.Example.Structs.GenericPair.Deconstruct}} -->
-The `Deconstruct` method allows a `GenericPair` struct to be deconstructed into its component parts, `First` and `Second`, by assigning them to the provided output parameters.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L99>)
+
+Deconstructs a `GenericPair` into its component values.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `first`: An output parameter of type `T` that will be assigned the value of the `First` property of the `GenericPair`.
-    - `second`: An output parameter of type `U` that will be assigned the value of the `Second` property of the `GenericPair`.
+    - `first`: An output parameter of type `T` that will hold the value of the `First` property.
+    - `second`: An output parameter of type `U` that will hold the value of the `Second` property.
 - **Control Flow**:
-    - Assign the value of the `First` property of the `GenericPair` to the `first` output parameter.
-    - Assign the value of the `Second` property of the `GenericPair` to the `second` output parameter.
-- **Output**: The method does not return a value but assigns the values of the `First` and `Second` properties to the respective output parameters.
-- **See also**: [`Com.Example.Structs.GenericPair`](<#GenericPair>)  (Data Structure)
+    - Assigns the value of the `First` property to the `first` output parameter.
+    - Assigns the value of the `Second` property to the `second` output parameter.
+- **Output**: The method does not return a value but assigns values to the output parameters `first` and `second`.
+- **See also**: [`Com.Example.Structs.GenericPair`](<#genericpair>)  (Data Structure)
 
 
 
 ---
 ### Complex<!-- {{#data_structure:Com.Example.Structs.Complex}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L107>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `Complex` struct represents a complex number with real and imaginary components, providing a robust implementation for complex number arithmetic and comparison. It includes properties for the real and imaginary parts, and supports operator overloading for addition, subtraction, and multiplication of complex numbers. The struct implements the `IEquatable<Complex>` and `IComparable<Complex>` interfaces, allowing for equality checks and magnitude-based comparisons. It overrides the `Equals`, `GetHashCode`, and `ToString` methods to ensure proper behavior in collections and string representations. The `ToString` method formats the complex number in a readable form, distinguishing between positive and negative imaginary parts.
+- **Description**: Represents a complex number with real and imaginary parts. Provides methods for arithmetic operations such as addition, subtraction, and multiplication through operator overloading. Implements equality and comparison operations by overriding `Equals`, `GetHashCode`, and `CompareTo` methods. The `ToString` method returns a string representation of the complex number in the form of `a + bi` or `a - bi`.
 - **Member Functions**:
-    - [`Com.Example.Structs.Complex.Real`](<#ComplexReal>)
-    - [`Com.Example.Structs.Complex.Imaginary`](<#ComplexImaginary>)
-    - [`Com.Example.Structs.Complex.Complex`](<#ComplexComplex>)
-    - [`Com.Example.Structs.Complex.+`](<#Complex>)
-    - [`Com.Example.Structs.Complex.-`](<#Complex->)
-    - [`Com.Example.Structs.Complex.*`](<#Complex*>)
-    - [`Com.Example.Structs.Complex.Equals`](<#ComplexEquals>)
-    - [`Com.Example.Structs.Complex.Equals`](<#ComplexEquals>)
-    - [`Com.Example.Structs.Complex.GetHashCode`](<#ComplexGetHashCode>)
-    - [`Com.Example.Structs.Complex.==`](<#Complex>)
-    - [`Com.Example.Structs.Complex.!=`](<#Complex>)
-    - [`Com.Example.Structs.Complex.CompareTo`](<#ComplexCompareTo>)
-    - [`Com.Example.Structs.Complex.ToString`](<#ComplexToString>)
+    - [`Com.Example.Structs.Complex.Real`](<#complexreal>)
+    - [`Com.Example.Structs.Complex.Imaginary`](<#compleximaginary>)
+    - [`Com.Example.Structs.Complex.Complex`](<#complexcomplex>)
+    - [`Com.Example.Structs.Complex.+`](<#complex>)
+    - [`Com.Example.Structs.Complex.-`](<#complex->)
+    - [`Com.Example.Structs.Complex.*`](<#complex*>)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+    - [`Com.Example.Structs.Complex.GetHashCode`](<#complexgethashcode>)
+    - [`Com.Example.Structs.Complex.==`](<#complex>)
+    - [`Com.Example.Structs.Complex.!=`](<#complex>)
+    - [`Com.Example.Structs.Complex.CompareTo`](<#complexcompareto>)
+    - [`Com.Example.Structs.Complex.ToString`](<#complextostring>)
 - **Inherits From**:
     - `IEquatable`
     - `IComparable`
@@ -416,422 +472,472 @@ The `Deconstruct` method allows a `GenericPair` struct to be deconstructed into 
 
 ---
 #### Complex\.Real<!-- {{#callable:Com.Example.Structs.Complex.Real}} -->
-The `Real` property is a read-only property that returns the real part of a complex number in the `Complex` struct.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L109>)
+
+Provides access to the real part of a complex number, this is a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Real` property is defined as a read-only property, meaning it can only be set during the initialization of the `Complex` struct instance.
-    - The value of `Real` is assigned in the constructor of the `Complex` struct and cannot be modified afterwards.
-- **Output**: The output is a `double` representing the real part of the complex number.
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - The `Real` property is a read-only property.
+    - It is initialized through the constructor of the `Complex` struct.
+- **Output**: A `double` representing the real part of the complex number.
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.Imaginary<!-- {{#callable:Com.Example.Structs.Complex.Imaginary}} -->
-The `Imaginary` property is a read-only property that returns the imaginary component of a `Complex` struct.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L110>)
+
+Provides access to the imaginary component of a complex number, this is a property.
 - **Modifiers**: `public`
 - **Inputs**: None
-- **Control Flow**:
-    - The `Imaginary` property is defined as a read-only property using the `get` accessor.
-    - It directly returns the value of the `Imaginary` field of the `Complex` struct.
-- **Output**: The output is a `double` representing the imaginary part of the complex number.
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+- **Control Flow**: None
+- **Output**: Returns the `Imaginary` component of the `Complex` struct as a `double`.
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.Complex<!-- {{#callable:Com.Example.Structs.Complex.Complex}} -->
-This is a constructor for the Complex struct that initializes a complex number with specified real and imaginary parts.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L112>)
+
+Initializes a new instance of the `Complex` struct with specified real and imaginary parts; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `real`: The real part of the complex number, represented as a double.
-    - `imaginary`: The imaginary part of the complex number, represented as a double.
+    - `real`: The real part of the complex number.
+    - `imaginary`: The imaginary part of the complex number.
 - **Control Flow**:
-    - Assigns the provided 'real' value to the 'Real' property of the Complex struct.
-    - Assigns the provided 'imaginary' value to the 'Imaginary' property of the Complex struct.
-- **Output**: This constructor does not return a value as it is used to initialize a new instance of the Complex struct.
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - Assigns the `real` parameter to the `Real` property of the `Complex` struct.
+    - Assigns the `imaginary` parameter to the `Imaginary` property of the `Complex` struct.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.\+<!-- {{#callable:Com.Example.Structs.Complex.+}} -->
-This operator overload method adds two Complex numbers by summing their real and imaginary parts separately.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L119>)
+
+Overloads the `+` operator to add two [`Complex`](<#complexcomplex>) numbers.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `left`: The first Complex number operand in the addition operation.
-    - `right`: The second Complex number operand in the addition operation.
+    - `left`: The first [`Complex`](<#complexcomplex>) number to add.
+    - `right`: The second [`Complex`](<#complexcomplex>) number to add.
 - **Control Flow**:
-    - The method takes two Complex objects as input parameters, 'left' and 'right'.
-    - It calculates the sum of the real parts of the two Complex numbers.
-    - It calculates the sum of the imaginary parts of the two Complex numbers.
-    - A new Complex object is created using the calculated real and imaginary sums.
-    - The newly created Complex object is returned as the result of the addition operation.
-- **Output**: A new Complex object representing the sum of the two input Complex numbers.
+    - Create a new [`Complex`](<#complexcomplex>) instance with the sum of the `Real` parts of `left` and `right` as the new `Real` part.
+    - Add the `Imaginary` parts of `left` and `right` to form the new `Imaginary` part.
+    - Return the new [`Complex`](<#complexcomplex>) instance.
+- **Output**: A new [`Complex`](<#complexcomplex>) instance representing the sum of the two input [`Complex`](<#complexcomplex>) numbers.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Complex`](<#ComplexComplex>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Complex`](<#complexcomplex>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.\-<!-- {{#callable:Com.Example.Structs.Complex.-}} -->
-This operator overload method subtracts two Complex numbers by returning a new Complex instance with the difference of their real and imaginary parts.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L124>)
+
+Implements the subtraction operator for [`Complex`](<#complexcomplex>) numbers, allowing the subtraction of two [`Complex`](<#complexcomplex>) instances.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `left`: The first Complex number operand in the subtraction operation.
-    - `right`: The second Complex number operand in the subtraction operation.
+    - `left`: The first [`Complex`](<#complexcomplex>) number to subtract from.
+    - `right`: The second [`Complex`](<#complexcomplex>) number to subtract.
 - **Control Flow**:
-    - The method takes two Complex objects, 'left' and 'right', as input parameters.
-    - It calculates the difference between the real parts of 'left' and 'right'.
-    - It calculates the difference between the imaginary parts of 'left' and 'right'.
-    - A new Complex object is instantiated with the calculated real and imaginary differences.
-    - The new Complex object is returned as the result of the subtraction operation.
-- **Output**: A new Complex object representing the result of subtracting the 'right' Complex number from the 'left' Complex number.
+    - Subtracts the `Real` part of `right` from the `Real` part of `left`.
+    - Subtracts the `Imaginary` part of `right` from the `Imaginary` part of `left`.
+    - Creates a new [`Complex`](<#complexcomplex>) instance with the resulting `Real` and `Imaginary` parts.
+- **Output**: A new [`Complex`](<#complexcomplex>) instance representing the result of the subtraction.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Complex`](<#ComplexComplex>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Complex`](<#complexcomplex>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.\*<!-- {{#callable:Com.Example.Structs.Complex.*}} -->
-This operator overload method multiplies two Complex numbers and returns the resulting Complex number.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L129>)
+
+Implements the multiplication operator for two [`Complex`](<#complexcomplex>) numbers, which is an operator_overload.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `left`: The first Complex number operand in the multiplication.
-    - `right`: The second Complex number operand in the multiplication.
+    - `left`: The first [`Complex`](<#complexcomplex>) number operand.
+    - `right`: The second [`Complex`](<#complexcomplex>) number operand.
 - **Control Flow**:
-    - Calculate the real part of the resulting Complex number by multiplying the real parts of the operands and subtracting the product of their imaginary parts.
-    - Calculate the imaginary part of the resulting Complex number by multiplying the real part of the first operand with the imaginary part of the second operand and adding the product of the imaginary part of the first operand with the real part of the second operand.
-    - Return a new Complex object constructed with the calculated real and imaginary parts.
-- **Output**: A new Complex object representing the product of the two input Complex numbers.
+    - Calculate the real part of the result as `left.Real * right.Real - left.Imaginary * right.Imaginary`.
+    - Calculate the imaginary part of the result as `left.Real * right.Imaginary + left.Imaginary * right.Real`.
+    - Return a new [`Complex`](<#complexcomplex>) instance with the calculated real and imaginary parts.
+- **Output**: A new [`Complex`](<#complexcomplex>) instance representing the product of the two input [`Complex`](<#complexcomplex>) numbers.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Complex`](<#ComplexComplex>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Complex`](<#complexcomplex>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.Equals<!-- {{#callable:Com.Example.Structs.Complex.Equals}} -->
-The Equals method checks if the current Complex object is equal to another Complex object by comparing their Real and Imaginary parts.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L138>)
+
+Checks if the current `Complex` object is equal to another `Complex` object by comparing their real and imaginary parts.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `other`: A Complex object to compare with the current instance.
+    - `other`: A `Complex` object to compare with the current object.
 - **Control Flow**:
-    - The method compares the Real part of the current Complex object with the Real part of the 'other' Complex object using the Equals method.
-    - It then compares the Imaginary part of the current Complex object with the Imaginary part of the 'other' Complex object using the Equals method.
-    - The method returns true if both the Real and Imaginary parts are equal; otherwise, it returns false.
-- **Output**: A boolean value indicating whether the current Complex object is equal to the 'other' Complex object.
+    - Use the [`Equals`](<#complexequals>) method of the `Real` property to compare the real parts of the current and `other` `Complex` objects.
+    - Use the [`Equals`](<#complexequals>) method of the `Imaginary` property to compare the imaginary parts of the current and `other` `Complex` objects.
+    - Return `true` if both the real and imaginary parts are equal; otherwise, return `false`.
+- **Output**: A boolean value indicating whether the current `Complex` object is equal to the `other` `Complex` object.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Equals`](<#ComplexEquals>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.Equals<!-- {{#callable:Com.Example.Structs.Complex.Equals}} -->
-The [`Equals`](<#ComplexEquals>) method determines if the current `Complex` object is equal to another object by checking if the other object is also a `Complex` instance and then comparing their values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L143>)
+
+Determines if the current `Complex` object is equal to another object.
 - **Modifiers**: `public`, `override`
 - **Inputs**:
-    - `obj`: An object to compare with the current `Complex` object.
+    - `obj`: The object to compare with the current `Complex` object.
 - **Control Flow**:
-    - Check if the input `obj` is of type `Complex` using the `is` keyword.
-    - If `obj` is a `Complex` object, cast it to a `Complex` type and call the [`Equals`](<#ComplexEquals>) method specific to `Complex` objects to compare values.
-    - Return the result of the [`Equals`](<#ComplexEquals>) method call.
-- **Output**: A boolean value indicating whether the current `Complex` object is equal to the specified object.
+    - Checks if `obj` is of type `Complex` and assigns it to `other`.
+    - Calls the [`Equals`](<#complexequals>) method with `other` as the argument if the type check is successful.
+- **Output**: Returns `true` if the current `Complex` object is equal to `obj`; otherwise, `false`.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Equals`](<#ComplexEquals>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.GetHashCode<!-- {{#callable:Com.Example.Structs.Complex.GetHashCode}} -->
-The `GetHashCode` method generates a hash code for a `Complex` struct instance using its `Real` and `Imaginary` properties.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L148>)
+
+Calculates a hash code for a `Complex` struct instance using its `Real` and `Imaginary` properties.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls `HashCode.Combine` with the `Real` and `Imaginary` properties of the `Complex` struct.
-    - `HashCode.Combine` computes a hash code based on the provided values.
-- **Output**: The method returns an integer representing the hash code of the `Complex` struct instance.
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - Calls `HashCode.Combine` with `Real` and `Imaginary` properties of the `Complex` struct.
+    - Returns the result of `HashCode.Combine`.
+- **Output**: An integer representing the hash code of the `Complex` struct instance.
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.==<!-- {{#callable:Com.Example.Structs.Complex.==}} -->
-This operator_overload method checks if two Complex objects are equal by comparing their real and imaginary parts.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L153>)
+
+Overloads the equality operator to compare two `Complex` objects for equality.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `left`: The first Complex object to compare.
-    - `right`: The second Complex object to compare.
+    - `left`: The first `Complex` object to compare.
+    - `right`: The second `Complex` object to compare.
 - **Control Flow**:
-    - The method calls the Equals method on the 'left' Complex object, passing the 'right' Complex object as an argument.
-    - The Equals method checks if both the real and imaginary parts of the 'left' and 'right' Complex objects are equal.
-- **Output**: A boolean value indicating whether the two Complex objects are equal.
+    - Calls the [`Equals`](<#complexequals>) method on the `left` `Complex` object, passing the `right` `Complex` object as an argument.
+    - Returns the result of the [`Equals`](<#complexequals>) method call.
+- **Output**: A boolean value indicating whether the two `Complex` objects are equal.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Equals`](<#ComplexEquals>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.\!=<!-- {{#callable:Com.Example.Structs.Complex.!=}} -->
-This operator overload method determines if two Complex objects are not equal by negating the result of their equality comparison.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L158>)
+
+Determines if two `Complex` objects are not equal by overloading the `!=` operator.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `left`: The first Complex object to compare.
-    - `right`: The second Complex object to compare.
+    - `left`: The first `Complex` object to compare.
+    - `right`: The second `Complex` object to compare.
 - **Control Flow**:
-    - The method takes two Complex objects as input parameters, 'left' and 'right'.
-    - It calls the Equals method on the 'left' object, passing 'right' as the argument to check if they are equal.
-    - The result of the Equals method is negated using the logical NOT operator (!).
-    - The negated result is returned, indicating whether the two Complex objects are not equal.
-- **Output**: A boolean value indicating whether the two Complex objects are not equal.
+    - Call the [`Equals`](<#complexequals>) method on the `left` object, passing the `right` object as an argument.
+    - Negate the result of the [`Equals`](<#complexequals>) method call to determine if the two objects are not equal.
+    - Return the negated result.
+- **Output**: A boolean value indicating whether the two `Complex` objects are not equal.
 - **Methods Called**:
-    - [`Com.Example.Structs.Complex.Equals`](<#ComplexEquals>)
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - [`Com.Example.Structs.Complex.Equals`](<#complexequals>)
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.CompareTo<!-- {{#callable:Com.Example.Structs.Complex.CompareTo}} -->
-The `CompareTo` method compares the magnitude of the current `Complex` instance with another `Complex` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L164>)
+
+Compares the magnitude of the current `Complex` instance to another `Complex` instance.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `other`: A `Complex` object representing the other complex number to compare against.
+    - `other`: A `Complex` instance to compare with the current instance.
 - **Control Flow**:
     - Calculate the magnitude of the current `Complex` instance using the formula `Math.Sqrt(Real * Real + Imaginary * Imaginary)`.
-    - Calculate the magnitude of the `other` `Complex` instance using the same formula.
-    - Use the `CompareTo` method of the `double` type to compare the two magnitudes and return the result.
-- **Output**: An integer that indicates the relative order of the complex numbers being compared: less than zero if the current instance is less than `other`, zero if they are equal, and greater than zero if the current instance is greater than `other`.
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - Calculate the magnitude of the `other` `Complex` instance using the formula `Math.Sqrt(other.Real * other.Real + other.Imaginary * other.Imaginary)`.
+    - Compare the two magnitudes using the `CompareTo` method of the `double` type and return the result.
+- **Output**: An integer that indicates the relative order of the magnitudes of the two `Complex` instances: less than zero if the current instance is less than `other`, zero if they are equal, and greater than zero if the current instance is greater than `other`.
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 ---
 #### Complex\.ToString<!-- {{#callable:Com.Example.Structs.Complex.ToString}} -->
-The `ToString` method returns a string representation of a complex number in the form of 'a + bi' or 'a - bi'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L171>)
+
+Converts the complex number to its string representation.
 - **Modifiers**: `public`, `override`
 - **Inputs**: None
 - **Control Flow**:
-    - Check if the Imaginary part of the complex number is greater than or equal to zero.
-    - If true, return a string formatted as 'Real + Imaginaryi'.
-    - If false, return a string formatted as 'Real - |Imaginary|i', using the absolute value of the Imaginary part.
-- **Output**: A string representing the complex number in the format 'a + bi' or 'a - bi'.
-- **See also**: [`Com.Example.Structs.Complex`](<#Complex>)  (Data Structure)
+    - Check if the `Imaginary` part of the complex number is greater than or equal to 0.
+    - If true, return the string in the format of 'Real + Imaginaryi'.
+    - If false, return the string in the format of 'Real - Imaginaryi', using the absolute value of `Imaginary`.
+- **Output**: A string representation of the complex number in the format 'Real + Imaginaryi' or 'Real - Imaginaryi'.
+- **See also**: [`Com.Example.Structs.Complex`](<#complex>)  (Data Structure)
 
 
 
 ---
 ### Container<!-- {{#data_structure:Com.Example.Structs.Container}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L181>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `Container` struct is a versatile data structure designed to hold an array of objects, providing a flexible way to manage collections of items. It includes a constructor that initializes the array, ensuring it is never null by defaulting to an empty array if no items are provided. The struct also features a nested enum, `ContainerType`, which categorizes the container as an Array, List, or Dictionary, and a nested struct, `Metadata`, which provides additional information about the container, such as its type, creation time, and a description. The `GetMetadata` method returns a `Metadata` instance, offering insights into the container's current state, including the number of items it holds.
+- **Description**: Represents a container that holds an array of objects. It includes a nested enum `ContainerType` to specify the type of container and a nested struct `Metadata` to store metadata about the container, such as its type, creation date, and a description. The `GetMetadata` method returns a `Metadata` instance with the current state of the container.
 - **Member Functions**:
-    - [`Com.Example.Structs.Container.Container`](<#ContainerContainer>)
-    - [`Com.Example.Structs.Container.GetMetadata`](<#ContainerGetMetadata>)
+    - [`Com.Example.Structs.Container.Container`](<#containercontainer>)
+    - [`Com.Example.Structs.Container.GetMetadata`](<#containergetmetadata>)
 
 **Methods**
 
 ---
 #### Container\.Container<!-- {{#callable:Com.Example.Structs.Container.Container}} -->
-The `Container` constructor initializes a new instance of the `Container` struct with an array of objects, defaulting to an empty array if no items are provided.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L185>)
+
+Initializes a new instance of the `Container` struct with an array of objects, this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `items`: A variable number of objects to be stored in the container, provided as a parameter array (`params object[]`).
+    - `items`: An array of objects to store in the `Container`; if null, an empty array is used.
 - **Control Flow**:
-    - The constructor checks if the `items` parameter is null.
-    - If `items` is null, it initializes the `items` field with an empty object array.
-    - If `items` is not null, it assigns the provided array to the `items` field.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the `Container` struct.
-- **See also**: [`Com.Example.Structs.Container`](<#Container>)  (Data Structure)
+    - Assigns the `items` parameter to the `items` field of the `Container` struct.
+    - If `items` is null, assigns an empty array to the `items` field.
+- **Output**: No output is returned as this is a constructor.
+- **See also**: [`Com.Example.Structs.Container`](<#container>)  (Data Structure)
 
 
 ---
 #### Container\.GetMetadata<!-- {{#callable:Com.Example.Structs.Container.GetMetadata}} -->
-The `GetMetadata` method returns a `Metadata` object containing information about the container's type, creation time, and a description of its contents.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L206>)
+
+Creates and returns a `Metadata` object with information about the container.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - A new `Metadata` object is instantiated and initialized with specific values.
-    - The `Type` property is set to `ContainerType.Array`.
-    - The `CreatedAt` property is set to the current date and time using `DateTime.Now`.
-    - The `Description` property is set to a string indicating the number of items in the container.
-    - The initialized `Metadata` object is returned.
-- **Output**: The method returns a `Metadata` object with properties `Type`, `CreatedAt`, and `Description` populated with relevant information about the container.
-- **See also**: [`Com.Example.Structs.Container`](<#Container>)  (Data Structure)
+    - Create a new `Metadata` object.
+    - Set the `Type` property of the `Metadata` object to `ContainerType.Array`.
+    - Set the `CreatedAt` property of the `Metadata` object to the current date and time using `DateTime.Now`.
+    - Set the `Description` property of the `Metadata` object to a string that describes the number of items in the container.
+    - Return the `Metadata` object.
+- **Output**: A `Metadata` object containing the type, creation date, and description of the container.
+- **See also**: [`Com.Example.Structs.Container`](<#container>)  (Data Structure)
 
 
 
 ---
 ### Metadata<!-- {{#data_structure:Com.Example.Structs.Container.Metadata}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L199>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `Metadata` struct is a nested structure within the `Container` struct, designed to hold metadata information about a container. It includes three properties: `Type`, which is of the enum type `ContainerType` and indicates the type of container (such as Array, List, or Dictionary); `CreatedAt`, a `DateTime` property that records when the metadata was created; and `Description`, a `string` that provides a textual description of the container. This struct is useful for encapsulating metadata details in a structured format, allowing for easy access and manipulation of container-related information.
+- **Description**: Represents metadata information for a `Container` struct, including the type of container, the creation date, and a description.
 - **Member Functions**:
-    - [`Com.Example.Structs.Container.Metadata.Type`](<#MetadataType>)
-    - [`Com.Example.Structs.Container.Metadata.CreatedAt`](<#MetadataCreatedAt>)
-    - [`Com.Example.Structs.Container.Metadata.Description`](<#MetadataDescription>)
+    - [`Com.Example.Structs.Container.Metadata.Type`](<#metadatatype>)
+    - [`Com.Example.Structs.Container.Metadata.CreatedAt`](<#metadatacreatedat>)
+    - [`Com.Example.Structs.Container.Metadata.Description`](<#metadatadescription>)
 
 **Methods**
 
 ---
 #### Metadata\.Type<!-- {{#callable:Com.Example.Structs.Container.Metadata.Type}} -->
-The `Type` property is a part of the `Metadata` struct within the `Container` struct, representing the type of container as defined by the `ContainerType` enum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L201>)
+
+Provides a property to get or set the `ContainerType` of a `Container.Metadata` instance.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Type` property is defined as a public property within the `Metadata` struct.
-    - It is of type `ContainerType`, which is an enum defined within the `Container` struct.
-    - The property has both a getter and a setter, allowing for reading and modifying the `Type` value.
-- **Output**: The output of this property is a value of the `ContainerType` enum, which indicates the type of container.
-- **See also**: [`Com.Example.Structs.Container.Metadata`](<#Container.Metadata>)  (Data Structure)
+    - The `Type` property allows getting or setting the `ContainerType` value for a `Container.Metadata` instance.
+- **Output**: A `ContainerType` value that represents the type of the container.
+- **See also**: [`Com.Example.Structs.Container.Metadata`](<#metadata>)  (Data Structure)
 
 
 ---
 #### Metadata\.CreatedAt<!-- {{#callable:Com.Example.Structs.Container.Metadata.CreatedAt}} -->
-The `CreatedAt` property is a `DateTime` property that can be both read and set, representing the creation time of an object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L202>)
+
+Represents a property that stores the creation date and time of a `Metadata` instance.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `CreatedAt` property is defined as a public property, allowing it to be accessed and modified from outside the class or struct.
-    - It is of type `DateTime`, which means it stores date and time information.
-- **Output**: The output of accessing this property is a `DateTime` value representing the creation time.
-- **See also**: [`Com.Example.Structs.Container.Metadata`](<#Container.Metadata>)  (Data Structure)
+    - The `CreatedAt` property is defined as a `DateTime` type.
+    - It has both a getter and a setter, allowing for reading and writing of the creation date and time.
+- **Output**: A `DateTime` value representing the creation date and time of the `Metadata` instance.
+- **See also**: [`Com.Example.Structs.Container.Metadata`](<#metadata>)  (Data Structure)
 
 
 ---
 #### Metadata\.Description<!-- {{#callable:Com.Example.Structs.Container.Metadata.Description}} -->
-The `Description` property is a string property that can be both read and set.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L203>)
+
+Provides a property to get or set a description string in the `Metadata` struct.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Description` property is defined as a public property within the `Metadata` struct.
-    - It is a simple auto-implemented property with both a getter and a setter, allowing for reading and writing of a string value.
-- **Output**: The output is a string value representing the description, which can be retrieved or modified using the property.
-- **See also**: [`Com.Example.Structs.Container.Metadata`](<#Container.Metadata>)  (Data Structure)
+    - The `Description` property is defined as a public auto-implemented property.
+    - It allows getting and setting a `string` value representing a description.
+- **Output**: A `string` value representing the description.
+- **See also**: [`Com.Example.Structs.Container.Metadata`](<#metadata>)  (Data Structure)
 
 
 
 ---
 ### MathConstants<!-- {{#data_structure:Com.Example.Structs.MathConstants}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L218>)
+
 - **Type**: `struct`
 - **Modifiers**: `public`
-- **Description**: The `MathConstants` struct is a utility structure that provides mathematical constants and conversion methods. It defines two public constant fields, `PI` and `E`, representing the mathematical constants π and e, respectively. Additionally, it includes a static readonly field `Empty` which is an instance of `MathConstants` with a default value. The struct encapsulates a private readonly field `value` and provides a constructor to initialize this field. It also offers a property `Value` to access the encapsulated value. Furthermore, `MathConstants` includes static methods `DegreesToRadians` and `RadiansToDegrees` for converting angles between degrees and radians, utilizing the defined constant `PI`. This struct is designed to be a simple and efficient way to handle common mathematical constants and conversions in C# applications.
+- **Description**: Defines mathematical constants and provides utility methods for angle conversions. It includes constants `PI` and `E`, a static readonly instance `Empty`, and a private readonly field `value`. The constructor initializes the `value` field. The `Value` property returns the `value`. Static methods `DegreesToRadians` and `RadiansToDegrees` convert angles between degrees and radians using the `PI` constant.
 - **Member Functions**:
-    - [`Com.Example.Structs.MathConstants.MathConstants`](<#MathConstantsMathConstants>)
-    - [`Com.Example.Structs.MathConstants.Value`](<#MathConstantsValue>)
-    - [`Com.Example.Structs.MathConstants.DegreesToRadians`](<#MathConstantsDegreesToRadians>)
-    - [`Com.Example.Structs.MathConstants.RadiansToDegrees`](<#MathConstantsRadiansToDegrees>)
+    - [`Com.Example.Structs.MathConstants.MathConstants`](<#mathconstantsmathconstants>)
+    - [`Com.Example.Structs.MathConstants.Value`](<#mathconstantsvalue>)
+    - [`Com.Example.Structs.MathConstants.DegreesToRadians`](<#mathconstantsdegreestoradians>)
+    - [`Com.Example.Structs.MathConstants.RadiansToDegrees`](<#mathconstantsradianstodegrees>)
 
 **Methods**
 
 ---
 #### MathConstants\.MathConstants<!-- {{#callable:Com.Example.Structs.MathConstants.MathConstants}} -->
-The MathConstants constructor initializes a new instance of the MathConstants struct with a specified double value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L227>)
+
+Initializes a new instance of the `MathConstants` struct with a specified double value, mentioning that this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `value`: A double representing the value to be assigned to the MathConstants instance.
+    - `value`: A `double` representing the value to initialize the `MathConstants` struct with.
 - **Control Flow**:
-    - Assigns the input parameter 'value' to the private readonly field 'value' of the MathConstants struct.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the MathConstants struct.
-- **See also**: [`Com.Example.Structs.MathConstants`](<#MathConstants>)  (Data Structure)
+    - Assigns the input `value` to the private readonly field `value` of the `MathConstants` struct.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Structs.MathConstants`](<#mathconstants>)  (Data Structure)
 
 
 ---
 #### MathConstants\.Value<!-- {{#callable:Com.Example.Structs.MathConstants.Value}} -->
-The `Value` property returns the private field `value` of the `MathConstants` struct.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L232>)
+
+Provides access to the private field `value` in the `MathConstants` struct as a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property directly returns the value of the private field `value`.
+    - The property `Value` is defined as an expression-bodied member using the lambda expression syntax `=>`.
+    - It directly returns the value of the private field `value`.
 - **Output**: The output is a `double` representing the value stored in the private field `value` of the `MathConstants` struct.
-- **See also**: [`Com.Example.Structs.MathConstants`](<#MathConstants>)  (Data Structure)
+- **See also**: [`Com.Example.Structs.MathConstants`](<#mathconstants>)  (Data Structure)
 
 
 ---
 #### MathConstants\.DegreesToRadians<!-- {{#callable:Com.Example.Structs.MathConstants.DegreesToRadians}} -->
-The `DegreesToRadians` method converts an angle from degrees to radians.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L235>)
+
+Converts an angle from degrees to radians.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `degrees`: A double representing the angle in degrees to be converted to radians.
+    - ``degrees``: The angle in degrees to convert to radians.
 - **Control Flow**:
-    - The method takes a single input parameter `degrees`.
-    - It multiplies the `degrees` value by the constant `PI` (π) and divides the result by 180.0 to convert the angle from degrees to radians.
-    - The computed value is then returned as the output.
-- **Output**: A double representing the angle in radians.
-- **See also**: [`Com.Example.Structs.MathConstants`](<#MathConstants>)  (Data Structure)
+    - Multiply the input `degrees` by the constant `PI`.
+    - Divide the result by 180.0 to convert the angle to radians.
+    - Return the calculated radian value.
+- **Output**: A `double` representing the angle in radians.
+- **See also**: [`Com.Example.Structs.MathConstants`](<#mathconstants>)  (Data Structure)
 
 
 ---
 #### MathConstants\.RadiansToDegrees<!-- {{#callable:Com.Example.Structs.MathConstants.RadiansToDegrees}} -->
-The `RadiansToDegrees` method converts an angle from radians to degrees.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L240>)
+
+Converts an angle from radians to degrees.
 - **Modifiers**: `public`, `static`
 - **Inputs**:
-    - `radians`: A double representing the angle in radians to be converted to degrees.
+    - `radians`: The angle in radians to convert to degrees.
 - **Control Flow**:
-    - The method takes a single input parameter `radians`.
-    - It multiplies the `radians` value by 180.0.
-    - It divides the result by the constant `PI` to convert the angle from radians to degrees.
-    - The method returns the computed degree value.
-- **Output**: A double representing the angle in degrees.
-- **See also**: [`Com.Example.Structs.MathConstants`](<#MathConstants>)  (Data Structure)
+    - Multiply the input `radians` by 180.0.
+    - Divide the result by the constant `PI`.
+    - Return the computed degree value.
+- **Output**: A `double` representing the angle in degrees.
+- **See also**: [`Com.Example.Structs.MathConstants`](<#mathconstants>)  (Data Structure)
 
 
 
 ---
 ### PersonInfo<!-- {{#data_structure:Com.Example.Structs.PersonInfo}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L247>)
+
 - **Type**: `record struct`
 - **Modifiers**: `public`
-- **Description**: The `PersonInfo` struct is a record struct introduced in C# 10, designed to encapsulate personal information with a focus on immutability and value semantics. It includes two primary fields, `Name` and `Age`, which are initialized through the constructor. Additionally, it has a mutable property `Email` with a default value of an empty string. The struct provides a computed property `DisplayName` that formats the name and age into a readable string, and a method `IsAdult` that determines if the person is an adult based on their age. This struct is ideal for scenarios where you need a lightweight, immutable data structure with built-in value equality and concise syntax for defining data-centric types.
+- **Description**: Represents a record struct that holds information about a person, including their `Name`, `Age`, and `Email`. It includes a computed property `DisplayName` that formats the name and age, and a method `IsAdult` that checks if the person is 18 years or older.
 
 
 ---
 ### ImmutablePersonInfo<!-- {{#data_structure:Com.Example.Structs.ImmutablePersonInfo}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L259>)
+
 - **Type**: `record struct`
 - **Modifiers**: `public`, `readonly`
-- **Description**: The `ImmutablePersonInfo` struct is a readonly record struct introduced in C# 10, designed to encapsulate immutable personal information with two primary fields: `Name` and `Age`. As a record struct, it benefits from value-based equality and concise syntax for defining data-centric types. The struct includes a computed property `DisplayName` that formats the name and age into a string, and a method `IsAdult` that determines if the person is an adult based on their age. Being a readonly struct, it ensures that its fields cannot be modified after initialization, promoting immutability and thread-safety.
+- **Description**: Represents an immutable record struct that holds personal information, specifically a `Name` and an `Age`. It provides a computed property `DisplayName` that formats the name and age as a string, and a method `IsAdult` that checks if the age is 18 or older.
 
 
 ---
 ### MultiModifierStruct<!-- {{#data_structure:Com.Example.Structs.StructExamples.MultiModifierStruct}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L272>)
+
 - **Type**: `struct`
 - **Modifiers**: `ref`, `private`, `protected`, `readonly`
-- **Description**: The `MultiModifierStruct` is a private protected, readonly, ref struct designed to encapsulate a span of integers. It is defined with multiple modifiers to ensure it is only accessible within its containing class or derived classes within the same assembly, and it is intended to be used on the stack due to its `ref` nature. The struct holds a private readonly field `data` of type `Span<int>`, which is initialized through its constructor. It provides a property `Length` to retrieve the length of the span and an indexer to access or modify elements within the span by reference, ensuring efficient manipulation of the underlying data without copying.
+- **Description**: Represents a stack-only data structure that holds a read-only reference to a `Span<int>`. It provides access to the length of the span and allows indexed access to its elements. The struct is defined with multiple modifiers: `private protected`, `readonly`, and `ref`, indicating restricted access, immutability, and stack-only allocation, respectively.
 - **Member Functions**:
-    - [`Com.Example.Structs.StructExamples.MultiModifierStruct.MultiModifierStruct`](<#MultiModifierStructMultiModifierStruct>)
-    - [`Com.Example.Structs.StructExamples.MultiModifierStruct.Length`](<#MultiModifierStructLength>)
+    - [`Com.Example.Structs.StructExamples.MultiModifierStruct.MultiModifierStruct`](<#multimodifierstructmultimodifierstruct>)
+    - [`Com.Example.Structs.StructExamples.MultiModifierStruct.Length`](<#multimodifierstructlength>)
     - [`Com.Example.Structs.StructExamples.MultiModifierStruct.[int index]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#callable:Com.Example.Structs.StructExamples.MultiModifierStruct.[int index]>)
 
 **Methods**
 
 ---
 #### MultiModifierStruct\.MultiModifierStruct<!-- {{#callable:Com.Example.Structs.StructExamples.MultiModifierStruct.MultiModifierStruct}} -->
-The `MultiModifierStruct` constructor initializes a new instance of the `MultiModifierStruct` with a given `Span<int>` data, and it is a constructor.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L276>)
+
+Initializes a new instance of the `MultiModifierStruct` with a given `Span<int>`; this is a constructor.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `data`: A `Span<int>` representing a contiguous region of memory that the struct will encapsulate.
+    - `data`: A `Span<int>` that represents the data to be stored in the struct.
 - **Control Flow**:
-    - Assigns the input `data` to the private readonly field `data` of the struct.
-- **Output**: This constructor does not return a value as it is used to initialize an instance of the `MultiModifierStruct`.
-- **See also**: [`Com.Example.Structs.StructExamples.MultiModifierStruct`](<#MultiModifierStruct>)  (Data Structure)
+    - Assigns the input `data` to the private readonly field `data`.
+- **Output**: There is no output as this is a constructor.
+- **See also**: [`Com.Example.Structs.StructExamples.MultiModifierStruct`](<#multimodifierstruct>)  (Data Structure)
 
 
 ---
 #### MultiModifierStruct\.Length<!-- {{#callable:Com.Example.Structs.StructExamples.MultiModifierStruct.Length}} -->
-The `Length` property returns the length of the `data` array.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L281>)
+
+Returns the length of the `data` array, and this is a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property accesses the `Length` property of the `data` array.
-    - It returns the integer value representing the number of elements in the `data` array.
-- **Output**: An integer representing the number of elements in the `data` array.
-- **See also**: [`Com.Example.Structs.StructExamples.MultiModifierStruct`](<#MultiModifierStruct>)  (Data Structure)
+    - Accesses the `data` array.
+    - Returns the `Length` property of the `data` array.
+- **Output**: The length of the `data` array as an integer.
+- **See also**: [`Com.Example.Structs.StructExamples.MultiModifierStruct`](<#multimodifierstruct>)  (Data Structure)
 
 
 ---
 #### MultiModifierStruct\.\[int index\]<!-- {{#callable:Com.Example.Structs.StructExamples.MultiModifierStruct.[int index]}} -->
-This is an indexer that provides direct access to the elements of an internal array by returning a reference to the integer at the specified index.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_structs.cs#L283>)
+
+Provides access to an element in the `data` array by index, and this is an indexer.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `index`: An integer representing the position in the internal array from which to retrieve a reference to the element.
+    - `index`: The zero-based index of the element in the `data` array to access.
 - **Control Flow**:
-    - The indexer takes an integer input parameter 'index'.
-    - It accesses the internal array 'data' at the specified 'index'.
-    - It returns a reference to the integer located at that position in the array.
-- **Output**: A reference to the integer at the specified index in the internal array 'data'.
-- **See also**: [`Com.Example.Structs.StructExamples.MultiModifierStruct`](<#MultiModifierStruct>)  (Data Structure)
+    - Accesses the `data` array using the provided `index`.
+    - Returns a reference to the element at the specified `index` in the `data` array.
+- **Output**: A reference to the integer element at the specified `index` in the `data` array.
+- **See also**: [`Com.Example.Structs.StructExamples.MultiModifierStruct`](<#multimodifierstruct>)  (Data Structure)
 
 
 

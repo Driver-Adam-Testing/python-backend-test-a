@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files, dependency graphs, licensing information, and documentation for the `uctags` component.
+Configuration files for library installation, dependency graphs, license, manifest, and documentation for uctags.
 
 ## Folders
-- **[dependencies](dependencies/README.md)**: YAML configuration files detailing installation and build instructions for libraries like libiconv, libjansson, libxml2, libyaml, and libz.
+- **[dependencies](dependencies/README.md)**: Configuration files for installing and configuring libraries: libiconv, libjansson, libxml2, libyaml, and libz.
 
 ## Files
-- **[COPYING](COPYING.md)**: The `COPYING` file in the `python-backend` codebase contains the full text of the GNU General Public License Version 2, outlining the terms and conditions for copying, distribution, and modification of software.
-- **[dependencies.box](dependencies/README.md.box)**: The `dependencies.box` file in the `python-backend` codebase outlines the dependency graph for the `uctags` component, detailing its reliance on libraries such as `libyaml`, `libjansson`, `libxml2`, `libz`, and `libiconv`.
-- **[dependencies.d2](dependencies/README.md.d2)**: The `dependencies.d2` file outlines the dependency relationships for `uctags`, indicating its dependencies on `libjansson`, `libyaml`, `libxml2`, and `libiconv`, with `libxml2` further depending on `libiconv` and `libz`.
-- **[dependencies.dot](dependencies/README.md.dot)**: The `dependencies.dot` file represents a directed graph of dependencies for the `uctags` component, showing its reliance on libraries such as `libjansson`, `libyaml`, `libxml2`, and `libiconv`, with `libxml2` further depending on `libiconv` and `libz`.
-- **[MANIFEST.txt](MANIFEST.txt.md)**: The `MANIFEST.txt` file lists the directory and files included in the `uctags-2024.10.02-linux-x86_64` package, along with their hash values, within the `python-backend` codebase.
-- **[NEWS.rst](NEWS.rst.md)**: The `NEWS.rst` file documents changes and updates in version 6.?.0 of the `python-backend` codebase, including new parsers and integration of `pegof` into the build process.
-- **[README.md](README.md.md)**: The `README.md` file in the `python-backend/content_services/inspector/uctags-2024.10.02-linux-x86_64/.ppkg` directory provides an overview of Universal Ctags, detailing its features, installation instructions, differences from Exuberant Ctags, and build status badges.
-- **[RECEIPT.yml](RECEIPT.yml.md)**: The `RECEIPT.yml` file specifies the package details for the `uctags` executable, including its version, dependencies, and build environment for the `python-backend` codebase.
+- **[COPYING](COPYING.md)**: GNU General Public License Version 2 text for software distribution and modification terms.
+- **[dependencies.box](dependencies.box.md)**: A dependency graph for the `uctags` component, showing its relationships with various libraries.
+- **[dependencies.d2](dependencies.d2.md)**: Dependency graph for uctags and its related libraries.
+- **[dependencies.dot](dependencies.dot.md)**: A graph representation of dependencies for the `uctags` component.
+- **[MANIFEST.txt](MANIFEST.txt.md)**: A manifest file listing directory and file hashes for binaries in the `bin/` directory.
+- **[NEWS.rst](NEWS.rst.md)**: Documenting changes in version 6.?.0, including new options, parser updates, and merged pull requests.
+- **[README.md](README.md.md)**: Documentation for Universal Ctags, detailing features, installation, and differences from Exuberant Ctags.
+- **[RECEIPT.yml](RECEIPT.yml.md)**: Package metadata for the uctags executable, including version, dependencies, and build details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

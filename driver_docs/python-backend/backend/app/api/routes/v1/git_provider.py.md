@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `git_provider.py` file in the `python-backend` codebase defines a FastAPI router for managing Git provider applications, including endpoints for creating, deleting, and authorizing apps, handling webhooks, and managing repository access and events.
+API routes and handlers for managing Git provider applications, installations, and webhooks using FastAPI.
 
 # Purpose
-This Python file is a FastAPI application that provides a comprehensive API for managing Git provider applications and their interactions with GitHub and GitLab. The code defines a series of API endpoints that facilitate operations such as creating, deleting, and authorizing Git provider apps, managing app installations, handling webhooks, and cloning repositories. The application is structured around an `APIRouter` instance, which organizes the routes and their associated handlers. The code integrates with AWS services for secret management and S3 storage, and it uses SQLModel for database interactions, particularly for managing GitHub and GitLab app installations.
+The code is a FastAPI application that provides an API for managing Git provider applications and their installations. It defines several endpoints under the `/app` and `/github` routes to perform operations such as listing, creating, and deleting Git provider apps, managing app installations, and handling webhooks from GitHub and other Git providers. The API uses dependencies to enforce permissions, such as `OrgManagerPermission`, and relies on a service layer (`provider_service`) to perform the core business logic related to Git provider management.
 
-The file imports various modules and components, including models, schemas, and utility functions, to support its operations. It defines several endpoints for handling Git provider app-related actions, such as fetching apps, adding group access tokens, and managing webhooks. The application also includes logic for verifying GitHub webhook signatures and processing different types of GitHub and GitLab events, such as push events and installation modifications. The code is designed to be part of a larger system, likely serving as a backend service that interacts with other components via APIs and AWS services. The use of Pydantic models ensures data validation, while the integration with AWS and SQLModel facilitates secure and efficient data management.
+The application integrates with various components, including a database for storing app and installation data, AWS for secret management, and external services for handling Git provider events. It uses Pydantic models for request and response validation and SQLModel for database interactions. The code also includes functions to verify GitHub webhook signatures and handle different types of GitHub events, such as push, installation, and repository modification events. The application is designed to be extensible, allowing for the addition of new Git providers and event types as needed.
 # Imports and Dependencies
 
 ---
@@ -23,10 +23,10 @@ The file imports various modules and components, including models, schemas, and 
 - `database.models_v1.GithubAppInstallation`
 - `database.models_v1.GitProviderApp`
 - `database.models_v1.GitProviderAppInstallation`
+- `database.models_v1.GitProviderKind`
 - `database.models_v2.PrimaryAsset`
 - `database.models_v2_enums.PrimaryAssetKind`
 - `fastapi.APIRouter`
-- `fastapi.Body`
 - `fastapi.Depends`
 - `fastapi.HTTPException`
 - `fastapi.Query`
@@ -36,94 +36,85 @@ The file imports various modules and components, including models, schemas, and 
 - `fastapi.responses.JSONResponse`
 - `pydantic.BaseModel`
 - `shared.interfaces.aws_client_config.AWSClientConfig`
-- `shared.secret_management.aws_secret_management.AWSSecretManagementStrategy`
-- `shared.secret_management.aws_secret_management.format_secret_name`
 - `sqlmodel.select`
-- `app.api.auth.ContentEditorPermission`
 - `app.api.auth.OrgManagerPermission`
 - `app.api.auth.UserToken`
 - `app.api.session.CurrentSession`
 - `app.core.config.settings`
 - `app.git_providers.utils.errors.GitProviderAccessTokenError`
+- `app.repositories.git_provider_repository.git_provider_app_by_id`
 - `app.repositories.git_provider_repository.git_provider_app_installation_by_id`
-- `app.repositories.git_provider_repository.git_provider_app_installation_by_org_id`
 - `app.repositories.github_app_installations_repository.GithubAppInstallationsRepository`
+- `app.schemas.git_provider_schema.AccessTokenData`
 - `app.schemas.git_provider_schema.CreateGitProviderAppRequest`
 - `app.schemas.git_provider_schema.GitRepository`
-- `app.schemas.git_provider_schema.GroupAccessToken`
 - `app.schemas.git_provider_schema.WebhookInfo`
-- `app.schemas.secret_management_schema.APP_INSTALL_GAT_NAME_PREFIX`
-- `app.services.gitlab_provider_service.authorize_git_provider`
-- `app.services.gitlab_provider_service.clone_git_repository`
-- `app.services.gitlab_provider_service.create_git_provider_app`
-- `app.services.gitlab_provider_service.fetch_git_provider_apps_by_org_id`
-- `app.services.gitlab_provider_service.fetch_group_repositories_by_installation_id`
-- `app.services.gitlab_provider_service.handle_authorization_callback`
-- `app.services.gitlab_provider_service.handle_delete_git_provider_app`
-- `app.services.gitlab_provider_service.handle_group_access_revoke`
-- `app.services.gitlab_provider_service.install_group_access_token`
-- `app.services.gitlab_provider_service.update_group_access_token`
-- `app.utils.aws_s3.org_id_to_hash`
+- `app.services.git_provider_service.get_git_provider_service`
 - `app.utils.aws_secrets_manager.format_secret_key`
 - `app.utils.aws_secrets_manager.write_secret`
-- `app.utils.gh_ops.download_and_upload_repo`
 - `app.utils.gh_ops.exchange_code_for_token`
-- `app.utils.gh_ops.fetch_app_access_token`
-- `app.utils.gh_ops.fetch_commit_hash`
-- `app.utils.gh_ops.verify_app_installation_access`
 
 
 # Global Variables
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a `Logger` object obtained from the Python `logging` module. It is configured to use the module's name as its logger name, which is typically the name of the module where it is defined.
-- **Use**: This logger is used throughout the code to log messages, errors, and exceptions, providing a standardized way to output log information for debugging and monitoring purposes.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of Python's `Logger` class, obtained using the `logging.getLogger(__name__)` function. This function creates or retrieves a logger with the name of the current module, which is useful for logging messages specific to this module.
+- **Use**: Used to log messages and exceptions throughout the module, aiding in debugging and monitoring.
 
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a collection of API routes that can be included in a FastAPI application. This allows for modular organization of routes, making it easier to manage and scale the application.
-- **Use**: This variable is used to register and manage API endpoints for the application, allowing for organized routing of HTTP requests.
+- **Type**: ``APIRouter``
+- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage a collection of API routes for the application. The `APIRouter` allows for modular route definitions and can be included in the main application to organize the API structure.
+- **Use**: Used to define and manage API routes for the application.
 
 
 ---
 ### NO\_OS\_DRIVER\_BRANCH
-- **Type**: `string`
-- **Description**: The `NO_OS_DRIVER_BRANCH` variable is a string that specifies the branch name 'staging/docs' for a GitHub repository. It is used in the context of handling GitHub events, particularly to identify the specific branch of the 'no-OS' repository within the 'analogdevicesinc' organization.
-- **Use**: This variable is used to determine the branch of the 'no-OS' repository to target for specific operations, such as fetching commit hashes or handling push events.
+- **Type**: ``str``
+- **Description**: Specifies the branch name 'staging/docs' for the no-OS GitHub repository. This variable is used to identify a specific branch within the repository for operations or checks.
+- **Use**: Used to determine if a push event is on the 'staging/docs' branch of the 'no-OS' repository.
 
 
 ---
 ### NO\_OS\_REPO\_NAME
-- **Type**: `str`
-- **Description**: The `NO_OS_REPO_NAME` variable is a string that holds the name of a specific GitHub repository, which in this case is 'no-OS'. This repository is likely related to the no-OS project by Analog Devices, Inc.
-- **Use**: This variable is used to identify and reference the 'no-OS' repository in various operations, such as cloning or fetching data from the repository.
+- **Type**: ``str``
+- **Description**: Contains the name of the repository 'no-OS'. This is a string variable that holds the name of a specific repository used in the application.
+- **Use**: Used to identify and reference the 'no-OS' repository within the application logic.
 
 
 ---
 ### NO\_OS\_GH\_ORG
 - **Type**: ``str``
-- **Description**: The variable `NO_OS_GH_ORG` is a string that holds the name of the GitHub organization 'analogdevicesinc'. This organization is likely associated with repositories or projects related to the 'no-OS' project.
-- **Use**: This variable is used to specify the GitHub organization when interacting with repositories, particularly in operations involving the 'no-OS' project.
+- **Description**: The variable is a string that holds the name of a GitHub organization, specifically 'analogdevicesinc'. This organization name is used in the context of GitHub operations and integrations.
+- **Use**: Used to identify and reference the GitHub organization 'analogdevicesinc' in various GitHub-related operations and logic within the application.
 
 
 ---
 ### aws\_config
-- **Type**: `AWSClientConfig`
-- **Description**: The `aws_config` variable is an instance of the `AWSClientConfig` class, which is used to configure AWS client settings. It specifies the AWS region as 'us-east-1' and uses access key ID and secret access key from the application's settings.
-- **Use**: This variable is used to provide AWS configuration details for various AWS-related operations throughout the application.
+- **Type**: ``AWSClientConfig``
+- **Description**: Represents the configuration for an AWS client, including the region, access key ID, and secret access key. It is initialized using values from the `settings` module.
+- **Use**: Used to configure AWS client services with specific credentials and region settings.
+
+
+---
+### provider\_service
+- **Type**: ``provider_service``
+- **Description**: `provider_service` is an instance of a service object that is obtained by calling the `get_git_provider_service` function with `aws_config` as an argument. This service object is used to interact with various Git provider applications and installations.
+- **Use**: Used to perform operations related to Git provider applications, such as listing, creating, deleting apps, and handling webhooks.
 
 
 # Classes
 
 ---
 ### OkResponse<!-- {{#class:python-backend/backend/app/api/routes/v1/git_provider.OkResponse}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L77>)
+
 - **Members**:
-    - `status`: A string indicating the status of the health check, defaulting to 'OK'.
-- **Description**: The `OkResponse` class is a simple response model that extends the `BaseModel` from Pydantic. It is designed to be used for health check responses, providing a default status of 'OK' to indicate that the system is functioning properly. This class ensures that the response structure is consistent and valid when performing health checks.
+    - `status`: Indicates the status of the health check, defaulting to 'OK'.
+- **Description**: Validates and returns a response for health check operations, ensuring the system is operational.
 - **Inherits From**:
     - `BaseModel`
 
@@ -132,461 +123,410 @@ The file imports various modules and components, including models, schemas, and 
 
 ---
 ### get\_apps<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.get_apps}} -->
-The `get_apps` function retrieves a list of Git provider applications associated with the current user's organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L84>)
+
+Retrieves a list of Git provider applications for the current user's organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `current_user`: An instance of `UserToken`, representing the current authenticated user.
-- **Control Flow**:
-    - The function calls [`fetch_git_provider_apps_by_org_id`](<../../../services/gitlab_provider_service.py.md#fetch_git_provider_apps_by_org_id>) with the current session and the organization ID of the current user.
-    - It directly returns the result of the [`fetch_git_provider_apps_by_org_id`](<../../../services/gitlab_provider_service.py.md#fetch_git_provider_apps_by_org_id>) function call.
-- **Output**: A list of `GitProviderApp` objects associated with the current user's organization.
+    - `session`: The current database session, used to interact with the database.
+    - `current_user`: The token representing the current user, which includes user and organization information.
+- **Logic and Control Flow**:
+    - Calls the [`list_apps`](<../../../services/git_provider_service.py.md#gitproviderservicelist_apps>) method of `provider_service` with the current session and the organization ID of the current user.
+    - Returns the list of Git provider applications retrieved from the service.
+- **Output**: A list of `GitProviderApp` objects representing the Git provider applications available to the user's organization.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.fetch_git_provider_apps_by_org_id`](<../../../services/gitlab_provider_service.py.md#fetch_git_provider_apps_by_org_id>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.list_apps`](<../../../services/git_provider_service.py.md#gitproviderservicelist_apps>)
 
 
 ---
 ### create\_app<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.create_app}} -->
-The `create_app` function handles the creation of a Git provider application by delegating the task to the [`create_git_provider_app`](<../../../services/gitlab_provider_service.py.md#create_git_provider_app>) service function.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L97>)
+
+Creates a new Git provider application using the provided session and input data.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `gp_app_input`: An instance of `CreateGitProviderAppRequest`, containing the input data required to create a Git provider app.
-- **Control Flow**:
-    - The function is decorated with `@router.post`, indicating it handles POST requests to the '/app' endpoint.
-    - The function directly calls [`create_git_provider_app`](<../../../services/gitlab_provider_service.py.md#create_git_provider_app>) with the provided `session`, `gp_app_input`, and a predefined `aws_config`.
-- **Output**: Returns an instance of `GitProviderApp`, representing the newly created Git provider application.
+    - `session`: The current session object, used to interact with the database or other session-specific resources.
+    - `gp_app_input`: An instance of `CreateGitProviderAppRequest` containing the input data for creating a Git provider application.
+- **Logic and Control Flow**:
+    - Calls the [`create_app`](<../../../services/git_provider_service.py.md#gitproviderservicecreate_app>) method of the `provider_service` with the `session` and a dictionary representation of `gp_app_input` obtained by calling `model_dump` with `by_alias=True`.
+    - Returns the result of the [`create_app`](<../../../services/git_provider_service.py.md#gitproviderservicecreate_app>) method call, which is a `GitProviderApp` object.
+- **Output**: A `GitProviderApp` object representing the newly created Git provider application.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/gitlab_provider_service.create_git_provider_app`](<../../../services/gitlab_provider_service.py.md#create_git_provider_app>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.create_app`](<../../../services/git_provider_service.py.md#gitproviderservicecreate_app>)
 
 
 ---
 ### delete\_git\_provider\_app<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.delete_git_provider_app}} -->
-The `delete_git_provider_app` function deletes a specified git provider application for the current user's organization and returns a success message.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L110>)
+
+Deletes a Git provider application using the specified application ID.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_user`: An instance of `UserToken` representing the current authenticated user.
-    - `application_id`: A string representing the ID of the application to be deleted.
-- **Control Flow**:
-    - The function calls [`handle_delete_git_provider_app`](<../../../services/gitlab_provider_service.py.md#handle_delete_git_provider_app>) with the current session, the organization ID of the current user, the application ID, and the AWS configuration to perform the deletion.
-    - After the deletion is handled, the function returns a `JSONResponse` with a status code of 200 (OK) and a message indicating that the app was deleted.
-- **Output**: A `JSONResponse` with a status code of 200 and a message indicating successful deletion of the app.
+    - `session`: The current database session, represented by `CurrentSession`, used to interact with the database.
+    - `current_user`: The current user token, represented by `UserToken`, which contains information about the authenticated user.
+    - `application_id`: A string representing the ID of the application to delete.
+- **Logic and Control Flow**:
+    - Calls `provider_service.delete_app` with the current session, the organization ID from `current_user`, and the `application_id` to delete the specified application.
+    - Returns a `JSONResponse` with a status code of 200 (OK) and a message indicating that the application was deleted.
+- **Output**: A `JSONResponse` with a status code of 200 and a message indicating successful deletion of the application.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#BaseRepositorydelete>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.handle_delete_git_provider_app`](<../../../services/gitlab_provider_service.py.md#handle_delete_git_provider_app>)
-
-
----
-### get\_provider\_authorize\_url<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.get_provider_authorize_url}} -->
-The `get_provider_authorize_url` function generates and returns an authorization URL for a specified Git provider application.
-- **Decorators**: `@router.get`
-- **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `current_user`: An instance of `UserToken`, representing the currently authenticated user.
-    - `application_id`: A string representing the ID of the application for which the authorization URL is being requested.
-- **Control Flow**:
-    - The function calls [`authorize_git_provider`](<../../../services/gitlab_provider_service.py.md#authorize_git_provider>) with the session, current user's organization ID, user ID, application ID, and AWS configuration to generate an authorization URL.
-    - The generated authorization URL is then returned in a JSON response with a status code of 200 (OK).
-- **Output**: A `JSONResponse` containing the authorization URL for the specified application.
-- **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.authorize_git_provider`](<../../../services/gitlab_provider_service.py.md#authorize_git_provider>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#baserepositorydelete>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.delete_app`](<../../../services/git_provider_service.py.md#gitproviderservicedelete_app>)
 
 
 ---
 ### get\_app\_installation<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.get_app_installation}} -->
-The `get_app_installation` function retrieves a list of Git provider app installations for a specific application ID associated with the current user's organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L128>)
+
+Retrieves a list of app installations for a given application ID for the current user's organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `current_user`: An instance of `UserToken`, representing the currently authenticated user.
-    - `application_id`: A string representing the ID of the application for which installations are being retrieved.
-- **Control Flow**:
-    - The function calls [`git_provider_app_installation_by_org_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_org_id>) with the current session, the organization ID from the current user, and the application ID to retrieve the installations.
-    - The retrieved installations are stored in the `installs` variable.
-    - The function returns the `installs` list.
-- **Output**: A list of `GitProviderAppInstallation` objects representing the installations of the specified application for the current user's organization.
+    - `session`: The current database session, used to interact with the database.
+    - `current_user`: The token representing the current user, which includes the user's organization ID.
+    - `application_id`: The ID of the application for which to retrieve installations.
+- **Logic and Control Flow**:
+    - Calls the [`list_app_installations`](<../../../services/git_provider_service.py.md#gitproviderservicelist_app_installations>) method of the `provider_service` with the current session, the organization ID from the current user, and the application ID.
+    - Returns the result of the [`list_app_installations`](<../../../services/git_provider_service.py.md#gitproviderservicelist_app_installations>) method call.
+- **Output**: A list of `GitProviderAppInstallation` objects representing the installations of the specified application.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_org_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_org_id>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.list_app_installations`](<../../../services/git_provider_service.py.md#gitproviderservicelist_app_installations>)
 
 
 ---
-### add\_group\_access\_token<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.add_group_access_token}} -->
-The `add_group_access_token` function adds a group access token to a specified application and returns a JSON response indicating success or failure.
+### add\_access\_token<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.add_access_token}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L146>)
+
+Adds an access token to a specified application for the current user.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_user`: An instance of `UserToken` representing the current authenticated user.
-    - `application_id`: A string representing the ID of the application to which the group access token is to be added.
-    - `gat`: An instance of `GroupAccessToken` representing the group access token to be added.
-- **Control Flow**:
-    - The function attempts to install the group access token by calling [`install_group_access_token`](<../../../services/gitlab_provider_service.py.md#install_group_access_token>) with the provided session, organization ID, application ID, group access token, and AWS configuration.
-    - If the installation is not successful (i.e., `install` is `None` or `False`), an `HTTPException` with a 404 status code is raised, indicating that the installation was not found.
-    - If the installation is successful, a `JSONResponse` with a 200 status code and a message indicating that the token was added is returned.
-    - If a `GitProviderAccessTokenError` is raised during the process, it is caught, logged, and an `HTTPException` with a 500 status code and a message indicating an invalid token is raised.
-- **Output**: A `JSONResponse` object indicating the success or failure of adding the group access token, with appropriate HTTP status codes and messages.
+    - `session`: The current database session, represented by `CurrentSession`, used to interact with the database.
+    - `current_user`: The current user token, represented by `UserToken`, which contains information about the authenticated user.
+    - `application_id`: A string representing the unique identifier of the application to which the access token will be added.
+    - `gat`: An instance of `AccessTokenData` containing the access token information to be added to the application.
+- **Logic and Control Flow**:
+    - Calls `provider_service.install_access_token` with the session, organization ID from `current_user`, `application_id`, and the model dump of `gat` to attempt to install the access token.
+    - Checks if the installation was successful; if not, raises an `HTTPException` with a 404 status code indicating that the installation was not found.
+    - Returns a `JSONResponse` with a 200 status code and a message indicating that the token was added if the installation is successful.
+    - Catches `GitProviderAccessTokenError` exceptions, logs the error, and raises an `HTTPException` with a 500 status code indicating an invalid token.
+- **Output**: A `JSONResponse` indicating the success or failure of adding the access token, with appropriate HTTP status codes and messages.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/gitlab_provider_service.install_group_access_token`](<../../../services/gitlab_provider_service.py.md#install_group_access_token>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.install_access_token`](<../../../services/git_provider_service.py.md#gitproviderserviceinstall_access_token>)
 
 
 ---
 ### get\_app\_installation\_webhook\_info<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.get_app_installation_webhook_info}} -->
-The `get_app_installation_webhook_info` function retrieves and returns webhook setup details for a specific application installation.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L174>)
+
+Retrieves webhook setup details for a specific app installation.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_user`: An instance of `UserToken` representing the current authenticated user.
-    - `application_id`: A `UUID` representing the unique identifier of the application.
-    - `installation_id`: A `UUID` representing the unique identifier of the installation.
-- **Control Flow**:
-    - Retrieve the application installation details using [`git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) with the provided session and installation_id.
-    - Check if the `git_provider_app_id` of the retrieved installation matches the provided `application_id`. If not, raise an `HTTPException` with a 404 status code.
-    - Read the secret token associated with the installation using [`AWSSecretManagementStrategy`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>) and [`format_secret_name`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>).
-    - Create a [`WebhookInfo`](<../../../schemas/git_provider_schema.py.md#WebhookInfo>) object with the callback URL, custom headers, secret token, SSL verification flag, and triggers.
-    - Return the [`WebhookInfo`](<../../../schemas/git_provider_schema.py.md#WebhookInfo>) object.
-- **Output**: Returns a [`WebhookInfo`](<../../../schemas/git_provider_schema.py.md#WebhookInfo>) object containing details necessary for setting up a webhook, including callback URL, custom headers, secret token, SSL verification, and event triggers.
+    - `session`: The current session object, used to interact with the database or other session-specific resources.
+    - `current_user`: The token representing the current user, which includes user-specific information such as organization ID.
+    - `application_id`: The UUID of the application for which the webhook information is requested.
+    - `installation_id`: The UUID of the specific installation of the application for which the webhook information is requested.
+- **Logic and Control Flow**:
+    - Calls the [`get_webhook_info`](<../../../services/git_provider_service.py.md#gitproviderserviceget_webhook_info>) method from the `provider_service` with the provided session, organization ID from the current user, application ID, and installation ID.
+    - Stores the result of the [`get_webhook_info`](<../../../services/git_provider_service.py.md#gitproviderserviceget_webhook_info>) call in the `webhook_info` variable.
+    - Returns the `webhook_info` variable as the output.
+- **Output**: Returns a `WebhookInfo` object containing details necessary for setting up a webhook for the specified app installation.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
-    - [`python-backend/backend/app/schemas/git_provider_schema.WebhookInfo`](<../../../schemas/git_provider_schema.py.md#WebhookInfo>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.get_webhook_info`](<../../../services/git_provider_service.py.md#gitproviderserviceget_webhook_info>)
 
 
 ---
 ### delete\_app\_installation<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.delete_app_installation}} -->
-The `delete_app_installation` function handles the deletion of a specific app installation by revoking group access and returning a success message.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L195>)
+
+Deletes an app installation by revoking its access token and returns a success message.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `current_user`: An instance of `UserToken`, representing the current authenticated user.
-    - `application_id`: A string representing the ID of the application whose installation is to be deleted.
-    - `installation_id`: A string representing the ID of the installation to be deleted.
-- **Control Flow**:
-    - The function begins by calling [`handle_group_access_revoke`](<../../../services/gitlab_provider_service.py.md#handle_group_access_revoke>) with the session, current user's organization ID, application ID, installation ID, and AWS configuration to revoke access for the specified installation.
-    - After revoking access, the function returns a `JSONResponse` with a status code of 200 (OK) and a message indicating that the installation has been deleted.
-- **Output**: A `JSONResponse` object with a status code of 200 and a message indicating successful deletion of the installation.
+    - `session`: The current session object, used to interact with the database or other session-specific resources.
+    - `current_user`: The token representing the current user, which includes user-specific information like organization ID.
+    - `application_id`: The unique identifier for the application whose installation is to be deleted.
+    - `installation_id`: The unique identifier for the installation to be deleted.
+- **Logic and Control Flow**:
+    - Calls `provider_service.revoke_access_token` with the session, organization ID from `current_user`, `application_id`, and `installation_id` to revoke the access token for the specified installation.
+    - Returns a `JSONResponse` with a status code of 200 (OK) and a message indicating that the installation was deleted.
+- **Output**: A `JSONResponse` with a status code of 200 and a message indicating successful deletion of the installation.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#BaseRepositorydelete>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.handle_group_access_revoke`](<../../../services/gitlab_provider_service.py.md#handle_group_access_revoke>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#baserepositorydelete>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.revoke_access_token`](<../../../services/git_provider_service.py.md#gitproviderservicerevoke_access_token>)
 
 
 ---
 ### get\_repositories\_by\_installation\_id<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.get_repositories_by_installation_id}} -->
-The `get_repositories_by_installation_id` function retrieves a list of Git repositories associated with a specific installation ID for a given application.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L215>)
+
+Fetches a list of Git repositories associated with a specific application and installation ID.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `current_user`: An instance of `UserToken`, representing the current authenticated user.
-    - `application_id`: A string representing the ID of the application for which repositories are being fetched.
-    - `installation_id`: A string representing the ID of the installation for which repositories are being fetched.
-- **Control Flow**:
-    - The function attempts to fetch repositories by calling [`fetch_group_repositories_by_installation_id`](<../../../services/gitlab_provider_service.py.md#fetch_group_repositories_by_installation_id>) with the provided session, user, application, and installation IDs, along with AWS configuration.
-    - If a `GitProviderAccessTokenError` is raised during the fetch, it logs the error and raises an `HTTPException` with a 500 status code and a message indicating an invalid token.
-- **Output**: A list of `GitRepository` objects representing the repositories associated with the specified installation ID.
+    - `session`: The current database session, used to interact with the database.
+    - `current_user`: The token representing the current user, which includes user and organization information.
+    - `application_id`: The ID of the application for which to fetch repositories.
+    - `installation_id`: The ID of the installation for which to fetch repositories.
+- **Logic and Control Flow**:
+    - Attempts to list repositories using the `provider_service.list_repositories` method with the provided session, organization ID from the current user, application ID, and installation ID.
+    - If a `GitProviderAccessTokenError` occurs, logs the error and raises an `HTTPException` with a 500 status code and a message indicating an invalid token.
+- **Output**: Returns a list of `GitRepository` objects if successful, or raises an `HTTPException` if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.fetch_group_repositories_by_installation_id`](<../../../services/gitlab_provider_service.py.md#fetch_group_repositories_by_installation_id>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.list_repositories`](<../../../services/git_provider_service.py.md#gitproviderservicelist_repositories>)
 
 
 ---
 ### update\_git\_provider\_group\_access\_token<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.update_git_provider_group_access_token}} -->
-The `update_git_provider_group_access_token` function updates the group access token for a specified Git provider app installation and returns a success message or raises an error if the update fails.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L239>)
+
+Updates the access token for a specific Git provider group installation.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_user`: An instance of `UserToken` representing the current authenticated user.
-    - `application_id`: A string representing the ID of the application for which the token is being updated.
-    - `installation_id`: A string representing the ID of the installation for which the token is being updated.
-    - `new_gat`: An instance of `GroupAccessToken` representing the new group access token to be set, provided in the request body.
-- **Control Flow**:
-    - The function is decorated with `@router.put`, indicating it handles HTTP PUT requests to update a resource.
-    - It attempts to update the group access token by calling [`update_group_access_token`](<../../../services/gitlab_provider_service.py.md#update_group_access_token>) with the provided session, organization ID, application ID, installation ID, new group access token, and AWS configuration.
-    - If the update is successful, it returns a `JSONResponse` with a status code of 200 and a message indicating the token was updated.
-    - If a `GitProviderAccessTokenError` is raised during the update, it logs the exception and raises an `HTTPException` with a status code of 500 and a detail message indicating an invalid token.
-- **Output**: A `JSONResponse` object with a status code of 200 and a message indicating the token was updated, or raises an `HTTPException` with a status code of 500 if an error occurs.
+    - `session`: The current database session, used to interact with the database.
+    - `current_user`: The token representing the current user, used to access user-specific information.
+    - `application_id`: The identifier for the application whose token is being updated.
+    - `installation_id`: The identifier for the installation within the application.
+    - `new_gat`: The new access token data to update for the installation.
+- **Logic and Control Flow**:
+    - Calls `provider_service.update_access_token` with the session, organization ID from `current_user`, `application_id`, `installation_id`, and the new access token data.
+    - If the update is successful, returns a `JSONResponse` with a status code of 200 and a message indicating the token was updated.
+    - If a `GitProviderAccessTokenError` is raised, logs the exception and raises an `HTTPException` with a status code of 500 and a message indicating an invalid token.
+- **Output**: A `JSONResponse` indicating the success or failure of the token update operation.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/gitlab_provider_service.update_group_access_token`](<../../../services/gitlab_provider_service.py.md#update_group_access_token>)
-
-
----
-### git\_provider\_app\_callback<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.git_provider_app_callback}} -->
-The `git_provider_app_callback` function handles the callback from a Git provider's authorization process, processing the authorization code or error and returning an HTML response to close the window.
-- **Decorators**: `@router.get`
-- **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `state`: A string representing the state parameter passed during the authorization request, used to maintain state between the request and callback.
-    - `code`: An optional string representing the authorization code returned by the Git provider if the authorization was successful.
-    - `error`: An optional string representing any error message returned by the Git provider if the authorization was denied or failed.
-- **Control Flow**:
-    - Check if both `error` and `code` are not provided, and if so, raise an HTTP 400 Bad Request exception.
-    - If `error` is provided, log the error message.
-    - If `code` is provided, call [`handle_authorization_callback`](<../../../services/gitlab_provider_service.py.md#handle_authorization_callback>) with the session, code, state, and AWS configuration to process the authorization.
-    - Prepare an HTML content string to close the window using JavaScript.
-    - Return a `Response` object with the HTML content and a media type of `text/html`.
-- **Output**: Returns a `Response` object containing HTML content that instructs the browser to close the window, with a media type of `text/html`.
-- **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.handle_authorization_callback`](<../../../services/gitlab_provider_service.py.md#handle_authorization_callback>)
-
-
----
-### clone\_git\_provider\_repo<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.clone_git_provider_repo}} -->
-The `clone_git_provider_repo` function clones a specified Git repository for a given application and returns a download URL for the cloned repository.
-- **Decorators**: `@router.post`
-- **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_user`: An instance of `UserToken` representing the current authenticated user.
-    - `application_id`: A string representing the ID of the application for which the repository is being cloned.
-    - `repo`: An instance of `GitRepository` representing the repository to be cloned.
-- **Control Flow**:
-    - Constructs an `upload_key` using the organization ID of the current user and the repository name.
-    - Determines the `bucket_name` based on the application settings, either using a legacy dropzone or a specific environment and bucket suffix.
-    - Calls the [`clone_git_repository`](<../../../services/gitlab_provider_service.py.md#clone_git_repository>) function with the session, user and application details, repository, upload key, bucket name, and AWS configuration to clone the repository.
-    - Returns a `JSONResponse` with a status code of 202 (Accepted) and a content dictionary containing the `download_url` of the cloned repository.
-- **Output**: A `JSONResponse` object with a status code of 202 (Accepted) and a content dictionary containing the `download_url` of the cloned repository.
-- **Functions Called**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.org_id_to_hash`](<../../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>)
-    - [`python-backend/backend/app/services/gitlab_provider_service.clone_git_repository`](<../../../services/gitlab_provider_service.py.md#clone_git_repository>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.update_access_token`](<../../../services/git_provider_service.py.md#gitproviderserviceupdate_access_token>)
 
 
 ---
 ### connect\_git\_provider\_repo<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.connect_git_provider_repo}} -->
-The `connect_git_provider_repo` function connects a list of Git repositories to a specified application by grouping them by installation ID and triggering event handling for each group.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L267>)
+
+Connects a list of Git repositories to a specified application based on the provider type and handles events accordingly.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
-    - `current_user`: An instance of `UserToken`, representing the current authenticated user.
-    - `application_id`: A `UUID` representing the ID of the application to which the repositories are being connected.
-    - `repos`: A list of `GitRepository` objects representing the repositories to be connected.
-- **Control Flow**:
-    - The function begins by looking up the `handle_gitlab_events` function using the `modal.Function.lookup` method.
-    - The list of repositories (`repos`) is sorted by their `installation_id`.
-    - The sorted repositories are grouped by `installation_id` using the `groupby` function from the `itertools` module.
-    - For each group of repositories (grouped by `installation_id`), the function retrieves the corresponding app installation using [`git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>).
-    - The function checks if the `git_provider_app_id` and `organization_id` of the app installation match the `application_id` and the `organization_id` of the `current_user`, respectively.
-    - If the check fails, an `HTTPException` with status code 404 is raised, indicating that the installation was not found.
-    - If the check passes, the `handle_gitlab_events.spawn` method is called to handle the events for the group of repositories, passing the `installation_id`, `organization_id`, and a list of added repositories (converted to dictionaries using `model_dump`).
-    - Finally, the function returns a `JSONResponse` with status code 202 and a message indicating that the connection is in progress.
-- **Output**: A `JSONResponse` with status code 202 and a message indicating that the connection process is underway.
+    - `session`: The current database session used to query and manipulate data.
+    - `current_user`: The token representing the current user, containing user and organization information.
+    - `application_id`: The unique identifier of the application to which the repositories will be connected.
+    - `repos`: A list of `GitRepository` objects representing the repositories to connect.
+- **Logic and Control Flow**:
+    - Retrieve the application using [`git_provider_app_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_by_id>) to determine the provider type.
+    - Raise an HTTP 404 exception if the application is not found.
+    - Select the appropriate event handler based on the application's provider type (GitLab or Bitbucket).
+    - Raise an HTTP 400 exception if the provider type is unsupported.
+    - Sort the repositories by `installation_id` and group them accordingly.
+    - For each group of repositories, verify the installation using [`git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>).
+    - Raise an HTTP 404 exception if the installation does not match the application or organization.
+    - Spawn an event handler for each installation group to process the added repositories.
+    - Return a JSON response with status 202 indicating the connection process has started.
+- **Output**: A `JSONResponse` with a status code of 202 and a message indicating the connection process has started.
 - **Functions Called**:
+    - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_by_id>)
     - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
 
 
 ---
 ### github\_callback<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.github_callback}} -->
-The `github_callback` function handles the GitHub OAuth callback, processes the authorization code, and manages GitHub app installations.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L332>)
+
+Handles the GitHub OAuth callback by exchanging the authorization code for a token, storing it, and managing GitHub app installations.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: The current database session, used to interact with the database.
-    - `code`: The authorization code returned by GitHub after user authorization.
-    - `state`: A base64-encoded string containing the organization and user IDs, used to maintain state between the request and callback.
-    - `installation_id`: The ID of the GitHub app installation, used to identify the specific installation.
-    - `request`: The HTTP request object, representing the incoming request.
-    - `response`: The HTTP response object, used to send the response back to the client.
-- **Control Flow**:
-    - Check if the 'code' parameter is missing and raise an HTTP 400 error if so.
-    - Decode the 'state' parameter from base64 and parse it as a JSON object to extract 'org_id' and 'user_id'.
-    - Generate a secret key using 'org_id', 'user_id', and 'github'.
-    - Exchange the authorization code for an access token using 'exchange_code_for_token'.
-    - Serialize the token data to JSON and store it as a secret using 'write_secret'.
-    - Query the database to check if a GitHub app installation already exists for the given 'org_id' and 'installation_id'.
-    - If no existing installation is found, create a new 'GithubAppInstallation' record, add it to the session, and commit the transaction.
-    - Look up the 'connect_repos_for_installation' function and spawn it with the 'installation_id'.
-    - Return an HTML response that closes the window.
-- **Output**: An HTML response that closes the browser window, indicating the callback process is complete.
+    - `session`: The current database session used to execute queries.
+    - `code`: The authorization code received from GitHub.
+    - `state`: A base64-encoded string containing the organization and user IDs.
+    - `installation_id`: The ID of the GitHub app installation.
+    - `request`: The HTTP request object.
+    - `response`: The HTTP response object.
+- **Logic and Control Flow**:
+    - Checks if the 'code' is not provided and raises an HTTP 400 error if missing.
+    - Decodes the 'state' parameter from base64 and parses it as a JSON object to extract 'org_id' and 'user_id'.
+    - Formats a secret key using 'org_id', 'user_id', and 'github'.
+    - Exchanges the 'code' for a token using 'exchange_code_for_token' and serializes the token data to JSON.
+    - Writes the token data to a secret store using 'write_secret'.
+    - Queries the database to check if a GitHub app installation already exists for the given 'org_id' and 'installation_id'.
+    - If no existing installation is found, logs the creation of a new installation, adds it to the session, and commits the session.
+    - Looks up and spawns a function to connect repositories for the installation if a new installation is created.
+    - Returns an HTML response that closes the window.
+- **Output**: An HTML response that closes the browser window.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/backend/app/utils/aws_secrets_manager.format_secret_key`](<../../../utils/aws_secrets_manager.py.md#format_secret_key>)
     - [`python-backend/backend/app/utils/gh_ops.exchange_code_for_token`](<../../../utils/gh_ops.py.md#exchange_code_for_token>)
     - [`python-backend/backend/app/utils/aws_secrets_manager.write_secret`](<../../../utils/aws_secrets_manager.py.md#write_secret>)
-    - [`python-backend/driver_db/database/models_v1.GithubAppInstallation`](<../../../../../driver_db/database/models_v1.py.md#GithubAppInstallation>)
-
-
----
-### clone\_repo<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.clone_repo}} -->
-The `clone_repo` function handles the cloning of a GitHub repository for a specified user and organization, verifying access permissions and managing the download and upload process.
-- **Decorators**: `@router.post`
-- **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_user`: An instance of `UserToken` representing the current authenticated user.
-    - `provider`: A string indicating the provider of the repository, expected to be 'github'.
-    - `repo`: An instance of `GitRepository` representing the repository to be cloned.
-- **Control Flow**:
-    - Check if the provider is 'github'; if not, raise a `NotImplementedError`.
-    - Verify if the current user has access to the GitHub installation ID associated with the repository; if not, log an error and raise an `HTTPException` with a 403 status code.
-    - Fetch an access token for the GitHub app installation using the installation ID from the repository metadata.
-    - Determine the commit SHA to use based on specific conditions related to the repository name and organization, setting it to `None` if no specific branch is required.
-    - Generate an upload key for storing the repository as a zip file in a specific S3 bucket path.
-    - Call [`download_and_upload_repo`](<../../../utils/gh_ops.py.md#download_and_upload_repo>) to download the repository and upload it to the specified location, using the access token and commit SHA if applicable.
-    - Check if the upload was successful; if so, return a `JSONResponse` with a 202 status code and the download URL, otherwise return a 500 status code with an error message.
-- **Output**: A `JSONResponse` indicating the result of the repository cloning operation, including a download URL if successful or an error message if not.
-- **Functions Called**:
-    - [`python-backend/backend/app/utils/gh_ops.verify_app_installation_access`](<../../../utils/gh_ops.py.md#verify_app_installation_access>)
-    - [`python-backend/backend/app/utils/gh_ops.fetch_app_access_token`](<../../../utils/gh_ops.py.md#fetch_app_access_token>)
-    - [`python-backend/backend/app/utils/gh_ops.fetch_commit_hash`](<../../../utils/gh_ops.py.md#fetch_commit_hash>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.org_id_to_hash`](<../../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>)
-    - [`python-backend/backend/app/utils/gh_ops.download_and_upload_repo`](<../../../utils/gh_ops.py.md#download_and_upload_repo>)
+    - [`python-backend/driver_db/database/models_v1.GithubAppInstallation`](<../../../../../driver_db/database/models_v1.py.md#githubappinstallation>)
 
 
 ---
 ### verify\_signature<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.verify_signature}} -->
-The `verify_signature` function validates that a payload was sent from GitHub by checking the SHA256 signature against a provided secret token.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L384>)
+
+Validates that a payload was sent from GitHub by checking the SHA256 signature.
 - **Inputs**:
-    - `payload_body`: The original request body in bytes that needs to be verified.
-    - `secret_token`: The GitHub app webhook token used for generating the expected signature.
-    - `signature_header`: The signature header received from GitHub, which contains the SHA256 hash to be verified.
-- **Control Flow**:
-    - Check if the `signature_header` is missing; if so, raise an HTTPException with a 403 status code indicating the header is missing.
-    - Create a new HMAC object using the `secret_token` encoded in UTF-8, the `payload_body` as the message, and SHA256 as the digest mode.
+    - `payload_body`: The original request body to verify, provided as bytes.
+    - `secret_token`: The GitHub app webhook token used for HMAC generation.
+    - `signature_header`: The signature header received from GitHub, expected to be in the format 'x-hub-signature-256'.
+- **Logic and Control Flow**:
+    - Check if the `signature_header` is missing; if so, raise an `HTTPException` with a 403 status code and a message indicating the missing header.
+    - Create an HMAC object using the `secret_token` encoded in UTF-8, the `payload_body`, and the SHA256 hashing algorithm.
     - Generate the expected signature by prefixing the HMAC digest with 'sha256='.
-    - Compare the expected signature with the `signature_header` using `hmac.compare_digest` to prevent timing attacks.
-    - If the signatures do not match, raise an HTTPException with a 403 status code indicating the signatures didn't match.
-- **Output**: The function does not return any value; it raises an HTTPException with a 403 status code if the signature verification fails.
+    - Compare the expected signature with the `signature_header` using `hmac.compare_digest`; if they do not match, raise an `HTTPException` with a 403 status code and a message indicating the mismatch.
+- **Output**: Raises an `HTTPException` with a 403 status code if the signature is invalid or missing, otherwise returns `None`.
 
 
 ---
 ### \_extract\_body\_and\_headers<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider._extract_body_and_headers}} -->
-The function asynchronously extracts the raw body, JSON-parsed body, and headers from a FastAPI request.
-- **Decorators**: `@async`
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L408>)
+
+Extracts the body and headers from an HTTP request and returns them in a dictionary.
 - **Inputs**:
-    - `request`: A FastAPI Request object from which the body and headers are extracted.
-- **Control Flow**:
-    - Await the body of the request to be read as bytes.
-    - Parse the body bytes into a JSON object.
-    - Return a dictionary containing the raw body bytes, the JSON-parsed body, and the request headers.
-- **Output**: A dictionary containing the raw body bytes, the JSON-parsed body, and the request headers.
+    - `request`: An instance of `Request` from which the function will extract the body and headers.
+- **Logic and Control Flow**:
+    - Await the `body` method of the `request` object to get the request body as bytes.
+    - Parse the byte content of the body into a JSON object using `json.loads`.
+    - Return a dictionary containing the raw body bytes, the parsed JSON body, and the request headers.
+- **Output**: A dictionary with keys `raw_body`, `json_body`, and `headers`, containing the raw body bytes, the parsed JSON body, and the request headers, respectively.
 
 
 ---
 ### verify\_github\_signature<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.verify_github_signature}} -->
-The `verify_github_signature` function checks the validity of a GitHub webhook signature using a secret token and raises an exception if the verification fails.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L414>)
+
+Verifies the GitHub webhook signature to ensure the request is authentic.
 - **Inputs**:
-    - `body_bytes`: The raw bytes of the request body that need to be verified.
-    - `secret_token`: The secret token used to generate the expected signature for verification.
-    - `signature_header`: The signature header received from GitHub, which contains the signature to be verified.
-- **Control Flow**:
-    - The function calls [`verify_signature`](<#verify_signature>) with the provided `body_bytes`, `secret_token`, and `signature_header` to perform the signature verification.
-    - If [`verify_signature`](<#verify_signature>) raises an `HTTPException`, the exception is caught, a warning is logged, and the exception is re-raised.
-- **Output**: The function does not return any value; it raises an `HTTPException` if the signature verification fails.
+    - `body_bytes`: The original request body in bytes to verify.
+    - `secret_token`: The GitHub app webhook secret token used for verification.
+    - `signature_header`: The signature header received from GitHub, typically 'x-hub-signature-256'.
+- **Logic and Control Flow**:
+    - Calls the [`verify_signature`](<#verify_signature>) function with the provided inputs to perform the signature verification.
+    - If [`verify_signature`](<#verify_signature>) raises an `HTTPException`, logs a warning message indicating signature verification failure.
+    - Re-raises the caught `HTTPException` to propagate the error.
+- **Output**: Does not return a value; raises an exception if verification fails.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v1/git_provider.verify_signature`](<#verify_signature>)
 
 
 ---
 ### handle\_installation\_delete\_event<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.handle_installation_delete_event}} -->
-The `handle_installation_delete_event` function processes a GitHub installation deletion event by removing the installation record from the database and triggering a background job to handle the disconnection of associated repositories.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L424>)
+
+Processes a GitHub installation delete event by removing the installation record and triggering a background job to handle repository disconnections.
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `body`: A dictionary containing the event data, including the installation ID and a list of repositories.
-- **Control Flow**:
-    - Extract the installation ID from the event body and convert it to a string.
-    - Query the database to find the installation record using the installation ID.
-    - Retrieve the organization ID from the installation record.
-    - Delete the installation record from the database and commit the transaction.
-    - Set the installation ID to `None` to indicate it has been deleted.
-    - Iterate over the list of repositories in the event body and append each repository's details to the `repos_deleted` list.
-    - Look up the `handle_github_events` function using the `modal.Function.lookup` method.
-    - Spawn a background job using `handle_github_events.spawn` with the installation ID, organization ID, and lists of added, deleted, and pushed repositories.
-    - Log an informational message indicating the processing of the installation delete event.
-    - Return a `JSONResponse` with a status code of 202 (Accepted) and an empty message.
-- **Output**: A `JSONResponse` with a status code of 202 (Accepted) and an empty message, indicating the event was processed successfully.
+    - `session`: A `CurrentSession` object used to interact with the database.
+    - `body`: A dictionary containing the event data, including installation and repository information.
+- **Logic and Control Flow**:
+    - Extracts the `installation_id` from the `body` dictionary.
+    - Queries the database to find the `GithubAppInstallation` record using the `installation_id`.
+    - Retrieves the `organization_id` from the installation record.
+    - Deletes the installation record from the database and commits the transaction.
+    - Initializes empty lists for `repos_added`, `repos_deleted`, and `repos_pushed`.
+    - Iterates over the `repositories` in the `body` and appends each repository's details to the `repos_deleted` list.
+    - Looks up the `handle_github_events` function using the `modal.Function.lookup` method.
+    - Spawns a background job using `handle_github_events.spawn` with the installation and repository details.
+    - Logs an informational message indicating the processing of the installation delete event.
+    - Returns a `JSONResponse` with a status code of `HTTP_202_ACCEPTED`.
+- **Output**: A `JSONResponse` object with a status code of `HTTP_202_ACCEPTED` and an empty message.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#BaseRepositorydelete>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../../repositories/base_repository.py.md#baserepositorydelete>)
 
 
 ---
 ### handle\_installation\_modified\_event<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.handle_installation_modified_event}} -->
-The `handle_installation_modified_event` function processes GitHub installation modification events by updating the list of added and removed repositories and triggering a background job to handle these changes.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L473>)
+
+Processes a GitHub installation modified event by updating repository connections and triggering background tasks.
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session used to query and update the database.
-    - `body`: A dictionary containing the event payload from GitHub, which includes details about the installation and the repositories added or removed.
-- **Control Flow**:
-    - Extract the installation ID from the event payload and convert it to a string.
-    - Query the database using [`GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository>) to find the installation record by its ID.
-    - If the installation record is not found, log a warning and return a JSON response with status code 202 (Accepted) and an empty message.
-    - Extract the lists of added and removed repositories from the event payload.
-    - Initialize empty lists for added, deleted, and pushed repositories.
-    - Iterate over the added repositories, appending each repository's details (ID, name, full name) to the `repos_added` list.
-    - Iterate over the removed repositories, appending each repository's details (ID, name, full name) to the `repos_deleted` list.
-    - Look up the `handle_github_events` function using the `modal.Function.lookup` method.
-    - Spawn a background job using `handle_github_events.spawn` with the installation ID, organization ID, and the lists of added, deleted, and pushed repositories.
-    - Log an informational message indicating the processing of the installation modified event.
-    - Return a JSON response with status code 202 (Accepted) and an empty message.
-- **Output**: A `JSONResponse` object with status code 202 (Accepted) and an empty message, indicating that the event has been processed.
+    - `session`: A `CurrentSession` object representing the current database session.
+    - `body`: A dictionary containing the event data, including installation ID and lists of added and removed repositories.
+- **Logic and Control Flow**:
+    - Extracts the installation ID from the `body` dictionary.
+    - Queries the database for the GitHub app installation using the installation ID.
+    - Logs a warning and returns an HTTP 202 response if the installation is not found.
+    - Extracts lists of added and removed repositories from the `body` dictionary.
+    - Initializes empty lists for added, deleted, and pushed repositories.
+    - Iterates over the added repositories and appends their details to the `repos_added` list.
+    - Iterates over the removed repositories and appends their details to the `repos_deleted` list.
+    - Looks up the `handle_github_events` function using the `modal.Function.lookup` method.
+    - Spawns a background task to handle the GitHub events with the installation ID, organization ID, and lists of repositories.
+    - Logs an informational message indicating the processing of the installation modified event.
+    - Returns an HTTP 202 response with a message indicating acceptance of the event.
+- **Output**: A `JSONResponse` object with a status code of HTTP 202 and a message indicating the event was accepted.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository>)
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_installation_id`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepositorylist_by_installation_id>)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_installation_id`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositorylist_by_installation_id>)
 
 
 ---
 ### handle\_push\_event<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.handle_push_event}} -->
-The `handle_push_event` function processes GitHub push events, verifying branch conditions and triggering background processing for valid events.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L536>)
+
+Processes GitHub push events and triggers background jobs for repository updates.
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
+    - `session`: A `CurrentSession` object representing the current database session.
     - `body`: A dictionary containing the payload of the GitHub push event.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Extracts repository details such as organization name, repository name, repository ID, default branch, pushed reference, installation ID, and commit hash from the `body` dictionary.
-    - Checks if the organization and repository match specific conditions (e.g., 'no-OS' or 'diff-tests') and if the pushed reference matches the expected branch for these conditions.
-    - Logs and returns a JSON response indicating the event is ignored if the conditions are not met.
-    - If the pushed reference matches the default branch, it logs the event and proceeds to fetch the GitHub app installation from the database using the installation ID.
-    - If the installation is not found, logs a warning and returns a JSON response indicating the need for a database entry.
-    - Attempts to retrieve the primary codebase asset for the repository; if not found, logs a warning and returns a JSON response.
-    - Prepares lists for repositories added, deleted, and pushed, and triggers a background job to handle the GitHub events using the `modal.Function.lookup` method.
-    - Logs the processing of the push event and returns a JSON response indicating acceptance of the event.
-- **Output**: A `JSONResponse` object indicating the result of the push event processing, with a status code of 202 (Accepted) and a message.
+    - Checks if the organization and repository match specific constants (`NO_OS_GH_ORG` and `NO_OS_REPO_NAME`) and if the pushed reference is not the driver branch, logs an informational message and returns a JSON response indicating the event is ignored.
+    - If the pushed reference is not the default branch, logs an informational message and returns a JSON response indicating the event is ignored.
+    - Logs an informational message if the push event is on the default branch.
+    - Retrieves the GitHub app installation from the database using the installation ID; if not found, logs a warning and returns a JSON response indicating the need for a database entry.
+    - Retrieves the codebase asset for the organization and repository; if not found, logs a warning and returns a JSON response indicating the absence of a primary asset record.
+    - Prepares lists for added, deleted, and pushed repositories, and includes the current repository in the pushed list.
+    - Looks up and spawns a background job to handle GitHub events using the `modal.Function` API.
+    - Logs an informational message indicating the push event is processed and returns a JSON response with a status of HTTP 202 Accepted.
+- **Output**: A `JSONResponse` object with a status code of HTTP 202 Accepted and a message indicating the result of the push event processing.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepository>)
-    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_installation_id`](<../../../repositories/github_app_installations_repository.py.md#GithubAppInstallationsRepositorylist_by_installation_id>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepository>)
+    - [`python-backend/backend/app/repositories/github_app_installations_repository.GithubAppInstallationsRepository.list_by_installation_id`](<../../../repositories/github_app_installations_repository.py.md#githubappinstallationsrepositorylist_by_installation_id>)
     - [`python-backend/backend/app/api/routes/v1/git_provider.get_codebase_asset`](<#get_codebase_asset>)
 
 
 ---
 ### get\_codebase\_asset<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.get_codebase_asset}} -->
-The `get_codebase_asset` function retrieves a `PrimaryAsset` from the database based on the organization ID and repository name, specifically for assets of kind `CODEBASE`.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L637>)
+
+Retrieves a `PrimaryAsset` from the database based on organization ID and repository name.
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to execute database queries.
+    - `session`: A `CurrentSession` object used to execute database queries.
     - `org_id`: A string representing the organization ID to filter the `PrimaryAsset`.
     - `repo_name`: A string representing the repository name to filter the `PrimaryAsset`.
-- **Control Flow**:
-    - The function executes a database query using the `session` object to select a `PrimaryAsset` where the `organization_id` matches `org_id`, the `display_name` matches `repo_name`, and the `kind` is `PrimaryAssetKind.CODEBASE`.
-    - The query is executed and the result is fetched using `one_or_none()`, which returns either a single `PrimaryAsset` object or `None` if no matching asset is found.
-- **Output**: The function returns a `PrimaryAsset` object if a matching asset is found, otherwise it returns `None`.
+- **Logic and Control Flow**:
+    - Executes a database query using the `session` to select a `PrimaryAsset` where the `organization_id` matches `org_id`, the `display_name` matches `repo_name`, and the `kind` is `PrimaryAssetKind.CODEBASE`.
+    - Uses the `one_or_none()` method to retrieve a single `PrimaryAsset` or `None` if no match is found.
+- **Output**: Returns a `PrimaryAsset` object if found, otherwise returns `None`.
 
 
 ---
 ### handle\_ping\_event<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.handle_ping_event}} -->
-The `handle_ping_event` function logs a ping event received from GitHub and returns a JSON response indicating the event was accepted.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L650>)
+
+Handles a ping event from GitHub and returns a JSON response indicating acceptance.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Logs the receipt of a ping event from GitHub using the logger.
-    - Returns a JSONResponse with a status code of HTTP 202 Accepted and a message indicating the ping was received.
-- **Output**: A JSONResponse object with a status code of HTTP 202 Accepted and a content message 'Ping received'.
+    - Returns a JSON response with a status code of 202 (Accepted) and a message indicating that the ping was received.
+- **Output**: A `JSONResponse` object with a status code of 202 and a message indicating that the ping was received.
 
 
 ---
 ### webhook<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.webhook}} -->
-The `webhook` function processes GitHub webhook events by verifying the signature and handling different event types such as push, ping, installation, and installation_repositories.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L657>)
+
+Handles GitHub webhook events by verifying signatures and delegating event-specific processing.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
+    - `session`: The current database session, used to interact with the database.
     - `body_data`: A dictionary containing the raw body, JSON body, and headers of the incoming request, extracted using the `_extract_body_and_headers` dependency.
-- **Control Flow**:
-    - Extract the raw body, JSON body, and headers from `body_data`.
-    - Retrieve the GitHub event type from the headers using the key `x-github-event`.
-    - Retrieve the signature header from the headers using the key `x-hub-signature-256`.
-    - Obtain the secret token from the application settings.
-    - Call [`verify_github_signature`](<#verify_github_signature>) to ensure the request is from GitHub by verifying the signature.
-    - Check the type of GitHub event and call the corresponding handler function: [`handle_push_event`](<#handle_push_event>) for 'push', [`handle_ping_event`](<#handle_ping_event>) for 'ping', [`handle_installation_delete_event`](<#handle_installation_delete_event>) for 'installation' with action 'deleted', and [`handle_installation_modified_event`](<#handle_installation_modified_event>) for 'installation_repositories'.
-    - Log an info message and return a JSON response with status 202 if the event type is unhandled.
-- **Output**: A `JSONResponse` object indicating the result of processing the webhook event, with different status codes and messages depending on the event type and outcome.
+- **Logic and Control Flow**:
+    - Extracts `raw_body`, `json_body`, and `headers` from `body_data`.
+    - Retrieves the GitHub event type from the `x-github-event` header and the signature from the `x-hub-signature-256` header.
+    - Fetches the secret token from the application settings.
+    - Calls [`verify_github_signature`](<#verify_github_signature>) to ensure the request is from GitHub by validating the signature.
+    - Checks the type of GitHub event and calls the corresponding handler function: [`handle_push_event`](<#handle_push_event>) for 'push', [`handle_ping_event`](<#handle_ping_event>) for 'ping', [`handle_installation_delete_event`](<#handle_installation_delete_event>) for 'installation' with 'deleted' action, and [`handle_installation_modified_event`](<#handle_installation_modified_event>) for 'installation_repositories'.
+    - Logs an info message and returns a JSON response with a message 'Event ignored' if the event type is unhandled.
+- **Output**: Returns a `JSONResponse` with a status code and message, depending on the event type and processing outcome.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/backend/app/api/routes/v1/git_provider.verify_github_signature`](<#verify_github_signature>)
     - [`python-backend/backend/app/api/routes/v1/git_provider.handle_push_event`](<#handle_push_event>)
     - [`python-backend/backend/app/api/routes/v1/git_provider.handle_ping_event`](<#handle_ping_event>)
@@ -595,51 +535,27 @@ The `webhook` function processes GitHub webhook events by verifying the signatur
 
 
 ---
-### handle\_gitlab\_push\_event<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.handle_gitlab_push_event}} -->
-The `handle_gitlab_push_event` function processes GitLab push events, verifying the branch and installation details before triggering further event handling.
-- **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `app_id`: A UUID representing the application ID associated with the GitLab event.
-    - `installation_id`: A string representing the installation ID of the GitLab app.
-    - `body`: A dictionary containing the payload of the GitLab push event.
-- **Control Flow**:
-    - Extracts repository and project details from the `body` dictionary, including repository name, project ID, full name, default branch, pushed reference, and commit hash.
-    - Retrieves the app installation details using the [`git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>) function with the `session` and `installation_id`.
-    - Checks if the pushed reference matches the default branch; if not, logs an informational message and returns a JSON response indicating the event is ignored.
-    - Logs a message indicating a push event on the default branch if the branch matches.
-    - Verifies if the app installation's `git_provider_app_id` matches the provided `app_id`; raises an HTTP 404 exception if they do not match.
-    - Prepares a list of repositories pushed, including metadata and commit details.
-    - Looks up the `handle_gitlab_events` function using the `modal.Function.lookup` method and spawns it with the installation ID, organization ID, and the list of pushed repositories.
-    - Returns a JSON response with a status code of 202 and an empty message indicating successful processing.
-- **Output**: A `JSONResponse` object with a status code of 202, indicating the event was processed or ignored.
-- **Functions Called**:
-    - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
+### git\_provider\_webhook<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.git_provider_webhook}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v1/git_provider.py#L693>)
 
-
----
-### gitlab\_webhook<!-- {{#callable:python-backend/backend/app/api/routes/v1/git_provider.gitlab_webhook}} -->
-The `gitlab_webhook` function handles incoming GitLab webhook events, verifies the secret token, and processes push events accordingly.
+Handles webhook events for GitLab and Bitbucket by delegating to a service and responding based on the event processing outcome.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession`, representing the current database session.
+    - `session`: The current session object, used to interact with the database or other session-specific resources.
     - `body_data`: A dictionary containing the JSON body and headers of the incoming request, extracted using the `_extract_body_and_headers` dependency.
-- **Control Flow**:
-    - Extract the JSON body and headers from `body_data`.
-    - Retrieve the `object_kind` from the body and the `installation_id` and `incoming_secret_token` from the headers.
-    - Read the secret token associated with the `installation_id` using [`AWSSecretManagementStrategy`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>).
-    - If the secret token is not found, log an error and raise an HTTP 403 exception for insufficient permissions.
-    - Compare the retrieved secret token with the `incoming_secret_token`; if they do not match, log an error and raise an HTTP 403 exception.
-    - Retrieve the app installation details using [`git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>).
-    - If the `object_kind` is 'push', call [`handle_gitlab_push_event`](<#handle_gitlab_push_event>) to process the push event.
-    - Return a JSON response with status 202 and a message indicating the event was ignored.
-- **Output**: A `JSONResponse` with status code 202 and a message indicating the event was ignored.
+    - `installation_id`: An optional string representing the installation ID, which can be provided as a query parameter or extracted from the headers.
+- **Logic and Control Flow**:
+    - Extracts the JSON body and headers from `body_data`.
+    - Logs the received webhook event for debugging purposes.
+    - Checks if `installation_id` is provided; if not, attempts to retrieve it from the headers using the key `x-driver-token`.
+    - If `installation_id` is still not found, logs an error and raises an `HTTPException` with a 403 status code indicating a forbidden request.
+    - Delegates the handling of the webhook event to `provider_service.handle_webhook_event`, passing the session, installation ID, headers, and body.
+    - If the event is processed successfully, returns a `JSONResponse` with a 202 status code and a message indicating the event was processed.
+    - If a `PermissionError` occurs during event handling, raises an `HTTPException` with a 403 status code and the error message.
+- **Output**: A `JSONResponse` indicating the result of the webhook event processing, with a 202 status code for successful processing or a 403 status code for forbidden access.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
-    - [`python-backend/backend/app/repositories/git_provider_repository.git_provider_app_installation_by_id`](<../../../repositories/git_provider_repository.py.md#git_provider_app_installation_by_id>)
-    - [`python-backend/backend/app/api/routes/v1/git_provider.handle_gitlab_push_event`](<#handle_gitlab_push_event>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../../repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/backend/app/services/git_provider_service.GitProviderService.handle_webhook_event`](<../../../services/git_provider_service.py.md#gitproviderservicehandle_webhook_event>)
 
 
 

@@ -2,11 +2,13 @@ import hashlib
 import os
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
 
 import modal
+from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
@@ -22,7 +24,7 @@ inspection_image = (
         [
             "boto3",
             "requests",
-            "openai>=1.40.2",
+            "openai==1.99.1",
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
@@ -39,6 +41,7 @@ inspection_image = (
     .add_local_python_source(
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -68,6 +71,8 @@ with inspection_image.imports():
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
+
+TECH_DOC_THREAD_POOL = ThreadPoolExecutor(max_workers=2)
 
 
 class InspectionMode(Enum):
@@ -146,7 +151,7 @@ async def get_result_loading_config(
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     memory=4096,
-    timeout=3600 * 8,
+    timeout=3600 * 12,
     region="us-east",
     max_containers=5,
     cpu=1.0,
@@ -158,8 +163,8 @@ async def inspect_db(
     import tempfile
 
     import boto3
-    from database.models_v2_enums import NodeKind as DbNodeKind
-    from database.models_v2_enums import VersionStatus
+    from database.models_enums import NodeKind as DbNodeKind
+    from database.models_enums import VersionStatus
     from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
@@ -413,12 +418,28 @@ async def inspect_db(
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise
     else:
+        # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
+        # architecture, then uncomment the following line to represent completion of
+        # stage 1.
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
+
+        # print("Spawning off deep context docs generation...")
+        # TODO: Add back in once update flow is in place and switch to spawn call rather than remote.
+        # _completed_docs = await deep_context_docs.remote.aio(
+        #     version_id,
+        #     install_id,
+        # )
+
+        try:
+            cleanup_old_versions.remote(version_id)
+        except Exception as e:
+            print(f"Error while cleaning up old versions: {e}")
+            raise
 
 
 def hash_file(file_path: Path) -> str:
@@ -541,6 +562,7 @@ async def inspect_files(
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
                 symbol_table_task=c_symbol_table_task,
+                thread_pool=TECH_DOC_THREAD_POOL,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
@@ -649,6 +671,7 @@ def get_file_content(path: Path) -> str:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",
@@ -665,15 +688,84 @@ def get_file_content(path: Path) -> str:
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
+
     from database.db import engine
-    from database.models_v2 import Version
-    from database.models_v2_enums import VersionStatus
+    from database.models import Version
+    from database.models_enums import VersionStatus
     from sqlmodel import Session
 
     with Session(engine) as session, session.begin():
         version = session.get(Version, version_id)
         version.status = VersionStatus(status)
         session.add(version)
+
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .pip_install("/driver_db")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "deep_context_docs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
+        ignore=lambda p: False,
+    ),
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    timeout=3600 * 12,
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
+    else None,
+)
+def cleanup_old_versions(new_version_id: str) -> None:
+    from database.db import engine
+    from database.models import DocumentSource, Node, Version
+    from sqlmodel import Session, select
+
+    with Session(engine) as session, session.begin():
+        # Get all versions
+        primary_asset_id = session.get(Version, new_version_id).primary_asset_id
+        versions = session.exec(
+            select(Version).where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        versions_with_sources = session.exec(
+            select(Version)
+            .join(Node)
+            .join(DocumentSource, DocumentSource.source_node_id == Node.id)
+            .where(Version.primary_asset_id == primary_asset_id)
+        ).all()
+        # Sort versions by creation date or any other criteria if needed
+        versions_to_keep = sorted(versions, key=lambda v: v.created_at, reverse=True)[
+            :10
+        ]
+        versions_to_keep.extend(versions_with_sources)
+
+        # Remove duplicates from versions_to_keep
+        versions_to_keep = list({v.id: v for v in versions_to_keep}.values())
+
+        # Delete all versions except the 10 most recent
+        print(f"DEBUG: Keeping {len(versions_to_keep)} unique versions")
+        print(f"DEBUG: Deleting {len(versions) - len(versions_to_keep)} versions")
+
+        versions_to_delete = [v for v in versions if v not in versions_to_keep]
+        for version in versions_to_keep:
+            print(
+                f"DEBUG: KEEPING version: {version.id} which was created at {version.created_at}"
+            )
+        for version in versions_to_delete:
+            print(
+                f"DEBUG: DELETING version: {version.id} which was created at {version.created_at} (deletion is not implemented yet)"
+            )
+            session.delete(version)
+        session.commit()
 
 
 @app.local_entrypoint()
@@ -697,6 +789,22 @@ def main(
 
 
 @app.local_entrypoint()
+def run_deep_context(
+    version_id: str,
+    install_id: str | None = None,
+) -> None:
+    """Run deep context docs generation"""
+
+    try:
+        deep_context_docs.remote(version_id, install_id)
+    except Exception as e:
+        print(f"Error while generating deep context docs for version {version_id}: {e}")
+        raise
+    else:
+        print(f"Deep context docs generation completed for version {version_id}")
+
+
+@app.local_entrypoint()
 def test_connection() -> None:
     from onboarding.onboard import run_codebase_connection
 
@@ -713,6 +821,13 @@ def test_connection() -> None:
         provider=provider,
         version_id=version_id,
     )
+
+
+@app.local_entrypoint()
+def test_cleanup_old_versions(
+    version_id: str,
+) -> None:
+    cleanup_old_versions.remote(version_id)
 
 
 @app.local_entrypoint()
@@ -745,6 +860,7 @@ def run_connect_unconnected_repos() -> None:
         "database",
         "inspection",
         "modal_funcs",
+        "deep_context_docs",
         "onboarding",
         "shared",
         "tasks",

@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders for implementing and testing pipeline functionalities and managing static resources.
+Performance testing and LLM-based pipelines, enums, message classes, and file handling tools.
 
 ## Folders
-- **[pipelines](pipelines/README.md)**: Various Python files and a subfolder for implementing and testing pipeline functionalities like chat, inline editing, and performance testing using language model clients.
-- **[static](static/README.md)**: Subfolders for enumerations, system messages, response type handling, and utility tools with specific Python files.
+- **[pipelines](pipelines/README.md)**: Performance testing pipeline, imports/exports for inline edit, reformat, smart instruction, and LLM-based pipelines.
+- **[static](static/README.md)**: Enums, message classes, response type management, and tools for summaries and file handling.
 
 
 ---

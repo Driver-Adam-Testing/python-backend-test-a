@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata, dependencies, and build system configuration for the `auto-toml` project.
+Configuration for the "auto-toml" project, specifying metadata, dependencies, and build system.
 
 # Purpose
-This TOML file is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. It specifies the project's metadata, including its name, version, author, and Python version compatibility. Additionally, it lists the project's dependencies and their version constraints, as well as the build system requirements and backend used for building the project.
+The file defines metadata and configuration for a Python project named `auto-toml`. It specifies the project version as `0.1.0` and lists the author as Jacob Furniss with an email address. The project requires Python version 3.12 or higher but less than 4.0. It includes dependencies such as `database`, `shared`, `openai`, `aiolimiter`, `pydantic`, and `tiktoken`, each with specified version constraints. The build system section indicates that the project requires `poetry-core` version 2.0.0 or higher but less than 3.0.0, and it uses `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

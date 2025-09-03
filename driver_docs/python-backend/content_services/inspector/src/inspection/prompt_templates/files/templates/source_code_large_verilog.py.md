@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_verilog.py` file defines a template for handling large Verilog source code, including prompts and collections for modules, functions, and tasks.
+Templates for generating structured prompts and analyzing Verilog source code.
 
 # Purpose
-This Python code is designed to facilitate the generation of structured prompts and templates specifically for analyzing and documenting Verilog source code. It imports various components and instructions from shared modules and utilities, which are then used to construct a template named `SOURCE_CODE_LARGE_TEMPLATE_VERILOG`. This template is a collection of tuples, each serving a distinct purpose in the documentation process. The first tuple focuses on generating a prompt for describing the overall purpose of the Verilog source code, utilizing specific instructions to ensure clarity and consistency in style. The subsequent tuples are concerned with identifying and documenting Verilog modules and functions/tasks, leveraging both static analysis and language model (LLM) capabilities to extract and organize relevant information.
+The code defines a template for generating structured prompts related to Verilog source code. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`. These components and instructions are used to create a list of tuples, `SOURCE_CODE_LARGE_TEMPLATE_VERILOG`, which specifies how to generate prompts for different sections of Verilog code, including the purpose, modules, and functions/tasks.
 
-The code is structured as a library file intended to be imported and used in other parts of a larger system, likely one that involves automated code analysis and documentation. It does not define public APIs or external interfaces directly but rather provides a set of tools and templates for internal use. The common theme across the components is the structured and automated generation of documentation for Verilog code, highlighting the code's purpose, modules, and functions/tasks. This approach ensures that the documentation is both comprehensive and consistent, leveraging both static and dynamic analysis techniques.
+Each tuple in the `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` list represents a different section of the prompt. The first tuple defines the prompt for the purpose of the Verilog code, using components like `GENERAL_STE_STYLE_INSTRUCTION` and `USE_BACKTICKS_STYLE_INSTRUCTION` to ensure the prompt follows specific style guidelines. The subsequent tuples define prompts for Verilog modules and functions/tasks, using collections like `VerilogModuleRawSymbolCollection` and `VerilogFnTaskRawSymbolCollection` to gather relevant symbols from static analysis. This code is intended to be part of a larger system that generates documentation or analysis for Verilog source code.
 # Imports and Dependencies
 
 ---
@@ -30,9 +30,9 @@ The code is structured as a library file intended to be imported and used in oth
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_VERILOG
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_VERILOG` is a list of tuples, each containing structured data related to Verilog code processing. Each tuple includes a type identifier, a description string, and various components or functions related to Verilog code analysis and transformation.
-- **Use**: This variable is used to define templates for processing and analyzing Verilog code, including generating prompts and collecting module and function symbols.
+- **Type**: ``list``
+- **Description**: A list of tuples that define structured prompts and processing instructions for Verilog code analysis. Each tuple contains a prompt type, a description, and a series of components or functions that process Verilog code or generate prompts.
+- **Use**: Used to configure and manage the generation and processing of prompts for Verilog code analysis.
 
 
 

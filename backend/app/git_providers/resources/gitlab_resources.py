@@ -4,7 +4,7 @@ import gitlab
 import httpx
 from app.git_providers.utils.errors import GitProviderAccessTokenError
 from app.schemas.git_provider_schema import GitRepository
-from database.models_v1 import GitProviderKind
+from database.models import GitProviderKind
 
 logger = logging.getLogger(__name__)
 

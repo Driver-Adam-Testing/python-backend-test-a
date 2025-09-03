@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_header.py` file defines a template for generating large source code headers, including sections for purpose, imports, global variables, data structures, and functions, using various utilities and collections.
+Defines a template for large source code headers, including prompts for purpose, imports, variables, data structures, and functions.
 
 # Purpose
-This code is a configuration file that defines a template for generating structured documentation for large source code files, particularly those written in C or C++. It imports various utilities and templates from a `utils` module, which are used to check imports, and analyze and categorize different components of the source code such as global variables, data structures, and functions. The `SOURCE_CODE_LARGE_TEMPLATE_HEADER` is a list of tuples, each representing a section of the documentation, including its title, the method for extracting relevant information, and the prompts used to guide the documentation process. This file provides narrow functionality focused on automating the creation of detailed documentation for large codebases, ensuring consistency and thoroughness in the documentation process.
+This code defines a template for generating headers in source code documentation, specifically for large C or C++ files. It imports several modules and functions from `utils.lang_specialization` and `utils.templates` to facilitate the creation of structured documentation sections. The `SOURCE_CODE_LARGE_TEMPLATE_HEADER` list contains tuples that define different sections of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each tuple specifies a type of prompt or condition, a section title, and associated functions or prompts to generate content for that section. This setup allows for automated or semi-automated generation of comprehensive documentation headers for large source code files.
 # Imports and Dependencies
 
 ---
@@ -26,9 +26,9 @@ This code is a configuration file that defines a template for generating structu
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_HEADER
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_HEADER` is a list of tuples, each containing a set of elements that define different sections of a large template header for source code. Each tuple includes a type identifier, a section title, and various functions or prompts related to that section, such as static analysis functions or user prompts.
-- **Use**: This variable is used to organize and define the structure of a large template header, specifying how different sections like purpose, imports, global variables, data structures, and functions should be processed or presented.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a string description, and a series of function or method references. These tuples represent different sections of a template header for source code documentation.
+- **Use**: Used to define the structure and content of a large template header for source code documentation.
 
 
 

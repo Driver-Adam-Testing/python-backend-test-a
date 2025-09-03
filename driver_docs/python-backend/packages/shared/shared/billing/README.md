@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements a billing service for managing subscription operations and defines pricing tiers for consumption and seat pricing.
+Manages subscription services and defines pricing tiers for consumption and seats.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[billing_service.py](billing_service.py.md)**: The `billing_service.py` file implements a `BillingService` class that manages subscription operations, such as retrieving active subscriptions and creating new ones, for organizations using a database session.
-- **[consumption_tiers.py](consumption_tiers.py.md)**: The `consumption_tiers.py` file defines pricing tiers for consumption and seat pricing, detailing the minimum and maximum usage limits and corresponding prices for each tier.
+- **[billing_service.py](billing_service.py.md)**: Manages subscription creation and retrieval for organizations using a database session.
+- **[consumption_tiers.py](consumption_tiers.py.md)**: Defines consumption and seat pricing tiers with corresponding price ranges and rates.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

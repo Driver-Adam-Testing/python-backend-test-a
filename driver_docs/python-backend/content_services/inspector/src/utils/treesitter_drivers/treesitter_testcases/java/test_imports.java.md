@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_imports.java` file demonstrates the usage of various Java imports, including utility classes, file handling, and static imports for mathematical operations.
+Demonstrates the use of various Java imports and static imports in a class method.
 
 # Purpose
-The provided Java code demonstrates the use of various import statements to incorporate classes and static members from different packages, showcasing a broad functionality. It imports utility classes from `java.util` for handling collections, `java.io` for file operations, and static members from `java.lang.Math` for mathematical calculations. Within the [`useImports`](<#ImportExamplesuseImports>) method, it creates an `ArrayList` to store strings, initializes a `File` object for file manipulation, and calculates the area of a circle using the static `PI` constant and `pow` method from the `Math` class. This code serves as an example of how to leverage Java's import capabilities to simplify access to commonly used classes and methods across different domains.
+The `ImportExamples` class demonstrates the use of various Java imports to perform different tasks. It imports classes from the `java.util` package to create a `List` and an `ArrayList`, which are used to store a collection of `String` objects. The `java.io.File` class is imported to create a `File` object representing a file named "test.txt". Additionally, the code uses static imports from the `java.lang.Math` class to access the constant `PI` and the method `pow` for calculating the area of a circle with a given radius. This code provides narrow functionality by illustrating how to use imports to access specific classes and methods in Java.
 # Imports and Dependencies
 
 ---
@@ -22,26 +22,30 @@ The provided Java code demonstrates the use of various import statements to inco
 
 ---
 ### ImportExamples<!-- {{#class:com.example.imports.ImportExamples}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_imports.java#L9>)
+
 - **Modifiers**: `public`
-- **Description**: The `ImportExamples` class demonstrates the use of various import statements in Java, including importing entire packages, specific classes, and static members, to utilize their functionalities within a method.
+- **Description**: Demonstrates the use of various Java imports, including collections, file handling, and static imports for mathematical operations.
 - **Methods**:
-    - [`com.example.imports.ImportExamples.useImports`](<#ImportExamplesuseImports>)
+    - [`com.example.imports.ImportExamples.useImports`](<#importexamplesuseimports>)
 
 **Methods**
 
 ---
 #### ImportExamples\.useImports<!-- {{#callable:com.example.imports.ImportExamples.useImports}} -->
-The `useImports` method demonstrates the usage of various imported classes and static methods by creating a list, a file, and calculating the area of a circle.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_imports.java#L11>)
+
+Demonstrates the use of various Java imports by creating a list, a file, and calculating the area of a circle.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Instantiate a new `ArrayList` of `String` type and assign it to the variable `list`.
-    - Create a new `File` object with the name 'test.txt' and assign it to the variable `file`.
-    - Declare a `double` variable `radius` and initialize it with the value 5.0.
-    - Calculate the area of a circle using the formula `PI * pow(radius, 2)` and assign the result to the variable `area`.
+    - Creates a new `ArrayList` of `String` type and assigns it to the variable `list`.
+    - Creates a new `File` object with the name `test.txt` and assigns it to the variable `file`.
+    - Initializes a `double` variable `radius` with the value `5.0`.
+    - Calculates the area of a circle using the formula `PI * pow(radius, 2)` and assigns the result to the variable `area`.
 - **Output**:
-    - This method does not return any value as it is declared with a `void` return type.
-- **See also**: [`com.example.imports.ImportExamples`](<#ImportExamples>)  (Base Class)
+    - No output is returned as the method is `void`.
+- **See also**: [`com.example.imports.ImportExamples`](<#importexamples>)  (Base Class)
 
 
 

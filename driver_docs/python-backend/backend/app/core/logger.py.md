@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `logger.py` file sets up a logging configuration with a stream handler for outputting log messages to standard output, but it is marked for deprecation in favor of a logger in `main.py`.
+Configures a logger with a stream handler for outputting warning-level messages to stdout.
 
 # Purpose
-This code is a configuration setup for a logging utility in Python, providing narrow functionality focused on logging messages to the console. It initializes a logger object with a specific name derived from the module's `__name__` attribute and sets its logging level to `DEBUG`, allowing it to capture all levels of log messages. A stream handler is configured to output log messages to the standard output (`sys.stdout`), but it only processes messages at the `WARNING` level or higher. The log messages are formatted to include the timestamp, logger name, log level, and message content. The code includes a comment indicating that this logging setup is intended to be deprecated in favor of a logger defined in another module, suggesting that this is a temporary or transitional piece of code.
+This code configures a logger using Python's `logging` module. It creates a logger instance with the name of the current module and sets its logging level to `DEBUG`. A stream handler is added to the logger to output log messages to standard output (`sys.stdout`), but it only processes messages with a severity level of `WARNING` or higher. The log messages are formatted to include the timestamp, logger name, log level, and message content. The code includes a comment indicating that this logger should be deprecated in favor of another logger located in `main.py`.
 # Imports and Dependencies
 
 ---
@@ -18,23 +18,23 @@ This code is a configuration setup for a logging utility in Python, providing na
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` is a global variable that is an instance of `logging.Logger`, configured to handle logging for the module. It is set to capture all log messages at the DEBUG level and above, and it outputs WARNING level and above messages to the standard output stream with a specific format.
-- **Use**: This variable is used to log messages throughout the module, providing a mechanism to track events and debug information.
+- **Type**: ``Logger` object`
+- **Description**: Represents a `Logger` object configured to handle logging messages for the current module. It is set to the DEBUG level, allowing it to capture all levels of log messages from DEBUG and above.
+- **Use**: Used to log messages with different severity levels, outputting them to the standard output stream with a specific format.
 
 
 ---
 ### c\_handler
-- **Type**: `logging.StreamHandler`
-- **Description**: The `c_handler` is a global variable that is an instance of `logging.StreamHandler`, which is configured to output log messages to the standard output stream (`sys.stdout`). It is set to handle log messages at the WARNING level and above, meaning it will process and display log messages that are warnings, errors, or critical issues.
-- **Use**: This variable is used to direct log messages of WARNING level and above to the console output.
+- **Type**: ``logging.StreamHandler``
+- **Description**: `c_handler` is an instance of `logging.StreamHandler` that directs log messages to the standard output stream (`sys.stdout`). It is configured to handle log messages with a severity level of `WARNING` or higher.
+- **Use**: Used to output log messages to the console with a specified format and severity level.
 
 
 ---
 ### c\_format
-- **Type**: `logging.Formatter`
-- **Description**: The `c_format` variable is an instance of the `logging.Formatter` class, which is used to format log messages. It specifies the format of the log message to include the timestamp, logger name, log level, and the actual log message, with a specific date format of 'YYYY-MM-DD HH:MM:SS'.
-- **Use**: This variable is used to set the format for log messages output by the `c_handler` stream handler.
+- **Type**: ``logging.Formatter``
+- **Description**: Configures the format for log messages, including the timestamp, logger name, log level, and message content. The date format is specified as 'YYYY-MM-DD HH:MM:SS'.
+- **Use**: Used to set the format of log messages for the `c_handler` stream handler.
 
 
 

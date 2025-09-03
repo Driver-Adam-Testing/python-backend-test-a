@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_rust.py` file defines a template for inspecting and structuring Rust source code, focusing on elements like imports, global variables, macros, traits, data structures, and functions.
+Defines templates for inspecting small Rust source code, focusing on imports, variables, macros, traits, data structures, and functions.
 
 # Purpose
-This Python source code file is a configuration script that defines a template for generating structured prompts and analyzing Rust source code. It imports various components and utilities from shared and utils modules, which are used to construct prompts and perform static analysis on Rust code elements such as variables, macros, traits, data structures, and functions. The file provides narrow functionality focused on creating a structured template (`SOURCE_CODE_SMALL_TEMPLATE_RUST`) that outlines how to document and analyze different aspects of Rust code, including imports, global variables, macros, traits, data structures, and functions. This template is likely used in a larger system for generating documentation or performing code analysis on Rust projects.
+This code defines a configuration for processing and analyzing Rust source code. It imports various components and utilities from different modules to facilitate structured prompting and language specialization. The `SOURCE_CODE_SMALL_TEMPLATE_RUST` list contains tuples that define different sections for analyzing Rust code, such as imports, global variables, macros, traits, data structures, and functions. Each tuple specifies a section title, a method for static analysis, a method for processing with a language model, and an optional transformation function. This setup is used to generate structured prompts and analyze Rust code components systematically.
 # Imports and Dependencies
 
 ---
@@ -36,8 +36,8 @@ This Python source code file is a configuration script that defines a template f
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_RUST
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_RUST` is a list of tuples, each containing a structured prompt or condition related to Rust code analysis and generation. Each tuple consists of a type identifier, a description string, and a series of components or functions that define how to process or generate specific parts of Rust code, such as imports, global variables, macros, traits, data structures, and functions.
-- **Use**: This variable is used to define a template for generating and analyzing Rust code by specifying different components and instructions for each aspect of the code.
+- **Description**: A list of tuples, where each tuple contains a condition type, a description string, a function or method for processing, and optional additional parameters. The list is used to define a template for processing Rust source code in a structured manner.
+- **Use**: Used to define and organize the processing of different components of Rust source code, such as imports, global variables, macros, traits, data structures, and functions.
 
 
 

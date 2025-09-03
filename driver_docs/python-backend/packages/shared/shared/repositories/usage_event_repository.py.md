@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `usage_event_repository.py` file defines a repository class for querying and managing usage events in a database, including methods to filter events by type and date, and to identify billable and credit event types.
+Repository for querying and categorizing usage events by type, date, and organization.
 
 # Purpose
-The provided code defines a repository class, `UsageEventRepository`, which is a specialized data access layer for handling `UsageEvent` objects within a database. This class extends a generic `BaseRepository` and is designed to interact with a database session to perform operations related to usage events. The primary functionality of this repository is to retrieve usage events based on specific criteria such as organization ID, event types, date range, and sorting preferences. It provides a method, [`get_usage_events_by_types`](<#UsageEventRepositoryget_usage_events_by_types>), which constructs and executes a SQL query to fetch usage events that match the given parameters, allowing for optional filtering by date range, limiting the number of results, and specifying an offset for pagination.
+The `UsageEventRepository` class is a specialized repository for managing `UsageEvent` records in a database. It extends the `BaseRepository` class, which provides basic repository functionalities, and is designed to interact with a SQL database using the `sqlmodel` library. The class constructor initializes the repository with a `Session` object and specifies `UsageEvent` as the model to operate on. The primary function of this class is to retrieve usage events based on specific criteria, such as organization ID, event types, date range, and sorting preferences. The [`get_usage_events_by_types`](<#usageeventrepositoryget_usage_events_by_types>) method constructs a SQL query to filter and sort `UsageEvent` records according to these parameters, and then executes the query to return the results.
 
-Additionally, the `UsageEventRepository` class defines two static methods, [`billable_usage_event_types`](<#UsageEventRepositorybillable_usage_event_types>) and [`credit_usage_event_types`](<#UsageEventRepositorycredit_usage_event_types>), which return lists of `UsageEventType` enumerations that categorize events as either billable or credit-related. These methods provide a clear and organized way to access predefined sets of event types, which can be used elsewhere in the application to determine billing or credit logic. Overall, this code serves as a focused component within a larger system, providing a structured interface for querying and categorizing usage events in a database.
+Additionally, the class defines two static methods, [`billable_usage_event_types`](<#usageeventrepositorybillable_usage_event_types>) and [`credit_usage_event_types`](<#usageeventrepositorycredit_usage_event_types>), which return lists of `UsageEventType` values. These methods categorize usage events into billable and credit types, respectively. This categorization can be useful for financial or usage tracking purposes. The class is intended to be used as part of a larger system where usage events need to be queried and categorized, and it provides a clear interface for these operations.
 # Imports and Dependencies
 
 ---
@@ -25,71 +25,81 @@ Additionally, the `UsageEventRepository` class defines two static methods, [`bil
 
 ---
 ### UsageEventRepository<!-- {{#class:python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository}} -->
-- **Description**: The `UsageEventRepository` class is a specialized repository for handling `UsageEvent` objects, inheriting from `BaseRepository`. It provides methods to query usage events based on specific criteria such as organization ID, event types, date range, and sorting preferences. Additionally, it defines static methods to categorize usage event types into billable and credit types, facilitating the management of usage events in a structured manner.
+[View Source →](<../../../../../../packages/shared/shared/repositories/usage_event_repository.py#L9>)
+
+- **Description**: Manages and queries `UsageEvent` records in a database session. Inherits from `BaseRepository` and provides methods to retrieve usage events filtered by type, date range, and other parameters. Also defines static methods to categorize usage event types into billable and credit categories.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.__init__`](<#UsageEventRepository__init__>)
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types`](<#UsageEventRepositoryget_usage_events_by_types>)
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.billable_usage_event_types`](<#UsageEventRepositorybillable_usage_event_types>)
-    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.credit_usage_event_types`](<#UsageEventRepositorycredit_usage_event_types>)
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.__init__`](<#usageeventrepository__init__>)
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types`](<#usageeventrepositoryget_usage_events_by_types>)
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.billable_usage_event_types`](<#usageeventrepositorybillable_usage_event_types>)
+    - [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.credit_usage_event_types`](<#usageeventrepositorycredit_usage_event_types>)
 
 **Methods**
 
 ---
 #### UsageEventRepository\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.__init__}} -->
-The [`__init__`](<base_repository.py.md#BaseRepository__init__>) method initializes an instance of the `UsageEventRepository` class by calling the parent class constructor with a session and the `UsageEvent` model.
+[View Source →](<../../../../../../packages/shared/shared/repositories/usage_event_repository.py#L10>)
+
+Initializes a `UsageEventRepository` instance with a database session and the `UsageEvent` model.
 - **Inputs**:
-    - `session`: A `Session` object used to interact with the database.
-- **Control Flow**:
-    - The method calls the [`__init__`](<base_repository.py.md#BaseRepository__init__>) method of the parent class `BaseRepository` with the provided `session` and the `UsageEvent` model.
-- **Output**: The method does not return any value as it is a constructor.
+    - `session`: A `Session` object that represents the database session to use for operations.
+- **Logic and Control Flow**:
+    - Calls the [`__init__`](<base_repository.py.md#baserepository__init__>) method of the parent class `BaseRepository` with `session` and `UsageEvent` as arguments.
+- **Output**: No output is returned as this is a constructor method.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.__init__`](<base_repository.py.md#BaseRepository__init__>)
-- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#UsageEventRepository>)  (Base Class)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.__init__`](<base_repository.py.md#baserepository__init__>)
+- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#usageeventrepository>)  (Base Class)
 
 
 ---
 #### UsageEventRepository\.get\_usage\_events\_by\_types<!-- {{#callable:python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.get_usage_events_by_types}} -->
-The `get_usage_events_by_types` method retrieves a list of `UsageEvent` records filtered by organization ID, event types, and optional date range, with support for pagination and sorting.
+[View Source →](<../../../../../../packages/shared/shared/repositories/usage_event_repository.py#L13>)
+
+Retrieves a list of `UsageEvent` objects filtered by organization ID, event types, and optional date range, with sorting and pagination options.
 - **Inputs**:
-    - `organization_id`: A string representing the unique identifier of the organization for which usage events are being queried.
-    - `event_types`: A list of `UsageEventType` objects specifying the types of events to filter the query by.
-    - `start_date`: An optional `datetime` object representing the start date for filtering events; only events occurring on or after this date will be included.
-    - `end_date`: An optional `datetime` object representing the end date for filtering events; only events occurring on or before this date will be included.
-    - `limit`: An optional integer specifying the maximum number of records to return.
-    - `offset`: An optional integer specifying the number of records to skip before starting to return records.
-    - `sort_direction`: A string literal, either 'ASC' or 'DESC', indicating the order in which to sort the events by timestamp.
-- **Control Flow**:
-    - Initialize a query to select `UsageEvent` records filtered by `organization_id` and `event_types`.
-    - If `start_date` is provided, add a condition to filter events occurring on or after this date.
-    - If `end_date` is provided, add a condition to filter events occurring on or before this date.
-    - Sort the query results by `UsageEvent.timestamp` in descending order if `sort_direction` is 'DESC', otherwise sort in ascending order.
-    - If `limit` is specified, apply it to restrict the number of records returned.
-    - If `offset` is specified, apply it to skip a certain number of records before returning results.
-    - Execute the query using the session and return all results as a list.
-- **Output**: A list of `UsageEvent` objects that match the specified filters and sorting criteria.
-- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#UsageEventRepository>)  (Base Class)
+    - `organization_id`: A string that identifies the organization for which to retrieve usage events.
+    - `event_types`: A list of `UsageEventType` objects that specify the types of events to filter.
+    - `start_date`: An optional `datetime` object that specifies the start date for filtering events.
+    - `end_date`: An optional `datetime` object that specifies the end date for filtering events.
+    - `limit`: An optional integer that limits the number of results returned.
+    - `offset`: An optional integer that specifies the number of results to skip before starting to return results.
+    - `sort_direction`: A string literal that specifies the sort order of the results, either 'ASC' for ascending or 'DESC' for descending.
+- **Logic and Control Flow**:
+    - Initializes a query to select `UsageEvent` objects filtered by `organization_id` and `event_types`.
+    - Adds a filter to the query for `start_date` if it is provided.
+    - Adds a filter to the query for `end_date` if it is provided.
+    - Orders the query results by `UsageEvent.timestamp` in descending order if `sort_direction` is 'DESC', otherwise in ascending order.
+    - Applies a limit to the query if `limit` is provided.
+    - Applies an offset to the query if `offset` is provided.
+    - Executes the query using the session and returns all results as a list.
+- **Output**: A list of `UsageEvent` objects that match the specified filters and sorting options.
+- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#usageeventrepository>)  (Base Class)
 
 
 ---
 #### UsageEventRepository\.billable\_usage\_event\_types<!-- {{#callable:python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.billable_usage_event_types}} -->
-The `billable_usage_event_types` method returns a list of usage event types that are considered billable.
+[View Source →](<../../../../../../packages/shared/shared/repositories/usage_event_repository.py#L45>)
+
+Returns a list of billable usage event types.
 - **Decorators**: `@staticmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns a list containing two specific `UsageEventType` values: `INSPECTOR_CODE_DIFF_USAGE_DEBIT` and `ONBOARDING_USAGE_DEBIT`.
+- **Logic and Control Flow**:
+    - Return a list containing `UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT` and `UsageEventType.ONBOARDING_USAGE_DEBIT`.
 - **Output**: A list of `UsageEventType` objects representing billable usage event types.
-- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#UsageEventRepository>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#usageeventrepository>)  (Base Class)
 
 
 ---
 #### UsageEventRepository\.credit\_usage\_event\_types<!-- {{#callable:python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository.credit_usage_event_types}} -->
-The `credit_usage_event_types` method returns a list of usage event types that are considered credits.
+[View Source →](<../../../../../../packages/shared/shared/repositories/usage_event_repository.py#L52>)
+
+Returns a list of usage event types that represent credit usage.
 - **Decorators**: `@staticmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns a list containing two specific `UsageEventType` values: `BASE_PLATFORM_USAGE_CREDIT` and `ADDITIONAL_PLATFORM_USAGE_CREDIT`.
+- **Logic and Control Flow**:
+    - Return a list containing `UsageEventType.BASE_PLATFORM_USAGE_CREDIT` and `UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT`.
 - **Output**: A list of `UsageEventType` objects representing credit usage event types.
-- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#UsageEventRepository>)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/repositories/usage_event_repository.UsageEventRepository`](<#usageeventrepository>)  (Base Class)
 
 
 

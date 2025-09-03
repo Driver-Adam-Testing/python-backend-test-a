@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `get_information_set_definitions_llm_response.py` file defines classes for representing and retrieving information set definitions, including parameters and enums for query types and source bounding.
+Classes for managing information set definitions and retrieval parameters with related enums.
 
 # Purpose
-This Python code defines two primary classes, `InformationSetDefinitionList` and `InformationSetRetrievalParameters`, both of which extend the `LlmParseable` interface, indicating they are designed to be compatible with a larger system that processes or parses language models. The `InformationSetDefinitionList` class encapsulates a collection of information sets, each represented by the inner class `InformationSetDefinition`, which includes attributes such as `name`, `description`, and `rationale`. This structure suggests that the class is used to manage and organize multiple information sets, likely for purposes such as data categorization or metadata management.
+The code defines two main classes, `InformationSetDefinitionList` and `InformationSetRetrievalParameters`, both of which inherit from `LlmParseable`. The `InformationSetDefinitionList` class represents a collection of information sets, each defined by the inner class `InformationSetDefinition`. This inner class includes attributes such as `name`, `description`, and `rationale`, which describe the characteristics and purpose of each information set.
 
-The `InformationSetRetrievalParameters` class is designed to specify the parameters required for retrieving information sets. It includes attributes like `query_strings`, `comparison_affirm`, `comparison_negate`, and several enumerated types such as `SourceBounding`, `QueryType`, `ElementAnalysis`, and `Exhaustiveness`. These enumerations define the constraints and methods for querying and analyzing information sets, providing a flexible framework for information retrieval. The presence of these detailed parameters and enumerations indicates that the code is part of a broader system, likely a library or module, that facilitates complex querying and retrieval operations on structured data sets.
+The `InformationSetRetrievalParameters` class specifies the parameters needed to retrieve an information set. It includes attributes like `query_strings`, `comparison_affirm`, `comparison_negate`, `source_bounding`, `query_type`, `element_analysis`, `exhaustiveness`, and `rationale`. These attributes define the criteria and methods for retrieving information sets. The class also defines several enumerations: `SourceBounding`, `QueryType`, `Exhaustiveness`, and `ElementAnalysis`, which provide specific options for the retrieval parameters. This code is likely part of a larger system that deals with information retrieval and processing, providing structured definitions and retrieval criteria for information sets.
 # Imports and Dependencies
 
 ---
@@ -20,43 +20,51 @@ The `InformationSetRetrievalParameters` class is designed to specify the paramet
 
 ---
 ### InformationSetDefinitionList<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetDefinitionList}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L6>)
+
 - **Members**:
     - `information_sets`: A list of information sets.
-- **Description**: The InformationSetDefinitionList class is designed to encapsulate a collection of information sets, each represented by the inner class InformationSetDefinition. This inner class includes attributes such as name, description, and rationale, which provide detailed information about each information set. The primary purpose of InformationSetDefinitionList is to manage and organize these sets, allowing for structured handling of multiple information sets within a single entity.
+- **Description**: Represents a list of information sets, each defined by the inner class `InformationSetDefinition`, which includes attributes for the name, description, and rationale of the information set.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../../interfaces/llm_parseable.py.md#LlmParseable>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../../interfaces/llm_parseable.py.md#llmparseable>)
 
 
 ---
 ### InformationSetDefinition<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetDefinitionList.InformationSetDefinition}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L20>)
+
 - **Members**:
     - `name`: The name of the information set.
     - `description`: A description of the information set.
     - `rationale`: The rationale behind the inclusion of this information set.
-- **Description**: The InformationSetDefinition class represents a single information set, encapsulating its name, description, and the rationale for its inclusion. It is designed to be parsed by an LLM (Language Model) and is used within the context of managing and defining collections of information sets.
+- **Description**: Represents a single information set with attributes for its name, description, and rationale.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../../interfaces/llm_parseable.py.md#LlmParseable>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../../interfaces/llm_parseable.py.md#llmparseable>)
 
 
 ---
 ### InformationSetRetrievalParameters<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetRetrievalParameters}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L28>)
+
 - **Members**:
-    - `query_strings`: The query strings to use to retrieve the information set.
-    - `comparison_affirm`: The comparison affirm to use to retrieve the information set.
-    - `comparison_negate`: The comparison negate to use to retrieve the information set.
-    - `source_bounding`: The bounding of the source to use to retrieve the information set.
-    - `query_type`: The type of query to use to retrieve the information set.
-    - `element_analysis`: The element analysis to use to retrieve the information set.
-    - `exhaustiveness`: The exhaustiveness to use to retrieve the information set.
-    - `rationale`: The rationale for why the parameters were chosen.
-- **Description**: The InformationSetRetrievalParameters class defines a set of parameters used for retrieving an information set, including query strings, comparison affirmations and negations, source bounding, query type, element analysis, and exhaustiveness. It also includes enumerations for SourceBounding, QueryType, ElementAnalysis, and Exhaustiveness, which provide specific options for these parameters. This class is designed to facilitate the configuration and execution of information retrieval processes by specifying detailed criteria and rationale for the retrieval operation.
+    - `query_strings`: A list of query strings to use to retrieve the information set.
+    - `comparison_affirm`: A string or None to affirm comparisons in retrieving the information set.
+    - `comparison_negate`: A string or None to negate comparisons in retrieving the information set.
+    - `source_bounding`: Defines the bounding of the source for information retrieval.
+    - `query_type`: Specifies the type of query for information retrieval.
+    - `element_analysis`: Determines the element analysis method for information retrieval.
+    - `exhaustiveness`: Indicates the level of exhaustiveness for information retrieval.
+    - `rationale`: Provides the rationale for the chosen parameters.
+- **Description**: Represents the parameters needed to retrieve an information set, including query strings, comparison criteria, source bounding, query type, element analysis, exhaustiveness, and rationale. It includes enumerations for `SourceBounding`, `QueryType`, `ElementAnalysis`, and `Exhaustiveness` to define specific options for these parameters.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../../interfaces/llm_parseable.py.md#LlmParseable>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../../interfaces/llm_parseable.py.md#llmparseable>)
 
 
 ---
 ### SourceBounding<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetRetrievalParameters.SourceBounding}} -->
-- **Description**: The `SourceBounding` class is an enumeration that defines two possible values, `FINITE` and `UNBOUNDED`, representing the bounding of a source in the context of information set retrieval parameters.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L49>)
+
+- **Description**: Defines the possible bounding states for a source, with options for `FINITE` and `UNBOUNDED`.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -64,7 +72,9 @@ The `InformationSetRetrievalParameters` class is designed to specify the paramet
 
 ---
 ### QueryType<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetRetrievalParameters.QueryType}} -->
-- **Description**: The `QueryType` class is an enumeration that defines two types of query methods: `EXACT_MATCH_KEYWORD` and `SEMANTIC`. It inherits from both `str` and `enum.Enum`, allowing it to be used as both a string and an enumeration type, providing a clear and structured way to specify the type of query to be used in information retrieval processes.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L53>)
+
+- **Description**: Defines types of queries with two possible values: `EXACT_MATCH_KEYWORD` and `SEMANTIC`.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -72,7 +82,9 @@ The `InformationSetRetrievalParameters` class is designed to specify the paramet
 
 ---
 ### Exhaustiveness<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetRetrievalParameters.Exhaustiveness}} -->
-- **Description**: The `Exhaustiveness` class is an enumeration that defines different levels of exhaustiveness for retrieving information sets, with three possible values: `ENFORCE_EXHAUSTIVENESS`, `BEST_EFFORT`, and `QUICK_AND_DIRTY`. It is used to specify the thoroughness of the retrieval process in the context of information set retrieval parameters.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L57>)
+
+- **Description**: Defines different levels of exhaustiveness for processing, including `ENFORCE_EXHAUSTIVENESS`, `BEST_EFFORT`, and `QUICK_AND_DIRTY`.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -80,7 +92,12 @@ The `InformationSetRetrievalParameters` class is designed to specify the paramet
 
 ---
 ### ElementAnalysis<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.InformationSetRetrievalParameters.ElementAnalysis}} -->
-- **Description**: The `ElementAnalysis` class is an enumeration that defines two possible values, `ALL` and `SEMANTIC_ANALYSIS`, which are used to specify the type of element analysis to be applied in the context of information set retrieval.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/get_information_set_definitions_llm_response.py#L62>)
+
+- **Members**:
+    - `ALL`: Represents the 'ALL' element analysis option.
+    - `SEMANTIC_ANALYSIS`: Represents the 'SEMANTIC_ANALYSIS' element analysis option.
+- **Description**: Defines an enumeration for element analysis options, including 'ALL' and 'SEMANTIC_ANALYSIS', used to specify the type of analysis to apply.
 - **Inherits From**:
     - `str`
     - `enum.Enum`

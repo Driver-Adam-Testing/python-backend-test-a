@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import modal
 from common import app
-from database.models_v2_enums import (
+from database.models_enums import (
     ContentKind,
     NodeKind,
     VersionStatus,
@@ -153,11 +153,10 @@ def handle_github_events(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-
-    # TODO Import is a dummy import to avoid the issue with importing
-    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
-    from database.models_v1 import GithubAppInstallation  # noqa: F401
-    from database.models_v2 import PrimaryAsset
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
@@ -272,11 +271,10 @@ def handle_gitlab_events(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-
-    # TODO Import is a dummy import to avoid the issue with importing
-    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
-    from database.models_v1 import GithubAppInstallation  # noqa: F401
-    from database.models_v2 import PrimaryAsset
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
     from onboarding import gitlab_ops
     from onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
@@ -379,8 +377,10 @@ def handle_bitbucket_events(
     from database.db import (
         engine,
     )
-    from database.models_v1 import GithubAppInstallation  # noqa: F401
-    from database.models_v2 import PrimaryAsset
+    from database.models import (
+        GithubAppInstallation,  # noqa: F401
+        PrimaryAsset,
+    )
     from onboarding import bitbucket_ops
     from onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
@@ -483,7 +483,7 @@ def handle_bitbucket_events(
 def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
-    from database.models_v1 import GithubAppInstallation
+    from database.models import GithubAppInstallation
     from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
 
@@ -592,7 +592,7 @@ def connect_unconnected_repos() -> None:
     """
     import requests
     from database.db import engine
-    from database.models_v1 import GithubAppInstallation
+    from database.models import GithubAppInstallation
     from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
 
@@ -682,7 +682,7 @@ def connect_unconnected_repos() -> None:
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
-    timeout=60 * 60 * 9,
+    timeout=int(60 * 60 * 12.5),  # longer than inspect db timeout
     region="us-east",
     max_containers=5,
     memory=2048,
@@ -702,16 +702,14 @@ def run_codebase_connection(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-    from database.models_v1 import (
+    from database.models import (
         DerivedContent,
         GitProviderKind,
-    )
-    from database.models_v2 import (
         Node,
         PrimaryAsset,
         Version,
     )
-    from database.models_v2_enums import VersionStatus
+    from database.models_enums import VersionStatus
     from onboarding.onboard_utils import (
         calculate_directory_stats,
         create_bucket_if_dne,
@@ -919,7 +917,20 @@ def run_codebase_connection(
         if version_status == VersionStatus.GENERATING:
             print("Inspecting...")
             inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-            inspect_db.remote(version_id)  # TODO: spawn?
+            try:
+                inspect_db.remote(version_id)
+            except Exception as e:
+                print(f"Uncaught during inspection: {e}")
+                # Note: this is likely redundant setting of error state, but this allows us to handle modal timeout exceptions
+
+                with Session(engine) as session, session.begin():
+                    update_stmt = (
+                        update(Version)
+                        .where(Version.id == version_id)
+                        .values(status=VersionStatus.GENERATION_ERROR)
+                    )
+                    session.exec(update_stmt)
+                raise
             print("Inspection complete")
 
     print(

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Handles AWS Lambda events for onboarding, with utilities for AWS S3 and configuration management.
+AWS Lambda function for S3 event processing and utilities for AWS S3 and environment configuration.
 
 ## Folders
-- **[utils](utils/README.md)**: Utility files for AWS S3 interactions and environment-specific configuration management using Pydantic.
+- **[utils](utils/README.md)**: Utilities for AWS S3 interactions and configuration settings for environment variables.
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase handles AWS Lambda events for onboarding by processing SNS messages, interacting with AWS Secrets Manager, and making HTTP requests to external services using Auth0 for authentication.
+- **[main.py](main.py.md)**: AWS Lambda function for processing S3 events, handling secrets, and executing onboarding services.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

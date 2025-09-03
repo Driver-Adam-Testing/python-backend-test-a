@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `logging_extension.py` file defines a `LoggingExtension` class that logs the first 128 characters of a GraphQL query execution context.
+A GraphQL logging extension that logs query execution details.
 
 # Purpose
-This code defines a custom extension for a GraphQL server using the Strawberry library, specifically for logging purposes. It is a narrow functionality script that extends the `SchemaExtension` class from Strawberry to log the execution of GraphQL queries. The `LoggingExtension` class overrides the [`on_execute`](<#LoggingExtensionon_execute>) method to log the first 128 characters of the GraphQL query being executed, removing any newline characters for cleaner logging. This is useful for monitoring and debugging GraphQL queries by providing insights into the queries being processed by the server.
+The code defines a `LoggingExtension` class that extends `SchemaExtension` from the `strawberry` library. It provides narrow functionality by implementing the [`on_execute`](<#loggingextensionon_execute>) method, which logs the first 128 characters of a GraphQL query from the `execution_context`. The log entry replaces newline characters with an empty string to ensure a single-line log message. This extension is useful for monitoring and debugging GraphQL queries by recording them in the application's log.
 # Imports and Dependencies
 
 ---
@@ -19,18 +19,20 @@ This code defines a custom extension for a GraphQL server using the Strawberry l
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the Python `logging` module. It is configured to use the name of the current module (`__name__`) as its logger name, which helps in identifying the source of log messages.
-- **Use**: This logger is used to log informational messages about GraphQL query executions within the `LoggingExtension` class.
+- **Type**: ``Logger``
+- **Description**: The `logger` is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows for logging messages that are specific to the module where the logger is defined.
+- **Use**: Used to log informational messages about the execution of GraphQL queries in the `LoggingExtension` class.
 
 
 # Classes
 
 ---
 ### LoggingExtension<!-- {{#class:python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension}} -->
-- **Description**: The LoggingExtension class is a subclass of SchemaExtension that logs the first 128 characters of a GraphQL query execution context, excluding newline characters, to provide insight into the queries being executed.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/logging_extension.py#L9>)
+
+- **Description**: Logs the first 128 characters of a GraphQL query from the execution context, removing newline characters, during the execution phase of a GraphQL operation.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension.on_execute`](<#LoggingExtensionon_execute>)
+    - [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension.on_execute`](<#loggingextensionon_execute>)
 - **Inherits From**:
     - `SchemaExtension`
 
@@ -38,13 +40,15 @@ This code defines a custom extension for a GraphQL server using the Strawberry l
 
 ---
 #### LoggingExtension\.on\_execute<!-- {{#callable:python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension.on_execute}} -->
-The `on_execute` method logs a truncated version of a GraphQL query from the execution context and yields control.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/logging_extension.py#L10>)
+
+Logs the first 128 characters of a GraphQL query and yields control.
 - **Inputs**: None
-- **Control Flow**:
-    - Logs the first 128 characters of the GraphQL query from the execution context, replacing newlines with empty strings.
-    - Yields control, allowing for further processing or continuation in a coroutine or generator context.
-- **Output**: An iterator that yields `None`, indicating the method is designed to be used in a generator context.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension`](<#LoggingExtension>)  (Base Class)
+- **Logic and Control Flow**:
+    - Logs the first 128 characters of the GraphQL query from `self.execution_context.query` after removing newline characters.
+    - Yields control back to the caller.
+- **Output**: An iterator that yields `None`.
+- **See also**: [`python-backend/backend/app/api/routes/legacy/logging_extension.LoggingExtension`](<#loggingextension>)  (Base Class)
 
 
 

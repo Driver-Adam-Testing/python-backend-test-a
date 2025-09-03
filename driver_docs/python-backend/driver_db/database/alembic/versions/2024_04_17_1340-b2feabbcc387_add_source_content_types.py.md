@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_04_17_1340-b2feabbcc387_add_source_content_types.py` file is an Alembic migration script that adds new entries to the `source_content_types` table if they do not already exist and provides a downgrade function to remove them.
+Alembic migration script to add and remove entries in the `source_content_types` table.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by adding new entries to the `source_content_types` table. The script is part of a version control system for database schemas, which is facilitated by Alembic, a lightweight database migration tool for SQLAlchemy. The primary function of this script is to ensure that specific content types, such as "codebase", "codebase-directory", "codebase-file", and "supplemental-document", are present in the `source_content_types` table. The [`upgrade`](<#upgrade>) function checks the existing entries in the table and inserts any of the specified content types that are not already present. Conversely, the [`downgrade`](<#downgrade>) function removes these content types from the table, effectively reversing the changes made by the [`upgrade`](<#upgrade>) function.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to a database schema. The [`upgrade`](<#upgrade>) function adds new entries to the `source_content_types` table, specifically inserting types such as `codebase`, `codebase-directory`, `codebase-file`, and `supplemental-document` if they do not already exist. It checks the current entries in the table and only inserts new types that are not present, ensuring no duplicates are added.
 
-The script is structured to be executed as part of a migration process, with revision identifiers (`revision` and `down_revision`) that help track the order of migrations. It uses SQLAlchemy's text-based SQL execution to interact with the database, ensuring that the operations are performed efficiently. The use of Alembic's `op.get_bind()` function allows the script to obtain a connection to the database, which is necessary for executing the SQL queries. This script is a focused component of a larger database management system, providing a specific and narrow functionality related to managing content types within a database schema.
+The [`downgrade`](<#downgrade>) function reverses the changes made by the [`upgrade`](<#upgrade>) function. It deletes the entries corresponding to the specified content types from the `source_content_types` table. The script uses SQLAlchemy's text-based SQL execution to interact with the database, and it includes revision identifiers to track the migration's position in the sequence of migrations. This script is part of a broader database migration process, allowing for controlled schema evolution in a database system.
 # Imports and Dependencies
 
 ---
@@ -22,65 +22,68 @@ The script is structured to be executed as part of a migration process, with rev
 
 ---
 ### revision
-- **Type**: `str`
-- **Description**: The `revision` variable is a string that uniquely identifies the current database schema version in the Alembic migration script. It is used to track changes and manage database schema upgrades and downgrades.
-- **Use**: This variable is used by Alembic to apply or revert migrations based on the specified revision identifier.
+- **Type**: ``str``
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `Union[str, None]`
-- **Description**: The `down_revision` variable is a global variable used in Alembic migration scripts to specify the identifier of the previous database schema revision that this migration depends on. It is set to the string '71e87ac95035', which is the revision ID of the migration that directly precedes the current one.
-- **Use**: This variable is used by Alembic to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``Union[str, None]``
+- **Description**: The `down_revision` variable is a global variable that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic, a database migration tool, to determine the order of migrations.
+- **Use**: Indicates the parent revision ID that the current migration script depends on.
 
 
 ---
 ### branch\_labels
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `branch_labels` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label a branch in a migration script.
-- **Use**: This variable is used to define labels for a branch in a database migration, which can help in identifying or categorizing the migration.
+- **Description**: `branch_labels` is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to potentially label branches in a migration script.
+- **Use**: Used to specify branch labels for Alembic migrations, though it is set to `None` by default in this script.
 
 
 ---
 ### depends\_on
 - **Type**: `Union[str, Sequence[str], None]`
-- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of Alembic migrations, which are part of the SQLAlchemy library for database schema management.
-- **Use**: This variable is used to specify dependencies for a database migration script, indicating which other migrations must be applied before this one.
+- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or a None value. It is used to specify dependencies for the Alembic migration script.
+- **Use**: Used to define dependencies for the Alembic migration script, indicating which other migrations this script depends on.
 
 
 ---
 ### content\_types
-- **Type**: `list`
-- **Description**: The `content_types` variable is a list of strings representing different types of content that can be stored or managed in the system. It includes types such as 'codebase', 'codebase-directory', 'codebase-file', and 'supplemental-document', which likely correspond to different categories or formats of content handled by the application.
-- **Use**: This variable is used to determine which content types should be inserted into or deleted from the `source_content_types` table in the database during upgrade and downgrade operations.
+- **Type**: ``list``
+- **Description**: A list of strings that represent different types of content related to a codebase. The list includes 'codebase', 'codebase-directory', 'codebase-file', and 'supplemental-document'.
+- **Use**: Used to determine which content types to insert or delete in the `source_content_types` table during database migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_04_17_1340-b2feabbcc387_add_source_content_types.upgrade}} -->
-The `upgrade` function adds new content types to the `source_content_types` table if they do not already exist.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_04_17_1340-b2feabbcc387_add_source_content_types.py#L29>)
+
+Adds new content types to the `source_content_types` table if they do not already exist.
 - **Inputs**: None
-- **Control Flow**:
-    - Retrieve a database connection using `op.get_bind()`.
-    - Execute a SQL query to select all existing type names from the `source_content_types` table.
-    - Store the result of the query in a set called `existing_types`.
-    - Create a list `new_types` containing type names from `content_types` that are not in `existing_types`.
-    - If `new_types` is not empty, construct an SQL `INSERT` statement to add these new types to the `source_content_types` table.
-    - Execute the constructed `INSERT` statement using the database connection.
-- **Output**: The function does not return any value; it performs a database update operation.
+- **Logic and Control Flow**:
+    - Executes a SQL query to select existing type names from the `source_content_types` table.
+    - Stores the result of the query in a set called `existing_types`.
+    - Compares `content_types` with `existing_types` to find new types that are not in the database.
+    - If there are new types, constructs an SQL `INSERT` statement to add them to the `source_content_types` table.
+    - Executes the `INSERT` statement to update the database.
+- **Output**: Does not return any value.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_04_17_1340-b2feabbcc387_add_source_content_types.downgrade}} -->
-The `downgrade` function removes specific content types from the `source_content_types` table in the database.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_04_17_1340-b2feabbcc387_add_source_content_types.py#L47>)
+
+Removes specified content types from the `source_content_types` table in the database.
 - **Inputs**: None
-- **Control Flow**:
-    - Constructs a comma-separated string of content type names from the `content_types` list.
-    - Builds a SQL DELETE query to remove entries from the `source_content_types` table where the `type_name` matches any of the names in the constructed string.
-    - Retrieves a database connection using `op.get_bind()`.
-    - Executes the DELETE query using the database connection.
-- **Output**: The function does not return any value; it performs a database operation to delete specific rows.
+- **Logic and Control Flow**:
+    - Creates a comma-separated string of content types from the `content_types` list, each enclosed in single quotes.
+    - Constructs a SQL `DELETE` query to remove entries from the `source_content_types` table where the `type_name` matches any of the specified content types.
+    - Gets a database connection using `op.get_bind()`.
+    - Executes the constructed SQL `DELETE` query using the database connection.
+- **Output**: Does not return any value.
 
 
 

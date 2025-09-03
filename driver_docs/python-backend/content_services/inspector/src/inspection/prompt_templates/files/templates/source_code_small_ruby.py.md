@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_ruby.py` file defines a template for inspecting Ruby source code, including prompts for purpose, imports, modules, and classes, using various components and utilities for structured prompting and language specialization.
+Templates for generating structured prompts and analyzing Ruby code components.
 
 # Purpose
-This Python code file defines a structured template specifically for analyzing and documenting small Ruby source code files. It provides narrow functionality by focusing on generating structured prompts and instructions for understanding the purpose, imports, dependencies, modules, and classes within Ruby code. The file imports various components and utilities from shared and utility modules, which are used to construct prompts and perform static analysis on Ruby code. The `SOURCE_CODE_SMALL_TEMPLATE_RUBY` variable is a list of tuples, each representing a different aspect of the Ruby code to be documented, such as purpose, imports, modules, and classes, using specific instructions and analysis functions. This setup is likely part of a larger system designed to automate or assist in the documentation and analysis of Ruby codebases.
+The code defines a template for generating structured prompts and instructions related to small Ruby source code files. It imports various components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization`, to facilitate the creation of prompts and style instructions. The `SOURCE_CODE_SMALL_TEMPLATE_RUBY` list contains tuples that define different sections of the template, including "Purpose", "Imports and Dependencies", "Modules", and "Classes". Each tuple specifies a type of prompt or condition, the associated instructions or checks, and the methods to process or analyze Ruby code. This setup is used to generate documentation or analysis for small Ruby code snippets, focusing on their purpose, dependencies, and structural elements.
 # Imports and Dependencies
 
 ---
@@ -29,9 +29,9 @@ This Python code file defines a structured template specifically for analyzing a
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_RUBY
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_RUBY` is a list of tuples, each containing structured data for generating Ruby code templates. Each tuple includes a type identifier, a description string, and a series of components or functions that define how to process or generate specific parts of a Ruby code template.
-- **Use**: This variable is used to define and organize the structure and components needed to generate small Ruby code templates, including prompts, imports, modules, and classes.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a description string, and a series of components or functions related to Ruby code analysis and prompt generation. Each tuple represents a different aspect of Ruby code, such as purpose, imports, modules, and classes.
+- **Use**: Used to define structured prompts and analysis components for Ruby code processing.
 
 
 

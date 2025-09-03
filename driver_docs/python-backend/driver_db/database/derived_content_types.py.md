@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `derived_content_types.py` file defines an enumeration of various derived content type names used in the `python-backend` codebase.
+Defines an enumeration for various derived content type names.
 
 # Purpose
-This code defines an enumeration class `DerivedContentTypeNames` using Python's `Enum` module, which provides a set of symbolic names for various content types. Each member of the enumeration represents a specific type of content, such as descriptions, quick start guides, architecture diagrams, and various PDF-related summaries. The purpose of this code is to provide a structured and readable way to handle different content types within a software application, likely for categorization or processing purposes. This is a narrow functionality script, primarily serving as a configuration or reference for other parts of a program that need to work with these specific content types.
+The code defines an enumeration `DerivedContentTypeNames` using Python's `Enum` class. This enumeration provides a set of named constants that represent different types of content descriptions and document elements. Each member of the enumeration is associated with a string value that describes a specific content type, such as `SHORT_PARAGRAPH_DESCRIPTION`, `QUICK_START_ENTRY`, or `PDF_SUMMARY`. This code is useful for categorizing and managing different content types in a structured way, likely within a larger application that processes or generates documentation. The use of an enumeration ensures that these content type names are consistent and easily referenced throughout the codebase.
 # Imports and Dependencies
 
 ---
@@ -17,31 +17,9 @@ This code defines an enumeration class `DerivedContentTypeNames` using Python's 
 
 ---
 ### DerivedContentTypeNames<!-- {{#class:python-backend/driver_db/database/derived_content_types.DerivedContentTypeNames}} -->
-- **Members**:
-    - `SHORT_PARAGRAPH_DESCRIPTION`: Represents a short paragraph description content type.
-    - `TERSE_SENTENCE_DESCRIPTION`: Represents a terse sentence description content type.
-    - `LONG_DESCRIPTION`: Represents a long description content type.
-    - `QUICK_START_ENTRY`: Represents a quick start entry content type.
-    - `QUICK_START_GETTING_STARTED`: Represents a quick start getting started content type.
-    - `QUICK_START_DEPENDENCIES`: Represents a quick start dependencies content type.
-    - `QUICK_START_USE`: Represents a quick start use content type.
-    - `ARCHITECTURE_DIAGRAM`: Represents an architecture diagram content type.
-    - `CHUNK_DESCRIPTIONS`: Represents chunk descriptions content type.
-    - `APPLICATION_NOTE`: Represents an application note content type.
-    - `SHORT_SENTENCE_DESCRIPTION`: Represents a short sentence description content type.
-    - `SYMBOL`: Represents a symbol content type.
-    - `PDF_SUMMARY`: Represents a PDF summary content type.
-    - `CODEBASE`: Represents a codebase content type.
-    - `CODEBASE_DIRECTORY`: Represents a codebase directory content type.
-    - `CODEBASE_FILE`: Represents a codebase file content type.
-    - `SUPPLEMENTAL_DOCUMENT`: Represents a supplemental document content type.
-    - `PDF_VISUAL_SUMMARY`: Represents a PDF visual summary content type.
-    - `PDF_TEXT_SUMMARY`: Represents a PDF text summary content type.
-    - `PDF_IMAGE_SUMMARY`: Represents a PDF image summary content type.
-    - `PDF_EXTRACTED_TEXT`: Represents a PDF extracted text content type.
-    - `PDF_EXTRACTED_TABLE`: Represents a PDF extracted table content type.
-    - `TEMPLATE`: Represents a template content type.
-- **Description**: The DerivedContentTypeNames class is an enumeration that defines a set of constants representing various types of content descriptions and formats, such as descriptions, quick start guides, architecture diagrams, and PDF summaries. Each member of the enumeration is associated with a string value that describes a specific content type, facilitating the categorization and identification of content within a software system.
+[View Source →](<../../../../driver_db/database/derived_content_types.py#L4>)
+
+- **Description**: Defines a set of enumeration values that represent different types of derived content names, such as descriptions, quick start guides, architecture diagrams, and various PDF summaries.
 - **Inherits From**:
     - `Enum`
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `threadpool.py` file defines a `FastShutdownThreadPoolExecutor` class that extends `ThreadPoolExecutor` to allow immediate shutdown on error without waiting for all threads to complete.
+A ThreadPoolExecutor subclass with a modified __exit__ method for immediate shutdown on error.
 
 # Purpose
-This code defines a specialized class, `FastShutdownThreadPoolExecutor`, which extends Python's built-in `concurrent.futures.ThreadPoolExecutor`. The primary purpose of this class is to modify the behavior of the [`__exit__`](<#FastShutdownThreadPoolExecutor__exit__>) method in a context manager (`with` block) to allow for immediate shutdown of the executor without waiting for all threads to complete their tasks. This functionality is particularly useful in scenarios where the tasks being executed are non-critical, and the program needs to handle exceptions or errors promptly by exiting the `with` block as soon as an error occurs. The code provides narrow functionality, focusing specifically on enhancing the shutdown behavior of a thread pool executor in error-handling contexts.
+The `FastShutdownThreadPoolExecutor` class extends the `concurrent.futures.ThreadPoolExecutor` to modify its behavior during the exit of a `with` block. Specifically, it overrides the [`__exit__`](<#fastshutdownthreadpoolexecutor__exit__>) method to shut down the executor without waiting for all threads to complete their tasks. This allows the `with` block to exit immediately upon encountering an error, enabling faster exception handling. While the executor stops accepting new tasks, any tasks already running will continue to execute. This functionality is useful in scenarios where the completion of all tasks is not critical, and immediate error handling is prioritized.
 # Imports and Dependencies
 
 ---
@@ -17,9 +17,11 @@ This code defines a specialized class, `FastShutdownThreadPoolExecutor`, which e
 
 ---
 ### FastShutdownThreadPoolExecutor<!-- {{#class:python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor}} -->
-- **Description**: The `FastShutdownThreadPoolExecutor` class is a subclass of `concurrent.futures.ThreadPoolExecutor` that overrides the `__exit__` method to allow the executor to shut down immediately without waiting for all threads to complete. This behavior is particularly useful in scenarios where the work being executed is not critical, and it is more important to handle exceptions promptly by exiting the `with` block as soon as an error occurs. While the executor will stop accepting new tasks, any tasks that are already running will continue to execute.
+[View Source →](<../../../../../../content_services/inspector/src/utils/threadpool.py#L4>)
+
+- **Description**: Modifies the `__exit__` method of `ThreadPoolExecutor` to shut down the executor without waiting, allowing the `with` block to exit immediately on error. This is useful for non-critical work where immediate exception handling is desired. Running futures will continue, but errors are raised immediately.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor.__exit__`](<#FastShutdownThreadPoolExecutor__exit__>)
+    - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor.__exit__`](<#fastshutdownthreadpoolexecutor__exit__>)
 - **Inherits From**:
     - `concurrent.futures.ThreadPoolExecutor`
 
@@ -27,16 +29,18 @@ This code defines a specialized class, `FastShutdownThreadPoolExecutor`, which e
 
 ---
 #### FastShutdownThreadPoolExecutor\.\_\_exit\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor.__exit__}} -->
-The `__exit__` method in `FastShutdownThreadPoolExecutor` shuts down the executor without waiting for threads to finish when exiting a `with` block.
+[View Source →](<../../../../../../content_services/inspector/src/utils/threadpool.py#L14>)
+
+Exits the context manager by shutting down the thread pool executor without waiting for threads to complete.
 - **Inputs**:
-    - `exc_type`: The exception type, if an exception was raised in the `with` block.
-    - `exc_val`: The exception value, if an exception was raised in the `with` block.
-    - `exc_tb`: The traceback object, if an exception was raised in the `with` block.
-- **Control Flow**:
-    - Calls the `shutdown` method on the executor with `wait=False`, which initiates an immediate shutdown without waiting for running threads to complete.
+    - `exc_type`: The exception type if an exception was raised in the `with` block.
+    - `exc_val`: The exception value if an exception was raised in the `with` block.
+    - `exc_tb`: The traceback object if an exception was raised in the `with` block.
+- **Logic and Control Flow**:
+    - Calls the `shutdown` method on the executor with `wait=False` to initiate a shutdown without waiting for threads to complete.
     - Returns `False` to indicate that any exception raised should not be suppressed.
-- **Output**: The method returns `False`, indicating that exceptions should not be suppressed and should propagate outside the `with` block.
-- **See also**: [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](<#FastShutdownThreadPoolExecutor>)  (Base Class)
+- **Output**: Returns `False` to indicate that exceptions should not be suppressed.
+- **See also**: [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](<#fastshutdownthreadpoolexecutor>)  (Base Class)
 
 
 

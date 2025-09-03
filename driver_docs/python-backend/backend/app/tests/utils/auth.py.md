@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth.py` file contains a utility function to obtain an Auth0 token using client credentials for authentication.
+Fetches an Auth0 access token using client credentials.
 
 # Purpose
-This Python script provides a narrow functionality focused on obtaining an authentication token from Auth0 using client credentials. It imports the `requests` library to handle HTTP requests and retrieves configuration settings from an external module, `app.core.config`. The function [`get_auth0_token`](<#get_auth0_token>) constructs a POST request to the Auth0 token endpoint, using credentials and audience information specified in the `settings` object. The function then sends the request and returns the access token from the JSON response, raising an exception if the request fails. This script is typically used in applications that require programmatic access to Auth0-protected resources.
+The code defines a function [`get_auth0_token`](<#get_auth0_token>) that retrieves an authentication token from the Auth0 service using client credentials. It constructs a URL using the `AUTH0_DOMAIN` from the application's configuration settings and sends a POST request to the Auth0 OAuth token endpoint. The request includes a JSON payload with the grant type, client ID, client secret, audience, and organization, all of which are sourced from the application's configuration. The function raises an error if the request fails and returns the access token from the response if successful. This code provides a narrow functionality focused on obtaining an Auth0 token for authentication purposes.
 # Imports and Dependencies
 
 ---
@@ -18,16 +18,18 @@ This Python script provides a narrow functionality focused on obtaining an authe
 
 ---
 ### get\_auth0\_token<!-- {{#callable:python-backend/backend/app/tests/utils/auth.get_auth0_token}} -->
-The function `get_auth0_token` retrieves an access token from Auth0 using client credentials.
+[View Source →](<../../../../../../backend/app/tests/utils/auth.py#L5>)
+
+Requests an access token from the Auth0 API using client credentials.
 - **Inputs**: None
-- **Control Flow**:
-    - Constructs the URL for the Auth0 token endpoint using the domain from settings.
-    - Creates a payload dictionary with grant type, client ID, client secret, audience, and organization for the Auth0 request.
+- **Logic and Control Flow**:
+    - Constructs the URL for the Auth0 token endpoint using the `AUTH0_DOMAIN` from the `settings`.
+    - Creates a payload dictionary with `grant_type`, `client_id`, `client_secret`, `audience`, and `organization` values from the `settings`.
     - Sets the request headers to specify JSON content type.
     - Sends a POST request to the Auth0 token endpoint with the payload and headers.
     - Raises an HTTP error if the response status is not successful.
-    - Extracts and returns the access token from the JSON response.
-- **Output**: The function returns the access token as a string extracted from the JSON response of the Auth0 token request.
+    - Extracts and returns the `access_token` from the JSON response.
+- **Output**: Returns the access token as a string.
 
 
 

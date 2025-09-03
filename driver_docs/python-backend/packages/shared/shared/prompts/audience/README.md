@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various Python scripts for tailored content prompts for business development, fifth graders, product managers, and software engineers.
+Prompt templates for business development, product managers, fifth graders, and software engineers.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `audience` package by importing the `fifth_grader` and `software_engineer` modules.
-- **[business_development.py](business_development.py.md)**: The `business_development.py` file contains a prompt designed to guide content curation for business development professionals interested in analyzing technical products with a focus on scalability, integration, and technological robustness.
-- **[fifth_grader.py](fifth_grader.py.md)**: The `fifth_grader.py` file contains a prompt and message setup for creating content tailored to a fifth grader's understanding of computers and software, emphasizing simplicity, engagement, and interactive learning.
-- **[product_manager.py](product_manager.py.md)**: The `product_manager.py` file contains a template for curating content aimed at product managers, focusing on technical analysis of product architecture, system integration, performance metrics, user experience, and market fit.
-- **[software_engineer.py](software_engineer.py.md)**: The `software_engineer.py` file defines a prompt and response structure for a seasoned software engineer seeking in-depth, codebase-specific technical documentation and analysis.
+- **[__init__.py](__init__.py.md)**: Imports modules `fifth_grader` and `software_engineer`.
+- **[business_development.py](business_development.py.md)**: A prompt template for business development professionals analyzing technical products.
+- **[fifth_grader.py](fifth_grader.py.md)**: Curates content to explain computers and software to fifth graders with illustrations and experiments.
+- **[product_manager.py](product_manager.py.md)**: Defines a prompt for product managers seeking a detailed technical analysis of product architecture.
+- **[software_engineer.py](software_engineer.py.md)**: Defines a prompt and response structure for a software engineer seeking detailed technical documentation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

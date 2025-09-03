@@ -3,26 +3,26 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tree-sitter language drivers and test suites for parsing and extracting code elements from C, C++, C#, Java, Python, and TypeScript.
+Tree-sitter language drivers and tests for C, C++, C#, Java, Python, and TypeScript code analysis.
 
 ## Folders
-- **[treesitter_testcases](treesitter_testcases/README.md)**: A collection of language-specific subfolders with test files for C, C++, C#, Java, Python, and TypeScript.
+- **[treesitter_testcases](treesitter_testcases/README.md)**: Test cases for C, C++, C#, Java, Python, and TypeScript covering various language constructs.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[base.py](base.py.md)**: The `base.py` file defines an abstract base class `DriverTree` for TreeSitter language drivers, providing methods for parsing source code and extracting various symbols, while ensuring subclasses specify required language attributes.
-- **[c_cpp_driver.py](c_cpp_driver.py.md)**: The `c_cpp_driver.py` file implements a driver for parsing C and C++ code using Tree-sitter, providing functionality to extract various code elements such as imports, callable definitions, data structures, variables, function calls, and function declarations.
-- **[c_driver_test.py](c_driver_test.py.md)**: The `c_driver_test.py` file contains a suite of tests using pytest to verify the functionality of the `CppCDriverTree` class, specifically focusing on extracting imports, function definitions, enums, structs, unions, global variables, function calls, and function declarations from C code.
-- **[cpp_driver_test.py](cpp_driver_test.py.md)**: The `cpp_driver_test.py` file contains a suite of pytest tests designed to verify the functionality of the `CppCDriverTree` class, specifically focusing on the extraction of C++ code elements such as includes, function definitions, class definitions, enums, structs, unions, namespaces, variables, function calls, function declarations, and inheritance structures.
-- **[cpp_fully_qualified_path_test.py](cpp_fully_qualified_path_test.py.md)**: The `cpp_fully_qualified_path_test.py` file contains a series of unit tests for verifying the extraction of fully qualified paths for classes and function calls within C++ code using the `CppCDriverTree` utility.
-- **[csharp_driver.py](csharp_driver.py.md)**: The `csharp_driver.py` file in the `python-backend` codebase provides a utility for parsing and extracting various C# language constructs such as imports, classes, methods, and interfaces using the Tree-sitter library.
-- **[csharp_driver_test.py](csharp_driver_test.py.md)**: The `csharp_driver_test.py` file contains a suite of pytest tests for the `CSharpDriverTree` class, verifying its ability to accurately extract and validate C# code elements such as namespaces, using imports, interfaces, classes, methods, enums, structs, and function calls from test C# source files.
-- **[java_driver.py](java_driver.py.md)**: The `java_driver.py` file implements a Java-specific driver for the Tree-sitter parser, providing functionality to extract and analyze various Java code elements such as classes, interfaces, methods, imports, and variables.
-- **[java_driver_test.py](java_driver_test.py.md)**: The `java_driver_test.py` file contains a suite of tests for the `JavaDriverTree` class, verifying its ability to extract various Java code elements such as imports, classes, interfaces, methods, variables, and enums from test Java files.
-- **[js_ts_driver.py](js_ts_driver.py.md)**: The `js_ts_driver.py` file implements a TypeScript tree-sitter driver for extracting various code elements such as imports, callable definitions, data structures, function calls, and variables from TypeScript and JavaScript code.
-- **[js_ts_driver_test.py](js_ts_driver_test.py.md)**: The `js_ts_driver_test.py` file contains a comprehensive suite of tests for the TypeScript tree-sitter driver, verifying its ability to accurately extract and count various TypeScript constructs such as imports, functions, classes, interfaces, object types, variables, enums, methods, and function calls.
-- **[python_driver.py](python_driver.py.md)**: The `python_driver.py` file in the `python-backend` codebase implements a driver for parsing Python code using Tree-sitter, providing functionality to extract various code elements such as imports, function and class definitions, calls, and variables.
-- **[python_driver_test.py](python_driver_test.py.md)**: The `python_driver_test.py` file contains a suite of tests using pytest to verify the functionality of the `PyDriverTree` class, specifically testing its ability to extract and validate import statements, function definitions, class definitions, global variables, method definitions, and function/method calls from Python code.
+- **[base.py](base.py.md)**: Abstract base class for TreeSitter language drivers with methods for symbol extraction and parsing.
+- **[c_cpp_driver.py](c_cpp_driver.py.md)**: A Tree-sitter-based driver for extracting C/C++ code symbols, including imports, functions, data structures, and variables.
+- **[c_driver_test.py](c_driver_test.py.md)**: Tests for extracting C/C++ code elements like imports, functions, enums, structs, unions, globals, and function calls using `CppCDriverTree`.
+- **[cpp_driver_test.py](cpp_driver_test.py.md)**: Tests for C++ code parsing and extraction of includes, functions, classes, enums, structs, unions, variables, function calls, and inheritance using the CppCDriverTree.
+- **[cpp_fully_qualified_path_test.py](cpp_fully_qualified_path_test.py.md)**: Tests for extracting fully qualified paths of classes and function calls in C++ code using `CppCDriverTree`.
+- **[csharp_driver.py](csharp_driver.py.md)**: A C# Tree-sitter driver for parsing and extracting symbols, classes, methods, and interfaces from C# source code.
+- **[csharp_driver_test.py](csharp_driver_test.py.md)**: Tests for extracting C# namespaces, using imports, interfaces, classes, methods, enums, structs, and invocations using the `CSharpDriverTree`.
+- **[java_driver.py](java_driver.py.md)**: Java syntax tree analysis and symbol extraction using Tree-sitter for Java source code.
+- **[java_driver_test.py](java_driver_test.py.md)**: Tests for Java code parsing using the JavaDriverTree class with various test cases.
+- **[js_ts_driver.py](js_ts_driver.py.md)**: Tree-sitter driver for TypeScript that extracts imports, callables, data structures, function calls, and variables.
+- **[js_ts_driver_test.py](js_ts_driver_test.py.md)**: Tests for the TypeScript tree-sitter driver, including imports, functions, classes, interfaces, and more.
+- **[python_driver.py](python_driver.py.md)**: A Python Tree-sitter driver for extracting and analyzing Python code structures and symbols.
+- **[python_driver_test.py](python_driver_test.py.md)**: Tests for the `PyDriverTree` class to verify extraction of imports, functions, classes, global variables, methods, and function calls from Python code.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

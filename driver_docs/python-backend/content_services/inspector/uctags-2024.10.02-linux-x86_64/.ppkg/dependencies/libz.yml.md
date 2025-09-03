@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libz.yml` file in the `python-backend` codebase specifies metadata and build instructions for the zlib data compression library, including its source URL, license, and developer information.
+Configuration for the zlib data compression library, including source details and build tweaks.
 
 # Purpose
-The provided content is a metadata file that describes the configuration and setup details for the zlib library, a general-purpose data compression library. It includes URLs for the source code repository, the official website, and a specific source archive, along with its SHA-256 checksum for verification. The file specifies that the library uses the Zlib license and is built using the CMake build system. It also contains patch instructions to modify the CMakeLists.txt file, adjusting paths and library names, and a tweak to create a symbolic link for the pkg-config file. Additionally, it lists the developers associated with the project, providing their names and contact information.
+The metadata file provides essential information about the zlib data compression library. It includes URLs for the Git repository, the official website, and the source archive, along with the SHA-256 checksum for verifying the source file's integrity. The library uses the Zlib license and employs CMake as its build system. The `dopatch` section contains commands to modify the `CMakeLists.txt` file, changing the pkgconfig directory path and adjusting the library name. The `dotweak` section creates a symbolic link for the pkgconfig file. The file also lists the developers, Jean-loup Gailly and Mark Adler, with their contact information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

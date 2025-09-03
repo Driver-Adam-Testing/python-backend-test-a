@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dag_test.py` file contains a suite of unit tests for the `FileTreeDag` and `Node` classes, verifying their functionality in managing and manipulating a directed acyclic graph (DAG) structure for file systems, including operations like adding, removing, and modifying nodes, as well as computing differences between DAGs.
+Unit tests for the `FileTreeDag` and `Node` classes, verifying node addition, removal, traversal, and status changes.
 
 # Purpose
-This Python file is a comprehensive test suite designed to validate the functionality of a file tree directed acyclic graph (DAG) system, which is implemented in the `FileTreeDag`, `Node`, and related classes. The file uses the `pytest` framework to define a series of unit tests that ensure the correct behavior of operations such as adding, removing, and modifying nodes within the DAG. The tests cover a wide range of scenarios, including the propagation of status changes through the DAG, topological sorting of nodes, and the computation of differences between two DAGs. The test cases are organized into two main classes: `TestNode` and `TestFileTreeDag`, each focusing on different aspects of the DAG's functionality.
+The code is a test suite for a file tree directed acyclic graph (DAG) system, which is implemented using the `pytest` framework. It tests the functionality of the `Node` and `FileTreeDag` classes, which are part of a module that manages file and directory structures as nodes in a DAG. The tests cover various operations such as adding and removing child nodes, traversing nodes upstream and downstream, converting nodes to a lightweight representation, and marking nodes as modified. The suite also includes tests for topological sorting of nodes and computing differences between two DAGs, which helps in identifying additions, modifications, and removals of files and directories.
 
-The `TestNode` class primarily tests the basic operations on individual nodes, such as adding and removing child nodes, and traversing the DAG. The `TestFileTreeDag` class, on the other hand, focuses on more complex operations involving the entire DAG, such as creating a DAG from a file structure, marking nodes as modified, and computing differences between two DAGs. The file also includes utility functions and fixtures to set up test environments, such as creating temporary directories and initializing DAG structures. This test suite is crucial for ensuring the robustness and reliability of the file tree DAG system, which is likely used for managing and tracking changes in a hierarchical file structure.
+The test suite is organized into two main classes: `TestNode` and `TestFileTreeDag`. `TestNode` focuses on testing individual node operations, while `TestFileTreeDag` tests the broader functionality of the DAG, including file addition, removal, and status propagation. The suite uses fixtures to set up test environments, such as temporary directories and predefined node structures, to ensure that each test runs in isolation and with consistent initial conditions. The [`create_file_tree_dag`](<#create_file_tree_dag>) function is used to create a `FileTreeDag` instance with a specified structure, facilitating the testing of DAG operations.
 # Imports and Dependencies
 
 ---
@@ -27,602 +27,669 @@ The `TestNode` class primarily tests the basic operations on individual nodes, s
 
 ---
 ### TestNode<!-- {{#class:python-backend/content_services/inspector/src/utils/dag_test.TestNode}} -->
-- **Description**: The `TestNode` class is a test suite for the `Node` class, utilizing the `pytest` framework to define fixtures and test methods. It provides fixtures for creating different types of nodes, such as root, child, second child, and grandchild nodes, each with specific attributes. The class includes test methods to verify the functionality of adding and removing child nodes, traversing nodes upstream and downstream, and converting nodes into a lite version. These tests ensure that the `Node` class behaves correctly in various scenarios, such as maintaining parent-child relationships and correctly traversing node hierarchies.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L10>)
+
+- **Description**: Defines test cases for the `Node` class using the `pytest` framework. It includes fixtures to create different types of nodes (`root_node`, `child_node`, `second_child_node`, and `grandchild_node`) and test methods to verify node operations such as adding and removing children, traversing nodes upstream and downstream, and converting nodes into a lite version. The tests ensure that node relationships and properties are correctly maintained and manipulated.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.root_node`](<#TestNoderoot_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.child_node`](<#TestNodechild_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.second_child_node`](<#TestNodesecond_child_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.grandchild_node`](<#TestNodegrandchild_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_add_child`](<#TestNodetest_add_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_remove_child`](<#TestNodetest_remove_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_traverse_upstream`](<#TestNodetest_traverse_upstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_traverse_downstream`](<#TestNodetest_traverse_downstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_into_lite_node`](<#TestNodetest_into_lite_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.root_node`](<#testnoderoot_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.child_node`](<#testnodechild_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.second_child_node`](<#testnodesecond_child_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.grandchild_node`](<#testnodegrandchild_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_add_child`](<#testnodetest_add_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_remove_child`](<#testnodetest_remove_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_traverse_upstream`](<#testnodetest_traverse_upstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_traverse_downstream`](<#testnodetest_traverse_downstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_into_lite_node`](<#testnodetest_into_lite_node>)
 
 **Methods**
 
 ---
 #### TestNode\.root\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.root_node}} -->
-The `root_node` method is a pytest fixture that creates and returns a Node object representing the root folder with specific attributes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L11>)
+
+Creates a [`Node`](<dag.py.md#node>) instance representing the root folder for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The method is decorated with `@pytest.fixture`, indicating it is a fixture for pytest tests.
-    - A Node object is instantiated with the kind set to `NodeKind.ROOT_FOLDER`, root relative path set to the root directory (`Path("/")`), no parent (`parent=None`), and status set to `NodeStatus.UNMODIFIED`.
-    - The created Node object is returned.
-- **Output**: A Node object representing the root folder with specified attributes is returned.
+- **Logic and Control Flow**:
+    - Returns a [`Node`](<dag.py.md#node>) object with `kind` set to `NodeKind.ROOT_FOLDER`, `root_rel_path` set to the root path `/`, `parent` set to `None`, and `status` set to `NodeStatus.UNMODIFIED`.
+- **Output**: A [`Node`](<dag.py.md#node>) object representing the root folder with specified attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#Node>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#node>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.child\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.child_node}} -->
-The `child_node` method is a pytest fixture that creates and returns a Node object representing a sub-folder with a specific path and status.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L20>)
+
+Creates a [`Node`](<dag.py.md#node>) instance representing a sub-folder with a specific path and status for use in tests.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The method is decorated with `@pytest.fixture`, indicating it is a fixture for pytest tests.
-    - A new [`Node`](<dag.py.md#Node>) object is instantiated with specific attributes: `kind` set to `NodeKind.SUB_FOLDER`, `root_rel_path` set to `Path("/child")`, `parent` set to `None`, and `status` set to `NodeStatus.UNMODIFIED`.
-    - The newly created [`Node`](<dag.py.md#Node>) object is returned.
-- **Output**: A [`Node`](<dag.py.md#Node>) object representing a sub-folder with the specified attributes.
+- **Logic and Control Flow**:
+    - Returns a [`Node`](<dag.py.md#node>) object with `kind` set to `NodeKind.SUB_FOLDER`.
+    - Sets `root_rel_path` to `Path("/child")`.
+    - Sets `parent` to `None`.
+    - Sets `status` to `NodeStatus.UNMODIFIED`.
+- **Output**: A [`Node`](<dag.py.md#node>) instance representing a sub-folder with the specified attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#Node>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#node>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.second\_child\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.second_child_node}} -->
-The `second_child_node` method is a pytest fixture that creates and returns a Node object representing a second child sub-folder with a specific path and status.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L29>)
+
+Creates a [`Node`](<dag.py.md#node>) instance representing a second child sub-folder for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The method is decorated with `@pytest.fixture`, indicating it is a fixture for use in pytest tests.
-    - A [`Node`](<dag.py.md#Node>) object is instantiated with the following attributes: `kind` set to `NodeKind.SUB_FOLDER`, `root_rel_path` set to `Path("/child2")`, `parent` set to `None`, and `status` set to `NodeStatus.UNMODIFIED`.
-    - The created [`Node`](<dag.py.md#Node>) object is returned.
-- **Output**: A [`Node`](<dag.py.md#Node>) object representing a sub-folder with the path `/child2` and an unmodified status.
+- **Logic and Control Flow**:
+    - Returns a [`Node`](<dag.py.md#node>) object with `kind` set to `NodeKind.SUB_FOLDER`.
+    - Sets `root_rel_path` to `Path("/child2")`.
+    - Sets `parent` to `None`.
+    - Sets `status` to `NodeStatus.UNMODIFIED`.
+- **Output**: A [`Node`](<dag.py.md#node>) object representing a second child sub-folder with specified attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#Node>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#node>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.grandchild\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.grandchild_node}} -->
-The `grandchild_node` method is a pytest fixture that creates and returns a Node object representing a file located at '/child/grandchild' with an unmodified status.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L38>)
+
+Creates a [`Node`](<dag.py.md#node>) instance representing a file located at `/child/grandchild` with an unmodified status.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The method returns a new Node object.
-    - The Node object is initialized with kind set to NodeKind.FILE, root_rel_path set to Path('/child/grandchild'), parent set to None, and status set to NodeStatus.UNMODIFIED.
-- **Output**: A Node object representing a file at '/child/grandchild' with an unmodified status.
+- **Logic and Control Flow**:
+    - Returns a [`Node`](<dag.py.md#node>) object with `kind` set to `NodeKind.FILE`, `root_rel_path` set to `Path("/child/grandchild")`, `parent` set to `None`, and `status` set to `NodeStatus.UNMODIFIED`.
+- **Output**: A [`Node`](<dag.py.md#node>) object representing a file node with specified attributes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#Node>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<dag.py.md#node>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.test\_add\_child<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_add_child}} -->
-The `test_add_child` method verifies the functionality of adding child nodes to a parent node and checks the integrity of parent-child relationships in a node tree structure.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L47>)
+
+Tests the addition of child and grandchild nodes to a root node and verifies their parent-child relationships.
 - **Inputs**:
-    - `root_node`: A Node object representing the root node of the tree.
-    - `child_node`: A Node object representing a child node to be added to the root node.
-    - `grandchild_node`: A Node object representing a grandchild node to be added to the child node.
-- **Control Flow**:
-    - The method begins by adding `child_node` as a child to `root_node` using the [`add_child`](<dag.py.md#Nodeadd_child>) method.
-    - It asserts that the `parent` attribute of `child_node` is correctly set to `root_node`.
-    - It asserts that `child_node` is correctly added to the `children` dictionary of `root_node` with the key '/child'.
-    - Next, it adds `grandchild_node` as a child to `child_node` using the [`add_child`](<dag.py.md#Nodeadd_child>) method.
-    - It asserts that the `parent` attribute of `grandchild_node` is correctly set to `child_node`.
-    - It asserts that `grandchild_node` is correctly added to the `children` dictionary of `child_node` with the key '/child/grandchild'.
-    - Finally, it asserts that the `root_rel_path` of `grandchild_node` is correctly set to `Path('/child/grandchild')`.
-- **Output**: The method does not return any value; it raises an assertion error if any of the assertions fail.
+    - `root_node`: A `Node` object representing the root node.
+    - `child_node`: A `Node` object representing the child node to be added to the root node.
+    - `grandchild_node`: A `Node` object representing the grandchild node to be added to the child node.
+- **Logic and Control Flow**:
+    - Add `child_node` to `root_node` using [`add_child`](<dag.py.md#nodeadd_child>) method.
+    - Verify that `child_node`'s parent is `root_node` and it is correctly added to `root_node`'s children.
+    - Add `grandchild_node` to `child_node` using [`add_child`](<dag.py.md#nodeadd_child>) method.
+    - Verify that `grandchild_node`'s parent is `child_node` and it is correctly added to `child_node`'s children.
+    - Verify that `grandchild_node`'s `root_rel_path` is set to `/child/grandchild`.
+- **Output**: No output is returned as the function is a test method that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#Nodeadd_child>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#nodeadd_child>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.test\_remove\_child<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_remove_child}} -->
-The `test_remove_child` method verifies that a child node can be successfully removed from a root node and that the child's parent reference is updated accordingly.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L59>)
+
+Tests the removal of a child node from a root node and verifies the resulting state of the nodes.
 - **Inputs**:
-    - `root_node`: A Node object representing the root node of the tree structure.
-    - `child_node`: A Node object representing the child node to be added and then removed from the root node.
-    - `grandchild_node`: A Node object representing the grandchild node to be added to the child node.
-- **Control Flow**:
-    - The method begins by adding the `child_node` to the `root_node` using the [`add_child`](<dag.py.md#Nodeadd_child>) method.
-    - Next, the `grandchild_node` is added to the `child_node` using the [`add_child`](<dag.py.md#Nodeadd_child>) method.
-    - The [`remove_child`](<dag.py.md#Noderemove_child>) method is called on the `root_node` with the path of the `child_node` to remove it.
-    - An assertion checks that the path of the `child_node` is no longer present in the `root_node`'s children.
-    - Another assertion checks that the `child_node`'s parent attribute is set to `None`, indicating it has been successfully removed.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
+    - `root_node`: The root node from which a child node will be removed.
+    - `child_node`: The child node to be added to and then removed from the root node.
+    - `grandchild_node`: The grandchild node to be added to the child node.
+- **Logic and Control Flow**:
+    - Add `child_node` to `root_node` as a child.
+    - Add `grandchild_node` to `child_node` as a child.
+    - Remove `child_node` from `root_node` using the path `/child`.
+    - Assert that the path `/child` is not in the children of `root_node`.
+    - Assert that `child_node` has no parent.
+- **Output**: No output is returned as the function is a test method that uses assertions to verify behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#Nodeadd_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<dag.py.md#Noderemove_child>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#nodeadd_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<dag.py.md#noderemove_child>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.test\_traverse\_upstream<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_traverse_upstream}} -->
-The `test_traverse_upstream` method verifies that the [`traverse_upstream`](<dag.py.md#Nodetraverse_upstream>) function of a `Node` correctly returns a list of nodes from the current node up to the root node.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L69>)
+
+Tests the upstream traversal of nodes in a tree structure.
 - **Inputs**:
-    - `grandchild_node`: A `Node` object representing the grandchild node in the hierarchy.
-    - `child_node`: A `Node` object representing the child node in the hierarchy.
-    - `root_node`: A `Node` object representing the root node in the hierarchy.
-- **Control Flow**:
-    - The method first establishes a parent-child relationship by adding `child_node` as a child of `root_node` and `grandchild_node` as a child of `child_node`.
-    - It then calls the [`traverse_upstream`](<dag.py.md#Nodetraverse_upstream>) method on `grandchild_node` and converts the result to a list.
-    - An assertion checks that the list of upstream nodes is exactly `[grandchild_node, child_node, root_node]`, ensuring the traversal order is correct.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of the [`traverse_upstream`](<dag.py.md#Nodetraverse_upstream>) method.
+    - `grandchild_node`: A `Node` object representing the grandchild node in the tree.
+    - `child_node`: A `Node` object representing the child node in the tree.
+    - `root_node`: A `Node` object representing the root node in the tree.
+- **Logic and Control Flow**:
+    - Add `child_node` as a child to `root_node`.
+    - Add `grandchild_node` as a child to `child_node`.
+    - Call [`traverse_upstream`](<dag.py.md#nodetraverse_upstream>) on `grandchild_node` and convert the result to a list.
+    - Assert that the list of upstream nodes is equal to `[grandchild_node, child_node, root_node]`.
+- **Output**: No output is returned as the function is a test method and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#Nodeadd_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<dag.py.md#Nodetraverse_upstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#nodeadd_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<dag.py.md#nodetraverse_upstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.test\_traverse\_downstream<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_traverse_downstream}} -->
-The `test_traverse_downstream` method verifies the correct traversal of nodes in a tree structure from a root node downstream to its children and grandchildren.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L78>)
+
+Tests the downstream traversal of nodes in a tree structure.
 - **Inputs**:
-    - `grandchild_node`: A Node object representing the grandchild in the tree structure.
-    - `child_node`: A Node object representing the first child in the tree structure.
-    - `second_child_node`: A Node object representing the second child in the tree structure.
-    - `root_node`: A Node object representing the root of the tree structure.
-- **Control Flow**:
-    - The method begins by adding `child_node` and `second_child_node` as children to `root_node` using the [`add_child`](<dag.py.md#Nodeadd_child>) method.
-    - It then adds `grandchild_node` as a child to `child_node`.
-    - The method calls [`traverse_downstream`](<dag.py.md#Nodetraverse_downstream>) on `root_node` and converts the result to a list, storing it in `downstream_nodes`.
-    - An assertion checks that `downstream_nodes` contains `root_node`, `child_node`, `grandchild_node`, and `second_child_node` in that order.
-    - The method calls [`traverse_downstream`](<dag.py.md#Nodetraverse_downstream>) on `child_node` and asserts that the result is a list containing `child_node` and `grandchild_node`.
-    - Finally, it calls [`traverse_downstream`](<dag.py.md#Nodetraverse_downstream>) on `second_child_node` and asserts that the result is a list containing only `second_child_node`.
-- **Output**: The method does not return any value; it uses assertions to verify the correctness of the downstream traversal.
+    - `grandchild_node`: A `Node` object representing the grandchild node in the tree.
+    - `child_node`: A `Node` object representing the child node in the tree.
+    - `second_child_node`: A `Node` object representing the second child node in the tree.
+    - `root_node`: A `Node` object representing the root node in the tree.
+- **Logic and Control Flow**:
+    - Add `child_node` and `second_child_node` as children to `root_node`.
+    - Add `grandchild_node` as a child to `child_node`.
+    - Traverse downstream from `root_node` and assert the order of nodes is `[root_node, child_node, grandchild_node, second_child_node]`.
+    - Traverse downstream from `child_node` and assert the order of nodes is `[child_node, grandchild_node]`.
+    - Traverse downstream from `second_child_node` and assert the order of nodes is `[second_child_node]`.
+- **Output**: No output is returned; assertions validate the downstream traversal order.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#Nodeadd_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<dag.py.md#nodeadd_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 ---
 #### TestNode\.test\_into\_lite\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestNode.test_into_lite_node}} -->
-The `test_into_lite_node` method verifies that a `Node` object can be correctly converted into a `LiteNode` object while maintaining its kind and root relative path.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L103>)
+
+Tests the conversion of a `Node` object to a `LiteNode` object and verifies the properties of the converted object.
 - **Inputs**:
-    - `grandchild_node`: A `Node` object representing a grandchild node, which is expected to be converted into a `LiteNode`.
-- **Control Flow**:
-    - Call the [`into_lite_node`](<dag.py.md#Nodeinto_lite_node>) method on the `grandchild_node` to convert it into a `LiteNode`.
-    - Assert that the resulting object is an instance of `LiteNode`.
-    - Assert that the `kind` attribute of the `lite_node` matches that of the `grandchild_node`.
-    - Assert that the `root_rel_path` attribute of the `lite_node` matches that of the `grandchild_node`.
-- **Output**: The method does not return any value; it raises an assertion error if any of the checks fail.
+    - `grandchild_node`: A `Node` object that is expected to be converted into a `LiteNode`.
+- **Logic and Control Flow**:
+    - Call the [`into_lite_node`](<dag.py.md#nodeinto_lite_node>) method on `grandchild_node` to convert it into a `LiteNode`.
+    - Use `assert` to check that the resulting `lite_node` is an instance of `LiteNode`.
+    - Use `assert` to verify that the `kind` attribute of `lite_node` matches that of `grandchild_node`.
+    - Use `assert` to verify that the `root_rel_path` attribute of `lite_node` matches that of `grandchild_node`.
+- **Output**: No output is returned as the function is a test method that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.into_lite_node`](<dag.py.md#Nodeinto_lite_node>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#TestNode>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.into_lite_node`](<dag.py.md#nodeinto_lite_node>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestNode`](<#testnode>)  (Base Class)
 
 
 
 ---
 ### TestFileTreeDag<!-- {{#class:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L129>)
+
 - **Decorators**: `@pytest.fixture`
-- **Description**: The `TestFileTreeDag` class is a test suite designed to validate the functionality of the `FileTreeDag` class, which manages a directed acyclic graph (DAG) representing a file tree structure. It uses pytest fixtures to set up temporary directories and file structures for testing various scenarios, such as adding, removing, and modifying files and folders within the DAG. The tests ensure that changes in the file tree are correctly reflected in the DAG's node statuses, and that operations like topological sorting and computing differences between DAGs are performed accurately.
+- **Description**: Contains test cases for the `FileTreeDag` class, using pytest fixtures to set up temporary directories and file structures for testing file addition, removal, and modification within a directed acyclic graph (DAG) representing a file tree.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.temp_dir`](<#TestFileTreeDagtemp_dir>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.setup_file_tree`](<#TestFileTreeDagsetup_file_tree>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_add_file_marks_ancestors_as_added`](<#TestFileTreeDagtest_add_file_marks_ancestors_as_added>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_marks_parents_as_modified`](<#TestFileTreeDagtest_remove_file_marks_parents_as_modified>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_marks_ancestors_as_removed_if_no_active_children`](<#TestFileTreeDagtest_remove_file_marks_ancestors_as_removed_if_no_active_children>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_does_not_mark_ancestors_as_removed_if_active_children_exist`](<#TestFileTreeDagtest_remove_file_does_not_mark_ancestors_as_removed_if_active_children_exist>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_propagates_to_parents`](<#TestFileTreeDagtest_mark_as_modified_propagates_to_parents>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_propagates_to_children`](<#TestFileTreeDagtest_mark_as_modified_propagates_to_children>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_does_not_propagate_to_unchanged_ancestors_if_disabled`](<#TestFileTreeDagtest_mark_as_modified_does_not_propagate_to_unchanged_ancestors_if_disabled>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_all_nodes`](<#TestFileTreeDagtest_topological_sort_all_nodes>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_changed_nodes_only`](<#TestFileTreeDagtest_topological_sort_changed_nodes_only>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_downstream_only_and_sort_changed_nodes`](<#TestFileTreeDagtest_mark_downstream_only_and_sort_changed_nodes>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_files_only`](<#TestFileTreeDagtest_topological_sort_files_only>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_folders_only`](<#TestFileTreeDagtest_topological_sort_folders_only>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.setup_diff_dags`](<#TestFileTreeDagsetup_diff_dags>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_additions`](<#TestFileTreeDagtest_compute_diff_additions>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_modifications`](<#TestFileTreeDagtest_compute_diff_modifications>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_removals`](<#TestFileTreeDagtest_compute_diff_removals>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_unmodified_nodes`](<#TestFileTreeDagtest_compute_diff_unmodified_nodes>)
-    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_no_changes`](<#TestFileTreeDagtest_compute_diff_no_changes>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.temp_dir`](<#testfiletreedagtemp_dir>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.setup_file_tree`](<#testfiletreedagsetup_file_tree>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_add_file_marks_ancestors_as_added`](<#testfiletreedagtest_add_file_marks_ancestors_as_added>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_marks_parents_as_modified`](<#testfiletreedagtest_remove_file_marks_parents_as_modified>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_marks_ancestors_as_removed_if_no_active_children`](<#testfiletreedagtest_remove_file_marks_ancestors_as_removed_if_no_active_children>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_does_not_mark_ancestors_as_removed_if_active_children_exist`](<#testfiletreedagtest_remove_file_does_not_mark_ancestors_as_removed_if_active_children_exist>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_propagates_to_parents`](<#testfiletreedagtest_mark_as_modified_propagates_to_parents>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_propagates_to_children`](<#testfiletreedagtest_mark_as_modified_propagates_to_children>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_does_not_propagate_to_unchanged_ancestors_if_disabled`](<#testfiletreedagtest_mark_as_modified_does_not_propagate_to_unchanged_ancestors_if_disabled>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_all_nodes`](<#testfiletreedagtest_topological_sort_all_nodes>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_changed_nodes_only`](<#testfiletreedagtest_topological_sort_changed_nodes_only>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_downstream_only_and_sort_changed_nodes`](<#testfiletreedagtest_mark_downstream_only_and_sort_changed_nodes>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_files_only`](<#testfiletreedagtest_topological_sort_files_only>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_folders_only`](<#testfiletreedagtest_topological_sort_folders_only>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.setup_diff_dags`](<#testfiletreedagsetup_diff_dags>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_additions`](<#testfiletreedagtest_compute_diff_additions>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_modifications`](<#testfiletreedagtest_compute_diff_modifications>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_removals`](<#testfiletreedagtest_compute_diff_removals>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_unmodified_nodes`](<#testfiletreedagtest_compute_diff_unmodified_nodes>)
+    - [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_no_changes`](<#testfiletreedagtest_compute_diff_no_changes>)
 
 **Methods**
 
 ---
 #### TestFileTreeDag\.temp\_dir<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.temp_dir}} -->
-The `temp_dir` method is a pytest fixture that provides a temporary directory for use in tests.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L130>)
+
+Provides a temporary directory for use in tests.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFileTreeDag` to which this method belongs.
-- **Control Flow**:
-    - The method uses a `with` statement to create a `TemporaryDirectory` which ensures that the directory is automatically cleaned up after use.
-    - The `TemporaryDirectory` is assigned to `tmpdir`, and the method yields a `Path` object pointing to this temporary directory.
+    - `self`: Represents the instance of the class where the method is defined.
+- **Logic and Control Flow**:
+    - Uses a context manager to create a temporary directory using `TemporaryDirectory`.
+    - Yields a `Path` object pointing to the temporary directory.
 - **Output**: An iterator that yields a `Path` object representing the temporary directory.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.setup\_file\_tree<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.setup_file_tree}} -->
-The `setup_file_tree` method is a pytest fixture that creates a temporary directory structure with specific folders and files for testing purposes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L135>)
+
+Creates a temporary file tree structure with specific folders and files for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Refers to the instance of the class `TestFileTreeDag` where this method is defined.
-    - `temp_dir`: A `Path` object representing a temporary directory provided by the `temp_dir` fixture.
-- **Control Flow**:
-    - Create a root directory named 'root' inside the temporary directory.
+    - `self`: Reference to the instance of the class where this method is defined.
+    - `temp_dir`: A `Path` object representing the temporary directory where the file tree will be created.
+- **Logic and Control Flow**:
+    - Create a root directory named 'root' inside the `temp_dir`.
     - Create a subdirectory 'folder1' inside the 'root' directory.
     - Create a file 'file0.txt' inside 'folder1'.
     - Create a subdirectory 'subfolder1' inside 'folder1'.
-    - Create two files 'file1.txt' and 'file2.txt' inside 'subfolder1'.
-    - Ensure that all directories are created with the necessary parent directories and that they exist.
-    - Create the files 'file0.txt', 'file1.txt', and 'file2.txt' by touching them, which creates empty files if they do not exist.
-    - Return a tuple containing paths to the root directory, the three files, and the two folders.
-- **Output**: A tuple containing six `Path` objects: the root directory, the three files, and the two folders.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - Create two files, 'file1.txt' and 'file2.txt', inside 'subfolder1'.
+    - Ensure that all directories are created with the necessary parent directories and that files are created as empty files.
+    - Return a tuple containing paths to the root directory, the created files, and the directories.
+- **Output**: A tuple containing `Path` objects for the root directory, the created files, and the directories: `(root_abs_path, test_file0, test_file1, test_file2, folder1, subfolder1)`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_add\_file\_marks\_ancestors\_as\_added<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_add_file_marks_ancestors_as_added}} -->
-The `test_add_file_marks_ancestors_as_added` method tests that adding files to a [`FileTreeDag`](<dag.py.md#FileTreeDag>) marks the files and their ancestors as added, except for the root which is marked as modified.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L152>)
+
+Tests if adding files to a [`FileTreeDag`](<dag.py.md#filetreedag>) marks the files and their ancestors as added, except for the root which is marked as modified.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that provides a tuple of Paths representing a file tree structure, including the root path and paths to test files and folders.
-- **Control Flow**:
-    - Extracts paths from the `setup_file_tree` fixture into variables `root_abs_path`, `test_file0`, `test_file1`, and `test_file2`.
-    - Initializes a [`FileTreeDag`](<dag.py.md#FileTreeDag>) object with `root_abs_path` as the root.
-    - Adds `test_file0`, `test_file1`, and `test_file2` to the [`FileTreeDag`](<dag.py.md#FileTreeDag>) with `change_status=True`, marking them as added.
-    - Asserts that the root node's status is `MODIFIED`, while the statuses of the added files and their ancestor folders are `ADDED`.
-- **Output**: The method does not return any value; it uses assertions to verify the expected status of nodes in the [`FileTreeDag`](<dag.py.md#FileTreeDag>).
+    - `setup_file_tree`: A tuple containing paths for the root directory, three test files, and two folders.
+- **Logic and Control Flow**:
+    - Extracts paths from `setup_file_tree` tuple.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) instance with the root path.
+    - Adds three test files to the [`FileTreeDag`](<dag.py.md#filetreedag>) with `change_status` set to `True`.
+    - Asserts that the root node is marked as `MODIFIED`.
+    - Asserts that the ancestor nodes of the added files are marked as `ADDED`.
+- **Output**: No output is returned; the function uses assertions to verify the expected behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_remove\_file\_marks\_parents\_as\_modified<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_marks_parents_as_modified}} -->
-This test method verifies that removing a file in a file tree structure marks the file as removed and its parent directories as modified.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L181>)
+
+Tests the removal of a file and ensures its parent directories are marked as modified.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that provides a tuple containing paths to the root directory and several test files and folders.
-- **Control Flow**:
-    - Extracts paths from the setup_file_tree fixture to initialize the file tree structure.
-    - Creates a FileTreeDag object with the root path from the setup_file_tree.
-    - Adds three files to the file tree DAG, marking them as changed.
-    - Marks one of the files (test_file1) for removal in the file tree DAG.
+    - `self`: Represents the instance of the class.
+    - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing a file tree structure.
+- **Logic and Control Flow**:
+    - Extracts paths from `setup_file_tree` to set up the file tree structure.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) object with the root path from `setup_file_tree`.
+    - Adds three files to the [`FileTreeDag`](<dag.py.md#filetreedag>) with their status set to changed.
+    - Marks one of the files for removal using [`mark_file_removal`](<dag.py.md#filetreedagmark_file_removal>).
     - Asserts that the parent directories of the removed file are marked as modified.
-    - Asserts that the removed file itself is marked with a status of REMOVED.
-- **Output**: The method does not return any value; it uses assertions to verify the expected state of the file tree after a file removal.
+    - Asserts that the removed file is marked with the status `REMOVED`.
+- **Output**: No output is returned as this is a test method that uses assertions to verify behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#FileTreeDagmark_file_removal>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#filetreedagmark_file_removal>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_remove\_file\_marks\_ancestors\_as\_removed\_if\_no\_active\_children<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_marks_ancestors_as_removed_if_no_active_children}} -->
-This test method verifies that when a file is removed, all its ancestor directories are marked as removed if they have no other active children.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L207>)
+
+Tests if removing a file marks its ancestors as removed when they have no active children.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that sets up a file tree structure and returns a tuple of Paths representing the root directory, two test files, and two folders.
-- **Control Flow**:
-    - Extract the root absolute path and the path to the test file from the setup_file_tree tuple.
-    - Create a FileTreeDag instance using the root absolute path.
-    - Add the test file to the FileTreeDag with change_status set to True.
-    - Invoke the mark_file_removal method on the FileTreeDag to mark the test file for removal.
-    - Assert that the status of the test file and its ancestor directories (except the root) are marked as REMOVED if they have no other active children.
-- **Output**: The method does not return any value; it uses assertions to verify the expected behavior of the FileTreeDag when a file is removed.
+    - `self`: Represents the instance of the class.
+    - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing a file tree structure.
+- **Logic and Control Flow**:
+    - Extracts `root_abs_path` and `test_file1` from `setup_file_tree` tuple.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) object with `root_abs_path`.
+    - Adds `test_file1` to the `file_tree_dag` with `change_status` set to `True`.
+    - Marks `test_file1` for removal in the `file_tree_dag`.
+    - Asserts that the ancestors of `test_file1` are marked as `REMOVED` if they have no other active children.
+- **Output**: No output is returned as this is a test method that uses assertions to verify behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#FileTreeDagmark_file_removal>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#filetreedagmark_file_removal>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_remove\_file\_does\_not\_mark\_ancestors\_as\_removed\_if\_active\_children\_exist<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_remove_file_does_not_mark_ancestors_as_removed_if_active_children_exist}} -->
-This test method verifies that removing a file does not mark its ancestor directories as removed if there are other active children files present.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L230>)
+
+Tests that removing a file does not mark its ancestors as removed if active children exist.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that provides a tuple of Path objects representing a file tree structure, including the root path and several test files and folders.
-- **Control Flow**:
-    - Initialize the file tree DAG with the root path from the setup_file_tree fixture.
-    - Add three files to the DAG, marking their status as changed.
-    - Mark one of the files (test_file1) for removal.
-    - Assert that the ancestor directory of the removed file is marked as modified, not removed, because another active child file exists.
-    - Assert that the removed file is marked as removed.
-    - Assert that the other active child file is marked as added.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of the file tree DAG.
+    - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing a file tree structure.
+- **Logic and Control Flow**:
+    - Extracts paths from `setup_file_tree` to initialize a [`FileTreeDag`](<dag.py.md#filetreedag>) object.
+    - Adds three files to the [`FileTreeDag`](<dag.py.md#filetreedag>) with `change_status` set to `True`.
+    - Marks `test_file1` for removal using [`mark_file_removal`](<dag.py.md#filetreedagmark_file_removal>).
+    - Asserts that the status of the ancestor folder `folder1/subfolder1` is `MODIFIED`.
+    - Asserts that the status of `file1.txt` is `REMOVED`.
+    - Asserts that the status of `file2.txt` is `ADDED`.
+- **Output**: No output is returned as this is a test method.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#FileTreeDagmark_file_removal>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#filetreedagmark_file_removal>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_mark\_as\_modified\_propagates\_to\_parents<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_propagates_to_parents}} -->
-The `test_mark_as_modified_propagates_to_parents` method tests that marking a file as modified in a file tree DAG correctly propagates the modified status to its parent nodes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L260>)
+
+Tests if marking a file as modified in a file tree DAG propagates the modified status to its parent nodes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFileTreeDag`.
+    - `self`: Represents the instance of the class.
     - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing a file tree structure.
-- **Control Flow**:
-    - Extracts paths for the root and test files from the `setup_file_tree` fixture.
-    - Initializes a [`FileTreeDag`](<dag.py.md#FileTreeDag>) object with the root path.
-    - Adds three files to the [`FileTreeDag`](<dag.py.md#FileTreeDag>) without changing their status.
-    - Calls [`mark_as_modified`](<dag.py.md#FileTreeDagmark_as_modified>) on `test_file1` with `include_upstream=True` to propagate the modified status to parent nodes.
+- **Logic and Control Flow**:
+    - Extracts paths from the `setup_file_tree` fixture to initialize the file tree DAG.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) object with the root path from the setup.
+    - Adds three files to the DAG with `change_status` set to `False`, meaning they are initially unmodified.
+    - Calls [`mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>) on `test_file1` with `include_upstream=True` to propagate the modified status to parent nodes.
     - Asserts that the status of `test_file1` and its ancestor nodes are set to `NodeStatus.MODIFIED`.
-- **Output**: The method does not return any value; it uses assertions to verify the expected behavior.
+- **Output**: No output is returned, but the test asserts that the file and its ancestors are marked as modified.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#FileTreeDagmark_as_modified>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_mark\_as\_modified\_propagates\_to\_children<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_propagates_to_children}} -->
-This test method verifies that marking a folder as modified in a file tree DAG propagates the modified status to all its downstream children.
-- **Decorators**: `@pytest.fixture`
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L287>)
+
+Tests if marking a folder as modified propagates the modified status to its child nodes.
 - **Inputs**:
-    - `setup_file_tree`: A fixture that provides a tuple containing paths for the root directory, three test files, a folder, and a subfolder.
-- **Control Flow**:
-    - Unpack the setup_file_tree tuple into individual path variables for the root, test files, folder, and subfolder.
-    - Create a FileTreeDag instance using the root path.
-    - Add the three test files to the file tree DAG without changing their status.
-    - Invoke the mark_as_modified method on the folder1 node, setting include_upstream to False and include_downstream to True, to propagate the modified status to downstream nodes.
-    - Assert that the folder1 node and all its downstream children (subfolder1, file1.txt, and file2.txt) have their status set to NodeStatus.MODIFIED.
-- **Output**: The method does not return any value; it uses assertions to verify that the modified status is correctly propagated to all downstream nodes.
+    - `setup_file_tree`: A tuple containing paths for the root directory, three test files, a folder, and a subfolder.
+- **Logic and Control Flow**:
+    - Unpack the `setup_file_tree` tuple into individual path variables.
+    - Create a [`FileTreeDag`](<dag.py.md#filetreedag>) instance with the root path from `setup_file_tree`.
+    - Add three test files to the [`FileTreeDag`](<dag.py.md#filetreedag>) without changing their status.
+    - Call [`mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>) on `folder1` with `include_downstream` set to `True` to propagate the modified status to child nodes.
+    - Assert that `folder1`, its subfolder, and the files within the subfolder have their status set to `NodeStatus.MODIFIED`.
+- **Output**: No output is returned; the function uses assertions to verify the expected behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#FileTreeDagmark_as_modified>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_mark\_as\_modified\_does\_not\_propagate\_to\_unchanged\_ancestors\_if\_disabled<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_as_modified_does_not_propagate_to_unchanged_ancestors_if_disabled}} -->
-This test method verifies that marking a file as modified does not propagate the modification status to its unchanged ancestor nodes when propagation is disabled.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L327>)
+
+Tests that marking a file as modified does not change the status of its ancestors if propagation is disabled.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: The instance of the class TestFileTreeDag.
-    - `setup_file_tree`: A fixture that provides a tuple of Path objects representing a file tree structure.
-- **Control Flow**:
-    - Extracts paths for root, test_file0, test_file1, and test_file2 from the setup_file_tree fixture.
-    - Initializes a FileTreeDag object with the root_abs_path.
-    - Adds test_file0, test_file1, and test_file2 to the file_tree_dag with change_status set to False, indicating they are initially unmodified.
-    - Calls mark_as_modified on test_file1 with include_upstream and include_downstream set to False, meaning no propagation of modification status to ancestors or descendants.
-    - Asserts that the status of the ancestor nodes (folder1 and folder1/subfolder1) remains UNMODIFIED.
-    - Asserts that the status of the modified file (folder1/subfolder1/file1.txt) is MODIFIED.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior.
+    - `self`: Represents the instance of the class.
+    - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing a file tree structure.
+- **Logic and Control Flow**:
+    - Extracts paths from `setup_file_tree` tuple.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) object with the root path.
+    - Adds files to the [`FileTreeDag`](<dag.py.md#filetreedag>) with `change_status` set to `False`.
+    - Calls [`mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>) on `test_file1` with both `include_upstream` and `include_downstream` set to `False`.
+    - Asserts that the status of the ancestors of `test_file1` remains `UNMODIFIED`.
+    - Asserts that the status of `test_file1` is `MODIFIED`.
+- **Output**: No output is returned; the function uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#FileTreeDagmark_as_modified>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_topological\_sort\_all\_nodes<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_all_nodes}} -->
-The `test_topological_sort_all_nodes` method tests the topological sorting of all nodes in a file tree DAG, ensuring the correct order of nodes from files to root.
-- **Decorators**: `@pytest.fixture`
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L353>)
+
+Tests the topological sorting of all nodes in a file tree directed acyclic graph (DAG).
 - **Inputs**:
     - `self`: Represents the instance of the class `TestFileTreeDag`.
-    - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing a file tree structure.
-- **Control Flow**:
-    - Extracts paths from the `setup_file_tree` tuple, including the root path and test files.
-    - Initializes a [`FileTreeDag`](<dag.py.md#FileTreeDag>) object with the root path.
-    - Adds `test_file1` and `test_file2` to the DAG without changing their status.
-    - Performs a topological sort on the DAG to get a list of sorted nodes.
-    - Asserts that the length of the sorted nodes list is 5.
+    - `setup_file_tree`: A tuple containing paths to the root directory and several test files and folders.
+- **Logic and Control Flow**:
+    - Extracts paths from `setup_file_tree` and initializes a [`FileTreeDag`](<dag.py.md#filetreedag>) with the root path.
+    - Adds `test_file1` and `test_file2` to the [`FileTreeDag`](<dag.py.md#filetreedag>) without changing their status.
+    - Performs a topological sort on the [`FileTreeDag`](<dag.py.md#filetreedag>).
+    - Asserts that the number of sorted nodes is 5.
     - Checks that the first two nodes in the sorted list are either `file1.txt` or `file2.txt`.
-    - Asserts the subsequent nodes in the sorted list correspond to `subfolder1`, `folder1`, and the root directory in that order.
-- **Output**: The method does not return any value; it uses assertions to validate the topological order of nodes in the DAG.
+    - Verifies the order of the remaining nodes in the sorted list, ensuring they represent the correct folder hierarchy.
+- **Output**: No output is returned as this is a test method; it uses assertions to validate the topological sort.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#FileTreeDagtopological_sort>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#filetreedagtopological_sort>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_topological\_sort\_changed\_nodes\_only<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_changed_nodes_only}} -->
-The `test_topological_sort_changed_nodes_only` method tests the topological sorting of a file tree DAG, ensuring only changed nodes are included after a file removal.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L376>)
+
+Tests the topological sorting of only changed nodes in a file tree directed acyclic graph (DAG) after marking a file for removal.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that sets up a file tree structure and returns a tuple of Paths representing the root directory and several test files and folders.
-- **Control Flow**:
-    - Extracts paths from the `setup_file_tree` fixture to initialize a [`FileTreeDag`](<dag.py.md#FileTreeDag>) object.
-    - Adds two files (`test_file1` and `test_file2`) to the DAG without marking them as changed.
-    - Marks `test_file1` for removal in the DAG.
-    - Performs a topological sort on the DAG, specifying that only changed nodes should be included.
-    - Asserts that the sorted nodes list contains exactly four nodes, corresponding to the removed file and its ancestor directories.
-- **Output**: The method does not return any value; it uses assertions to validate the expected behavior of the topological sort operation.
+    - `setup_file_tree`: A tuple containing paths to the root directory and several test files and folders.
+- **Logic and Control Flow**:
+    - Extracts paths from the `setup_file_tree` tuple.
+    - Initializes a [`FileTreeDag`](<dag.py.md#filetreedag>) object with the root path.
+    - Adds two files to the DAG with `change_status` set to `False`.
+    - Marks one file for removal in the DAG.
+    - Performs a topological sort on the DAG with `changed_nodes_only` set to `True`.
+    - Asserts that the length of the sorted nodes list is 4.
+    - Asserts the expected order of the sorted nodes based on their relative paths.
+- **Output**: No return value; the function uses assertions to validate the behavior of the topological sort.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#FileTreeDagmark_file_removal>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#FileTreeDagtopological_sort>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<dag.py.md#filetreedagmark_file_removal>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#filetreedagtopological_sort>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_mark\_downstream\_only\_and\_sort\_changed\_nodes<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_mark_downstream_only_and_sort_changed_nodes}} -->
-The method tests the functionality of marking downstream nodes as modified and sorting only the changed nodes in a file tree DAG.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L393>)
+
+Tests the marking of downstream nodes as modified and sorts only the changed nodes in a file tree DAG.
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that provides a tuple containing paths to the root directory, test files, and folders in the file tree.
-- **Control Flow**:
-    - Unpack the setup_file_tree tuple into individual path variables for root, test files, and folders.
-    - Create a FileTreeDag instance using the root path.
-    - Add test_file1 and test_file2 to the DAG with change_status set to False.
-    - Mark folder1 as modified in the DAG, including only downstream nodes.
+    - `setup_file_tree`: A tuple containing paths for the root directory, test files, and folders in the file tree.
+- **Logic and Control Flow**:
+    - Unpack the `setup_file_tree` tuple into individual path variables.
+    - Create a [`FileTreeDag`](<dag.py.md#filetreedag>) instance with the root path.
+    - Add `test_file1` and `test_file2` to the DAG without marking them as changed.
+    - Mark `folder1` as modified, including only downstream nodes.
     - Perform a topological sort on the DAG, considering only changed nodes.
-    - Print each node in the sorted list of changed nodes.
+    - Print each node in the sorted list.
     - Assert that the number of sorted nodes is 4.
-    - Extract the root-relative paths of the sorted nodes into a list.
+    - Extract the relative paths of the sorted nodes.
     - Define the expected set of paths for the sorted nodes.
-    - Assert that the set of sorted paths matches the expected set.
-    - Assert the order of the sorted paths to ensure the correct topological order.
-- **Output**: The method does not return any value; it performs assertions to validate the expected behavior of the DAG operations.
+    - Assert that the set of sorted paths matches the expected paths.
+    - Assert the order of the sorted paths to ensure correct topological sorting.
+- **Output**: None, but it performs assertions to validate the behavior of the DAG operations.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#FileTreeDagmark_as_modified>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#FileTreeDagtopological_sort>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<dag.py.md#filetreedagmark_as_modified>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#filetreedagtopological_sort>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_topological\_sort\_files\_only<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_files_only}} -->
-The `test_topological_sort_files_only` method tests the topological sorting of files only within a file tree DAG, ensuring that the sorted files match the expected set of file paths.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L440>)
+
+Tests the topological sorting of files only in a file tree directed acyclic graph (DAG).
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_file_tree`: A fixture that provides a tuple of Paths representing the root directory and several test files and folders within a temporary directory.
-- **Control Flow**:
-    - Extracts the root path and three test file paths from the `setup_file_tree` fixture.
-    - Initializes a [`FileTreeDag`](<dag.py.md#FileTreeDag>) object with the root path.
-    - Adds the three test files to the DAG without changing their status.
-    - Performs a topological sort on the DAG, specifying to include files only.
-    - Asserts that the number of sorted nodes is 3, corresponding to the three test files.
+    - `self`: Represents the instance of the class.
+    - `setup_file_tree`: A fixture that provides a tuple of `Path` objects representing the root directory and test files.
+- **Logic and Control Flow**:
+    - Extracts the root path and test files from `setup_file_tree`.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) object with the root path.
+    - Adds three test files to the DAG without changing their status.
+    - Performs a topological sort on the DAG with the `files_only` parameter set to `True`.
+    - Asserts that the number of sorted nodes is 3.
     - Extracts the relative paths of the sorted nodes.
     - Asserts that the set of sorted paths matches the expected set of file paths.
-- **Output**: The method does not return any value; it uses assertions to validate the behavior of the topological sort operation.
+- **Output**: No return value; the function uses assertions to validate the test conditions.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#FileTreeDagtopological_sort>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#filetreedagtopological_sort>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_topological\_sort\_folders\_only<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_topological_sort_folders_only}} -->
-The `test_topological_sort_folders_only` method tests the topological sorting of folder nodes only within a file tree DAG, ensuring they are sorted in the correct order.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L464>)
+
+Tests the topological sorting of folder nodes only in a file tree directed acyclic graph (DAG).
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFileTreeDag`.
-    - `setup_file_tree`: A fixture that provides a tuple containing paths to the root directory and several test files and folders.
-- **Control Flow**:
-    - Extracts the root path and test files from the `setup_file_tree` fixture.
-    - Initializes a [`FileTreeDag`](<dag.py.md#FileTreeDag>) object with the root path.
+    - `self`: Represents the instance of the class.
+    - `setup_file_tree`: A tuple containing paths to the root directory and test files and folders.
+- **Logic and Control Flow**:
+    - Extracts the root path and test files from the `setup_file_tree` tuple.
+    - Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) instance with the root path.
     - Adds three test files to the DAG without changing their status.
-    - Performs a topological sort on the DAG with the `folders_only` flag set to `True`.
-    - Asserts that the sorted nodes contain only folders and are in the correct topological order.
-- **Output**: The method does not return any value; it uses assertions to verify the correct behavior of the topological sort for folders only.
+    - Performs a topological sort on the DAG with the `folders_only` option set to `True`.
+    - Asserts that the sorted nodes contain only folders and verifies their topological order.
+- **Output**: No output is returned as this is a test method that uses assertions to verify behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#FileTreeDagtopological_sort>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<dag.py.md#filetreedagtopological_sort>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.setup\_diff\_dags<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.setup_diff_dags}} -->
-The `setup_diff_dags` method is a pytest fixture that sets up two different file tree DAGs for testing purposes, representing two different directory structures with specific file hashes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L483>)
+
+Creates two `FileTreeDag` instances with different directory structures for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
+    - `self`: Reference to the instance of the class `TestFileTreeDag`.
     - `temp_dir`: A temporary directory path where the DAGs will be created.
-- **Control Flow**:
-    - Define a dictionary `structure_a` representing the first directory structure with file paths and their corresponding hashes.
-    - Create a file tree DAG `dag_a` using `structure_a` within the `temp_dir` under the subdirectory 'dag_a'.
-    - Define a dictionary `structure_b` representing the second directory structure with file paths and their corresponding hashes, including modifications and additions compared to `structure_a`.
-    - Create a file tree DAG `dag_b` using `structure_b` within the `temp_dir` under the subdirectory 'dag_b'.
-    - Return a tuple containing `dag_a` and `dag_b`.
-- **Output**: A tuple containing two `FileTreeDag` objects, `dag_a` and `dag_b`, representing the two different directory structures.
+- **Logic and Control Flow**:
+    - Defines a dictionary `structure_a` representing the first directory structure with file paths and their corresponding hashes.
+    - Calls [`create_file_tree_dag`](<#create_file_tree_dag>) with `temp_dir / 'dag_a'` and `structure_a` to create `dag_a`.
+    - Defines a dictionary `structure_b` representing the second directory structure with file paths and their corresponding hashes, including modifications and additions compared to `structure_a`.
+    - Calls [`create_file_tree_dag`](<#create_file_tree_dag>) with `temp_dir / 'dag_b'` and `structure_b` to create `dag_b`.
+    - Returns a tuple containing `dag_a` and `dag_b`.
+- **Output**: A tuple containing two `FileTreeDag` instances, `dag_a` and `dag_b`, representing different directory structures.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/dag_test.create_file_tree_dag`](<#create_file_tree_dag>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_compute\_diff\_additions<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_additions}} -->
-The `test_compute_diff_additions` method verifies that the [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) function correctly identifies added files and folders between two file tree DAGs.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L510>)
+
+Verifies that the [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) method correctly identifies added and modified nodes in a file tree DAG.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_diff_dags`: A tuple containing two FileTreeDag instances representing the initial and modified file tree structures.
-- **Control Flow**:
-    - Retrieve the two DAGs, `dag_a` and `dag_b`, from the `setup_diff_dags` fixture.
-    - Compute the difference between `dag_b` and `dag_a` using [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) with `delete_file_nodes` set to `False`.
-    - Traverse the resulting diff DAG to find nodes with specific paths and statuses, checking for added files and folders.
-    - Assert that exactly one node matches each expected addition or modification.
-- **Output**: The method does not return any output but uses assertions to validate the expected additions in the diff.
+    - `setup_diff_dags`: A tuple containing two `FileTreeDag` instances representing the initial and modified file tree structures.
+- **Logic and Control Flow**:
+    - Unpack `setup_diff_dags` into `dag_a` and `dag_b`.
+    - Call [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) on `dag_b` with `dag_a` as the argument and `delete_file_nodes` set to `False`.
+    - Traverse the `diff` DAG to find nodes with specific paths and statuses.
+    - Check that there is exactly one node added for `folder2/file3.txt` and `folder1/added_child.txt`.
+    - Check that there is exactly one node added for `folder2`.
+    - Check that there is exactly one node modified for `folder1`.
+- **Output**: The function does not return a value; it uses assertions to verify the correctness of the [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) method.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#FileTreeDagcompute_diff>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#filetreedagcompute_diff>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_compute\_diff\_modifications<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_modifications}} -->
-The `test_compute_diff_modifications` method verifies that the [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) function correctly identifies modified nodes between two file tree DAGs.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L547>)
+
+Verifies that the [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) method correctly identifies modified nodes between two file tree DAGs.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_diff_dags`: A tuple containing two FileTreeDag instances representing the initial and modified file tree structures.
-- **Control Flow**:
-    - Extracts `dag_a` and `dag_b` from the `setup_diff_dags` input tuple.
-    - Calls [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) on `dag_b` with `dag_a` as the argument and `delete_file_nodes` set to `False` to get the diff DAG.
-    - Asserts that there is at least one node in the diff DAG with the path 'folder1/file2.txt' and status `MODIFIED`.
-    - Asserts that there is at least one node in the diff DAG with the path 'folder1' and status `MODIFIED`.
-- **Output**: The method does not return any value; it uses assertions to validate the expected modifications in the diff DAG.
+    - `setup_diff_dags`: A tuple containing two `FileTreeDag` instances representing the initial and modified file tree structures.
+- **Logic and Control Flow**:
+    - Unpack `setup_diff_dags` into `dag_a` and `dag_b`.
+    - Call [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) on `dag_b` with `dag_a` as the argument and `delete_file_nodes` set to `False`.
+    - Use assertions to check if any node in the resulting diff has a `root_rel_path` of `folder1/file2.txt` and a status of `MODIFIED`.
+    - Use assertions to check if any node in the resulting diff has a `root_rel_path` of `folder1` and a status of `MODIFIED`.
+- **Output**: No output is returned; the function uses assertions to validate the expected behavior.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#FileTreeDagcompute_diff>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#filetreedagcompute_diff>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_compute\_diff\_removals<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_removals}} -->
-The `test_compute_diff_removals` method verifies that the [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) function correctly identifies and marks nodes as removed in a file tree DAG when comparing two DAGs, with specific attention to the removal of nodes and the modification status of parent nodes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L583>)
+
+Tests the removal of nodes in a file tree DAG and verifies the status of nodes after computing the difference between two DAGs.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `setup_diff_dags`: A tuple containing two FileTreeDag instances, representing the initial and modified states of a file tree.
-- **Control Flow**:
-    - Extracts `dag_a` and `dag_b` from the `setup_diff_dags` input tuple.
-    - Calls [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) on `dag_b` with `dag_a` as the argument and `delete_file_nodes` set to `True`, storing the result in `diff`.
-    - Asserts that `dag_a` contains a node with the path `folder3/subdir/file1.txt`.
-    - Asserts that `dag_b` does not contain a node with the path `folder3/subdir/file1.txt`, indicating it has been removed.
-    - Asserts that `diff` contains a node with the path `folder1` marked as `MODIFIED`, indicating a change due to child node removal.
-    - Asserts that `diff` does not contain a node with the path `folder3/subdir`, indicating it has been removed due to all children being removed.
-- **Output**: The method does not return any value; it uses assertions to validate the expected state of the DAGs after computing the diff.
+    - `setup_diff_dags`: A tuple containing two `FileTreeDag` instances representing the initial and modified file tree structures.
+- **Logic and Control Flow**:
+    - Retrieve `dag_a` and `dag_b` from `setup_diff_dags`.
+    - Compute the difference `diff` between `dag_b` and `dag_a` with `delete_file_nodes` set to `True`.
+    - Assert that `dag_a` contains a node with the path `folder3/subdir/file1.txt`.
+    - Assert that `dag_b` does not contain a node with the path `folder3/subdir/file1.txt`.
+    - Assert that `diff` contains a node with the path `folder1` and status `MODIFIED`.
+    - Assert that `diff` does not contain a node with the path `folder3/subdir`.
+- **Output**: No output is returned; the function uses assertions to validate conditions.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#FileTreeDagcompute_diff>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#filetreedagcompute_diff>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_compute\_diff\_unmodified\_nodes<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_unmodified_nodes}} -->
-The `test_compute_diff_unmodified_nodes` method verifies that the [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) function correctly identifies unmodified nodes between two file tree DAGs.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L618>)
+
+Verifies that the [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) method correctly identifies unmodified nodes between two file tree DAGs.
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `self`: Refers to the instance of the class `TestFileTreeDag`.
-    - `setup_diff_dags`: A tuple containing two `FileTreeDag` instances representing the initial and modified file tree structures.
-- **Control Flow**:
-    - Extracts `dag_a` and `dag_b` from the `setup_diff_dags` tuple.
-    - Calls [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) on `dag_b` with `dag_a` as the argument and `delete_file_nodes` set to `False`, storing the result in `diff`.
-    - Asserts that there is at least one node in the downstream traversal of `diff`'s root that has a relative path of `file1.txt` and a status of `NodeStatus.UNMODIFIED`.
-- **Output**: The method does not return any value; it asserts the presence of an unmodified node in the computed diff.
+    - `self`: Reference to the instance of the class.
+    - `setup_diff_dags`: A tuple containing two `FileTreeDag` instances to compare.
+- **Logic and Control Flow**:
+    - Unpack `setup_diff_dags` into `dag_a` and `dag_b`.
+    - Call [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) on `dag_b` with `dag_a` as the argument and `delete_file_nodes` set to `False`.
+    - Traverse downstream from the root of the `diff` DAG to find any node with `root_rel_path` equal to `Path('file1.txt')` and `status` equal to `NodeStatus.UNMODIFIED`.
+    - Use an `assert` statement to ensure that such a node exists.
+- **Output**: No output is returned; the function uses assertions to validate the test conditions.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#FileTreeDagcompute_diff>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#filetreedagcompute_diff>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 ---
 #### TestFileTreeDag\.test\_compute\_diff\_no\_changes<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag.test_compute_diff_no_changes}} -->
-The `test_compute_diff_no_changes` method verifies that the [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) function correctly identifies no changes between two identical file tree structures.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L631>)
+
+Verifies that the [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) method identifies no changes between two identical file tree structures.
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestFileTreeDag` to which this method belongs.
-    - `tmp_path`: A `Path` object provided by pytest's temporary directory fixture, used to create temporary file structures for testing.
-- **Control Flow**:
-    - Define a file structure with two files and one sub-folder, each with specific node kinds and hashes.
-    - Create two identical file tree DAGs (`dag_a` and `dag_b`) using the [`create_file_tree_dag`](<#create_file_tree_dag>) function and the defined structure.
-    - Compute the difference between `dag_b` and `dag_a` using the [`compute_diff`](<dag.py.md#FileTreeDagcompute_diff>) method with `delete_file_nodes` set to `False`.
-    - Traverse through each node in the resulting diff's root and assert that each node's status is `NodeStatus.UNMODIFIED`.
-- **Output**: The method does not return any value; it asserts that all nodes in the diff are unmodified, indicating no changes between the two DAGs.
+    - `self`: Represents the instance of the class `TestFileTreeDag`.
+    - `tmp_path`: A `Path` object representing a temporary directory path for creating file tree structures.
+- **Logic and Control Flow**:
+    - Defines a file tree structure with files and folders, each having a specific node kind and hash.
+    - Creates two identical file tree DAGs (`dag_a` and `dag_b`) using the defined structure.
+    - Computes the difference between `dag_b` and `dag_a` using the [`compute_diff`](<dag.py.md#filetreedagcompute_diff>) method with `delete_file_nodes` set to `False`.
+    - Iterates over each node in the computed diff's root and traverses downstream to assert that each node's status is `NodeStatus.UNMODIFIED`.
+- **Output**: No output is returned, but the test asserts that all nodes in the diff have an `UNMODIFIED` status, indicating no changes between the two DAGs.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/dag_test.create_file_tree_dag`](<#create_file_tree_dag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#FileTreeDagcompute_diff>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#TestFileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<dag.py.md#filetreedagcompute_diff>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<dag.py.md#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag_test.TestFileTreeDag`](<#testfiletreedag>)  (Base Class)
 
 
 
@@ -630,22 +697,24 @@ The `test_compute_diff_no_changes` method verifies that the [`compute_diff`](<da
 
 ---
 ### create\_file\_tree\_dag<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag_test.create_file_tree_dag}} -->
-The `create_file_tree_dag` function initializes a [`FileTreeDag`](<dag.py.md#FileTreeDag>) with a specified directory structure and file hashes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag_test.py#L110>)
+
+Creates a [`FileTreeDag`](<dag.py.md#filetreedag>) with a specified directory structure and file hashes.
 - **Inputs**:
     - `root_path`: The root directory path where the DAG will be created.
-    - `structure`: A dictionary mapping relative file paths to their corresponding file hash or None.
-- **Control Flow**:
+    - `structure`: A dictionary mapping relative file paths to tuples containing a `NodeKind` and a file hash or `None`.
+- **Logic and Control Flow**:
     - Create the root directory specified by `root_path`.
-    - Initialize a [`FileTreeDag`](<dag.py.md#FileTreeDag>) instance with the absolute root path.
-    - Iterate over each entry in the `structure` dictionary.
-    - For each entry, construct the full path by combining `root_path` with the relative path.
-    - Ensure the parent directories of the path exist, creating them if necessary.
+    - Initialize a [`FileTreeDag`](<dag.py.md#filetreedag>) object with the root path.
+    - Iterate over each item in the `structure` dictionary.
+    - For each item, construct the full path by combining `root_path` and the relative path from the dictionary.
+    - Create parent directories for the path if they do not exist.
     - Create an empty file at the specified path.
-    - Add the file to the [`FileTreeDag`](<dag.py.md#FileTreeDag>) with the given hash, without changing its status.
-- **Output**: Returns an instance of [`FileTreeDag`](<dag.py.md#FileTreeDag>) representing the directory structure and file hashes.
+    - Add the file to the [`FileTreeDag`](<dag.py.md#filetreedag>) with the specified file hash and without changing the status.
+- **Output**: A [`FileTreeDag`](<dag.py.md#filetreedag>) instance representing the directory structure and file hashes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#FileTreeDag>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#FileTreeDagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<dag.py.md#filetreedag>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<dag.py.md#filetreedagadd_file>)
 
 
 

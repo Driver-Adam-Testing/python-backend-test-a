@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration management functionality using Pydantic, with an empty `__init__.py` file.
+Configuration settings management using Pydantic for environment and database parameters.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[config.py](config.py.md)**: The `config.py` file defines a `Settings` class using Pydantic to manage environment configurations, including environment type and database URL settings.
+- **[config.py](config.py.md)**: Configuration settings management using Pydantic for environment and database parameters.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

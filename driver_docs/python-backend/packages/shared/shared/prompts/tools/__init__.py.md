@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase at `python-backend/packages/shared/shared/prompts/tools/__init__.py` is likely used to mark the directory as a Python package and has flake8 linting disabled.
+Initialization file for the shared prompts tools package.
 
 # Purpose
-This file is a configuration file for the Flake8 tool, which is a Python linting utility used to enforce coding style and check for errors. The presence of `# flake8: noqa` at the top of the file indicates that all Flake8 checks are globally disabled for this file. This is a narrow functionality file, as it serves a specific purpose of configuring the behavior of Flake8 for this particular file, likely to prevent it from being flagged for style or syntax issues during automated checks. This is not a script or a collection of variables but rather a directive for a code quality tool.
+The comment `# flake8: noqa` is a directive used in Python source code to instruct the Flake8 tool to ignore all style and linting errors in the file. Flake8 is a popular linting tool that checks for compliance with the PEP 8 style guide and other code quality issues. By including this comment, the file is exempt from Flake8's checks, which can be useful in situations where the code intentionally deviates from standard style guidelines or when the developer wants to suppress warnings for specific reasons. This directive applies to the entire file, ensuring that no Flake8 errors or warnings are reported.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

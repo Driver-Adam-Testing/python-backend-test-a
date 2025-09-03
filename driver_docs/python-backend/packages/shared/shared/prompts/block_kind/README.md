@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files that define Pydantic models for markdown conversion of text, code, diagrams, lists, and tables.
+Pydantic models and classes for markdown content conversion, including code, diagrams, lists, tables, and text.
 
 
 ## Files
-- **[block_kind_any.py](block_kind_any.py.md)**: The `block_kind_any.py` file defines a Pydantic model `BlockKindCopyEditorAny` for handling markdown-formatted content responses for a copy editor agent.
-- **[block_kind_code.py](block_kind_code.py.md)**: The `block_kind_code.py` file defines a Pydantic model `BlockKindCopyEditorCodeBlock` that processes code block snippets into markdown formatted code blocks with descriptions, ensuring proper syntax highlighting and formatting.
-- **[block_kind_diagram.py](block_kind_diagram.py.md)**: The `block_kind_diagram.py` file defines a Pydantic model for handling and formatting mermaid diagrams in markdown, including methods to extract and properly format the mermaid code.
-- **[block_kind_list.py](block_kind_list.py.md)**: The `block_kind_list.py` file defines the `BlockKindCopyEditorList` class, which provides a structured response for a copy editor agent to convert lists of strings into markdown format, supporting both ordered and unordered lists.
-- **[block_kind_table.py](block_kind_table.py.md)**: The `block_kind_table.py` file defines the `BlockKindCopyEditorTable` class, which represents a structured response for a copy editor agent that handles tables and includes functionality to convert these tables into markdown format.
-- **[block_kind_text.py](block_kind_text.py.md)**: The `block_kind_text.py` file defines the `BlockKindCopyEditorText` class, which represents a structured response for a copy editor agent handling text paragraphs, with functionality to convert the response to markdown.
+- **[block_kind_any.py](block_kind_any.py.md)**: A Pydantic model for a copy editor agent handling markdown content.
+- **[block_kind_code.py](block_kind_code.py.md)**: A Pydantic model for generating markdown-formatted code blocks with descriptions for a copy editor agent.
+- **[block_kind_diagram.py](block_kind_diagram.py.md)**: Defines a Pydantic model for handling and formatting Mermaid diagrams in markdown.
+- **[block_kind_list.py](block_kind_list.py.md)**: Defines a class for converting lists into markdown format, supporting ordered and unordered lists.
+- **[block_kind_table.py](block_kind_table.py.md)**: A class for a copy editor agent to convert tables with headers and rows into markdown format.
+- **[block_kind_text.py](block_kind_text.py.md)**: A class for a copy editor agent's structured response with markdown text conversion.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

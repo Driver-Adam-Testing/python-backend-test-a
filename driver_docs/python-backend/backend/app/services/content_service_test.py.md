@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `content_service_test.py` file contains a suite of tests for the `ContentService` in the `python-backend` codebase, verifying functionalities such as content creation, retrieval, association, editing, and deletion, while handling different organizational contexts and exceptions.
+Unit tests for the `ContentService` and `TagService` in a FastAPI application using pytest.
 
 # Purpose
-This Python source code file is a test suite for a content management system, utilizing the `pytest` framework to define and execute a series of tests. The code provides narrow functionality, specifically focusing on testing various operations related to content creation, retrieval, association, editing, and deletion within an application. It includes several `pytest` fixtures to set up the necessary test environment, such as creating instances of `ContentService` and `TagService`, and generating test data like `DerivedContent` and `NewTagInput`. The tests cover scenarios like creating content, associating content sources, handling content from different organizations, and ensuring proper exception handling with `HTTPException`. The file is structured to ensure that the content management operations behave as expected, particularly in multi-organization contexts, and to verify that the system correctly handles errors and edge cases.
+This code is a test suite for a content management system using the `pytest` framework. It defines several `pytest` fixtures to set up the necessary services and data, such as `ContentService`, `TagService`, and various content-related entities. The tests cover a range of functionalities, including creating, retrieving, editing, associating, and deleting content and tags. The tests also verify access control by checking operations across different organizations, ensuring that unauthorized actions raise `HTTPException`. The fixtures and tests work together to simulate real-world scenarios and validate the behavior of the content management system's API and services.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

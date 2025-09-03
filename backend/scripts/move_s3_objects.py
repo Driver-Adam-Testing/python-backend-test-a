@@ -4,13 +4,8 @@ import os
 
 from boto3 import resource
 from botocore.client import ClientError
-from database.models_v1 import DerivedContent
-from database.models_v2 import (
-    Node,
-    PrimaryAsset,
-    Version,
-)
-from database.models_v2_enums import NodeKind, PrimaryAssetKind
+from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models_enums import NodeKind, PrimaryAssetKind
 from sqlalchemy import create_engine
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
@@ -37,7 +32,7 @@ def update_s3_keys(primary_asset_id: str, version_id: str, codebase_id: str) -> 
         "s3",
         aws_access_key_id=os.getenv("SRC_AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.getenv("SRC_AWS_SECRET_ACCESS_KEY"),
-        region_name="us-east-1",
+        region_name=os.environ["AWS_REGION"],
     )
     organization_id = nodes[0].version.primary_asset.organization_id
     hashed_org_id = hashlib.sha256(organization_id.encode()).hexdigest()[:63]

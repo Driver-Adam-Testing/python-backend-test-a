@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_imports.ts` file is a comprehensive test suite for various TypeScript import and export statement patterns, including default, named, namespace, type-only, dynamic, and side-effect imports, as well as numerous export scenarios such as default, named, re-exports, and complex patterns.
+Test file for various TypeScript import and export statement patterns.
 
 # Purpose
-This TypeScript file serves as a comprehensive test suite for various import and export statement patterns, showcasing the versatility and complexity of module handling in TypeScript. It includes examples of default, named, namespace, and dynamic imports, as well as type-only and side-effect imports, demonstrating how to bring in modules from different sources and formats. The file also illustrates a wide range of export patterns, including default, named, re-exports, and type-only exports, along with more advanced concepts like export assignments, namespaces, and module declarations. Additionally, it covers CommonJS-style imports and exports, conditional exports, and the use of decorators, making it a valuable resource for understanding the full spectrum of module management capabilities in TypeScript. This file is not intended for production use but rather as a reference or educational tool for developers to understand and test the various import/export functionalities available in TypeScript.
+This code is a comprehensive test file for TypeScript import and export statements, demonstrating various import and export patterns. It includes examples of default imports, named imports, namespace imports, type-only imports, side-effect imports, dynamic imports, and imports with assertions. The file also covers CommonJS-style imports, import meta properties, and imports from node modules, scoped packages, and nested paths. On the export side, it illustrates default exports, named exports, type-only exports, export declarations, re-exports with renaming, and complex export patterns such as generic exports, const assertion exports, and exports with decorators. This file serves as a reference for understanding the different ways to manage module dependencies and exports in TypeScript.
 # Imports and Dependencies
 
 ---
@@ -47,29 +47,29 @@ This TypeScript file serves as a comprehensive test suite for various import and
 ---
 ### url
 - **Type**: ``string``
-- **Description**: The `url` variable is a global constant that holds the URL of the module in which the code is running. It is obtained using `import.meta.url`, which is a special meta property in JavaScript modules that provides metadata about the module.
-- **Use**: This variable is used to access the current module's URL, which can be useful for dynamic imports or module-specific operations.
+- **Description**: Contains the URL of the module from which the code is executed. It is a string that represents the location of the current module.
+- **Use**: Used to access the URL of the current module for purposes such as logging or debugging.
 
 
 ---
 ### env
-- **Type**: `object`
-- **Description**: The `env` variable is a global constant that holds the environment-specific metadata provided by the module system. It is accessed via `import.meta.env`, which is a feature of modern JavaScript environments that support ES modules, such as Vite or other bundlers that provide environment variables at build time.
-- **Use**: This variable is used to access environment-specific configuration and metadata within the module.
+- **Type**: ``object``
+- **Description**: Represents the environment-specific variables available at runtime in a module. It is part of the `import.meta` object, which provides metadata about the module.
+- **Use**: Accesses environment variables specific to the module's runtime environment.
 
 
 ---
 ### dynamicModule
 - **Type**: `Promise<any>`
-- **Description**: The `dynamicModule` variable is a global constant that holds the result of a dynamic import operation. It uses the top-level `await` to asynchronously import the module located at './dynamic', which allows for loading the module only when needed, potentially improving performance by reducing initial load time.
-- **Use**: This variable is used to dynamically import a module and access its exports, specifically to retrieve and export the `value` property from the imported module.
+- **Description**: `dynamicModule` is a promise that resolves to the module imported from the './dynamic' path. It uses a top-level await to dynamically import the module at runtime.
+- **Use**: Used to dynamically import a module and access its exports.
 
 
 ---
 ### dynamicValue
-- **Type**: ``any``
-- **Description**: The `dynamicValue` variable is a constant exported from the module, which is assigned the value of `value` from the dynamically imported `dynamicModule`. This variable is defined using top-level await, indicating that the module it imports is loaded asynchronously at runtime.
-- **Use**: `dynamicValue` is used to provide access to the `value` property of the dynamically imported `dynamicModule` for other modules that import it.
+- **Type**: ``dynamicValue``
+- **Description**: References the `value` property from the dynamically imported `dynamicModule`. This variable is exported for use in other modules.
+- **Use**: Used to export the `value` from `dynamicModule` for external access.
 
 
 

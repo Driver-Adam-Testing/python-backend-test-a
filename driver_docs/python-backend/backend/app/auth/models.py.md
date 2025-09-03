@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models.py` file defines Pydantic models for `User` and `M2M` entities, including fields for authentication and authorization attributes with specified aliases.
+Defines Pydantic models for user and machine-to-machine authentication data.
 
 # Purpose
-This code defines two data models, `User` and `M2M`, using the Pydantic library, which is known for data validation and settings management using Python type annotations. The `User` class models user-related data, including fields like `organization_id`, `user_id`, `email`, and `permissions`, with some fields having aliases for JSON serialization/deserialization. The `M2M` class models machine-to-machine communication data, sharing some fields with the `User` class, such as `issuer`, `subject`, and `audience`. The code provides narrow functionality, focusing on defining structured data models for user and machine-to-machine data, with a note to reduce redundancy in field aliases.
+The code defines two data models, `User` and `M2M`, using the Pydantic library's `BaseModel` class. These models are used to validate and manage structured data, likely related to user and machine-to-machine authentication contexts. Each model includes fields with type annotations and optional default values, and many fields use the `Field` function to specify aliases, which map the model's attributes to alternative names. The `User` model includes fields for user-specific information such as `organization_id`, `user_id`, and `email`, while the `M2M` model focuses on machine-to-machine authentication details. The use of Pydantic ensures that the data adheres to the specified types and constraints, facilitating data integrity and validation.
 # Imports and Dependencies
 
 ---
@@ -18,36 +18,40 @@ This code defines two data models, `User` and `M2M`, using the Pydantic library,
 
 ---
 ### User<!-- {{#class:python-backend/backend/app/auth/models.User}} -->
+[View Source →](<../../../../../backend/app/auth/models.py#L4>)
+
 - **Members**:
-    - `organization_id`: The unique identifier for the organization, aliased as 'org_id'.
-    - `organization_display_name`: The display name of the organization, aliased as 'org_name'.
-    - `organization_name`: The name of the organization, aliased as 'org_name'.
-    - `user_id`: The unique identifier for the user, aliased as 'sub'.
-    - `issuer`: The issuer of the token, aliased as 'iss'.
-    - `subject`: The subject of the token, aliased as 'sub'.
-    - `audience`: The intended audience for the token, aliased as 'aud'.
-    - `issued_at`: The timestamp when the token was issued, aliased as 'iat'.
-    - `expiration`: The timestamp when the token expires, aliased as 'exp'.
-    - `scope`: The scope of the token, aliased as 'scope'.
-    - `authorized_party`: The party authorized to use the token, aliased as 'azp'.
-    - `permissions`: A list of permissions granted to the user.
-    - `email`: The email address of the user, aliased as 'user_email'.
-    - `full_name`: The full name of the user, aliased as 'user_full_name'.
-- **Description**: The User class is a Pydantic model that represents a user entity with various attributes related to authentication and authorization. It includes fields for organization details, user identification, token metadata, and user-specific information such as email and full name. The class uses field aliases to map JSON keys to Python attributes, facilitating data interchange and validation.
+    - `organization_id`: Stores the organization ID with an alias 'org_id'.
+    - `organization_display_name`: Stores the organization display name with an alias 'org_name'.
+    - `organization_name`: Stores the organization name with an alias 'org_name'.
+    - `user_id`: Stores the user ID with an alias 'sub'.
+    - `issuer`: Stores the issuer with an alias 'iss'.
+    - `subject`: Stores the subject with an alias 'sub'.
+    - `audience`: Stores the audience as a list or string with an alias 'aud'.
+    - `issued_at`: Stores the issued at timestamp with an alias 'iat'.
+    - `expiration`: Stores the expiration timestamp with an alias 'exp'.
+    - `scope`: Stores the scope with an alias 'scope'.
+    - `authorized_party`: Stores the authorized party with an alias 'azp'.
+    - `permissions`: Stores a list of permissions with a default empty list.
+    - `email`: Stores the user's email with an alias 'user_email'.
+    - `full_name`: Stores the user's full name with an alias 'user_full_name'.
+- **Description**: Represents a user with various attributes such as organization details, user identification, and authorization information. Uses aliases for field names to map to different identifiers.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### M2M<!-- {{#class:python-backend/backend/app/auth/models.M2M}} -->
+[View Source →](<../../../../../backend/app/auth/models.py#L22>)
+
 - **Members**:
-    - `issuer`: The entity that issued the token, aliased as 'iss'.
-    - `subject`: The subject of the token, aliased as 'sub'.
-    - `audience`: The intended audience of the token, aliased as 'aud'.
-    - `issued_at`: The timestamp when the token was issued, aliased as 'iat'.
-    - `expiration`: The timestamp when the token expires, aliased as 'exp'.
-    - `authorized_party`: The party authorized to use the token, aliased as 'azp'.
-- **Description**: The M2M class is a Pydantic model that represents a machine-to-machine authentication token, encapsulating essential JWT claims such as issuer, subject, audience, issued time, expiration time, and authorized party.
+    - `issuer`: Specifies the entity that issued the token.
+    - `subject`: Identifies the principal that is the subject of the token.
+    - `audience`: Defines the recipients that the token is intended for.
+    - `issued_at`: Indicates the time at which the token was issued.
+    - `expiration`: Specifies the expiration time on or after which the token must not be accepted.
+    - `authorized_party`: Identifies the party authorized to use the token.
+- **Description**: Represents a machine-to-machine (M2M) token model with fields for issuer, subject, audience, issued time, expiration time, and authorized party, using Pydantic for data validation and aliasing.
 - **Inherits From**:
     - `BaseModel`
 

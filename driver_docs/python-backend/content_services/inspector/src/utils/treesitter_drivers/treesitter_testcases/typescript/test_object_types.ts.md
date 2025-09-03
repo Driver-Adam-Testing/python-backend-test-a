@@ -3,145 +3,178 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_object_types.ts` file defines a comprehensive set of TypeScript type aliases, including basic, union, intersection, tuple, function, object, mapped, conditional, template literal, intrinsic string manipulation, utility, recursive, discriminated union, type guard, generic constraint, distributive conditional, and complex real-world types.
+TypeScript type definitions for aliases, unions, intersections, tuples, functions, objects, mapped types, and more.
 
 # Purpose
-This TypeScript file is a comprehensive collection of type definitions, showcasing a wide array of TypeScript's type system capabilities. It includes basic type aliases, union and intersection types, tuple types, function types, object types, and mapped types, providing a broad foundation for type manipulation and safety in TypeScript applications. The file also demonstrates advanced concepts such as conditional types, template literal types, intrinsic string manipulation, utility types, recursive types, discriminated unions, type guards, and generic constraints. Additionally, it includes real-world complex types like API responses and middleware, illustrating practical applications of these type constructs. Overall, this file serves as a versatile toolkit for developers to define and manipulate types in a TypeScript codebase, enhancing type safety and code clarity.
+This TypeScript code file defines a comprehensive set of type aliases and utility types, providing a broad range of type functionalities. It includes basic type aliases for primitive types, union and intersection types, tuple types, and function types. The code also defines object types with optional and readonly properties, mapped types for transforming object properties, and conditional types for type inference and manipulation. Additionally, it includes template literal types, intrinsic string manipulation types, and utility types such as `Partial`, `Readonly`, and `Record`. The file also covers complex type constructs like recursive types, discriminated unions, type guards, and predicates, as well as generic constraints and distributive conditional types. These type definitions are useful for creating flexible and type-safe TypeScript applications.
 # Types
 
 ---
 ### PersonName<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.PersonName}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L12>)
+
 - **Members**:
-    - `firstName`: The first name of the person.
-    - `lastName`: The last name of the person.
-- **Description**: The `PersonName` type defines a simple structure for representing a person's name, consisting of two string properties: `firstName` and `lastName`. This type is used to ensure that any object representing a person's name will have these two properties, both of which are required and must be strings.
+    - `firstName`: The first name of a person as a string.
+    - `lastName`: The last name of a person as a string.
+- **Description**: The `PersonName` type defines an object structure with two properties: `firstName` and `lastName`, both of which are strings. This type represents the basic name information of a person, ensuring that any object conforming to this type will have these two string properties.
 
 
 ---
 ### PersonAge<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.PersonAge}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L13>)
+
 - **Members**:
-    - `age`: A number representing the age of a person.
-- **Description**: The `PersonAge` type is a TypeScript type alias that defines a contract for objects representing a person's age. It ensures that any object of this type will have an `age` property, which is a number. This type is used in conjunction with other types, such as `PersonName`, to form more complex types like `Person`, which represents a complete person with both name and age properties.
+    - `age`: The `age` property is a number that represents a person's age.
+- **Description**: The `PersonAge` type is a TypeScript type alias that defines an object structure with a single property, `age`, which is a number. This type is used to represent the age attribute of a person and can be combined with other types, such as `PersonName`, to form more complex types like `Person`.
 
 
 ---
 ### OverloadedFunction<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.OverloadedFunction}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L29>)
+
 - **Members**:
     - `(x: string): string`: Defines a function signature that takes a string and returns a string.
     - `(x: number): number`: Defines a function signature that takes a number and returns a number.
-- **Description**: The `OverloadedFunction` type alias defines a function type that can be invoked with either a string or a number as its argument, returning a value of the same type as the argument. This type provides a contract for functions that need to handle both string and number inputs, ensuring that the return type matches the input type, thus allowing for type-safe function overloading.
+- **Description**: The `OverloadedFunction` type alias defines a function type that can accept either a string or a number as an argument and returns a value of the same type as the argument. This type provides a contract for functions that need to handle both string and number inputs, ensuring that the return type matches the input type.
 
 
 ---
 ### Point<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.Point}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L35>)
+
 - **Members**:
-    - `x`: The x-coordinate of the point, represented as a number.
-    - `y`: The y-coordinate of the point, represented as a number.
-- **Description**: The `Point` type defines a simple object structure representing a point in a 2D space with two properties: `x` and `y`, both of which are numbers. This type is used to specify the coordinates of a point on a plane, making it useful for graphical applications, geometric calculations, or any context where a 2D point representation is needed.
+    - `x`: The x-coordinate of the point.
+    - `y`: The y-coordinate of the point.
+- **Description**: The `Point` type defines a simple object structure with two properties, `x` and `y`, both of which are numbers. This type represents a point in a two-dimensional space, where `x` is the horizontal coordinate and `y` is the vertical coordinate.
 
 
 ---
 ### ReadonlyPoint<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ReadonlyPoint}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L40>)
+
 - **Members**:
-    - `x`: A readonly number representing the x-coordinate of the point.
-    - `y`: A readonly number representing the y-coordinate of the point.
-- **Description**: The `ReadonlyPoint` type defines a contract for objects representing a point in a 2D space with immutable coordinates. It ensures that the `x` and `y` properties of the point cannot be modified after the object is created, providing a way to represent fixed points in applications where immutability is required.
+    - `x`: The x-coordinate of the point, which is read-only.
+    - `y`: The y-coordinate of the point, which is read-only.
+- **Description**: The `ReadonlyPoint` type defines an object structure with two numeric properties, `x` and `y`, both of which are read-only. This type ensures that once a `ReadonlyPoint` object is created, its `x` and `y` values cannot be changed, providing immutability for these coordinates.
 
 
 ---
 ### OptionalPoint<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.OptionalPoint}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L45>)
+
 - **Members**:
     - `x`: An optional number representing the x-coordinate.
     - `y`: An optional number representing the y-coordinate.
-- **Description**: The `OptionalPoint` type defines an object structure that represents a point in a 2D space, where both the x and y coordinates are optional. This allows for flexibility in representing points that may not have complete coordinate information, making it useful in scenarios where partial data is acceptable or expected.
+- **Description**: The `OptionalPoint` type defines an object structure with two optional properties, `x` and `y`, both of which are numbers. This type is useful for representing a point in a 2D space where either or both coordinates may be undefined.
 
 
 ---
 ### Readonly<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.Readonly}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L51>)
+
 - **Members**:
-    - `[P in keyof T]`: Iterates over each property key in the type T.
+    - `[P in keyof T]`: Iterates over each property key in the type `T`.
     - `readonly`: Makes each property in the resulting type read-only.
-- **Description**: The `Readonly` type alias in TypeScript is a mapped type that takes a generic type `T` and produces a new type where all properties of `T` are marked as read-only. This means that once an object of this type is created, its properties cannot be modified. It is useful for creating immutable object types, ensuring that the properties of an object cannot be changed after it is constructed, thus providing a contract for immutability in TypeScript.
+- **Description**: The `Readonly<T>` type alias creates a mapped type that takes an object type `T` and transforms it into a new type where all properties are read-only. This means that once an object of this type is created, its properties cannot be modified. It is useful for ensuring immutability in TypeScript objects.
 
 
 ---
 ### Partial<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.Partial}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L55>)
+
 - **Members**:
-    - `[P in keyof T]`: Represents each property of the type T, making it optional.
-- **Description**: The `Partial<T>` type alias is a mapped type that constructs a new type by making all properties of the given type `T` optional. This is achieved by iterating over each property `P` in `T` and appending a `?` to indicate that the property is optional. This type is useful when you want to create a version of a type where some or all properties are not required, allowing for more flexible object creation and manipulation.
+    - `[P in keyof T]`: Represents each property `P` in the type `T`.
+    - `?`: Indicates that each property `P` is optional.
+    - `T[P]`: Represents the type of the property `P` in the type `T`.
+- **Description**: The `Partial<T>` type alias creates a new type where all properties of the type `T` are optional. This means that any object of type `Partial<T>` can have zero or more of the properties defined in `T`, and each property can be omitted. This is useful for scenarios where you want to work with objects that may not have all the properties of a given type `T`.
 
 
 ---
 ### Nullable<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.Nullable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L59>)
+
 - **Members**:
-    - `[P in keyof T]`: Iterates over each property key in the type T.
-    - `T[P] | null`: Each property value in the type T can be either its original type or null.
-- **Description**: The `Nullable<T>` type alias is a mapped type that transforms all properties of a given type `T` to be nullable. This means that for each property in `T`, the corresponding property in `Nullable<T>` can either hold its original type or be `null`. This type is useful for scenarios where you want to allow `null` values for all properties of an object, providing flexibility in handling optional or missing data.
+    - `[P in keyof T]`: Maps each property of type `T` to a type that can be either the original type or `null`.
+- **Description**: The `Nullable<T>` type alias creates a mapped type where each property of the given type `T` can be either its original type or `null`. This type is useful when you want to allow `null` values for all properties of an object type, effectively making all properties nullable.
 
 
 ---
 ### Getters<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.Getters}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L64>)
+
 - **Members**:
-    - `[P in keyof T as `get${Capitalize<string & P>}`]`: Defines a getter method for each property in T, with the method name prefixed by 'get' and the property name capitalized.
-- **Description**: The `Getters` type alias is a mapped type that transforms each property of a given type `T` into a getter method. For each property `P` in `T`, it creates a method named `getP` (where `P` is capitalized) that returns the value of type `T[P]`. This type is useful for creating a consistent interface for accessing properties of an object through getter methods, ensuring encapsulation and potentially adding logic to the property access.
+    - `[P in keyof T as `get${Capitalize<string & P>}`]`: Defines a getter method for each property in `T`, with the method name prefixed by 'get' and the property name capitalized.
+- **Description**: The `Getters` type alias creates a mapped type that transforms each property of a given type `T` into a getter method. Each method is named by prefixing 'get' to the capitalized property name and returns the property's type. This type alias is useful for defining a consistent interface for accessing properties of an object through getter methods.
 
 
 ---
 ### RemovePrefix<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.RemovePrefix}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L68>)
+
 - **Members**:
-    - `P`: Represents each property key in the type T.
-- **Description**: The `RemovePrefix` type alias is a mapped type that transforms the keys of a given type `T` by removing a leading underscore (`_`) if present. It iterates over each key `P` in `T`, and if `P` matches the pattern of an underscore followed by any string (`_${infer R}`), it remaps the key to `R`. Otherwise, it retains the original key `P`. This type is useful for creating a new type with keys that have had their leading underscores removed, while preserving the original values associated with those keys.
+    - `P`: Represents each property key in the type `T`.
+- **Description**: The `RemovePrefix` type alias defines a mapped type that transforms the keys of a given type `T`. It removes a leading underscore (`_`) from each key if present, while preserving the original value type. This type is useful for creating a new object type where prefixed keys are normalized by removing the underscore.
 
 
 ---
 ### ConstrainedGeneric<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ConstrainedGeneric}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L103>)
+
 - **Members**:
-    - `value`: Holds a value of type T, which must extend the Lengthwise interface.
-    - `getLength`: A method that returns the length of the value.
-- **Description**: The ConstrainedGeneric type is a TypeScript type alias that defines a structure for objects containing a value of a generic type T, which is constrained to types that extend the Lengthwise interface. This ensures that the value has a length property. The type also includes a method getLength, which returns the length of the value, leveraging the constraint on T to ensure the presence of a length property.
+    - `value`: Holds a value of type `T` which must extend `Lengthwise`.
+    - `getLength`: A method that returns the length of the `value`.
+- **Description**: The `ConstrainedGeneric` type alias defines an object structure where the `value` is of a generic type `T` that must extend the `Lengthwise` interface, ensuring it has a `length` property. This type also includes a `getLength` method that returns the length of the `value`, enforcing that any type used with `ConstrainedGeneric` must have a measurable length.
 
 
 ---
 ### LinkedList<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.LinkedList}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L117>)
+
 - **Members**:
     - `value`: Holds the data of the current node in the linked list.
-    - `next`: An optional reference to the next node in the linked list, allowing for recursive linking.
-- **Description**: The `LinkedList<T>` type defines a recursive data structure for a singly linked list, where each node contains a value of generic type `T` and an optional reference to the next node in the list. This structure allows for dynamic and flexible storage of elements in a sequence, where each element points to the next, facilitating operations like traversal, insertion, and deletion.
+    - `next`: Points to the next node in the linked list, or is undefined if there is no next node.
+- **Description**: The `LinkedList<T>` type defines a recursive data structure for a singly linked list, where each node contains a `value` of generic type `T` and an optional `next` property that points to the next node in the list. This structure allows for the creation of a chain of nodes, where each node can hold data and reference the subsequent node, facilitating operations like traversal and insertion.
 
 
 ---
 ### FluentInterface<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.FluentInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L155>)
+
 - **Members**:
-    - `method`: A method that returns the current instance, enabling method chaining.
-    - `chain`: A method that returns the current instance, allowing for chaining of method calls.
-- **Description**: The `FluentInterface` type defines a contract for objects that support method chaining, a common design pattern in which methods return the object itself to allow for a sequence of method calls on the same object instance. This type includes two methods, `method` and `chain`, both of which return `this`, facilitating the chaining of multiple method calls in a fluent and readable manner.
+    - `method`: A method that returns the current instance of the object.
+    - `chain`: A method that returns the current instance of the object.
+- **Description**: The `FluentInterface` type defines an object structure that supports method chaining by returning the current instance (`this`) from its methods. This allows for a sequence of method calls on the same object instance, facilitating a fluent and readable coding style.
 
 
 ---
 ### APIResponse<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.APIResponse}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L160>)
+
 - **Members**:
-    - `data`: Holds the payload of the response, which is of a generic type T.
-    - `status`: Represents the HTTP status code of the response.
-    - `headers`: Contains the HTTP headers as a key-value pair object.
-    - `timestamp`: Records the date and time when the response was generated.
-- **Description**: The `APIResponse<T>` type alias defines the structure of an object representing an HTTP response in a generic way. It includes a `data` field of a generic type `T` to hold the response payload, a `status` field for the HTTP status code, a `headers` field as a record of string key-value pairs for HTTP headers, and a `timestamp` field to indicate when the response was created. This type is useful for standardizing the shape of API responses across different parts of an application.
+    - `data`: Holds the payload of the response, which is of a generic type `T`.
+    - `status`: Represents the HTTP status code of the response as a number.
+    - `headers`: Contains the HTTP headers of the response as a record with string keys and values.
+    - `timestamp`: Records the date and time when the response was generated as a `Date` object.
+- **Description**: The `APIResponse` type is a generic TypeScript type alias that defines the structure of an API response object. It includes a `data` field of a generic type `T` to hold the response payload, a `status` field to represent the HTTP status code, a `headers` field to store HTTP headers as key-value pairs, and a `timestamp` field to indicate when the response was generated. This type provides a standardized way to represent API responses in TypeScript applications.
 
 
 ---
 ### DeepPartial<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.DeepPartial}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L173>)
+
 - **Members**:
-    - `[P in keyof T]`: Iterates over each key in the type T.
-    - `T[P] extends object ? DeepPartial<T[P]> : T[P]`: Recursively applies DeepPartial to nested objects, otherwise keeps the type as is.
-- **Description**: The `DeepPartial` type alias is a utility type that recursively makes all properties of a given type `T` optional. It is particularly useful when you want to create a version of an object type where all properties, including those nested within other objects, are optional. This type is implemented using a mapped type that iterates over each key in `T`, and applies the `DeepPartial` type recursively if the property is an object, otherwise it keeps the property type as is but makes it optional.
+    - `[P in keyof T]`: Iterates over each property `P` in the type `T`.
+    - `T[P] extends object ? DeepPartial<T[P]> : T[P]`: Recursively applies `DeepPartial` to nested objects, otherwise keeps the property type as is.
+- **Description**: The `DeepPartial` type alias creates a new type where all properties of the given type `T` are optional, and if any property is an object, it recursively applies the same transformation to make all nested properties optional as well. This type is useful for creating partial versions of complex nested objects, allowing for flexibility in specifying only a subset of properties at any depth.
 
 
 ---
 ### DeepReadonly<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.DeepReadonly}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_object_types.ts#L177>)
+
 - **Members**:
-    - `[P in keyof T]`: Iterates over each property key in the type T.
-    - `readonly`: Marks each property as readonly, preventing reassignment.
-    - `T[P] extends object ? DeepReadonly<T[P]> : T[P]`: Recursively applies DeepReadonly to nested objects, otherwise keeps the property type unchanged.
-- **Description**: The `DeepReadonly` type alias is a utility type in TypeScript that recursively makes all properties of a given type `T` readonly. This means that not only the top-level properties of an object are immutable, but also all nested objects within it. It is particularly useful for ensuring that complex data structures are not accidentally modified, enforcing immutability throughout the entire object hierarchy.
+    - `DeepReadonly`: A mapped type that recursively makes all properties of an object type `T` deeply readonly.
+- **Description**: The `DeepReadonly` type alias defines a recursive mapped type that makes all properties of an object type `T` deeply readonly. This means that not only the top-level properties of `T` are readonly, but also all nested properties within any object properties of `T` are recursively made readonly. This type is useful for ensuring that an object and all its nested objects cannot be modified.
 
 
 

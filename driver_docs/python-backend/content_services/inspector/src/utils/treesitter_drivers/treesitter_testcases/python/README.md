@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A collection of test case files covering Python function and method calls, class definitions, function features, import statements, method definitions, and variable definitions.
+Test cases for Python function calls, classes, functions, imports, methods, and variables.
 
 
 ## Files
-- **[tst_calls.py](tst_calls.py.md)**: The `tst_calls.py` file contains various test cases for Python function and method calls, demonstrating different types of calls including simple, built-in, method, chained, class instance, lambda, module function, and async function calls, as well as calls with unpacking, complex expressions, and property access.
-- **[tst_classes.py](tst_classes.py.md)**: The `tst_classes.py` file contains various test cases for Python class definitions, demonstrating concepts such as inheritance, abstract base classes, dataclasses, nested classes, method types, special methods, generics, and metaclasses.
-- **[tst_functions.py](tst_functions.py.md)**: The `tst_functions.py` file contains a comprehensive suite of test functions demonstrating various Python function features, including parameter types, decorators, async functions, generators, and complex annotations.
-- **[tst_imports.py](tst_imports.py.md)**: The `tst_imports.py` file contains various test cases for different types of Python import statements, demonstrating scenarios such as simple imports, imports with aliases, conditional imports, and more complex import patterns.
-- **[tst_methods.py](tst_methods.py.md)**: The `tst_methods.py` file contains test cases for various Python method definitions, including instance, class, static, property, special, context manager, async, abstract, decorated, private, protected, complex signature methods, and methods within nested classes.
-- **[tst_variables.py](tst_variables.py.md)**: The `tst_variables.py` file contains test cases for various types of Python variable definitions, including module-level variables, constants, type-annotated variables, final variables, class variables, and variables in different scopes.
+- **[tst_calls.py](tst_calls.py.md)**: Test cases for various Python function and method call scenarios, including simple, built-in, and class methods.
+- **[tst_classes.py](tst_classes.py.md)**: Test cases for various Python class definitions, including inheritance, dataclasses, and metaclasses.
+- **[tst_functions.py](tst_functions.py.md)**: Tests for various Python function types, including async, decorators, and complex annotations.
+- **[tst_imports.py](tst_imports.py.md)**: Test cases for various Python import statement scenarios, including aliases, conditionals, and dynamics.
+- **[tst_methods.py](tst_methods.py.md)**: Test cases for various Python method definitions, including instance, class, static, and abstract methods.
+- **[tst_variables.py](tst_variables.py.md)**: Test cases for Python variable definitions, including module-level, class, and scoped variables.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_py.py` file defines a template for processing large Python source code files, including sections for purpose, imports, global variables, classes, and functions, utilizing various collections and prompts.
+Defines a template for analyzing Python source code, including prompts for purpose, imports, variables, classes, and functions.
 
 # Purpose
-This Python code file is designed to serve as a template for generating structured prompts and extracting specific components from Python source code. It is part of a larger system that likely involves analyzing and documenting Python codebases. The file imports various modules and classes that facilitate the creation of prompts and the collection of code elements such as imports, global variables, classes, and functions. The primary functionality is encapsulated in the `SOURCE_CODE_LARGE_TEMPLATE_PY` list, which defines a series of tuples. Each tuple specifies a section of the template, such as "Purpose," "Imports and Dependencies," "Global Variables," "Classes," and "Functions," and associates these sections with methods for extracting relevant data from the code.
+The code defines a template for generating structured documentation for Python source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.python`, which are used to create and manage prompts and collections related to Python code analysis. The template, `SOURCE_CODE_LARGE_TEMPLATE_PY`, is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Classes", and "Functions".
 
-The file is structured to be part of a library or framework that can be imported and used in other parts of the system. It does not define a standalone script but rather provides a set of tools for analyzing Python code. The use of components like `Prompt` and `Component` suggests that the file is intended to generate human-readable documentation or reports based on the analysis of Python code. The file defines a public API through the `SOURCE_CODE_LARGE_TEMPLATE_PY` list, which can be used by other parts of the system to apply the template to specific codebases and extract structured information for documentation or analysis purposes.
+Each tuple in the template contains a section identifier, a section title, and a series of instructions or methods to generate the content for that section. For example, the "Purpose" section uses the `Prompt` class to append components and instructions to form a string that describes the purpose of the code. Other sections, like "Imports and Dependencies", use static analysis and collections to gather and list relevant information. This code is intended to be part of a larger system that automates the generation of technical documentation for Python code, focusing on structured and clear presentation of code components and their purposes.
 # Imports and Dependencies
 
 ---
@@ -35,8 +35,8 @@ The file is structured to be part of a library or framework that can be imported
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_PY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_PY` is a list of tuples, each containing structured data for generating prompts and analyzing Python source code. Each tuple includes a type identifier, a description, and various components or functions for processing code elements such as imports, global variables, classes, and functions.
-- **Use**: This variable is used to define a template for generating structured prompts and performing static and dynamic analysis on Python source code.
+- **Description**: Contains a list of tuples, each representing a section of a structured prompt template. Each tuple includes a section identifier, a section title, and one or more components or functions that generate or process prompt content.
+- **Use**: Used to define and organize sections of a structured prompt template for code analysis and documentation.
 
 
 

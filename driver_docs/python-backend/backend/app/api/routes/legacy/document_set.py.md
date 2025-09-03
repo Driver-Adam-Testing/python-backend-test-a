@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `document_set.py` file in the `python-backend` codebase defines various data structures and functions to manage and retrieve document sets, including content descriptions and metadata, from a database and S3 storage, using the FastAPI framework and Strawberry for GraphQL types.
+Defines a `DocumentSet` class and related types for managing document content and metadata in a codebase.
 
 # Purpose
-This Python code file is designed to facilitate the retrieval and organization of document-related data from a database, specifically focusing on content derived from nodes within a codebase. It leverages the FastAPI framework for handling HTTP exceptions and uses SQLAlchemy and SQLModel for database interactions. The code defines several data structures using the Strawberry library, which is used for creating GraphQL types, to represent different types of content such as documents, code metadata, and application notes. These structures are used to encapsulate various content types, including descriptions, quickstart guides, and architecture diagrams, which are associated with nodes in a codebase.
+The code defines a set of data models and functions to manage and retrieve document sets related to nodes in a database. It uses the `strawberry` library to define GraphQL types such as `Document`, `Short`, `Quickstart`, `CodeMetadata`, `Code`, `ApplicationNote`, `TopLevel`, and `DocumentSet`. These types represent various content structures, including descriptions, quick start guides, code metadata, and application notes. The `DerivedContentTypes` enumeration specifies different types of derived content that can be associated with nodes.
 
-The primary function, [`get_document_set`](<#get_document_set>), orchestrates the retrieval of content from the database based on specified parameters such as node kind, path, and asset identifiers. It fetches the relevant node and its associated derived content, populating a `DocumentSet` object with the retrieved data. This function also handles the fetching of code content from an S3 bucket if required. The code is structured to support a modular and extensible approach to managing and accessing content metadata, making it suitable for applications that need to dynamically generate or display documentation and related content based on codebase nodes.
+The [`get_document_set`](<#get_document_set>) function is a key component that retrieves a `DocumentSet` for a given node. It uses SQLAlchemy to query the database for nodes, versions, and derived content based on the provided parameters. The function checks the validity of the primary asset and version, retrieves the node, and populates the `DocumentSet` with content from the database. It also handles fetching code content from an S3 bucket if required. The code includes error handling for invalid inputs and logs warnings for unrecognized content kinds. This module is intended to be part of a larger application, providing a structured way to access and manage content related to codebases and documents.
 # Imports and Dependencies
 
 ---
@@ -35,193 +35,219 @@ The primary function, [`get_document_set`](<#get_document_set>), orchestrates th
 
 ---
 ### DerivedContentTypes<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.DerivedContentTypes}} -->
-- **Description**: The `DerivedContentTypes` class is an enumeration that defines various types of derived content, such as symbols, descriptions, quick start guides, architecture diagrams, and application notes. Each member of the enumeration represents a specific type of content that can be used to categorize or identify different content types within a system.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L21>)
+
+- **Description**: Defines various types of derived content as enumeration values, such as 'symbol', 'short_paragraph_description', and 'long_description', to categorize different content types.
 - **Inherits From**:
     - `Enum`
 
 
 ---
 ### Document<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.Document}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L36>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `id`: A unique identifier for the document, initialized to a default UUID.
-    - `content`: The textual content of the document, initialized as an empty string.
-- **Description**: The `Document` class is a simple data structure used to represent a document with a unique identifier and associated content. It is decorated with `@strawberry.type`, indicating its use in a GraphQL schema, and provides a basic framework for storing and accessing document data within the application.
+    - `id`: Stores a unique identifier for the document as a UUID.
+    - `content`: Holds the textual content of the document as a string.
+- **Description**: Represents a document with a unique identifier and associated textual content, used within a Strawberry GraphQL type.
 
 
 ---
 ### Short<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.Short}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L42>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `terse_sentence`: A string representing a terse sentence.
-    - `single_sentence`: A string representing a single sentence.
-    - `single_paragraph`: A string representing a single paragraph.
-    - `terse_sentence_document`: An optional Document associated with the terse sentence.
-    - `single_sentence_document`: An optional Document associated with the single sentence.
-    - `single_paragraph_document`: An optional Document associated with the single paragraph.
-- **Description**: The Short class is a data structure designed to hold brief textual content in the form of a terse sentence, a single sentence, and a single paragraph, along with optional associated Document objects for each type of content. It is decorated with @strawberry.type, indicating its use in a GraphQL schema.
+    - `terse_sentence`: Stores a terse sentence as a string.
+    - `single_sentence`: Stores a single sentence as a string.
+    - `single_paragraph`: Stores a single paragraph as a string.
+    - `terse_sentence_document`: Holds a `Document` object or `None` for the terse sentence.
+    - `single_sentence_document`: Holds a `Document` object or `None` for the single sentence.
+    - `single_paragraph_document`: Holds a `Document` object or `None` for the single paragraph.
+- **Description**: Represents a data structure for storing short textual content and their associated `Document` objects, if available.
 
 
 ---
 ### Quickstart<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.Quickstart}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L52>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `use`: A string representing the use case or purpose of the quickstart.
-    - `dependencies`: A string detailing the dependencies required for the quickstart.
-    - `entry`: A string indicating the entry point for the quickstart.
-    - `getting_started`: A string providing instructions for getting started with the quickstart.
-    - `use_document`: An optional Document object containing detailed information about the use case.
-    - `dependencies_document`: An optional Document object containing detailed information about the dependencies.
-    - `entry_document`: An optional Document object containing detailed information about the entry point.
-    - `getting_started_document`: An optional Document object containing detailed information about getting started.
-- **Description**: The Quickstart class is a data structure designed to encapsulate information related to a quickstart guide, including its use, dependencies, entry point, and getting started instructions. Each of these aspects is represented as a string, with optional Document objects available to provide more detailed information. The class is decorated with @strawberry.type, indicating its use in a GraphQL schema.
+    - `use`: Stores a string related to the use of the quickstart.
+    - `dependencies`: Stores a string related to the dependencies of the quickstart.
+    - `entry`: Stores a string related to the entry point of the quickstart.
+    - `getting_started`: Stores a string related to getting started with the quickstart.
+    - `use_document`: Holds a `Document` object or `None` related to the use of the quickstart.
+    - `dependencies_document`: Holds a `Document` object or `None` related to the dependencies of the quickstart.
+    - `entry_document`: Holds a `Document` object or `None` related to the entry point of the quickstart.
+    - `getting_started_document`: Holds a `Document` object or `None` related to getting started with the quickstart.
+- **Description**: Represents a quickstart guide with fields for use, dependencies, entry, and getting started, each accompanied by an optional `Document` object.
 
 
 ---
 ### CodeMetadata<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.CodeMetadata}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L64>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `size`: Represents the size of the code, which can be None if not specified.
-    - `sloc`: Indicates the source lines of code, which can be None if not specified.
-    - `extension`: Specifies the file extension of the code, which can be None if not specified.
-    - `is_binary`: Indicates whether the code is binary, which can be None if not specified.
-    - `is_hex`: Indicates whether the code is in hexadecimal format, which can be None if not specified.
-    - `is_analyzable`: A boolean indicating if the code is analyzable, defaulting to True.
-    - `is_blacklisted`: A boolean indicating if the code is blacklisted, defaulting to False.
-- **Description**: The CodeMetadata class is a data structure used to encapsulate metadata about a code file, including its size, source lines of code (SLOC), file extension, and various boolean flags indicating its properties such as whether it is binary, hexadecimal, analyzable, or blacklisted. This class is decorated with @strawberry.type, indicating its use in a GraphQL schema.
+    - `size`: Represents the size of the code file.
+    - `sloc`: Represents the source lines of code in the file.
+    - `extension`: Represents the file extension of the code file.
+    - `is_binary`: Indicates if the code file is binary.
+    - `is_hex`: Indicates if the code file is in hexadecimal format.
+    - `is_analyzable`: Indicates if the code file can be analyzed.
+    - `is_blacklisted`: Indicates if the code file is blacklisted.
+- **Description**: Represents metadata information about a code file, including its size, source lines of code, file extension, and various boolean flags indicating its properties such as whether it is binary, hexadecimal, analyzable, or blacklisted.
 
 
 ---
 ### Code<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.Code}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L75>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `file_name`: The name of the file represented by this code.
-    - `extension`: The file extension of the code file.
-    - `content`: The actual content of the code file.
-    - `metadata`: Metadata associated with the code, such as size and whether it is analyzable.
-- **Description**: The `Code` class represents a code file with attributes for its file name, extension, content, and optional metadata. It is decorated with `@strawberry.type`, indicating its use in a GraphQL schema. The class provides a structured way to encapsulate information about a code file, including its content and various metadata properties that describe its characteristics.
+    - `file_name`: Stores the name of the file as a string.
+    - `extension`: Stores the file extension as a string.
+    - `content`: Holds the content of the file as a string.
+    - `metadata`: Contains metadata about the code, which is an instance of `CodeMetadata` or `None`.
+- **Description**: Represents a code file with attributes for its name, extension, content, and optional metadata. This class is decorated with `@strawberry.type`, indicating it is part of a GraphQL schema.
 
 
 ---
 ### ApplicationNote<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.ApplicationNote}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L83>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `id`: A unique identifier for the application note.
-    - `status`: The current status of the application note.
-    - `prompt`: The prompt or initial input for generating the application note.
-    - `name`: The name or title of the application note.
-    - `content`: The main content of the application note.
-    - `description`: A brief description of the application note.
-    - `metadata`: Additional metadata associated with the application note.
-    - `generation_timestamp`: The timestamp when the application note was generated.
-- **Description**: The `ApplicationNote` class represents a structured data type for application notes, encapsulating various attributes such as id, status, prompt, name, content, description, metadata, and a generation timestamp. It is decorated with `@strawberry.type`, indicating its use in a GraphQL schema, and is designed to store and manage information related to application notes within the system.
+    - `id`: Stores the unique identifier for the application note.
+    - `status`: Indicates the current status of the application note.
+    - `prompt`: Contains the prompt or initial input for generating the application note.
+    - `name`: Holds the name of the application note.
+    - `content`: Stores the main content of the application note.
+    - `description`: Provides a description of the application note.
+    - `metadata`: Contains metadata related to the application note.
+    - `generation_timestamp`: Records the timestamp when the application note was generated.
+- **Description**: Represents an application note with attributes for identification, status, content, and metadata, along with a timestamp for when it was generated.
 
 
 ---
 ### TopLevel<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.TopLevel}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L95>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `short_sentence`: A short sentence description.
-    - `short_paragraph`: A short paragraph description.
-    - `terse_sentence`: A terse sentence description.
-    - `long_description`: A long description.
-    - `short_sentence_document`: An optional Document associated with the short sentence.
-    - `short_paragraph_document`: An optional Document associated with the short paragraph.
-    - `terse_sentence_document`: An optional Document associated with the terse sentence.
-    - `long_description_document`: An optional Document associated with the long description.
-- **Description**: The TopLevel class is a data structure designed to hold various forms of textual descriptions, including short sentences, short paragraphs, terse sentences, and long descriptions. Each of these descriptions can optionally be associated with a Document object, which provides additional metadata or content details. This class is decorated with @strawberry.type, indicating its use in a GraphQL schema, likely to facilitate querying and manipulation of these description fields in a structured manner.
+    - `short_sentence`: Stores a short sentence as a string.
+    - `short_paragraph`: Stores a short paragraph as a string.
+    - `terse_sentence`: Stores a terse sentence as a string.
+    - `long_description`: Stores a long description as a string.
+    - `short_sentence_document`: Holds a `Document` object or `None` for the short sentence.
+    - `short_paragraph_document`: Holds a `Document` object or `None` for the short paragraph.
+    - `terse_sentence_document`: Holds a `Document` object or `None` for the terse sentence.
+    - `long_description_document`: Holds a `Document` object or `None` for the long description.
+- **Description**: Represents a top-level structure with fields for different types of textual content and their corresponding `Document` objects. Each field can store a specific type of description or sentence, and the associated `Document` fields can hold additional metadata or content related to these descriptions.
 
 
 ---
 ### DocumentSet<!-- {{#class:python-backend/backend/app/api/routes/legacy/document_set.DocumentSet}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L107>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `source_content_id`: A deprecated string identifier for the source content.
-    - `architecture`: A string representing the architecture description.
-    - `architecture_document`: A Document object containing the architecture document.
-    - `long`: A string representing the long description.
-    - `long_document`: A Document object containing the long description document.
-    - `short`: A Short object containing short descriptions and their documents.
-    - `quickstart`: A Quickstart object containing quickstart information and documents.
-    - `chunk_descriptions`: A list of strings or None representing chunk descriptions.
-    - `code`: A Code object containing code-related information and metadata.
-    - `toplevel`: A TopLevel object containing top-level descriptions and their documents.
-    - `application_notes`: A list of ApplicationNote objects or None representing application notes.
-- **Description**: The DocumentSet class is a data structure designed to encapsulate various types of documentation and related metadata for a given content node. It includes fields for architecture, long descriptions, short descriptions, quickstart guides, and code information, each represented by their respective objects or strings. The class also supports optional fields for chunk descriptions and application notes, allowing for a comprehensive representation of documentation associated with a content node. The use of the Strawberry library indicates that this class is likely used in a GraphQL API context.
+    - `source_content_id`: Stores a deprecated source content identifier.
+    - `architecture`: Holds the architecture description as a string.
+    - `architecture_document`: Contains a `Document` object for the architecture.
+    - `long`: Stores a long description as a string.
+    - `long_document`: Contains a `Document` object for the long description.
+    - `short`: Holds a `Short` object for short descriptions.
+    - `quickstart`: Contains a `Quickstart` object for quickstart information.
+    - `chunk_descriptions`: Stores a list of chunk descriptions or None.
+    - `code`: Holds a `Code` object for code-related information.
+    - `toplevel`: Contains a `TopLevel` object for top-level descriptions.
+    - `application_notes`: Stores a list of `ApplicationNote` objects or None.
+- **Description**: Represents a set of documents and related metadata, including architecture, long and short descriptions, quickstart information, code details, top-level descriptions, and application notes. It uses `strawberry.field` to define default values and factories for its members.
 
 
 # Functions
 
 ---
 ### node\_kind\_map<!-- {{#callable:python-backend/backend/app/api/routes/legacy/document_set.node_kind_map}} -->
-The `node_kind_map` function maps a given node kind string to a corresponding codebase-related string or raises an error if the node kind is invalid.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L124>)
+
+Maps a given node kind to its corresponding codebase representation.
 - **Inputs**:
-    - `node_kind`: A string representing the type of node, which can be 'resource', 'directory', or 'file'.
-- **Control Flow**:
-    - Check if the input `node_kind` is 'resource', and if so, return 'codebase'.
-    - Check if the input `node_kind` is 'directory', and if so, return 'codebase-directory'.
-    - Check if the input `node_kind` is 'file', and if so, return 'codebase-file'.
-    - If none of the above conditions are met, raise a `ValueError` indicating an invalid node kind.
-- **Output**: A string that represents the mapped codebase-related type for the given node kind.
+    - `node_kind`: A string representing the type of node, such as 'resource', 'directory', or 'file'.
+- **Logic and Control Flow**:
+    - Checks if `node_kind` is 'resource' and returns 'codebase'.
+    - Checks if `node_kind` is 'directory' and returns 'codebase-directory'.
+    - Checks if `node_kind` is 'file' and returns 'codebase-file'.
+    - Raises a `ValueError` if `node_kind` does not match any of the expected values.
+- **Output**: A string that represents the mapped codebase type for the given node kind.
 
 
 ---
 ### fetch\_code\_metadata<!-- {{#callable:python-backend/backend/app/api/routes/legacy/document_set.fetch_code_metadata}} -->
-The `fetch_code_metadata` function retrieves code metadata from a given Node object if available.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L135>)
+
+Fetches metadata for a code node if available.
 - **Inputs**:
-    - `node`: A Node object from which the code metadata is to be fetched.
-- **Control Flow**:
-    - Check if the Node object has any miscellaneous metadata; if not, return None.
-    - If metadata is present, create and return a CodeMetadata object using the metadata values from the Node.
-- **Output**: A CodeMetadata object containing metadata details like size, sloc, extension, and various flags, or None if no metadata is available.
+    - `node`: A `Node` object that contains metadata information.
+- **Logic and Control Flow**:
+    - Check if `node.misc_metadata` is not present; if absent, return `None`.
+    - If `node.misc_metadata` is present, create and return a [`CodeMetadata`](<#codemetadata>) object using the metadata from `node.misc_metadata`.
+- **Output**: A [`CodeMetadata`](<#codemetadata>) object containing metadata details or `None` if metadata is not available.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/legacy/document_set.CodeMetadata`](<#CodeMetadata>)
+    - [`python-backend/backend/app/api/routes/legacy/document_set.CodeMetadata`](<#codemetadata>)
 
 
 ---
 ### fetch\_code\_content\_from\_s3<!-- {{#callable:python-backend/backend/app/api/routes/legacy/document_set.fetch_code_content_from_s3}} -->
-The function `fetch_code_content_from_s3` retrieves the content of a file from an S3 bucket using the details of a given `Node` object.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L149>)
+
+Fetches the content of a file from an S3 bucket using the details from a given `Node` object.
 - **Inputs**:
-    - `node`: A `Node` object that contains information about the version, primary asset, and relative path of the file to be fetched from S3.
-- **Control Flow**:
-    - An [`S3BucketAccess`](<s3.py.md#S3BucketAccess>) object is instantiated using the organization ID, primary asset ID, and version ID from the `Node` object.
-    - The [`get_file_content`](<s3.py.md#S3BucketAccessget_file_content>) method of the [`S3BucketAccess`](<s3.py.md#S3BucketAccess>) object is called with the relative path from the `Node` object to retrieve the file content.
-- **Output**: A string representing the content of the file fetched from the S3 bucket.
+    - `node`: A `Node` object that contains information about the version, primary asset, and relative path of the file to fetch from S3.
+- **Logic and Control Flow**:
+    - Creates an [`S3BucketAccess`](<s3.py.md#s3bucketaccess>) object using the organization ID, primary asset ID, and version ID from the `Node` object.
+    - Calls the [`get_file_content`](<s3.py.md#s3bucketaccessget_file_content>) method on the [`S3BucketAccess`](<s3.py.md#s3bucketaccess>) object with the `relative_path` from the `Node` to fetch the file content.
+- **Output**: Returns the content of the file as a string.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/legacy/s3.S3BucketAccess`](<s3.py.md#S3BucketAccess>)
-    - [`python-backend/backend/app/api/routes/legacy/s3.S3BucketAccess.get_file_content`](<s3.py.md#S3BucketAccessget_file_content>)
+    - [`python-backend/backend/app/api/routes/legacy/s3.S3BucketAccess`](<s3.py.md#s3bucketaccess>)
+    - [`python-backend/backend/app/api/routes/legacy/s3.S3BucketAccess.get_file_content`](<s3.py.md#s3bucketaccessget_file_content>)
 
 
 ---
 ### get\_document\_set<!-- {{#callable:python-backend/backend/app/api/routes/legacy/document_set.get_document_set}} -->
-The `get_document_set` function retrieves and constructs a [`DocumentSet`](<#DocumentSet>) object based on a specified node kind, path, and asset information from a database session.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/document_set.py#L158>)
+
+Retrieves and constructs a [`DocumentSet`](<#documentset>) object based on the specified node kind, path, primary asset, and version information.
 - **Inputs**:
-    - `node_kind`: A string representing the type of node, such as 'CODEBASE', 'FILE', or 'PAGE'.
-    - `path`: A string representing the relative path to the node.
-    - `primary_asset_id`: A string representing the ID of the primary asset to be retrieved.
-    - `organization_id`: A string representing the ID of the organization to which the primary asset belongs.
+    - `node_kind`: A string that specifies the kind of node, such as 'CODEBASE', 'FILE', or 'PAGE'.
+    - `path`: A string that represents the relative path to the node.
+    - `primary_asset_id`: A string that identifies the primary asset.
+    - `organization_id`: A string that identifies the organization.
     - `session`: A `Session` object used to interact with the database.
     - `fetch_code_content`: A boolean indicating whether to fetch the code content from S3.
-    - `version_id`: An optional string representing the version ID to be used; if not provided, the latest version is used.
-- **Control Flow**:
-    - Retrieve the primary asset using the `primary_asset_id` and check if it belongs to the specified `organization_id`; raise an HTTP 404 error if not found or mismatched.
-    - Verify that the primary asset's kind matches one of the allowed types ('CODEBASE', 'FILE', 'PAGE'); raise an HTTP 400 error if not.
-    - Determine the version to use: if `version_id` is provided, retrieve the specific version; otherwise, fetch the latest version associated with the primary asset.
+    - `version_id`: An optional string that specifies the version ID; if not provided, the latest version is used.
+- **Logic and Control Flow**:
+    - Retrieve the primary asset using `primary_asset_id` and check if it belongs to the specified `organization_id`.
+    - Raise an HTTP 404 error if the primary asset is not found or does not belong to the organization.
+    - Check if the primary asset's kind matches the allowed types ('CODEBASE', 'FILE', 'PAGE'); raise an HTTP 400 error if not.
+    - Determine the version to use: if `version_id` is provided, retrieve the specified version; otherwise, retrieve the latest version for the primary asset.
     - Raise an HTTP 400 error if no version is found.
     - Retrieve the node using the version ID and relative path; raise an HTTP 400 error if no node is found.
-    - Fetch all derived content associated with the node ID.
-    - Initialize a [`DocumentSet`](<#DocumentSet>) object with the node ID as `source_content_id`.
-    - Iterate over each derived content document, identify its type, and populate the corresponding fields in the [`DocumentSet`](<#DocumentSet>) object.
-    - Handle special cases for different content kinds, such as skipping symbols and parsing application notes.
-    - If the node kind is `CODEBASE_FILE`, fetch code metadata and optionally fetch code content from S3, then populate the `code` field in the [`DocumentSet`](<#DocumentSet>).
-- **Output**: Returns a [`DocumentSet`](<#DocumentSet>) object populated with content and metadata based on the specified node and asset information.
+    - Retrieve all derived content documents associated with the node.
+    - Initialize a [`DocumentSet`](<#documentset>) object with the node ID as `source_content_id`.
+    - Iterate over each document, identify its type, and populate the [`DocumentSet`](<#documentset>) fields accordingly, skipping symbols and handling JSON parsing for application notes.
+    - If the node kind is `CODEBASE_FILE`, fetch code metadata and optionally fetch code content from S3, then populate the [`DocumentSet`](<#documentset>) with this information.
+- **Output**: A [`DocumentSet`](<#documentset>) object containing the structured documentation and code information for the specified node.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/legacy/document_set.DocumentSet`](<#DocumentSet>)
-    - [`python-backend/backend/app/api/routes/legacy/document_set.Document`](<#Document>)
-    - [`python-backend/backend/app/api/routes/legacy/document_set.ApplicationNote`](<#ApplicationNote>)
+    - [`python-backend/backend/app/api/routes/legacy/document_set.DocumentSet`](<#documentset>)
+    - [`python-backend/backend/app/api/routes/legacy/document_set.Document`](<#document>)
+    - [`python-backend/backend/app/api/routes/legacy/document_set.ApplicationNote`](<#applicationnote>)
     - [`python-backend/backend/app/api/routes/legacy/document_set.fetch_code_metadata`](<#fetch_code_metadata>)
     - [`python-backend/backend/app/api/routes/legacy/document_set.fetch_code_content_from_s3`](<#fetch_code_content_from_s3>)
-    - [`python-backend/backend/app/api/routes/legacy/document_set.Code`](<#Code>)
+    - [`python-backend/backend/app/api/routes/legacy/document_set.Code`](<#code>)
 
 
 

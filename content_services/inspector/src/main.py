@@ -428,12 +428,12 @@ async def inspect_db(
         else:
             print("No changes detected skipping tech doc export.")
 
-        print("Spawning off deep context docs generation...")
-        # TODO: do deep context doc specific I/O or further analysis.
-        _completed_docs = await deep_context_docs.remote.aio(
-            version_id,
-            install_id,
-        )
+        # print("Spawning off deep context docs generation...")
+        # TODO: Add back in once update flow is in place and switch to spawn call rather than remote.
+        # _completed_docs = await deep_context_docs.remote.aio(
+        #     version_id,
+        #     install_id,
+        # )
 
         try:
             cleanup_old_versions.remote(version_id)
@@ -794,7 +794,6 @@ def run_deep_context(
     install_id: str | None = None,
 ) -> None:
     """Run deep context docs generation"""
-    from deep_context_docs import deep_context_docs
 
     try:
         deep_context_docs.remote(version_id, install_id)

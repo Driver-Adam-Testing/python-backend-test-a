@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for writing a single paragraph description of a software codebase by summarizing slightly overlapping descriptions of its subcomponents.
+Instructions for writing a concise paragraph summarizing a software codebase from module descriptions.
 
 # Purpose
-The provided content appears to be a template or guideline for generating a comprehensive summary of a software codebase based on detailed descriptions of its subcomponents. The purpose of this template is to assist in creating a cohesive and concise overview of a codebase by synthesizing information from various module descriptions. It instructs the user to summarize the entire codebase in a single paragraph, ensuring that the summary does not exceed six sentences. The template emphasizes the importance of using only the provided descriptions to construct the summary, thereby maintaining accuracy and avoiding speculation. This structured approach ensures that the final paragraph effectively communicates the purpose and functionality of the codebase by integrating slightly overlapping descriptions of its subcomponents.
+The `codebase_name` codebase is designed to manage and process data efficiently. It includes modules for data ingestion, transformation, and storage, ensuring seamless integration with various data sources. The codebase also provides tools for data analysis and visualization, enabling users to derive insights from the processed data. Additionally, it supports scalable deployment options, allowing it to handle varying data loads and user demands. The architecture is modular, facilitating easy maintenance and extension of functionalities.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,26 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_chunk_descriptions.txt` file provides instructions for creating a single sentence summary of a codebase by synthesizing slightly overlapping descriptions of its subcomponents.
+Instructions for writing a single sentence description of a codebase using overlapping subcomponent descriptions.
 
 # Purpose
-The provided content outlines a structured approach for generating a concise, single-sentence description of a software codebase by synthesizing multiple detailed descriptions of its subcomponents. This file serves as a guideline for a software engineering expert tasked with distilling overlapping and detailed descriptions of various subsets of a codebase into a coherent and comprehensive summary. The expert is instructed to rely solely on the provided information without introducing any external assumptions or information, ensuring that the final description accurately reflects the documented functionalities and purposes of the codebase's components.
+Chunk of module subset descriptions for codebase `WeatherApp`:
+
+Content subset 1 description for codebase `WeatherApp`:
+
+The `WeatherApp` codebase includes modules for fetching real-time weather data from various APIs, processing the data to extract relevant information, and storing it in a local database for quick access.
+
+Content subset 2 description for codebase `WeatherApp`:
+
+The `WeatherApp` codebase contains user interface components that display weather forecasts, alerts, and historical weather data, allowing users to interact with the application and customize their weather information preferences.
+
+Content subset 3 description for codebase `WeatherApp`:
+
+The `WeatherApp` codebase integrates notification services to alert users about severe weather conditions and updates, ensuring timely information delivery through push notifications and email alerts.
+
+Single sentence description of the purpose and contents of the codebase `WeatherApp`:
+
+The `WeatherApp` codebase is designed to fetch, process, and store real-time weather data, provide an interactive user interface for displaying forecasts and alerts, and deliver timely notifications about severe weather conditions through various communication channels.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

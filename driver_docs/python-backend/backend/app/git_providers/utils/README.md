@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utility files for handling Git provider errors and generating codebase metadata.
+Custom exception classes for Git provider errors and metadata generation for codebases.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[errors.py](errors.py.md)**: The `errors.py` file defines custom exception classes for handling errors related to Git provider application revocation and access token issues.
-- **[git_provider_utils.py](git_provider_utils.py.md)**: The `git_provider_utils.py` file contains a function to generate metadata for a codebase, including hashed organization ID and other repository details.
+- **[errors.py](errors.py.md)**: Custom exception classes for handling Git provider app revoke and access token errors.
+- **[git_provider_utils.py](git_provider_utils.py.md)**: Generates metadata for a codebase using organization and repository details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

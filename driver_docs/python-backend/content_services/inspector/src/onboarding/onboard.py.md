@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `onboard.py` file in the `python-backend` codebase handles the onboarding process for repositories from GitHub and GitLab, including collecting file paths, processing files, managing repository events, and connecting codebases to a database, while utilizing various external services and configurations.
+Handles GitHub, GitLab, and Bitbucket events, processes repositories, and manages codebase connections using AWS S3 and a database.
 
 # Purpose
-This Python code file is designed to handle the integration and management of code repositories, specifically focusing on GitHub and GitLab events. It is structured as a collection of functions that are decorated with `@app.function`, indicating that they are intended to be executed as serverless functions using the Modal framework. The primary purpose of these functions is to manage repository events such as additions, deletions, and updates, and to facilitate the connection of codebases to a database for further processing and analysis. The code includes functionality for downloading repositories, processing files, and updating database records to reflect the current state of the repositories.
+The code is a Python module that manages the integration and processing of repositories from GitHub, GitLab, and Bitbucket. It uses the `modal` library to define functions that handle events from these platforms, such as repository additions, deletions, and updates. The module includes functions to process these events by downloading repositories, updating database records, and managing repository assets. It uses concurrent processing to handle multiple repositories efficiently and integrates with AWS S3 for storage operations.
 
-The file is organized around several key functions, each serving a specific role in the repository management process. Functions like [`handle_github_events`](<#handle_github_events>) and [`handle_gitlab_events`](<#handle_gitlab_events>) are responsible for processing events from GitHub and GitLab, respectively, handling tasks such as downloading repositories and updating database records. The [`connect_repos_for_installation`](<#connect_repos_for_installation>) and [`connect_unconnected_repos`](<#connect_unconnected_repos>) functions are designed to establish connections for repositories that are either newly added or previously unconnected. The [`run_codebase_connection`](<#run_codebase_connection>) function is particularly significant as it handles the downloading, unpacking, and processing of codebases, updating the database with metadata and statistics about the codebase contents. The code leverages concurrent processing through `ThreadPoolExecutor` and `ProcessPoolExecutor` to efficiently handle multiple tasks, and it integrates with AWS S3 for storage operations. Overall, this file provides a comprehensive solution for managing and processing code repositories in a cloud-based environment.
+The module defines several functions decorated with `@app.function`, indicating that they are intended to be executed as serverless functions within the `modal` framework. These functions handle specific tasks such as processing GitHub, GitLab, and Bitbucket events, connecting repositories for installations, and running codebase connections. The code also includes utility functions for file path collection and processing, which are used to manage the contents of downloaded repositories. The module interacts with a database to update the status of repository assets and uses external libraries for tasks such as HTTP requests and subprocess management.
 # Imports and Dependencies
 
 ---
@@ -38,6 +38,7 @@ The file is organized around several key functions, each serving a specific role
 - `sqlmodel.Session`
 - `sqlmodel.select`
 - `onboarding.gitlab_ops`
+- `onboarding.bitbucket_ops`
 - `requests`
 - `onboarding.gh_ops.AccessTokenError`
 - `tempfile`
@@ -61,65 +62,87 @@ The file is organized around several key functions, each serving a specific role
 
 ---
 ### image
-- **Type**: `modal.Image`
-- **Description**: The `image` variable is an instance of a `modal.Image` object configured with a Debian Slim base image using Python 3.12. It is further customized by installing additional packages such as 'tree' and 'ripgrep', adding local directories and files to specific remote paths, and installing Python dependencies from a `pyproject.toml` file and via pip.
-- **Use**: This variable is used to define the environment configuration for functions decorated with `@app.function`, specifying the runtime environment for executing these functions.
+- **Type**: ``modal.Image``
+- **Description**: Represents a `modal.Image` object that is configured with a Debian Slim base image using Python 3.12. It installs several packages such as `tree`, `ripgrep`, and `git`, and includes local directories and files into the image. Additionally, it installs dependencies from a `pyproject.toml` file and the `requests` package using `pip`.
+- **Use**: Used to define the environment for functions that require specific system packages and local resources.
 
 
 # Functions
 
 ---
 ### collect\_file\_paths<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.collect_file_paths}} -->
-The `collect_file_paths` function gathers all file paths and their parent directories under a specified directory, optionally respecting a `.driverignore` file.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L46>)
+
+Collects all file paths and directories under a specified path, considering ignore rules if applicable.
 - **Inputs**:
-    - `extracted_path`: A `Path` object representing the directory from which to collect file paths.
-- **Control Flow**:
-    - List all files in the `extracted_path` directory.
-    - Check if a `.driverignore` file is present in the directory listing.
-    - Construct a command to list files using `ripgrep` (rg), optionally including the `.driverignore` file if it exists.
-    - Execute the command using `subprocess.run` to capture the output of file paths.
+    - `extracted_path`: A `Path` object representing the directory path from which to collect file paths and directories.
+- **Logic and Control Flow**:
+    - List all files in the directory specified by `extracted_path`.
+    - Check if a `.driverignore` file is present in the directory; if so, include it in the command to ignore specified files.
+    - Run a subprocess command using `ripgrep` to list all files, capturing the output.
     - Handle any `subprocess.CalledProcessError` exceptions by printing an error message and re-raising the exception.
-    - Parse the command output to create a list of `Path` objects representing all files.
+    - Parse the subprocess output to create a list of all file paths.
     - Initialize a set to store all directories, starting with the `extracted_path`.
-    - Iterate over each file path, adding its parent directories to the set of directories.
+    - Iterate over each file path to determine its parent directories and add them to the set of directories.
     - Convert the set of directories to a list.
-    - Return a tuple containing the list of file paths and the list of directories.
-- **Output**: A tuple containing two lists: the first list contains `Path` objects for all files found, and the second list contains `Path` objects for all directories found.
+    - Return a tuple containing the list of all file paths and the list of all directories.
+- **Output**: A tuple containing two lists: the first list contains `Path` objects for all files, and the second list contains `Path` objects for all directories under the specified path.
+
+
+---
+### collect\_ignored\_file\_paths<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.collect_ignored_file_paths}} -->
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L85>)
+
+Identifies and returns a list of file paths ignored by a `.driverignore` file within a specified directory.
+- **Inputs**:
+    - `extracted_path`: A `Path` object representing the directory to search for ignored files.
+- **Logic and Control Flow**:
+    - List all files in the `extracted_path` directory.
+    - Check if `.driverignore` is present in the directory; if not, return an empty list.
+    - Define a helper function `run_rg` to execute a subprocess command using `ripgrep` (rg) and return a set of file paths.
+    - Use `run_rg` to get all files without any ignore rules applied.
+    - Use `run_rg` again to get files not ignored by `.driverignore`.
+    - Calculate the difference between all files and unignored files to determine ignored files.
+    - Return the list of ignored file paths, prepending each with `extracted_path`.
+- **Output**: A list of `Path` objects representing the files ignored by `.driverignore`.
 
 
 ---
 ### process\_file<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.process_file}} -->
-The `process_file` function unpacks a tuple of paths and processes a file using the [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>) function.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L124>)
+
+Unpacks a tuple of paths and processes a file using a utility function.
 - **Inputs**:
-    - `local_path_and_extracted_path`: A tuple containing two Path objects: the local path and the extracted path of a file.
-- **Control Flow**:
-    - The function begins by importing the [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>) function from `onboarding.onboard_utils`.
-    - It unpacks the `local_path_and_extracted_path` tuple into `local_path` and `extracted_path`.
-    - It calls the [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>) function with `local_path` and `extracted_path` as arguments.
-- **Output**: A tuple containing the `local_path` and the result of [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>), which is a dictionary.
+    - `local_path_and_extracted_path`: A tuple containing two `Path` objects: the local path and the extracted path.
+- **Logic and Control Flow**:
+    - Unpacks the `local_path_and_extracted_path` tuple into `local_path` and `extracted_path`.
+    - Calls the [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>) function with `local_path` and `extracted_path` as arguments.
+    - Returns a tuple containing `local_path` and the result of [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>).
+- **Output**: A tuple containing the `local_path` and a dictionary returned by [`run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>).
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.run_file_stats_and_reencode`](<onboard_utils.py.md#run_file_stats_and_reencode>)
 
 
 ---
 ### handle\_github\_events<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.handle_github_events}} -->
-The `handle_github_events` function processes GitHub repository events such as additions, deletions, and pushes, managing database records and handling repository data accordingly.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L132>)
+
+Handles GitHub events by processing added, deleted, and pushed repositories for a given organization and installation.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `installation_id`: A string or None, representing the GitHub installation ID, required for added or pushed repositories.
-    - `org_id`: A string representing the organization ID associated with the GitHub events.
-    - `repos_added`: A list of dictionaries, each representing a repository that has been added.
-    - `repos_deleted`: A list of dictionaries, each representing a repository that has been deleted.
-    - `repos_pushed`: A list of dictionaries, each representing a repository that has been pushed to.
-- **Control Flow**:
-    - The function begins by importing necessary modules and deferring some imports until secrets are set.
-    - It checks if the installation_id is None when there are added or pushed repositories, raising a ValueError if so.
-    - For deleted repositories, it opens a database session and iterates over each repository to check if a primary asset exists and whether it can be deleted based on its version statuses.
-    - If there are no added or pushed repositories, the function returns early.
-    - It attempts to fetch an access token for the installation ID, raising an AccessTokenError if unsuccessful.
-    - For added repositories, it uses a ThreadPoolExecutor to concurrently download and upload each repository, collecting any errors.
-    - For pushed repositories, it processes each repository sequentially, downloading and uploading them, and collecting any errors.
-- **Output**: The function does not return any value; it performs operations such as database updates and repository data handling.
+    - `installation_id`: The ID of the GitHub installation, which can be `None` for delete-only events.
+    - `org_id`: The ID of the organization associated with the GitHub events.
+    - `repos_added`: A list of dictionaries representing repositories that have been added.
+    - `repos_deleted`: A list of dictionaries representing repositories that have been deleted.
+    - `repos_pushed`: A list of dictionaries representing repositories that have been pushed.
+- **Logic and Control Flow**:
+    - Check if `installation_id` is `None` and if there are added or pushed repositories, raise a `ValueError` if true.
+    - If there are deleted repositories, open a database session and iterate over each deleted repository to find and possibly delete the corresponding primary asset.
+    - If there are no added or pushed repositories, return immediately.
+    - Attempt to fetch an access token using the `installation_id`. If it fails, print an error message and raise an exception.
+    - Use a `ThreadPoolExecutor` to concurrently download and upload each added repository using the fetched token.
+    - For each pushed repository, download and upload it, and collect any errors encountered.
+- **Output**: Returns `None` after processing the GitHub events.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/gh_ops.fetch_app_access_token`](<gh_ops.py.md#fetch_app_access_token>)
     - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.download_and_upload_repo`](<gitlab_ops.py.md#download_and_upload_repo>)
@@ -127,101 +150,140 @@ The `handle_github_events` function processes GitHub repository events such as a
 
 ---
 ### handle\_gitlab\_events<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.handle_gitlab_events}} -->
-The `handle_gitlab_events` function processes GitLab repository events such as additions, deletions, and pushes, managing primary assets in a database and handling repository data accordingly.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L247>)
+
+Handles GitLab events by processing added, deleted, and pushed repositories for a given organization.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `installation_id`: An optional string representing the GitLab installation ID, required for added or pushed repositories.
-    - `org_id`: A string representing the organization ID associated with the repositories.
-    - `repos_added`: A list of dictionaries, each representing a repository that has been added.
-    - `repos_deleted`: A list of dictionaries, each representing a repository that has been deleted.
-    - `repos_pushed`: A list of dictionaries, each representing a repository that has been pushed.
-- **Control Flow**:
-    - Check if `installation_id` is None and either `repos_added` or `repos_pushed` is not empty, raising a ValueError if true.
-    - If `repos_deleted` is not empty, open a database session and iterate over each deleted repository to find and potentially delete the corresponding primary asset.
-    - If neither `repos_added` nor `repos_pushed` is present, return early from the function.
-    - Attempt to fetch an access token using the `gitlab_ops.fetch_access_token` method, raising an error if unsuccessful.
-    - Use a `ThreadPoolExecutor` to concurrently process each added repository by downloading and uploading it using the fetched token.
-    - Iterate over each pushed repository and process it similarly, appending any errors to `errant_repos`.
-- **Output**: The function does not return any value; it performs operations on the database and potentially logs errors or issues.
+    - `installation_id`: The ID of the GitLab installation, which can be `None` for delete-only events.
+    - `org_id`: The ID of the organization to which the repositories belong.
+    - `repos_added`: A list of dictionaries representing repositories that have been added.
+    - `repos_deleted`: A list of dictionaries representing repositories that have been deleted.
+    - `repos_pushed`: A list of dictionaries representing repositories that have been pushed.
+- **Logic and Control Flow**:
+    - Check if `installation_id` is `None` and if there are added or pushed repositories, raise a `ValueError` if true.
+    - If there are deleted repositories, open a session with the database and iterate over each deleted repository.
+    - For each deleted repository, check if a primary asset exists in the database; if not, print a message and continue.
+    - If a primary asset exists, check the status of its versions; if all are in a connected state, delete the primary asset, otherwise print a message and do not delete.
+    - If there are no added or pushed repositories, return immediately.
+    - Attempt to fetch an access token using the `installation_id`; if it fails, print a message and raise an exception.
+    - Use a `ThreadPoolExecutor` to concurrently download and upload added repositories, collecting any errors.
+    - Iterate over pushed repositories, downloading and uploading each one, and collect any errors.
+- **Output**: Returns `None` after processing the events.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.fetch_access_token`](<gitlab_ops.py.md#fetch_access_token>)
     - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.download_and_upload_repo`](<gitlab_ops.py.md#download_and_upload_repo>)
 
 
 ---
-### connect\_repos\_for\_installation<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.connect_repos_for_installation}} -->
-The `connect_repos_for_installation` function connects GitHub repositories to a specific installation by fetching repository data using the GitHub API and initiating further processing.
+### handle\_bitbucket\_events<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.handle_bitbucket_events}} -->
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L356>)
+
+Processes Bitbucket events by handling repository additions, deletions, and updates.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `github_installation_id`: A string representing the GitHub installation ID for which repositories need to be connected.
-- **Control Flow**:
-    - The function starts by establishing a database session using the SQLModel `Session` with the provided `engine`.
-    - It queries the `GithubAppInstallation` table to find the installation record matching the provided `github_installation_id`.
-    - If the installation is found, it prints a message indicating the addition of repositories for the installation.
-    - The function attempts to fetch an access token for the GitHub installation using [`fetch_app_access_token`](<gh_ops.py.md#fetch_app_access_token>). If it fails, an `AccessTokenError` is raised and caught, printing an error message and re-raising the exception.
-    - With the access token, it makes a GET request to the GitHub API to retrieve the list of repositories associated with the installation.
-    - The response is checked for success, and the list of repositories is extracted from the JSON response.
-    - The function iterates over the repositories, appending their details (id, name, full_name) to a list `repos_added`.
-    - It checks for pagination in the API response using the `link` header and continues fetching additional pages of repositories until no more pages are available or a maximum of 100 pages is reached.
-    - After collecting all repositories, it spawns a new process using `handle_github_events.spawn` to handle the GitHub events for the installation, passing the installation ID, organization ID, and the list of added repositories.
-    - Finally, it prints a message indicating the number of repositories connected and lists each repository's full name.
-- **Output**: The function does not return any value (returns `None`).
+    - `installation_id`: The ID of the Bitbucket installation, which can be `None` for delete-only events.
+    - `org_id`: The organization ID associated with the Bitbucket events.
+    - `repos_added`: A list of dictionaries representing repositories that have been added.
+    - `repos_deleted`: A list of dictionaries representing repositories that have been deleted.
+    - `repos_pushed`: A list of dictionaries representing repositories that have been pushed.
+- **Logic and Control Flow**:
+    - Checks if `installation_id` is `None` and raises a `ValueError` if there are added or pushed repositories.
+    - For each repository in `repos_deleted`, retrieves the corresponding `PrimaryAsset` from the database and deletes it if all versions have specific statuses.
+    - Returns early if there are no added or pushed repositories.
+    - Attempts to fetch an access token using `bitbucket_ops.fetch_access_token` and raises an `AccessTokenError` if unsuccessful.
+    - Adds `installation_id` to each repository in `repos_added` if not present.
+    - Uses a `ThreadPoolExecutor` to concurrently download and upload each repository in `repos_added`, collecting any errors.
+    - Processes each repository in `repos_pushed` similarly, adding `installation_id` if not present and collecting any errors.
+- **Output**: Returns `None` after processing the events.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_access_token`](<bitbucket_ops.py.md#fetch_access_token>)
+    - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.download_and_upload_repo`](<bitbucket_ops.py.md#download_and_upload_repo>)
+
+
+---
+### connect\_repos\_for\_installation<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.connect_repos_for_installation}} -->
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L469>)
+
+Connects GitHub repositories for a given installation ID and spawns a process to handle GitHub events.
+- **Decorators**: `@app.function`
+- **Inputs**:
+    - `github_installation_id`: A string representing the GitHub installation ID to connect repositories for.
+- **Logic and Control Flow**:
+    - Imports necessary modules and classes for database interaction and GitHub operations.
+    - Opens a session with the database engine to query the `GithubAppInstallation` table for the given `github_installation_id`.
+    - Prints a message indicating the start of the repository addition process for the installation.
+    - Attempts to fetch an access token for the GitHub installation; raises an error if unsuccessful.
+    - Sets up headers for a GitHub API request using the fetched token.
+    - Makes a GET request to the GitHub API to retrieve repositories associated with the installation.
+    - Raises an error if the API request fails.
+    - Parses the JSON response to extract repository details and appends them to a list `repos_added`.
+    - Checks for pagination in the API response and continues fetching repositories if more pages are available, up to a maximum of 100 pages.
+    - Spawns a process to handle GitHub events using the `handle_github_events` function, passing the installation ID, organization ID, and list of added repositories.
+    - Prints a message indicating the completion of the repository connection process and lists the connected repositories.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/gh_ops.fetch_app_access_token`](<gh_ops.py.md#fetch_app_access_token>)
 
 
 ---
 ### connect\_unconnected\_repos<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.connect_unconnected_repos}} -->
-The `connect_unconnected_repos` function connects unconnected GitHub repositories by fetching access tokens and repository data, then spawning a process to handle GitHub events for each installation.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L574>)
+
+Connects unconnected GitHub repositories by fetching and processing their data.
 - **Decorators**: `@app.function`
 - **Inputs**: None
-- **Control Flow**:
-    - The function starts by importing necessary modules and establishing a session with the database engine.
-    - It retrieves all GitHub app installations from the database.
-    - For each installation, it attempts to fetch an access token using the installation ID.
-    - If the access token fetch fails, it logs a message and continues to the next installation.
-    - With a valid token, it makes a request to the GitHub API to get the list of repositories for the installation.
-    - It processes the response to extract repository details and appends them to a list of added repositories.
-    - The function checks for pagination in the API response and continues fetching additional pages if available, up to a maximum of 100 pages.
-    - After collecting all repositories, it spawns a process to handle GitHub events for the installation, passing the list of added repositories.
-    - It logs the number of connected repositories and their details.
-- **Output**: The function does not return any value; it performs operations to connect repositories and logs the process.
+- **Logic and Control Flow**:
+    - Imports necessary modules and classes for database operations and GitHub API interaction.
+    - Opens a session with the database engine to retrieve all GitHub app installations.
+    - Iterates over each installation, attempting to fetch an access token using the installation ID.
+    - If an `AccessTokenError` occurs, logs a message and continues to the next installation.
+    - Sends a GET request to the GitHub API to retrieve repositories associated with the installation using the access token.
+    - Processes the response to extract repository data and appends it to a list of added repositories.
+    - Checks for pagination in the API response and continues fetching additional pages if available, up to a maximum of 100 pages.
+    - Spawns a new process to handle GitHub events for the installation, passing the list of added repositories.
+    - Logs the number of connected repositories and their details.
+- **Output**: No output is returned as the function is designed to perform operations and log results.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/gh_ops.fetch_app_access_token`](<gh_ops.py.md#fetch_app_access_token>)
 
 
 ---
 ### run\_codebase\_connection<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/onboard.run_codebase_connection}} -->
-The `run_codebase_connection` function downloads a codebase from a presigned URL, processes it, and updates the database and S3 storage with the codebase's metadata and contents.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/onboard.py#L679>)
+
+Establishes a connection to a codebase by downloading, unpacking, processing files, and updating the database with the codebase's metadata.
 - **Decorators**: `@app.function`
 - **Inputs**:
-    - `presigned_url`: A string representing the presigned URL from which the codebase is downloaded.
-    - `provisional_codebase_name`: A string representing the provisional name of the codebase, used as the download destination.
-    - `org_id`: A string representing the organization ID, used to verify the version's ownership and create a unique S3 bucket.
-    - `version_id`: A string representing the version ID of the codebase.
-    - `provider`: An optional string indicating the codebase provider, defaulting to 'manual', which may affect the codebase name processing.
-- **Control Flow**:
-    - Download the codebase from the presigned URL to a local path using the provisional codebase name.
-    - Determine the override codebase name based on the provider type.
+    - `presigned_url`: A URL to download the codebase archive from S3.
+    - `provisional_codebase_name`: The temporary name for the codebase during processing.
+    - `org_id`: The organization ID to verify the version's ownership.
+    - `version_id`: The version ID of the codebase.
+    - `provider`: The source provider of the codebase, defaulting to 'manual'.
+- **Logic and Control Flow**:
+    - Download the codebase archive from the given `presigned_url` to a local path.
+    - Determine the `override_codebase_name` based on the `provider` value.
     - Unpack the downloaded archive to a temporary directory, possibly overriding the codebase name.
-    - Open a database session and attempt to update the primary asset's display name with the codebase name.
-    - Handle IntegrityError by setting the version status to CONNECTION_FAILED if the primary asset already exists.
-    - Create an S3 bucket for the organization if it doesn't exist and prepare the S3 destination path.
-    - Collect all file paths from the extracted codebase and process each file to gather statistics, using a process pool for parallel execution.
-    - Calculate directory statistics and check if there are any analyzable bytes; if none, set the version status to CONNECTION_FAILED.
-    - Upload the codebase to the S3 bucket, including metadata if available.
-    - Add directory and file nodes to the database, linking them to the version and storing metadata.
-    - Update the version status to CONNECTED unless it is already GENERATING, in which case trigger an inspection process.
-- **Output**: The function returns None, but it performs side effects such as updating the database and uploading files to S3.
+    - Attempt to update the `PrimaryAsset` in the database with the new codebase name; handle `IntegrityError` by setting the version status to `CONNECTION_FAILED`.
+    - Create an S3 bucket if it does not exist, using a hash of the `org_id`.
+    - Collect file paths and ignored file paths from the extracted codebase.
+    - Process each file in parallel to gather statistics and calculate the total analyzable bytes.
+    - If no analyzable bytes are found, set the version status to `CONNECTION_FAILED` and exit.
+    - Upload the processed codebase to S3, including metadata if available.
+    - Update the database with directory and file metadata, creating [`Node`](<../../../../driver_db/database/models_v2.py.md#node>) and [`DerivedContent`](<../../../../driver_db/database/models_v1.py.md#derivedcontent>) entries.
+    - Check the version status and, if necessary, trigger a remote inspection function.
+    - Print completion messages with the codebase and version details.
+- **Output**: Returns `None` after processing and updating the codebase connection.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.download_file_from_presigned_url`](<onboard_utils.py.md#download_file_from_presigned_url>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.unpack_archive_to_finalized_path`](<onboard_utils.py.md#unpack_archive_to_finalized_path>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.create_bucket_if_dne`](<onboard_utils.py.md#create_bucket_if_dne>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard.collect_file_paths`](<#collect_file_paths>)
+    - [`python-backend/content_services/inspector/src/onboarding/onboard.collect_ignored_file_paths`](<#collect_ignored_file_paths>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.calculate_directory_stats`](<onboard_utils.py.md#calculate_directory_stats>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.parse_presigned_url`](<onboard_utils.py.md#parse_presigned_url>)
-    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../driver_db/database/models_v2.py.md#Node>)
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../driver_db/database/models_v1.py.md#DerivedContent>)
+    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../driver_db/database/models_v2.py.md#node>)
+    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../driver_db/database/models_v1.py.md#derivedcontent>)
 
 
 

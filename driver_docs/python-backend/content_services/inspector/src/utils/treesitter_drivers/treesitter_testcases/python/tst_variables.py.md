@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst_variables.py` file contains test cases for various types of Python variable definitions, including module-level variables, constants, type-annotated variables, final variables, class variables, and variables in different scopes.
+Test cases for Python variable definitions, including module-level, class, and scoped variables.
 
 # Purpose
-This Python script serves as a comprehensive demonstration of various types of variable definitions and their scopes within a module. It includes examples of simple module-level variables, constants, type-annotated variables, and final variables that cannot be reassigned. The script also illustrates multiple assignment, module-level collections, and the use of class variables and instance variables within a class. Additionally, it showcases the manipulation of global variables and the use of different scopes, including module, function, and nested scopes. Overall, this code provides a broad overview of variable usage in Python, making it a useful reference for understanding variable definitions and scope management.
+This code defines various types of Python variables and demonstrates their usage in different contexts. It includes module-level variables, constants, type-annotated variables, and final variables that cannot be reassigned. The code also shows multiple assignment, module-level collections, and a class `VariableExamples` with class and instance variables, including private and very private variables. Additionally, it includes global variables that can be modified by the [`modify_globals`](<#modify_globals>) function, and it illustrates variable scopes with a function that modifies a nonlocal variable. This code serves as a comprehensive example of variable definitions and scope in Python.
 # Imports and Dependencies
 
 ---
@@ -22,160 +22,167 @@ This Python script serves as a comprehensive demonstration of various types of v
 
 ---
 ### simple\_var
-- **Type**: `str`
-- **Description**: The variable `simple_var` is a module-level variable defined as a string with the value 'hello world'. It is a straightforward example of a simple variable assignment in Python.
-- **Use**: This variable is used to store a basic string value at the module level.
+- **Type**: ``str``
+- **Description**: A string variable that contains the text 'hello world'.
+- **Use**: Used as a simple module-level variable to store a greeting message.
 
 
 ---
 ### number\_var
-- **Type**: `int`
-- **Description**: The variable `number_var` is a simple integer variable defined at the module level with a value of 42. It is a straightforward representation of a numeric value.
-- **Use**: This variable is used to store a numeric value that can be accessed throughout the module.
+- **Type**: ``int``
+- **Description**: A module-level variable that stores the integer value 42.
+- **Use**: Used to represent a simple integer value within the module.
 
 
 ---
 ### API\_VERSION
-- **Type**: `str`
-- **Description**: `API_VERSION` is a string variable that holds the version number of the API, set to "1.0.0". It is defined as a constant, indicated by its uppercase naming convention, suggesting that it should not be changed during the execution of the program.
-- **Use**: This variable is used to specify the current version of the API, which can be referenced throughout the codebase to ensure compatibility and version control.
+- **Type**: ``str``
+- **Description**: Specifies the version of the API as a string.
+- **Use**: Used to indicate the current version of the API in the application.
 
 
 ---
 ### MAX\_CONNECTIONS
-- **Type**: `int`
-- **Description**: `MAX_CONNECTIONS` is a global constant integer variable set to 100. It represents the maximum number of connections that can be handled or allowed by the system or application.
-- **Use**: This variable is used to define a limit on the number of concurrent connections.
+- **Type**: ``int``
+- **Description**: Defines the maximum number of connections allowed in the application. It is a constant value set to 100.
+- **Use**: Limits the number of simultaneous connections to 100.
 
 
 ---
 ### typed\_string
-- **Type**: `str`
-- **Description**: The variable `typed_string` is a string type variable initialized with the value 'annotated'. It is defined at the module level, making it a global variable accessible throughout the module.
-- **Use**: This variable is used to demonstrate type-annotated variable declarations in Python.
+- **Type**: ``str``
+- **Description**: A string variable with a type annotation.
+- **Use**: Stores the string value 'annotated'.
 
 
 ---
 ### typed\_list
-- **Type**: `List[int]`
-- **Description**: The `typed_list` variable is a list of integers, specifically containing the elements [1, 2, 3, 4, 5]. It is type-annotated to indicate that it should only contain integer values.
-- **Use**: This variable is used to store a sequence of integer values, ensuring type safety through its annotation.
+- **Type**: ``List[int]``
+- **Description**: A list of integers with type annotation, containing the elements [1, 2, 3, 4, 5].
+- **Use**: Used to store a sequence of integer values with type safety.
 
 
 ---
 ### FINAL\_CONSTANT
-- **Type**: `Final[str]`
-- **Description**: `FINAL_CONSTANT` is a global variable defined as a constant string with the value 'cannot be reassigned'. It is annotated with `Final` from the `typing` module, indicating that it should not be reassigned after its initial definition.
-- **Use**: This variable is used to store a constant string value that is intended to remain unchanged throughout the program.
+- **Type**: ``Final[str]``
+- **Description**: A constant string variable that cannot be reassigned after its initial definition. It is defined with the `Final` type hint to indicate its immutability.
+- **Use**: Used to store a string value that should remain constant throughout the program.
 
 
 ---
 ### FINAL\_NUMBER
-- **Type**: `Final`
-- **Description**: `FINAL_NUMBER` is a global variable defined with the `Final` type hint, indicating that it is intended to be a constant and should not be reassigned. It is assigned the integer value 42.
-- **Use**: This variable is used to represent a constant integer value that should remain unchanged throughout the program.
+- **Type**: ``Final``
+- **Description**: A global variable that is defined as a constant with the value `42`. The `Final` type hint indicates that this variable should not be reassigned after its initial definition.
+- **Use**: Used to store a constant integer value that remains unchanged throughout the program.
 
 
 ---
 ### a
 - **Type**: `int`
-- **Description**: The variable `a` is an integer initialized to the value 1. It is part of a multiple assignment statement where `a`, `b`, and `c` are assigned the values 1, 2, and 3 respectively.
-- **Use**: This variable is used to store the integer value 1 as part of a simple multiple assignment at the module level.
+- **Description**: The variable `a` is an integer initialized to the value 1. It is part of a multiple assignment statement that also initializes variables `b` and `c`. This assignment is done at the module level, making `a` a global variable.
+- **Use**: Used to store the integer value 1 as part of a multiple assignment operation at the module level.
 
 
 ---
 ### b
 - **Type**: `int`
-- **Description**: The variable `b` is an integer that is initialized to the value 2 through a multiple assignment statement. It is defined at the module level, making it a global variable within the module.
-- **Use**: This variable is used to store the integer value 2 and can be accessed or modified throughout the module.
+- **Description**: The variable `b` is an integer initialized with the value 2. It is part of a multiple assignment statement where the variables `a`, `b`, and `c` are assigned the values 1, 2, and 3, respectively.
+- **Use**: Stores the integer value 2 as part of a multiple assignment operation.
 
 
 ---
 ### c
 - **Type**: `int`
-- **Description**: The variable `c` is a simple integer variable that is initialized to the value 3 through a multiple assignment statement. It is defined at the module level, making it a global variable within the module.
-- **Use**: This variable is used to store the integer value 3 and can be accessed throughout the module.
+- **Description**: The variable `c` is an integer initialized with the value 3. It is part of a multiple assignment statement where `a`, `b`, and `c` are assigned the values 1, 2, and 3, respectively.
+- **Use**: Stores the integer value 3 as part of a multiple assignment operation.
 
 
 ---
 ### ALLOWED\_EXTENSIONS
 - **Type**: `set`
-- **Description**: `ALLOWED_EXTENSIONS` is a set containing file extensions that are permitted, specifically ".py", ".pyx", and ".pyi". This set is used to define which file types are acceptable for certain operations, likely related to Python files and extensions.
-- **Use**: This variable is used to check if a file's extension is among the allowed types for processing or handling within the application.
+- **Description**: A set of file extensions that are allowed for some operation or process. The set includes the extensions `.py`, `.pyx`, and `.pyi`, which are commonly associated with Python source files and related formats.
+- **Use**: Used to check if a file's extension is permitted for a specific operation.
 
 
 ---
 ### ERROR\_CODES
-- **Type**: `Dict[int, str]`
-- **Description**: ERROR_CODES is a dictionary that maps HTTP status codes to their corresponding textual descriptions. It includes common status codes such as 404 for 'Not Found', 500 for 'Internal Server Error', and 200 for 'OK'. This dictionary serves as a quick reference for interpreting HTTP response codes.
-- **Use**: This variable is used to provide human-readable descriptions for HTTP status codes in the application.
+- **Type**: ``dict``
+- **Description**: A dictionary that maps HTTP status codes to their corresponding message strings. The keys are integers representing standard HTTP status codes, and the values are strings that describe the status.
+- **Use**: Used to provide human-readable descriptions for HTTP status codes.
 
 
 ---
 ### global\_counter
-- **Type**: `int`
-- **Description**: The `global_counter` is a global integer variable initialized to 0. It is used to keep track of the number of times a certain operation has been performed, as indicated by its incrementation in the `modify_globals` function.
-- **Use**: This variable is used to count and track the number of modifications made to global state, specifically within the `modify_globals` function.
+- **Type**: ``int``
+- **Description**: A global integer variable initialized to 0.
+- **Use**: Tracks the number of times the `modify_globals` function is called.
 
 
 ---
 ### global\_registry
-- **Type**: `List[str]`
-- **Description**: The `global_registry` is a global variable defined as a list of strings. It is initialized as an empty list and is intended to store string entries.
-- **Use**: This variable is used to keep track of entries by appending new string entries to the list, typically modified within the `modify_globals` function.
+- **Type**: ``List[str]``
+- **Description**: A global list variable that stores string entries. It is initialized as an empty list and is intended to hold string data.
+- **Use**: Used to store and manage a collection of string entries that can be modified by functions such as `modify_globals`.
 
 
 ---
 ### module\_scope
-- **Type**: `str`
-- **Description**: The `module_scope` variable is a string defined at the module level with the value "module". It is a simple global variable that is accessible throughout the module.
-- **Use**: This variable is used to demonstrate the concept of module-level scope in Python.
+- **Type**: ``str``
+- **Description**: A string variable that holds the value 'module'.
+- **Use**: Used to represent the scope at the module level.
 
 
 # Classes
 
 ---
 ### VariableExamples<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.py#L34>)
+
 - **Members**:
     - `class_var`: A class variable shared across instances.
-    - `counter`: A class variable that counts instances or actions.
-    - `name`: An instance variable storing the name.
-    - `value`: An instance variable storing the value.
+    - `counter`: A class variable that counts instances.
+    - `name`: An instance variable that stores the name.
+    - `value`: An instance variable that stores the value.
     - `_private_var`: An optional private instance variable.
     - `__very_private`: A very private instance variable with a default value of 42.
-- **Description**: The `VariableExamples` class demonstrates the use of class and instance variables in Python. It includes class variables `class_var` and `counter`, which are shared across all instances, and instance variables `name`, `value`, `_private_var`, and `__very_private`, which are specific to each instance. The class also features a computed property `computed_property` that combines the `name` and `value` into a formatted string. This class serves as an example of variable scoping and encapsulation in Python.
+- **Description**: Defines a class with both class and instance variables, including private and very private variables, and a computed property that combines the name and value.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.__init__`](<#VariableExamples__init__>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.computed_property`](<#VariableExamplescomputed_property>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.__init__`](<#variableexamples__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.computed_property`](<#variableexamplescomputed_property>)
 
 **Methods**
 
 ---
 #### VariableExamples\.\_\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.__init__}} -->
-The `__init__` method initializes an instance of the `VariableExamples` class by setting up instance variables with provided and default values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.py#L39>)
+
+Initializes an instance of the `VariableExamples` class with specified name and value, and sets up private instance variables.
 - **Inputs**:
-    - `name`: A string representing the name to be assigned to the instance.
-    - `value`: An integer representing the value to be assigned to the instance.
-- **Control Flow**:
-    - Assigns the provided `name` argument to the instance variable `self.name`.
-    - Assigns the provided `value` argument to the instance variable `self.value`.
-    - Initializes the instance variable `self._private_var` to `None`.
-    - Initializes the instance variable `self.__very_private` to the integer `42`.
-- **Output**: The method does not return any value; it initializes the instance variables of the class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](<#VariableExamples>)  (Base Class)
+    - `name`: A string representing the name of the instance.
+    - `value`: An integer representing the value of the instance.
+- **Logic and Control Flow**:
+    - Assigns the input `name` to the instance variable `self.name`.
+    - Assigns the input `value` to the instance variable `self.value`.
+    - Initializes the private instance variable `self._private_var` to `None`.
+    - Initializes the very private instance variable `self.__very_private` to `42`.
+- **Output**: No output is returned as this is a constructor method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](<#variableexamples>)  (Base Class)
 
 
 ---
 #### VariableExamples\.computed\_property<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples.computed_property}} -->
-The `computed_property` method returns a formatted string combining the instance's `name` and `value` attributes.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.py#L46>)
+
+Generates a string by concatenating the instance's `name` and `value` attributes with a colon separator.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Accesses the instance's `name` attribute.
     - Accesses the instance's `value` attribute.
-    - Formats and returns a string combining `name` and `value` separated by a colon.
-- **Output**: A string formatted as "name:value" where `name` and `value` are the instance's attributes.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](<#VariableExamples>)  (Base Class)
+    - Concatenates `name` and `value` with a colon `:` separator.
+    - Returns the concatenated string.
+- **Output**: A string formatted as `<name>:<value>`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.VariableExamples`](<#variableexamples>)  (Base Class)
 
 
 
@@ -183,27 +190,30 @@ The `computed_property` method returns a formatted string combining the instance
 
 ---
 ### modify\_globals<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.modify_globals}} -->
-The `modify_globals` function increments a global counter and appends a new entry to a global registry list.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.py#L54>)
+
+Modifies global variables `global_counter` and `global_registry` by incrementing the counter and appending a new entry to the registry.
 - **Inputs**: None
-- **Control Flow**:
-    - The function declares `global_counter` and `global_registry` as global variables, allowing it to modify them.
-    - It increments the `global_counter` by 1.
-    - It appends a new string entry, formatted with the updated `global_counter`, to the `global_registry` list.
-- **Output**: The function does not return any value; it modifies global variables in place.
+- **Logic and Control Flow**:
+    - Accesses the global variables `global_counter` and `global_registry` using the `global` keyword.
+    - Increments the value of `global_counter` by 1.
+    - Appends a new string entry, formatted as `entry_<global_counter>`, to the `global_registry` list.
+- **Output**: No return value; modifies global variables in place.
 
 
 ---
 ### function\_scope\_example<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.function_scope_example}} -->
-The function `function_scope_example` demonstrates variable scope and modification within nested functions.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_variables.py#L62>)
+
+Demonstrates variable scope and modification within nested functions.
 - **Inputs**: None
-- **Control Flow**:
-    - The function `function_scope_example` initializes a local variable `function_scope` with the value 'function'.
-    - A nested function `nested_scope` is defined within `function_scope_example`.
-    - Inside `nested_scope`, a local variable `nested_scope` is initialized with the value 'nested'.
-    - The `nonlocal` keyword is used to modify the `function_scope` variable from the enclosing scope, changing its value to 'modified'.
-    - The `nested_scope` function returns a tuple containing the values of `nested_scope` and `function_scope`.
-    - The `function_scope_example` function returns the result of calling `nested_scope`.
-- **Output**: A tuple containing the values of the `nested_scope` and `function_scope` variables, specifically ('nested', 'modified').
+- **Logic and Control Flow**:
+    - Defines a local variable `function_scope` with the value 'function'.
+    - Defines a nested function `nested_scope` that declares a local variable `nested_scope` with the value 'nested'.
+    - Uses the `nonlocal` keyword to modify the `function_scope` variable from the enclosing function scope, changing its value to 'modified'.
+    - Returns a tuple containing the values of `nested_scope` and `function_scope` from the `nested_scope` function.
+    - Calls the `nested_scope` function and returns its result.
+- **Output**: A tuple containing the values of `nested_scope` and `function_scope` after modification.
 
 
 

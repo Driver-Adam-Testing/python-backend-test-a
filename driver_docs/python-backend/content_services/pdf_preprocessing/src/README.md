@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains the `main.py` file, which is responsible for processing PDF files, including downloading, sanitizing, embedding summaries, persisting results to a database, and handling exceptions with notification emails.
+Implements PDF preprocessing and embedding functions with exception handling and database persistence.
 
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase is responsible for processing PDF files by downloading, sanitizing, embedding summaries, and persisting the results to a database, while also handling exceptions by sending notification emails.
+- **[main.py](main.py.md)**: Implements PDF preprocessing and embedding functions, including exception handling and database persistence.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

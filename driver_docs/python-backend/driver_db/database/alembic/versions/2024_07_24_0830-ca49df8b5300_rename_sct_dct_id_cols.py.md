@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.py` file contains an Alembic migration script that renames columns in the `source_contents` and `derived_contents` tables by changing `source_content_type_id` and `derived_content_type_id` to `content_type_id`, and vice versa for downgrades.
+Alembic migration script to rename columns in the `source_contents` and `derived_contents` tables.
 
 # Purpose
-This Python script is a database migration file used with Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality, specifically focusing on renaming columns in two database tables: `source_contents` and `derived_contents`. The [`upgrade`](<#upgrade>) function changes the column names from `source_content_type_id` and `derived_content_type_id` to `content_type_id`, while the [`downgrade`](<#downgrade>) function reverses these changes, restoring the original column names. This script is part of a version control system for database schemas, allowing developers to apply and revert schema changes systematically.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function to rename the `source_content_type_id` column to `content_type_id` in the `source_contents` table and the `derived_content_type_id` column to `content_type_id` in the `derived_contents` table. The [`downgrade`](<#downgrade>) function reverses these changes, renaming `content_type_id` back to `source_content_type_id` and `derived_content_type_id` in their respective tables. The script includes revision identifiers `revision` and `down_revision` to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -17,52 +17,56 @@ This Python script is a database migration file used with Alembic, a database mi
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for a specific database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of migrations.
+- **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.upgrade}} -->
-The `upgrade` function renames specific columns in two database tables to unify their column names.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.py#L18>)
+
+Renames columns in the database tables `source_contents` and `derived_contents`.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.alter_column` to rename the column `source_content_type_id` in the `source_contents` table to `content_type_id`.
-    - The function calls `op.alter_column` to rename the column `derived_content_type_id` in the `derived_contents` table to `content_type_id`.
-- **Output**: The function does not return any value; it performs operations to alter the database schema.
+- **Logic and Control Flow**:
+    - Calls `op.alter_column` to rename the column `source_content_type_id` to `content_type_id` in the `source_contents` table.
+    - Calls `op.alter_column` to rename the column `derived_content_type_id` to `content_type_id` in the `derived_contents` table.
+- **Output**: No return value; modifies the database schema by renaming columns.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.downgrade}} -->
-The `downgrade` function renames columns in the 'source_contents' and 'derived_contents' tables to revert changes made by a previous migration.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_0830-ca49df8b5300_rename_sct_dct_id_cols.py#L27>)
+
+Reverts column name changes in the `source_contents` and `derived_contents` tables.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.alter_column` to rename the 'content_type_id' column in the 'source_contents' table back to 'source_content_type_id'.
-    - The function calls `op.alter_column` to rename the 'content_type_id' column in the 'derived_contents' table back to 'derived_content_type_id'.
-- **Output**: The function does not return any value; it performs database schema alterations.
+- **Logic and Control Flow**:
+    - Calls `op.alter_column` to change the column name from `content_type_id` to `source_content_type_id` in the `source_contents` table.
+    - Calls `op.alter_column` to change the column name from `content_type_id` to `derived_content_type_id` in the `derived_contents` table.
+- **Output**: No output is returned.
 
 
 

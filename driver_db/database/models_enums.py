@@ -17,6 +17,39 @@ class PrimaryAssetProvider(enum.StrEnum):
     USER = enum.auto()
 
 
+class VcsAutoUpdatePolicy(enum.StrEnum):
+    """These settings are used to configure the frequency of automatic derived
+    contents updates triggered by VCS push events.  When a push event is
+    handled, the selected policy allows a new update based on the elapsed
+    time between the current push event and most recent update.
+    Example: if the policy is set to THREE_DAYS_OR_MORE, an update will
+    occur if the most recent update occurred at least 3 days prior to the
+    new push event."""
+
+    NEVER = "NEVER"
+    AFTER_EVERY_COMMIT = "AFTER_EVERY_COMMIT"  # default
+    AFTER_ONE_DAY_OR_MORE = "AFTER_ONE_DAY_OR_MORE"
+    AFTER_THREE_DAYS_OR_MORE = "AFTER_THREE_DAYS_OR_MORE"
+    AFTER_ONE_WEEK_OR_MORE = "AFTER_ONE_WEEK_OR_MORE"
+    AFTER_TWO_WEEKS_OR_MORE = "AFTER_TWO_WEEKS_OR_MORE"
+    AFTER_FOUR_WEEKS_OR_MORE = "AFTER_FOUR_WEEKS_OR_MORE"
+
+    def to_seconds(self) -> int | None:
+        match self:
+            case VcsAutoUpdatePolicy.NEVER | VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT:
+                return None
+            case VcsAutoUpdatePolicy.AFTER_ONE_DAY_OR_MORE:
+                return 24 * 60 * 60
+            case VcsAutoUpdatePolicy.AFTER_THREE_DAYS_OR_MORE:
+                return 3 * 24 * 60 * 60
+            case VcsAutoUpdatePolicy.AFTER_ONE_WEEK_OR_MORE:
+                return 7 * 24 * 60 * 60
+            case VcsAutoUpdatePolicy.AFTER_TWO_WEEKS_OR_MORE:
+                return 14 * 24 * 60 * 60
+            case VcsAutoUpdatePolicy.AFTER_FOUR_WEEKS_OR_MORE:
+                return 28 * 24 * 60 * 60
+
+
 class VersionStatus(str, enum.Enum):
     GENERATING = "GENERATING"
     GENERATION_COMPLETE = "GENERATION_COMPLETE"
@@ -88,6 +121,10 @@ class ContentKind(str, enum.Enum):
     TOP_LEVEL_SHORT_PARAGRAPH = "TOP_LEVEL_SHORT_PARAGRAPH"
     TOP_LEVEL_TERSE_SENTENCE = "TOP_LEVEL_TERSE_SENTENCE"
     TOP_LEVEL_LONG_DESCRIPTION = "TOP_LEVEL_LONG_DESCRIPTION"
+    DEEP_CONTEXT_ARCHITECTURE = "deep-context-architecture"
+    DEEP_CONTEXT_LLM_ONBOARDING = "deep-context-llm-onboarding"
+    DEEP_CONTEXT_CHANGELOG = "deep-context-changelog"
+    DEEP_CONTEXT_BESPOKE = "deep-context-bespoke"
 
 
 class FileTypeEnum(enum.Enum):

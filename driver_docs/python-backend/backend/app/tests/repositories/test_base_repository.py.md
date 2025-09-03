@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_base_repository.py` file contains unit tests for the `BaseRepository` class, verifying its CRUD operations using a mock SQLModel and a mocked session.
+Tests for CRUD operations in the BaseRepository using a mock SQLModel and MagicMock.
 
 # Purpose
-This Python file is a test suite designed to validate the functionality of a `BaseRepository` class, which is part of a larger application. It uses the `pytest` framework and `unittest.mock` to create mock objects and fixtures for testing database operations without requiring a real database connection. The file defines a `MockModel` class to simulate a database model and includes several test functions to verify the behavior of CRUD operations (`get`, `get_all`, `create`, `update`, and `delete`) on the `BaseRepository`. Each test checks that the repository methods interact correctly with the mocked session, ensuring that the expected database operations are called and that the methods return the correct results. This code provides narrow functionality focused on testing the repository layer of an application.
+This code is a test suite for a repository pattern implementation using the `pytest` framework and `unittest.mock` for mocking database interactions. It defines a `MockModel` class, which is a mock SQL model with fields `id` and `name`, to simulate database entities. The test suite includes several test functions that verify the behavior of the `BaseRepository` class methods: `get`, `get_all`, `create`, `update`, and `delete`. Each test function uses fixtures to create a mock session and a `BaseRepository` instance, then asserts that the repository methods interact with the session as expected, ensuring correct CRUD operations. The tests also check the handling of cases where entities are not found in the database.
 # Imports and Dependencies
 
 ---
@@ -22,10 +22,12 @@ This Python file is a test suite designed to validate the functionality of a `Ba
 
 ---
 ### MockModel<!-- {{#class:python-backend/backend/app/tests/repositories/test_base_repository.MockModel}} -->
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L11>)
+
 - **Members**:
-    - `id`: A unique identifier for the model, which can be None or a UUID, and serves as the primary key.
-    - `name`: A string representing the name of the model.
-- **Description**: The MockModel class is a simple SQLModel-based data model used for testing purposes, featuring an optional UUID as a primary key and a name field. It is designed to be used with a SQL database table, as indicated by the 'table=True' parameter in its definition. This class is primarily utilized in unit tests to simulate database operations within a repository pattern.
+    - `id`: Stores a unique identifier for the model, which can be `None`.
+    - `name`: Stores the name of the model as a string.
+- **Description**: Defines a SQL model with an optional unique identifier and a name field, used for testing purposes.
 - **Inherits From**:
     - `SQLModel`
 
@@ -34,142 +36,159 @@ This Python file is a test suite designed to validate the functionality of a `Ba
 
 ---
 ### session<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.session}} -->
-The `session` function is a pytest fixture that returns a mock object for simulating database session interactions in tests.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L16>)
+
+Creates a mock session object for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a pytest fixture, which means it is used to provide a fixed baseline for tests by setting up a mock session object.
-    - The function returns a `MagicMock` object, which is a mock object from the `unittest.mock` library used to simulate and assert calls to the session in tests.
-- **Output**: A `MagicMock` object that simulates a database session for testing purposes.
+- **Logic and Control Flow**:
+    - Returns a `MagicMock` object.
+- **Output**: A `MagicMock` object that simulates a session for testing.
 
 
 ---
 ### base\_repository<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.base_repository}} -->
-The `base_repository` function is a pytest fixture that initializes and returns an instance of [`BaseRepository`](<../../repositories/base_repository.py.md#BaseRepository>) using a mock session and a mock model for testing purposes.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L21>)
+
+Creates a fixture that provides a [`BaseRepository`](<../../repositories/base_repository.py.md#baserepository>) instance with a mock session and model for testing.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**:
-    - `session`: A mock session object provided by another pytest fixture, used to simulate database interactions.
-- **Control Flow**:
-    - The function takes a mock session as an input parameter.
-    - It creates an instance of [`BaseRepository`](<../../repositories/base_repository.py.md#BaseRepository>) using the provided session and the `MockModel` class.
-    - The function returns the created [`BaseRepository`](<../../repositories/base_repository.py.md#BaseRepository>) instance.
-- **Output**: An instance of [`BaseRepository`](<../../repositories/base_repository.py.md#BaseRepository>) initialized with a mock session and the `MockModel` class.
+    - `session`: A mock session object used to simulate database interactions.
+- **Logic and Control Flow**:
+    - Returns a new instance of [`BaseRepository`](<../../repositories/base_repository.py.md#baserepository>) initialized with the provided `session` and `MockModel`.
+- **Output**: An instance of [`BaseRepository`](<../../repositories/base_repository.py.md#baserepository>) configured with the mock session and model.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<../../repositories/base_repository.py.md#BaseRepository>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<../../repositories/base_repository.py.md#baserepository>)
 
 
 ---
 ### test\_get<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.test_get}} -->
-The `test_get` function tests the [`get`](<../../repositories/base_repository.py.md#BaseRepositoryget>) method of the `BaseRepository` class to ensure it retrieves a [`MockModel`](<#MockModel>) instance by its UUID.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L26>)
+
+Tests the [`get`](<../../repositories/base_repository.py.md#baserepositoryget>) method of the `BaseRepository` to ensure it retrieves a [`MockModel`](<#mockmodel>) instance by its UUID.
+- **Decorators**: `@pytest.fixture`, `@pytest.fixture`
 - **Inputs**:
-    - `base_repository`: A fixture providing an instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#MockModel>).
-    - `session`: A fixture providing a mock session object used to simulate database operations.
-- **Control Flow**:
-    - A [`MockModel`](<#MockModel>) instance is created with a specific UUID and name 'Test'.
-    - The mock session's [`get`](<../../repositories/base_repository.py.md#BaseRepositoryget>) method is set to return the created [`MockModel`](<#MockModel>) instance.
-    - The [`get`](<../../repositories/base_repository.py.md#BaseRepositoryget>) method of `base_repository` is called with the specific UUID to retrieve the [`MockModel`](<#MockModel>) instance.
-    - The test asserts that the session's [`get`](<../../repositories/base_repository.py.md#BaseRepositoryget>) method was called once with [`MockModel`](<#MockModel>) and the specific UUID.
-    - The test asserts that the result of the [`get`](<../../repositories/base_repository.py.md#BaseRepositoryget>) method call is equal to the [`MockModel`](<#MockModel>) instance.
-- **Output**: The function does not return a value; it asserts the correctness of the [`get`](<../../repositories/base_repository.py.md#BaseRepositoryget>) method's behavior.
+    - `base_repository`: A fixture that provides an instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#mockmodel>).
+    - `session`: A fixture that provides a mock session object for simulating database operations.
+- **Logic and Control Flow**:
+    - Create a [`MockModel`](<#mockmodel>) instance with a specific UUID and name.
+    - Set the mock session's [`get`](<../../repositories/base_repository.py.md#baserepositoryget>) method to return the created [`MockModel`](<#mockmodel>) instance.
+    - Call the [`get`](<../../repositories/base_repository.py.md#baserepositoryget>) method of `base_repository` with the specific UUID to retrieve the instance.
+    - Verify that the session's [`get`](<../../repositories/base_repository.py.md#baserepositoryget>) method is called once with [`MockModel`](<#mockmodel>) and the specific UUID.
+    - Assert that the result of the [`get`](<../../repositories/base_repository.py.md#baserepositoryget>) method call is equal to the [`MockModel`](<#mockmodel>) instance.
+- **Output**: Returns the [`MockModel`](<#mockmodel>) instance retrieved by the [`get`](<../../repositories/base_repository.py.md#baserepositoryget>) method of `base_repository`.
 - **Functions Called**:
-    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#MockModel>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#mockmodel>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../../repositories/base_repository.py.md#baserepositoryget>)
 
 
 ---
 ### test\_get\_all<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.test_get_all}} -->
-The `test_get_all` function tests the [`get_all`](<../../repositories/base_repository.py.md#BaseRepositoryget_all>) method of the `BaseRepository` class to ensure it retrieves all instances of [`MockModel`](<#MockModel>) from the database session.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L40>)
+
+Tests the [`get_all`](<../../repositories/base_repository.py.md#baserepositoryget_all>) method of the `BaseRepository` to ensure it retrieves all instances correctly.
+- **Decorators**: `@pytest.fixture`, `@pytest.fixture`
 - **Inputs**:
-    - `base_repository`: A fixture providing an instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#MockModel>).
-    - `session`: A fixture providing a mock session object to simulate database operations.
-- **Control Flow**:
-    - Create a list of mock [`MockModel`](<#MockModel>) instances with predefined UUIDs and names.
-    - Set the return value of `session.exec().all()` to the list of mock instances to simulate database retrieval.
-    - Call the [`get_all`](<../../repositories/base_repository.py.md#BaseRepositoryget_all>) method on `base_repository` to retrieve all instances.
-    - Assert that `session.exec()` was called exactly once to ensure the method interacts with the session as expected.
-    - Assert that the result of [`get_all`](<../../repositories/base_repository.py.md#BaseRepositoryget_all>) matches the list of mock instances to verify correct functionality.
-- **Output**: The function does not return any value; it uses assertions to validate the behavior of the [`get_all`](<../../repositories/base_repository.py.md#BaseRepositoryget_all>) method.
+    - `base_repository`: A fixture that provides an instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#mockmodel>).
+    - `session`: A fixture that provides a mock session object for simulating database operations.
+- **Logic and Control Flow**:
+    - Creates a list of mock [`MockModel`](<#mockmodel>) instances with predefined UUIDs and names.
+    - Sets the mock session's `exec` method to return the list of mock instances when `all` is called.
+    - Calls the [`get_all`](<../../repositories/base_repository.py.md#baserepositoryget_all>) method on the `base_repository` to retrieve all instances.
+    - Asserts that the `exec` method of the session is called exactly once.
+    - Asserts that the result from [`get_all`](<../../repositories/base_repository.py.md#baserepositoryget_all>) matches the list of mock instances.
+- **Output**: Returns `None` as it is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#MockModel>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](<../../repositories/base_repository.py.md#BaseRepositoryget_all>)
+    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#mockmodel>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](<../../repositories/base_repository.py.md#baserepositoryget_all>)
 
 
 ---
 ### test\_create<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.test_create}} -->
-The `test_create` function tests the [`create`](<../../repositories/base_repository.py.md#BaseRepositorycreate>) method of the `BaseRepository` class to ensure it correctly adds, commits, and refreshes a new [`MockModel`](<#MockModel>) instance in the session.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L53>)
+
+Tests the [`create`](<../../repositories/base_repository.py.md#baserepositorycreate>) method of the `BaseRepository` class to ensure it correctly adds, commits, and refreshes a new [`MockModel`](<#mockmodel>) instance.
 - **Inputs**:
-    - `base_repository`: A fixture providing an instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#MockModel>).
-    - `session`: A fixture providing a mock session object to simulate database operations.
-- **Control Flow**:
-    - A [`MockModel`](<#MockModel>) instance named `mock_instance` is created with the name 'Test'.
-    - The mock session's `add`, `commit`, and `refresh` methods are set to return `None`.
-    - The [`create`](<../../repositories/base_repository.py.md#BaseRepositorycreate>) method of `base_repository` is called with `mock_instance`, and the result is stored in `result`.
-    - The test asserts that the session's `add` method was called once with `mock_instance`.
-    - The test asserts that the session's `commit` method was called once.
-    - The test asserts that the session's `refresh` method was called once with `mock_instance`.
-    - The test asserts that the `result` is equal to `mock_instance`.
-- **Output**: The function does not return a value but asserts that the [`create`](<../../repositories/base_repository.py.md#BaseRepositorycreate>) method behaves as expected, ensuring the [`MockModel`](<#MockModel>) instance is added, committed, and refreshed in the session.
+    - `base_repository`: A fixture that provides an instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#mockmodel>).
+    - `session`: A fixture that provides a mock session object for simulating database operations.
+- **Logic and Control Flow**:
+    - Create a [`MockModel`](<#mockmodel>) instance with the name 'Test'.
+    - Set the return values of `session.add`, `session.commit`, and `session.refresh` to `None`.
+    - Call the [`create`](<../../repositories/base_repository.py.md#baserepositorycreate>) method of `base_repository` with the `mock_instance`.
+    - Verify that `session.add` is called once with `mock_instance`.
+    - Verify that `session.commit` is called once.
+    - Verify that `session.refresh` is called once with `mock_instance`.
+    - Assert that the result of the [`create`](<../../repositories/base_repository.py.md#baserepositorycreate>) method is equal to `mock_instance`.
+- **Output**: The function does not return a value; it asserts that the [`create`](<../../repositories/base_repository.py.md#baserepositorycreate>) method behaves as expected.
 - **Functions Called**:
-    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#MockModel>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.create`](<../../repositories/base_repository.py.md#BaseRepositorycreate>)
+    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#mockmodel>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.create`](<../../repositories/base_repository.py.md#baserepositorycreate>)
 
 
 ---
 ### test\_update<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.test_update}} -->
-The `test_update` function tests the update functionality of a repository by modifying a mock model instance and verifying the changes and session operations.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L67>)
+
+Tests the update functionality of the `base_repository` by modifying a [`MockModel`](<#mockmodel>) instance and verifying the changes.
 - **Inputs**:
-    - `base_repository`: A fixture providing an instance of BaseRepository configured with a mock session and model.
-    - `session`: A fixture providing a mock session object to simulate database operations.
-- **Control Flow**:
-    - A mock instance of MockModel is created with a predefined UUID and name 'Test'.
-    - An update dictionary is defined to change the name of the mock instance to 'Updated Test'.
-    - The session's commit and refresh methods are mocked to return None, simulating their behavior without actual database operations.
-    - The update method of the base_repository is called with the mock instance and update data, which should update the instance's name.
-    - Assertions are made to verify that the mock instance's name is updated to 'Updated Test'.
-    - The session's add, commit, and refresh methods are asserted to have been called once with the appropriate arguments.
-    - The result of the update method is asserted to be the updated mock instance.
-- **Output**: The function does not return a value but asserts that the update operation correctly modifies the mock instance and that the session methods are called as expected.
+    - `base_repository`: A fixture that provides an instance of `BaseRepository` configured with a mock session and [`MockModel`](<#mockmodel>).
+    - `session`: A fixture that provides a mock session object for simulating database operations.
+- **Logic and Control Flow**:
+    - Create a [`MockModel`](<#mockmodel>) instance with a predefined UUID and name.
+    - Define `update_data` with a new name for the [`MockModel`](<#mockmodel>) instance.
+    - Set the return values of `session.commit` and `session.refresh` to `None`.
+    - Call the [`update`](<../../repositories/base_repository.py.md#baserepositoryupdate>) method of `base_repository` with the `mock_instance` and `update_data`.
+    - Assert that the `name` attribute of `mock_instance` is updated to 'Updated Test'.
+    - Verify that `session.add` is called once with `mock_instance`.
+    - Verify that `session.commit` is called once.
+    - Verify that `session.refresh` is called once with `mock_instance`.
+    - Assert that the result of the [`update`](<../../repositories/base_repository.py.md#baserepositoryupdate>) method is the updated `mock_instance`.
+- **Output**: The updated [`MockModel`](<#mockmodel>) instance with the new name.
 - **Functions Called**:
-    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#MockModel>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.update`](<../../repositories/base_repository.py.md#BaseRepositoryupdate>)
+    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#mockmodel>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.update`](<../../repositories/base_repository.py.md#baserepositoryupdate>)
 
 
 ---
 ### test\_delete<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.test_delete}} -->
-The `test_delete` function tests the [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method of the `BaseRepository` class to ensure it correctly deletes a [`MockModel`](<#MockModel>) instance from the database session.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L84>)
+
+Tests the [`delete`](<../../repositories/base_repository.py.md#baserepositorydelete>) method of `base_repository` to ensure it deletes a [`MockModel`](<#mockmodel>) instance correctly.
 - **Inputs**:
-    - `base_repository`: An instance of `BaseRepository` initialized with a mock session and [`MockModel`](<#MockModel>) class.
-    - `session`: A mock session object used to simulate database operations.
-- **Control Flow**:
-    - A [`MockModel`](<#MockModel>) instance is created with a specific UUID and name 'Test'.
-    - The mock session is configured to return this [`MockModel`](<#MockModel>) instance when queried with the specific UUID.
-    - The [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method of `base_repository` is called with the UUID of the [`MockModel`](<#MockModel>) instance.
-    - The test asserts that the session's `get` method is called once with the [`MockModel`](<#MockModel>) class and the specific UUID.
-    - The test asserts that the session's [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method is called once with the [`MockModel`](<#MockModel>) instance.
-    - The test asserts that the session's `commit` method is called once to commit the transaction.
-    - The test asserts that the result of the [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method is the [`MockModel`](<#MockModel>) instance.
-- **Output**: The function outputs the [`MockModel`](<#MockModel>) instance that was deleted, verifying that the [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method returns the correct instance.
+    - `base_repository`: A fixture that provides an instance of `BaseRepository` configured with a mock session and [`MockModel`](<#mockmodel>).
+    - `session`: A fixture that provides a mock session object for simulating database operations.
+- **Logic and Control Flow**:
+    - Create a [`MockModel`](<#mockmodel>) instance with a specific UUID and set it as the return value for `session.get`.
+    - Set `session.delete` and `session.commit` to return `None`.
+    - Call the [`delete`](<../../repositories/base_repository.py.md#baserepositorydelete>) method of `base_repository` with the UUID of the [`MockModel`](<#mockmodel>) instance.
+    - Verify that `session.get` is called once with [`MockModel`](<#mockmodel>) and the UUID.
+    - Verify that `session.delete` is called once with the [`MockModel`](<#mockmodel>) instance.
+    - Verify that `session.commit` is called once.
+    - Assert that the result of the [`delete`](<../../repositories/base_repository.py.md#baserepositorydelete>) method is the [`MockModel`](<#mockmodel>) instance.
+- **Output**: The [`MockModel`](<#mockmodel>) instance that was deleted.
 - **Functions Called**:
-    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#MockModel>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>)
+    - [`python-backend/backend/app/tests/repositories/test_base_repository.MockModel`](<#mockmodel>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../repositories/base_repository.py.md#baserepositorydelete>)
 
 
 ---
 ### test\_delete\_not\_found<!-- {{#callable:python-backend/backend/app/tests/repositories/test_base_repository.test_delete_not_found}} -->
-The `test_delete_not_found` function tests the behavior of the [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method in `BaseRepository` when attempting to delete a non-existent record.
+[View Source →](<../../../../../../backend/app/tests/repositories/test_base_repository.py#L102>)
+
+Tests the behavior of the [`delete`](<../../repositories/base_repository.py.md#baserepositorydelete>) method when the specified item is not found in the repository.
 - **Inputs**:
-    - `base_repository`: An instance of `BaseRepository` initialized with a mock session and `MockModel`.
-    - `session`: A mock session object used to simulate database operations.
-- **Control Flow**:
-    - Set the return value of `session.get` to `None` to simulate a non-existent record.
-    - Call the [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method of `base_repository` with a specific UUID.
-    - Assert that `session.get` is called once with `MockModel` and the specified UUID.
-    - Assert that `session.delete` is not called since the record does not exist.
-    - Assert that `session.commit` is not called since no changes are made.
-    - Check that the result of the [`delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>) method is `None`, indicating no record was deleted.
-- **Output**: The function outputs `None`, indicating that no record was found or deleted.
+    - `base_repository`: A fixture that provides an instance of `BaseRepository` initialized with a mock session and model.
+    - `session`: A fixture that provides a mock session object for simulating database operations.
+- **Logic and Control Flow**:
+    - Set the return value of `session.get` to `None` to simulate a not found item.
+    - Call the [`delete`](<../../repositories/base_repository.py.md#baserepositorydelete>) method of `base_repository` with a specific UUID.
+    - Verify that `session.get` is called once with `MockModel` and the specified UUID.
+    - Verify that `session.delete` is not called since the item is not found.
+    - Verify that `session.commit` is not called since no changes are made.
+    - Assert that the result of the [`delete`](<../../repositories/base_repository.py.md#baserepositorydelete>) method is `None`.
+- **Output**: Returns `None` to indicate that the item to delete was not found.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../repositories/base_repository.py.md#BaseRepositorydelete>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../../repositories/base_repository.py.md#baserepositorydelete>)
 
 
 

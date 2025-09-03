@@ -3,28 +3,30 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_func_declarations.c` file contains various function declarations, a function definition, a variable declaration, and a typedef for a function pointer, likely for testing purposes in the `python-backend` codebase.
+Test cases for function declarations and handling in C, including inline attributes and complex return types.
 
 # Purpose
-This C source code file appears to be a header file that provides function declarations and macro definitions, likely for use in a larger project involving memory management and cluster node operations. The file includes conditional compilation to modify the behavior of the `inline` keyword when using the GNU Compiler Collection (GCC) with Position Independent Code (PIC), ensuring that functions are always inlined. It declares several functions related to memory operations ([`__mmap`](<#__mmap>), [`__munmap`](<#__munmap>), [`__mremap`](<#__mremap>), [`__madvise`](<#__madvise>)) and cluster node management ([`createClusterNode`](<#createClusterNode>), [`clusterAddNode`](<#clusterAddNode>), [`clusterAcceptHandler`](<#clusterAcceptHandler>), [`clusterReadHandler`](<#clusterReadHandler>)). Additionally, the file includes a function definition ([`some_function`](<#some_function>)) and a variable declaration (`not_a_function`) to demonstrate differentiation between functions and variables, as well as a typedef for a function pointer (`signal_handler_t`) and a function with a complex return type ([`complex_function`](<#complex_function>)). This setup suggests the file is intended to provide necessary interfaces and type definitions for memory and cluster management functionalities.
+This C source code file contains a mix of function declarations, macro definitions, and type definitions. It includes a conditional macro definition that modifies the `inline` keyword to enforce inlining when using the GNU Compiler Collection (GCC) with Position Independent Code (PIC). The file declares several functions related to memory management and cluster node operations, such as [`__mmap`](<#__mmap>), [`__munmap`](<#__munmap>), [`createClusterNode`](<#createclusternode>), and [`clusterAddNode`](<#clusteraddnode>). Additionally, it defines a simple function [`some_function`](<#some_function>) and a variable `not_a_function` to illustrate different code elements. A typedef for a function pointer, `signal_handler_t`, is also included, along with a function [`complex_function`](<#complex_function>) that returns a complex data type `struct result_type`. This file serves as a header-like collection of function prototypes and type definitions for use in a larger C program.
 # Global Variables
 
 ---
 ### not\_a\_function
-- **Type**: `int`
-- **Description**: The variable `not_a_function` is a global integer variable declared at the top level of the file. It is not initialized, so it defaults to zero.
-- **Use**: This variable is used as a global integer that can be accessed and modified by any function within the file or other files that include this file.
+- **Type**: ``int``
+- **Description**: A global integer variable named `not_a_function` is declared.
+- **Use**: Used to store an integer value accessible throughout the program.
 
 
 # Functions
 
 ---
 ### some\_function<!-- {{#callable:some_function}} -->
-The function `some_function` returns the integer value 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_func_declarations.c#L15>)
+
+Returns the integer 42.
 - **Inputs**: None
-- **Control Flow**:
-    - The function executes a single return statement.
-- **Output**: The function returns the integer value 42.
+- **Logic and Control Flow**:
+    - Returns the integer 42 immediately.
+- **Output**: The integer 42.
 
 
 

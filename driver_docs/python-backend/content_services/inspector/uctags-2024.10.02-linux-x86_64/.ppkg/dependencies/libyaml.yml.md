@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `libyaml.yml` file specifies metadata for the libyaml C library, including its source URL, checksum, license, and build system configuration.
+A C library for parsing and emitting YAML, version 0.2.5, licensed under MIT.
 
 # Purpose
-This file provides metadata for a C library focused on parsing and emitting YAML. It includes the library's description, source URL, and SHA-256 checksum for verification, along with licensing information under the MIT License. Additionally, it specifies the build system as "configure" and lists the developer's contact information.
+This metadata file provides information about a C library used for parsing and emitting YAML. It includes the source URL `https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz` and the SHA-256 checksum `c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4` for verifying the integrity of the source file. The library is licensed under the MIT License and uses a `configure` build system. The developer of the library is Kirill Simonov, whose contact email is `xi@resolvent.net`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

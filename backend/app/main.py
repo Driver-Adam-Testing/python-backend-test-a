@@ -28,6 +28,7 @@ from app.api.unprotected_router import unprotected_router  # NEW
 from app.auth.api_key_middleware import require_api_key
 from app.auth.jwt_middleware import require_jwt
 from app.core.config import settings
+from app.mcp.server import my_mcp
 
 if TYPE_CHECKING:
     from fastapi.routing import APIRoute
@@ -94,11 +95,15 @@ def _unique_id(route: APIRoute) -> str:  # pragma: no cover - deterministic IDs
 
 
 # we should probably be documenting the api router, not the studio router
+mcp_app = my_mcp.http_app(path="/v1")
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.STUDIO_V1_STR}/openapi.json",
     generate_unique_id_function=_unique_id,
+    lifespan=mcp_app.lifespan,
 )
+app.mount("/mcp", mcp_app)
 
 # CORS ----------------------------------------------------------------------
 if settings.BACKEND_CORS_ORIGINS:

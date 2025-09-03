@@ -6,7 +6,7 @@
 Configuration for the `metrics-handler` project using Poetry, specifying dependencies and build settings.
 
 # Purpose
-The file is a configuration file for the Poetry dependency management tool, which is used to manage Python project dependencies and packaging. It specifies the project metadata, including the project name `metrics-handler`, version `0.1.0`, and author information. The file defines the dependencies required for the project, such as `boto3`, `httpx`, and `pydantic`, with specific version constraints. It also includes development dependencies under the `dev` group, like `pytest` and `moto`, which are used for testing purposes. Additionally, the file configures the build system to use `poetry-core` and sets options for `pytest`, specifying the test paths and Python path for the project.
+The file configures a Python project using Poetry, a dependency management and packaging tool. It specifies the project metadata, including the project name `metrics-handler`, version `0.1.0`, and author information. The file defines the dependencies required for the project, such as `boto3`, `httpx`, and `pydantic`, with specific version constraints. It also includes development dependencies under the `dev` group, like `pytest` and `moto`, which are used for testing purposes. The `build-system` section indicates that the project requires `poetry-core` for building, and the `tool.pytest.ini_options` section configures `pytest` to look for tests in the `tests` directory and include the `src` directory in the Python path.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

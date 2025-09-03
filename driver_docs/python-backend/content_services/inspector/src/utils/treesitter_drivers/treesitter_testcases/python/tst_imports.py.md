@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst_imports.py` file contains various test cases for different types of Python import statements, demonstrating scenarios such as simple imports, imports with aliases, conditional imports, and more complex import patterns.
+Test cases for various Python import statement scenarios, including aliases, conditionals, and dynamics.
 
 # Purpose
-This Python script serves as a comprehensive demonstration of various import statement techniques and patterns used in Python programming. It covers a wide range of import scenarios, including simple module imports, aliasing, specific item imports, wildcard imports, conditional imports, and dynamic imports within functions. Additionally, it illustrates more advanced concepts such as relative imports, future imports, and programmatic imports using `importlib`. The script also highlights less common practices like nested try-except blocks for fallback imports and imports within class methods. While the script is primarily educational, showcasing both recommended and discouraged practices, it does not provide functional application code but rather serves as a reference for understanding the flexibility and nuances of Python's import system.
+This code is a collection of test cases for various Python import statement patterns. It demonstrates different import techniques, including simple module imports, imports with aliases, specific item imports using `from`, and conditional imports using `try-except` blocks. The code also covers more complex scenarios such as relative imports, dynamic imports within functions, and imports with long module paths using line continuation. Additionally, it includes examples of imports within class methods and nested `try-except` structures for handling alternative import sources. The code serves as a comprehensive reference for understanding the diverse ways to import modules and components in Python.
 # Imports and Dependencies
 
 ---
@@ -55,102 +55,119 @@ This Python script serves as a comprehensive demonstration of various import sta
 
 ---
 ### \_\_all\_\_
-- **Type**: `list`
-- **Description**: The `__all__` variable is a list that defines the public interface of a module. It specifies which attributes of the module should be accessible when the module is imported using a wildcard import (e.g., `from module import *`).
-- **Use**: This variable is used to control the export of module attributes, ensuring that only the specified functions, classes, or constants are exposed to users of the module.
+- **Type**: ``list``
+- **Description**: Defines a list of public symbols that the module exports. This list includes 'public_function', 'PublicClass', and 'PUBLIC_CONSTANT', which are intended to be accessible when the module is imported using a wildcard import (e.g., `from module import *`).
+- **Use**: Controls the public API of the module by specifying which symbols are available for import.
 
 
 ---
 ### PUBLIC\_CONSTANT
-- **Type**: `str`
-- **Description**: `PUBLIC_CONSTANT` is a global string variable defined with the value "visible". It is included in the `__all__` list, indicating that it is intended to be a public part of the module's API.
-- **Use**: This variable is used to represent a constant value that is publicly accessible when the module is imported.
+- **Type**: ``str``
+- **Description**: A string variable that holds the value 'visible'. It is defined as a global constant in the module.
+- **Use**: Used to represent a constant value that is publicly accessible within the module.
 
 
 # Classes
 
 ---
 ### ImportInClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass}} -->
-- **Description**: The `ImportInClass` class demonstrates the use of an import statement within a method. It contains a single method, `method_with_import`, which imports the `hashlib` module and uses it to compute and return the MD5 hash of the byte string "test". This class serves as an example of how imports can be scoped to a specific method, allowing for dynamic or conditional importing of modules.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L63>)
+
+- **Description**: Defines a class with a method that performs an import statement within the method itself. The `method_with_import` method imports the `hashlib` module and uses it to compute the MD5 hash of the byte string `b"test"`, returning the hexadecimal digest of the hash.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass.method_with_import`](<#ImportInClassmethod_with_import>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass.method_with_import`](<#importinclassmethod_with_import>)
 
 **Methods**
 
 ---
 #### ImportInClass\.method\_with\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass.method_with_import}} -->
-The method_with_import method imports the hashlib module and returns the MD5 hash of the string 'test'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L64>)
+
+Calculates and returns the MD5 hash of the byte string 'test'.
 - **Inputs**:
-    - `self`: Represents the instance of the class ImportInClass to which the method belongs.
-- **Control Flow**:
-    - The method begins by importing the hashlib module within its scope.
-    - It then computes the MD5 hash of the byte string b'test' using hashlib.md5().
-    - The resulting hash object is converted to a hexadecimal string using the hexdigest() method.
-    - The hexadecimal string is returned as the output of the method.
-- **Output**: A hexadecimal string representing the MD5 hash of the byte string b'test'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass`](<#ImportInClass>)  (Base Class)
+    - `self`: Represents the instance of the class `ImportInClass`.
+- **Logic and Control Flow**:
+    - Imports the `hashlib` module within the method scope.
+    - Uses `hashlib.md5` to create an MD5 hash object from the byte string `b"test"`.
+    - Calls `hexdigest()` on the hash object to get the hexadecimal representation of the hash.
+    - Returns the hexadecimal string of the MD5 hash.
+- **Output**: A string representing the hexadecimal MD5 hash of the byte string 'test'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass`](<#importinclass>)  (Base Class)
 
 
 
 ---
 ### PublicClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.PublicClass}} -->
-- **Description**: The `PublicClass` is a minimal class definition that currently does not contain any attributes or methods. It serves as a placeholder or a base for further development, allowing for future expansion or customization.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L98>)
+
+- **Description**: Defines an empty class with no attributes or methods.
 
 
 # Functions
 
 ---
 ### dynamic\_import\_example<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.dynamic_import_example}} -->
-The function `dynamic_import_example` dynamically imports the `random` and `secrets` modules to generate a random integer and a secure token.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L50>)
+
+Dynamically imports modules and returns a random integer and a hexadecimal token.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by importing the `random` module and the `token_hex` function from the `secrets` module.
-    - It then generates a random integer between 1 and 100 using `random.randint(1, 100)`.
-    - It also generates a secure random token of 8 bytes using `token_hex(8)`.
-    - Finally, it returns a tuple containing the random integer and the secure token.
-- **Output**: A tuple containing a random integer between 1 and 100 and a secure random token of 8 bytes.
+- **Logic and Control Flow**:
+    - Imports the `random` module and the `token_hex` function from the `secrets` module inside the function body.
+    - Generates a random integer between 1 and 100 using `random.randint(1, 100)`.
+    - Generates a hexadecimal token of 8 bytes using `token_hex(8)`.
+    - Returns a tuple containing the random integer and the hexadecimal token.
+- **Output**: A tuple containing a random integer between 1 and 100, and a hexadecimal token of 8 bytes.
 
 
 ---
 ### conditional\_feature<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.conditional_feature}} -->
-The `conditional_feature` function checks if a specific feature exists in the `sys` module and returns a boolean indicating its presence.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L79>)
+
+Checks if a specific feature exists in the `sys` module.
 - **Inputs**: None
-- **Control Flow**:
-    - Imports the `sys` module within the function scope.
-    - Uses `getattr` to attempt to retrieve the attribute `some_new_feature` from the `sys` module, defaulting to `None` if it does not exist.
-    - Returns `True` if the feature is found (i.e., not `None`), otherwise returns `False`.
-- **Output**: A boolean value indicating whether the `some_new_feature` attribute exists in the `sys` module.
+- **Logic and Control Flow**:
+    - Imports the `sys` module.
+    - Uses `getattr` to check if `sys` has an attribute named `some_new_feature`.
+    - Returns `True` if the feature exists, otherwise returns `False`.
+- **Output**: A boolean value indicating the presence of `some_new_feature` in the `sys` module.
 
 
 ---
 ### programmatic\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.programmatic_import}} -->
-The `programmatic_import` function dynamically imports a module by its name using the `importlib` library and returns the imported module.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L87>)
+
+Imports a module programmatically using its name as a string.
 - **Inputs**:
-    - `module_name`: A string representing the name of the module to be imported.
-- **Control Flow**:
-    - The function uses `importlib.import_module` to import the module specified by `module_name`.
-    - The imported module is then returned.
-- **Output**: The function returns the module object corresponding to the imported module.
+    - `module_name`: A string that specifies the name of the module to import.
+- **Logic and Control Flow**:
+    - Uses the `importlib.import_module` function to import the module specified by `module_name`.
+    - Assigns the imported module to the variable `module`.
+    - Returns the imported module.
+- **Output**: The imported module object.
 
 
 ---
 ### public\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.public_function}} -->
-The `public_function` is a placeholder function that currently does nothing.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L95>)
+
+Defines a placeholder function with no implementation.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - The function is defined with no parameters.
-    - The function body contains only the `pass` statement, indicating no operations are performed.
-- **Output**: The function does not return any value or perform any operations.
+    - The function body contains only the `pass` statement, indicating no operation is performed.
+- **Output**: No output is produced as the function does not perform any operations.
 
 
 ---
 ### \_private\_function<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports._private_function}} -->
-The `_private_function` is a placeholder function that currently does nothing.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.py#L103>)
+
+Defines a private function that does nothing.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - The function is defined with no parameters.
     - The function body contains a single `pass` statement, indicating no operation is performed.
-- **Output**: The function does not return any value or perform any operations.
+- **Output**: No output is produced as the function does nothing.
 
 
 

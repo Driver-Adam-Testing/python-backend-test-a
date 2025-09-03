@@ -14,6 +14,9 @@ class DevelopmentStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        self.cdkenv = kwargs.get("env")
+        print(f"AWS environment set to : {self.cdkenv}")
+
         cors_origins = (
             "https://app.dev.driverai.com,https://labs.dev.driverai.com,"
             "https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
@@ -36,6 +39,8 @@ class DevelopmentStack(Stack):
                 allowed_ips=["98.142.217.111/32"],
                 use_legacy_dropzone=True,
                 metrics_bus=self.metrics_lambda.metrics_bus,
+                aws_region=self.cdkenv.region,
+                aws_account=self.cdkenv.account
             ),
         )
         self.onboarding_lambda = AssetOnboardingLambda(

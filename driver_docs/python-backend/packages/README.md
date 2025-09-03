@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Includes the `shared` folder with components for backend functionalities, dependencies, and Docker configuration.
+Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
 
 ## Folders
-- **[shared](shared/README.md)**: Essential subfolders and files for managing backend functionalities, with configuration for dependencies and Docker.
+- **[shared](shared/README.md)**: Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
 
 
 ---

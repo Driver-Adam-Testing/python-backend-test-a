@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tree.py` file defines a function to construct a tree representation of a codebase's directory and file structure using SQLModel and Strawberry, based on a given version and organization ID.
+Implements a function to retrieve and construct a tree of nodes from a database using SQLModel.
 
 # Purpose
-This Python code defines a function to retrieve and construct a hierarchical representation of a codebase's directory and file structure, specifically tailored for a given version and organization. The primary function, [`get_codebase_tree`](<#get_codebase_tree>), queries a database using SQLModel to fetch nodes, versions, and primary assets associated with a specified version ID and organization ID. The data is then processed to distinguish between directories and files, using the `NodeTypeEnum` class to categorize each node. The `FlatNode` class, decorated with `@strawberry.type`, is used to represent each node in the tree, capturing essential attributes such as ID, name, path, and kind, with directories potentially containing children nodes.
+The code defines a function [`get_codebase_tree`](<#get_codebase_tree>) that retrieves and constructs a hierarchical representation of a codebase's directory and file structure. It uses SQLModel to query a database for nodes associated with a specific version and organization. The function returns a list of `FlatNode` objects, each representing a directory or file, with attributes such as `id`, `name`, `path`, and `kind`. The `FlatNode` class is defined using the Strawberry library, which suggests that it is part of a GraphQL API schema.
 
-The code is structured as a library component, likely intended for integration into a larger application, possibly one that uses GraphQL given the use of the `strawberry` library. It does not define a public API but provides a specific utility function that can be used to generate a structured view of a codebase's file system. The function's output is a list of `FlatNode` objects, each representing a directory or file, with directories containing references to their child nodes. This setup facilitates the visualization or further processing of a codebase's structure in applications that require an organized view of files and directories.
+The code also defines a `NodeTypeEnum` class to categorize nodes as directories or files. The function processes the query results to build a map of directories and files, organizing them into a tree structure. It identifies directories by checking if the `relative_path` ends with a slash and assigns the appropriate `kind`. The function then populates the `children` attribute of directory nodes with the paths of their child nodes, ensuring a structured representation of the codebase. This code is likely part of a larger application that manages or visualizes codebase structures.
 # Imports and Dependencies
 
 ---
@@ -25,49 +25,55 @@ The code is structured as a library component, likely intended for integration i
 
 ---
 ### NodeTypeEnum<!-- {{#class:python-backend/backend/app/api/routes/legacy/tree.NodeTypeEnum}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/tree.py#L9>)
+
 - **Members**:
     - `Directory`: Represents a directory node type.
     - `File`: Represents a file node type.
     - `Resource`: Represents a resource node type.
     - `Workspace`: Represents a workspace node type.
-- **Description**: The NodeTypeEnum class defines a set of string constants representing different types of nodes, such as directories, files, resources, and workspaces, which can be used to categorize or identify node types within a system.
+- **Description**: Defines constants for different types of nodes, such as directory, file, resource, and workspace, used to categorize nodes in a codebase tree.
 
 
 ---
 ### FlatNode<!-- {{#class:python-backend/backend/app/api/routes/legacy/tree.FlatNode}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/tree.py#L16>)
+
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `id`: A unique identifier for the FlatNode.
-    - `name`: The name of the FlatNode, which can be None.
-    - `path`: The relative path of the FlatNode, which can be None.
-    - `kind`: The type of the FlatNode, which can be None.
-    - `children`: A list of child node paths, defaulting to an empty list.
-- **Description**: The FlatNode class represents a node in a hierarchical structure, such as a file system, with attributes for identification, naming, path, type, and children. It is designed to be used within a Strawberry GraphQL type system, allowing for the representation of nodes that can be either files or directories, each potentially containing child nodes.
+    - `id`: Unique identifier for the node.
+    - `name`: Name of the node, which can be null.
+    - `path`: Relative path of the node, which can be null.
+    - `kind`: Type of the node, which can be null.
+    - `children`: List of child node paths, initialized as an empty list.
+- **Description**: Represents a node in a codebase tree with attributes for identification, naming, path, type, and children. It is used to model both directories and files within a hierarchical structure.
 
 
 # Functions
 
 ---
 ### get\_codebase\_tree<!-- {{#callable:python-backend/backend/app/api/routes/legacy/tree.get_codebase_tree}} -->
-The `get_codebase_tree` function retrieves and constructs a hierarchical representation of a codebase's directory and file structure for a specific version and organization.
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/tree.py#L25>)
+
+Generates a tree structure of codebase nodes for a given version and organization.
 - **Inputs**:
-    - `version_id`: A string representing the primary identifier for the version of the codebase to retrieve.
+    - `version_id`: A string that identifies the version of the codebase.
     - `session`: A `Session` object used to execute database queries.
-    - `organization_id`: A string representing the identifier for the organization to which the codebase belongs.
-- **Control Flow**:
-    - Execute a database query to select nodes, versions, and primary assets that match the given version_id and organization_id.
+    - `organization_id`: A string that identifies the organization to which the codebase belongs.
+- **Logic and Control Flow**:
+    - Execute a database query to select nodes, versions, and primary assets that match the given `version_id` and `organization_id`.
     - If no nodes are found, return an empty list.
-    - Initialize two collections: `directories_map` for directories and `files` for files.
-    - Iterate over the retrieved nodes to determine if each node is a directory or a file, creating a [`FlatNode`](<#FlatNode>) object for each.
-    - Add file nodes to the `files` list and directory nodes to the `directories_map`.
-    - For each file node, determine its parent directory and add the file path to the parent's children list if the parent exists in `directories_map`.
-    - Add each file node to `directories_map` to ensure all nodes are included.
-    - Iterate over the `directories_map` to finalize the children lists for each directory, ensuring only valid paths are included.
+    - Initialize `directories_map` to store directory nodes and `files` to store file nodes.
+    - Iterate over the fetched nodes to determine if each node is a directory or a file based on its `relative_path`.
+    - Create a [`FlatNode`](<#flatnode>) for each node and add it to `directories_map` if it is a directory or to `files` if it is a file.
+    - Iterate over the `files` list to find parent directories for each file and update the `children` attribute of the parent directory in `directories_map`.
+    - Add each file node to `directories_map` after updating its parent directory's children.
+    - Iterate over `directories_map` to filter and update the `children` attribute of each directory node to include only valid child paths.
     - Return the list of directory nodes as the result.
-- **Output**: A list of [`FlatNode`](<#FlatNode>) objects representing the directory and file structure of the codebase for the specified version and organization.
+- **Output**: A list of [`FlatNode`](<#flatnode>) objects representing the directory structure of the codebase.
 - **Functions Called**:
-    - [`python-backend/backend/app/api/routes/legacy/tree.FlatNode`](<#FlatNode>)
-    - [`python-backend/backend/app/api/routes/legacy/scalars.ID`](<scalars.py.md#ID>)
+    - [`python-backend/backend/app/api/routes/legacy/tree.FlatNode`](<#flatnode>)
+    - [`python-backend/backend/app/api/routes/legacy/scalars.ID`](<scalars.py.md#id>)
 
 
 

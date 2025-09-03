@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `document_source_schema.py` file defines a Pydantic model `DocumentSourceCreate` for creating document source entries with fields for `document_id`, `source_id`, and an `include` flag.
+Defines a Pydantic model for creating a document source with UUIDs and an include flag.
 
 # Purpose
-This code defines a Pydantic model named `DocumentSourceCreate`, which is used for data validation and serialization in Python applications. The model includes three fields: `document_id` and `source_id`, both of which are UUIDs, and `include`, a boolean. This code provides narrow functionality, specifically for creating and validating instances of `DocumentSourceCreate` objects, ensuring that the data conforms to the specified types. It is a short script that leverages Pydantic's capabilities to enforce data integrity and type safety, typically used in applications where structured data input is required, such as API request validation.
+The code defines a Pydantic model named `DocumentSourceCreate`, which is used for data validation and serialization. This model includes three fields: `document_id`, `source_id`, and `include`. Both `document_id` and `source_id` are of type `UUID`, ensuring that these fields contain valid UUID values. The `include` field is a boolean, indicating whether a particular source should be included. This model is useful for applications that require structured data input validation, particularly when dealing with document and source identifiers.
 # Imports and Dependencies
 
 ---
@@ -19,11 +19,13 @@ This code defines a Pydantic model named `DocumentSourceCreate`, which is used f
 
 ---
 ### DocumentSourceCreate<!-- {{#class:python-backend/backend/app/schemas/document_source_schema.DocumentSourceCreate}} -->
+[View Source →](<../../../../../backend/app/schemas/document_source_schema.py#L6>)
+
 - **Members**:
-    - `document_id`: A UUID representing the unique identifier of the document.
-    - `source_id`: A UUID representing the unique identifier of the source.
-    - `include`: A boolean indicating whether the source should be included.
-- **Description**: The DocumentSourceCreate class is a Pydantic model that defines the structure for creating a document source, including unique identifiers for both the document and the source, as well as a flag to indicate inclusion.
+    - `document_id`: Stores the unique identifier for the document.
+    - `source_id`: Stores the unique identifier for the source.
+    - `include`: Indicates whether to include the source in the document.
+- **Description**: Defines a data structure for creating a document source with identifiers for both the document and the source, and a flag to include the source.
 - **Inherits From**:
     - `BaseModel`
 

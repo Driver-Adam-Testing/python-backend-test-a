@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Subfolders for application logic, global constants, interfaces, language model clients, testing, and utilities, with an `__init__.py` file to initialize and expose these components for LLM operations.
+Performance testing, LLM pipelines, JSON parsing, LLM clients, tests, utilities, and package initialization.
 
 ## Folders
-- **[app](app/README.md)**: Subfolders for implementing and testing pipeline functionalities and managing static resources.
-- **[globals](globals/README.md)**: Defines constants, message classes, and glossary terms for JSON formatting, LLM behaviors, and communication.
-- **[interfaces](interfaces/README.md)**: Python files that define classes and enumerations for managing language model messages, history, parsing, response types, stream responses, and tools.
-- **[llms](llms/README.md)**: Subfolders for implementing clients to interact with language model APIs and managing configuration files.
-- **[tests](tests/README.md)**: Unit tests for `DataSource`, `LlmMessage`, and `LlmMessageHistory` classes, focusing on creation, interaction, and conversion.
-- **[utils](utils/README.md)**: Utility files and a subfolder for post-processing Mermaid diagrams, including data source management, JSON encoding/decoding, response string parsing, graph node referencing, semantic comparison, and testing.
+- **[app](app/README.md)**: Performance testing and LLM-based pipelines, enums, message classes, and file handling tools.
+- **[globals](globals/README.md)**: Constants, classes, and messages for JSON parsing, DataSource, LLM, glossary, and iteration contexts.
+- **[interfaces](interfaces/README.md)**: Classes and enums for handling LLM messages, responses, tools, and parsing in Python.
+- **[llms](llms/README.md)**: LLM client implementations for Anthropic and OpenAI models, and configuration management with Pydantic and TOML.
+- **[tests](tests/README.md)**: Tests for DataSource class methods and LlmMessage functionalities, including conversions and persistence.
+- **[utils](utils/README.md)**: Functions for Mermaid diagram validation, data source management, JSON parsing, and semantic comparison.
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the shared v3 package by importing and exposing various interfaces, clients, and utilities related to LLM (Language Model) operations.
+- **[__init__.py](__init__.py.md)**: Initializes the shared.v3 package by importing and exposing key interfaces, clients, and utilities.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

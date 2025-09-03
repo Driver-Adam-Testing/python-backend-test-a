@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dag.py` file in the `python-backend` codebase provides a utility for managing a directed acyclic graph (DAG) representing a file tree, including functionality for adding, removing, and modifying nodes, as well as computing differences between file tree states.
+Implements a directed acyclic graph (DAG) for managing file trees, supporting node operations and topological sorting.
 
 # Purpose
-The provided Python code defines a system for managing and manipulating a file tree structure using a directed acyclic graph (DAG) model. The primary purpose of this code is to represent and track changes in a file system hierarchy, allowing for operations such as adding, removing, and modifying files and directories. The code is structured around several key components: `NodeStatus` and `NodeKind` enums to represent the state and type of nodes, `LiteNode` and `Node` classes to encapsulate file and directory information, and the `FileTreeDag` class to manage the overall file tree structure. The `FileTreeDag` class provides methods for adding files, marking files for removal, deleting nodes, and computing differences between two file tree states, among other functionalities.
+The code defines a data structure for managing a file tree as a directed acyclic graph (DAG). It provides classes and methods to represent and manipulate nodes within this graph, which can be files or folders. The `NodeStatus` and `NodeKind` enums define the possible states and types of nodes, respectively. The `LiteNode` class represents a simplified node without parent or child information, while the `Node` class extends `LiteNode` to include hierarchical relationships. The `FileTreeDag` class manages the entire file tree, allowing operations such as adding files, marking files for removal, and computing differences between two file tree states.
 
-This code is designed to be part of a larger system, likely serving as a library or module that can be imported and utilized by other scripts or applications. It does not define a standalone script with executable functionality but rather provides a set of classes and methods that can be used to build and manipulate a file tree DAG. The code includes public APIs for interacting with the file tree, such as [`add_file`](<#FileTreeDagadd_file>), [`mark_file_removal`](<#FileTreeDagmark_file_removal>), [`delete_file_node`](<#FileTreeDagdelete_file_node>), and [`compute_diff`](<#FileTreeDagcompute_diff>), which allow users to perform various operations on the file tree. The use of Python's `dataclass` for defining `LiteNode` and `Node` simplifies the creation and management of these objects, while the `graphlib.TopologicalSorter` is employed to perform topological sorting of the nodes, ensuring that dependencies are respected when processing the file tree.
+The `FileTreeDag` class includes methods for traversing the graph, performing topological sorting, and handling file modifications and removals. It uses the `graphlib.TopologicalSorter` to sort nodes based on dependencies. The class also supports computing a diff between two file tree states, which can be used to track changes over time. The code is structured to be used as a library, with public methods that provide an interface for interacting with the file tree DAG. The design allows for serialization and deserialization of nodes, making it suitable for applications that require tracking and managing file system changes.
 # Imports and Dependencies
 
 ---
@@ -26,14 +26,11 @@ This code is designed to be part of a larger system, likely serving as a library
 
 ---
 ### NodeStatus<!-- {{#class:python-backend/content_services/inspector/src/utils/dag.NodeStatus}} -->
-- **Members**:
-    - `UNMODIFIED`: Represents a node that has not been changed.
-    - `MODIFIED`: Represents a node that has been altered.
-    - `ADDED`: Represents a node that has been newly added.
-    - `REMOVED`: Represents a node that has been removed.
-- **Description**: The NodeStatus class is an enumeration that defines the possible states of a node in a file tree, such as unmodified, modified, added, or removed. It provides a string representation of each status by converting the enumeration name to lowercase.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L10>)
+
+- **Description**: Defines different statuses for a node, such as `UNMODIFIED`, `MODIFIED`, `ADDED`, and `REMOVED`, each associated with an integer value. Provides a string representation of the status by returning the lowercase name of the status.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag.NodeStatus.__str__`](<#NodeStatus__str__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.NodeStatus.__str__`](<#nodestatus__str__>)
 - **Inherits From**:
     - `Enum`
 
@@ -41,26 +38,27 @@ This code is designed to be part of a larger system, likely serving as a library
 
 ---
 #### NodeStatus\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.NodeStatus.__str__}} -->
-The `__str__` method returns the lowercase string representation of the enum member's name.
-- **Inputs**: None
-- **Control Flow**:
-    - The method accesses the `name` attribute of the enum member, which is a string representing the name of the member.
-    - It converts this name to lowercase using the `lower()` method.
-    - The lowercase string is then returned as the output of the method.
-- **Output**: A lowercase string representation of the enum member's name.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.NodeStatus`](<#NodeStatus>)  (Base Class)
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L16>)
+
+Converts the `NodeStatus` enum name to a lowercase string.
+- **Inputs**:
+    - `self`: The instance of the `NodeStatus` enum.
+- **Logic and Control Flow**:
+    - Accesses the `name` attribute of the `NodeStatus` enum instance.
+    - Converts the `name` to lowercase using the `lower()` method.
+    - Returns the lowercase string representation of the enum name.
+- **Output**: A lowercase string representation of the `NodeStatus` enum name.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.NodeStatus`](<#nodestatus>)  (Base Class)
 
 
 
 ---
 ### NodeKind<!-- {{#class:python-backend/content_services/inspector/src/utils/dag.NodeKind}} -->
-- **Members**:
-    - `FILE`: Represents a file node with a value of 0.
-    - `SUB_FOLDER`: Represents a sub-folder node with a value of 1.
-    - `ROOT_FOLDER`: Represents a root folder node with a value of 2.
-- **Description**: The NodeKind class is an enumeration that defines three types of nodes: FILE, SUB_FOLDER, and ROOT_FOLDER, each associated with a specific integer value. It provides a string representation for each node type, allowing for easy conversion to a human-readable format. This class is used to categorize nodes within a file tree structure, distinguishing between files, sub-folders, and root folders.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L20>)
+
+- **Description**: Defines different types of nodes in a file tree structure, such as files, sub-folders, and root folders, using enumeration.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag.NodeKind.__str__`](<#NodeKind__str__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.NodeKind.__str__`](<#nodekind__str__>)
 - **Inherits From**:
     - `Enum`
 
@@ -68,388 +66,444 @@ The `__str__` method returns the lowercase string representation of the enum mem
 
 ---
 #### NodeKind\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.NodeKind.__str__}} -->
-The `__str__` method of the `NodeKind` enum returns a string representation of the enum member, mapping each member to a specific string.
-- **Inputs**: None
-- **Control Flow**:
-    - Check if the current instance is `NodeKind.FILE` and return the string 'file'.
-    - Check if the current instance is `NodeKind.SUB_FOLDER` and return the string 'folder'.
-    - Check if the current instance is `NodeKind.ROOT_FOLDER` and return the string 'root'.
-    - If none of the above conditions are met, raise a `ValueError` indicating an unreachable state.
-- **Output**: A string representing the type of node, either 'file', 'folder', or 'root'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.NodeKind`](<#NodeKind>)  (Base Class)
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L25>)
+
+Converts a `NodeKind` enum member to its corresponding string representation.
+- **Inputs**:
+    - `self`: The instance of the `NodeKind` enum for which the string representation is needed.
+- **Logic and Control Flow**:
+    - Check if `self` is equal to `NodeKind.FILE` and return the string 'file'.
+    - Check if `self` is equal to `NodeKind.SUB_FOLDER` and return the string 'folder'.
+    - Check if `self` is equal to `NodeKind.ROOT_FOLDER` and return the string 'root'.
+    - If none of the conditions match, raise a `ValueError` indicating an unreachable state.
+- **Output**: A string that represents the type of node, either 'file', 'folder', or 'root'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.NodeKind`](<#nodekind>)  (Base Class)
 
 
 
 ---
 ### LiteNode<!-- {{#class:python-backend/content_services/inspector/src/utils/dag.LiteNode}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L36>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
     - `kind`: Specifies the type of node, such as file or folder.
-    - `root_rel_path`: Holds the relative path of the node from the root.
+    - `root_rel_path`: Stores the relative path of the node from the root.
     - `status`: Indicates the current status of the node, defaulting to unmodified.
-- **Description**: The LiteNode class represents a simplified node structure that omits parent and child information, making it suitable for easy serialization and deserialization. It includes essential attributes such as the node's kind, its relative path from the root, and its status. The class provides a stable identifier based on its kind and path, and it can be hashed and converted to a string representation for convenience.
+- **Description**: Represents a node that does not store information about its children or parent, making it easy to serialize and deserialize. It includes properties to identify the node type, its relative path, and its status. The class also provides a stable identifier and implements hash and string conversion methods.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.stable_id`](<#LiteNodestable_id>)
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.__hash__`](<#LiteNode__hash__>)
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.__str__`](<#LiteNode__str__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.stable_id`](<#litenodestable_id>)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.__hash__`](<#litenode__hash__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.__str__`](<#litenode__str__>)
 
 **Methods**
 
 ---
 #### LiteNode\.stable\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.LiteNode.stable_id}} -->
-The `stable_id` property method generates a unique identifier for a `LiteNode` instance by combining its `kind` and `root_rel_path` attributes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L44>)
+
+Generates a stable identifier for a `LiteNode` instance by combining its `kind` and `root_rel_path` attributes.
 - **Decorators**: `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs a string by concatenating the `kind` attribute of the `LiteNode` instance with its `root_rel_path` attribute, separated by an underscore.
-- **Output**: A string representing the unique identifier for the `LiteNode` instance, formatted as `<kind>_<root_rel_path>`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#LiteNode>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `kind` attribute of the `LiteNode` instance.
+    - Accesses the `root_rel_path` attribute of the `LiteNode` instance.
+    - Concatenates the `kind` and `root_rel_path` attributes with an underscore ('_') separator.
+    - Returns the concatenated string as the stable identifier.
+- **Output**: A string that uniquely identifies the `LiteNode` instance by combining its `kind` and `root_rel_path`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#litenode>)  (Base Class)
 
 
 ---
 #### LiteNode\.\_\_hash\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.LiteNode.__hash__}} -->
-The `__hash__` method returns the hash value of a `LiteNode` instance based on its stable identifier.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L48>)
+
+Computes the hash value of a `LiteNode` instance based on its `stable_id` property.
 - **Inputs**: None
-- **Control Flow**:
-    - The method calls the `stable_id` property of the `LiteNode` instance to get a unique string identifier.
-    - It then computes the hash of this stable identifier using Python's built-in `hash` function.
-    - Finally, it returns the computed hash value.
+- **Logic and Control Flow**:
+    - Calls the `stable_id` property of the `LiteNode` instance to get a unique string identifier.
+    - Uses the built-in `hash` function to compute the hash value of the `stable_id`.
+    - Returns the computed hash value.
 - **Output**: An integer representing the hash value of the `LiteNode` instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#LiteNode>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#litenode>)  (Base Class)
 
 
 ---
 #### LiteNode\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.LiteNode.__str__}} -->
-The `__str__` method returns the string representation of the `LiteNode` object, which is the `root_rel_path` attribute.
-- **Inputs**: None
-- **Control Flow**:
-    - The method constructs a string using the `root_rel_path` attribute of the `LiteNode` instance.
-    - It returns this string as the output.
-- **Output**: A string representation of the `LiteNode` object, specifically the `root_rel_path` attribute.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#LiteNode>)  (Base Class)
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L51>)
+
+Returns the string representation of the `LiteNode` object, which is the `root_rel_path` attribute.
+- **Inputs**:
+    - `self`: The instance of the `LiteNode` class.
+- **Logic and Control Flow**:
+    - Accesses the `root_rel_path` attribute of the `LiteNode` instance.
+    - Formats the `root_rel_path` as a string using an f-string.
+- **Output**: A string representation of the `root_rel_path` attribute of the `LiteNode` instance.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#litenode>)  (Base Class)
 
 
 
 ---
 ### Node<!-- {{#class:python-backend/content_services/inspector/src/utils/dag.Node}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L55>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `parent`: An optional reference to the parent Node.
-    - `children`: A dictionary mapping child node paths to Node objects.
-- **Description**: The `Node` class extends `LiteNode` to represent a node in a tree structure with parent-child relationships. It includes functionality to manage its children, traverse the tree both upstream and downstream, and convert itself into a `LiteNode`. The class is designed to handle hierarchical data, allowing for the addition and removal of child nodes, and supports operations like topological sorting and computing differences between node states.
+    - `parent`: Stores a reference to the parent `Node`, or `None` if there is no parent.
+    - `children`: Holds a dictionary mapping child node paths to `Node` objects.
+- **Description**: Represents a node in a tree structure, inheriting from `LiteNode`, and adds functionality to manage parent-child relationships. It allows adding and removing child nodes, traversing the tree both upstream and downstream, and converting itself into a `LiteNode`. The class also provides string representation and hash functionality.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<#Nodeadd_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<#Noderemove_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#Nodetraverse_upstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<#Nodetraverse_downstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.into_lite_node`](<#Nodeinto_lite_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.__str__`](<#Node__str__>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.__hash__`](<#Node__hash__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<#nodeadd_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<#noderemove_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#nodetraverse_upstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<#nodetraverse_downstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.into_lite_node`](<#nodeinto_lite_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.__str__`](<#node__str__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.__hash__`](<#node__hash__>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#LiteNode>)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#litenode>)
 
 **Methods**
 
 ---
 #### Node\.add\_child<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.add_child}} -->
-The `add_child` method adds a child node to the current node's children and sets the current node as the parent of the child node.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L60>)
+
+Adds a child node to the current node and sets the current node as the parent of the child.
 - **Inputs**:
-    - `child`: A `Node` object representing the child node to be added to the current node's children.
-- **Control Flow**:
-    - The method takes a `Node` object as input, representing the child node to be added.
-    - It converts the `root_rel_path` of the child node to a POSIX-style path string to use as a key in the `children` dictionary of the current node.
-    - The child node is added to the `children` dictionary of the current node using the POSIX path string as the key.
-    - The `parent` attribute of the child node is set to the current node, establishing a parent-child relationship.
-- **Output**: The method does not return any value (returns `None`).
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+    - `child`: A `Node` object that will be added as a child to the current node.
+- **Logic and Control Flow**:
+    - Converts the `root_rel_path` of the `child` node to a POSIX path string.
+    - Adds the `child` node to the `children` dictionary of the current node using the POSIX path string as the key.
+    - Sets the `parent` attribute of the `child` node to the current node.
+- **Output**: None
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 ---
 #### Node\.remove\_child<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.remove_child}} -->
-The `remove_child` method removes a child node from the current node's children based on the given path.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L64>)
+
+Removes a child node from the `children` dictionary of the current node based on the given path.
 - **Inputs**:
-    - `path`: A `Path` object representing the relative path of the child node to be removed.
-- **Control Flow**:
-    - Convert the `path` to a POSIX-style string to use as a key for the children dictionary.
-    - Check if the child key exists in the `children` dictionary.
-    - If the child key exists, retrieve the child node from the dictionary.
-    - Set the `parent` attribute of the child node to `None`, effectively detaching it from the current node.
-    - Delete the child node from the `children` dictionary using the child key.
-- **Output**: The method does not return any value (`None`).
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+    - `path`: A `Path` object representing the relative path of the child node to remove.
+- **Logic and Control Flow**:
+    - Convert the `path` to a POSIX-style string to use as a key in the `children` dictionary.
+    - Check if the `child_key` exists in the `children` dictionary.
+    - If the `child_key` exists, retrieve the child node from the `children` dictionary.
+    - Set the `parent` attribute of the child node to `None` to detach it from the current node.
+    - Delete the child node from the `children` dictionary using the `child_key`.
+- **Output**: None
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 ---
 #### Node\.traverse\_upstream<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream}} -->
-The `traverse_upstream` method yields all nodes upstream of the current node, including the node itself, by traversing through the parent nodes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L71>)
+
+Yields all nodes upstream of the current node, including the node itself.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize `current` to `self`, the current node.
+- **Logic and Control Flow**:
+    - Initialize `current` to `self`.
     - Enter a while loop that continues as long as `current` is not `None`.
     - Yield the `current` node.
-    - Set `current` to its parent node, moving one step upstream.
-- **Output**: A generator that yields each node in the upstream path from the current node to the root, including the current node itself.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+    - Set `current` to its parent node.
+- **Output**: A generator that yields `Node` objects, starting from the current node and moving upstream to the root node.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 ---
 #### Node\.traverse\_downstream<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream}} -->
-The `traverse_downstream` method yields all nodes downstream from the current node, including itself, in a depth-first manner.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L78>)
+
+Yields all downstream nodes from the current node, including the node itself.
 - **Inputs**: None
-- **Control Flow**:
-    - The method first yields the current node (`self`).
-    - It then iterates over each child node in the `children` dictionary of the current node.
-    - For each child node, it recursively calls `traverse_downstream` to yield all downstream nodes from that child.
-- **Output**: A generator that yields `Node` objects, starting with the current node and including all its downstream nodes.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+- **Logic and Control Flow**:
+    - Yields the current node (`self`).
+    - Iterates over each child node in `self.children`.
+    - For each child node, recursively calls `traverse_downstream` and yields all nodes from the child.
+- **Output**: A generator that yields `Node` objects, starting with the current node and including all downstream nodes.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 ---
 #### Node\.into\_lite\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.into_lite_node}} -->
-The `into_lite_node` method converts a `Node` instance into a [`LiteNode`](<#LiteNode>) instance by copying its kind, root relative path, and status attributes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L84>)
+
+Converts a `Node` instance into a [`LiteNode`](<#litenode>) instance by copying specific attributes.
 - **Inputs**: None
-- **Control Flow**:
-    - The method creates a new [`LiteNode`](<#LiteNode>) instance.
-    - It assigns the `kind`, `root_rel_path`, and `status` attributes of the current `Node` instance to the new [`LiteNode`](<#LiteNode>).
-    - The method returns the newly created [`LiteNode`](<#LiteNode>) instance.
-- **Output**: A [`LiteNode`](<#LiteNode>) instance with the same `kind`, `root_rel_path`, and `status` as the original `Node`.
+- **Logic and Control Flow**:
+    - Creates a new [`LiteNode`](<#litenode>) instance.
+    - Copies the `kind`, `root_rel_path`, and `status` attributes from the current `Node` instance to the new [`LiteNode`](<#litenode>) instance.
+    - Returns the newly created [`LiteNode`](<#litenode>) instance.
+- **Output**: A [`LiteNode`](<#litenode>) instance with the same `kind`, `root_rel_path`, and `status` as the original `Node`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#LiteNode>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode`](<#litenode>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 ---
 #### Node\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.__str__}} -->
-The `__str__` method returns a string representation of a `Node` object, displaying its root relative path and the keys of its children.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L89>)
+
+Generates a string representation of the `Node` object, showing its root relative path and the keys of its children.
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs a string using the `root_rel_path` attribute of the `Node` object.
-    - It joins the keys of the `children` dictionary with a comma and space, and includes them in parentheses after the `root_rel_path`.
-    - The constructed string is returned as the output.
-- **Output**: A string representing the `Node` object, formatted as "<root_rel_path>(<child1_key>, <child2_key>, ...)".
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+- **Logic and Control Flow**:
+    - Uses an f-string to format the string representation.
+    - Accesses `self.root_rel_path` to include the root relative path in the output.
+    - Joins the keys of the `self.children` dictionary with a comma to list the children in the output.
+- **Output**: A string that represents the `Node` object, formatted as "<root_rel_path>(<child1_key>, <child2_key>, ...)".
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 ---
 #### Node\.\_\_hash\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.Node.__hash__}} -->
-The [`__hash__`](<#LiteNode__hash__>) method in the `Node` class returns the hash value of the object by calling the parent class's [`__hash__`](<#LiteNode__hash__>) method.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L94>)
+
+Returns the hash value of the current `Node` instance by calling the parent class's [`__hash__`](<#litenode__hash__>) method.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly calls and returns the result of the [`__hash__`](<#LiteNode__hash__>) method from the superclass `LiteNode`.
-- **Output**: An integer representing the hash value of the `Node` object, as determined by the superclass's [`__hash__`](<#LiteNode__hash__>) method.
+- **Logic and Control Flow**:
+    - Calls the [`__hash__`](<#litenode__hash__>) method of the parent class `LiteNode` using `super()` to obtain the hash value.
+- **Output**: An integer representing the hash value of the `Node` instance.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.__hash__`](<#LiteNode__hash__>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.LiteNode.__hash__`](<#litenode__hash__>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)  (Base Class)
 
 
 
 ---
 ### FileTreeDag<!-- {{#class:python-backend/content_services/inspector/src/utils/dag.FileTreeDag}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L98>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `root`: The root node of the file tree, initialized post-construction.
-    - `root_abs_path`: The absolute path to the root directory of the file tree.
-    - `node_rel_path_to_content_hash`: A dictionary mapping relative node paths to their content hashes.
-- **Description**: The `FileTreeDag` class represents a directed acyclic graph (DAG) structure for managing a file tree, where each node corresponds to a file or directory. It provides functionality to add, remove, and modify files within the tree, as well as to compute differences between different states of the file tree. The class ensures that changes in the file tree are tracked, and it supports operations like topological sorting of nodes and marking nodes as modified or removed. The class is initialized with a root absolute path and manages nodes using a `Node` class, which maintains parent-child relationships and node statuses.
+    - `root`: Stores the root node of the file tree.
+    - `root_abs_path`: Holds the absolute path to the root of the file tree.
+    - `node_rel_path_to_content_hash`: Maps node relative paths to their content hashes.
+- **Description**: Represents a directed acyclic graph (DAG) structure for managing a file tree, allowing operations such as adding, removing, and modifying files and folders. It maintains the status of each node and supports topological sorting and diff computation between different states of the file tree.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.__post_init__`](<#FileTreeDag__post_init__>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<#FileTreeDagmark_file_removal>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._propagate_removal_upstream`](<#FileTreeDag_propagate_removal_upstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<#FileTreeDagmark_as_modified>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.delete_file_node`](<#FileTreeDagdelete_file_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._remove_empty_parents`](<#FileTreeDag_remove_empty_parents>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<#FileTreeDagtopological_sort>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<#FileTreeDagcompute_diff>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.__str__`](<#FileTreeDag__str__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.__post_init__`](<#filetreedag__post_init__>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<#filetreedagmark_file_removal>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._propagate_removal_upstream`](<#filetreedag_propagate_removal_upstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<#filetreedagmark_as_modified>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.delete_file_node`](<#filetreedagdelete_file_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._remove_empty_parents`](<#filetreedag_remove_empty_parents>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort`](<#filetreedagtopological_sort>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff`](<#filetreedagcompute_diff>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.__str__`](<#filetreedag__str__>)
 
 **Methods**
 
 ---
 #### FileTreeDag\.\_\_post\_init\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.__post_init__}} -->
-The `__post_init__` method initializes the root node of the `FileTreeDag` class after ensuring the existence of the specified root path.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L104>)
+
+Initializes the `root` attribute of the `FileTreeDag` class and checks if the `root_abs_path` exists.
 - **Decorators**: `@dataclass`
 - **Inputs**: None
-- **Control Flow**:
-    - Check if `self.root_abs_path` exists; if not, raise a `FileNotFoundError`.
-    - Initialize `self.root` as a [`Node`](<#Node>) with `NodeKind.ROOT_FOLDER`, an empty `root_rel_path`, and no parent.
-- **Output**: This method does not return any value; it initializes the `root` attribute of the `FileTreeDag` instance.
+- **Logic and Control Flow**:
+    - Checks if `self.root_abs_path` exists using the `exists()` method.
+    - Raises a `FileNotFoundError` if `self.root_abs_path` does not exist, with a message indicating the missing path.
+    - Initializes `self.root` as a [`Node`](<#node>) with `kind` set to `NodeKind.ROOT_FOLDER`, `root_rel_path` set to an empty `Path`, and `parent` set to `None`.
+- **Output**: No output is returned as the method is a post-initialization step for setting up the `FileTreeDag` object.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.add\_file<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file}} -->
-The `add_file` method adds a file to the `FileTreeDag` structure, updating the node status and optionally storing a file hash.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L111>)
+
+Adds a file to the file tree structure, updating node statuses and storing file hashes if provided.
 - **Inputs**:
-    - `path`: A `Path` object representing the file path to be added to the DAG.
-    - `change_status`: A boolean indicating whether to change the status of the node to `ADDED` or leave it as `UNMODIFIED`. Defaults to `True`.
-    - `file_hash`: An optional string representing the hash of the file content, used for tracking changes.
-- **Control Flow**:
-    - Check if the provided path exists and is a file, raising exceptions if not.
-    - Calculate the relative path of the file from the root absolute path of the DAG.
-    - Iterate over each part of the relative path to traverse or build the node hierarchy in the DAG.
+    - `path`: A `Path` object representing the file path to add.
+    - `change_status`: A boolean indicating whether to change the status of the node to `ADDED` or `MODIFIED`.
+    - `file_hash`: An optional string representing the hash of the file content.
+- **Logic and Control Flow**:
+    - Check if the `path` exists and is a file; raise exceptions if not.
+    - Calculate the relative path of the file from the root absolute path.
+    - Initialize variables for the current node, current path, and a flag to track if a node is added.
+    - Iterate over each part of the relative path to traverse or create nodes in the file tree.
     - For each part, check if it exists in the current node's children; if not, create a new node and add it as a child.
-    - If a new node is added and `change_status` is `True`, mark upstream nodes as `MODIFIED`.
-    - If a `file_hash` is provided, store it in the `node_rel_path_to_content_hash` dictionary.
-- **Output**: The method does not return any value; it modifies the DAG structure in place.
+    - If a file hash is provided, store it in the `node_rel_path_to_content_hash` dictionary.
+    - If a new node is added and `change_status` is true, traverse upstream to mark nodes as `MODIFIED`.
+- **Output**: Returns `None` but modifies the file tree structure by adding nodes and updating statuses.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<#Node>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<#Nodeadd_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#Nodetraverse_upstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node`](<#node>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.add_child`](<#nodeadd_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#nodetraverse_upstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.mark\_file\_removal<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal}} -->
-The `mark_file_removal` method marks a file node for removal in a file tree DAG without actually deleting it, and updates the status of upstream nodes accordingly.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L168>)
+
+Marks a file for removal in the file tree DAG without actually deleting it.
 - **Inputs**:
-    - `path`: A `Path` object representing the file path to be marked for removal.
-- **Control Flow**:
-    - Convert the given path to a relative path with respect to the root absolute path of the DAG.
-    - Split the relative path into its components and traverse the file tree starting from the root node to locate the node corresponding to the given path.
-    - If any part of the path does not exist in the tree, raise a `KeyError`.
-    - Once the node is found, traverse upstream from this node and mark all upstream nodes as `MODIFIED`, except the current node.
-    - If the current node has a parent, mark the current node's status as `REMOVED` and propagate this removal status upstream using the [`_propagate_removal_upstream`](<#FileTreeDag_propagate_removal_upstream>) method.
-- **Output**: The method does not return any value (returns `None`).
+    - `path`: A `Path` object representing the file path to mark for removal.
+- **Logic and Control Flow**:
+    - Convert the given `path` to a relative path with respect to `self.root_abs_path`.
+    - Split the relative path into its components and traverse the file tree starting from `self.root`.
+    - For each part of the path, update `current` to the corresponding child node in the tree.
+    - If a part of the path does not exist in the tree, raise a `KeyError`.
+    - Mark all upstream nodes as `MODIFIED` except the current node.
+    - If the current node has a parent, mark the current node's status as `REMOVED`.
+    - Call [`_propagate_removal_upstream`](<#filetreedag_propagate_removal_upstream>) to update the status of parent nodes if necessary.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#Nodetraverse_upstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._propagate_removal_upstream`](<#FileTreeDag_propagate_removal_upstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#nodetraverse_upstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._propagate_removal_upstream`](<#filetreedag_propagate_removal_upstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.\_propagate\_removal\_upstream<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag._propagate_removal_upstream}} -->
-The `_propagate_removal_upstream` method marks parent nodes as removed if all their children are marked as removed, stopping at the root node.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L199>)
+
+Marks parent nodes as removed if they have no active children, propagating the removal status upstream.
 - **Inputs**:
     - `node`: A `Node` object representing the starting point for propagating the removal status upstream.
-- **Control Flow**:
-    - The method enters a loop that continues as long as `node` is not `None`.
-    - If the current node has no parent, the loop breaks, stopping the propagation at the root node.
-    - The method checks if all children of the current node are marked as `REMOVED`.
-    - If all children are removed, the current node's status is set to `REMOVED`.
-    - If not all children are removed, the loop breaks, stopping further propagation.
-    - The method moves to the parent node and repeats the process.
-- **Output**: The method does not return any value; it modifies the status of nodes in place.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+- **Logic and Control Flow**:
+    - Start with the given `node` and continue while `node` is not `None`.
+    - Check if the `node` has no parent; if true, stop the process to avoid marking the root node.
+    - Determine if all children of the `node` have a status of `NodeStatus.REMOVED`.
+    - If all children are removed, set the `node` status to `NodeStatus.REMOVED`.
+    - If not all children are removed, stop the process as there are active children.
+    - Move to the parent node and repeat the process.
+- **Output**: No output is returned as the function modifies the status of nodes in place.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.mark\_as\_modified<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified}} -->
-The `mark_as_modified` method updates the status of a node in a file tree to 'MODIFIED' and optionally propagates this status change upstream and downstream in the tree.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L213>)
+
+Marks a node and optionally its upstream and downstream nodes as modified in a file tree DAG.
 - **Inputs**:
-    - `self`: Refers to the instance of the FileTreeDag class.
-    - `path`: A Path object representing the file or directory path to be marked as modified.
-    - `include_upstream`: A boolean indicating whether to mark upstream nodes as modified; defaults to True.
-    - `include_downstream`: A boolean indicating whether to mark downstream nodes as modified; defaults to False.
-- **Control Flow**:
-    - Convert the given path to a relative path based on the root absolute path of the FileTreeDag.
-    - Split the relative path into its components (parts).
-    - Initialize the current node to the root of the tree and an empty current path.
-    - Iterate over each part of the path, updating the current path and checking if the path exists in the current node's children.
-    - If the path does not exist in the children, raise a KeyError indicating the path is not found in the tree.
-    - Once the node is found, set its status to NodeStatus.MODIFIED.
-    - If include_upstream is True, traverse upstream from the current node and set each node's status to NodeStatus.MODIFIED.
-    - If include_downstream is True, traverse downstream from the current node and set each node's status to NodeStatus.MODIFIED.
-- **Output**: The method does not return any value (returns None).
+    - `path`: A `Path` object representing the path to the node to mark as modified.
+    - `include_upstream`: A boolean indicating whether to mark upstream nodes as modified. Defaults to `True`.
+    - `include_downstream`: A boolean indicating whether to mark downstream nodes as modified. Defaults to `False`.
+- **Logic and Control Flow**:
+    - Convert the given `path` to a relative path with respect to `self.root_abs_path` and split it into parts.
+    - Initialize `current` to the root node and `current_path` to an empty `Path`.
+    - Iterate over each part of the relative path, updating `current_path` and checking if the path exists in `current.children`.
+    - If the path does not exist, raise a `KeyError` indicating the path is not found in the tree.
+    - Set the status of the current node to `NodeStatus.MODIFIED`.
+    - If `include_upstream` is `True`, traverse upstream from the current node and set each node's status to `NodeStatus.MODIFIED`.
+    - If `include_downstream` is `True`, traverse downstream from the current node and set each node's status to `NodeStatus.MODIFIED`.
+- **Output**: Returns `None`. The function modifies the status of nodes in the file tree DAG.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#Nodetraverse_upstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<#Nodetraverse_downstream>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_upstream`](<#nodetraverse_upstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<#nodetraverse_downstream>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.delete\_file\_node<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.delete_file_node}} -->
-The `delete_file_node` method removes a file node from the directed acyclic graph (DAG) based on a given path and recursively removes empty parent folders if they have no other children.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L242>)
+
+Removes a file node from the DAG and recursively removes empty parent folders if necessary.
 - **Inputs**:
-    - `path`: A `Path` object representing the path of the file node to be deleted.
-- **Control Flow**:
-    - Convert the given path to a relative path with respect to the root absolute path of the DAG.
-    - Initialize traversal variables: `current` as the root node, `current_path` as an empty `Path`, and `parent` as `None`.
-    - Iterate over each part of the relative path to traverse the DAG to the node to be deleted.
-    - If a part of the path is not found in the current node's children, raise a `KeyError`.
-    - Once the node is found, check if it is of type `NodeKind.FILE`; if not, raise a `TypeError`.
-    - Remove the node from its parent using the [`remove_child`](<#Noderemove_child>) method of the parent node.
-    - Remove the node's path from the `node_rel_path_to_content_hash` dictionary.
-    - Call [`_remove_empty_parents`](<#FileTreeDag_remove_empty_parents>) to recursively remove any empty parent folders.
-- **Output**: The method does not return any value (returns `None`).
+    - `path`: A `Path` object representing the file node to delete from the DAG.
+- **Logic and Control Flow**:
+    - Convert the given `path` to a relative path with respect to `self.root_abs_path`.
+    - Split the relative path into its components to traverse the DAG.
+    - Initialize `current` to the root node and `current_path` to an empty `Path`.
+    - Iterate over each part of the path to traverse the DAG to the node to delete.
+    - If a part of the path is not found in `current.children`, raise a `KeyError`.
+    - If the node to delete is not of kind `NodeKind.FILE`, raise a `TypeError`.
+    - Remove the node from its parent using `parent.remove_child(current_path)`.
+    - Remove the node's content hash from `self.node_rel_path_to_content_hash`.
+    - Call [`_remove_empty_parents`](<#filetreedag_remove_empty_parents>) to remove any empty parent folders.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<#Noderemove_child>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._remove_empty_parents`](<#FileTreeDag_remove_empty_parents>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<#noderemove_child>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag._remove_empty_parents`](<#filetreedag_remove_empty_parents>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.\_remove\_empty\_parents<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag._remove_empty_parents}} -->
-The `_remove_empty_parents` method recursively removes parent nodes from a file tree if they are empty folders.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L276>)
+
+Recursively removes parent nodes if they are empty and are folders.
 - **Inputs**:
-    - `node`: A `Node` object or `None`, representing the starting node from which to begin checking and potentially removing empty parent nodes.
-- **Control Flow**:
-    - The method first checks if the provided node is `None` or if it is the root node (i.e., it has no parent), in which case it returns immediately without doing anything.
-    - It enters a loop that continues as long as the current node is a folder (either `SUB_FOLDER` or `ROOT_FOLDER`) and the node is not `None`.
-    - Within the loop, it checks if the current node has any children; if it does, the loop breaks, stopping further removal.
-    - If the node has no children, it retrieves the parent of the current node, removes the current node from its parent's children, and then sets the current node to its parent to continue checking upwards in the tree.
-- **Output**: The method does not return any value; it modifies the tree structure in place by removing empty folder nodes.
+    - `node`: A `Node` object or `None`, representing the node to start the removal process from.
+- **Logic and Control Flow**:
+    - Check if the `node` is `None` or if it has no parent, and return immediately if true.
+    - Enter a loop that continues as long as `node` is not `None` and its kind is either `NodeKind.SUB_FOLDER` or `NodeKind.ROOT_FOLDER`.
+    - Inside the loop, check if the `node` has children; if it does, break the loop.
+    - If the `node` has no children, get its parent and remove the `node` from the parent's children.
+    - Set `node` to its parent and continue the loop.
+- **Output**: No output is returned; the function modifies the tree structure in place by removing nodes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<#Noderemove_child>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.remove_child`](<#noderemove_child>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.topological\_sort<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.topological_sort}} -->
-The `topological_sort` method performs a topological sort on the nodes of a file tree DAG, optionally filtering the results based on node status or type.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L291>)
+
+Performs a topological sort on the nodes of a file tree directed acyclic graph (DAG) and returns them in a sorted list.
 - **Inputs**:
-    - `changed_nodes_only`: A boolean flag indicating whether to include only nodes that have been changed (i.e., not unmodified) in the sorted output.
-    - `files_only`: A boolean flag indicating whether to include only file nodes in the sorted output.
-    - `folders_only`: A boolean flag indicating whether to include only folder nodes (sub-folder or root folder) in the sorted output.
-- **Control Flow**:
+    - `changed_nodes_only`: A boolean flag that, if set to True, filters the sorted nodes to include only those that have been changed (i.e., not unmodified).
+    - `files_only`: A boolean flag that, if set to True, filters the sorted nodes to include only file nodes.
+    - `folders_only`: A boolean flag that, if set to True, filters the sorted nodes to include only folder nodes (sub-folder or root folder).
+- **Logic and Control Flow**:
     - Initialize a `TopologicalSorter` from the `graphlib` module.
     - Define a recursive function `add_nodes_and_edges` to add nodes and their edges to the sorter.
-    - Invoke `add_nodes_and_edges` starting from the root node to populate the sorter with all nodes and edges in the DAG.
+    - Call `add_nodes_and_edges` starting from the root node to populate the sorter with all nodes and edges.
     - Retrieve the nodes in topological order using `sorter.static_order()` and convert them to a list.
-    - If `changed_nodes_only` is True, filter the sorted nodes to include only those with a status other than `NodeStatus.UNMODIFIED`.
-    - If `files_only` is True, filter the sorted nodes to include only those of kind `NodeKind.FILE`.
-    - If `folders_only` is True, filter the sorted nodes to include only those of kind `NodeKind.SUB_FOLDER` or `NodeKind.ROOT_FOLDER`.
-    - Return the filtered list of sorted nodes.
-- **Output**: A list of `Node` objects sorted in topological order, optionally filtered by the specified criteria.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - If `changed_nodes_only` is True, filter the sorted nodes to exclude those with status `NodeStatus.UNMODIFIED`.
+    - If `files_only` is True, filter the sorted nodes to include only those with kind `NodeKind.FILE`.
+    - If `folders_only` is True, filter the sorted nodes to include only those with kind `NodeKind.SUB_FOLDER` or `NodeKind.ROOT_FOLDER`.
+- **Output**: A list of `Node` objects sorted in topological order, optionally filtered based on the input flags.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.compute\_diff<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.compute_diff}} -->
-The `compute_diff` method generates a new `FileTreeDag` representing the differences between the current state and a previous state, including additions, modifications, and removals of file nodes.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L323>)
+
+Computes the differences between two `FileTreeDag` instances, identifying added, modified, and removed file nodes.
 - **Inputs**:
-    - `old`: A `FileTreeDag` object representing the previous state of the file tree.
-    - `delete_file_nodes`: A boolean indicating whether to physically delete file nodes that are no longer present in the current state.
-- **Control Flow**:
-    - Create a deep copy of the `old` `FileTreeDag` to serve as the base for the diff DAG.
-    - Set the root path of the diff DAG to match the current DAG's root path.
+    - `old`: A `FileTreeDag` instance representing the previous state of the file tree.
+    - `delete_file_nodes`: A boolean indicating whether to delete file nodes that are not present in the current state.
+- **Logic and Control Flow**:
+    - Create a deep copy of the `old` `FileTreeDag` to serve as the base for the diff.
+    - Set the root path of the diff DAG to the root path of the current `FileTreeDag` instance.
     - Define a helper function `collect_nodes` to gather all nodes in a DAG into a dictionary keyed by their relative paths.
-    - Collect nodes from both the `old` and current DAGs using `collect_nodes`.
-    - Iterate over nodes in the current DAG to identify additions and modifications compared to the `old` DAG.
-    - For each new or modified file node, update the diff DAG to reflect the addition or modification.
-    - Iterate over nodes in the `old` DAG to identify removals compared to the current DAG.
-    - For each removed file node, either delete the node from the diff DAG or mark it for removal based on the `delete_file_nodes` flag.
+    - Collect nodes from both the `old` and current `FileTreeDag` instances.
+    - Iterate over nodes in the current DAG to identify additions and modifications.
+    - For each node in the current DAG not present in the `old` DAG, add it to the diff DAG if it is a file node.
+    - For each node present in both DAGs, check if the node type or content hash has changed, and mark it as modified in the diff DAG if so.
+    - Iterate over nodes in the `old` DAG to identify removals.
+    - For each node in the `old` DAG not present in the current DAG, delete or mark it for removal in the diff DAG based on the `delete_file_nodes` flag.
     - Return the modified diff DAG.
-- **Output**: A `FileTreeDag` object representing the differences between the current and old DAGs, annotated with changes such as additions, modifications, and removals.
+- **Output**: A `FileTreeDag` instance representing the differences between the `old` and current DAGs, with annotations for added, modified, and removed nodes.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<#Nodetraverse_downstream>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<#FileTreeDagadd_file>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<#FileTreeDagmark_as_modified>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.delete_file_node`](<#FileTreeDagdelete_file_node>)
-    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<#FileTreeDagmark_file_removal>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/dag.Node.traverse_downstream`](<#nodetraverse_downstream>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.add_file`](<#filetreedagadd_file>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_as_modified`](<#filetreedagmark_as_modified>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.delete_file_node`](<#filetreedagdelete_file_node>)
+    - [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag.mark_file_removal`](<#filetreedagmark_file_removal>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 ---
 #### FileTreeDag\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/dag.FileTreeDag.__str__}} -->
-The `__str__` method returns a string representation of the root node of the `FileTreeDag`.
+[View Source →](<../../../../../../content_services/inspector/src/utils/dag.py#L409>)
+
+Returns the string representation of the `root` node in the `FileTreeDag` class.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the string representation of the `root` attribute of the `FileTreeDag` instance.
-- **Output**: A string representation of the `root` node of the `FileTreeDag`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#FileTreeDag>)  (Base Class)
+- **Logic and Control Flow**:
+    - Calls the `__str__` method of the `root` node to get its string representation.
+- **Output**: A string that represents the `root` node of the `FileTreeDag`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/dag.FileTreeDag`](<#filetreedag>)  (Base Class)
 
 
 

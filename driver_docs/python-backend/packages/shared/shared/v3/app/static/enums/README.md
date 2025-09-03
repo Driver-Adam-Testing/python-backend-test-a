@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `enums` folder in the `python-backend` codebase contains the `format_kinds.py` file, which defines the `FormatKind` enumeration for categorizing various content formats.
+Defines the `FormatKind` enumeration for format types such as CODE_EXAMPLE, DIAGRAM, and TEXT.
 
 
 ## Files
-- **[format_kinds.py](format_kinds.py.md)**: The `format_kinds.py` file defines an enumeration `FormatKind` that categorizes different types of content formats such as code examples, diagrams, text, tables, lists, and any format.
+- **[format_kinds.py](format_kinds.py.md)**: Defines the `FormatKind` enumeration for different format types like CODE_EXAMPLE, DIAGRAM, and TEXT.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,7 +3,7 @@
 # import pytest
 # from database.db import get_session
 # from database.models_v2 import RuntimeLlmMessage, RuntimeLlmMessageHistory
-# from database.models_v1 import Tag
+# from database.models import Tag
 # from shared.v3 import LlmMessage, LlmMessageHistory, MessageKind
 
 

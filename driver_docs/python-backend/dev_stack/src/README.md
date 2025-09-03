@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python scripts for authentication mechanisms, developer environments, application configuration, and resource management.
+Authentication tools with FastAPI, CLI interfaces, Auth0 management, developer setup, and ngrok management.
 
 ## Folders
-- **[auth](auth/README.md)**: Python scripts for Auth0 authentication mechanisms, including device flow, PKCE-based OAuth2, and CLI tools.
+- **[auth](auth/README.md)**: Auth0 and OAuth2 authentication tools with FastAPI, including CLI interfaces and token management.
 
 ## Files
-- **[auth0_apps.py](auth/README.md0_apps.py)**: The `auth0_apps.py` file in the `python-backend` codebase provides functions to manage Auth0 applications and APIs, including creating and deleting SPA, API, and M2M apps, as well as assigning roles and permissions.
-- **[cli.py](cli.py.md)**: The `cli.py` file in the `python-backend` codebase provides a command-line interface for setting up, generating configurations, tearing down, and running ngrok tunnels for a developer environment.
-- **[config.py](config.py.md)**: The `config.py` file in the `python-backend` codebase is responsible for loading environment variables from a `.env` file and defining application settings using Pydantic's `BaseSettings`.
-- **[deploy_secrets.py](deploy_secrets.py.md)**: The `deploy_secrets.py` file in the `python-backend` codebase is responsible for deploying secrets to AWS Secrets Manager by fetching CloudFormation stack outputs and updating secret values based on configurations loaded from JSON files.
-- **[developer_setup.py](developer_setup.py.md)**: The `developer_setup.py` file in the `python-backend` codebase provides functions to set up, configure, and tear down developer resources, including creating domains, TCP tunnels, and various application resources, as well as managing developer state and configuration files.
-- **[github_setup.py](github_setup.py.md)**: The `github_setup.py` file generates a markdown guide for setting up a GitHub App using configuration details from a `GitHubAppResource` object.
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase provides a command-line interface for setting up and tearing down developer environments, including loading developer state from JSON files.
-- **[modal_scripts.py](modal_scripts.py.md)**: The `modal_scripts.py` file contains a function to generate a bash script for deploying various content services to a specified environment using modal and poetry.
-- **[models.py](models.py.md)**: The `models.py` file in the `python-backend` codebase defines various Pydantic models and enumerations for handling configurations and resources related to Auth0 applications, Ngrok domains, developer resources, GitHub apps, and database connections.
-- **[ngrok.py](ngrok.py.md)**: The `ngrok.py` file in the `python-backend` codebase provides functionality for managing ngrok tunnels, including creating and deleting reserved domains and TCP addresses, and running HTTP and TCP tunnels using asyncio.
-- **[ngrok_server.py](ngrok_server.py.md)**: The `ngrok_server.py` file implements a FastAPI application that manages WebSocket connections and a socket server to handle tunnel client connections, providing a web interface for sending commands to connected clients.
-- **[utils.py](utils.py.md)**: The `utils.py` file provides utility functions for loading a wordlist from a URL, generating a webhook secret using random words from the wordlist, and loading secrets from a JSON file.
+- **[auth0_apps.py](auth0_apps.py.md)**: Functions for creating, deleting, and managing Auth0 applications and APIs, including role permissions.
+- **[cli.py](cli.py.md)**: Command-line interface for setting up, generating configs, tearing down, and running ngrok tunnels for developer environments.
+- **[config.py](config.py.md)**: Configuration settings management using Pydantic for environment variables and secrets.
+- **[deploy_secrets.py](deploy_secrets.py.md)**: Deploys secrets to AWS Secrets Manager using CloudFormation stack outputs and command line arguments.
+- **[developer_setup.py](developer_setup.py.md)**: Functions and classes for setting up, managing, and tearing down developer resources and configurations.
+- **[github_setup.py](github_setup.py.md)**: Generates a GitHub App setup guide in Markdown format based on a given configuration.
+- **[main.py](main.py.md)**: CLI for setting up and tearing down developer environments with state management.
+- **[modal_scripts.py](modal_scripts.py.md)**: Generates a bash script for deploying services to a specified environment using modal and poetry.
+- **[models.py](models.py.md)**: Defines data models and configurations for Auth0 applications, Ngrok domains, developer resources, and GitHub apps.
+- **[ngrok.py](ngrok.py.md)**: Manages ngrok tunnels, including creating, deleting, and running HTTP and TCP tunnels asynchronously.
+- **[ngrok_server.py](ngrok_server.py.md)**: Implements a FastAPI server for managing WebSocket connections and tunnel clients with a web UI.
+- **[utils.py](utils.py.md)**: Functions to load a wordlist, generate a webhook secret, and load secrets from a JSON file.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

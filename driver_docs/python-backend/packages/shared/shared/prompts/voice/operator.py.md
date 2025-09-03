@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `operator.py` file outlines a series of questions and options to define a pipeline for content creation, including roles such as content creator agent, critic, and copy editor, as well as presets like entrypoint analysis and online docs page.
+Defines questions and options to configure a content creation pipeline with roles like operator, content creator, critic, and copy editor.
 
 # Purpose
-The provided content appears to be a configuration or planning document for a content creation pipeline within a software codebase. It outlines a series of questions that help determine the necessary components and processes for generating documentation or content, such as whether a copy editor or critic is needed, and the type of document being created. The document also specifies a workflow involving different roles, such as an operator, content creator agent, critic, and copy editor, indicating a structured approach to content production. Additionally, it lists options and presets that might influence the content creation process, such as the intended audience, voice, and specific document types like entrypoint analysis or online documentation pages. This setup is likely used to ensure that the content produced is tailored to specific requirements and follows a consistent quality assurance process.
+The content outlines a series of questions and options that help define the structure and components of a document creation pipeline. The questions determine the need for various elements such as a copy editor, critic, and whether to use a multi or single shot agent for content creation. They also assess the necessity of including source code, symbol lookup, technical documentation lookup, and PDF searches. The options provided, such as 'Audience' and 'Voice', guide the customization of the document's tone and style. The pipeline involves an operator, a content creator agent, a critic, and a copy editor, each playing a role in the document creation process. Presets like 'Entrypoint analysis', 'App Note', 'Readme', 'Getting started Guide', and 'Online Docs Page' suggest predefined templates or starting points for different types of documentation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

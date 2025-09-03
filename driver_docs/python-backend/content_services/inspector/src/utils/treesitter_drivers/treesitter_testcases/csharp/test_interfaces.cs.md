@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_interfaces.cs` file contains a comprehensive set of test cases for various C# interface definitions, including examples of simple, generic, inherited, and nested interfaces, as well as implementations demonstrating their usage.
+Test cases for various C# interface definitions, including inheritance, generics, and default implementations.
 
 # Purpose
-This C# source code file defines a comprehensive set of interfaces and example implementations, showcasing a wide range of interface functionalities and design patterns. The file is structured to demonstrate various interface concepts such as simple interfaces, generic interfaces, interface inheritance, default implementations, and multiple interface inheritance. It also includes examples of covariant and contravariant interfaces, interfaces with indexers, and functional interface equivalents. Additionally, the file explores advanced topics like partial interfaces, unsafe interfaces, and nested interfaces with different accessibility levels.
+The code defines a collection of C# interfaces and their implementations, demonstrating various interface features and patterns. It includes simple interfaces like `IDrawable`, which defines methods, properties, and events for drawing operations, and more complex interfaces like `IRepository<T>`, which provides asynchronous CRUD operations for generic types. The code also illustrates interface inheritance with `IResizable`, which extends `IDrawable` by adding resizing capabilities and nested interfaces. Additionally, it showcases C# 8.0+ features such as default method implementations in `ICalculator`, and static and protected methods within interfaces.
 
-The primary purpose of this file is to serve as a reference or educational resource for understanding the diverse capabilities and use cases of interfaces in C#. It provides a broad functionality by covering both basic and advanced interface features, making it suitable for developers looking to deepen their understanding of interface design in C#. The file also includes example implementations, such as the `Rectangle` class implementing `IAdvancedDrawable` and the `InMemoryRepository<T>` class implementing `IRepository<T>`, which illustrate how these interfaces can be practically applied in real-world scenarios. This file is not intended to be an executable but rather a library of interface definitions and examples that can be imported and utilized in other C# projects.
+The code further explores advanced interface concepts, including covariance and contravariance with `IProducer<out T>` and `IConsumer<in T>`, respectively. It also demonstrates the use of indexers in `IIndexable<T>`, and the concept of partial interfaces with `IPartialInterface`. The code includes examples of nested interfaces with different access modifiers, such as public, internal, and private protected, within classes and interfaces. Implementations of these interfaces are provided, such as the `Rectangle` class implementing `IAdvancedDrawable`, and `InMemoryRepository<T>` implementing `IRepository<T>`, showcasing practical use cases of the defined interfaces.
 # Imports and Dependencies
 
 ---
@@ -21,227 +21,259 @@ The primary purpose of this file is to serve as a reference or educational resou
 
 ---
 ### ClassWithNestedInterfaces<!-- {{#class:Com.Example.Interfaces.ClassWithNestedInterfaces}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L155>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `ClassWithNestedInterfaces` is a C# class that serves as a container for demonstrating the use of nested interfaces with various access modifiers. It includes four nested interfaces, each with a different level of accessibility: `IPublicNested` is public, `IInternalNested` is internal, `IProtectedInternalNested` is protected internal, and `IPrivateProtectedNested` is private protected. Each nested interface declares a single method, showcasing how different access levels can be applied to interfaces within a class.
+- **Description**: Defines a class that contains nested interfaces with different access modifiers. The nested interfaces include `IPublicNested`, `IInternalNested`, `IProtectedInternalNested`, and `IPrivateProtectedNested`, each with a single method that corresponds to their respective access levels.
 
 
 ---
 ### Rectangle<!-- {{#class:Com.Example.Interfaces.Rectangle}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L201>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `Rectangle` class is a concrete implementation of the `IAdvancedDrawable` interface, providing functionality for drawing and resizing a rectangle. It includes properties for `Name`, `Width`, `Height`, and `IsVisible`, with `Width` and `Height` being read-only outside the class. The class supports drawing operations through the `Draw` methods, which can be invoked with or without coordinates, and it can trigger a `DrawCompleted` event upon completion. Additionally, the `Rectangle` class can be resized using the `Resize` method and can draw with special effects if it is visible, as indicated by the `IsVisible` property.
+- **Description**: Represents a drawable rectangle that can be resized and drawn with or without effects. It includes properties for `Name`, `Width`, `Height`, and `IsVisible`, and an event `DrawCompleted` to signal when drawing is complete. The class provides methods to draw the rectangle at specified coordinates, resize it, and draw it with effects if it is visible.
 - **Methods**:
-    - [`Com.Example.Interfaces.Rectangle.Name`](<#RectangleName>)
-    - [`Com.Example.Interfaces.Rectangle.Width`](<#RectangleWidth>)
-    - [`Com.Example.Interfaces.Rectangle.Height`](<#RectangleHeight>)
-    - [`Com.Example.Interfaces.Rectangle.IsVisible`](<#RectangleIsVisible>)
-    - [`Com.Example.Interfaces.Rectangle.DrawCompleted`](<#RectangleDrawCompleted>)
-    - [`Com.Example.Interfaces.Rectangle.Draw`](<#RectangleDraw>)
-    - [`Com.Example.Interfaces.Rectangle.Draw`](<#RectangleDraw>)
-    - [`Com.Example.Interfaces.Rectangle.Resize`](<#RectangleResize>)
-    - [`Com.Example.Interfaces.Rectangle.DrawWithEffects`](<#RectangleDrawWithEffects>)
+    - [`Com.Example.Interfaces.Rectangle.Name`](<#rectanglename>)
+    - [`Com.Example.Interfaces.Rectangle.Width`](<#rectanglewidth>)
+    - [`Com.Example.Interfaces.Rectangle.Height`](<#rectangleheight>)
+    - [`Com.Example.Interfaces.Rectangle.IsVisible`](<#rectangleisvisible>)
+    - [`Com.Example.Interfaces.Rectangle.DrawCompleted`](<#rectangledrawcompleted>)
+    - [`Com.Example.Interfaces.Rectangle.Draw`](<#rectangledraw>)
+    - [`Com.Example.Interfaces.Rectangle.Draw`](<#rectangledraw>)
+    - [`Com.Example.Interfaces.Rectangle.Resize`](<#rectangleresize>)
+    - [`Com.Example.Interfaces.Rectangle.DrawWithEffects`](<#rectangledrawwitheffects>)
 - **Inherits From**:
-    - [`Com.Example.Interfaces.IAdvancedDrawable`](<#IAdvancedDrawable>)
+    - [`Com.Example.Interfaces.IAdvancedDrawable`](<#iadvanceddrawable>)
 
 **Methods**
 
 ---
 #### Rectangle\.Name<!-- {{#callable:Com.Example.Interfaces.Rectangle.Name}} -->
-The `Name` property is a public string property with both get and set accessors.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L203>)
+
+Represents a property to get or set the `Name` of an object.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The `Name` property allows getting and setting of a string value.
-- **Output**: The output is a string value representing the name, which can be both retrieved and modified.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - The `Name` property is defined as a public string.
+    - It has both a getter and a setter, allowing read and write access.
+- **Output**: A string value representing the `Name` of the object.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.Width<!-- {{#callable:Com.Example.Interfaces.Rectangle.Width}} -->
-The Width property is an integer property with a private setter, allowing only internal modification.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L204>)
+
+Represents a property that gets or sets the width value of an object.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The Width property is defined as an integer.
-    - The property has a private setter, meaning it can only be set within the class itself.
-- **Output**: The output is an integer representing the width value.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - The `Width` property is defined as an integer.
+    - The `Width` property has a private setter, which means it can only be set within the class it is defined in.
+    - The `Width` property can be accessed publicly to retrieve its value.
+- **Output**: An integer representing the width of an object.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.Height<!-- {{#callable:Com.Example.Interfaces.Rectangle.Height}} -->
-The `Height` property is an integer that can be privately set and publicly accessed.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L205>)
+
+Represents a property that stores the height value as an integer.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
     - The `Height` property is defined as an integer.
-    - It has a private setter, meaning it can only be modified within the class it is defined.
-    - It has a public getter, allowing it to be accessed from outside the class.
-- **Output**: The output is an integer value representing the height, which can be accessed publicly but set privately.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - The `Height` property has a private setter, which means it can only be set within the class.
+    - The `Height` property can be accessed publicly to retrieve its value.
+- **Output**: An integer representing the height.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.IsVisible<!-- {{#callable:Com.Example.Interfaces.Rectangle.IsVisible}} -->
-The `IsVisible` property is a boolean flag that indicates whether an object is visible, with a default value of true.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L206>)
+
+Indicates whether an object is visible, and this is a property.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The property is defined with a default value of true, indicating that the object is visible by default.
-    - The property has both a getter and a setter, allowing it to be read and modified.
-- **Output**: The output is a boolean value representing the visibility state of the object, either true (visible) or false (not visible).
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - The property `IsVisible` is initialized with a default value of `true`.
+    - The property can be accessed and modified using the `get` and `set` accessors.
+- **Output**: A boolean value that represents the visibility state of an object.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.DrawCompleted<!-- {{#callable:Com.Example.Interfaces.Rectangle.DrawCompleted}} -->
-The `DrawCompleted` is an event field-like that signifies the completion of a drawing operation by invoking an action with a string parameter.
-- **Modifiers**: `public`
-- **Inputs**:
-    - `Action<string>`: A delegate that represents a method to be called when the event is triggered, taking a single string argument.
-- **Control Flow**:
-    - The event is declared as a public field-like event within the `IDrawable` interface, allowing classes implementing this interface to trigger the event.
-    - When a drawing operation is completed, the event can be invoked with a string message, typically indicating the completion status or additional information.
-    - The `Rectangle` class, which implements the `IDrawable` interface, triggers this event in its `Draw` method by invoking `DrawCompleted?.Invoke("Draw completed")`.
-- **Output**: The output is the invocation of the event handler(s) attached to the `DrawCompleted` event, passing a string message to them.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L208>)
 
-
----
-#### Rectangle\.Draw<!-- {{#callable:Com.Example.Interfaces.Rectangle.Draw}} -->
-The `Draw` method outputs a message indicating a rectangle is being drawn and triggers a completion event.
+Defines an event field-like `DrawCompleted` that triggers an action when a drawing operation completes.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Outputs a message to the console indicating the drawing of a rectangle with its name.
-    - Invokes the `DrawCompleted` event, if it is not null, with the message 'Draw completed'.
-- **Output**: The method does not return any value, but it outputs a message to the console and may trigger an event.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - Defines an event `DrawCompleted` of type `Action<string>`.
+    - The event can be triggered with a string argument to notify subscribers when a drawing operation is complete.
+- **Output**: An event field-like that allows subscribers to be notified with a string message when a drawing operation completes.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.Draw<!-- {{#callable:Com.Example.Interfaces.Rectangle.Draw}} -->
-The `Draw` method outputs a message to the console indicating the coordinates where a rectangle is being drawn.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L210>)
+
+Outputs a message to the console and invokes an event to signal the completion of a drawing operation.
+- **Modifiers**: `public`
+- **Inputs**: None
+- **Control Flow**:
+    - Outputs a message to the console using `Console.WriteLine` to indicate the drawing of a rectangle with its `Name`.
+    - Invokes the `DrawCompleted` event, if it is not null, with the message 'Draw completed'.
+- **Output**: No return value, but outputs a message to the console and potentially triggers an event.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
+
+
+---
+#### Rectangle\.Draw<!-- {{#callable:Com.Example.Interfaces.Rectangle.Draw}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L216>)
+
+Outputs a message to the console indicating the coordinates where a rectangle is drawn.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `x`: The x-coordinate where the rectangle is to be drawn.
-    - `y`: The y-coordinate where the rectangle is to be drawn.
+    - `x`: The x-coordinate where the rectangle is drawn.
+    - `y`: The y-coordinate where the rectangle is drawn.
 - **Control Flow**:
-    - The method takes two integer parameters, `x` and `y`, representing coordinates.
-    - It uses `Console.WriteLine` to print a formatted string that includes the provided coordinates.
-- **Output**: The method does not return any value; it outputs a message to the console.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - Uses `Console.WriteLine` to print a formatted string that includes the `x` and `y` coordinates.
+- **Output**: No return value; the method outputs a message to the console.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.Resize<!-- {{#callable:Com.Example.Interfaces.Rectangle.Resize}} -->
-The `Resize` method sets the `Width` and `Height` properties to the specified values.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L221>)
+
+Sets the `Width` and `Height` properties to the specified values.
 - **Modifiers**: `public`
 - **Inputs**:
     - `width`: The new width value to set.
     - `height`: The new height value to set.
 - **Control Flow**:
-    - Assign the value of the `width` parameter to the `Width` property.
-    - Assign the value of the `height` parameter to the `Height` property.
-- **Output**: This method does not return a value; it modifies the object's state by updating its `Width` and `Height` properties.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - Assign the value of `width` to the `Width` property.
+    - Assign the value of `height` to the `Height` property.
+- **Output**: No output is returned as the method is `void`.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 ---
 #### Rectangle\.DrawWithEffects<!-- {{#callable:Com.Example.Interfaces.Rectangle.DrawWithEffects}} -->
-The `DrawWithEffects` method outputs a message to the console if the object is visible.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L227>)
+
+Draws with effects if the object is visible.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Check if the `IsVisible` property is true.
-    - If `IsVisible` is true, print 'Drawing with effects' to the console.
-- **Output**: The method does not return any value; it outputs a message to the console if the condition is met.
-- **See also**: [`Com.Example.Interfaces.Rectangle`](<#Rectangle>)  (Base Class)
+    - Check if `IsVisible` is true.
+    - If true, print 'Drawing with effects' to the console.
+- **Output**: No output is returned.
+- **See also**: [`Com.Example.Interfaces.Rectangle`](<#rectangle>)  (Base Class)
 
 
 
 ---
 ### InMemoryRepository<!-- {{#class:Com.Example.Interfaces.InMemoryRepository}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L237>)
+
 - **Type**: `class`
 - **Modifiers**: `public`
-- **Description**: The `InMemoryRepository<T>` class is a generic implementation of the `IRepository<T>` interface, designed to manage a collection of objects in memory. It provides asynchronous methods for basic CRUD operations: retrieving an item by its ID, retrieving all items, adding a new item, updating an existing item, and deleting an item by its ID. The class uses a private `List<T>` to store the items, and the operations are simplified, particularly the update method, which does not perform proper ID matching. This class is useful for scenarios where a simple, in-memory data store is sufficient, such as testing or prototyping.
+- **Description**: Provides an in-memory implementation of the `IRepository<T>` interface for managing a collection of items of type `T`. It supports basic CRUD operations such as adding, retrieving, updating, and deleting items asynchronously. The class uses a `List<T>` to store items and assumes that the index of the list can serve as a unique identifier for each item, which simplifies the implementation but may not be suitable for all use cases.
 - **Methods**:
-    - [`Com.Example.Interfaces.InMemoryRepository.GetByIdAsync`](<#InMemoryRepositoryGetByIdAsync>)
-    - [`Com.Example.Interfaces.InMemoryRepository.GetAllAsync`](<#InMemoryRepositoryGetAllAsync>)
-    - [`Com.Example.Interfaces.InMemoryRepository.AddAsync`](<#InMemoryRepositoryAddAsync>)
-    - [`Com.Example.Interfaces.InMemoryRepository.UpdateAsync`](<#InMemoryRepositoryUpdateAsync>)
-    - [`Com.Example.Interfaces.InMemoryRepository.DeleteAsync`](<#InMemoryRepositoryDeleteAsync>)
+    - [`Com.Example.Interfaces.InMemoryRepository.GetByIdAsync`](<#inmemoryrepositorygetbyidasync>)
+    - [`Com.Example.Interfaces.InMemoryRepository.GetAllAsync`](<#inmemoryrepositorygetallasync>)
+    - [`Com.Example.Interfaces.InMemoryRepository.AddAsync`](<#inmemoryrepositoryaddasync>)
+    - [`Com.Example.Interfaces.InMemoryRepository.UpdateAsync`](<#inmemoryrepositoryupdateasync>)
+    - [`Com.Example.Interfaces.InMemoryRepository.DeleteAsync`](<#inmemoryrepositorydeleteasync>)
 - **Inherits From**:
-    - [`Com.Example.Interfaces.IRepository`](<#IRepository>)
+    - [`Com.Example.Interfaces.IRepository`](<#irepository>)
 
 **Methods**
 
 ---
 #### InMemoryRepository\.GetByIdAsync<!-- {{#callable:Com.Example.Interfaces.InMemoryRepository.GetByIdAsync}} -->
-The `GetByIdAsync` method retrieves an item from a collection by its index asynchronously.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L241>)
+
+Retrieves an item from a list by its index asynchronously.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `id`: An integer representing the index of the item to retrieve from the collection.
+    - `id`: The index of the item to retrieve from the list.
 - **Control Flow**:
-    - Check if the provided index `id` is within the bounds of the `_items` collection.
-    - If `id` is within bounds, return the item at that index wrapped in a `Task`.
-    - If `id` is out of bounds, return `null` wrapped in a `Task`.
-- **Output**: A `Task` containing the item at the specified index if it exists, otherwise `null`.
-- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#InMemoryRepository>)  (Base Class)
+    - Check if the index `id` is within the bounds of the `_items` list.
+    - If `id` is within bounds, return the item at the specified index.
+    - If `id` is out of bounds, return `null`.
+- **Output**: A `Task` containing the item at the specified index or `null` if the index is out of bounds.
+- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#inmemoryrepository>)  (Base Class)
 
 
 ---
 #### InMemoryRepository\.GetAllAsync<!-- {{#callable:Com.Example.Interfaces.InMemoryRepository.GetAllAsync}} -->
-The `GetAllAsync` method asynchronously retrieves all items from a collection.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L247>)
+
+Returns a task that represents an asynchronous operation to retrieve all items of type `T`.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns a task that wraps the result of the collection `_items`.
-- **Output**: A `Task` containing an `IEnumerable<T>` of all items in the collection.
-- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#InMemoryRepository>)  (Base Class)
+    - Calls `Task.FromResult<IEnumerable<T>>` with `_items` to create a completed task that contains the `_items`.
+- **Output**: A `Task` containing an `IEnumerable<T>` of all items.
+- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#inmemoryrepository>)  (Base Class)
 
 
 ---
 #### InMemoryRepository\.AddAsync<!-- {{#callable:Com.Example.Interfaces.InMemoryRepository.AddAsync}} -->
-The `AddAsync` method adds an entity to a collection and returns it as a completed task.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L252>)
+
+Adds an entity to a collection and returns it as a completed task.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `entity`: The entity of type `T` to be added to the collection.
+    - `entity`: The entity of type `T` to add to the collection.
 - **Control Flow**:
-    - The method takes an entity of type `T` as an input parameter.
-    - It adds the entity to the `_items` collection.
-    - It returns the entity wrapped in a completed `Task` using `Task.FromResult`.
+    - Add the `entity` to the `_items` collection.
+    - Return the `entity` wrapped in a completed `Task`.
 - **Output**: A `Task` containing the added entity of type `T`.
 - **Methods Called**:
-    - [`Com.Example.Interfaces.ICalculator.Add`](<#ICalculatorAdd>)
-- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#InMemoryRepository>)  (Base Class)
+    - [`Com.Example.Interfaces.ICalculator.Add`](<#icalculatoradd>)
+- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#inmemoryrepository>)  (Base Class)
 
 
 ---
 #### InMemoryRepository\.UpdateAsync<!-- {{#callable:Com.Example.Interfaces.InMemoryRepository.UpdateAsync}} -->
-The `UpdateAsync` method is an asynchronous placeholder for updating an entity of type `T` in a data store.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L258>)
+
+Completes an asynchronous update operation for a given entity.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `entity`: An instance of type `T` representing the entity to be updated.
+    - `entity`: The entity of type `T` that needs to be updated.
 - **Control Flow**:
-    - The method currently does not perform any operations and immediately returns a completed task.
-- **Output**: A `Task` representing the asynchronous operation, which is immediately completed.
-- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#InMemoryRepository>)  (Base Class)
+    - The method immediately returns a completed task without performing any actual update operation.
+- **Output**: A `Task` that represents the completed asynchronous operation.
+- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#inmemoryrepository>)  (Base Class)
 
 
 ---
 #### InMemoryRepository\.DeleteAsync<!-- {{#callable:Com.Example.Interfaces.InMemoryRepository.DeleteAsync}} -->
-The `DeleteAsync` method removes an item from a list at a specified index if the index is within the list's bounds.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L264>)
+
+Deletes an item from the `_items` list at the specified index asynchronously.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `id`: An integer representing the index of the item to be removed from the list.
+    - `id`: The index of the item to delete from the `_items` list.
 - **Control Flow**:
-    - Check if the provided `id` is less than the count of items in the list `_items`.
-    - If the condition is true, remove the item at the specified `id` from the list `_items`.
-    - Return a completed `Task` to indicate the asynchronous operation is finished.
-- **Output**: A `Task` representing the asynchronous operation, which is completed immediately.
-- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#InMemoryRepository>)  (Base Class)
+    - Check if `id` is less than the count of `_items`.
+    - If true, remove the item at the index `id` from `_items`.
+    - Return a completed `Task`.
+- **Output**: A `Task` that represents the asynchronous operation.
+- **See also**: [`Com.Example.Interfaces.InMemoryRepository`](<#inmemoryrepository>)  (Base Class)
 
 
 
@@ -249,8 +281,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IDrawable<!-- {{#interface:Com.Example.Interfaces.IDrawable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L9>)
+
 - **Modifiers**: `public`
-- **Description**: The `IDrawable` interface defines a contract for drawable objects, providing methods and properties essential for drawing operations. It includes two overloaded `Draw` methods, one without parameters and another that accepts coordinates (`x` and `y`) to specify the drawing position. The interface also defines a `Name` property, which can be both read and written, and a read-only `Width` property, indicating the width of the drawable object. Additionally, it declares an event `DrawCompleted`, which is triggered upon the completion of a drawing operation, allowing subscribers to respond to this event with a string message.
+- **Description**: Defines a contract for drawable objects. Provides two `Draw` methods: one without parameters and one that accepts `x` and `y` coordinates to specify the drawing position. Includes a `Name` property for setting or getting the name of the drawable object, and a read-only `Width` property to get the width. Also, declares an event `DrawCompleted` that triggers when the drawing operation is complete.
 
 **Methods**
 - `Draw`<!-- {{#callable:Com.Example.Interfaces.IDrawable.Draw}} -->
@@ -261,8 +295,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IRepository<!-- {{#interface:Com.Example.Interfaces.IRepository}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L25>)
+
 - **Modifiers**: `public`
-- **Description**: The `IRepository<T>` interface is a generic contract for a repository pattern, which is commonly used in software design to abstract data access logic. This interface defines asynchronous methods for basic CRUD (Create, Read, Update, Delete) operations on entities of type `T`, where `T` is constrained to be a class. The methods include `GetByIdAsync` for retrieving an entity by its identifier, `GetAllAsync` for retrieving all entities, `AddAsync` for adding a new entity, `UpdateAsync` for updating an existing entity, and `DeleteAsync` for removing an entity by its identifier. This interface facilitates the implementation of a repository that can handle various types of data entities in a consistent manner.
+- **Description**: Defines a generic repository pattern for managing entities of type `T`, where `T` is constrained to be a class. Provides asynchronous methods for common data operations: `GetByIdAsync` retrieves an entity by its identifier, `GetAllAsync` retrieves all entities, `AddAsync` adds a new entity, `UpdateAsync` updates an existing entity, and `DeleteAsync` removes an entity by its identifier.
 
 **Methods**
 - `GetByIdAsync`<!-- {{#callable:Com.Example.Interfaces.IRepository.GetByIdAsync}} -->
@@ -274,8 +310,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IResizable<!-- {{#interface:Com.Example.Interfaces.IResizable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L35>)
+
 - **Modifiers**: `public`
-- **Description**: The `IResizable` interface extends the `IDrawable` interface, adding functionality for resizing objects. It includes a method `Resize(int width, int height)` to adjust the dimensions of an object, and a read-only property `Height` to retrieve the current height. Additionally, it defines a nested interface `IResizeListener`, which provides a method `OnResize(int oldWidth, int oldHeight, int newWidth, int newHeight)` to handle resize events, allowing for actions to be taken when an object's size changes. This interface is designed to be implemented by classes that require both drawing and resizing capabilities, ensuring that they can be resized and that resize events can be managed.
+- **Description**: Extends the `IDrawable` interface to include functionality for resizing objects. Provides a `Resize` method that takes `width` and `height` parameters to adjust the size of an object. Includes a read-only `Height` property to get the current height of the object. Contains a nested interface `IResizeListener` that defines a method `OnResize` to handle resize events, providing the old and new dimensions of the object.
 
 **Methods**
 - `Resize`<!-- {{#callable:Com.Example.Interfaces.IResizable.Resize}} -->
@@ -284,7 +322,9 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IResizeListener<!-- {{#interface:Com.Example.Interfaces.IResizable.IResizeListener}} -->
-- **Description**: The `IResizeListener` interface is a nested interface within the `IResizable` interface, designed to provide a mechanism for responding to resize events. It defines a single method, `OnResize`, which is intended to be implemented by classes that need to handle changes in dimensions. This method takes four parameters: `oldWidth`, `oldHeight`, `newWidth`, and `newHeight`, which represent the previous and new dimensions of an object, respectively. The purpose of this interface is to allow implementing classes to react to size changes, potentially updating their state or triggering other actions in response to a resize event.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L43>)
+
+- **Description**: Defines a contract for listening to resize events. The `OnResize` method is called when a resize event occurs, providing the old and new dimensions (`oldWidth`, `oldHeight`, `newWidth`, `newHeight`) of the object being resized. This interface is typically used in scenarios where an object needs to respond to changes in size, such as updating layout or graphics.
 
 **Methods**
 - `OnResize`<!-- {{#callable:Com.Example.Interfaces.IResizable.IResizeListener.OnResize}} -->
@@ -292,8 +332,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### ICalculator<!-- {{#interface:Com.Example.Interfaces.ICalculator}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L50>)
+
 - **Modifiers**: `public`
-- **Description**: The `ICalculator` interface defines a contract for basic arithmetic operations, including addition, subtraction, multiplication, and division. It provides method signatures for `Add` and `Subtract`, which must be implemented by any class that implements this interface. Additionally, it includes a default implementation for the `Multiply` method, allowing implementing classes to use this method without providing their own implementation. The interface also defines a static method `Divide`, which performs division and includes error handling for division by zero. Furthermore, it introduces a protected method `Square`, which can be used by derived classes to calculate the square of a number. This interface demonstrates the use of default implementations, static methods, and protected methods in C# interfaces, showcasing the flexibility and power of modern C# interface design.
+- **Description**: Defines a contract for basic arithmetic operations. Provides methods `Add` and `Subtract` for addition and subtraction of two integers. Includes a default implementation for the `Multiply` method, which multiplies two integers. Offers a static method `Divide` to divide two integers, with error handling for division by zero. Contains a protected method `Square` to calculate the square of an integer, available for use in derived classes.
 
 **Methods**
 - `Add`<!-- {{#callable:Com.Example.Interfaces.ICalculator.Add}} -->
@@ -305,8 +347,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IAdvancedDrawable<!-- {{#interface:Com.Example.Interfaces.IAdvancedDrawable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L70>)
+
 - **Modifiers**: `public`
-- **Description**: The `IAdvancedDrawable` interface is an extension of the `IDrawable` and `IResizable` interfaces, designed to provide advanced drawing capabilities. It introduces a method `DrawWithEffects` for rendering with additional visual effects, enhancing the basic drawing functionality. Additionally, it includes a boolean property `IsVisible` to manage the visibility state of the drawable object. This interface is suitable for objects that require both drawing and resizing capabilities, along with the ability to apply special effects during rendering.
+- **Description**: Extends the functionality of `IDrawable` and `IResizable` interfaces by adding the ability to draw with effects and manage visibility. Provides the `DrawWithEffects` method to apply special effects during the drawing process. Includes a `bool` property `IsVisible` to control the visibility state of the drawable object.
 
 **Methods**
 - `DrawWithEffects`<!-- {{#callable:Com.Example.Interfaces.IAdvancedDrawable.DrawWithEffects}} -->
@@ -315,8 +359,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IComparable<!-- {{#interface:Com.Example.Interfaces.IComparable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L77>)
+
 - **Modifiers**: `public`
-- **Description**: The `IComparable<T>` interface is a generic interface that defines a single method, `CompareTo(T other)`, which is used to compare the current instance with another object of the same type. This interface is typically implemented by types that need to provide a custom comparison logic, allowing instances of the type to be ordered or sorted. The `CompareTo` method returns an integer that indicates the relative order of the objects being compared: a negative integer if the current instance precedes the other object, zero if they are equal, and a positive integer if the current instance follows the other object. This interface is contravariant, meaning it can accept a more derived type than specified by the generic parameter `T`.
+- **Description**: Defines a generic interface for comparing objects of type `T`. The `CompareTo` method takes an object of type `T` as a parameter and returns an integer. This integer indicates the relative order of the objects being compared. A return value less than zero indicates that the current instance precedes the object specified in the method call. A return value of zero indicates that the current instance occurs in the same position in the sort order as the specified object. A return value greater than zero indicates that the current instance follows the specified object in the sort order.
 
 **Methods**
 - `CompareTo`<!-- {{#callable:Com.Example.Interfaces.IComparable.CompareTo}} -->
@@ -324,8 +370,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IProducer<!-- {{#interface:Com.Example.Interfaces.IProducer}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L83>)
+
 - **Modifiers**: `public`
-- **Description**: The `IProducer<out T>` interface is a covariant generic interface designed to define a contract for producing instances of a specified type `T`. It includes two methods: `Produce()`, which returns a single instance of type `T`, and `ProduceMany()`, which returns an enumerable collection of instances of type `T`. The use of covariance (indicated by the `out` keyword) allows for flexibility in assigning instances of more derived types to variables of this interface type, making it particularly useful in scenarios where the exact type of the produced objects can vary within a type hierarchy.
+- **Description**: Defines a covariant interface for producing objects of type `T`. The `Produce` method returns a single instance of type `T`, while the `ProduceMany` method returns an `IEnumerable<T>` containing multiple instances. The use of covariance (indicated by the `out` keyword) allows the interface to return derived types of `T`.
 
 **Methods**
 - `Produce`<!-- {{#callable:Com.Example.Interfaces.IProducer.Produce}} -->
@@ -334,8 +382,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IConsumer<!-- {{#interface:Com.Example.Interfaces.IConsumer}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L90>)
+
 - **Modifiers**: `public`
-- **Description**: The `IConsumer<T>` interface is a contravariant generic interface designed to define a contract for consuming items of a specified type `T`. It provides two methods: `Consume(T item)`, which allows for the consumption of a single item, and `ConsumeMany(IEnumerable<T> items)`, which facilitates the consumption of multiple items at once. The contravariant nature of the interface, indicated by the `in` keyword, allows it to accept arguments of a more derived type than the specified type parameter, making it flexible for use in various scenarios where items need to be processed or consumed.
+- **Description**: Defines a contravariant interface for consuming items of type `T`. Provides two methods: `Consume`, which takes a single item of type `T` as a parameter, and `ConsumeMany`, which takes an `IEnumerable<T>` collection of items. The contravariant nature of the interface allows it to accept arguments of a more derived type than `T`, making it flexible for various implementations.
 
 **Methods**
 - `Consume`<!-- {{#callable:Com.Example.Interfaces.IConsumer.Consume}} -->
@@ -344,8 +394,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IIndexable<!-- {{#interface:Com.Example.Interfaces.IIndexable}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L97>)
+
 - **Modifiers**: `public`
-- **Description**: The `IIndexable<T>` interface defines a contract for objects that can be indexed using an integer index, similar to arrays or lists. It includes an indexer property that allows getting or setting elements at a specified index, and a `Count` property that provides the total number of elements in the collection. This interface is generic, allowing it to be implemented for collections of any type `T`, providing flexibility and type safety for indexed collections.
+- **Description**: Defines a generic interface with an indexer and a property. The indexer allows access to elements of type `T` using an integer index, with both get and set accessors. The `Count` property provides the total number of elements available in the collection.
 
 **Methods**
 - `[int index]`<!-- {{#callable:Com.Example.Interfaces.IIndexable.[int index]}} -->
@@ -354,8 +406,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IProcessor<!-- {{#interface:Com.Example.Interfaces.IProcessor}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L104>)
+
 - **Modifiers**: `public`
-- **Description**: The `IProcessor<TInput, TOutput>` interface is a generic functional interface that defines a contract for processing an input of type `TInput` to produce an output of type `TOutput`. It contains a single method, `Process`, which takes an input parameter of type `TInput` and returns a result of type `TOutput`. This interface is designed to be implemented by classes that perform specific processing tasks, allowing for flexibility and reusability in handling various types of data transformations.
+- **Description**: Defines a contract for processing an input of type `TInput` to produce an output of type `TOutput`. The `Process` method takes an input parameter of type `TInput` and returns a result of type `TOutput`. This interface is generic and can be implemented for various data types, allowing for flexible processing logic.
 
 **Methods**
 - `Process`<!-- {{#callable:Com.Example.Interfaces.IProcessor.Process}} -->
@@ -363,8 +417,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IInternalService<!-- {{#interface:Com.Example.Interfaces.IInternalService}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L110>)
+
 - **Modifiers**: `internal`
-- **Description**: The `IInternalService` interface is an internal interface, meaning it is intended for use only within the assembly in which it is defined. It provides a contract for classes that need to perform internal operations, offering a method `DoInternalWork` for executing internal tasks and a read-only property `InternalProperty` to expose some internal state or information. This interface is designed to encapsulate functionality that should not be exposed publicly, ensuring that only components within the same assembly can implement or interact with it.
+- **Description**: Defines a contract for internal services within an assembly. Contains a method `DoInternalWork` for executing internal operations and a read-only property `InternalProperty` to retrieve internal data. This interface is marked as `internal`, meaning it is accessible only within the same assembly.
 
 **Methods**
 - `DoInternalWork`<!-- {{#callable:Com.Example.Interfaces.IInternalService.DoInternalWork}} -->
@@ -373,8 +429,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IPartialInterface<!-- {{#interface:Com.Example.Interfaces.IPartialInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L117>)
+
 - **Modifiers**: `public`, `partial`
-- **Description**: The `IPartialInterface` is a partial interface in C# that is defined across multiple parts within the same namespace. This interface is split into two parts, each contributing different members to the interface. The first part of the `IPartialInterface` includes a method `Method1` and a property `Property1` with both getter and setter accessors. The second part of the interface adds another method `Method2` and a read-only property `Property2`. This design allows for the separation of interface definitions across different files or sections of code, facilitating modularity and organization in larger projects.
+- **Description**: Defines a partial interface that can be split across multiple files. Contains two methods, `Method1` and `Method2`, and two properties, `Property1` (read-write) and `Property2` (read-only). This allows for the separation of interface definitions into different parts, which can be useful for organizing code in large projects.
 
 **Methods**
 - `Method1`<!-- {{#callable:Com.Example.Interfaces.IPartialInterface.Method1}} -->
@@ -389,8 +447,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IUnsafeOperations<!-- {{#interface:Com.Example.Interfaces.IUnsafeOperations}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L130>)
+
 - **Modifiers**: `public`, `unsafe`
-- **Description**: The `IUnsafeOperations` interface is designed for operations that require direct memory manipulation using pointers, which is a feature available in C# when using the `unsafe` keyword. This interface provides two methods: `GetPointer`, which returns a pointer to an unspecified type, and `ProcessPointer`, which takes a pointer to a byte array and an integer representing the length of the data to be processed. This interface is particularly useful in scenarios where performance is critical and direct memory access is necessary, such as in systems programming or when interfacing with unmanaged code.
+- **Description**: Defines operations that involve unsafe code, which requires an unsafe context in C#. Provides a method `GetPointer` that returns a pointer of type `void*`, allowing for direct memory manipulation. Also includes a method `ProcessPointer` that takes a pointer to a byte array and an integer representing the length of the data, enabling processing of raw byte data.
 
 **Methods**
 - `GetPointer`<!-- {{#callable:Com.Example.Interfaces.IUnsafeOperations.GetPointer}} -->
@@ -399,8 +459,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IOuterInterface<!-- {{#interface:Com.Example.Interfaces.IOuterInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L137>)
+
 - **Modifiers**: `public`
-- **Description**: The `IOuterInterface` is a public interface that defines a single method, `OuterMethod`, which is intended to be implemented by any class that inherits from this interface. Additionally, `IOuterInterface` contains two nested interfaces with different access modifiers: `IPrivateNested` and `IProtectedNested`. The `IPrivateNested` interface is private and includes a method `PrivateNestedMethod`, which is not accessible outside the `IOuterInterface`. The `IProtectedNested` interface is protected, allowing it to be accessed by derived classes, and it contains a method `ProtectedNestedMethod`. These nested interfaces demonstrate the use of different access levels within an interface, providing a way to encapsulate specific functionality that may be intended for internal use or for use by subclasses.
+- **Description**: Defines a contract with a method `OuterMethod` and includes two nested interfaces with different access modifiers. The `IPrivateNested` interface is private and contains the method `PrivateNestedMethod`, while the `IProtectedNested` interface is protected and contains the method `ProtectedNestedMethod`. These nested interfaces demonstrate the use of access modifiers within an interface to encapsulate specific behaviors or functionalities.
 
 **Methods**
 - `OuterMethod`<!-- {{#callable:Com.Example.Interfaces.IOuterInterface.OuterMethod}} -->
@@ -408,8 +470,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IPrivateNested<!-- {{#interface:Com.Example.Interfaces.IOuterInterface.IPrivateNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L142>)
+
 - **Modifiers**: `private`
-- **Description**: The `IPrivateNested` interface is a private nested interface defined within the `IOuterInterface` interface. It contains a single method, `PrivateNestedMethod()`, which is intended to be implemented by classes that have access to this private interface. Being a private interface, it is not accessible outside the scope of the `IOuterInterface`, and its primary purpose is to encapsulate specific functionality that should not be exposed publicly. This design allows for a more controlled and secure implementation of methods that are only relevant within the context of the `IOuterInterface`.
+- **Description**: Defines a private nested interface within the `IOuterInterface`. Contains a single method `PrivateNestedMethod()`, which must be implemented by any class that implements this interface. This interface is not accessible outside the containing interface or class, ensuring encapsulation and restricting its use to specific contexts within the `IOuterInterface`.
 
 **Methods**
 - `PrivateNestedMethod`<!-- {{#callable:Com.Example.Interfaces.IOuterInterface.IPrivateNested.PrivateNestedMethod}} -->
@@ -417,8 +481,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IProtectedNested<!-- {{#interface:Com.Example.Interfaces.IOuterInterface.IProtectedNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L148>)
+
 - **Modifiers**: `protected`
-- **Description**: The `IProtectedNested` interface is a protected nested interface within the `IOuterInterface`. It defines a single method, `ProtectedNestedMethod`, which must be implemented by any class that implements this interface. Being a protected nested interface, it is only accessible within the containing class or its derived classes, providing a way to encapsulate specific functionality that should not be exposed publicly. This design allows for a more controlled and secure implementation of methods that are intended to be used internally within a class hierarchy.
+- **Description**: Defines a protected nested interface within the `IOuterInterface`. It contains a single method, `ProtectedNestedMethod`, which must be implemented by any class that implements this interface. The protected access modifier restricts the visibility of this interface to the containing class and its derived classes.
 
 **Methods**
 - `ProtectedNestedMethod`<!-- {{#callable:Com.Example.Interfaces.IOuterInterface.IProtectedNested.ProtectedNestedMethod}} -->
@@ -426,8 +492,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IPublicNested<!-- {{#interface:Com.Example.Interfaces.ClassWithNestedInterfaces.IPublicNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L158>)
+
 - **Modifiers**: `public`
-- **Description**: The `IPublicNested` interface is a public nested interface defined within the `ClassWithNestedInterfaces` class. It declares a single method, `PublicMethod()`, which must be implemented by any class that implements this interface. This interface serves as a simple contract for classes that need to provide a public method implementation, and it demonstrates the use of nested interfaces within a class to organize related functionality.
+- **Description**: Defines a contract for a public nested interface within a class. Contains a single method, `PublicMethod`, which must be implemented by any class that implements this interface. This interface is nested within the `ClassWithNestedInterfaces` class, demonstrating the use of public accessibility for nested interfaces.
 
 **Methods**
 - `PublicMethod`<!-- {{#callable:Com.Example.Interfaces.ClassWithNestedInterfaces.IPublicNested.PublicMethod}} -->
@@ -435,8 +503,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IInternalNested<!-- {{#interface:Com.Example.Interfaces.ClassWithNestedInterfaces.IInternalNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L164>)
+
 - **Modifiers**: `internal`
-- **Description**: The `IInternalNested` interface is an internal interface defined within the `ClassWithNestedInterfaces` class. It is designed to encapsulate a single method, `InternalMethod`, which is intended for internal use within the assembly. This interface is not accessible outside of the assembly due to its internal access modifier, making it suitable for defining internal contracts or behaviors that should not be exposed to external components or assemblies. The interface does not inherit from any other interfaces, indicating that it is a standalone contract within its context.
+- **Description**: Defines a contract for an internal nested interface within a class. Contains a single method `InternalMethod` that must be implemented by any class that implements this interface. This interface is intended for use within the assembly and is not accessible from outside the assembly due to its `internal` access modifier.
 
 **Methods**
 - `InternalMethod`<!-- {{#callable:Com.Example.Interfaces.ClassWithNestedInterfaces.IInternalNested.InternalMethod}} -->
@@ -444,8 +514,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IProtectedInternalNested<!-- {{#interface:Com.Example.Interfaces.ClassWithNestedInterfaces.IProtectedInternalNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L170>)
+
 - **Modifiers**: `protected`, `internal`
-- **Description**: The `IProtectedInternalNested` interface is a protected internal nested interface defined within the `ClassWithNestedInterfaces` class. It contains a single method, `ProtectedInternalMethod()`, which must be implemented by any class that inherits this interface. The protected internal access modifier indicates that the interface is accessible within its own assembly or to derived types, providing a level of encapsulation that restricts its visibility to a specific scope. This interface is typically used to define a contract for nested types that require a specific level of access control within a class hierarchy.
+- **Description**: Defines a `protected internal` nested interface within a class, which means it is accessible within its own assembly or from derived classes. Contains a single method `ProtectedInternalMethod()` that must be implemented by any class that implements this interface.
 
 **Methods**
 - `ProtectedInternalMethod`<!-- {{#callable:Com.Example.Interfaces.ClassWithNestedInterfaces.IProtectedInternalNested.ProtectedInternalMethod}} -->
@@ -453,8 +525,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IPrivateProtectedNested<!-- {{#interface:Com.Example.Interfaces.ClassWithNestedInterfaces.IPrivateProtectedNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L176>)
+
 - **Modifiers**: `private`, `protected`
-- **Description**: The `IPrivateProtectedNested` interface is a private protected nested interface defined within the `ClassWithNestedInterfaces` class. It contains a single method, `PrivateProtectedMethod()`, which is intended to be implemented by classes that have access to this interface. The private protected access modifier restricts the visibility of this interface to the containing class and any derived classes within the same assembly, making it useful for scenarios where you want to expose certain functionality only to a specific subset of classes within a controlled scope.
+- **Description**: Defines a `private protected` nested interface within a class, which means it is accessible only within its containing class or in derived classes that are in the same assembly. Contains a single method `PrivateProtectedMethod` that must be implemented by any class that implements this interface.
 
 **Methods**
 - `PrivateProtectedMethod`<!-- {{#callable:Com.Example.Interfaces.ClassWithNestedInterfaces.IPrivateProtectedNested.PrivateProtectedMethod}} -->
@@ -462,8 +536,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IComplexInterface<!-- {{#interface:Com.Example.Interfaces.IComplexInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L183>)
+
 - **Modifiers**: `internal`, `partial`
-- **Description**: The `IComplexInterface` is an internal partial interface designed to encapsulate complex functionality within a software system. It defines a single method, `ComplexMethod`, which is intended to be implemented by classes that require complex operations. Additionally, this interface includes a nested public interface, `INestedInPartial`, which itself contains a method `NestedPartialMethod`. Furthermore, `INestedInPartial` houses a private deeply nested interface, `IDeeplyNested`, which defines the `DeeplyNestedMethod`. This structure allows for a hierarchical organization of methods and interfaces, facilitating modular and organized code development, particularly in scenarios where complex interactions and encapsulations are necessary.
+- **Description**: Defines a partial interface with a method `ComplexMethod` and includes a nested public interface `INestedInPartial`, which itself contains a method `NestedPartialMethod`. Within `INestedInPartial`, there is a private nested interface `IDeeplyNested` that declares a method `DeeplyNestedMethod`. This structure allows for complex interface hierarchies and encapsulation of related functionalities within the same interface definition.
 
 **Methods**
 - `ComplexMethod`<!-- {{#callable:Com.Example.Interfaces.IComplexInterface.ComplexMethod}} -->
@@ -471,8 +547,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### INestedInPartial<!-- {{#interface:Com.Example.Interfaces.IComplexInterface.INestedInPartial}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L188>)
+
 - **Modifiers**: `public`
-- **Description**: The `INestedInPartial` interface is a nested interface within the `IComplexInterface` partial interface. It defines a single method, `NestedPartialMethod`, which is intended to be implemented by classes that require specific functionality related to this nested interface. Additionally, `INestedInPartial` contains a private, deeply nested interface named `IDeeplyNested`, which itself declares a method `DeeplyNestedMethod`. This structure suggests a design where `INestedInPartial` is used to encapsulate specific behaviors or operations that are part of a larger, more complex interface hierarchy, potentially allowing for modular and organized code within a partial interface context.
+- **Description**: Defines a contract for a nested interface within a partial interface. Contains a method `NestedPartialMethod` that must be implemented by any class that implements this interface. Also includes a private nested interface `IDeeplyNested`, which contains a method `DeeplyNestedMethod`. The `IDeeplyNested` interface is not accessible outside the `INestedInPartial` interface, indicating that it is intended for internal use within the implementing class.
 
 **Methods**
 - `NestedPartialMethod`<!-- {{#callable:Com.Example.Interfaces.IComplexInterface.INestedInPartial.NestedPartialMethod}} -->
@@ -480,8 +558,10 @@ The `DeleteAsync` method removes an item from a list at a specified index if the
 
 ---
 ### IDeeplyNested<!-- {{#interface:Com.Example.Interfaces.IComplexInterface.INestedInPartial.IDeeplyNested}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/csharp/test_interfaces.cs#L193>)
+
 - **Modifiers**: `private`
-- **Description**: The `IDeeplyNested` interface is a private, deeply nested interface within the `INestedInPartial` interface, which itself is nested within the `IComplexInterface`. This interface contains a single method, `DeeplyNestedMethod`, which is intended to be implemented by classes that require specific functionality at a deeply nested level within a complex interface structure. The private access modifier restricts its visibility to the containing interface, emphasizing its use for internal or specialized purposes within the context of the `IComplexInterface`.
+- **Description**: Defines a private interface with a single method `DeeplyNestedMethod`. This interface is deeply nested within another interface `INestedInPartial`, which is itself nested within the `IComplexInterface`. The `IDeeplyNested` interface is not accessible outside its containing context due to its private access modifier.
 
 **Methods**
 - `DeeplyNestedMethod`<!-- {{#callable:Com.Example.Interfaces.IComplexInterface.INestedInPartial.IDeeplyNested.DeeplyNestedMethod}} -->

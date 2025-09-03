@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_llm_message.py` file contains unit tests for the `LlmMessage` class and its interactions with various message types and tools, including OpenAI and Anthropic message formats, within the `python-backend` codebase.
+Tests for LlmMessage functionality, including conversions and tool call responses, using pytest fixtures.
 
 # Purpose
-This Python file is a test suite designed to validate the functionality of message handling and tool execution within a larger system that integrates with language models, such as those provided by OpenAI and Anthropic. The file uses the `pytest` framework to define a series of test cases and fixtures that simulate different message types and interactions. The primary focus is on the `LlmMessage` class and its interactions with various message formats, including OpenAI's `ChatCompletionMessage` and Anthropic's `Message`. The `TestTool` class, a subclass of `LlmTool`, is used to simulate tool execution, returning a response based on the input provided.
+This code is a test suite for validating the functionality of the `LlmMessage` class and its interactions with various message types and tools. It uses the `pytest` framework to define test cases and fixtures. The `TestTool` class, which inherits from `LlmTool`, is a mock tool used to simulate tool call responses. The test suite includes fixtures that create instances of `LlmMessage`, `ChatCompletionMessage`, `ParsedChatCompletionMessage`, and `AnthropicMessage`, which are used in the test cases to verify the conversion and handling of messages between different formats and systems.
 
-The test cases cover a range of scenarios, including converting messages to and from persistent storage, handling tool call requests and responses, and ensuring consistent hashing of message objects. The fixtures provide predefined message instances that are used across multiple tests to ensure consistency and reusability. This file is intended to be part of a larger testing framework, ensuring that the message handling and tool execution components of the system function correctly and can interoperate with external APIs and message formats.
+The test cases cover several scenarios, including converting `LlmMessage` instances to and from persistent storage, handling OpenAI and Anthropic message formats, and executing tool call responses. The tests ensure that the `LlmMessage` class correctly processes content and message kinds, and that it can interact with tool call requests and responses. The suite also verifies the hashing functionality of `LlmMessage` instances to ensure consistent behavior. This code is intended to be run as part of a testing process to ensure the reliability and correctness of the message handling and tool interaction logic in the larger system.
 # Imports and Dependencies
 
 ---
@@ -28,43 +28,49 @@ The test cases cover a range of scenarios, including converting messages to and 
 
 ---
 ### TestTool<!-- {{#class:python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool}} -->
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L17>)
+
 - **Members**:
-    - `test_input`: A string input that should be set to 'success' or 'failure' to determine the response message.
-- **Description**: The `TestTool` class is a subclass of `LlmTool` designed to simulate a tool that returns a success message based on the value of the `test_input` attribute. It primarily serves as a testing utility, where the `test_input` should be set to either 'success' or 'failure', and the class provides a mechanism to generate a corresponding `LlmMessage` response. This class is useful for testing scenarios where tool call responses need to be simulated and verified.
+    - `test_input`: A string that the caller should set to 'success' or 'failure'.
+- **Description**: Implements a test tool that returns a success message based on the value of `test_input`. The tool expects the caller to set `test_input` to either 'success' or 'failure', and it generates a response message accordingly.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool._execute`](<#TestTool_execute>)
-    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool.to_tool_call_response_message`](<#TestToolto_tool_call_response_message>)
+    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool._execute`](<#testtool_execute>)
+    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool.to_tool_call_response_message`](<#testtoolto_tool_call_response_message>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../interfaces/llm_tool.py.md#LlmTool>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../interfaces/llm_tool.py.md#llmtool>)
 
 **Methods**
 
 ---
 #### TestTool\.\_execute<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool._execute}} -->
-The `_execute` method in the `TestTool` class returns a tool call response message based on the `test_input` attribute.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L25>)
+
+Returns a tool call response message based on the `test_input` attribute.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly calls `self.to_tool_call_response_message()` to generate a response message.
-    - The [`to_tool_call_response_message`](<#TestToolto_tool_call_response_message>) method constructs an `LlmMessage` using the `test_input` attribute and sets the message kind to `TOOL_CALL_RESPONSE`.
-- **Output**: The method returns an `LlmMessage` object that contains the content of `test_input` and a message kind of `TOOL_CALL_RESPONSE`.
+- **Logic and Control Flow**:
+    - Calls the [`to_tool_call_response_message`](<#testtoolto_tool_call_response_message>) method.
+    - Returns the result of the [`to_tool_call_response_message`](<#testtoolto_tool_call_response_message>) method.
+- **Output**: An `LlmMessage` object that contains the content of `test_input` and a message kind of `TOOL_CALL_RESPONSE`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool.to_tool_call_response_message`](<#TestToolto_tool_call_response_message>)
-- **See also**: [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool`](<#TestTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool.to_tool_call_response_message`](<#testtoolto_tool_call_response_message>)
+- **See also**: [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool`](<#testtool>)  (Base Class)
 
 
 ---
 #### TestTool\.to\_tool\_call\_response\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool.to_tool_call_response_message}} -->
-The `to_tool_call_response_message` method constructs and returns an [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object with content based on the `test_input` attribute and a message kind of `TOOL_CALL_RESPONSE`.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L28>)
+
+Creates an [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) with the content from `test_input` and a message kind of `TOOL_CALL_RESPONSE`.
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs an [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object.
-    - The `content` of the [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) is set to the value of `self.test_input`.
-    - The `message_kind` of the [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) is set to `MessageKind.TOOL_CALL_RESPONSE`.
-    - The constructed [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object is returned.
-- **Output**: An [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object with content derived from `self.test_input` and a message kind of `TOOL_CALL_RESPONSE`.
+- **Logic and Control Flow**:
+    - Creates an [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) object.
+    - Sets the `content` of the [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) to the value of `self.test_input`.
+    - Sets the `message_kind` of the [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) to `MessageKind.TOOL_CALL_RESPONSE`.
+    - Returns the created [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) object.
+- **Output**: An [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) object with the specified content and message kind.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
-- **See also**: [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool`](<#TestTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
+- **See also**: [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool`](<#testtool>)  (Base Class)
 
 
 
@@ -72,186 +78,212 @@ The `to_tool_call_response_message` method constructs and returns an [`LlmMessag
 
 ---
 ### llm\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.llm_message}} -->
-The `llm_message` function is a pytest fixture that returns a [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object with predefined content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L35>)
+
+Creates a fixture that returns a [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) object with predefined content and message kind.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a pytest fixture, which means it is used to provide a fixed baseline for tests.
-    - It creates and returns an instance of [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) with the content set to 'Hello, world!' and the message kind set to `MessageKind.USER`.
-- **Output**: The function returns an instance of [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) with specific content and message kind.
+- **Logic and Control Flow**:
+    - Returns a [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) object with the content set to 'Hello, world!' and the message kind set to `MessageKind.USER`.
+- **Output**: A [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) object with specific content and message kind.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
 
 ---
 ### openai\_chat\_tool\_call\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.openai_chat_tool_call_message}} -->
-The `openai_chat_tool_call_message` function is a pytest fixture that returns a `ChatCompletionMessage` object configured with a tool call to a test tool named 'TestTool'.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L40>)
+
+Creates a `ChatCompletionMessage` fixture with a predefined tool call for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a pytest fixture, which means it is used to set up some state or object for use in tests.
-    - It returns a `ChatCompletionMessage` object with several attributes set to `None` or specific values.
-    - The `tool_calls` attribute is populated with a list containing a single `ChatCompletionMessageToolCall` object.
-    - The `ChatCompletionMessageToolCall` object is initialized with an ID, a function of type `OpenAIFunction` with the name 'TestTool' and arguments specifying a test input, and a type set to 'function'.
-- **Output**: The function outputs a `ChatCompletionMessage` object with a predefined tool call configuration.
+- **Logic and Control Flow**:
+    - Returns a `ChatCompletionMessage` object with `content`, `refusal`, `audio`, and `function_call` set to `None`.
+    - Sets the `role` of the message to `assistant`.
+    - Includes a `tool_calls` list containing one `ChatCompletionMessageToolCall` object.
+    - The `ChatCompletionMessageToolCall` object has an `id` of "1", a `function` defined by an `OpenAIFunction` with the name "TestTool" and arguments `{"test_input": "success"}`, and a `type` of "function".
+- **Output**: A `ChatCompletionMessage` object with a predefined tool call.
 
 
 ---
 ### openai\_parsed\_chat\_completion\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.openai_parsed_chat_completion_message}} -->
-The `openai_parsed_chat_completion_message` function is a pytest fixture that returns a `ParsedChatCompletionMessage` object with predefined content and role.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L61>)
+
+Creates a `ParsedChatCompletionMessage` fixture with predefined content and role.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a pytest fixture, which means it is used to provide a fixed baseline for tests.
-    - It returns a `ParsedChatCompletionMessage` object initialized with specific content and role values.
-- **Output**: A `ParsedChatCompletionMessage` object with content set to 'Hello, world! - openai parsed chat completion' and role set to 'assistant'.
+- **Logic and Control Flow**:
+    - Returns a `ParsedChatCompletionMessage` object with `content` set to 'Hello, world! - openai parsed chat completion' and `role` set to 'assistant'.
+- **Output**: A `ParsedChatCompletionMessage` object with specified content and role.
 
 
 ---
 ### openai\_chat\_completion\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.openai_chat_completion_message}} -->
-The `openai_chat_completion_message` function is a pytest fixture that returns a `ChatCompletionMessage` object with predefined content and role.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L69>)
+
+Creates a `ChatCompletionMessage` fixture with predefined content and role for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a pytest fixture, which means it is used to provide a fixed baseline for tests.
-    - It returns a `ChatCompletionMessage` object initialized with specific content and role values.
-- **Output**: A `ChatCompletionMessage` object with content set to 'Hello, world! - openai chat completion' and role set to 'assistant'.
+- **Logic and Control Flow**:
+    - Returns a `ChatCompletionMessage` object with the content set to 'Hello, world! - openai chat completion'.
+    - Sets the role of the message to 'assistant'.
+- **Output**: A `ChatCompletionMessage` object with specified content and role.
 
 
 ---
 ### anthropic\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.anthropic_message}} -->
-The `anthropic_message` function is a pytest fixture that creates and returns an `AnthropicMessage` object with predefined attributes.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L77>)
+
+Creates and returns an `AnthropicMessage` object with predefined attributes for testing purposes.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
-- **Control Flow**:
-    - The function initializes an `AnthropicMessage` object with specific attributes such as `id`, `role`, `content`, `model`, `type`, and `usage`.
-    - The function returns the created `AnthropicMessage` object.
+- **Logic and Control Flow**:
+    - Creates an `AnthropicMessage` object with a specific `id`, `role`, `content`, `model`, `type`, and `usage`.
+    - Returns the created `AnthropicMessage` object.
 - **Output**: An `AnthropicMessage` object with predefined attributes.
 
 
 ---
 ### test\_llm\_message\_to\_string<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_llm_message_to_string}} -->
-The function `test_llm_message_to_string` verifies that a given `LlmMessage` object has the expected content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L89>)
+
+Validates that the `llm_message` has the expected content and message kind.
 - **Inputs**:
-    - `llm_message`: An instance of `LlmMessage` that is expected to have specific content and message kind for the test.
-- **Control Flow**:
-    - The function uses assertions to check that the `content` attribute of `llm_message` is equal to 'Hello, world!'.
-    - It also asserts that the `message_kind` attribute of `llm_message` is equal to `MessageKind.USER`.
-- **Output**: The function does not return any value; it raises an assertion error if the checks fail.
+    - `llm_message`: An instance of `LlmMessage` to validate.
+- **Logic and Control Flow**:
+    - Use `assert` to check if `llm_message.content` is equal to 'Hello, world!'.
+    - Use `assert` to check if `llm_message.message_kind` is equal to `MessageKind.USER`.
+- **Output**: None, but raises an `AssertionError` if any assertion fails.
 
 
 ---
 ### test\_to\_persistent\_llm\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_to_persistent_llm_message}} -->
-The function `test_to_persistent_llm_message` tests the conversion of an `LlmMessage` to its persistent form and verifies its content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L94>)
+
+Tests the conversion of an `LlmMessage` to a persistent format and verifies its content and message kind.
 - **Inputs**:
-    - `llm_message`: An instance of `LlmMessage` that is used to test the conversion to a persistent message.
-- **Control Flow**:
-    - Convert the `llm_message` to a persistent LLM message using the `to_persistent_llm_message` method.
-    - Assert that the `content` field of the resulting persistent message's JSON representation is 'Hello, world!'.
-    - Assert that the `message_kind` field of the resulting persistent message's JSON representation is `MessageKind.USER`.
-- **Output**: The function does not return any value; it raises an assertion error if the tests fail.
+    - `llm_message`: An instance of `LlmMessage` to be converted to a persistent format.
+- **Logic and Control Flow**:
+    - Call the `to_persistent_llm_message` method on the `llm_message` to convert it to a persistent format.
+    - Assert that the `content` field of the resulting persistent message is 'Hello, world!'.
+    - Assert that the `message_kind` field of the resulting persistent message is `MessageKind.USER`.
+- **Output**: No output is returned as the function is a test and uses assertions to validate behavior.
 
 
 ---
 ### test\_from\_persistent\_llm\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_from_persistent_llm_message}} -->
-The function `test_from_persistent_llm_message` tests the conversion of an `LlmMessage` to a persistent format and back, ensuring data integrity.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L100>)
+
+Tests the conversion of an `LlmMessage` to and from a persistent format and verifies the integrity of the message content and kind.
 - **Inputs**:
-    - `llm_message`: An instance of `LlmMessage` representing a message with content and kind.
-- **Control Flow**:
-    - Convert the `llm_message` to a persistent format using `to_persistent_llm_message()` method.
-    - Assert that the `content` field of the persistent message JSON is 'Hello, world!'.
-    - Assert that the `message_kind` field of the persistent message JSON is `MessageKind.USER`.
+    - `llm_message`: An instance of `LlmMessage` to test the conversion process.
+- **Logic and Control Flow**:
+    - Convert `llm_message` to a persistent format using `to_persistent_llm_message()` method.
+    - Assert that the `content` of the persistent message is 'Hello, world!'.
+    - Assert that the `message_kind` of the persistent message is `MessageKind.USER`.
     - Convert the persistent message back to an `LlmMessage` using `from_persistent_llm_message()` method.
-    - Assert that the original `llm_message` is equal to the message obtained from the persistent format.
-- **Output**: The function does not return any value; it raises an assertion error if any of the checks fail.
+    - Assert that the original `llm_message` is equal to the `LlmMessage` obtained from the persistent message.
+- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 
 
 ---
 ### test\_from\_openai\_chat\_completion\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_from_openai_chat_completion_message}} -->
-The function tests the conversion of an OpenAI chat completion message to an LlmMessage and verifies its content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L107>)
+
+Tests the conversion of an OpenAI chat completion message to an LlmMessage and verifies its content and message kind.
 - **Inputs**:
-    - `openai_chat_completion_message`: An instance of ChatCompletionMessage representing a message from OpenAI's chat completion.
-- **Control Flow**:
-    - Convert the input OpenAI chat completion message to an LlmMessage using the from_openai_chat_completion_message method.
-    - Assert that the content of the resulting LlmMessage is 'Hello, world! - openai chat completion'.
-    - Assert that the message kind of the resulting LlmMessage is MessageKind.ASSISTANT.
-- **Output**: The function does not return any value; it raises an assertion error if the test conditions are not met.
+    - `openai_chat_completion_message`: An instance of `ChatCompletionMessage` representing the OpenAI chat completion message to be tested.
+- **Logic and Control Flow**:
+    - Call `LlmMessage.from_openai_chat_completion_message` with `openai_chat_completion_message` to convert it to an `LlmMessage`.
+    - Use `assert` to check if the `content` of `llm_message` is equal to 'Hello, world! - openai chat completion'.
+    - Use `assert` to check if the `message_kind` of `llm_message` is equal to `MessageKind.ASSISTANT`.
+- **Output**: No output is returned as this is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../interfaces/llm_message.py.md#llmmessagefrom_openai_chat_completion_message>)
 
 
 ---
 ### test\_from\_anthropic\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_from_anthropic_message}} -->
-The function `test_from_anthropic_message` tests the conversion of an `AnthropicMessage` to an `LlmMessage` and verifies its content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L117>)
+
+Tests the conversion of an `AnthropicMessage` to an `LlmMessage` and verifies its content and message kind.
 - **Inputs**:
-    - `anthropic_message`: An instance of `AnthropicMessage` that contains message details such as content, role, and other metadata.
-- **Control Flow**:
-    - Convert the `anthropic_message` to an `LlmMessage` using the [`from_anthropic_message`](<../interfaces/llm_message.py.md#LlmMessagefrom_anthropic_message>) method.
-    - Assert that the content of the resulting `LlmMessage` is 'Hello, world! - anthropic'.
-    - Assert that the message kind of the resulting `LlmMessage` is `MessageKind.ASSISTANT`.
-- **Output**: The function does not return any value; it raises an assertion error if the tests fail.
+    - `anthropic_message`: An instance of `AnthropicMessage` that contains the message data to be converted.
+- **Logic and Control Flow**:
+    - Call `LlmMessage.from_anthropic_message` with `anthropic_message` to convert it to an `LlmMessage`.
+    - Use `assert` to check that the `content` of the resulting `LlmMessage` is 'Hello, world! - anthropic'.
+    - Use `assert` to check that the `message_kind` of the resulting `LlmMessage` is `MessageKind.ASSISTANT`.
+- **Output**: No output is returned; the function uses assertions to validate the conversion.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_anthropic_message`](<../interfaces/llm_message.py.md#LlmMessagefrom_anthropic_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_anthropic_message`](<../interfaces/llm_message.py.md#llmmessagefrom_anthropic_message>)
 
 
 ---
 ### test\_tool\_call\_response\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_tool_call_response_message}} -->
-The function `test_tool_call_response_message` tests the conversion of an OpenAI chat tool call message into an LlmMessage and verifies the execution and response of a tool call.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L123>)
+
+Tests the response message of a tool call using an OpenAI chat tool call message.
 - **Inputs**:
-    - `openai_chat_tool_call_message`: An instance of ChatCompletionMessage representing a tool call message from OpenAI.
-- **Control Flow**:
-    - Convert the OpenAI chat tool call message into an LlmMessage using the [`from_openai_chat_completion_message`](<../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message>) method, specifying `TestTool` as the tool type.
-    - Assert that the message kind of the converted LlmMessage is `MessageKind.TOOL_CALL_REQUEST`.
-    - Retrieve the tool requests from the LlmMessage and assert that there is exactly one tool request.
-    - Assert that the name of the tool request matches the name of `TestTool`.
-    - Assert that the arguments of the tool request are equal to '{"test_input": "success"}'.
-    - Execute the tool request using the [`_execute`](<#TestTool_execute>) method of the parsed tool and store the result in `tool_response`.
-    - Assert that the content of `tool_response` is "success".
-    - Assert that the message kind of `tool_response` is `MessageKind.TOOL_CALL_RESPONSE`.
-- **Output**: The function does not return any value; it raises an assertion error if any of the assertions fail.
+    - `openai_chat_tool_call_message`: An instance of `ChatCompletionMessage` representing the OpenAI chat tool call message to test.
+- **Logic and Control Flow**:
+    - Convert `openai_chat_tool_call_message` to an `LlmMessage` using `LlmMessage.from_openai_chat_completion_message` with `TestTool` as the tool type.
+    - Assert that the `message_kind` of `llm_message` is `MessageKind.TOOL_CALL_REQUEST`.
+    - Retrieve `tool_requests` from `llm_message` and assert its length is 1.
+    - Assert that the name of the first tool request is `TestTool.__name__`.
+    - Assert that the arguments of the first tool request are `'{"test_input": "success"}'`.
+    - Execute the parsed tool of the first tool request and store the result in `tool_response`.
+    - Assert that the `content` of `tool_response` is "success".
+    - Assert that the `message_kind` of `tool_response` is `MessageKind.TOOL_CALL_RESPONSE`.
+- **Output**: None, as this is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../interfaces/llm_message.py.md#LlmMessagefrom_openai_chat_completion_message>)
-    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool._execute`](<#TestTool_execute>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_chat_completion_message`](<../interfaces/llm_message.py.md#llmmessagefrom_openai_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/tests/test_llm_message.TestTool._execute`](<#testtool_execute>)
 
 
 ---
 ### test\_llm\_message\_to\_persistent\_llm\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_llm_message_to_persistent_llm_message}} -->
-The function `test_llm_message_to_persistent_llm_message` tests the conversion of an [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object to a persistent format and verifies its content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L140>)
+
+Tests the conversion of an [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) to a persistent format and verifies the content and message kind.
 - **Inputs**: None
-- **Control Flow**:
-    - Create an [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object with content 'Hello, world!' and message kind `MessageKind.USER`.
-    - Convert the [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) object to a persistent format using `to_persistent_llm_message()`.
-    - Assert that the `content` in the persistent message's JSON representation matches 'Hello, world!'.
-    - Assert that the `message_kind` in the persistent message's JSON representation matches `MessageKind.USER`.
-- **Output**: The function does not return any value; it raises an assertion error if the test conditions are not met.
+- **Logic and Control Flow**:
+    - Create an [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) instance with content 'Hello, world!' and message kind `MessageKind.USER`.
+    - Convert the [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) instance to a persistent format using `to_persistent_llm_message()`.
+    - Assert that the `content` in the persistent message JSON is 'Hello, world!'.
+    - Assert that the `message_kind` in the persistent message JSON is `MessageKind.USER`.
+- **Output**: No output is returned as the function is a test and uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
 
 ---
 ### test\_llm\_message\_from\_openai\_parsed\_chat\_completion\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_llm_message_from_openai_parsed_chat_completion_message}} -->
-The function tests the conversion of a ParsedChatCompletionMessage to an LlmMessage and verifies its content and message kind.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L147>)
+
+Tests the conversion of a `ParsedChatCompletionMessage` to an `LlmMessage` and verifies its content and message kind.
 - **Inputs**:
-    - `openai_parsed_chat_completion_message`: A ParsedChatCompletionMessage object representing a parsed chat completion message from OpenAI.
-- **Control Flow**:
-    - Call the static method from_openai_parsed_chat_completion_message of the LlmMessage class with the input openai_parsed_chat_completion_message to create an LlmMessage object.
-    - Assert that the content of the resulting LlmMessage is 'Hello, world! - openai parsed chat completion'.
-    - Assert that the message_kind of the resulting LlmMessage is MessageKind.ASSISTANT.
-- **Output**: The function does not return any value; it raises an AssertionError if any of the assertions fail.
+    - `openai_parsed_chat_completion_message`: A `ParsedChatCompletionMessage` object that contains the content and role of the message to be converted.
+- **Logic and Control Flow**:
+    - Call `LlmMessage.from_openai_parsed_chat_completion_message` with `openai_parsed_chat_completion_message` to convert it to an `LlmMessage`.
+    - Assert that the `content` of the resulting `LlmMessage` is 'Hello, world! - openai parsed chat completion'.
+    - Assert that the `message_kind` of the resulting `LlmMessage` is `MessageKind.ASSISTANT`.
+- **Output**: No output is returned as this is a test function that uses assertions to validate behavior.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_parsed_chat_completion_message`](<../interfaces/llm_message.py.md#LlmMessagefrom_openai_parsed_chat_completion_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.from_openai_parsed_chat_completion_message`](<../interfaces/llm_message.py.md#llmmessagefrom_openai_parsed_chat_completion_message>)
 
 
 ---
 ### test\_llm\_message\_hash<!-- {{#callable:python-backend/packages/shared/shared/v3/tests/test_llm_message.test_llm_message_hash}} -->
-The function `test_llm_message_hash` verifies that two [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) objects with identical content and message kind have the same hash value.
+[View Source →](<../../../../../../../packages/shared/shared/v3/tests/test_llm_message.py#L157>)
+
+Verifies that two [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) instances with identical content and message kind have the same hash value.
 - **Inputs**: None
-- **Control Flow**:
-    - Create two [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) objects, `llm_message_1` and `llm_message_2`, both with the content 'Hello, world!' and message kind `MessageKind.USER`.
+- **Logic and Control Flow**:
+    - Create two [`LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>) instances, `llm_message_1` and `llm_message_2`, with the same content 'Hello, world!' and message kind `MessageKind.USER`.
     - Use the `assert` statement to check that the hash values of `llm_message_1` and `llm_message_2` are equal.
-- **Output**: The function does not return any value; it raises an assertion error if the hash values of the two [`LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>) objects are not equal.
+- **Output**: No output is returned as this is a test function; it raises an assertion error if the hash values are not equal.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#LlmMessage>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 
 
 

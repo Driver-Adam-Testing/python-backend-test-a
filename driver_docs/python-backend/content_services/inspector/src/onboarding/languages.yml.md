@@ -3,35 +3,28 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `languages.yml` file in the `python-backend` codebase defines various programming, markup, and data languages known to GitHub, including their properties such as file extensions, color representation, and syntax highlighting modes.
+Defines language metadata for GitHub, including type, color, extensions, and highlighting modes.
 
 # Purpose
-The provided content is from a YAML configuration file that defines metadata for various programming, markup, prose, and data languages recognized by GitHub. This file is part of the Linguist library, which GitHub uses to detect and highlight the programming languages in repositories. Each language entry includes attributes such as `type` (indicating whether the language is for programming, data, markup, or prose), `color` (a CSS hex color for visual representation), `extensions` (file extensions associated with the language), and `ace_mode` (the mode used by the Ace editor for syntax highlighting). Additional fields like `tm_scope`, `codemirror_mode`, and `codemirror_mime_type` are used for integrating with text editors and syntax highlighters. The file's content is crucial for language detection, syntax highlighting, and statistical analysis of codebases on GitHub, ensuring that files are correctly identified and displayed with appropriate syntax highlighting.
+This file is a YAML configuration file that defines metadata for various programming, markup, and data languages recognized by GitHub. Each language entry includes several attributes such as `type`, `color`, `extensions`, `tm_scope`, `ace_mode`, and `language_id`. The `type` attribute categorizes the language as programming, data, markup, or prose. The `color` attribute specifies a CSS hex color code used to visually represent the language. The `extensions` attribute lists file extensions associated with the language, while `tm_scope` and `ace_mode` are used for syntax highlighting in text editors. The `language_id` is a unique identifier for each language, ensuring consistent indexing across GitHub. This file is crucial for language detection and syntax highlighting on GitHub, enhancing code readability and organization.
 # Content Summary
-The provided content is a YAML configuration file that defines metadata for various programming, markup, prose, and data languages recognized by GitHub. This file is crucial for developers working with GitHub's Linguist library, which is responsible for language detection and syntax highlighting on the platform. Here are the key technical details:
+The provided content is a configuration file that defines metadata for various programming, markup, prose, and data languages recognized by GitHub. This file is structured in YAML format and includes detailed information for each language, such as:
 
-1. **Language Definition**: Each language is defined with a set of attributes that describe its characteristics and how it should be handled by GitHub's systems.
+- **fs_name**: An optional field used when the language name is not a valid filename on Windows.
+- **type**: Specifies the category of the language, which can be data, programming, markup, prose, or nil.
+- **aliases**: Lists alternative names for the language.
+- **ace_mode**: Indicates the Ace Mode for syntax highlighting when editing files.
+- **codemirror_mode** and **codemirror_mime_type**: Define the CodeMirror mode and MIME type for syntax highlighting.
+- **wrap**: A boolean indicating if line wrapping is enabled (default is false).
+- **extensions**: Lists file extensions associated with the language, with the first being the primary extension.
+- **filenames**: Lists common filenames associated with the language.
+- **interpreters**: Lists interpreters associated with the language.
+- **language_id**: A unique integer identifier for the language, used for indexing.
+- **color**: A CSS hex color code representing the language, used for programming or markup types.
+- **tm_scope**: The TextMate scope for the language, used for syntax highlighting.
+- **group**: Indicates a parent language group for statistical purposes.
 
-2. **Attributes**:
-   - **`fs_name`**: An optional field used when the language name is not a valid filename on Windows.
-   - **`type`**: Specifies the category of the language, such as programming, markup, prose, or data.
-   - **`aliases`**: Lists alternative names for the language.
-   - **`ace_mode`**: Indicates the Ace editor mode for syntax highlighting.
-   - **`codemirror_mode`** and **`codemirror_mime_type`**: Define the CodeMirror editor mode and MIME type for syntax highlighting.
-   - **`wrap`**: A boolean indicating if line wrapping should be enabled.
-   - **`extensions`**: Lists file extensions associated with the language.
-   - **`filenames`**: Lists specific filenames associated with the language.
-   - **`interpreters`**: Lists interpreters associated with the language.
-   - **`language_id`**: A unique integer identifier for the language, used for indexing.
-   - **`color`**: A CSS hex color code representing the language, used for visual identification.
-   - **`tm_scope`**: The TextMate scope for the language, used for syntax highlighting.
-   - **`group`**: Indicates a parent language group for statistical purposes.
-
-3. **Maintenance**: The file includes instructions for maintaining the list, such as keeping it alphabetized and ensuring any changes are accompanied by corresponding test updates in `test/test_blob.rb`.
-
-4. **Usage**: This configuration is used by GitHub to accurately detect and display code in repositories, providing users with appropriate syntax highlighting and language statistics.
-
-This file is essential for developers contributing to or maintaining the Linguist library, as it directly impacts how languages are recognized and displayed on GitHub.
+Each language entry is alphabetized and includes specific details such as color codes, file extensions, and syntax highlighting modes. The file also notes that any changes should be accompanied by corresponding test changes in `test/test_blob.rb`. This configuration is essential for developers working with GitHub's Linguist library, which is responsible for language detection and syntax highlighting on the platform.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

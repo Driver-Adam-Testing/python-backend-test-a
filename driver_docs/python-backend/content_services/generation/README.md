@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Source code for processing inline edits and smart instructions using Modal, with configuration files for managing dependencies and project settings with Poetry.
+Asynchronous functions for inline editing, smart instruction processing, and Python project configuration.
 
 ## Folders
-- **[src](src/README.md)**: The `src` folder in the `python-backend` codebase contains the `main.py` file, which defines asynchronous functions for processing inline edits and smart instructions using Modal, with dependencies managed via a Debian Slim image and secrets for external services.
+- **[src](src/README.md)**: Defines asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
 
 ## Files
 - **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
-- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies and build system details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

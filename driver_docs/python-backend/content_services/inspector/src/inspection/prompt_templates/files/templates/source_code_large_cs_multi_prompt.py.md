@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_cs_multi_prompt.py` file defines a template for generating multi-prompt structures specifically for analyzing and processing large C# source code files, including handling classes, structs, and interfaces.
+Templates for generating multi-prompt structures for C# source code inspection.
 
 # Purpose
-This Python code defines a structured template for generating multi-prompt instructions specifically tailored for analyzing C# source code. The file is part of a larger system that appears to facilitate the extraction and organization of information from C# codebases. It imports various components and instructions from shared and utility modules, which are then used to construct a series of prompts. These prompts are designed to guide the analysis of C# code, focusing on different aspects such as the purpose of the code, its imports and dependencies, and the identification of classes, structs, and interfaces within the code. The template is structured to handle large systems by breaking down the analysis into manageable components, leveraging both static analysis and language model (LLM) insights.
+The code defines a template for generating structured prompts related to C# source code analysis. It imports several components and instructions from different modules, which are used to construct prompts for analyzing and documenting C# code. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS`, is a list of tuples, each specifying a different aspect of the analysis, such as the purpose of the code, imports and dependencies, classes, structs, and interfaces. Each tuple contains a specific type of prompt or function that processes the C# code to extract relevant information.
 
-The code is not a standalone script but rather a library component intended to be integrated into a larger system that processes and analyzes C# code. It defines a public API in the form of the `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS` variable, which is a list of tuples. Each tuple represents a specific aspect of the code analysis, such as purpose, imports, classes, structs, and interfaces, and specifies the method of analysis, whether through static analysis or LLM. This structured approach allows for a comprehensive and systematic examination of C# code, making it a valuable tool for developers and analysts working with large C# codebases.
+The template uses components like `Prompt`, `Component`, and various collections for C# classes, structs, and interfaces. These components help in creating structured prompts that guide the analysis of C# code. The template is designed to handle large systems by breaking down the analysis into manageable parts, such as identifying imports, classes, structs, and interfaces. The use of `Prompt.empty()` and `Component` allows for the dynamic construction of prompts based on the specific needs of the analysis. This code is intended to be part of a larger system that automates the documentation and analysis of C# source code.
 # Imports and Dependencies
 
 ---
@@ -34,9 +34,9 @@ The code is not a standalone script but rather a library component intended to b
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_CS
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS` is a list of tuples, each representing a different aspect of C# source code analysis and generation. Each tuple contains a type identifier, a description string, and a series of components or functions that are used to generate or analyze specific parts of C# code, such as purpose, imports, classes, structs, and interfaces.
-- **Use**: This variable is used to define a structured template for generating and analyzing C# code using multiple prompts and conditions.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a description, and a series of `Prompt` objects or functions related to C# code analysis and documentation. Each tuple represents a different aspect of the code, such as purpose, imports, classes, structs, and interfaces.
+- **Use**: Used to define a structured template for generating multi-prompt documentation for C# source code.
 
 
 

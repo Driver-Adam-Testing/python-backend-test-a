@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `scripts` folder in the `python-backend` codebase contains a shell script, `test.sh`, designed for managing Docker Compose environments to facilitate backend testing.
+Shell script to build, run, and test a Docker Compose environment for the backend.
 
 
 ## Files
-- **[test.sh](test.sh.md)**: The `test.sh` file is a shell script for building, running, and cleaning up Docker Compose environments to execute backend tests in the `python-backend` codebase.
+- **[test.sh](test.sh.md)**: Shell script to build, run, and test a Docker Compose environment for the backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

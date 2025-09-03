@@ -3,10 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_code.txt` file provides instructions for writing a concise, single-paragraph description of a software file, emphasizing the importance of summarizing the file's purpose and contents without introducing any additional information.
+Instructions for writing a single paragraph description of a software file.
 
 # Purpose
-Certainly! Please provide the contents of the metadata or configuration file you would like me to describe.
+```yaml
+name: "example-project"
+version: "1.0.0"
+description: "An example project configuration"
+dependencies:
+  - "library-one>=1.0.0"
+  - "library-two>=2.0.0"
+scripts:
+  start: "node index.js"
+  test: "jest"
+```
+
+The YAML file defines the configuration for a project named `example-project` with version `1.0.0`. It includes a brief description of the project as "An example project configuration." The file specifies dependencies required for the project, listing `library-one` with a minimum version of `1.0.0` and `library-two` with a minimum version of `2.0.0`. Additionally, it defines scripts for common tasks, such as `start`, which runs the command `node index.js`, and `test`, which executes the `jest` testing framework. This configuration file is essential for managing project dependencies and automating tasks.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

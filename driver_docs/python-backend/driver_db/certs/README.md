@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Public key certificates for database driver authentication and secure database connections.
+Development and production database public key certificates for secure communication.
 
 
 ## Files
-- **[dev_db_public_key.cert](dev_db_public_key.cert.md)**: The `dev_db_public_key.cert` file contains a public key certificate used in the `python-backend` codebase for database driver authentication.
-- **[prod_db_public_key.cert](prod_db_public_key.cert.md)**: The `prod_db_public_key.cert` file contains a public key certificate used for secure database connections in the `python-backend` codebase.
+- **[dev_db_public_key.cert](dev_db_public_key.cert.md)**: Development database public key certificate for secure communication.
+- **[prod_db_public_key.cert](prod_db_public_key.cert.md)**: Public key certificate for the production database in the Python backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

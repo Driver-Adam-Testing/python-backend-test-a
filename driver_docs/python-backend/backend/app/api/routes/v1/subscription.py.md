@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `subscription.py` file defines API routes for retrieving active subscription details and creating new subscriptions, utilizing permissions and session management within the FastAPI framework.
+API routes for managing subscriptions, including getting active subscription details and creating subscriptions.
 
 # Purpose
-This Python file is a FastAPI router module that provides API endpoints for managing subscription-related operations within an organization. It defines two primary endpoints: one for retrieving the active subscription details of an organization and another for creating a new subscription. The module leverages FastAPI's `APIRouter` to organize these endpoints, ensuring they are easily integrated into a larger application. The endpoints are protected by specific permissions, such as `OrgManagerPermission` and `SubscriptionManagerPermission`, which are imported from the application's authentication module, ensuring that only authorized users can access or modify subscription data.
+This code defines a FastAPI router for managing subscription-related operations within an organization. It provides two main endpoints: one for retrieving the active subscription details of an organization and another for creating a new subscription. The [`get_active_subscription`](<#get_active_subscription>) function is a GET endpoint that requires `OrgManagerPermission` and returns the active subscription details for the organization associated with the user. If no active subscription is found, it raises a 404 HTTP exception.
 
-The technical components of this file include the use of the `BillingService` class, which is responsible for interacting with the billing system to fetch or create subscription records. The endpoints utilize data models like `CreateSubscriptionRequest` and `SubscriptionRecord` to handle input and output data structures, ensuring type safety and validation. The file is designed to be part of a larger application, likely serving as a microservice or a component within a service-oriented architecture, focusing specifically on subscription management. It does not define a broad public API but rather a focused set of functionalities related to billing and subscriptions, intended to be used internally within the application or by other services that require subscription management capabilities.
+The [`create_subscription`](<#create_subscription>) function is a POST endpoint that requires `SubscriptionManagerPermission` and a valid `M2MToken`. It allows the creation of a new subscription by accepting a `CreateSubscriptionRequest` object, which includes details such as the organization ID, plan type, billing frequency, and start date. If the token is invalid, it raises a 403 HTTP exception. Both functions utilize the `BillingService` to interact with the billing system, ensuring that subscription operations are handled consistently.
 # Imports and Dependencies
 
 ---
@@ -28,46 +28,50 @@ The technical components of this file include the use of the `BillingService` cl
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a group of related API endpoints, allowing for modular and organized route management within the application.
-- **Use**: This variable is used to register and manage API routes for subscription-related operations, such as getting active subscription details and creating new subscriptions.
+- **Type**: ``APIRouter``
+- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage the routing of HTTP requests to specific endpoint functions within the application.
+- **Use**: Routes HTTP requests to the appropriate endpoint functions defined in the application.
 
 
 # Functions
 
 ---
 ### get\_active\_subscription<!-- {{#callable:python-backend/backend/app/api/routes/v1/subscription.get_active_subscription}} -->
-The `get_active_subscription` function retrieves the active subscription details for an organization based on the user's organization ID.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/subscription.py#L19>)
+
+Retrieves the active subscription details for a user's organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: An instance of CurrentSession, representing the current session context.
-    - `user`: An instance of UserToken, representing the authenticated user, which includes the user's organization ID.
-- **Control Flow**:
-    - The function calls [`get_active_subscription_by_org`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingServiceget_active_subscription_by_org>) on the [`BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingService>) instance, passing the user's organization ID to retrieve the active subscription.
-    - If no subscription is found, an HTTPException with a 404 status code is raised, indicating that the subscription was not found.
-    - If a subscription is found, it is returned as the result of the function.
-- **Output**: The function returns a `SubscriptionRecord` object representing the active subscription details for the organization.
+    - `session`: A `CurrentSession` object that represents the current session context.
+    - `user`: A `UserToken` object that contains the user's authentication and organization information.
+- **Logic and Control Flow**:
+    - Call [`get_active_subscription_by_org`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingserviceget_active_subscription_by_org>) method of [`BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingservice>) with the user's organization ID to retrieve the active subscription.
+    - Check if the `subscription` is `None`, and if so, raise an `HTTPException` with a 404 status code and message 'Subscription not found.'
+    - Return the `subscription` if it exists.
+- **Output**: A `SubscriptionRecord` object representing the active subscription details.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget>)
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingService>)
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingServiceget_active_subscription_by_org>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingservice>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.get_active_subscription_by_org`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingserviceget_active_subscription_by_org>)
 
 
 ---
 ### create\_subscription<!-- {{#callable:python-backend/backend/app/api/routes/v1/subscription.create_subscription}} -->
-The [`create_subscription`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingServicecreate_subscription>) function creates a new subscription for an organization using the provided session, token, and subscription request details.
+[View Source →](<../../../../../../../backend/app/api/routes/v1/subscription.py#L35>)
+
+Creates a new subscription for an organization using the provided session, token, and request data.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` representing the current database session.
-    - `current_token`: An instance of `M2MToken` representing the machine-to-machine authentication token.
-    - `request`: An instance of `CreateSubscriptionRequest` containing the details required to create a subscription, such as organization ID, plan type, billing frequency, and start date.
-- **Control Flow**:
-    - Check if `current_token` is `None`, and if so, raise an `HTTPException` with a 403 status code indicating forbidden access.
-    - Call the [`create_subscription`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingServicecreate_subscription>) method of the [`BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingService>) class, passing the organization ID, plan type, billing frequency, and start date from the `request` object.
-- **Output**: Returns a `SubscriptionRecord` object representing the newly created subscription.
+    - `session`: The current session object, which provides context for the operation.
+    - `current_token`: An M2MToken object that represents the current machine-to-machine authentication token.
+    - `request`: A CreateSubscriptionRequest object containing the details needed to create a subscription, such as organization ID, plan type, billing frequency, and start date.
+- **Logic and Control Flow**:
+    - Check if the `current_token` is `None` and raise an `HTTPException` with status code 403 if true.
+    - Call the [`create_subscription`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingservicecreate_subscription>) method of the [`BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingservice>) class with the session and request data to create a new subscription.
+- **Output**: A `SubscriptionRecord` object representing the newly created subscription.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingService>)
-    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.create_subscription`](<../../../../../packages/shared/shared/billing/billing_service.py.md#BillingServicecreate_subscription>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingservice>)
+    - [`python-backend/packages/shared/shared/billing/billing_service.BillingService.create_subscription`](<../../../../../packages/shared/shared/billing/billing_service.py.md#billingservicecreate_subscription>)
 
 
 

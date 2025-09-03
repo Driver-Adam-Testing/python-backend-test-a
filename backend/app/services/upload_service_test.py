@@ -1,7 +1,7 @@
 # import pytest
 
 # # Reuse fixtures from conftest.py
-# from database.models_v1 import Workspace
+# from database.models import Workspace
 # from fastapi import HTTPException
 # from pydantic import ValidationError
 

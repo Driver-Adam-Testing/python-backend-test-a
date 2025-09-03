@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `abbreviate_page_content.py` file implements a pipeline for summarizing page content before and after a cursor position using a language model client, with support for concurrent processing of text chunks.
+A pipeline for summarizing page content using language model clients, with support for concurrent processing.
 
 # Purpose
-This Python code file defines a function, [`abbreviate_page_content`](<#abbreviate_page_content>), which is designed to summarize text content from a document, specifically focusing on the content before and after a cursor position. The function utilizes a language model client, `LlmClient`, to perform the summarization tasks. The code is structured to handle text in chunks, allowing for efficient processing of large text bodies by splitting the content into manageable parts and summarizing each chunk separately. The use of `concurrent.futures.ThreadPoolExecutor` enables parallel processing of these chunks, enhancing performance by leveraging concurrent execution. The summarized results are then aggregated to form a complete response, encapsulated in the `AbbreviatedPageContentPipelineResponse` class.
+The code defines a function [`abbreviate_page_content`](<#abbreviate_page_content>) that processes and summarizes text content from a document. It uses a language model client, `LlmClient`, to generate abbreviated versions of the text before and after a cursor position within a document. The function takes a user prompt and optional text segments as input and returns an `AbbreviatedPageContentPipelineResponse` object containing the summarized text. The code splits the text into manageable chunks, processes each chunk concurrently using a thread pool, and then combines the results to form the final summarized output.
 
-The file imports several components from a shared library, indicating that it is part of a larger system, likely intended to be used as a module within a broader application. The code defines several data models using Pydantic's `BaseModel` and custom interfaces like `LlmParseable`, which facilitate structured data handling and validation. The primary purpose of this code is to provide a robust and efficient mechanism for text summarization, leveraging advanced language model capabilities. It is designed to be integrated into applications that require dynamic text processing, such as document editors or content management systems, where summarizing large text sections is necessary for improving user experience or data analysis.
+The code includes several classes and functions to support its operation. The `AbbreviatedDocumentText` and `AbbreviatedPageContentPipelineResponse` classes define the structure of the summarized text. The `SummarizedChunkResponse` class, based on `BaseModel`, represents the response for each text chunk. The `create_chunks` function divides the text into chunks, ensuring that a portion of the text remains untouched for context. The `summarize_chunk` function uses the `LlmClient` to generate a summary for each chunk. The code is designed to be part of a larger system, as indicated by its imports from shared modules, and it provides a specific functionality for text summarization.
 # Imports and Dependencies
 
 ---
@@ -26,47 +26,53 @@ The file imports several components from a shared library, indicating that it is
 
 ---
 ### TEXT\_PADDING\_WORD\_SIZE
-- **Type**: `int`
-- **Description**: `TEXT_PADDING_WORD_SIZE` is an integer variable set to 50, representing the number of words used as padding when processing text content. It is used to determine the number of words that should remain untouched at the beginning or end of a text segment during text summarization.
-- **Use**: This variable is used to define the size of the padding for text segments when creating chunks for summarization.
+- **Type**: ``int``
+- **Description**: Defines the number of words to retain as padding when creating text chunks for processing. This variable is used to ensure that a certain number of words are left untouched at the beginning or end of a text segment during chunk creation.
+- **Use**: Used in the `create_chunks` function to determine the number of words to leave untouched when splitting text into chunks.
 
 
 ---
 ### PAGE\_CONTENT\_CHUNK\_WORD\_SIZE
-- **Type**: `int`
-- **Description**: `PAGE_CONTENT_CHUNK_WORD_SIZE` is an integer variable set to 256, representing the number of words in each chunk of page content to be processed. This variable is used to determine the size of the chunks when splitting the page content for summarization.
-- **Use**: This variable is used to define the size of each chunk of text that will be processed separately in the `abbreviate_page_content` function.
+- **Type**: ``int``
+- **Description**: Defines the number of words in each chunk of page content for processing. This variable is used to split the page content into manageable parts for summarization.
+- **Use**: Used to determine the size of each chunk when dividing page content into smaller sections for processing.
 
 
 # Classes
 
 ---
 ### AbbreviatedDocumentText<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.AbbreviatedDocumentText}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/abbreviate_page_content.py#L17>)
+
 - **Members**:
-    - `abbreviated_document_text`: The summarized text from the document.
-- **Description**: The `AbbreviatedDocumentText` class, inheriting from `LlmParseable`, is designed to encapsulate a single piece of summarized text derived from a document. It contains a single attribute, `abbreviated_document_text`, which holds the summarized content as a string. This class serves as a simple data structure for handling and storing the output of text summarization processes.
+    - `abbreviated_document_text`: Stores the summarized text from the document.
+- **Description**: Represents a structure to hold summarized text extracted from a document, inheriting from `LlmParseable`.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../interfaces/llm_parseable.py.md#LlmParseable>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../interfaces/llm_parseable.py.md#llmparseable>)
 
 
 ---
 ### AbbreviatedPageContentPipelineResponse<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.AbbreviatedPageContentPipelineResponse}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/abbreviate_page_content.py#L26>)
+
 - **Members**:
     - `abbreviated_before`: The summarized text from the document before the cursor.
     - `abbreviated_after`: The summarized text from the document after the cursor.
-- **Description**: The `AbbreviatedPageContentPipelineResponse` class is designed to encapsulate the summarized text from a document, specifically capturing the content before and after a cursor position. It inherits from `LlmParseable`, indicating that it is intended to be used in contexts where parsing of language model outputs is required. The class contains two main attributes, `abbreviated_before` and `abbreviated_after`, which store the summarized text segments from the respective parts of the document.
+- **Description**: Represents a response containing summarized text from a document, divided into sections before and after a cursor position.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../interfaces/llm_parseable.py.md#LlmParseable>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<../../interfaces/llm_parseable.py.md#llmparseable>)
 
 
 ---
 ### SummarizedChunkResponse<!-- {{#class:python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.SummarizedChunkResponse}} -->
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/abbreviate_page_content.py#L37>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `content`: The summarized text content of the chunk.
-    - `is_before`: A boolean indicating if the chunk is from before the cursor.
-    - `index`: The index of the chunk in the sequence of chunks.
-- **Description**: The `SummarizedChunkResponse` class is a data model that represents a summarized chunk of text, including its content, position relative to a cursor, and its index in a sequence of chunks. It is used to encapsulate the result of summarizing a portion of text, providing a structured way to handle and process summarized data in the context of text processing pipelines.
+    - `content`: Stores the summarized text content of a chunk.
+    - `is_before`: Indicates if the chunk is from before the cursor position.
+    - `index`: Represents the position of the chunk in the sequence.
+- **Description**: Represents a response containing summarized text from a specific chunk of a document, including its position and whether it is before the cursor.
 - **Inherits From**:
     - `BaseModel`
 
@@ -75,34 +81,36 @@ The file imports several components from a shared library, indicating that it is
 
 ---
 ### abbreviate\_page\_content<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.abbreviate_page_content}} -->
-The `abbreviate_page_content` function summarizes text content before and after a cursor position using a language model client.
+[View Source →](<../../../../../../../../packages/shared/shared/v3/app/pipelines/abbreviate_page_content.py#L43>)
+
+Abbreviates the content of a page around a cursor position using a language model client.
 - **Inputs**:
-    - `user_prompt`: A string representing the user's prompt to guide the summarization process.
-    - `page_content_before_cursor`: A string containing the text content before the cursor position, defaulting to an empty string.
-    - `page_content_after_cursor`: A string containing the text content after the cursor position, defaulting to an empty string.
+    - `user_prompt`: A string that provides the prompt for the language model.
+    - `page_content_before_cursor`: A string representing the content of the page before the cursor position, defaulting to an empty string.
+    - `page_content_after_cursor`: A string representing the content of the page after the cursor position, defaulting to an empty string.
     - `selected_text`: A string representing the selected text, defaulting to a newline character.
-    - `client`: An optional LlmClient instance used for summarization; if not provided, a default client is created from configuration.
-- **Control Flow**:
-    - Initialize the LlmClient if not provided.
-    - Define a nested function `summarize_chunk` to summarize a text chunk using the client and return a [`SummarizedChunkResponse`](<#SummarizedChunkResponse>).
-    - Define a nested function `create_chunks` to split content into chunks and return untouched words and chunks.
-    - Initialize empty strings for `abbreviated_before` and `abbreviated_after`.
-    - Create chunks for content before and after the cursor using `create_chunks`.
-    - Use a ThreadPoolExecutor to concurrently summarize each chunk using `summarize_chunk`.
-    - Collect and sort the results based on their index.
-    - Concatenate the summarized content to form `abbreviated_before` and `abbreviated_after`.
-    - Return an [`AbbreviatedPageContentPipelineResponse`](<#AbbreviatedPageContentPipelineResponse>) with the summarized content.
-- **Output**: An [`AbbreviatedPageContentPipelineResponse`](<#AbbreviatedPageContentPipelineResponse>) object containing the summarized text before and after the cursor.
+    - `client`: An optional `LlmClient` instance; if not provided, a default client is created from configuration.
+- **Logic and Control Flow**:
+    - Initialize the `client` using the provided `client` or create a new one from configuration.
+    - Define a nested function `summarize_chunk` to summarize a given text chunk using the language model client.
+    - Define a nested function `create_chunks` to split the content into chunks and identify untouched words based on a padding size.
+    - Initialize empty strings `abbreviated_before` and `abbreviated_after` to store the summarized content.
+    - Create chunks for the content before and after the cursor using `create_chunks`.
+    - Use a `ThreadPoolExecutor` to concurrently summarize each chunk using `summarize_chunk`.
+    - Collect and sort the results of the summarization based on their index.
+    - Concatenate the summarized content and untouched words to form the final abbreviated content.
+    - Return an [`AbbreviatedPageContentPipelineResponse`](<#abbreviatedpagecontentpipelineresponse>) with the abbreviated content before and after the cursor.
+- **Output**: An [`AbbreviatedPageContentPipelineResponse`](<#abbreviatedpagecontentpipelineresponse>) object containing the abbreviated content before and after the cursor.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.from_config`](<../../llms/clients/llm_client.py.md#LlmClientfrom_config>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini`](<../../llms/config/llm_config.py.md#LlmConfiggpt_4o_mini>)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.SummarizedChunkResponse`](<#SummarizedChunkResponse>)
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.single_shot`](<../../llms/clients/llm_client.py.md#LlmClientsingle_shot>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory>)
-    - [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentSystemMessage`](<../static/messages/abbreviate_page_content_messages.py.md#AbbreviatePageContentSystemMessage>)
-    - [`python-backend/packages/shared/shared/v3/globals/iteration_messages.IterationMessage.from_context`](<../../globals/iteration_messages.py.md#IterationMessagefrom_context>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../content_services/auto_toml/src/auto_toml.py.md#AutoTomlappend>)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.AbbreviatedPageContentPipelineResponse`](<#AbbreviatedPageContentPipelineResponse>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.from_config`](<../../llms/clients/llm_client.py.md#llmclientfrom_config>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini`](<../../llms/config/llm_config.py.md#llmconfiggpt_4o_mini>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.SummarizedChunkResponse`](<#summarizedchunkresponse>)
+    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client.LlmClient.single_shot`](<../../llms/clients/llm_client.py.md#llmclientsingle_shot>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory`](<../../interfaces/llm_message_history.py.md#llmmessagehistory>)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentSystemMessage`](<../static/messages/abbreviate_page_content_messages.py.md#abbreviatepagecontentsystemmessage>)
+    - [`python-backend/packages/shared/shared/v3/app/static/messages/abbreviate_page_content_messages.AbbreviatePageContentUserMessage.from_context`](<../static/messages/abbreviate_page_content_messages.py.md#abbreviatepagecontentusermessagefrom_context>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../content_services/auto_toml/src/auto_toml.py.md#autotomlappend>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/abbreviate_page_content.AbbreviatedPageContentPipelineResponse`](<#abbreviatedpagecontentpipelineresponse>)
 
 
 

@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `consumption_tiers.py` file defines pricing tiers for consumption and seat pricing, detailing the minimum and maximum usage limits and corresponding prices for each tier.
+Defines consumption and seat pricing tiers with corresponding price ranges and rates.
 
 # Purpose
-This code defines two dictionaries, `CONSUMPTION_TIERS` and `SEAT_PRICING_TIERS`, which serve as configuration data for pricing models. The `CONSUMPTION_TIERS` dictionary outlines different consumption plans, each with a range of usage (defined by `min` and `max` values) and an associated price per unit. This structure is likely used to calculate costs based on usage levels. The `SEAT_PRICING_TIERS` dictionary specifies pricing for different subscription levels, with options for monthly and annual payments, indicating a tiered pricing strategy for user seats. Overall, this code provides narrow functionality as a configuration setup for a pricing system, likely used in a larger application to determine costs based on user consumption and subscription choices.
+The code defines two dictionaries, `CONSUMPTION_TIERS` and `SEAT_PRICING_TIERS`, which serve as configuration data for pricing models. `CONSUMPTION_TIERS` specifies different consumption plans with their respective minimum and maximum usage limits and associated prices per unit. This structure allows for tiered pricing based on usage levels. `SEAT_PRICING_TIERS` outlines pricing options for different seat categories, providing both monthly and annual rates where applicable. This configuration supports a pricing strategy based on user access levels and subscription duration.
 # Global Variables
 
 ---
 ### CONSUMPTION\_TIERS
-- **Type**: `dict`
-- **Description**: The `CONSUMPTION_TIERS` variable is a dictionary that defines different consumption tiers for a service or product, each with a specified range of usage and corresponding price per unit. Each tier is represented as a key-value pair, where the key is a string representing the tier name (e.g., 'NO_PLAN', 'A', 'B', etc.), and the value is another dictionary containing 'min', 'max', and 'price' keys. The 'min' and 'max' keys define the range of usage for that tier, while the 'price' key specifies the cost per unit within that range.
-- **Use**: This variable is used to determine the pricing structure based on the consumption level of a service or product.
+- **Type**: ``dict``
+- **Description**: Defines a dictionary that categorizes consumption into different tiers based on usage ranges. Each tier is represented by a key (e.g., 'NO_PLAN', 'A', 'B', etc.) and contains a nested dictionary with 'min', 'max', and 'price' keys. The 'min' and 'max' keys define the range of usage for the tier, while the 'price' key specifies the cost per unit within that range.
+- **Use**: Used to determine pricing based on consumption levels.
 
 
 ---
 ### SEAT\_PRICING\_TIERS
-- **Type**: `dict`
-- **Description**: SEAT_PRICING_TIERS is a dictionary that defines the pricing structure for different seat tiers in a subscription model. It includes three tiers: CORE, ADVANCED, and ENTERPRISE, each with specified monthly and/or annual pricing. The CORE and ADVANCED tiers offer both monthly and annual pricing options, while the ENTERPRISE tier only provides an annual pricing option.
-- **Use**: This variable is used to determine the cost associated with each seat tier for billing purposes in a subscription service.
+- **Type**: ``dict``
+- **Description**: Defines pricing tiers for different seat subscription plans. Each tier specifies the cost for monthly and/or annual subscriptions. The tiers include 'CORE', 'ADVANCED', and 'ENTERPRISE', with varying pricing structures.
+- **Use**: Used to determine the subscription cost based on the selected tier and payment frequency.
 
 
 

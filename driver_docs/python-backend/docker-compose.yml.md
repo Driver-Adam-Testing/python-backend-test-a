@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `docker-compose.yml` file in the `python-backend` codebase configures services for a PostgreSQL database and a backend application, specifying images, ports, volumes, environment variables, and dependencies.
+Defines Docker services for a PostgreSQL database and a backend application with environment variables.
 
 # Purpose
-The provided content is a Docker Compose configuration file, which is used to define and manage multi-container Docker applications. This file specifies the services required for the application, including a PostgreSQL database service (`db`) and a backend service (`backend`). The `db` service uses the `pgvector/pgvector:pg16` image and maps the host port 5434 to the container port 5432, while also defining environment variables and volume mappings for persistent data storage. The `backend` service is configured to run on a Linux ARM64 platform, exposing port 4000, and includes volume mappings for code and dependencies, as well as a build context and arguments. Both services rely on environment variables sourced from a `.env` file, ensuring sensitive information like database credentials and API keys are managed securely. Additionally, the configuration includes a volume definition (`app-db-data`) for persistent storage of the database data.
+The configuration file defines a Docker Compose setup for a multi-service application. It specifies two main services: `db` and `backend`. The `db` service uses the `pgvector/pgvector:pg16` image and maps port `5434` on the host to port `5432` in the container. It also mounts a volume for persistent data storage and uses environment variables defined in an `.env` file to configure the PostgreSQL database. The `backend` service is built from a Dockerfile and runs on the `linux/arm64` platform. It exposes port `4000`, mounts several directories for code and dependencies, and depends on the `db` service. The `backend` service also uses environment variables for configuration, including database connection details, authentication settings, and AWS credentials. The file defines a named volume `app-db-data` for storing database data.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

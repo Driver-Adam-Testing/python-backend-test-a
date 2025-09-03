@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_02_12_1604-a9eb69a99830_update_primary_asset_table.py` file contains an Alembic migration script that adds an `installation_id` column to the `v2_primary_asset` table and creates a foreign key constraint linking it to the `git_provider_app_installations` table.
+Alembic migration script to update the `v2_primary_asset` table with a new column and foreign key.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. It provides narrow functionality, specifically designed to update the database schema by adding a new column, `installation_id`, to the `v2_primary_asset` table. This column is of type UUID and is nullable. Additionally, the script establishes a foreign key relationship between the `installation_id` column in the `v2_primary_asset` table and the `id` column in the `git_provider_app_installations` table, with a cascading delete action set to "SET NULL". The [`upgrade`](<#upgrade>) function implements these changes, while the [`downgrade`](<#downgrade>) function reverses them, ensuring that the migration can be rolled back if necessary. This script is part of a version-controlled series of migrations, as indicated by the revision identifiers.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `installation_id` of type UUID to the `v2_primary_asset` table and creates a foreign key constraint linking it to the `id` column of the `git_provider_app_installations` table, with a `SET NULL` action on delete. The [`downgrade`](<#downgrade>) function reverses these changes by removing the foreign key constraint and dropping the `installation_id` column from the `v2_primary_asset` table. The script includes metadata such as `revision`, `down_revision`, and `Create Date` for version control.
 # Imports and Dependencies
 
 ---
@@ -18,52 +18,57 @@ This code is a database migration script using Alembic, a lightweight database m
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring proper sequencing of database schema updates.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to manage database schema changes.
-- **Use**: This variable is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration dependencies.
-- **Use**: This variable is used to indicate that the current migration does not depend on any other migrations.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_12_1604-a9eb69a99830_update_primary_asset_table.upgrade}} -->
-The `upgrade` function modifies the database schema by adding a new column and a foreign key constraint to the `v2_primary_asset` table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_02_12_1604-a9eb69a99830_update_primary_asset_table.py#L19>)
+
+Modifies the database schema by adding a new column and creating a foreign key constraint.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by adding a new column named `installation_id` of type `UUID` to the `v2_primary_asset` table, allowing null values.
-    - It then creates a foreign key constraint on the `installation_id` column, linking it to the `id` column of the `git_provider_app_installations` table, with a `SET NULL` action on delete.
-- **Output**: The function does not return any value; it performs schema modifications on the database.
+- **Logic and Control Flow**:
+    - Adds a new column named `installation_id` of type `UUID` to the `v2_primary_asset` table, allowing null values.
+    - Creates a foreign key constraint on the `installation_id` column in the `v2_primary_asset` table, referencing the `id` column in the `git_provider_app_installations` table.
+    - Specifies that if a referenced record is deleted, the `installation_id` in `v2_primary_asset` will be set to NULL.
+- **Output**: Does not return any value.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_12_1604-a9eb69a99830_update_primary_asset_table.downgrade}} -->
-The `downgrade` function reverses database schema changes by removing a foreign key constraint and dropping a column from the `v2_primary_asset` table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_02_12_1604-a9eb69a99830_update_primary_asset_table.py#L35>)
+
+Reverts changes made to the `v2_primary_asset` table by removing a foreign key constraint and dropping the `installation_id` column.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by dropping a foreign key constraint from the `v2_primary_asset` table using `op.drop_constraint`.
-    - Next, it drops the `installation_id` column from the `v2_primary_asset` table using `op.drop_column`.
-- **Output**: The function does not return any output as it is designed to perform schema changes on the database.
+- **Logic and Control Flow**:
+    - Calls `op.drop_constraint` to remove a foreign key constraint from the `v2_primary_asset` table.
+    - Calls `op.drop_column` to remove the `installation_id` column from the `v2_primary_asset` table.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

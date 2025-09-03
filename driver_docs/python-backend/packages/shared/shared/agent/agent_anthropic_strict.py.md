@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agent_anthropic_strict.py` file defines the `AnthropicStrictAgent` class, which extends `AgentBase` to handle tool calls and create message completions using the Anthropic client, with optional response formatting.
+Implements the AnthropicStrictAgent class for executing tool calls and creating message completions.
 
 # Purpose
-The provided Python code defines a class `AnthropicStrictAgent`, which extends the `AgentBase` class from a shared module. This class is designed to interact with the Anthropic API, a service that likely provides AI-driven functionalities such as natural language processing or machine learning model interactions. The primary purpose of this class is to manage and execute tool calls, format responses, and handle message exchanges with the Anthropic service. It encapsulates the logic for creating message completions, executing iterations of tool calls, and formatting responses according to a specified schema. The class is structured to be part of a larger system, likely serving as a component in a broader application that requires interaction with the Anthropic API.
+The `AnthropicStrictAgent` class extends the `AgentBase` class and is designed to interact with the Anthropic API. It provides a structured way to handle tool calls and generate completions based on user prompts. The class initializes with a response format and an Anthropic client, and it overrides several methods to execute tool calls, create completions, and handle iterations of interactions with the API. The [`_execute_tool_calls`](<#anthropicstrictagent_execute_tool_calls>) method processes a list of tool calls, executing each tool and handling any exceptions that occur. The [`_create_completion`](<#anthropicstrictagent_create_completion>) method constructs a completion request with specified parameters, including model, messages, and tools, and sends it to the Anthropic API to receive a response.
 
-The class includes several key methods: [`_execute_tool_calls`](<#AnthropicStrictAgent_execute_tool_calls>), [`_create_completion`](<#AnthropicStrictAgent_create_completion>), [`_execute_iteration`](<#AnthropicStrictAgent_execute_iteration>), and [`invoke`](<#AnthropicStrictAgentinvoke>). These methods collectively manage the lifecycle of a request to the Anthropic service, from preparing and sending tool calls to processing and formatting the responses. The [`invoke`](<#AnthropicStrictAgentinvoke>) method serves as the public interface for initiating interactions, allowing for optional response formatting based on a provided schema. The class is designed to be flexible, supporting dynamic tool integration and error handling, which suggests it is intended for use in complex applications where AI-driven tool execution and response management are required.
+The [`invoke`](<#anthropicstrictagentinvoke>) method is the primary interface for external calls, allowing users to send prompts and receive responses. If a response format is specified, the method formats the response according to the given schema. The class is part of a broader system that likely involves multiple agents and tools, as indicated by its inheritance from `AgentBase` and its use of tools. The code is structured to be part of a library or framework, intended to be imported and used in other applications that require interaction with the Anthropic API.
 # Imports and Dependencies
 
 ---
@@ -21,114 +21,124 @@ The class includes several key methods: [`_execute_tool_calls`](<#AnthropicStric
 
 ---
 ### AnthropicStrictAgent<!-- {{#class:python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent}} -->
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_anthropic_strict.py#L8>)
+
 - **Members**:
     - `response_format`: Stores the response format for the agent.
-    - `client`: An instance of the Anthropic client used for message creation.
-- **Description**: The AnthropicStrictAgent class extends the AgentBase class and is designed to interact with the Anthropic API to execute tool calls and generate message completions. It manages the execution of tool calls by aggregating them into a single user message and handles the formatting of responses based on a specified response format. The class utilizes the Anthropic client to create message completions and supports the invocation of prompts, potentially formatting the response according to a predefined schema.
+    - `client`: Holds an instance of the `Anthropic` client.
+- **Description**: Extends `AgentBase` to interact with the Anthropic API, managing tool calls and formatting responses according to a specified format. It processes tool calls by executing them and aggregating their results into a single message. It also creates completions using the Anthropic client and formats responses if a response format is specified.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.__init__`](<#AnthropicStrictAgent__init__>)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_tool_calls`](<#AnthropicStrictAgent_execute_tool_calls>)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._create_completion`](<#AnthropicStrictAgent_create_completion>)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_iteration`](<#AnthropicStrictAgent_execute_iteration>)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke`](<#AnthropicStrictAgentinvoke>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.__init__`](<#anthropicstrictagent__init__>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_tool_calls`](<#anthropicstrictagent_execute_tool_calls>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._create_completion`](<#anthropicstrictagent_create_completion>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_iteration`](<#anthropicstrictagent_execute_iteration>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke`](<#anthropicstrictagentinvoke>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<agent_base.py.md#AgentBase>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<agent_base.py.md#agentbase>)
 
 **Methods**
 
 ---
 #### AnthropicStrictAgent\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.__init__}} -->
-The [`__init__`](<../interfaces/agents/data_scope.py.md#DataScopeNode__init__>) method initializes an instance of the `AnthropicStrictAgent` class, setting up the response format and client, and calling the parent class initializer.
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_anthropic_strict.py#L9>)
+
+Initializes an instance of the `AnthropicStrictAgent` class, setting up the response format and client.
 - **Inputs**:
-    - `*args`: Variable length argument list passed to the method.
-    - `**kwargs`: Arbitrary keyword arguments, which may include 'response_format' to specify the desired response format.
-- **Control Flow**:
-    - Extracts 'response_format' from kwargs if provided, otherwise sets it to None.
-    - Assigns the 'response_format' to an instance variable 'self.response_format'.
-    - Initializes 'self.client' as an instance of the 'Anthropic' class.
-    - Calls the parent class's '__init__' method with the remaining args and kwargs.
-- **Output**: This method does not return any value; it initializes the instance state.
+    - `*args`: Positional arguments passed to the parent class initializer.
+    - `**kwargs`: Keyword arguments, with 'response_format' optionally specifying the format for responses.
+- **Logic and Control Flow**:
+    - Extracts 'response_format' from `kwargs` if present and assigns it to `self.response_format`.
+    - Initializes `self.client` as an instance of the `Anthropic` class.
+    - Calls the parent class's [`__init__`](<agent_base.py.md#agentbase__init__>) method with the remaining `args` and `kwargs`.
+- **Output**: No return value; sets up instance variables for the class.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope.DataScopeNode.__init__`](<../interfaces/agents/data_scope.py.md#DataScopeNode__init__>)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#AnthropicStrictAgent>)  (Base Class)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__`](<agent_base.py.md#agentbase__init__>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#anthropicstrictagent>)  (Base Class)
 
 
 ---
 #### AnthropicStrictAgent\.\_execute\_tool\_calls<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_tool_calls}} -->
-The `_execute_tool_calls` method processes a list of tool calls, executing each tool and collecting their results or errors into a single user message.
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_anthropic_strict.py#L15>)
+
+Executes a series of tool calls and aggregates their results into a single user message.
 - **Inputs**:
-    - `tool_calls`: A list of dictionaries, each representing a tool call with keys 'id', 'name', and 'input'.
-- **Control Flow**:
+    - `tool_calls`: A list of dictionaries, each containing details of a tool call, including 'id', 'name', and 'input'.
+- **Logic and Control Flow**:
     - Initialize a message dictionary with 'role' set to 'user' and an empty 'content' list.
-    - Iterate over each tool call in the `tool_calls` list.
-    - For each tool call, initialize a `tool_message` dictionary with 'type' set to 'tool_result', 'tool_use_id' set to the tool call's 'id', and 'content' set to 'Error in tool call'.
-    - Attempt to find and execute the tool matching the tool call's 'name' using the provided 'input'.
-    - If the tool executes successfully, update the `tool_message` 'content' with the execution result.
-    - If an exception occurs during tool execution, update the `tool_message` 'content' with the error message.
-    - Append the `tool_message` to the `message['content']` list.
-    - After processing all tool calls, add the `message` to the agent's messages using `self.add_message(message)`.
-- **Output**: The method does not return a value; it updates the agent's messages with the results of the tool calls.
+    - Iterate over each tool call in 'tool_calls'.
+    - For each tool call, initialize a 'tool_message' dictionary with 'type' set to 'tool_result', 'tool_use_id' set to the tool call's 'id', and 'content' set to 'Error in tool call'.
+    - Attempt to find a tool in 'self.tools' that matches the 'name' in the tool call.
+    - If a matching tool is found, execute the tool with the provided input and update 'tool_message["content"]' with the result.
+    - If an exception occurs during tool execution, update 'tool_message["content"]' with the error message.
+    - Append the 'tool_message' to 'message["content"]'.
+    - After processing all tool calls, add the 'message' to the agent's messages using 'self.add_message(message)'.
+- **Output**: None. The method modifies the agent's message list by adding a new message containing the results of the tool calls.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#AgentBaseadd_message>)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#AnthropicStrictAgent>)  (Base Class)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#agentbaseadd_message>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#anthropicstrictagent>)  (Base Class)
 
 
 ---
 #### AnthropicStrictAgent\.\_create\_completion<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._create_completion}} -->
-The `_create_completion` method constructs a dictionary of parameters for a message completion request and sends it to the Anthropic client to generate a response.
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_anthropic_strict.py#L38>)
+
+Creates a completion request using the specified model, messages, and tools, and sends it to the Anthropic client.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an empty dictionary `completion_kwargs` to store parameters for the completion request.
-    - Set the 'model' key in `completion_kwargs` to the instance's `model` attribute.
-    - Set the 'messages' key in `completion_kwargs` to the instance's `messages` attribute.
-    - Set the 'max_tokens' key in `completion_kwargs` to 2048.
-    - Check if the instance has any tools; if so, print the tools and add a 'tools' key to `completion_kwargs` with a list of tool schemas, and set 'tool_choice' to 'auto'.
-    - Concatenate the content of all system messages into a single string and add it to `completion_kwargs` under the 'system' key.
+    - Set the `model` key in `completion_kwargs` to the instance's `model` attribute.
+    - Set the `messages` key in `completion_kwargs` to the instance's `messages` attribute.
+    - Set the `max_tokens` key in `completion_kwargs` to 2048.
+    - If `self.tools` is not empty, print the tools and add a `tools` key to `completion_kwargs` with a list of tool schemas, and set `tool_choice` to 'auto'.
+    - Concatenate the content of messages with the role 'system' into a single string and set it as the `system` key in `completion_kwargs`.
     - Print the `completion_kwargs` dictionary for debugging purposes.
-    - Call the `create` method on the `client.messages` object with `completion_kwargs` as arguments to generate a response.
-    - Return the response from the `create` method.
-- **Output**: The method returns the response object generated by the `client.messages.create` method call.
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#AnthropicStrictAgent>)  (Base Class)
+    - Call `self.client.messages.create` with `completion_kwargs` as arguments to create a completion response.
+    - Return the response from the completion request.
+- **Output**: A response object from the Anthropic client after creating a completion with the specified parameters.
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#anthropicstrictagent>)  (Base Class)
 
 
 ---
 #### AnthropicStrictAgent\.\_execute\_iteration<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_iteration}} -->
-The `_execute_iteration` method creates a completion, processes tool calls from the response, and executes them if present.
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_anthropic_strict.py#L59>)
+
+Executes a completion iteration and processes tool calls if present.
 - **Inputs**: None
-- **Control Flow**:
-    - Call [`_create_completion`](<#AnthropicStrictAgent_create_completion>) to generate a response and store it in `response`.
-    - Add the first message from the response choices to the agent's messages.
-    - Initialize an empty list `tool_calls` to store tool call information.
-    - Iterate over the content of the first message in the response choices.
-    - For each content item, check if its type is 'tool_use'.
-    - If the content type is 'tool_use', extract the tool call details (id, name, input) and append them to `tool_calls`.
-    - Check if `tool_calls` is not empty.
-    - If `tool_calls` contains items, call [`_execute_tool_calls`](<#AnthropicStrictAgent_execute_tool_calls>) with `tool_calls` and return `True`.
-    - If `tool_calls` is empty, return `False`.
+- **Logic and Control Flow**:
+    - Call [`_create_completion`](<#anthropicstrictagent_create_completion>) to generate a response.
+    - Add the first message from the response to the message list.
+    - Initialize an empty list `tool_calls` to store tool call data.
+    - Iterate over the content of the response message.
+    - Check if the content type is `tool_use`; if so, extract `id`, `name`, and `input` and append to `tool_calls`.
+    - If `tool_calls` is not empty, call [`_execute_tool_calls`](<#anthropicstrictagent_execute_tool_calls>) with `tool_calls` and return `True`.
+    - Return `False` if no tool calls are present.
 - **Output**: Returns `True` if tool calls are executed, otherwise returns `False`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._create_completion`](<#AnthropicStrictAgent_create_completion>)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#AgentBaseadd_message>)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_tool_calls`](<#AnthropicStrictAgent_execute_tool_calls>)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#AnthropicStrictAgent>)  (Base Class)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._create_completion`](<#anthropicstrictagent_create_completion>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#agentbaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent._execute_tool_calls`](<#anthropicstrictagent_execute_tool_calls>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#anthropicstrictagent>)  (Base Class)
 
 
 ---
 #### AnthropicStrictAgent\.invoke<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke}} -->
-The [`invoke`](<agent_base.py.md#AgentBaseinvoke>) method processes a prompt, optionally formats the response according to a specified schema, and returns the formatted or raw response.
+[View Source →](<../../../../../../packages/shared/shared/agent/agent_anthropic_strict.py#L79>)
+
+Processes a prompt and optionally formats the response according to a specified schema.
 - **Inputs**:
-    - `prompt`: A string input that represents the prompt to be processed by the method.
-- **Control Flow**:
-    - The method first calls the [`invoke`](<agent_base.py.md#AgentBaseinvoke>) method of its superclass with the provided prompt and stores the result in `response`.
-    - It checks if `self.response_format` is defined; if so, it constructs a `format_prompt` string that requests formatting of the response according to the specified schema.
-    - A completion request is made to the `self.client` with the `format_prompt`, and the response is captured in `format_response`.
-    - The `format_response` is parsed into a JSON object, ensuring it is properly closed with a '}'.
-    - The parsed JSON object is then converted into a Python object using `self.response_format.parse_obj` and returned.
-    - If `self.response_format` is not defined, the method simply returns the raw `response`.
-- **Output**: The method returns either a formatted response as a Python object if `self.response_format` is specified, or the raw response from the superclass's [`invoke`](<agent_base.py.md#AgentBaseinvoke>) method.
+    - `prompt`: A string input that represents the prompt to be processed.
+- **Logic and Control Flow**:
+    - Calls the [`invoke`](<agent_base.py.md#agentbaseinvoke>) method of the superclass with the given `prompt` to get an initial `response`.
+    - Checks if `self.response_format` is defined.
+    - If `self.response_format` is defined, constructs a `format_prompt` string to request formatting of the `response` according to the schema defined in `self.response_format`.
+    - Uses `self.client.completions.create` to generate a `format_response` based on the `format_prompt`.
+    - Parses the `format_response` to extract a JSON object and loads it into `formatted_response`.
+    - Returns the parsed object using `self.response_format.parse_obj(formatted_response)`.
+    - If `self.response_format` is not defined, returns the initial `response` directly.
+- **Output**: Returns the processed response, either as a formatted object if `self.response_format` is defined, or as the original response string.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<agent_base.py.md#AgentBaseinvoke>)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#AnthropicStrictAgent>)  (Base Class)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<agent_base.py.md#agentbaseinvoke>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent`](<#anthropicstrictagent>)  (Base Class)
 
 
 

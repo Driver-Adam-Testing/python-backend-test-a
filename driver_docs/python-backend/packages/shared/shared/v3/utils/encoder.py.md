@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `encoder.py` file defines a custom JSON encoder for UUID objects and a decoder hook to convert string representations back to UUIDs.
+Custom JSON encoder and decoder for handling UUID objects.
 
 # Purpose
-This Python code provides a narrow functionality focused on handling UUID objects during JSON serialization and deserialization. It defines a custom JSON encoder class, `UUIDEncoder`, which extends `json.JSONEncoder` to convert `uuid.UUID` objects into strings, allowing them to be serialized into JSON format. Additionally, it includes a [`uuid_decoder_hook`](<#uuid_decoder_hook>) function that acts as a custom decoder hook for JSON deserialization, converting string representations of UUIDs back into `uuid.UUID` objects, while gracefully handling any conversion errors using `contextlib.suppress`. This code is a utility module that enhances JSON handling capabilities specifically for UUIDs, making it easier to work with JSON data that includes UUIDs in Python applications.
+This code provides functionality for encoding and decoding UUIDs in JSON data. It defines a custom JSON encoder class, `UUIDEncoder`, which extends `json.JSONEncoder` to convert `uuid.UUID` objects into their string representation during JSON serialization. The [`uuid_decoder_hook`](<#uuid_decoder_hook>) function is a custom decoder hook that attempts to convert string values back into `uuid.UUID` objects during JSON deserialization. This code is useful for applications that need to handle UUIDs within JSON data structures, ensuring that UUIDs are correctly serialized and deserialized.
 # Imports and Dependencies
 
 ---
@@ -19,9 +19,11 @@ This Python code provides a narrow functionality focused on handling UUID object
 
 ---
 ### UUIDEncoder<!-- {{#class:python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder}} -->
-- **Description**: The UUIDEncoder class is a custom JSON encoder that extends the default JSONEncoder to handle UUID objects by converting them to their string representation during the encoding process.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/encoder.py#L6>)
+
+- **Description**: Extends `json.JSONEncoder` to convert `uuid.UUID` objects to their string representation during JSON encoding.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder.default`](<#UUIDEncoderdefault>)
+    - [`python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder.default`](<#uuidencoderdefault>)
 - **Inherits From**:
     - `json.JSONEncoder`
 
@@ -29,15 +31,17 @@ This Python code provides a narrow functionality focused on handling UUID object
 
 ---
 #### UUIDEncoder\.default<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder.default}} -->
-The `default` method in `UUIDEncoder` converts `uuid.UUID` objects to strings for JSON serialization.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/encoder.py#L7>)
+
+Converts a UUID object to its string representation during JSON encoding.
 - **Inputs**:
-    - `o`: An object of any type that is to be serialized to JSON.
-- **Control Flow**:
+    - `o`: The object to encode, which can be of any type.
+- **Logic and Control Flow**:
     - Check if the input object `o` is an instance of `uuid.UUID`.
-    - If `o` is a `uuid.UUID`, convert it to a string and return it.
-    - If `o` is not a `uuid.UUID`, call the `default` method of the superclass to handle the serialization.
-- **Output**: Returns a string representation of a `uuid.UUID` object if the input is a `uuid.UUID`, otherwise it returns the result of the superclass's `default` method.
-- **See also**: [`python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder`](<#UUIDEncoder>)  (Base Class)
+    - If `o` is a `uuid.UUID`, convert it to a string and return the string.
+    - If `o` is not a `uuid.UUID`, call the `default` method of the superclass to handle the encoding.
+- **Output**: Returns a string representation of a UUID object or delegates encoding to the superclass for other object types.
+- **See also**: [`python-backend/packages/shared/shared/v3/utils/encoder.UUIDEncoder`](<#uuidencoder>)  (Base Class)
 
 
 
@@ -45,15 +49,17 @@ The `default` method in `UUIDEncoder` converts `uuid.UUID` objects to strings fo
 
 ---
 ### uuid\_decoder\_hook<!-- {{#callable:python-backend/packages/shared/shared/v3/utils/encoder.uuid_decoder_hook}} -->
-The `uuid_decoder_hook` function attempts to convert string values in a dictionary to UUID objects.
+[View Source →](<../../../../../../../packages/shared/shared/v3/utils/encoder.py#L13>)
+
+Converts string representations of UUIDs in a dictionary to UUID objects.
 - **Inputs**:
-    - `dct`: A dictionary with string keys and values of any type, where string values may represent UUIDs.
-- **Control Flow**:
-    - Iterates over each key-value pair in the input dictionary.
+    - `dct`: A dictionary where keys are strings and values can be of any type.
+- **Logic and Control Flow**:
+    - Iterates over each key-value pair in the input dictionary `dct`.
     - Checks if the value is a string.
-    - Attempts to convert the string value to a UUID object, suppressing any ValueError exceptions that occur during conversion.
+    - Attempts to convert the string value to a `uuid.UUID` object, suppressing `ValueError` exceptions if conversion fails.
     - Updates the dictionary with the converted UUID object if conversion is successful.
-- **Output**: The function returns the modified dictionary with string values converted to UUID objects where applicable.
+- **Output**: The modified dictionary with string UUIDs converted to `uuid.UUID` objects.
 
 
 

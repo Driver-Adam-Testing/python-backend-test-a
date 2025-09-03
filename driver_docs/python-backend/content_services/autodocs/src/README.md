@@ -3,17 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files, utility scripts, and Python modules for automated documentation, OpenAI API, and Modal.
+Configuration files, utilities for OpenAI chat models, and scripts for automated documentation generation.
 
 ## Folders
-- **[configs](configs/README.md)**: TOML configuration files for generating structured documents like README and architecture documents.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains a `models.py` file that defines classes and methods for configuring output formats and generating responses using OpenAI's API, including handling different model types and retrying requests with exponential backoff.
+- **[configs](configs/README.md)**: Configuration files for README generation, architecture documentation, and LLM model settings.
+- **[utils](utils/README.md)**: Defines data structures and functions for OpenAI chat model configuration and response generation.
 
 ## Files
-- **[adi_project_readme.toml](adi_project_readme.toml.md)**: The `adi_project_readme.toml` file in the `python-backend` codebase defines the configuration and structure for generating a structured README for projects in the `no-OS` codebase by ADI, including sections for supported evaluation boards, power supply requirements, and platform-specific build commands.
-- **[autodocs_prototype.py](autodocs_prototype.py.md)**: The `autodocs_prototype.py` file in the `python-backend` codebase provides a comprehensive implementation for generating and managing automated documentation, including configuration validation, section generation, and document assembly, with support for both local and remote execution using Modal.
-- **[common.py](common.py.md)**: The `common.py` file in the `python-backend` codebase provides functions to check and poll for specific GuardDuty malware scan status tags on S3 objects.
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase defines functions for generating and updating autodoc content using configurations and document sources, leveraging the Modal framework for asynchronous execution and resource management.
+- **[adi_project_readme.toml](adi_project_readme.toml.md)**: Configuration for generating a structured README for ADI's `no-OS` codebase projects, including evaluation board details and example setups.
+- **[autodoc_log.py](autodoc_log.py.md)**: Defines a data structure for logging AutoDoc usage to a Notion database and a function to write logs.
+- **[autodocs_prototype.py](autodocs_prototype.py.md)**: A comprehensive script for generating and managing automated documentation using various models and configurations, supporting local and remote execution.
+- **[common.py](common.py.md)**: Functions to check and poll S3 objects for specific GuardDuty malware scan status tags.
+- **[main.py](main.py.md)**: Asynchronous functions for generating and managing autodoc content using Modal, with configuration and database interactions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

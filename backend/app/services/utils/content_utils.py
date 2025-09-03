@@ -1,5 +1,6 @@
-from database.models_v1 import DerivedContent
 import json
+
+from database.models import DerivedContent
 
 
 def _get_name_from_content_json(content: str) -> str | None:

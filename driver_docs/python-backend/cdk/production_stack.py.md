@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `production_stack.py` file defines a production stack using AWS CDK, incorporating components such as a metrics lambda, API backend, asset onboarding lambda, and inspector, all configured for a production environment.
+Defines a production stack with AWS CDK, including metrics, backend, onboarding, and inspector components.
 
 # Purpose
-The provided code defines a class `ProductionStack` that extends the AWS CDK `Stack` class, indicating that it is part of an infrastructure-as-code setup using the AWS Cloud Development Kit (CDK). This code is designed to configure and deploy a production environment stack for a cloud application. The stack includes several key components: a `MetricsLambda` for handling metrics and alarms, a `Backend` for API backend configuration, an `AssetOnboardingLambda` for managing asset onboarding processes, and an `Inspector` for security and compliance checks. Each component is instantiated with specific parameters tailored for a production environment, such as environment identifiers, API URLs, and security configurations.
+The code defines a `ProductionStack` class, which is a part of an AWS Cloud Development Kit (CDK) application. This class extends the `Stack` class from the AWS CDK library and is used to define a collection of AWS resources that are deployed together. The `ProductionStack` class is designed to set up a production environment by instantiating several constructs, each representing a different component of the application infrastructure.
 
-The code is structured to be part of a larger application, likely serving as a module that is imported and used to deploy infrastructure in a cloud environment. It does not define public APIs or external interfaces directly but rather sets up the necessary infrastructure components that would support such interfaces. The use of constructs like `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector` suggests a modular approach, where each construct encapsulates specific functionality related to cloud resource management and application deployment. The common theme across these components is the orchestration of cloud resources to support a production-level application, with a focus on metrics, backend services, asset management, and security.
+The `ProductionStack` includes four main components: `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector`. Each component is initialized with specific parameters tailored for a production environment. The `MetricsLambda` is responsible for handling metrics and is configured with a CloudWatch alarm. The `Backend` component sets up the API backend with CORS settings and IP restrictions. The `AssetOnboardingLambda` manages asset onboarding processes, interfacing with external APIs and authentication services. Finally, the `Inspector` component is included for security and compliance checks. This stack is intended to be deployed as part of a larger AWS infrastructure, providing a cohesive setup for a production environment.
 # Imports and Dependencies
 
 ---
@@ -28,14 +28,16 @@ The code is structured to be part of a larger application, likely serving as a m
 
 ---
 ### ProductionStack<!-- {{#class:python-backend/cdk/production_stack.ProductionStack}} -->
+[View Source →](<../../../cdk/production_stack.py#L13>)
+
 - **Members**:
-    - `metrics_lambda`: An instance of MetricsLambda configured for the production environment.
-    - `backend`: An instance of Backend configured for the production environment with specific CORS and IP settings.
-    - `onboarding_lambda`: An instance of AssetOnboardingLambda configured for the production environment with specific API and Auth0 settings.
-    - `inspector`: An instance of Inspector configured for the production environment.
-- **Description**: The ProductionStack class is a specialized AWS CDK stack designed for the production environment of a DriverAI application. It extends the base Stack class and initializes several key components, including a metrics lambda for monitoring, a backend service with CORS and IP configurations, an asset onboarding lambda for handling asset uploads, and an inspector for security or compliance checks. Each component is configured with production-specific parameters to ensure the stack operates correctly in a live environment.
+    - `metrics_lambda`: An instance of `MetricsLambda` configured for the production environment.
+    - `backend`: An instance of `Backend` configured for the production environment with CORS and legacy dropzone settings.
+    - `onboarding_lambda`: An instance of `AssetOnboardingLambda` configured for the production environment with API and Auth0 settings.
+    - `inspector`: An instance of `Inspector` configured for the production environment.
+- **Description**: Represents a production environment stack that initializes and configures various AWS Lambda functions and services, including metrics, backend, asset onboarding, and inspection components, with specific parameters for the production environment.
 - **Methods**:
-    - [`python-backend/cdk/production_stack.ProductionStack.__init__`](<#ProductionStack__init__>)
+    - [`python-backend/cdk/production_stack.ProductionStack.__init__`](<#productionstack__init__>)
 - **Inherits From**:
     - `Stack`
 
@@ -43,29 +45,31 @@ The code is structured to be part of a larger application, likely serving as a m
 
 ---
 #### ProductionStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/production_stack.ProductionStack.__init__}} -->
-The `__init__` method initializes a `ProductionStack` instance by setting up various components such as [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>), [`Backend`](<constructs/backend.py.md#Backend>), [`AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>), and [`Inspector`](<constructs/inspector.py.md#Inspector>) with production-specific parameters.
+[View Source →](<../../../cdk/production_stack.py#L14>)
+
+Initializes the `ProductionStack` class by setting up various AWS resources and configurations for a production environment.
 - **Inputs**:
-    - `scope`: A `Construct` object that represents the scope in which this stack is defined.
+    - `scope`: A `Construct` object that defines the scope in which this stack is created.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
-    - `kwargs`: Additional keyword arguments that can be passed to the parent class `Stack`.
-- **Control Flow**:
-    - The method begins by calling the superclass `__init__` method with `scope`, `construct_id`, and `kwargs` to initialize the base `Stack` class.
-    - A constant `cors_origins` is defined with the value 'https://app.driverai.com'.
-    - An instance of [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>) is created with production environment parameters and assigned to `self.metrics_lambda`.
-    - An instance of [`Backend`](<constructs/backend.py.md#Backend>) is created with production environment parameters, including the `cors_origins` and the metrics bus from `self.metrics_lambda`, and assigned to `self.backend`.
-    - An instance of [`AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>) is created with production environment parameters, including API and Auth0 URLs, and the dropzone bucket from `self.backend`, and assigned to `self.onboarding_lambda`.
-    - An instance of [`Inspector`](<constructs/inspector.py.md#Inspector>) is created with production environment parameters and assigned to `self.inspector`.
-- **Output**: The method does not return any value; it initializes the `ProductionStack` instance with configured components.
+    - `kwargs`: Additional keyword arguments that are passed to the parent class `Stack`.
+- **Logic and Control Flow**:
+    - Calls the parent class `Stack`'s `__init__` method with `scope`, `construct_id`, and `kwargs`.
+    - Sets the `cors_origins` variable to the URL 'https://app.driverai.com'.
+    - Initializes a [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) object with production environment parameters and assigns it to `self.metrics_lambda`.
+    - Initializes a [`Backend`](<constructs/backend.py.md#backend>) object with production environment parameters, including CORS origins and metrics bus, and assigns it to `self.backend`.
+    - Initializes an [`AssetOnboardingLambda`](<constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>) object with production environment parameters, including API and Auth0 URLs, and assigns it to `self.onboarding_lambda`.
+    - Initializes an [`Inspector`](<constructs/inspector.py.md#inspector>) object with production environment parameters and assigns it to `self.inspector`.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](<constructs/metrics_lambda.py.md#MetricsLambdaParams>)
-    - [`python-backend/cdk/constructs/backend.Backend`](<constructs/backend.py.md#Backend>)
-    - [`python-backend/cdk/constructs/backend.BackendParams`](<constructs/backend.py.md#BackendParams>)
-    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>)
-    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams>)
-    - [`python-backend/cdk/constructs/inspector.Inspector`](<constructs/inspector.py.md#Inspector>)
-    - [`python-backend/cdk/constructs/inspector.InspectorParams`](<constructs/inspector.py.md#InspectorParams>)
-- **See also**: [`python-backend/cdk/production_stack.ProductionStack`](<#ProductionStack>)  (Base Class)
+    - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>)
+    - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambdaParams`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambdaparams>)
+    - [`python-backend/cdk/constructs/backend.Backend`](<constructs/backend.py.md#backend>)
+    - [`python-backend/cdk/constructs/backend.BackendParams`](<constructs/backend.py.md#backendparams>)
+    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>)
+    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](<constructs/asset_onboarding_lambda.py.md#assetonboardinglambdaparams>)
+    - [`python-backend/cdk/constructs/inspector.Inspector`](<constructs/inspector.py.md#inspector>)
+    - [`python-backend/cdk/constructs/inspector.InspectorParams`](<constructs/inspector.py.md#inspectorparams>)
+- **See also**: [`python-backend/cdk/production_stack.ProductionStack`](<#productionstack>)  (Base Class)
 
 
 

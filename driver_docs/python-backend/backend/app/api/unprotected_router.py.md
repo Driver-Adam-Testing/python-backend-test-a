@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `unprotected_router.py` file defines API endpoints that do not require JWT authentication, including routes for health checks, webhooks, and local sandbox tooling, and it uses FastAPI to include various internal routers under the `/studio/v1` prefix.
+Defines API routes that do not require JWT authentication for uptime checks, web-hooks, and sandbox tools.
 
 # Purpose
-This Python file defines an API router using FastAPI that handles endpoints not requiring JWT authentication, providing narrow functionality focused on specific unauthenticated routes. It is a configuration script that sets up and organizes various API routes under a common prefix, `/studio/v1`, for different functionalities such as health checks, Git provider webhooks, onboarding, and subscription management. Additionally, it conditionally includes a GraphQL sandbox route for non-production environments, facilitating local development and testing. The `unprotected_router` is exported for use in the main application, ensuring these routes are accessible without authentication, which is crucial for uptime checks and webhook operations.
+The code defines an `APIRouter` instance named `unprotected_router` using the FastAPI framework. This router is responsible for handling API endpoints that do not require JSON Web Token (JWT) authentication. These endpoints are part of the main API under the `/studio/v1` prefix but are excluded from authentication to allow for operations such as uptime checks, web-hooks, and local sandbox tooling to function without requiring user authentication.
+
+The `unprotected_router` includes several internal routers, each associated with specific functionality. It includes routers for health checks, Git provider webhooks and OAuth callbacks, onboarding processes, and subscription management. Additionally, if the environment is not set to production, it includes a router for a local GraphQL sandbox, which is used for development and testing purposes. The `unprotected_router` is exported for use in other parts of the application, specifically in `main.py`, where it can be mounted to handle the specified unauthenticated routes.
 # Imports and Dependencies
 
 ---
@@ -23,16 +25,16 @@ This Python file defines an API router using FastAPI that handles endpoints not 
 
 ---
 ### unprotected\_router
-- **Type**: `APIRouter`
-- **Description**: The `unprotected_router` is an instance of FastAPI's `APIRouter` class, which is used to define a set of API routes that do not require authentication. It is configured to include various sub-routers for different endpoints such as health checks, git provider webhooks, onboarding, and subscription, and optionally a GraphQL sandbox in non-production environments.
-- **Use**: This variable is used to manage and organize API endpoints that are accessible without authentication, facilitating operations like uptime checks and webhooks.
+- **Type**: ``APIRouter``
+- **Description**: The `unprotected_router` is an instance of `APIRouter` from the FastAPI framework. It is used to define a set of API routes that do not require authentication via JWT. These routes are intended for operations such as health checks, webhooks, and local sandbox tooling.
+- **Use**: It is used to include various route modules like `healthcheck`, `git_provider`, `onboarding`, and `subscription` under a common router without authentication.
 
 
 ---
 ### \_\_all\_\_
-- **Type**: `list`
-- **Description**: The `__all__` variable is a list that defines the public interface of the module by specifying which attributes or functions should be accessible when the module is imported using a wildcard import (e.g., `from module import *`). In this case, it contains a single string, "unprotected_router", indicating that this is the only symbol intended for public use from this module.
-- **Use**: This variable is used to control the symbols that are exported when the module is imported with a wildcard import.
+- **Type**: ``list``
+- **Description**: Contains the string name of the `unprotected_router` variable. This list is used to define the public API of the module, specifying which symbols are available for import when the module is imported using a wildcard import statement.
+- **Use**: Defines the public API of the module by listing `unprotected_router` as an exportable symbol.
 
 
 

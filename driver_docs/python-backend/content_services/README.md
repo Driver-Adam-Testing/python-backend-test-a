@@ -3,20 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Modules and scripts for configuration, documentation, code inspection, deployment, and dependency management.
+Tools and scripts for agent interfaces, TOML and documentation generation, code analysis, and service deployment.
 
 ## Folders
-- **[agent](agent/README.md)**: Main source code for modal interface and block kind agents, tests for Mermaid diagrams, and configuration files.
-- **[auto_toml](auto_toml/README.md)**: Python scripts for TOML configuration management, CLI, OpenAI chat, logging, and dependency files.
-- **[autodocs](autodocs/README.md)**: Configuration files, utility scripts, and Python modules for automated documentation, OpenAI API, and Modal, supported by `poetry.lock` and `pyproject.toml` for package management and project metadata.
-- **[generation](generation/README.md)**: Source code for processing inline edits and smart instructions using Modal, with configuration files for managing dependencies and project settings with Poetry.
-- **[inspector](inspector/README.md)**: Modules for code inspection and task management, configuration and documentation for `uctags`, and essential project files for managing dependencies and setup instructions.
-- **[mermaid_validator](mermaid_validator/README.md)**: Source code and configuration files for setting up a Modal app to validate Mermaid diagram syntax.
-- **[onboarding_event_handler](onboarding_event_handler/README.md)**: Main logic and unit tests for handling AWS Lambda events related to onboarding, with configuration files.
-- **[pdf_preprocessing](pdf_preprocessing/README.md)**: Processing PDF files with dependency management and project configuration, including `src`, `.gitignore`, `poetry.lock`, `pyproject.toml`, and an empty `README.md`.
+- **[agent](agent/README.md)**: Exposes a modal interface for block kind agents, tests Mermaid CLI rendering, and manages Python dependencies.
+- **[auto_toml](auto_toml/README.md)**: Classes and interfaces for TOML generation, OpenAI chat, logging, and prompts; dependency management.
+- **[autodocs](autodocs/README.md)**: Configuration files, utilities for OpenAI chat models, scripts for automated documentation, and Poetry dependency management.
+- **[generation](generation/README.md)**: Asynchronous functions for inline editing, smart instruction processing, and Python project configuration.
+- **[inspector](inspector/README.md)**: Templates, file and code analysis tools, GitHub utilities, uctags configuration, and project setup files.
+- **[mermaid_validator](mermaid_validator/README.md)**: Validates Mermaid diagram syntax and checks CLI version with Node.js, Chromium, and Poetry configuration.
+- **[onboarding_event_handler](onboarding_event_handler/README.md)**: AWS Lambda function for S3 event processing, tests, dependency management, and configuration files.
+- **[pdf_preprocessing](pdf_preprocessing/README.md)**: PDF preprocessing and embedding functions with exception handling, database persistence, and Poetry configuration.
 
 ## Files
-- **[modal_deploy.sh](modal_deploy.sh.md)**: The `modal_deploy.sh` file is a bash script that automates the deployment of multiple services in different directories using a specified environment argument.
+- **[modal_deploy.sh](modal_deploy.sh.md)**: Bash script for deploying multiple services with a specified environment argument.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

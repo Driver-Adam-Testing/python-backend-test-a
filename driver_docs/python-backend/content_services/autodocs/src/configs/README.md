@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-TOML configuration files for generating structured documents like README and architecture documents.
+Configuration files for README generation, architecture documentation, and LLM model settings.
 
 
 ## Files
-- **[adi_driver_readme.toml](adi_driver_readme.toml.md)**: The `adi_driver_readme.toml` file in the `python-backend` codebase outlines the configuration for generating a structured README for a driver in the `no-OS` codebase by ADI, detailing the sections, instructions, and models used for content creation.
-- **[architecture_modal.toml](architecture_modal.toml.md)**: The `architecture_modal.toml` file in the `python-backend` codebase defines the configuration for generating a detailed architecture document, specifying models, document goals, and structured sections with instructions for content creation.
-- **[custom_config.toml](custom_config.toml.md)**: The `custom_config.toml` file in the `python-backend` codebase specifies configuration settings for generating an architecture document, including model tags, document goals, formatting, and section details.
+- **[adi_driver_readme.toml](adi_driver_readme.toml.md)**: Configuration for generating a structured README for an ADI driver in the `no-OS` codebase.
+- **[architecture_modal.toml](architecture_modal.toml.md)**: Configuration for generating a detailed architecture document with specified sections and models.
+- **[custom_config.toml](custom_config.toml.md)**: Configuration file for LLM models and document structure in the architecture documentation process.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

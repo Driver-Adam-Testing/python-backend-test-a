@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tag_service.py` file implements the `TagService` class, which provides functionalities for managing tags, including associating tags with content, creating, editing, listing, and deleting tags within an organization.
+Implements tag management services including creation, association, editing, listing, and deletion.
 
 # Purpose
-The provided Python code defines a `TagService` class, which is part of a larger application likely built using the FastAPI framework and SQLAlchemy for database interactions. The primary purpose of this class is to manage operations related to tags within an organization, such as associating tags with content, creating, editing, listing, and deleting tags. The class utilizes a session object for database transactions and employs a repository pattern to interact with the `Tag` and `DerivedContent` models. The `TagService` class is designed to handle HTTP requests and responses, raising `HTTPException` for error handling, which is typical in web applications to provide meaningful error messages to clients.
+The code defines a `TagService` class that provides functionality for managing tags within an application. This class is part of a broader system that uses FastAPI for web services and SQLAlchemy for database interactions. The `TagService` class includes methods to associate tags with content, create new tags, edit existing tags, list tags, list contents associated with a tag, and delete tags. Each method interacts with a database session to perform CRUD (Create, Read, Update, Delete) operations on `Tag` and `DerivedContent` models. The class uses a `BaseRepository` for database operations and a `ContentService` for content-related functionalities.
 
-The `TagService` class provides a focused set of functionalities related to tag management, encapsulating operations that involve both tags and their associations with content. It includes methods for associating tags with content, creating new tags, editing existing tags, listing tags and their associated content, and deleting tags. The class also logs significant events and errors, which aids in monitoring and debugging. The code is structured to be part of a larger application, likely intended to be imported and used as a service layer within a FastAPI application, providing a public API for tag-related operations.
+The `TagService` class handles HTTP exceptions to provide appropriate responses when operations fail, such as when a tag or content is not found, or when there is an integrity error during database transactions. The class also logs significant events and errors using Python's `logging` module. The [`delete_tag_and_related_entities`](<#delete_tag_and_related_entities>) function is defined outside the class to handle the deletion of a tag and its related entities from the database. This code is intended to be part of a larger application where it can be imported and used to manage tags and their associations with content.
 # Imports and Dependencies
 
 ---
@@ -36,185 +36,201 @@ The `TagService` class provides a focused set of functionalities related to tag 
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module, configured to use the name of the current module (`__name__`). It is used to log messages for the module, providing a way to track events and errors during the execution of the code.
-- **Use**: This variable is used throughout the `TagService` class to log informational messages, errors, and exceptions, aiding in debugging and monitoring the application's behavior.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name.
+- **Use**: Used to log informational, error, and exception messages throughout the `TagService` class methods.
 
 
 # Classes
 
 ---
 ### TagService<!-- {{#class:python-backend/backend/app/services/tag_service.TagService}} -->
+[View Source →](<../../../../../backend/app/services/tag_service.py#L27>)
+
 - **Members**:
-    - `session`: A SQLAlchemy session used for database operations.
-    - `tag_repository`: A repository for managing Tag entities.
-    - `content_repository`: A repository for managing DerivedContent entities.
-    - `content_service`: A service for handling content-related operations.
-- **Description**: The TagService class provides a set of methods to manage tags and their associations with content within an organization. It allows for creating, editing, listing, and deleting tags, as well as associating tags with content. The class utilizes repositories for database interactions and handles exceptions to ensure robust operations. It is designed to work within a session context, ensuring that changes are committed or rolled back appropriately.
+    - `session`: Stores the database session for database operations.
+    - `tag_repository`: Manages database operations for `Tag` entities.
+    - `content_repository`: Manages database operations for `DerivedContent` entities.
+    - `content_service`: Provides content-related services using the current session.
+- **Description**: Manages operations related to tags, including associating tags with content, creating, editing, listing, and deleting tags. It uses repositories to interact with the database and a content service to manage content-related operations.
 - **Methods**:
-    - [`python-backend/backend/app/services/tag_service.TagService.__init__`](<#TagService__init__>)
-    - [`python-backend/backend/app/services/tag_service.TagService.associate_tag`](<#TagServiceassociate_tag>)
-    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<#TagServicecreate_tag>)
-    - [`python-backend/backend/app/services/tag_service.TagService.edit_tag`](<#TagServiceedit_tag>)
-    - [`python-backend/backend/app/services/tag_service.TagService.list_tags`](<#TagServicelist_tags>)
-    - [`python-backend/backend/app/services/tag_service.TagService.list_tag_contents`](<#TagServicelist_tag_contents>)
-    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<#TagServicedelete_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService.__init__`](<#tagservice__init__>)
+    - [`python-backend/backend/app/services/tag_service.TagService.associate_tag`](<#tagserviceassociate_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService.create_tag`](<#tagservicecreate_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService.edit_tag`](<#tagserviceedit_tag>)
+    - [`python-backend/backend/app/services/tag_service.TagService.list_tags`](<#tagservicelist_tags>)
+    - [`python-backend/backend/app/services/tag_service.TagService.list_tag_contents`](<#tagservicelist_tag_contents>)
+    - [`python-backend/backend/app/services/tag_service.TagService.delete_tag`](<#tagservicedelete_tag>)
 
 **Methods**
 
 ---
 #### TagService\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.__init__}} -->
-The `__init__` method initializes a `TagService` instance by setting up repositories and services using the provided database session.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L28>)
+
+Initializes a `TagService` instance with a database session and sets up repositories and services for tags and content.
 - **Inputs**:
-    - `self`: Refers to the instance of the `TagService` class being initialized.
-    - `session`: A `Session` object from SQLAlchemy used to interact with the database.
-- **Control Flow**:
-    - Assigns the provided `session` to the instance variable `self.session`.
-    - Initializes `self.tag_repository` as a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `Tag` using the provided `session`.
-    - Initializes `self.content_repository` as a [`BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>) for `DerivedContent` using the provided `session`.
-    - Initializes `self.content_service` as a [`ContentService`](<content_service.py.md#ContentService>) using the provided `session`.
-- **Output**: The method does not return any value; it initializes the instance variables.
+    - `self`: The instance of the `TagService` class being initialized.
+    - `session`: A `Session` object used for database operations.
+- **Logic and Control Flow**:
+    - Assigns the `session` parameter to the `self.session` attribute.
+    - Creates a [`BaseRepository`](<../repositories/base_repository.py.md#baserepository>) for `Tag` and assigns it to `self.tag_repository`.
+    - Creates a [`BaseRepository`](<../repositories/base_repository.py.md#baserepository>) for `DerivedContent` and assigns it to `self.content_repository`.
+    - Initializes a [`ContentService`](<content_service.py.md#contentservice>) with the session and assigns it to `self.content_service`.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<../repositories/base_repository.py.md#BaseRepository>)
-    - [`python-backend/backend/app/services/content_service.ContentService`](<content_service.py.md#ContentService>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository`](<../repositories/base_repository.py.md#baserepository>)
+    - [`python-backend/backend/app/services/content_service.ContentService`](<content_service.py.md#contentservice>)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 ---
 #### TagService\.associate\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.associate_tag}} -->
-The `associate_tag` method associates a tag with a content item within an organization, handling various validation checks and committing the association to the database.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L34>)
+
+Associates a tag with a content item for a specific organization, handling errors and logging the process.
 - **Inputs**:
-    - `organization_id`: A string representing the unique identifier of the organization.
-    - `content_id`: A UUID representing the unique identifier of the content to be tagged.
-    - `tag_id`: A UUID representing the unique identifier of the tag to be associated with the content.
-    - `include_tag`: A boolean flag indicating whether to include the tag in the association, defaulting to True.
-- **Control Flow**:
-    - Logs the attempt to associate the tag with the content for the specified organization.
-    - Retrieves the content from the content repository using the content_id.
+    - `organization_id`: The identifier for the organization to which the content and tag belong.
+    - `content_id`: The unique identifier of the content to associate with the tag.
+    - `tag_id`: The unique identifier of the tag to associate with the content.
+    - `include_tag`: A boolean flag indicating whether to include the tag in the association, defaults to True.
+- **Logic and Control Flow**:
+    - Logs the start of the tag association process.
+    - Retrieves the content by its ID from the content repository.
     - Checks if the content exists; if not, logs an error and raises an HTTP 404 exception.
-    - Retrieves the tag from the tag repository using the tag_id and organization_id.
+    - Retrieves the tag by its ID and organization ID from the tag repository.
     - Checks if the tag exists; if not, logs an error and raises an HTTP 404 exception.
-    - Validates the tag type; if it is a 'collection', checks the content type and raises an HTTP 400 exception if invalid.
-    - Determines the value of include_tag based on the tag type and the provided argument.
-    - Attempts to commit the association to the database, logging success or handling an IntegrityError by rolling back and raising an HTTP 400 exception.
-    - Returns a TagAssociationResponse indicating the successful association of the tag with the content.
-- **Output**: Returns a TagAssociationResponse object containing the tag_id, content_id, and a success message.
+    - Checks if the tag type is 'collection'; if so, logs an error and raises an HTTP 400 exception if the content type is invalid.
+    - Sets the `include_tag` flag based on the tag type and its current value.
+    - Attempts to commit the session to save the association; logs success or handles an `IntegrityError` by rolling back the session, logging an error, and raising an HTTP 400 exception.
+- **Output**: Returns a [`TagAssociationResponse`](<../schemas/content_schema.py.md#tagassociationresponse>) object containing the tag ID, content ID, and a success message.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#BaseRepositoryget_by_conditions>)
-    - [`python-backend/backend/app/schemas/content_schema.TagAssociationResponse`](<../schemas/content_schema.py.md#TagAssociationResponse>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#baserepositoryget_by_conditions>)
+    - [`python-backend/backend/app/schemas/content_schema.TagAssociationResponse`](<../schemas/content_schema.py.md#tagassociationresponse>)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 ---
 #### TagService\.create\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.create_tag}} -->
-The `create_tag` method creates a new tag in the database for a given user and handles potential integrity errors.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L110>)
+
+Creates a new tag in the repository and handles potential integrity errors.
 - **Inputs**:
-    - `self`: An instance of the TagService class, providing access to the session and repositories.
-    - `user`: A UserToken object containing information about the user, including their organization ID and user ID.
-    - `lt_input`: A NewTagInput object containing the details of the tag to be created, such as name, hex color, and type.
-- **Control Flow**:
-    - Attempts to create a new Tag object using the provided input and user information.
-    - Strips whitespace from the name and hex color fields of the input before creating the Tag object.
-    - If the tag creation is successful, it returns the created Tag object.
-    - If an IntegrityError occurs, it rolls back the session to clear the failed transaction.
-    - Checks if the error is due to a duplicate key value violating a unique constraint, logs an error, and raises an HTTPException with a 400 status code.
-    - If the error is unexpected, logs the error and raises an HTTPException with a 500 status code.
-- **Output**: Returns a Tag object representing the newly created tag if successful, or raises an HTTPException in case of errors.
+    - `self`: An instance of the `TagService` class.
+    - `user`: A `UserToken` object containing user information such as `organization_id` and `user_id`.
+    - `lt_input`: A `NewTagInput` object containing the details of the tag to create, including `name`, `hex_color`, and `type`.
+- **Logic and Control Flow**:
+    - Attempts to create a new [`Tag`](<../../../driver_db/database/models_v1.py.md#tag>) object using the `tag_repository.create` method with attributes from `lt_input` and `user`.
+    - Strips whitespace from `name` and `hex_color` fields of `lt_input` before creating the [`Tag`](<../../../driver_db/database/models_v1.py.md#tag>).
+    - Sets `organization_id`, `created_by`, and `updated_by` fields of the [`Tag`](<../../../driver_db/database/models_v1.py.md#tag>) using the `user` object.
+    - Catches `IntegrityError` exceptions to handle database integrity issues.
+    - Rolls back the session if an `IntegrityError` occurs to clear the failed transaction.
+    - Logs an error and raises an `HTTPException` with status code 400 if the error is due to a duplicate tag name.
+    - Logs an error and raises an `HTTPException` with status code 500 for any other unexpected errors.
+- **Output**: Returns a [`Tag`](<../../../driver_db/database/models_v1.py.md#tag>) object if creation is successful, or raises an `HTTPException` if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.create`](<../repositories/base_repository.py.md#BaseRepositorycreate>)
-    - [`python-backend/driver_db/database/models_v1.Tag`](<../../../driver_db/database/models_v1.py.md#Tag>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.create`](<../repositories/base_repository.py.md#baserepositorycreate>)
+    - [`python-backend/driver_db/database/models_v1.Tag`](<../../../driver_db/database/models_v1.py.md#tag>)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 ---
 #### TagService\.edit\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.edit_tag}} -->
-The `edit_tag` method updates an existing tag's details in the database for a given organization and user.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L131>)
+
+Updates a tag's details in the database for a specific organization.
 - **Inputs**:
-    - `self`: An instance of the TagService class, providing access to the session and repositories.
-    - `user`: A UserToken object representing the user making the request, containing user and organization information.
-    - `tag_id`: A string representing the unique identifier of the tag to be edited.
-    - `lt_input`: An EditTagInput object containing the new data for the tag, with only the fields to be updated.
-- **Control Flow**:
-    - Retrieve the tag from the repository using the tag_id and the user's organization_id.
-    - If the tag is not found, log an error and raise an HTTP 404 exception indicating the tag was not found.
-    - Attempt to update the tag using the data from lt_input, excluding unset fields, and set the updated_by field to the user's ID.
+    - `self`: The instance of the `TagService` class.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `tag_id`: A string representing the unique identifier of the tag to edit.
+    - `lt_input`: An `EditTagInput` object containing the new data for the tag.
+- **Logic and Control Flow**:
+    - Retrieve the tag from the repository using `tag_id` and the user's organization ID.
+    - If the tag does not exist, log an error and raise an `HTTPException` with a 404 status code.
+    - Attempt to update the tag with the data from `lt_input`, excluding unset fields, and set the `updated_by` field to the user's ID.
     - If the update is successful, log the update and return the updated tag.
-    - If an exception occurs during the update, rollback the session, log the error, and raise an HTTP 500 exception indicating an internal server error.
-- **Output**: Returns the updated Tag object if the update is successful, or raises an HTTPException if an error occurs.
+    - If an exception occurs during the update, rollback the session, log the error, and raise an `HTTPException` with a 500 status code.
+- **Output**: Returns the updated [`Tag`](<../../../driver_db/database/models_v1.py.md#tag>) object if successful, otherwise raises an `HTTPException`.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#BaseRepositoryget_by_conditions>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.update`](<../repositories/base_repository.py.md#BaseRepositoryupdate>)
-    - [`python-backend/driver_db/database/models_v1.Tag`](<../../../driver_db/database/models_v1.py.md#Tag>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#baserepositoryget_by_conditions>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.update`](<../repositories/base_repository.py.md#baserepositoryupdate>)
+    - [`python-backend/driver_db/database/models_v1.Tag`](<../../../driver_db/database/models_v1.py.md#tag>)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 ---
 #### TagService\.list\_tags<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.list_tags}} -->
-The `list_tags` method retrieves and returns a list of tags for a specified user based on input criteria such as name and type, along with pagination details.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L161>)
+
+Retrieves a list of tags based on specified criteria for a given user.
 - **Inputs**:
-    - `self`: An instance of the TagService class.
-    - `user`: A UserToken object representing the user requesting the tag list.
-    - `lt_input`: A ListTagsInput object containing criteria for filtering tags, including name, type, limit, and offset for pagination.
-- **Control Flow**:
-    - Log the start of the tag listing process with user ID and input criteria.
-    - Initialize `statement` and [`count_by`](<../repositories/base_repository.py.md#BaseRepositorycount_by>) lists with a condition to match the user's organization ID with the tag's organization ID.
-    - If `lt_input.name` is provided, add a condition to filter tags by name to both `statement` and [`count_by`](<../repositories/base_repository.py.md#BaseRepositorycount_by>).
-    - If `lt_input.type` is provided, add a condition to filter tags by type to both `statement` and [`count_by`](<../repositories/base_repository.py.md#BaseRepositorycount_by>).
-    - Calculate the total count of tags matching the [`count_by`](<../repositories/base_repository.py.md#BaseRepositorycount_by>) conditions using the `tag_repository.count_by` method.
-    - Retrieve the list of tags matching the `statement` conditions with pagination using the `tag_repository.get_all` method.
-    - Log the number of tags found for the user.
-    - Return a ListTagsResults object containing the retrieved tags, offset, limit, and total count.
-- **Output**: A ListTagsResults object containing the list of tags, pagination details (offset and limit), and the total count of tags matching the criteria.
+    - `self`: An instance of the `TagService` class.
+    - `user`: A `UserToken` object representing the user requesting the tag list.
+    - `lt_input`: A `ListTagsInput` object containing the criteria for listing tags, such as name, type, limit, and offset.
+- **Logic and Control Flow**:
+    - Logs the start of the tag listing process with the user ID and input criteria.
+    - Initializes `statement` and [`count_by`](<../repositories/base_repository.py.md#baserepositorycount_by>) lists with a condition to match the user's organization ID with the tag's organization ID.
+    - Checks if `lt_input.name` is provided; if so, adds a condition to filter tags by name to both `statement` and [`count_by`](<../repositories/base_repository.py.md#baserepositorycount_by>) lists.
+    - Checks if `lt_input.type` is provided; if so, adds a condition to filter tags by type to both `statement` and [`count_by`](<../repositories/base_repository.py.md#baserepositorycount_by>) lists.
+    - Counts the total number of tags that match the [`count_by`](<../repositories/base_repository.py.md#baserepositorycount_by>) conditions using the `tag_repository.count_by` method.
+    - Retrieves the tags that match the `statement` conditions using the `tag_repository.get_all` method, with pagination controlled by `lt_input.limit` and `lt_input.offset`.
+    - Logs the total number of tags found for the user.
+    - Returns a [`ListTagsResults`](<../schemas/tag_schema.py.md#listtagsresults>) object containing the retrieved tags, offset, limit, and total count.
+- **Output**: A [`ListTagsResults`](<../schemas/tag_schema.py.md#listtagsresults>) object containing the list of tags, the offset, the limit, and the total count of tags matching the criteria.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.count_by`](<../repositories/base_repository.py.md#BaseRepositorycount_by>)
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](<../repositories/base_repository.py.md#BaseRepositoryget_all>)
-    - [`python-backend/backend/app/schemas/tag_schema.ListTagsResults`](<../schemas/tag_schema.py.md#ListTagsResults>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.count_by`](<../repositories/base_repository.py.md#baserepositorycount_by>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_all`](<../repositories/base_repository.py.md#baserepositoryget_all>)
+    - [`python-backend/backend/app/schemas/tag_schema.ListTagsResults`](<../schemas/tag_schema.py.md#listtagsresults>)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 ---
 #### TagService\.list\_tag\_contents<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.list_tag_contents}} -->
-The `list_tag_contents` method retrieves and returns the contents associated with a specific tag for a given user.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L191>)
+
+Retrieves and returns the contents associated with a specific tag for a given user.
 - **Inputs**:
-    - `self`: An instance of the TagService class, providing access to its methods and properties.
-    - `user`: A UserToken object representing the user making the request, containing user-specific information like user_id and organization_id.
-    - `tag_id`: A string representing the unique identifier of the tag whose contents are to be listed.
-    - `lt_input`: A ListContentInput object containing parameters for filtering and paginating the content list.
-- **Control Flow**:
+    - `self`: An instance of the `TagService` class.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `tag_id`: A string representing the unique identifier of the tag.
+    - `lt_input`: A `ListContentInput` object containing the input parameters for listing content.
+- **Logic and Control Flow**:
     - Logs the start of the content listing process for the specified tag and user.
-    - Retrieves the tag from the tag repository using the tag_id and the user's organization_id.
-    - Checks if the tag exists; if not, logs an error and raises an HTTP 404 exception.
-    - Sets the tag_ids attribute of lt_input to a list containing the tag_id.
-    - Calls the content_service's get_list_content method to retrieve the content associated with the tag, using the user's organization_id and lt_input as parameters.
+    - Retrieves the tag from the repository using the tag ID and the user's organization ID.
+    - Checks if the tag exists; if not, logs an error and raises an `HTTPException` with a 404 status code.
+    - Sets the `tag_ids` attribute of `lt_input` to a list containing the `tag_id`.
+    - Calls the [`get_list_content`](<content_service.py.md#contentserviceget_list_content>) method of `content_service` to retrieve the content associated with the tag.
     - Logs the number of contents found for the tag and user.
-    - Returns a ListTagContentsResults object containing the tag, the list of content results, and pagination details (offset, limit, and count).
-- **Output**: A ListTagContentsResults object containing the tag details, a list of content results, and pagination information (offset, limit, and count).
+    - Returns a [`ListTagContentsResults`](<../schemas/tag_schema.py.md#listtagcontentsresults>) object containing the tag, content results, offset, limit, and count.
+- **Output**: A [`ListTagContentsResults`](<../schemas/tag_schema.py.md#listtagcontentsresults>) object containing the tag, content results, offset, limit, and count.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#BaseRepositoryget_by_conditions>)
-    - [`python-backend/backend/app/services/content_service.ContentService.get_list_content`](<content_service.py.md#ContentServiceget_list_content>)
-    - [`python-backend/backend/app/schemas/tag_schema.ListTagContentsResults`](<../schemas/tag_schema.py.md#ListTagContentsResults>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get_by_conditions`](<../repositories/base_repository.py.md#baserepositoryget_by_conditions>)
+    - [`python-backend/backend/app/services/content_service.ContentService.get_list_content`](<content_service.py.md#contentserviceget_list_content>)
+    - [`python-backend/backend/app/schemas/tag_schema.ListTagContentsResults`](<../schemas/tag_schema.py.md#listtagcontentsresults>)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 ---
 #### TagService\.delete\_tag<!-- {{#callable:python-backend/backend/app/services/tag_service.TagService.delete_tag}} -->
-The `delete_tag` method removes a tag from the database if it belongs to the user's organization, handling errors and logging appropriately.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L222>)
+
+Deletes a tag and its related entities from the database for a given user and tag ID.
 - **Inputs**:
     - `self`: An instance of the `TagService` class.
-    - `user`: A `UserToken` object representing the user attempting to delete the tag, containing the user's organization ID.
-    - `tag_id`: A `UUID` representing the unique identifier of the tag to be deleted.
-- **Control Flow**:
-    - Retrieve the organization ID from the `user` object.
-    - Attempt to get the tag from the `tag_repository` using the `tag_id`.
-    - Check if the tag is `None` or if its organization ID does not match the user's organization ID; if so, log an error and raise a 404 HTTPException.
-    - If the tag is valid, attempt to delete the tag and its related entities using [`delete_tag_and_related_entities`](<#delete_tag_and_related_entities>).
-    - Log the successful deletion of the tag.
-    - If an exception occurs during deletion, rollback the session, log the exception, and raise a 500 HTTPException.
-- **Output**: The method does not return any value; it raises an HTTPException if an error occurs.
+    - `user`: A `UserToken` object representing the user performing the operation.
+    - `tag_id`: A `UUID` representing the unique identifier of the tag to delete.
+- **Logic and Control Flow**:
+    - Get the `organization_id` from the `user` object.
+    - Retrieve the tag from the `tag_repository` using the `tag_id`.
+    - If the tag is not found or the `organization_id` of the tag does not match the user's `organization_id`, log an error and raise an `HTTPException` with a 404 status code.
+    - Attempt to delete the tag and its related entities using the [`delete_tag_and_related_entities`](<#delete_tag_and_related_entities>) function.
+    - If successful, log the deletion.
+    - If an exception occurs during deletion, roll back the session, log the exception, and raise an `HTTPException` with a 500 status code.
+- **Output**: Does not return a value; raises an `HTTPException` on error.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.get`](<../repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/backend/app/services/tag_service.delete_tag_and_related_entities`](<#delete_tag_and_related_entities>)
-- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#TagService>)  (Base Class)
+- **See also**: [`python-backend/backend/app/services/tag_service.TagService`](<#tagservice>)  (Base Class)
 
 
 
@@ -222,16 +238,18 @@ The `delete_tag` method removes a tag from the database if it belongs to the use
 
 ---
 ### delete\_tag\_and\_related\_entities<!-- {{#callable:python-backend/backend/app/services/tag_service.delete_tag_and_related_entities}} -->
-The function deletes a specified tag and commits the changes to the database session.
+[View Source →](<../../../../../backend/app/services/tag_service.py#L242>)
+
+Deletes a specified tag and commits the transaction to the database.
 - **Inputs**:
-    - `session`: A SQLAlchemy session object used to interact with the database.
-    - `tag`: The Tag object that is to be deleted from the database.
-- **Control Flow**:
-    - The function calls the [`delete`](<../repositories/base_repository.py.md#BaseRepositorydelete>) method on the session object to mark the tag for deletion.
-    - The function then calls the `commit` method on the session object to persist the deletion in the database.
-- **Output**: The function does not return any value; it performs an action on the database.
+    - `session`: A `Session` object used to interact with the database.
+    - `tag`: A `Tag` object representing the tag to delete.
+- **Logic and Control Flow**:
+    - Calls `session.delete(tag)` to mark the `tag` object for deletion from the database.
+    - Calls `session.commit()` to commit the transaction, which applies the deletion to the database.
+- **Output**: No output is returned as the function's return type is `None`.
 - **Functions Called**:
-    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../repositories/base_repository.py.md#BaseRepositorydelete>)
+    - [`python-backend/backend/app/repositories/base_repository.BaseRepository.delete`](<../repositories/base_repository.py.md#baserepositorydelete>)
 
 
 

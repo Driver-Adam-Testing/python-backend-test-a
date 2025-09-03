@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Various AWS CDK constructs for deploying and managing AWS services, including Lambda functions, WAF, backend services, and infrastructure components like Inspector and metrics processing.
+AWS CDK constructs for Lambda functions, WAF, backend services, Inspector, and metrics processing.
 
 
 ## Files
-- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: The `asset_onboarding_lambda.py` file defines a CDK construct for an AWS Lambda function that handles asset onboarding, integrating with various AWS services such as S3, SNS, and Secrets Manager.
-- **[aws_waf.py](aws_waf.py.md)**: The `aws_waf.py` file in the `python-backend` codebase defines a construct for setting up an AWS WAF (Web Application Firewall) with specific rule configurations and associations to an Application Load Balanced Fargate Service.
-- **[backend.py](backend.py.md)**: The `backend.py` file in the `python-backend` codebase defines a CDK construct for deploying a backend service on AWS, utilizing various AWS services such as ECS, S3, Secrets Manager, and Route 53, with configurations for environment variables, secrets, and network settings.
-- **[inspector.py](inspector.py.md)**: The `inspector.py` file defines the `Inspector` class, which is a construct for managing inspector-related infrastructure, and includes comments on future plans for migrating CDK ownership of existing inspector buckets.
-- **[metrics_lambda.py](metrics_lambda.py.md)**: The `metrics_lambda.py` file defines a CDK construct for deploying a Lambda function that processes metrics events, along with associated resources like an SQS dead-letter queue, CloudWatch alarms, and an EventBridge event bus.
+- **[asset_onboarding_lambda.py](asset_onboarding_lambda.py.md)**: Defines an AWS Lambda construct for asset onboarding with S3, SNS, and Secrets Manager integration.
+- **[aws_waf.py](aws_waf.py.md)**: Defines AWS WAF configuration and association for an Application Load Balanced Fargate service.
+- **[backend.py](backend.py.md)**: Defines AWS infrastructure for a backend service using AWS CDK, including ECS, VPC, and secret management.
+- **[inspector.py](inspector.py.md)**: Defines an Inspector construct with parameters for environment configuration in a CDK application.
+- **[metrics_lambda.py](metrics_lambda.py.md)**: Defines a Lambda function with event handling, alarms, and notifications for metrics processing.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

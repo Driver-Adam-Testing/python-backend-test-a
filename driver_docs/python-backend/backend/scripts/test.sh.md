@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test.sh` file is a bash script that runs tests using pytest with coverage reporting for the `app` source, and generates both a terminal and HTML coverage report.
+A Bash script to run tests with coverage reporting and generate an HTML report.
 
 # Purpose
-This Bash script is designed to automate the process of running test coverage analysis for a Python application. It provides a narrow functionality focused on executing tests using `pytest` while measuring code coverage with the `coverage` tool. The script first ensures that the script exits immediately if any command fails (`set -e`) and enables debugging output (`set -x`). It then runs the tests located in the `app` directory, generates a coverage report highlighting any missing coverage, and finally produces an HTML report with a customizable title. This script is not an executable or a library but rather a utility script intended to be run in a development environment to facilitate testing and coverage analysis.
+The script is a Bash executable that automates the process of running tests and generating code coverage reports for a Python application. It uses the `coverage` tool to execute tests with `pytest` while tracking which parts of the code are executed. The `--source=app` option specifies that the coverage analysis should focus on the `app` directory. The script generates a coverage report in the terminal and an HTML report, with the title customizable via command-line arguments. The `set -e` and `set -x` commands ensure that the script stops execution on errors and prints each command before executing it, respectively.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

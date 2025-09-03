@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_header_multi_prompt.py` file defines a template for generating multi-prompt headers for large source code files, focusing on purposes, imports, global variables, data structures, and functions.
+Defines a template for multi-prompt headers in C or C++ source code inspection.
 
 # Purpose
-This Python code defines a structured template for analyzing and documenting C or C++ header files. It imports several components from utility modules, which are used to create a multi-prompt template for extracting and organizing information about the purpose, imports, global variables, data structures, and functions within a header file. The template is designed to work with a multi-context approach, leveraging both static analysis and language model (LLM) insights to gather comprehensive details about the header file's contents. The code is likely part of a larger system that automates the documentation process for C or C++ codebases, providing a systematic way to generate detailed and organized documentation.
+The code defines a template for generating documentation headers for C or C++ source code files. It imports several components from the `utils.lang_specialization` and `utils.templates` modules, which are used to create structured prompts for different sections of a documentation header. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER`, is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions".
 
-The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER` is a list of tuples, each representing a different aspect of the header file to be documented. Each tuple contains a prompt type, a section title, and functions or methods that facilitate the extraction and formatting of information. For example, it uses static analysis to gather raw symbols for variables, data structures, and functions, and then refines this information using LLM-based methods. This code is not a standalone script but rather a component of a documentation generation library, intended to be imported and used within a larger framework that processes and documents source code files.
+Each tuple in the template contains a type identifier from the `S` class, a section title, and a series of functions or prompts that are used to generate content for that section. For example, the "Purpose" section uses prompts related to the general purpose of C or C++ headers, while the "Imports and Dependencies" section uses a function to check for necessary imports. The template is designed to facilitate the automated generation of comprehensive documentation for C or C++ header files by leveraging both static analysis and language model outputs.
 # Imports and Dependencies
 
 ---
@@ -29,9 +29,9 @@ The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER` is a list of tuples, each r
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_HEADER
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER` is a list of tuples, where each tuple represents a section of a multi-prompt template for processing source code. Each tuple contains a type identifier, a section header, and a series of functions or variables that are used to process or analyze different aspects of the source code, such as purpose, imports, global variables, data structures, and functions.
-- **Use**: This variable is used to define a structured template for generating prompts that guide the analysis and processing of large source code files.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string and several function references. Each tuple represents a section of a multi-prompt template for large source code files.
+- **Use**: Used to define the structure and components of a multi-prompt template for processing large source code files.
 
 
 

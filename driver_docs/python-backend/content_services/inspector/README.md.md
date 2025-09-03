@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `README.md` file in the `python-backend/content_services/inspector` directory provides instructions for setting up, running, and deploying the cloud-first version of the Inspector service using Poetry and Modal.
+Instructions for installing, running, and deploying the cloud-first version of Inspector.
 
 # Purpose
-The provided content is a documentation snippet for setting up and running a cloud-based application called "Inspector" using the Poetry package manager and the Modal framework. It outlines the steps to install the necessary environment with Poetry, emphasizing the need to configure the `main.py` file to point to the correct local and remote codebase paths. The document provides instructions for executing the application from a local machine while targeting cloud resources, including commands for running the application, handling crashes or aborts by using run IDs, and rerunning specific parts of the application tree. Additionally, it includes a command for deploying the application service to the cloud environment, ensuring that users can manage both local and cloud-based operations effectively.
+The document provides instructions for setting up and running a cloud-based version of an application called `Inspector`. To install the necessary environment, use the command `poetry install --no-root`. Before executing the application from a local computer, modify `main.py` to specify the correct paths for the local and remote codebases. The application can be run in a development environment using the command `modal run --env=dev src/main.py codebase-id="<UUID>"`. In case of an interruption, the application can be resumed using a run ID with the command `modal run --env=dev src/main.py resume-from-id="myuuid"`. To rerun specific parts of the application, provide the paths to the nodes with the `--rerun-paths` option. Finally, to deploy the application service to the cloud, use the command `modal deploy --env=dev src/main.py`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

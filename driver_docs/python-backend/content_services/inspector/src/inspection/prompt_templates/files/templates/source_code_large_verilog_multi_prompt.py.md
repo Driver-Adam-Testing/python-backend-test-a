@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_verilog_multi_prompt.py` file defines a template for generating prompts related to large Verilog source code, including instructions and collections for modules, functions, and tasks.
+Templates for generating structured prompts for large Verilog source code analysis.
 
 # Purpose
-This Python code file defines a configuration for generating structured prompts specifically tailored for analyzing and describing Verilog source code. It imports various components and instructions from shared and utility modules, which are then used to construct a template named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG`. This template is a list of tuples, each containing a specific configuration for generating prompts related to the purpose, modules, and functions/tasks within Verilog code. The code provides narrow functionality focused on creating structured prompts for Verilog code analysis, leveraging both static analysis and language model insights. It is essentially a configuration file that sets up the necessary components and instructions for generating these specialized prompts.
+This code defines a configuration for a multi-prompt template specifically designed for Verilog source code analysis. It imports several components and instructions from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.verilog`, to construct a structured template. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG`, is a list of tuples that specify different sections, such as "# Purpose", "# Modules", and "# Functions and Tasks". Each section uses specific prompts and collections to facilitate the analysis and documentation of Verilog code, leveraging both static analysis and language model outputs. The configuration is intended to guide the generation of structured documentation for Verilog source code by using predefined instructions and components.
 # Imports and Dependencies
 
 ---
@@ -29,9 +29,9 @@ This Python code file defines a configuration for generating structured prompts 
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_VERILOG
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG` is a list of tuples, each containing structured data for generating prompts related to Verilog code analysis. Each tuple includes a string identifier, a description, and a series of components or functions that are used to construct or analyze Verilog code prompts.
-- **Use**: This variable is used to define and organize multiple prompt templates for Verilog code analysis, facilitating structured prompting in different contexts such as purpose, modules, and functions/tasks.
+- **Type**: ``list``
+- **Description**: A list of tuples that define structured prompts for Verilog code analysis and documentation. Each tuple contains a string identifier, a description, and a series of components or functions that generate or process Verilog code prompts.
+- **Use**: Used to organize and define structured prompts for analyzing and documenting Verilog code.
 
 
 

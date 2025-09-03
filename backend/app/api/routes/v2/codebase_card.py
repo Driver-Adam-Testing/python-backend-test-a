@@ -4,8 +4,8 @@ from datetime import datetime  # noqa: TCH003
 from typing import Any
 from uuid import UUID  # noqa: TCH003
 
-from database.models_v1 import DerivedContent
-from database.models_v2 import (
+from database.models import (
+    DerivedContent,
     Node,
     PrimaryAsset,
     PrimaryAssetKind,
@@ -13,7 +13,7 @@ from database.models_v2 import (
     PrimaryAssetTag,
     Version,
 )
-from database.models_v2_enums import ContentKind, VersionStatus
+from database.models_enums import ContentKind, VcsAutoUpdatePolicy, VersionStatus
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import and_, func, or_
@@ -73,6 +73,7 @@ class MostRecentMetadata(BaseModel):
     analyzable_sloc: int | None = None
     top_language: str | None = None
     analyzable_sloc_by_type: dict[str, int] | None = None
+    analyzable_files_by_type: dict[str, int] | None = None
 
 
 class MostRecentVersionContent(BaseModel):
@@ -85,6 +86,7 @@ class MostRecentVersionContent(BaseModel):
 
 class CodebaseCard(BaseModel):
     id: UUID
+    vcs_auto_update_policy: VcsAutoUpdatePolicy | None
     organization_id: str
     kind: str
     source_type: str
@@ -402,6 +404,7 @@ def codebase_card(
                 analyzable_sloc=0,
                 top_language=None,
                 analyzable_sloc_by_type=None,
+                analyzable_files_by_type=None,
             )
 
             mrv_content = MostRecentVersionContent(
@@ -414,6 +417,7 @@ def codebase_card(
             connecting_cards.append(
                 CodebaseCard(
                     id=pa_row.id,
+                    vcs_auto_update_policy=pa_row.vcs_auto_update_policy,
                     organization_id=pa_row.organization_id,
                     kind=pa_row.kind.value,
                     source_type=_provider_to_source_type(pa_row.provider, pa_row.kind),
@@ -597,6 +601,7 @@ def codebase_card(
             top_language=node_meta.get("top_language_by_file_count")
             or node_meta.get("top_language"),
             analyzable_sloc_by_type=node_meta.get("analyzable_sloc_by_type"),
+            analyzable_files_by_type=node_meta.get("analyzable_files_by_type"),
         )
 
         mrv_content = MostRecentVersionContent(
@@ -610,6 +615,7 @@ def codebase_card(
         cards.append(
             CodebaseCard(
                 id=pa_row.id,
+                vcs_auto_update_policy=pa_row.vcs_auto_update_policy,
                 organization_id=pa_row.organization_id,
                 kind=pa_row.kind.value,
                 source_type=_provider_to_source_type(pa_row.provider, pa_row.kind),

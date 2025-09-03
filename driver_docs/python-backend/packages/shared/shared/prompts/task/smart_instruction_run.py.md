@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `smart_instruction_run.py` file defines a prompt template for generating smart instructions, focusing on executing the given prompt while providing context for document generation.
+Defines a system message prompt template for generating smart instructions in a document.
 
 # Purpose
-This code defines a couple of global variables, `PROMPT` and `MESSAGE`, which are likely used in a larger application to manage or generate text-based instructions or messages. The `PROMPT` variable contains a multi-line string that describes how a prompt should be executed and provides context for document generation, indicating that it is part of a system that processes or generates text dynamically. The `MESSAGE` variable is a dictionary with a "role" key set to "system" and a "content" key that holds the `PROMPT` string, suggesting that it is structured for use in a messaging or communication system, possibly for a chatbot or automated document generation tool. This code provides narrow functionality, focusing specifically on defining these configuration-like variables for use elsewhere in the application.
+This code defines two global variables, `PROMPT` and `MESSAGE`, which are used to store a string and a dictionary, respectively. The `PROMPT` variable contains a multi-line string that provides instructions and context for a document, emphasizing the importance of focusing on a specific section called the "prompt." The `MESSAGE` variable is a dictionary with two keys: `role`, which is set to the string `"system"`, and `content`, which is set to the value of the `PROMPT` variable. This code is likely part of a configuration or setup for a system that processes or generates documents based on specific instructions.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The `PROMPT` variable is a multi-line string that provides instructions and context for generating a document. It describes the purpose of the prompt, emphasizing that it is the main focus and that other sections are placeholders to be filled with 'smart_instructions'. The text also advises on maintaining cohesiveness and readability within the document.
-- **Use**: This variable is used to define the content of a system message, providing instructions for document generation.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions and context for a document. It includes details about the document's scope, the role of the prompt, and how the selected text should be used.
+- **Use**: Used as the content for the `MESSAGE` dictionary to provide system-level instructions.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for a system prompt.
-- **Use**: This variable is used to store and structure the system prompt information, likely for use in a context where a system role and its associated instructions are required.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key is assigned the string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system role information and prompt content for further processing or communication.
 
 
 

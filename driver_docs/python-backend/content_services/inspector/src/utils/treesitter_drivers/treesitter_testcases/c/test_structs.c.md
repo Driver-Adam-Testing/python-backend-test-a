@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_structs.c` file demonstrates various struct declarations, definitions, and usages in C, including named, unnamed, forward-declared, and typedef'd structs, as well as struct variable initialization and usage.
+Demonstrates various struct declarations, typedefs, and usage in C with print statements for verification.
 
 # Purpose
-This C source code file demonstrates various ways to define and use structures in C, showcasing both named and unnamed structs, forward declarations, and typedefs. The code provides a comprehensive overview of struct usage, including forward declarations, named structs with tags, typedefs for both named and unnamed structs, and global unnamed structs. It also illustrates how to define structs with nested anonymous structs, although the nested struct example is commented out, indicating it might be intended for testing in a C++ context. The file includes a [`main`](<#main>) function that initializes and manipulates instances of these structs, demonstrating their practical application and printing their values to verify correct usage.
+The code demonstrates various ways to define and use structures in C. It includes examples of forward declarations, named and unnamed structures, typedefs, and global scope structures. The code also shows how to declare and initialize variables of these structures and how to use them within the [`main`](<#main>) function. The [`main`](<#main>) function initializes several structure variables and prints their values to verify correct usage.
 
-The code serves as an educational example, highlighting the flexibility and various syntactic forms available for struct definitions in C. It does not define public APIs or external interfaces, as its primary purpose is to illustrate struct usage within a single file. The inclusion of typedefs simplifies the syntax for declaring struct variables, making the code more readable and easier to maintain. By covering a wide range of struct-related concepts, this file acts as a valuable resource for understanding how to effectively use structs in C programming.
+The code provides a comprehensive overview of struct usage in C, including forward declarations, typedefs for both named and unnamed structs, and the use of global unnamed structs. It also includes a commented-out example of a struct with an anonymous nested struct, which is intended for testing in C++. The code concludes with a series of `printf` statements that output the values of the initialized struct variables, demonstrating how to access and manipulate struct members.
 # Imports and Dependencies
 
 ---
@@ -19,97 +19,99 @@ The code serves as an educational example, highlighting the flexibility and vari
 
 ---
 ### global\_data
-- **Type**: `struct`
-- **Description**: `global_data` is a global variable of an unnamed struct type containing two integer fields, `u` and `v`. It is defined at the file scope, making it accessible throughout the file in which it is declared.
-- **Use**: This variable is used to store and manipulate two integer values, `u` and `v`, which can be accessed and modified from any function within the file.
+- **Type**: ``struct``
+- **Description**: An unnamed `struct` with two integer members, `u` and `v`, is defined at the global scope. This `struct` is used to declare the global variable `global_data`. The `struct` does not have a tag or typedef, making it an anonymous `struct`.
+- **Use**: Stores two integer values accessible throughout the program via the `global_data` variable.
 
 
 ---
 ### p1
-- **Type**: `struct Point`
-- **Description**: The variable `p1` is a global instance of the `Point` structure, which contains two integer fields, `px` and `py`. This structure is used to represent a point in a 2D space with integer coordinates.
-- **Use**: `p1` is used to store and manipulate the x and y coordinates of a point in the program.
+- **Type**: ``struct Point``
+- **Description**: Represents a point in a 2D space with integer coordinates `px` and `py`. The variable `p1` is an instance of this structure and is declared globally.
+- **Use**: Used to store and manipulate the coordinates of a point in 2D space.
 
 
 ---
 ### p2
-- **Type**: `struct Point`
-- **Description**: The variable `p2` is a global instance of the `Point` struct, which contains two integer fields, `px` and `py`. It is initialized with the values 3 and 4, respectively, representing a point in a 2D space.
-- **Use**: `p2` is used to store and represent a specific point with coordinates (3, 4) in the program.
+- **Type**: ``struct Point``
+- **Description**: Contains two integer members `px` and `py`, initialized to 3 and 4 respectively. It is a global variable declared alongside the definition of the `struct Point`. This struct represents a point in a 2D space with integer coordinates.
+- **Use**: Used to store and access the coordinates of a point in a 2D space.
 
 
 # Data Structures
 
 ---
 ### Named
-- **Type**: `struct`
+- **Type**: ``struct``
 - **Members**:
-    - `a`: An integer member of the struct.
-    - `b`: Another integer member of the struct.
-- **Description**: The `Named` struct is a simple data structure containing two integer fields, `a` and `b`. It is used to group these two related integer values together, allowing for more organized and readable code when handling pairs of integers. This struct is defined with a tag, making it possible to declare variables of this type using the `struct Named` syntax.
+    - `a`: An integer member of the `Named` struct.
+    - `b`: Another integer member of the `Named` struct.
+- **Description**: Represents a simple structure with two integer members, `a` and `b`, which can be used to store and manipulate pairs of integer values.
 
 
 ---
 ### ForwardDecl
-- **Type**: `struct`
+- **Type**: ``struct``
 - **Members**:
     - `c`: An integer member of the struct.
     - `d`: A floating-point member of the struct.
-- **Description**: The `ForwardDecl` struct is a simple data structure that contains two members: an integer `c` and a floating-point `d`. It is initially forward-declared and later defined in the code, allowing for its use in variable declarations and operations. This struct is used to demonstrate the concept of forward declaration in C, which allows the struct to be referenced before its full definition is provided.
+- **Description**: Represents a simple data structure with two members: an integer `c` and a floating-point `d`. This struct is initially forward-declared and later defined, allowing its use in the program after its definition.
 
 
 ---
 ### MyStruct
-- **Type**: `typedef struct`
+- **Type**: ``struct``
 - **Members**:
     - `x`: An integer member of the struct.
     - `y`: Another integer member of the struct.
-- **Description**: `MyStruct` is a typedef for a struct that contains two integer members, `x` and `y`. This struct is used to group together two related integer values, which can be useful for representing a point in a 2D space or any other pair of related integer data.
+- **Description**: Defines a structure with two integer members, `x` and `y`, which can be used to store a pair of integer values.
 
 
 ---
 ### MyAnonTypedef
-- **Type**: `typedef struct`
+- **Type**: ``typedef struct``
 - **Members**:
-    - `z`: An integer member of the anonymous struct.
-- **Description**: `MyAnonTypedef` is a typedef for an anonymous struct containing a single integer member `z`. This allows for the creation of variables of type `MyAnonTypedef` without explicitly naming the struct, simplifying the syntax and usage in the code.
+    - `z`: An integer member of the struct.
+- **Description**: Defines an unnamed struct with a single integer member `z` and creates a typedef `MyAnonTypedef` for it, allowing the struct to be used without specifying the `struct` keyword.
 
 
 ---
 ### Point
-- **Type**: `struct`
+- **Type**: ``struct``
 - **Members**:
     - `px`: An integer representing the x-coordinate of the point.
     - `py`: An integer representing the y-coordinate of the point.
-- **Description**: The `Point` structure is a simple data structure used to represent a point in a 2D space with integer coordinates. It contains two members, `px` and `py`, which store the x and y coordinates of the point, respectively. This structure is used to declare variables `p1` and `p2`, where `p2` is initialized with the coordinates (3, 4).
+- **Description**: Represents a point in a 2D space with integer coordinates `px` and `py`. The `Point` structure is used to declare variables `p1` and `p2`, where `p2` is initialized with the coordinates (3, 4).
 
 
 ---
 ### Point2
-- **Type**: `typedef struct`
+- **Type**: ``struct``
 - **Members**:
-    - `x`: An integer representing the x-coordinate of the point.
-    - `y`: An integer representing the y-coordinate of the point.
-- **Description**: The `Point2` data structure is a typedef for an unnamed struct that represents a two-dimensional point with integer coordinates. It includes two members, `x` and `y`, which store the x and y coordinates of the point, respectively. Additionally, a pointer type `Point2Ptr` is defined for this struct, allowing for easy manipulation of `Point2` instances through pointers.
+    - `x`: An integer representing the x-coordinate.
+    - `y`: An integer representing the y-coordinate.
+- **Description**: Defines a 2D point with integer coordinates `x` and `y`, and provides a typedef for both the structure itself (`Point2`) and a pointer to the structure (`Point2Ptr`).
 
 
 # Functions
 
 ---
 ### main<!-- {{#callable:main}} -->
-The `main` function initializes various struct variables, assigns values to their fields, and prints these values to the console for verification.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/c/test_structs.c#L58>)
+
+Initializes various struct instances, assigns values, and prints them to verify usage.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize a `Named` struct variable `namedVar` with fields `a` and `b`.
-    - Initialize a `ForwardDecl` struct variable `fdVar` with fields `c` and `d`.
-    - Initialize a `MyStruct` typedef struct variable `myVar` with fields `x` and `y`.
-    - Initialize a `MyAnonTypedef` typedef struct variable `anonVar` with field `z`.
-    - Assign values to the global unnamed struct `global_data` fields `u` and `v`.
-    - Initialize an `Outer` struct variable `outVar` with fields `i`, `x`, and `y`.
-    - Assign values to the `Point` struct variable `p1` fields `px` and `py`.
-    - Print the values of all initialized struct variables to the console.
+- **Logic and Control Flow**:
+    - Declare and initialize a `struct Named` instance `namedVar` with values 1 and 2 for fields `a` and `b`.
+    - Declare and initialize a `struct ForwardDecl` instance `fdVar` with values 3 and 4.5 for fields `c` and `d`.
+    - Declare and initialize a `MyStruct` instance `myVar` with values 5 and 6 for fields `x` and `y`.
+    - Declare and initialize a `MyAnonTypedef` instance `anonVar` with value 7 for field `z`.
+    - Assign values 8 and 9 to the global unnamed struct `global_data` fields `u` and `v`.
+    - Declare and initialize a `struct Outer` instance `outVar` with values 10, 11.0, and 12.0 for fields `i`, `x`, and `y`.
+    - Assign values 1 and 2 to the `struct Point` instance `p1` fields `px` and `py`.
+    - Print the values of all initialized struct instances to verify their usage.
     - Return 0 to indicate successful execution.
-- **Output**: The function returns an integer value `0` indicating successful execution.
+- **Output**: Returns 0 to indicate successful execution.
 
 
 

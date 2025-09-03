@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `ngrok_server.py` file implements a FastAPI application that manages WebSocket connections and a socket server to handle tunnel client connections, providing a web interface for sending commands to connected clients.
+Implements a FastAPI server for managing WebSocket connections and tunnel clients with a web UI.
 
 # Purpose
-This Python file is a FastAPI application designed to manage WebSocket connections and facilitate communication between a web-based user interface and tunnel clients, such as those used with Ngrok. The application serves as a real-time command and control interface, allowing users to send commands to connected tunnel clients and receive their responses. The code defines a WebSocket endpoint (`/ws`) that handles incoming WebSocket connections from the web interface, enabling bidirectional communication. It also includes an asynchronous socket server that listens for connections from tunnel clients, allowing the server to send commands and receive responses from these clients.
+The code defines a FastAPI application that manages WebSocket connections and a socket server for tunnel clients. It serves as a communication interface between a web-based user interface and tunnel clients, allowing commands to be sent from the web interface to the clients. The application uses WebSockets to maintain real-time communication with the web interface, enabling it to send and receive messages. The [`websocket_endpoint`](<#websocket_endpoint>) function handles WebSocket connections, receiving commands from the web interface and forwarding them to connected tunnel clients.
 
-The application is structured to serve both static files and dynamic HTML content, with a primary focus on providing a user interface for managing tunnel clients. The HTML content includes a simple UI with buttons to send predefined commands (e.g., "status", "stop", "start") to the tunnel clients. The WebSocket connection ensures that the UI remains updated with the latest status and log messages from the server. The code also includes mechanisms for handling client disconnections and errors, ensuring robust communication between the server, the web interface, and the tunnel clients. This setup is particularly useful for managing remote services or applications that require real-time interaction and monitoring.
+The application also includes a socket server that listens for connections from tunnel clients. The [`handle_client`](<#handle_client>) function manages these connections, sending commands received from the WebSocket to the clients and broadcasting their responses back to the web interface. The application serves an HTML page as the main user interface, which includes buttons to send predefined commands to the tunnel clients. The HTML page uses JavaScript to establish a WebSocket connection with the server and handle user interactions. The application mounts a static file directory to serve additional resources, such as the GitHub setup page.
 # Imports and Dependencies
 
 ---
@@ -25,90 +25,100 @@ The application is structured to serve both static files and dynamic HTML conten
 
 ---
 ### app
-- **Type**: `FastAPI`
-- **Description**: The `app` variable is an instance of the FastAPI class, which is used to create a web application. It is configured to serve static files from the 'static' directory and is responsible for handling HTTP requests and WebSocket connections.
-- **Use**: This variable is used to define the main application object that routes HTTP and WebSocket requests to their respective handlers.
+- **Type**: ``FastAPI``
+- **Description**: Initializes a FastAPI application instance and mounts a static file directory at the '/static' path. This setup allows the application to serve static files from the specified directory.
+- **Use**: Used to create and configure the FastAPI application, including setting up routes and middleware.
 
 
 ---
 ### clients
-- **Type**: `dict[str, asyncio.Queue]`
-- **Description**: The `clients` variable is a dictionary that maps client identifiers (strings) to asyncio.Queue objects. Each entry in the dictionary represents a connected tunnel client, where the key is a unique identifier for the client, and the value is a queue used to send commands to that client.
-- **Use**: This variable is used to manage and send commands to connected tunnel clients in the application.
+- **Type**: ``dict[str, asyncio.Queue]``
+- **Description**: Stores active tunnel client connections, where each key is a client identifier (a string) and each value is an `asyncio.Queue` instance. The queue is used to send commands to the respective client.
+- **Use**: Used to manage and send commands to connected tunnel clients.
 
 
 ---
 ### websockets
-- **Type**: `set[WebSocket]`
-- **Description**: The `websockets` variable is a global set that stores active WebSocket connections. It is used to keep track of all currently connected WebSocket clients in the FastAPI application.
-- **Use**: This variable is used to manage and broadcast messages to all connected WebSocket clients.
+- **Type**: ``set[WebSocket]``
+- **Description**: A set that stores active WebSocket connections. Each element in the set is an instance of the `WebSocket` class.
+- **Use**: Used to manage and track all active WebSocket connections for broadcasting messages.
 
 
 # Functions
 
 ---
 ### broadcast<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.broadcast}} -->
-The `broadcast` function asynchronously sends a message to all connected WebSocket clients and removes any clients that have disconnected.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L16>)
+
+Sends a message to all connected WebSocket clients and removes any disconnected clients from the set of active connections.
 - **Inputs**:
-    - `message`: A string representing the message to be sent to all connected WebSocket clients.
-- **Control Flow**:
-    - Initialize an empty set `disconnected` to keep track of WebSocket clients that have disconnected.
-    - Iterate over each `websocket` in the global `websockets` set.
+    - `message`: The message to send to all connected WebSocket clients.
+- **Logic and Control Flow**:
+    - Initialize an empty set `disconnected` to track WebSocket clients that disconnect during the message sending process.
+    - Iterate over each `websocket` in the `websockets` set.
     - Attempt to send the `message` to the current `websocket` using `await websocket.send_text(message)`.
-    - If a `WebSocketDisconnect` exception is raised, add the `websocket` to the `disconnected` set.
-    - After attempting to send the message to all clients, remove the disconnected clients from the `websockets` set using `websockets.difference_update(disconnected)`.
-- **Output**: The function does not return any value (returns `None`).
+    - If a `WebSocketDisconnect` exception occurs, add the `websocket` to the `disconnected` set.
+    - After attempting to send the message to all clients, remove the `disconnected` clients from the `websockets` set using `websockets.difference_update(disconnected)`.
+- **Output**: None
 
 
 ---
 ### send\_command\_to\_clients<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.send_command_to_clients}} -->
-The `send_command_to_clients` function asynchronously sends a specified command to all connected tunnel clients and handles any exceptions that occur during the process.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L29>)
+
+Sends a command to all connected tunnel clients and handles any exceptions that occur during the process.
 - **Inputs**:
-    - `command`: A string representing the command to be sent to all tunnel clients.
-- **Control Flow**:
-    - Check if there are any connected clients; if not, broadcast a status message indicating no clients are connected and return.
-    - Print a message indicating the command being sent and the number of clients.
-    - Iterate over each client in the `clients` dictionary, attempting to put the command into each client's queue.
-    - Handle any exceptions that occur during the process of putting the command into a client's queue, printing an error message if an exception is caught.
-- **Output**: The function does not return any value; it performs actions such as broadcasting messages and printing to the console.
+    - `command`: A string representing the command to send to all tunnel clients.
+- **Logic and Control Flow**:
+    - Checks if there are any connected clients in the `clients` dictionary.
+    - If no clients are connected, broadcasts a status message indicating no tunnel clients are connected and returns immediately.
+    - Prints a message indicating the command being sent and the number of clients.
+    - Iterates over each client in the `clients` dictionary, attempting to send the command to each client's queue.
+    - Handles exceptions that occur during the sending process, printing an error message for each client that encounters an error.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
     - [`python-backend/dev_stack/src/ngrok_server.broadcast`](<#broadcast>)
 
 
 ---
 ### websocket\_endpoint<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.websocket_endpoint}} -->
-The `websocket_endpoint` function handles WebSocket connections, receiving commands from clients and broadcasting them to connected tunnel clients.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L45>)
+
+Handles WebSocket connections, receives commands from clients, and forwards them to tunnel clients.
 - **Decorators**: `@app.websocket`
 - **Inputs**:
-    - `websocket`: An instance of `WebSocket` representing the connection to a client.
-- **Control Flow**:
-    - The function begins by accepting the WebSocket connection and adding it to the `websockets` set.
-    - It enters a `try` block where it continuously listens for text data from the WebSocket connection.
-    - Upon receiving data, it logs the command and calls [`send_command_to_clients`](<#send_command_to_clients>) to broadcast the command to all connected tunnel clients.
-    - If a `WebSocketDisconnect` exception is raised, indicating the client has disconnected, the WebSocket is removed from the `websockets` set and a disconnection message is logged.
-- **Output**: The function does not return any value; it operates asynchronously to manage WebSocket connections and command distribution.
+    - `websocket`: A `WebSocket` object representing the connection to a client.
+- **Logic and Control Flow**:
+    - Accepts the WebSocket connection and adds it to the `websockets` set.
+    - Enters a loop to continuously receive text data from the WebSocket.
+    - Prints the received command and sends it to all connected tunnel clients using [`send_command_to_clients`](<#send_command_to_clients>).
+    - Handles `WebSocketDisconnect` exceptions by removing the WebSocket from the `websockets` set and printing a disconnection message.
+- **Output**: Does not return any value.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/ngrok_server.send_command_to_clients`](<#send_command_to_clients>)
 
 
 ---
 ### handle\_client<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.handle_client}} -->
-The `handle_client` function manages incoming connections from tunnel clients, processes commands from a WebSocket, and handles communication between the client and WebSocket.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L61>)
+
+Manages incoming tunnel client connections, processes commands, and communicates with WebSocket clients.
 - **Inputs**:
-    - `reader`: An `asyncio.StreamReader` object used to read data from the tunnel client.
-    - `writer`: An `asyncio.StreamWriter` object used to send data to the tunnel client.
-- **Control Flow**:
-    - Generate a unique `client_id` using the client's peer name information.
-    - Create an `asyncio.Queue` for the client and store it in the `clients` dictionary with `client_id` as the key.
-    - Broadcast a message to all WebSocket clients indicating a new tunnel client connection.
-    - Enter a loop to continuously process commands from the WebSocket and communicate with the tunnel client.
+    - `reader`: An `asyncio.StreamReader` object to read data from the tunnel client.
+    - `writer`: An `asyncio.StreamWriter` object to send data to the tunnel client.
+- **Logic and Control Flow**:
+    - Create a unique `client_id` using the client's peer name information.
+    - Initialize an `asyncio.Queue` for the client and store it in the `clients` dictionary with `client_id` as the key.
+    - Log the new client connection and notify all WebSocket clients about it using the [`broadcast`](<#broadcast>) function.
+    - Enter a loop to continuously process commands from the WebSocket and send them to the tunnel client.
     - Retrieve a command from the client's queue and send it to the tunnel client using the `writer` object.
     - Read the response from the tunnel client using the `reader` object.
-    - If the response is empty, log the closure of the connection and break the loop.
-    - Decode and process the response, broadcasting it to WebSocket clients as either a status or log message.
+    - If the response is empty, log the disconnection and break the loop.
+    - Decode and log the response, then broadcast it to WebSocket clients, distinguishing between status and log messages.
     - Handle `ConnectionResetError` and other exceptions by logging the error and breaking the loop.
-    - In the `finally` block, remove the client from the `clients` dictionary, broadcast a disconnection message, and close the writer.
-- **Output**: The function does not return any value; it performs operations to manage client connections and communication.
+    - In the `finally` block, remove the client from the `clients` dictionary, log the disconnection, and notify WebSocket clients.
+    - Attempt to close the `writer` object and handle any exceptions during closure.
+- **Output**: No return value; the function performs network communication and logging operations.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/ngrok_server.broadcast`](<#broadcast>)
     - [`python-backend/dev_stack/src/ngrok_server.get`](<#get>)
@@ -116,53 +126,56 @@ The `handle_client` function manages incoming connections from tunnel clients, p
 
 ---
 ### start\_socket\_server<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.start_socket_server}} -->
-The `start_socket_server` function initializes and runs an asynchronous socket server to handle tunnel client connections on localhost at port 9000.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L127>)
+
+Starts an asynchronous socket server to handle tunnel client connections.
 - **Inputs**: None
-- **Control Flow**:
-    - The function uses `asyncio.start_server` to create a server that listens for connections on 'localhost' at port 9000, with `handle_client` as the callback for handling connections.
-    - A message is printed to the console indicating that the socket server has started.
-    - The server is run within an asynchronous context manager (`async with`), ensuring that it serves clients indefinitely using `server.serve_forever()`.
-- **Output**: The function does not return any value; it runs the server indefinitely.
+- **Logic and Control Flow**:
+    - Uses `asyncio.start_server` to create a server that listens on 'localhost' at port 9000 and handles connections using the `handle_client` function.
+    - Prints a message indicating that the socket server has started.
+    - Uses an asynchronous context manager to ensure the server runs indefinitely by calling `serve_forever`.
+- **Output**: Does not return any value.
 
 
 ---
 ### startup\_event<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.startup_event}} -->
-The `startup_event` function initializes and starts the socket server when the FastAPI application starts.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L135>)
+
+Starts the socket server when the FastAPI application starts.
 - **Decorators**: `@app.on_event`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is decorated with `@app.on_event("startup")`, indicating it should run when the FastAPI app starts.
-    - It creates an asynchronous task to start the socket server by calling `start_socket_server()`.
-    - The task is stored in `app.state.socket_server_task` to prevent it from being garbage collected.
-- **Output**: The function does not return any output.
+- **Logic and Control Flow**:
+    - Creates an asynchronous task to start the socket server by calling `start_socket_server()`.
+    - Stores the task reference in `app.state.socket_server_task` to prevent it from being garbage collected.
+- **Output**: Does not return any output.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/ngrok_server.start_socket_server`](<#start_socket_server>)
 
 
 ---
 ### get<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.get}} -->
-The `get` function serves the main user interface for the Ngrok Tunnel Manager as an HTML response.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L143>)
+
+Serves the main user interface for the Ngrok Tunnel Manager as an HTML response.
 - **Decorators**: `@app.get`
 - **Inputs**: None
-- **Control Flow**:
-    - The function defines a multi-line string `html_content` containing HTML and JavaScript code for the user interface.
-    - The HTML includes a title, styles, and a body with buttons for controlling the Ngrok tunnels and a log area.
-    - JavaScript functions are defined to manage WebSocket connections, handle messages, and send commands to the server.
-    - The `connect` function establishes a WebSocket connection and handles open, message, close, and error events.
-    - The `sendCommand` function sends commands over the WebSocket if it is open, or attempts to reconnect if it is not.
-    - The `connect` function is called immediately to establish the WebSocket connection when the page loads.
-- **Output**: The function returns an `HTMLResponse` containing the `html_content` string, which is the HTML and JavaScript for the main UI.
+- **Logic and Control Flow**:
+    - Defines a multi-line string `html_content` containing HTML and JavaScript code for the user interface.
+    - Returns an `HTMLResponse` with the `html_content` as its content.
+- **Output**: An `HTMLResponse` object containing the HTML content for the main UI.
 
 
 ---
 ### get\_github\_setup<!-- {{#callable:python-backend/dev_stack/src/ngrok_server.get_github_setup}} -->
-The `get_github_setup` function serves an HTML file located at 'static/gh.html' as an HTTP response.
+[View Source →](<../../../../dev_stack/src/ngrok_server.py#L235>)
+
+Serves the GitHub setup HTML page as an HTTP response.
 - **Decorators**: `@app.get`
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as an asynchronous function using the `async def` syntax.
-    - It returns an `HTMLResponse` object, which is constructed by reading the contents of the 'static/gh.html' file.
-- **Output**: The function outputs an `HTMLResponse` containing the HTML content of the 'static/gh.html' file.
+- **Logic and Control Flow**:
+    - Reads the content of the 'static/gh.html' file.
+    - Returns an HTML response with the content of the file.
+- **Output**: An `HTMLResponse` containing the content of the 'static/gh.html' file.
 - **Functions Called**:
     - [`python-backend/dev_stack/src/ngrok_server.get`](<#get>)
 

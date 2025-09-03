@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mypy.ini` file in the `python-backend` codebase configures the MyPy static type checker to use Python 3.10, skip following imports, and support namespace packages.
+Configuration for MyPy type checker specifying Python version 3.10 and import handling options.
 
 # Purpose
-This configuration file is for MyPy, a static type checker for Python. It specifies that the Python version to be checked is 3.10, instructs MyPy to skip checking imports, and enables support for namespace packages.
+The `[mypy]` section configures the behavior of the `mypy` static type checker. It specifies that the Python version to check against is `3.10`, instructs `mypy` to skip following imports, and enables support for `namespace_packages`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for Poetry dependencies and build system for the autodocs project.
+Configuration for the Poetry package manager, specifying project metadata and dependencies.
 
 # Purpose
-The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. It specifies the project's name as `autodocs`, with a version of `0.1.0`, and lists the author. The `packages` section includes the source directory `src/utils`. The `tool.poetry.dependencies` section defines the required Python version and lists the dependencies needed for the project, such as `openai`, `tiktoken`, and `boto3`, among others. The file also notes that it is used to create a virtual environment for the local integrated development environment (IDE), while dependencies for containers are managed separately by Modal. The `build-system` section specifies that `poetry-core` is required and sets the build backend to `poetry.core.masonry.api`.
+The `pyproject.toml` file is a configuration file used by the Poetry tool to manage dependencies and package information for a Python project. It specifies the project's metadata, including the name `autodocs`, version `0.1.0`, and author details. The file lists the packages to include, such as `src/utils`, and defines the dependencies required for the project, including specific versions of Python and various libraries like `openai`, `tiktoken`, and `boto3`. The file also includes paths to local packages, such as `database` and `shared`, which are marked for development use. Additionally, the `[build-system]` section specifies the build requirements and backend, indicating the use of `poetry-core` for building the project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

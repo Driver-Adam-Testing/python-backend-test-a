@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_multi_context_default.py` file defines a template for generating structured prompts to analyze source code, focusing on aspects like purpose, imports, global variables, data structures, and functions.
+Defines a template for multi-context source code inspection with prompts for purpose, imports, variables, data structures, and functions.
 
 # Purpose
-This Python code file is designed to facilitate structured prompting and analysis of source code, particularly in the context of understanding and documenting the purpose and structure of code files. It imports various components and instructions from shared and utility modules, which are then used to construct prompts and templates for analyzing code. The file defines a template, `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT`, which is a collection of tuples. Each tuple represents a specific aspect of code analysis, such as determining the purpose of the code, identifying imports and dependencies, and extracting information about global variables, data structures, and functions. These tuples utilize components like `Prompt` and `Component` to build structured prompts that can be used to query or instruct a language model to perform specific tasks related to code analysis.
+The code defines a configuration for a multi-context template used in a structured prompting system. It imports several components and instructions from different modules, which are used to construct prompts and manage language specialization. The primary purpose of this code is to create a structured template that can handle multiple contexts, specifically for analyzing source code. The template is organized into sections such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section uses specific prompts and components to extract and organize information from the source code.
 
-The code is not a standalone script but rather a part of a larger system, likely intended to be imported and used within a broader application or library focused on code analysis and documentation. It provides a structured approach to dissecting and understanding code by leveraging predefined instructions and templates. The file does not define public APIs or external interfaces directly but instead focuses on assembling the necessary components to facilitate the analysis of code through structured prompts. This makes it a crucial part of a system that aims to automate or assist in the documentation and understanding of software codebases.
+The `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` variable is a list of tuples, each representing a different section of the template. Each tuple contains a section identifier, a description, and a series of prompts or functions that process the source code to extract relevant information. The code uses components like `Prompt`, `Component`, and various collections to build these sections. The template is designed to facilitate the analysis of source code by breaking it down into manageable parts, allowing for a detailed examination of its structure and components.
 # Imports and Dependencies
 
 ---
@@ -34,9 +34,9 @@ The code is not a standalone script but rather a part of a larger system, likely
 
 ---
 ### SOURCE\_CODE\_MULTI\_CONTEXT\_TEMPLATE\_DEFAULT
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT` is a list of tuples, each containing a structured prompt configuration for different aspects of source code analysis. Each tuple includes a type identifier, a description string, and a series of prompt or function calls that are used to generate or process specific parts of the source code, such as purpose, imports, global variables, data structures, and functions.
-- **Use**: This variable is used to define a template for generating and processing structured prompts for analyzing various components of source code in a multi-context environment.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a description string, and a series of prompts or functions related to code analysis and transformation. Each tuple is designed to handle a specific aspect of code, such as purpose, imports, global variables, data structures, and functions.
+- **Use**: Used to define a template for multi-context code analysis and transformation, organizing different code components and their processing instructions.
 
 
 

@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from database.models_v1 import (
+from database.models import (
     DerivedContent,
     Tag,
 )

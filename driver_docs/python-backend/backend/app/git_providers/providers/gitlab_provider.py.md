@@ -3,284 +3,353 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `gitlab_provider.py` file implements the `GitLabProvider` class, which handles GitLab OAuth authorization, access token management, repository fetching, and cloning operations, integrating with AWS services for secret management and file storage.
+Implements a GitLab provider for managing Group Access Tokens, installations, and webhook events.
 
 # Purpose
-The provided Python code defines a class `GitLabProvider` that serves as an interface for interacting with GitLab repositories through OAuth authentication and API requests. This class is part of a larger application that integrates with GitLab to manage repository access and operations. The `GitLabProvider` class encapsulates functionality for authorizing GitLab applications, handling OAuth callbacks, fetching access tokens, and performing repository operations such as fetching repository lists and cloning repositories. It leverages several components, including `GitLabOAuthStrategy` for OAuth operations, `GitLabAPIResources` for API interactions, and `AWSSecretManagementStrategy` for managing secrets related to access tokens. The class also includes methods for uploading repository data to AWS S3 and generating presigned URLs for accessing the uploaded data.
+The code defines a class `GitLabProvider` that implements the `GitProviderInterface` to interact with GitLab using Group Access Tokens (GAT). It provides functionality to manage GitLab installations, validate access tokens, store and update secrets in AWS Secrets Manager, handle webhook events, and fetch repositories. The class uses `GitLabOAuthStrategy` for token validation and `GitLabAPIResources` for API interactions. It also includes methods to handle specific GitLab webhook events, such as push events, and to revoke access by deleting stored secrets.
 
-The code is structured as a library module intended to be used within a larger application, rather than as a standalone script. It defines a public API through the `GitLabProvider` class, which can be instantiated and used to perform various GitLab-related operations. The class methods handle the intricacies of OAuth authentication, token management, and API communication, abstracting these details away from the rest of the application. Additionally, the [`from_config`](<#GitLabProviderfrom_config>) class method provides a convenient way to instantiate the `GitLabProvider` using configuration data, making it easier to integrate into different environments. The code is designed to be robust, with logging for key operations and error handling for scenarios such as token expiration and failed uploads.
+The `GitLabProvider` class is designed to be instantiated with a configuration and a secrets management strategy, specifically `AWSSecretManagementStrategy`. It includes methods for creating and managing GitLab installations, handling webhook events, and managing secrets related to GitLab access tokens. The class also provides a method to fetch repositories associated with a GitLab installation. The code is structured to be part of a larger application, as indicated by the imports from various modules, and it is intended to be used as a component within a system that integrates with GitLab.
 # Imports and Dependencies
 
 ---
-- `base64`
 - `json`
 - `logging`
+- `typing.Any`
+- `modal`
+- `app.core.config.settings`
 - `app.git_providers.core.config.GitProviderConfig`
-- `app.git_providers.core.config_loader.load_provider_config`
+- `app.git_providers.interfaces.provider_interface.GitProviderInterface`
+- `app.git_providers.interfaces.provider_interface.WebhookConfig`
+- `app.git_providers.interfaces.provider_interface.WebhookEventContext`
 - `app.git_providers.oauth.gitlab_oauth_strategy.GitLabOAuthStrategy`
 - `app.git_providers.resources.gitlab_resources.GitLabAPIResources`
-- `app.git_providers.utils.errors.GitProviderAppRevokeError`
+- `app.schemas.git_provider_schema.AccessTokenData`
+- `app.schemas.git_provider_schema.GitProviderAppTokenSecret`
 - `app.schemas.git_provider_schema.GitRepository`
+- `app.schemas.git_provider_schema.TokenType`
 - `app.schemas.secret_management_schema.APP_INSTALL_GAT_NAME_PREFIX`
-- `app.schemas.secret_management_schema.APP_INSTALL_SECRET_NAME_PREFIX`
-- `app.schemas.secret_management_schema.APP_SECRET_NAME_PREFIX`
 - `database.models_v1.GitProviderApp`
 - `database.models_v1.GitProviderAppInstallation`
-- `shared.file_storage.aws_s3_client.AWSS3Client`
-- `shared.file_storage.aws_s3_client.org_id_to_hash`
 - `shared.interfaces.aws_client_config.AWSClientConfig`
 - `shared.secret_management.aws_secret_management.AWSSecretManagementStrategy`
 - `shared.secret_management.aws_secret_management.format_secret_name`
+- `app.git_providers.core.config_loader.load_provider_config`
+- `secrets`
 
 
 # Global Variables
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module, configured to use the name of the current module (`__name__`). It is used to log messages throughout the `GitLabProvider` class, providing information about the execution flow and any errors that occur.
-- **Use**: This variable is used to log informational and error messages within the `GitLabProvider` class methods.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the name of the current module as its logger name, which is obtained using `__name__`. This allows for logging messages that are specific to the module where the logger is used.
+- **Use**: Used to log messages and errors throughout the module, providing information about the execution flow and any issues encountered.
 
 
 # Classes
 
 ---
 ### GitLabProvider<!-- {{#class:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L34>)
+
 - **Members**:
-    - `config`: Holds the configuration details for the GitLab provider.
-    - `secrets_manager`: Manages secrets using AWS Secret Management Strategy.
+    - `config`: Holds the configuration for the GitLab provider.
+    - `secrets_manager`: Manages secrets using AWS Secrets Manager.
     - `auth_strategy`: Handles OAuth authentication for GitLab.
-    - `api_strategy`: Manages API resources for interacting with GitLab.
-- **Description**: The GitLabProvider class is responsible for managing interactions with GitLab, including authorization, token management, and repository operations. It utilizes OAuth for authentication and AWS for secret management, providing methods to authorize the provider, handle authorization callbacks, fetch access tokens, and clone repositories. The class is designed to integrate with AWS services for secure storage and retrieval of sensitive information, and it supports operations such as fetching repositories and generating presigned URLs for repository downloads.
+    - `api_strategy`: Interacts with GitLab API resources.
+- **Description**: Implements a GitLab provider that supports Group Access Tokens (GAT) for managing GitLab installations. It provides methods to validate access tokens, create and manage installations, store and update secrets, fetch repositories, handle webhook events, and revoke access. The class uses AWS Secrets Manager for secret management and interacts with GitLab through OAuth and API strategies.
 - **Methods**:
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.__init__`](<#GitLabProvider__init__>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.authorize_provider`](<#GitLabProviderauthorize_provider>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.handle_app_authorization_callback`](<#GitLabProviderhandle_app_authorization_callback>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_access_token`](<#GitLabProviderfetch_access_token>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_group_access_token`](<#GitLabProviderfetch_group_access_token>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_repos`](<#GitLabProviderfetch_repos>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_group_repos`](<#GitLabProviderfetch_group_repos>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.clone_repository`](<#GitLabProviderclone_repository>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<#GitLabProviderfrom_config>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.__init__`](<#gitlabprovider__init__>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config`](<#gitlabproviderfrom_config>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.validate_access_token`](<#gitlabprovidervalidate_access_token>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.create_installation`](<#gitlabprovidercreate_installation>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.store_secrets`](<#gitlabproviderstore_secrets>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.update_secrets`](<#gitlabproviderupdate_secrets>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_secrets`](<#gitlabproviderfetch_secrets>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_repositories`](<#gitlabproviderfetch_repositories>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.handle_webhook_event`](<#gitlabproviderhandle_webhook_event>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.revoke_access`](<#gitlabproviderrevoke_access>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.register_webhook`](<#gitlabproviderregister_webhook>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider._fetch_group_access_token`](<#gitlabprovider_fetch_group_access_token>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider._handle_push_event`](<#gitlabprovider_handle_push_event>)
+- **Inherits From**:
+    - [`python-backend/backend/app/git_providers/interfaces/provider_interface.GitProviderInterface`](<../interfaces/provider_interface.py.md#gitproviderinterface>)
 
 **Methods**
 
 ---
 #### GitLabProvider\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.__init__}} -->
-The `__init__` method initializes a `GitLabProvider` instance with configuration, secret management, authentication, and API strategies.
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L37>)
+
+Initializes a `GitLabProvider` instance with configuration and secret management strategies.
 - **Inputs**:
-    - `self`: Refers to the instance of the `GitLabProvider` class being initialized.
     - `config`: An instance of `GitProviderConfig` that contains configuration details for the GitLab provider.
-    - `secrets_manager`: An instance of `AWSSecretManagementStrategy` used for managing secrets related to the GitLab provider.
-- **Control Flow**:
-    - Assigns the `config` parameter to the instance variable `self.config`.
-    - Assigns the `secrets_manager` parameter to the instance variable `self.secrets_manager`.
-    - Initializes `self.auth_strategy` with a [`GitLabOAuthStrategy`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategy>) using the provided `config`.
-    - Initializes `self.api_strategy` with a [`GitLabAPIResources`](<../resources/gitlab_resources.py.md#GitLabAPIResources>) using the base URL and provider kind from the `config`.
-- **Output**: This method does not return any value; it initializes the instance variables for the `GitLabProvider` object.
+    - `secrets_manager`: An instance of `AWSSecretManagementStrategy` used for managing secrets.
+- **Logic and Control Flow**:
+    - Assigns the `config` parameter to the `self.config` attribute.
+    - Assigns the `secrets_manager` parameter to the `self.secrets_manager` attribute.
+    - Initializes `self.auth_strategy` with a [`GitLabOAuthStrategy`](<../oauth/gitlab_oauth_strategy.py.md#gitlaboauthstrategy>) instance using the `config` parameter for token validation.
+    - Initializes `self.api_strategy` with a [`GitLabAPIResources`](<../resources/gitlab_resources.py.md#gitlabapiresources>) instance using `config.base_url` and `config.provider_kind`.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategy>)
-    - [`python-backend/backend/app/git_providers/resources/gitlab_resources.GitLabAPIResources`](<../resources/gitlab_resources.py.md#GitLabAPIResources>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.authorize\_provider<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.authorize_provider}} -->
-The `authorize_provider` method generates an authorization URL for a GitLab provider using encoded state information.
-- **Inputs**:
-    - `organization_id`: A string representing the ID of the organization for which the provider is being authorized.
-    - `user_id`: A string representing the ID of the user requesting the authorization.
-    - `application_id`: A string representing the ID of the application requesting the authorization.
-- **Control Flow**:
-    - Logs an informational message indicating the start of the authorization process with the provided organization, user, and application IDs.
-    - Creates a dictionary `state` containing the `organization_id`, `user_id`, and `application_id`.
-    - Converts the `state` dictionary to a JSON string.
-    - Encodes the JSON string into bytes using UTF-8 encoding and then encodes these bytes into a base64 string.
-    - Decodes the base64 bytes back into a string format.
-    - Calls the [`generate_authorization_url`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategygenerate_authorization_url>) method of the `auth_strategy` object, passing the base64-encoded state string as an argument.
-- **Output**: Returns a string representing the generated authorization URL.
-- **Functions Called**:
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.generate_authorization_url`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategygenerate_authorization_url>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.handle\_app\_authorization\_callback<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.handle_app_authorization_callback}} -->
-The `handle_app_authorization_callback` method processes the authorization callback by exchanging a code for an access token and storing it securely.
-- **Inputs**:
-    - `code`: A string representing the authorization code received from the OAuth callback.
-    - `installation_id`: A string representing the unique identifier for the app installation.
-- **Control Flow**:
-    - Logs the handling of the app authorization callback for the given installation ID.
-    - Formats the secret name using the installation ID to create a key for storing the access token.
-    - Exchanges the provided authorization code for an access token using the authentication strategy.
-    - Serializes the access token data into a JSON string.
-    - Writes the serialized access token data to the secrets manager using the formatted secret key.
-- **Output**: This method does not return any value; it performs actions to store the access token securely.
-- **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.exchange_code_for_token`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategyexchange_code_for_token>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.write_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategywrite_secret>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.fetch\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_access_token}} -->
-The `fetch_access_token` method retrieves and validates an access token for a given installation ID, refreshing it if necessary.
-- **Inputs**:
-    - `install_id`: A string representing the installation ID for which the access token is being fetched.
-- **Control Flow**:
-    - Logs the action of fetching an access token for the given installation ID.
-    - Formats the secret name using the installation ID and reads the secret value from the secrets manager.
-    - Checks if the secret value is present; if not, raises a ValueError indicating the access token is not found.
-    - Extracts the access token and refresh token from the secret value.
-    - Validates the access token using the authentication strategy.
-    - If the access token is not valid, logs the need for refreshing, and refreshes the access token using the refresh token.
-    - Logs the acquisition of a new access token and validates it again.
-    - If the new access token is valid, writes it back to the secrets manager; otherwise, logs an error and raises a GitProviderAppRevokeError.
-    - Returns the valid access token.
-- **Output**: A string representing the valid access token for the specified installation ID.
-- **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.is_token_valid`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategyis_token_valid>)
-    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.refresh_access_token`](<../oauth/gitlab_oauth_strategy.py.md#GitLabOAuthStrategyrefresh_access_token>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.write_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategywrite_secret>)
-    - [`python-backend/backend/app/git_providers/utils/errors.GitProviderAppRevokeError`](<../utils/errors.py.md#GitProviderAppRevokeError>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.fetch\_group\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_group_access_token}} -->
-The `fetch_group_access_token` method retrieves a group access token for a given installation ID from a secrets manager.
-- **Inputs**:
-    - `install_id`: A string representing the installation ID for which the group access token is to be fetched.
-- **Control Flow**:
-    - Logs the action of fetching a group access token for the provided installation ID.
-    - Formats the secret name using a prefix and the installation ID to create the key for accessing the secret.
-    - Reads the secret value from the secrets manager using the formatted key.
-    - Checks if the secret value is not found and raises a `ValueError` if it is missing.
-    - Extracts the 'token' from the secret value dictionary.
-    - Returns the extracted group access token.
-- **Output**: A string representing the group access token associated with the given installation ID.
-- **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.fetch\_repos<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_repos}} -->
-The [`fetch_repos`](<../resources/gitlab_resources.py.md#GitLabAPIResourcesfetch_repos>) method retrieves a list of Git repositories for a given application installation by using an access token.
-- **Inputs**:
-    - `app_installation`: An instance of `GitProviderAppInstallation` representing the application installation for which repositories are to be fetched.
-- **Control Flow**:
-    - Logs the action of fetching repositories for the given installation ID.
-    - Calls [`fetch_access_token`](<#GitLabProviderfetch_access_token>) with the installation ID to retrieve the access token.
-    - Uses the `api_strategy` to fetch repositories by calling [`fetch_repos`](<../resources/gitlab_resources.py.md#GitLabAPIResourcesfetch_repos>) with the installation ID and the access token.
-- **Output**: A list of `GitRepository` objects representing the repositories associated with the given application installation.
-- **Functions Called**:
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_access_token`](<#GitLabProviderfetch_access_token>)
-    - [`python-backend/backend/app/git_providers/resources/gitlab_resources.GitLabAPIResources.fetch_repos`](<../resources/gitlab_resources.py.md#GitLabAPIResourcesfetch_repos>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.fetch\_group\_repos<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_group_repos}} -->
-The `fetch_group_repos` method retrieves a list of Git repositories for a given Git provider app installation using a group access token.
-- **Inputs**:
-    - `app_installation`: An instance of `GitProviderAppInstallation` representing the Git provider app installation for which repositories are to be fetched.
-- **Control Flow**:
-    - Logs the action of fetching repositories for the given installation ID.
-    - Calls [`fetch_group_access_token`](<#GitLabProviderfetch_group_access_token>) with the installation ID to retrieve the group access token.
-    - Uses the `api_strategy` to fetch repositories by calling [`fetch_repos`](<../resources/gitlab_resources.py.md#GitLabAPIResourcesfetch_repos>) with the installation ID and the retrieved access token.
-- **Output**: Returns a list of `GitRepository` objects representing the repositories associated with the given app installation.
-- **Functions Called**:
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_group_access_token`](<#GitLabProviderfetch_group_access_token>)
-    - [`python-backend/backend/app/git_providers/resources/gitlab_resources.GitLabAPIResources.fetch_repos`](<../resources/gitlab_resources.py.md#GitLabAPIResourcesfetch_repos>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
-
-
----
-#### GitLabProvider\.clone\_repository<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.clone_repository}} -->
-The `clone_repository` method clones a Git repository, generates metadata, uploads it to an S3 bucket, and returns a presigned URL for download.
-- **Inputs**:
-    - `repo_info`: An instance of `GitRepository` containing information about the repository to be cloned, including its name, installation ID, metadata, and latest commit.
-    - `user_id`: A string representing the ID of the user initiating the clone operation.
-    - `org_id`: A string representing the ID of the organization associated with the repository.
-    - `upload_key`: A string used as the key for uploading the repository to the S3 bucket.
-    - `bucket_name`: A string representing the name of the S3 bucket where the repository will be uploaded.
-- **Control Flow**:
-    - Log the start of the cloning process with the repository name and installation ID.
-    - Retrieve the installation ID and repository ID from `repo_info`.
-    - Fetch the group access token using the installation ID.
-    - Check if the access token is available; if not, log an error and raise a `ValueError`.
-    - Retrieve the latest commit ID from `repo_info`.
-    - Log the start of the repository download process.
-    - Download the repository as a zip file using the API strategy with the repository ID, latest commit, and access token.
-    - Log the start of metadata generation for the repository.
-    - Generate metadata for the codebase using the provided information and the [`generate_codebase_metadata`](<#generate_codebase_metadata>) function.
-    - Log the start of the upload process to S3.
-    - Create an instance of [`AWSS3Client`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Client>) using the secrets manager configuration.
-    - Upload the zip content and metadata to the specified S3 bucket using the [`upload_to_s3`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Clientupload_to_s3>) method of [`AWSS3Client`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Client>).
-    - Check if the upload was successful; if not, log an error and raise a `ValueError`.
-    - Log the start of generating a presigned URL for the repository.
-    - Generate a presigned URL for downloading the repository from S3 using the [`generate_get_presigned_url`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Clientgenerate_get_presigned_url>) method of [`AWSS3Client`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Client>).
-    - Return the generated presigned URL.
-- **Output**: A string representing the presigned URL for downloading the cloned repository from the S3 bucket.
-- **Functions Called**:
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_group_access_token`](<#GitLabProviderfetch_group_access_token>)
-    - [`python-backend/backend/app/git_providers/resources/gitlab_resources.GitLabAPIResources.download_repo`](<../resources/gitlab_resources.py.md#GitLabAPIResourcesdownload_repo>)
-    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.generate_codebase_metadata`](<#generate_codebase_metadata>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Client>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.upload_to_s3`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Clientupload_to_s3>)
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.AWSS3Client.generate_get_presigned_url`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#AWSS3Clientgenerate_get_presigned_url>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy`](<../oauth/gitlab_oauth_strategy.py.md#gitlaboauthstrategy>)
+    - [`python-backend/backend/app/git_providers/resources/gitlab_resources.GitLabAPIResources`](<../resources/gitlab_resources.py.md#gitlabapiresources>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
 
 
 ---
 #### GitLabProvider\.from\_config<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.from_config}} -->
-The `from_config` class method initializes a `GitLabProvider` instance using configuration from a `GitProviderApp` and AWS client configuration.
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L47>)
+
+Creates a `GitLabProvider` instance from the given application and AWS configuration.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `git_provider_app`: An instance of `GitProviderApp` representing the Git provider application configuration.
-    - `aws_config`: An instance of `AWSClientConfig` containing AWS client configuration details.
-- **Control Flow**:
-    - Create an instance of [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>) using the provided `aws_config`.
-    - Read the secret associated with the `git_provider_app` using the `secrets_manager`.
-    - Load the Git provider configuration using [`load_provider_config`](<../core/config_loader.py.md#load_provider_config>), passing the `git_provider_app` and the `client_secret` from the secret if available.
-    - Return a new instance of `GitLabProvider` initialized with the loaded configuration and the `secrets_manager`.
-- **Output**: Returns an instance of `GitLabProvider` initialized with the specified configuration and secret management strategy.
+    - `app`: An instance of `GitProviderApp` representing the application configuration.
+    - `aws_config`: An instance of `AWSClientConfig` representing the AWS client configuration.
+- **Logic and Control Flow**:
+    - Imports the [`load_provider_config`](<../core/config_loader.py.md#load_provider_config>) function from `app.git_providers.core.config_loader`.
+    - Creates an instance of [`AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>) using the provided `aws_config`.
+    - Calls [`load_provider_config`](<../core/config_loader.py.md#load_provider_config>) with `app` and `client_secret=None` to load the provider configuration.
+    - Returns a new instance of `GitLabProvider` initialized with the loaded configuration and the `secrets_manager`.
+- **Output**: Returns an instance of `GitLabProvider`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategy>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#AWSSecretManagementStrategyread_secret>)
-    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategy>)
     - [`python-backend/backend/app/git_providers/core/config_loader.load_provider_config`](<../core/config_loader.py.md#load_provider_config>)
-- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#GitLabProvider>)  (Base Class)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
 
-
-
-# Functions
 
 ---
-### generate\_codebase\_metadata<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.generate_codebase_metadata}} -->
-The `generate_codebase_metadata` function creates a dictionary containing metadata about a codebase, including organization, repository, and commit details.
+#### GitLabProvider\.validate\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.validate_access_token}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L63>)
+
+Validates a GitLab Group Access Token by checking its type and attempting to retrieve user information.
 - **Inputs**:
-    - `org_id`: The unique identifier for the organization.
-    - `org_name`: The name of the organization.
-    - `repo`: The name of the repository.
-    - `repo_id`: The unique identifier for the repository.
-    - `owner`: The owner of the repository.
-    - `provider`: The name of the service provider (e.g., GitHub, GitLab).
-    - `commit`: The commit hash or identifier for the version of the codebase.
-    - `upload_key`: The key used for uploading the codebase, typically to a storage service.
-- **Control Flow**:
-    - Convert the organization ID (`org_id`) to a hashed value using the [`org_id_to_hash`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>) function.
-    - Create a dictionary with keys such as 'unhashed_organization_id', 'organization_id', 'org_bucket', 'org_name', 'creator_id', 'file_path', 'codebase_name', 'content_type', 'provider', 'version', and 'repository_id'.
-    - Assign the corresponding input values to the dictionary keys, with 'organization_id' and 'org_bucket' using the hashed organization ID, and 'provider' being converted to lowercase.
-- **Output**: A dictionary containing metadata about the codebase, including organization, repository, and commit details.
+    - `token_data`: A dictionary containing the token data to validate.
+- **Logic and Control Flow**:
+    - Create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using the `token_data` dictionary.
+    - Check if the `token_type` of the `access_token` is `TokenType.GROUP_ACCESS_TOKEN`.
+    - If the token type is not `GROUP_ACCESS_TOKEN`, return `False` and an error message.
+    - Attempt to retrieve user information using the `auth_strategy` and the token.
+    - If user information is retrieved, return `True` and `None`.
+    - If user information is not retrieved, return `False` and an error message indicating an invalid token.
+    - If an exception occurs, log the error and return `False` with the exception message.
+- **Output**: A tuple containing a boolean indicating the validation result and an optional error message.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/file_storage/aws_s3_client.org_id_to_hash`](<../../../../packages/shared/shared/file_storage/aws_s3_client.py.md#org_id_to_hash>)
+    - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
+    - [`python-backend/backend/app/git_providers/oauth/gitlab_oauth_strategy.GitLabOAuthStrategy.token_user`](<../oauth/gitlab_oauth_strategy.py.md#gitlaboauthstrategytoken_user>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.create\_installation<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.create_installation}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L78>)
+
+Creates a GitLab installation record using provided organization ID, app ID, and token data.
+- **Inputs**:
+    - `organization_id`: A string representing the ID of the organization for which the installation is created.
+    - `app_id`: A string representing the ID of the Git provider application.
+    - `token_data`: A dictionary containing token data, including the token type and other relevant information.
+- **Logic and Control Flow**:
+    - Creates an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using the provided `token_data`.
+    - Returns a [`GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object initialized with the `app_id`, `organization_id`, and a dictionary containing metadata extracted from `token_data` and `access_token`.
+- **Output**: A [`GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>) object representing the created installation record.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
+    - [`python-backend/driver_db/database/models_v1.GitProviderAppInstallation`](<../../../../driver_db/database/models_v1.py.md#gitproviderappinstallation>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.store\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.store_secrets}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L92>)
+
+Stores a GitLab Group Access Token (GAT) and a generated webhook secret in AWS Secrets Manager.
+- **Inputs**:
+    - `installation`: An instance of `GitProviderAppInstallation` representing the GitLab installation for which the secrets are stored.
+    - `token_data`: A dictionary containing the token data used to create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object.
+- **Logic and Control Flow**:
+    - Create an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object using the provided `token_data`.
+    - Import the `secrets` module to generate a secure webhook secret.
+    - Generate a webhook secret using `secrets.token_urlsafe(32)`.
+    - Format the secret key using [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with `APP_INSTALL_GAT_NAME_PREFIX` and the installation ID.
+    - Create a [`GitProviderAppTokenSecret`](<../../schemas/git_provider_schema.py.md#gitproviderapptokensecret>) object with the access token and webhook secret, then serialize it to JSON.
+    - Write the serialized secret to AWS Secrets Manager using `self.secrets_manager.write_secret`.
+    - Log an informational message indicating the storage of the GAT for the specified installation.
+- **Output**: None
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/backend/app/schemas/git_provider_schema.GitProviderAppTokenSecret`](<../../schemas/git_provider_schema.py.md#gitproviderapptokensecret>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.write_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategywrite_secret>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.update\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.update_secrets}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L114>)
+
+Updates the GitLab Group Access Token (GAT) while preserving the existing webhook secret for a given installation.
+- **Inputs**:
+    - `installation`: An instance of `GitProviderAppInstallation` representing the GitLab installation for which the secrets are being updated.
+    - `token_data`: A dictionary containing the token data used to update the Group Access Token.
+- **Logic and Control Flow**:
+    - Creates an [`AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>) object from the `token_data` dictionary.
+    - Formats the secret key using the installation ID and a predefined prefix.
+    - Reads existing secrets from the secrets manager using the formatted secret key.
+    - Checks if the existing secrets contain a `secret_token`; if not, raises a `ValueError`.
+    - Extracts the `secret_token` from the existing secrets to preserve it.
+    - Creates a new secret value by combining the new token and the preserved `secret_token`.
+    - Writes the updated secret value back to the secrets manager using the same secret key.
+    - Logs an informational message indicating the update of the GAT and preservation of the webhook secret.
+- **Output**: Does not return any value; performs updates and logs the operation.
+- **Functions Called**:
+    - [`python-backend/backend/app/schemas/git_provider_schema.AccessTokenData`](<../../schemas/git_provider_schema.py.md#accesstokendata>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>)
+    - [`python-backend/backend/app/schemas/git_provider_schema.GitProviderAppTokenSecret`](<../../schemas/git_provider_schema.py.md#gitproviderapptokensecret>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.write_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategywrite_secret>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.fetch\_secrets<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_secrets}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L140>)
+
+Fetches the secret associated with a GitLab installation from the secrets manager.
+- **Inputs**:
+    - `installation`: An instance of `GitProviderAppInstallation` representing the GitLab installation for which to fetch the secret.
+- **Logic and Control Flow**:
+    - Generate a secret key using [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) with `APP_INSTALL_GAT_NAME_PREFIX` and `installation.id`.
+    - Read the secret value from the secrets manager using the generated secret key.
+    - If the secret value is not found, raise a `ValueError` indicating the GAT is not found for the installation.
+    - Return the secret value.
+- **Output**: A dictionary containing the secret value associated with the specified GitLab installation.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.fetch\_repositories<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.fetch_repositories}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L147>)
+
+Fetches GitLab repositories using a Group Access Token (GAT) for a given installation.
+- **Inputs**:
+    - `installation`: An instance of `GitProviderAppInstallation` representing the GitLab installation for which to fetch repositories.
+- **Logic and Control Flow**:
+    - Logs the start of the repository fetching process for the given installation ID.
+    - Attempts to fetch a Group Access Token (GAT) for the installation using the [`_fetch_group_access_token`](<#gitlabprovider_fetch_group_access_token>) method.
+    - Uses the `api_strategy` to fetch repositories with the installation ID and the obtained access token.
+    - Returns the list of fetched repositories.
+    - Catches any exceptions during the process, logs an error message, and re-raises the exception.
+- **Output**: A list of `GitRepository` objects representing the fetched repositories.
+- **Functions Called**:
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider._fetch_group_access_token`](<#gitlabprovider_fetch_group_access_token>)
+    - [`python-backend/backend/app/git_providers/resources/gitlab_resources.GitLabAPIResources.fetch_repos`](<../resources/gitlab_resources.py.md#gitlabapiresourcesfetch_repos>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.handle\_webhook\_event<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.handle_webhook_event}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L165>)
+
+Handles GitLab webhook events by validating the secret token and processing push events.
+- **Inputs**:
+    - `headers`: A dictionary containing the headers of the webhook request.
+    - `payload`: A dictionary containing the payload of the webhook event.
+    - `webhook_event_ctx`: An instance of `WebhookEventContext` providing context for the webhook event, including the installation ID.
+- **Logic and Control Flow**:
+    - Extracts the `installation_id` from `webhook_event_ctx` and the `event_type` from `payload`.
+    - Logs the event type and installation ID.
+    - Retrieves the incoming secret token from the `headers`.
+    - Formats the secret key using `APP_INSTALL_GAT_NAME_PREFIX` and `installation_id`.
+    - Reads the secret from the secrets manager using the formatted secret key.
+    - Checks if the secret contains a `secret_token`; if not, logs an error and raises a `PermissionError`.
+    - Compares the `secret_token` from the secret with the `incoming_secret_token`; if they do not match, logs an error and raises a `PermissionError`.
+    - If the `event_type` is 'push', logs the event and calls [`_handle_push_event`](<#gitlabprovider_handle_push_event>) with `payload` and `webhook_event_ctx`.
+    - If the `event_type` is not 'push', logs a warning about the unhandled event type.
+    - Returns a dictionary with a message indicating the event was ignored if not a push event.
+- **Output**: A dictionary containing a message about the event handling result, either from [`_handle_push_event`](<#gitlabprovider_handle_push_event>) or indicating the event was ignored.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>)
+    - [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider._handle_push_event`](<#gitlabprovider_handle_push_event>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.revoke\_access<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.revoke_access}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L199>)
+
+Revokes access for a GitLab installation by deleting the associated Group Access Token (GAT) secret.
+- **Inputs**:
+    - `installation`: An instance of `GitProviderAppInstallation` representing the GitLab installation for which access is to be revoked.
+- **Logic and Control Flow**:
+    - Logs the action of revoking access for the specified GitLab installation using its ID.
+    - Formats the secret key name using the [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) function with the prefix `APP_INSTALL_GAT_NAME_PREFIX` and the installation ID.
+    - Deletes the secret associated with the formatted secret key from the secrets manager.
+    - Logs the successful deletion of the GAT secret for the specified installation.
+- **Output**: Does not return any value (returns `None`).
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.delete_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategydelete_secret>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.register\_webhook<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider.register_webhook}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L210>)
+
+Raises a NotImplementedError indicating that webhook registration is not supported for GitLab.
+- **Inputs**:
+    - `installation`: An instance of `GitProviderAppInstallation` representing the GitLab installation.
+    - `config`: An instance of `WebhookConfig` containing the configuration for the webhook.
+    - `scope`: An optional dictionary specifying the scope of the webhook, with string keys and values.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with a message indicating that webhook registration is not implemented for GitLab and instructs users to create webhooks manually through the GitLab UI.
+- **Output**: Raises a `NotImplementedError` and does not return any value.
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.\_fetch\_group\_access\_token<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider._fetch_group_access_token}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L224>)
+
+Fetches a Group Access Token (GAT) from the secrets manager using the provided installation ID.
+- **Inputs**:
+    - `install_id`: A string representing the installation ID for which to fetch the Group Access Token.
+- **Logic and Control Flow**:
+    - Format the secret key using the [`format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>) function with `APP_INSTALL_GAT_NAME_PREFIX` and `install_id`.
+    - Read the secret value from the secrets manager using the formatted secret key.
+    - If the secret value is not found, raise a `ValueError` indicating that the GAT is not found for the given installation ID.
+    - Return the 'token' field from the secret value.
+- **Output**: Returns the Group Access Token as a string.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.format_secret_name`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#format_secret_name>)
+    - [`python-backend/packages/shared/shared/secret_management/aws_secret_management.AWSSecretManagementStrategy.read_secret`](<../../../../packages/shared/shared/secret_management/aws_secret_management.py.md#awssecretmanagementstrategyread_secret>)
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
+
+---
+#### GitLabProvider\.\_handle\_push\_event<!-- {{#callable:python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider._handle_push_event}} -->
+[View Source →](<../../../../../../backend/app/git_providers/providers/gitlab_provider.py#L234>)
+
+Processes GitLab push events and triggers further event handling if the push is on the default branch.
+- **Inputs**:
+    - `body`: A dictionary containing the details of the GitLab push event.
+    - `webhook_event_ctx`: An instance of `WebhookEventContext` containing context information about the webhook event, such as installation and organization IDs.
+- **Logic and Control Flow**:
+    - Extracts `installation_id` and `organization_id` from `webhook_event_ctx`.
+    - Retrieves repository and project details from the `body` dictionary, including `repo_name`, `repo_id`, `full_name`, `default_branch`, `pushed_ref`, and `commit_hash`.
+    - Checks if the `pushed_ref` matches the default branch reference. If not, logs an informational message and returns a message indicating the push event is ignored.
+    - If the push is on the default branch, logs an informational message about the push event.
+    - Creates a list `repos_pushed` containing details of the repository and the latest commit.
+    - Looks up the `handle_gitlab_events` function using `modal.Function.lookup` and spawns it with the relevant parameters.
+    - Returns a message indicating the push event was processed successfully.
+- **Output**: A dictionary with a message indicating whether the push event was ignored or processed successfully.
+- **See also**: [`python-backend/backend/app/git_providers/providers/gitlab_provider.GitLabProvider`](<#gitlabprovider>)  (Base Class)
+
 
 
 

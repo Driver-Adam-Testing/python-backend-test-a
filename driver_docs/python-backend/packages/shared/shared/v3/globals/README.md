@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines constants, message classes, and glossary terms for JSON formatting, LLM behaviors, and communication.
+Constants, classes, and messages for JSON parsing, DataSource, LLM, glossary, and iteration contexts.
 
 
 ## Files
-- **[constants.py](constants.py.md)**: The `constants.py` file in the `python-backend` codebase defines various constants and template strings for formatting JSON responses and tool call requests, including default values and prompt strings.
-- **[datasource_messages.py](datasource_messages.py.md)**: The `datasource_messages.py` file defines classes for creating messages that describe the structure and usage of the `DataSource` class, including system messages for developers and tuning instructions to improve query precision.
-- **[global_messages.py](global_messages.py.md)**: The `global_messages.py` file defines the `GlobalSystemMessage` class, which outlines universal behaviors for LLM calls, including the use of XML tags for input components and formatting tool calls as JSON, while ensuring final responses are in markdown without XML tags.
-- **[glossary.py](glossary.py.md)**: The `glossary.py` file defines a `GlossaryDefinition` class for creating glossary entries with XML tags and provides various predefined glossary terms related to user interaction, cursor, document, reference, tool, search, copy editor, and data source within the `python-backend` codebase.
-- **[iteration_messages.py](iteration_messages.py.md)**: The `iteration_messages.py` file defines classes for handling multi-iteration context messages and iteration-specific messages within a task, emphasizing the execution of tools and the conditions for returning final responses.
+- **[constants.py](constants.py.md)**: Defines constants and template strings for JSON formatting and parsing in a Python backend.
+- **[datasource_messages.py](datasource_messages.py.md)**: Classes for creating and managing messages related to the DataSource structure for tool usage.
+- **[global_messages.py](global_messages.py.md)**: Defines a global system message for the LLM Framework, detailing universal behaviors for LLM calls.
+- **[glossary.py](glossary.py.md)**: Defines the `GlossaryDefinition` class and various glossary terms with XML wrapping functionality.
+- **[iteration_messages.py](iteration_messages.py.md)**: Defines classes for managing multi-iteration context and iteration messages in a task resolution process.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

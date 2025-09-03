@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `initial_data.py` file initializes the database with initial data when the environment is set to "local" and logs the process.
+Initializes database with initial data based on environment settings.
 
 # Purpose
-This Python script is designed to initialize a database with initial data, primarily for local development environments. It imports necessary modules for database interaction and configuration management, setting up logging to provide informational output. The script defines two main functions: [`init`](<#init>), which calls `init_db` to set up the database using a provided session, and [`main`](<#main>), which checks the environment setting from a configuration file. If the environment is set to "local", it logs the process of creating initial data and executes the [`init`](<#init>) function within a database session. Otherwise, it logs that the initial data creation is being skipped. This script provides narrow functionality, focusing specifically on database initialization based on the environment configuration.
+This script initializes a database session and optionally creates initial data based on the environment configuration. It imports necessary components such as the `engine` and `init_db` function from a database module, and `settings` from a configuration module. The [`init`](<#init>) function takes a `Session` object and calls `init_db` to set up the database. The [`main`](<#main>) function checks if the environment is set to "local" using the `settings.ENVIRONMENT` variable; if so, it logs the creation of initial data and executes the [`init`](<#init>) function within a database session. If the environment is not "local", it logs that the initial data creation is skipped. The script configures logging to display informational messages and executes the [`main`](<#main>) function when run as a standalone program.
 # Imports and Dependencies
 
 ---
@@ -21,38 +21,41 @@ This Python script is designed to initialize a database with initial data, prima
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a Logger object obtained from the Python logging module. It is configured to use the module's name as its logger name, which helps in identifying the source of log messages. The logger is set up to log messages at the INFO level or higher, as specified by the logging configuration.
-- **Use**: The `logger` is used to log informational messages about the application's execution, particularly during the initialization of data in different environments.
+- **Type**: ``Logger``
+- **Description**: The `logger` is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its identifier.
+- **Use**: Used to log informational messages about the application's initialization process.
 
 
 # Functions
 
 ---
 ### init<!-- {{#callable:python-backend/backend/app/initial_data.init}} -->
-The `init` function initializes the database using a given session.
+[View Source →](<../../../../backend/app/initial_data.py#L11>)
+
+Initializes the database using the provided session.
 - **Inputs**:
     - `session`: A `Session` object used to interact with the database.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Calls the [`init_db`](<../../driver_db/database/db.py.md#init_db>) function with the provided `session` argument.
-    - Executes a `pass` statement, which is a no-operation placeholder.
-- **Output**: The function does not return any value (returns `None`).
+    - Executes a `pass` statement, which does nothing and serves as a placeholder.
+- **Output**: Does not return any value.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.init_db`](<../../driver_db/database/db.py.md#init_db>)
 
 
 ---
 ### main<!-- {{#callable:python-backend/backend/app/initial_data.main}} -->
-The `main` function initializes data in a local environment by creating a database session and calling the [`init`](<#init>) function, while logging the process.
+[View Source →](<../../../../backend/app/initial_data.py#L16>)
+
+Executes initial data creation based on the environment setting.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if the environment setting is 'local'.
-    - If the environment is 'local', log the start of data creation.
-    - Create a database session using the `Session` context manager with the `engine`.
-    - Call the [`init`](<#init>) function with the session to initialize the database.
-    - Log the completion of data creation.
-    - If the environment is not 'local', log that initial data creation is skipped.
-- **Output**: The function does not return any value; it performs logging and potentially initializes data in a local environment.
+- **Logic and Control Flow**:
+    - Checks if the `ENVIRONMENT` setting is 'local'.
+    - Logs a message indicating the start of initial data creation if the environment is 'local'.
+    - Opens a session with the database engine and calls the [`init`](<#init>) function to initialize the database.
+    - Logs a message indicating the completion of initial data creation.
+    - Logs a message indicating that initial data creation is skipped if the environment is not 'local'.
+- **Output**: No output is returned as the function returns `None`.
 - **Functions Called**:
     - [`python-backend/backend/app/initial_data.init`](<#init>)
 

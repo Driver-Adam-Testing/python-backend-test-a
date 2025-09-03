@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `copy_records_and_s3.py` file in the `python-backend` codebase is a script that migrates database records between two databases and copies S3 bucket contents from a source to a target, handling both database and S3 operations.
+Script for migrating database records and copying S3 bucket contents between environments.
 
 # Purpose
-This Python script is designed to facilitate the migration of data between two databases and the transfer of data between two S3 storage environments. It serves a dual purpose: first, it migrates records from a source database to a target database using SQLAlchemy and SQLModel, and second, it copies S3 buckets and their contents from a source AWS S3 environment to a target environment, which is configured for local development using LocalStack. The script is structured to handle multiple models defined in the `database.models_v1` module, iterating over each to transfer records from the source to the target database. It also manages S3 bucket and object transfers, ensuring that existing resources are not duplicated in the target environment.
+This code is a script designed to perform data migration between two databases and two S3 storage environments. It first migrates data from a source database to a target database by iterating over a list of models (`Workspace`, `Codebase`, `DerivedContentType`, `DerivedContent`). For each model, it retrieves all records from the source database, creates new records with the same attributes, and commits them to the target database. The script uses SQLAlchemy and SQLModel to manage database connections and sessions.
 
-The script is intended to be executed as a standalone script rather than a library, as it directly performs operations without defining reusable functions or classes. It relies on environment variables for configuration, such as database URLs and AWS credentials, ensuring flexibility and security. The script includes error handling to manage potential issues during the migration process, such as missing records or AWS credential errors. This makes it a robust tool for developers looking to synchronize data across different environments, particularly in scenarios involving local development and cloud-based resources.
+In addition to database migration, the script also handles the migration of S3 buckets and their contents. It connects to a source S3 environment and a target S3 environment, listing all buckets in the source. For each bucket, it checks if a corresponding bucket exists in the target; if not, it creates one. It then lists all objects in each source bucket and copies them to the target bucket, skipping any objects that already exist in the target. The script uses the `boto3` library to interact with AWS S3 services and handles potential errors such as missing credentials.
 # Imports and Dependencies
 
 ---
@@ -29,51 +29,51 @@ The script is intended to be executed as a standalone script rather than a libra
 
 ---
 ### source\_database\_url
-- **Type**: `string`
-- **Description**: The `source_database_url` is a string variable that stores the URL of the source database. It is retrieved from the environment variable `SOURCE_DATABASE_URL` using the `os.getenv` function. This URL is used to establish a connection to the source database for data migration purposes.
-- **Use**: This variable is used to create a SQLAlchemy engine for connecting to the source database during the migration process.
+- **Type**: ``str``
+- **Description**: Represents the URL of the source database. It is obtained from the environment variable `SOURCE_DATABASE_URL` using the `os.getenv` function.
+- **Use**: Used to create a SQLAlchemy engine for connecting to the source database.
 
 
 ---
 ### target\_database\_url
-- **Type**: `str`
-- **Description**: The `target_database_url` is a string variable that holds the URL for the target database connection. It is derived from the `SQLALCHEMY_DATABASE_URI` attribute of the `settings` module, which is imported from the `database.config` package.
-- **Use**: This variable is used to create a SQLAlchemy engine for the target database, facilitating the migration of data from the source database.
+- **Type**: ``str``
+- **Description**: Represents the URL of the target database for SQLAlchemy connections. It is derived from the `SQLALCHEMY_DATABASE_URI` attribute of the `settings` module.
+- **Use**: Used to create a SQLAlchemy engine for the target database to facilitate data migration.
 
 
 ---
 ### source\_engine
-- **Type**: `sqlalchemy.engine.base.Engine`
-- **Description**: The `source_engine` variable is an instance of SQLAlchemy's Engine class, created using the `create_engine` function with the `source_database_url` as its parameter. This engine is responsible for managing connections to the source database, allowing for the execution of SQL statements and transactions.
-- **Use**: This variable is used to establish a connection to the source database, enabling the migration of data from the source to the target database.
+- **Type**: ``Engine``
+- **Description**: Represents a SQLAlchemy engine instance for the source database. It is created using the `create_engine` function with the `source_database_url` as its parameter.
+- **Use**: Used to establish a connection to the source database for executing SQL queries and managing transactions.
 
 
 ---
 ### target\_engine
-- **Type**: `Engine`
-- **Description**: The `target_engine` is an instance of SQLAlchemy's `Engine` class, created using the `create_engine` function with the `target_database_url` as its parameter. This engine is configured to connect to the target database specified by the `SQLALCHEMY_DATABASE_URI` setting.
-- **Use**: This variable is used to establish a connection to the target database, allowing for operations such as data migration and session management.
+- **Type**: ``Engine``
+- **Description**: Represents a SQLAlchemy `Engine` object that connects to the target database. It is created using the `create_engine` function with the `target_database_url` as its parameter.
+- **Use**: Used to establish a connection to the target database for executing SQL operations during data migration.
 
 
 ---
 ### models
-- **Type**: `list`
-- **Description**: The `models` variable is a list containing four model classes: `Workspace`, `Codebase`, `DerivedContentType`, and `DerivedContent`. These classes are imported from the `database.models_v1` module and represent different entities in the database schema.
-- **Use**: This variable is used to iterate over each model class to migrate records from a source database to a target database.
+- **Type**: ``list``
+- **Description**: Contains a list of model classes imported from `database.models_v1`. These classes are `Workspace`, `Codebase`, `DerivedContentType`, and `DerivedContent`. Each class represents a different type of data model used in the database migration process.
+- **Use**: Used to iterate over each model class to migrate records from the source database to the target database.
 
 
 ---
 ### source\_s3
-- **Type**: `boto3.client`
-- **Description**: The `source_s3` variable is an instance of a Boto3 S3 client configured to interact with an AWS S3 service. It is initialized with AWS credentials and a specific region, which are retrieved from environment variables.
-- **Use**: This variable is used to perform operations on the source S3 buckets, such as listing buckets and objects, and copying objects to a target S3 service.
+- **Type**: ``boto3.client``
+- **Description**: Creates an S3 client using the `boto3` library. It uses AWS credentials and region information from environment variables to configure the client.
+- **Use**: Used to interact with the source AWS S3 service for operations such as listing buckets and copying objects.
 
 
 ---
 ### target\_s3
-- **Type**: `boto3.client`
-- **Description**: The `target_s3` variable is an instance of a boto3 S3 client configured to interact with a local S3-compatible service, such as LocalStack or Minio. It is initialized with specific endpoint URL and credentials obtained from environment variables, and is set to operate in the 'us-east-1' region.
-- **Use**: This variable is used to manage and perform operations on S3 buckets and objects in a local development environment.
+- **Type**: ``boto3.client``
+- **Description**: Represents an S3 client configured to interact with a local S3-compatible service, such as LocalStack or Minio. It uses credentials and region information from environment variables to authenticate and connect to the service.
+- **Use**: Used to perform operations on the target S3 service, such as creating buckets and copying objects from a source S3 service.
 
 
 

@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests_pre_start.py` file in the `python-backend` codebase is responsible for initializing the service by checking the database connection using a retry mechanism to ensure the database is awake before proceeding.
+Retries database connection initialization until successful or timeout.
 
 # Purpose
-This Python script is designed to ensure the initialization of a database connection, providing a narrow and specific functionality. It uses the `tenacity` library to implement a retry mechanism, attempting to establish a session with a database engine up to a maximum of 300 attempts, with a one-second wait between each attempt. The script logs the process of initialization, including any errors encountered, using Python's `logging` module. The [`init`](<#init>) function checks if the database is responsive by executing a simple query, and the [`main`](<#main>) function orchestrates the initialization process, logging the start and completion of the service initialization. This script is typically used in scenarios where a service needs to ensure that a database is ready before proceeding with further operations.
+This code is a script designed to initialize a service by ensuring that a database is ready for operations. It uses the `sqlalchemy` and `sqlmodel` libraries to interact with the database and the `tenacity` library to implement a retry mechanism. The script attempts to establish a session with the database using the [`init`](<#init>) function, which is decorated with the `@retry` decorator. This decorator configures the function to retry the database connection attempt multiple times, with a fixed wait time between attempts, until a maximum number of tries is reached. Logging is used to provide information about the initialization process, including any errors encountered.
+
+The script defines a [`main`](<#main>) function that logs the start of the initialization process, calls the [`init`](<#init>) function with the database engine, and logs the completion of the initialization. The [`main`](<#main>) function is executed when the script is run as the main module. The use of the `retry` mechanism ensures that the script can handle temporary database unavailability by retrying the connection attempt, making it suitable for environments where the database might not be immediately available.
 # Imports and Dependencies
 
 ---
@@ -26,49 +28,54 @@ This Python script is designed to ensure the initialization of a database connec
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of a Logger object obtained from the Python logging module. It is configured to use the module's name as its logger name, which helps in identifying the source of log messages. The logger is set up to log messages at the INFO level and above.
-- **Use**: This logger is used throughout the code to log informational messages, warnings, and errors, particularly during the initialization of a database connection and the main service.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its identifier, which helps in categorizing log messages by their source module.
+- **Use**: Used to log informational and error messages throughout the module, particularly in the `init` and `main` functions.
 
 
 ---
 ### max\_tries
-- **Type**: `int`
-- **Description**: The variable `max_tries` is an integer that represents the maximum number of retry attempts allowed for a certain operation. It is calculated as 60 multiplied by 5, which equates to 300 attempts, corresponding to a 5-minute duration if each attempt is spaced by 1 second.
-- **Use**: This variable is used to define the stopping condition for the retry mechanism in the `init` function, limiting the number of retry attempts to 300.
+- **Type**: ``int``
+- **Description**: The `max_tries` variable is an integer that represents the maximum number of retry attempts allowed for a specific operation. It is calculated as the product of 60 and 5, which equals 300, indicating a total of 5 minutes worth of attempts if each attempt is spaced by 1 second.
+- **Use**: Used to define the stopping condition for retry attempts in the `@retry` decorator applied to the `init` function.
 
 
 ---
 ### wait\_seconds
-- **Type**: `int`
-- **Description**: The `wait_seconds` variable is an integer that specifies the fixed amount of time, in seconds, to wait between retry attempts when initializing a database connection. It is used in conjunction with the `tenacity` library to manage retry logic.
-- **Use**: This variable is used to define the wait time between retry attempts in the `init` function's retry decorator.
+- **Type**: ``int``
+- **Description**: Defines the fixed wait time in seconds between retry attempts when initializing the database connection.
+- **Use**: Used in the `wait_fixed` parameter of the `@retry` decorator to specify the delay between retries.
 
 
 # Functions
 
 ---
 ### init<!-- {{#callable:python-backend/backend/app/tests_pre_start.init}} -->
-The `init` function attempts to establish a session with a database engine to verify its availability, retrying on failure according to specified retry policies.
+[View Source →](<../../../../backend/app/tests_pre_start.py#L15>)
+
+Attempts to establish a session with the database engine to verify its availability, retrying on failure.
 - **Decorators**: `@retry`
 - **Inputs**:
     - `db_engine`: An instance of `Engine` representing the database engine to connect to.
-- **Control Flow**:
-    - The function is decorated with `@retry`, which applies retry logic with specified stop, wait, before, and after conditions.
-    - Within a try block, a session is created using the provided `db_engine` to execute a simple SQL select statement to check if the database is responsive.
-    - If an exception occurs during the session creation or execution, it is caught, logged as an error, and then re-raised.
-- **Output**: The function does not return any value; it raises an exception if the database connection check fails after the retry attempts.
+- **Logic and Control Flow**:
+    - Attempts to create a session with the provided `db_engine` using a `Session` context manager.
+    - Executes a simple `select(1)` query to check if the database is responsive.
+    - If an exception occurs, logs the error using `logger.error` and re-raises the exception.
+    - Retries the operation based on the retry policy defined by the `@retry` decorator.
+- **Output**: Does not return a value; raises an exception if the database connection cannot be established.
 
 
 ---
 ### main<!-- {{#callable:python-backend/backend/app/tests_pre_start.main}} -->
-The `main` function initializes a service by logging the start and end of the initialization process and calling the [`init`](<#init>) function to ensure the database engine is ready.
+[View Source →](<../../../../backend/app/tests_pre_start.py#L31>)
+
+Initializes the service by logging the start and end of the initialization process and calling the [`init`](<#init>) function.
 - **Inputs**: None
-- **Control Flow**:
-    - Logs an informational message indicating the start of the service initialization.
-    - Calls the [`init`](<#init>) function with the `engine` to ensure the database is ready.
-    - Logs an informational message indicating the completion of the service initialization.
-- **Output**: The function does not return any value as its return type is `None`.
+- **Logic and Control Flow**:
+    - Logs the message 'Initializing service' to indicate the start of the service initialization.
+    - Calls the [`init`](<#init>) function with the `engine` as an argument to initialize the database connection.
+    - Logs the message 'Service finished initializing' to indicate the completion of the service initialization.
+- **Output**: No output is returned as the function's return type is `None`.
 - **Functions Called**:
     - [`python-backend/backend/app/tests_pre_start.init`](<#init>)
 

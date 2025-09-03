@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `schemas.py` file in the `python-backend` codebase defines various Pydantic models for reading, creating, and updating data related to primary assets, versions, nodes, tags, and content, including both flat and detailed schemas.
+Defines Pydantic schemas for reading, creating, and updating various entities like assets, nodes, and tags.
 
 # Purpose
-The `node_schemas.py` file defines a comprehensive set of data models using Pydantic, a data validation and settings management library in Python. These models are designed to represent various entities and their relationships within a system that appears to manage digital assets, versions, nodes, and associated metadata. The file is structured into sections that define schemas for reading, creating, and updating these entities, indicating that it serves as a foundational component for data interchange and validation within the application. The models include `PrimaryAssetRead`, `VersionRead`, `NodeRead`, `UserRead`, and others, each capturing specific attributes relevant to their respective entities, such as UUIDs, timestamps, and enumerated types for categorization.
+The code defines a set of data schemas using the `pydantic` library, which are used to model and validate data structures related to nodes, assets, versions, and tags in a database. These schemas are organized into categories such as flat read schemas, detail read schemas, and create/update schemas. The flat read schemas, such as `PrimaryAssetRead`, `VersionRead`, and `NodeRead`, provide basic representations of data entities with attributes like `id`, `created_at`, and `updated_at`. The detail read schemas, such as `NodeDetailRead` and `PrimaryAssetDetailRead`, extend the flat schemas to include more detailed relationships and computed properties, such as the [`browsable`](<#primaryassetdetailreadbrowsable>) property in `PrimaryAssetDetailRead`.
 
-The file is intended to be used as a library, providing a structured and type-safe way to handle data related to digital assets and their metadata. It includes both flat and detailed read schemas, which suggest different levels of data granularity for various use cases, such as listing assets or retrieving detailed information about a specific asset. Additionally, the file defines create and update schemas, which are likely used for data input validation when creating or modifying records in the system. The use of Pydantic's `BaseModel` ensures that data is validated against the defined types and constraints, promoting data integrity and consistency across the application. This file does not define public APIs or external interfaces directly but provides the necessary data structures that would be used by other components of the system to interact with the underlying data models.
+The create and update schemas, such as `PrimaryAssetCreate` and `NodeUpdate`, define the structure of data required for creating or updating records in the database. These schemas ensure that the data conforms to expected types and constraints before it is processed or stored. The code also includes generic structures like `ListWithCount` to handle lists of results with a total count, which is useful for pagination. Overall, the code serves as a library file intended to be imported and used in other parts of the application to ensure consistent data handling and validation.
 # Imports and Dependencies
 
 ---
@@ -28,374 +28,421 @@ The file is intended to be used as a library, providing a structured and type-sa
 
 ---
 ### T
-- **Type**: `TypeVar`
-- **Description**: The variable `T` is a type variable used in Python's type hinting system, specifically for generic programming. It allows for the creation of generic classes or functions that can operate on any data type, providing flexibility and type safety.
-- **Use**: `T` is used as a placeholder for any data type in generic classes, such as `ListWithCount`, to enable type-safe operations on lists of various types.
+- **Type**: ``TypeVar``
+- **Description**: Defines a generic type variable `T` that can be used to specify generic types in class and function definitions. It allows for type flexibility and reusability in type annotations.
+- **Use**: Used to create generic classes or functions that can operate on any data type specified by `T`.
 
 
 # Classes
 
 ---
 ### ListWithCount<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.ListWithCount}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L17>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `results`: A list of items of generic type T.
-    - `total_count`: An integer representing the total number of items.
-- **Description**: The ListWithCount class is a generic data structure that extends BaseModel and is used to encapsulate a list of items along with a count of the total number of items. It is designed to be flexible by allowing the type of items in the list to be specified using a generic type parameter T. This class is useful in scenarios where you need to return a collection of items along with metadata about the collection, such as the total number of items available, which can be particularly useful in paginated data retrieval contexts.
+    - `results`: A list of items of type `T`.
+    - `total_count`: The total number of items in the list.
+- **Description**: Represents a generic list structure with a count of total items, extending `BaseModel` and supporting generic type `T`.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### PrimaryAssetRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L27>)
+
 - **Members**:
-    - `id`: A unique identifier for the primary asset.
-    - `organization_id`: The identifier for the organization associated with the primary asset.
-    - `kind`: The type of primary asset, defined by the PrimaryAssetKind enum.
-    - `display_name`: The display name of the primary asset.
-    - `created_at`: The timestamp when the primary asset was created, or None if not set.
-    - `updated_at`: The timestamp when the primary asset was last updated, or None if not set.
-    - `repository_id`: The identifier for the repository associated with the primary asset, or None if not set.
-- **Description**: The PrimaryAssetRead class is a Pydantic model that represents a primary asset in a system, encapsulating its unique identifier, organization association, type, display name, and timestamps for creation and updates. It also optionally includes a repository identifier. This class is configured to allow attribute-based access to its fields.
+    - `id`: Unique identifier for the primary asset.
+    - `organization_id`: Identifier for the organization associated with the asset.
+    - `kind`: Type of the primary asset.
+    - `display_name`: Human-readable name for the primary asset.
+    - `created_at`: Timestamp when the asset was created.
+    - `updated_at`: Timestamp when the asset was last updated.
+    - `repository_id`: Identifier for the repository associated with the asset.
+- **Description**: Represents a primary asset with attributes such as unique identifier, organization ID, type, display name, and timestamps for creation and updates. It includes optional repository ID and timestamps for creation and updates. The class uses Pydantic's `BaseModel` for data validation and parsing.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### Config<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.ContentDetailRead.Config}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L195>)
+
 - **Members**:
-    - `from_attributes`: A class variable indicating if attributes should be used for model creation.
-- **Description**: The `Config` class is a simple configuration class used within other classes to specify that attributes should be used when creating models. It contains a single class variable, `from_attributes`, which is set to `True`, indicating that the model should be constructed from attributes.
+    - `from_attributes`: Indicates if the configuration should be derived from attributes.
+- **Description**: Defines configuration settings for classes, specifying that attributes should be used to derive configuration values.
 
 
 ---
 ### VersionRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.VersionRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L40>)
+
 - **Members**:
-    - `id`: A unique identifier for the version.
-    - `primary_asset_id`: The unique identifier of the primary asset associated with the version.
-    - `display_name`: The display name of the version.
-    - `created_at`: The timestamp when the version was created.
-    - `updated_at`: The timestamp when the version was last updated.
-    - `status`: The current status of the version.
-    - `browsable`: Indicates whether the version is browsable.
-- **Description**: The `VersionRead` class is a Pydantic model that represents a version of a primary asset, including its unique identifiers, display name, creation and update timestamps, status, and browsability. It is used to encapsulate the data related to a version in a structured format, facilitating data validation and serialization.
+    - `id`: Unique identifier for the version.
+    - `primary_asset_id`: Unique identifier for the primary asset associated with the version.
+    - `vcs_hash`: Version control system hash for the version.
+    - `created_at`: Timestamp when the version was created.
+    - `updated_at`: Timestamp when the version was last updated.
+    - `status`: Current status of the version.
+    - `browsable`: Indicates if the version is browsable.
+- **Description**: Represents a version of a primary asset with attributes for identification, version control, timestamps, status, and browsability.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### NodeRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.NodeRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L53>)
+
 - **Members**:
-    - `id`: A unique identifier for the node.
-    - `version_id`: A unique identifier for the version associated with the node.
-    - `relative_path`: The relative path of the node within its context.
-    - `kind`: The type of node, represented by the NodeKind enumeration.
-    - `created_at`: The timestamp when the node was created, or None if not set.
-    - `updated_at`: The timestamp when the node was last updated, or None if not set.
-    - `depth`: The depth level of the node in its hierarchy.
-- **Description**: The NodeRead class is a Pydantic model that represents a node entity with attributes such as a unique identifier, version association, relative path, node type, creation and update timestamps, and its depth in a hierarchy. It is configured to allow attribute-based initialization, making it suitable for data validation and serialization in applications that manage hierarchical data structures.
+    - `id`: Unique identifier for the node.
+    - `version_id`: Identifier for the version associated with the node.
+    - `relative_path`: Path relative to a base directory or root.
+    - `kind`: Type of node as defined by `NodeKind`.
+    - `created_at`: Timestamp when the node was created.
+    - `updated_at`: Timestamp when the node was last updated.
+    - `depth`: Depth level of the node in a hierarchy.
+- **Description**: Represents a node with attributes such as unique identifiers, path, type, and timestamps for creation and updates. It is a subclass of `BaseModel` and includes configuration to derive attributes from other sources.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### UserRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.UserRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L66>)
+
 - **Members**:
-    - `id`: A string representing the unique identifier of the user.
-    - `full_name`: A string representing the full name of the user.
-    - `email`: A string representing the email address of the user.
-- **Description**: The UserRead class is a Pydantic model that represents a user with essential attributes such as id, full name, and email. It is used to define the structure of user data within the application, ensuring that these fields are present and correctly typed. The class also includes a configuration setting to allow attribute-based initialization.
+    - `id`: Stores the unique identifier of the user as a string.
+    - `full_name`: Stores the full name of the user as a string.
+    - `email`: Stores the email address of the user as a string.
+- **Description**: Represents a user with basic information including an ID, full name, and email address. The `Config` class within enables attribute-based configuration.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### NodeMetaReadWithTerseSentence<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.NodeMetaReadWithTerseSentence}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L75>)
+
 - **Members**:
-    - `id`: Unique identifier for the node.
-    - `version_id`: Identifier for the version associated with the node.
-    - `relative_path`: Path relative to the root of the node.
-    - `kind`: Type of node as defined by NodeKind.
-    - `created_at`: Timestamp of when the node was created.
-    - `updated_at`: Timestamp of the last update to the node.
-    - `misc_metadata`: Additional metadata associated with the node.
-    - `total_files`: Total number of files associated with the node.
-    - `depth`: Depth level of the node in the hierarchy.
-    - `contents`: List of contents associated with the node.
-- **Description**: The NodeMetaReadWithTerseSentence class extends NodeRead to provide a schema specifically for the list_primary_assets endpoint, including a terse sentence description of the node. It includes additional metadata fields such as misc_metadata, total_files, and contents, which are not present in the base NodeRead class. This class is designed to be used with specific filters to avoid loading all contents for every node, ensuring efficient data retrieval.
+    - `id`: Stores the unique identifier for the node.
+    - `version_id`: Stores the unique identifier for the version of the node.
+    - `relative_path`: Stores the relative path of the node.
+    - `kind`: Indicates the type of node.
+    - `created_at`: Records the creation timestamp of the node.
+    - `updated_at`: Records the last update timestamp of the node.
+    - `misc_metadata`: Holds additional metadata as a dictionary.
+    - `total_files`: Indicates the total number of files associated with the node.
+    - `depth`: Represents the depth level of the node in the hierarchy.
+    - `contents`: Contains a list of content objects related to the node.
+- **Description**: Extends `NodeRead` to include additional metadata and content information for nodes, specifically for use with the `list_primary_assets` endpoint, providing a concise description of the node's attributes and contents.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.NodeRead`](<#NodeRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.NodeRead`](<#noderead>)
 
 
 ---
 ### TagRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.TagRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L95>)
+
 - **Members**:
-    - `id`: A unique identifier for the tag.
-    - `name`: The name of the tag.
-    - `hex_color`: The hexadecimal color code associated with the tag.
-    - `organization_id`: The identifier for the organization to which the tag belongs.
-    - `type`: The type or category of the tag.
-    - `created_at`: The timestamp when the tag was created.
-    - `created_by`: The identifier of the user who created the tag.
-    - `updated_at`: The timestamp when the tag was last updated.
-    - `updated_by`: The identifier of the user who last updated the tag.
-- **Description**: The `TagRead` class is a data model that represents a tag entity with attributes such as a unique identifier, name, color, organization association, type, and metadata about its creation and last update. It extends the `BaseModel` from Pydantic, allowing for data validation and serialization, and includes configuration to support attribute-based initialization.
+    - `id`: Stores a unique identifier for the tag.
+    - `name`: Stores the name of the tag.
+    - `hex_color`: Stores the hexadecimal color code for the tag.
+    - `organization_id`: Stores the identifier of the organization associated with the tag.
+    - `type`: Stores the type of the tag.
+    - `created_at`: Stores the timestamp when the tag was created.
+    - `created_by`: Stores the identifier of the user who created the tag.
+    - `updated_at`: Stores the timestamp when the tag was last updated.
+    - `updated_by`: Stores the identifier of the user who last updated the tag.
+- **Description**: Represents a tag with attributes such as name, color, and associated organization, along with metadata about its creation and updates.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### PrimaryAssetTagRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetTagRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L110>)
+
 - **Members**:
-    - `tag_id`: A unique identifier for the tag associated with the primary asset.
-    - `primary_asset_id`: A unique identifier for the primary asset linked to the tag.
-- **Description**: The `PrimaryAssetTagRead` class is a Pydantic model that represents the association between a tag and a primary asset, identified by their respective UUIDs. It is used to read and validate data related to the tagging of primary assets in the system.
+    - `tag_id`: Stores the unique identifier for the tag.
+    - `primary_asset_id`: Stores the unique identifier for the primary asset.
+- **Description**: Associates a tag with a primary asset by storing their unique identifiers.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ContentRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.ContentRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L118>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
-    - `id`: An optional unique identifier for the content.
-    - `node_id`: An optional unique identifier for the associated node.
-    - `content`: The actual content as a string, which is optional.
-    - `content_kind`: The type of content, defined by the ContentKind enum.
-    - `misc_metadata`: Optional dictionary containing miscellaneous metadata.
-    - `created_at`: An optional timestamp indicating when the content was created.
-    - `updated_at`: An optional timestamp indicating when the content was last updated.
-- **Description**: The ContentRead class is a Pydantic model that represents a read-only view of content data, including its unique identifiers, type, and metadata. It is designed to be used in scenarios where content information needs to be retrieved and displayed, with optional fields for creation and update timestamps. The class is configured to allow attribute-based access to its fields.
+    - `id`: Stores a unique identifier for the content.
+    - `node_id`: Stores a unique identifier for the node associated with the content.
+    - `content`: Holds the actual content as a string.
+    - `content_kind`: Indicates the type of content using the `ContentKind` enumeration.
+    - `misc_metadata`: Contains additional metadata as a dictionary.
+    - `created_at`: Records the date and time when the content was created.
+    - `updated_at`: Records the date and time when the content was last updated.
+- **Description**: Represents a content item with associated metadata, including identifiers, content type, and timestamps for creation and updates.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DocumentSourceRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.DocumentSourceRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L131>)
+
 - **Members**:
-    - `page_node_id`: An optional UUID representing the page node identifier.
-    - `source_node_id`: An optional UUID representing the source node identifier.
-- **Description**: The `DocumentSourceRead` class is a Pydantic model that represents a document source with optional identifiers for both a page node and a source node. It is configured to allow attribute-based initialization, making it suitable for use in data validation and serialization tasks within the context of document management systems.
+    - `page_node_id`: Stores the UUID of the page node or None.
+    - `source_node_id`: Stores the UUID of the source node or None.
+- **Description**: Represents a document source with optional identifiers for a page node and a source node, allowing for the association of documents with specific nodes in a system.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### NodeDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.NodeDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L144>)
+
 - **Members**:
-    - `version`: An instance of NodeVersionRead representing the version details of the node.
-- **Description**: The NodeDetailRead class extends NodeRead to provide detailed information about a node, including its version details encapsulated in the nested NodeVersionRead class. This class is part of the detail read schemas and is configured to derive its properties from attributes, allowing it to represent a more comprehensive view of a node by including associated primary asset and creator information.
+    - `version`: Holds the `NodeVersionRead` instance for the node.
+- **Description**: Extends `NodeRead` to include detailed information about a node, specifically its version details. It contains a nested class `NodeVersionRead` that extends `VersionRead` to include additional attributes such as `primary_asset` and `creator`. This class is configured to derive its schema from attributes.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.NodeRead`](<#NodeRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.NodeRead`](<#noderead>)
 
 
 ---
 ### NodeVersionRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.NodeDetailRead.NodeVersionRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L145>)
+
 - **Members**:
-    - `primary_asset`: Represents the primary asset associated with the node version.
-    - `creator`: Represents the user who created the node version, or None if not available.
-- **Description**: The NodeVersionRead class is a specialized schema that extends the VersionRead class to include additional details specific to a node version, such as the primary asset and the creator. It is used to encapsulate the read-only data for a node version, providing a structured way to access the primary asset and creator information associated with a particular version of a node.
+    - `primary_asset`: References a `PrimaryAssetRead` object.
+    - `creator`: References a `UserRead` object or is `None`.
+- **Description**: Extends the `VersionRead` class to include additional information specific to a node version, such as the primary asset and the creator of the version.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.VersionRead`](<#VersionRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.VersionRead`](<#versionread>)
 
 
 ---
 ### VersionDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.VersionDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L155>)
+
 - **Members**:
-    - `primary_asset`: Holds the primary asset information associated with the version.
-    - `root_node`: Represents the root node of the version, if available.
-    - `creator`: Stores the user information of the creator of the version, if available.
-- **Description**: The `VersionDetailRead` class extends the `VersionRead` class to provide detailed information about a version, including its primary asset, root node, and creator. It is part of a schema used to represent detailed read operations for version data, allowing for more comprehensive data retrieval in applications that require detailed version information.
+    - `primary_asset`: Holds the primary asset information.
+    - `root_node`: References the root node of the version or is None.
+    - `creator`: Stores the creator's user information or is None.
+- **Description**: Extends `VersionRead` to include additional details such as the primary asset, root node, and creator information for a version.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.VersionRead`](<#VersionRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.VersionRead`](<#versionread>)
 
 
 ---
 ### PrimaryAssetDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L164>)
+
 - **Members**:
-    - `most_recent_version`: Holds the most recent version of the primary asset, which includes its root node and creator information.
-    - `tags`: A list of tags associated with the primary asset.
-    - `codebase_settings_auto_commit_docs`: Indicates whether the codebase settings automatically commit documents.
-- **Description**: The `PrimaryAssetDetailRead` class extends `PrimaryAssetRead` to provide detailed information about a primary asset, specifically for the `list_primary_assets` endpoint. It includes the most recent version of the asset, along with its root node and creator details, and a list of associated tags. The class also features a computed property to determine if the asset is browsable based on its versions. This schema is designed for specific use cases and should not be used elsewhere without appropriate filters to avoid fetching unnecessary data.
+    - `most_recent_version`: Holds the most recent version of the primary asset.
+    - `tags`: Contains a list of tags associated with the primary asset.
+    - `codebase_settings_auto_commit_docs`: Indicates if the codebase settings auto-commit documents.
+- **Description**: Extends `PrimaryAssetRead` to include additional details for primary assets, specifically for the `list_primary_assets` endpoint. It includes the most recent version of the asset and its root node with a terse sentence description. The class also provides a computed property to determine if the primary asset is browsable based on its versions.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead.browsable`](<#PrimaryAssetDetailReadbrowsable>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead.browsable`](<#primaryassetdetailreadbrowsable>)
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetRead`](<#PrimaryAssetRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetRead`](<#primaryassetread>)
 
 **Methods**
 
 ---
 #### PrimaryAssetDetailRead\.browsable<!-- {{#callable:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead.browsable}} -->
-The `browsable` method determines if a primary asset is browsable based on the browsability of its most recent version.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L178>)
+
+Determines if a primary asset is browsable based on the browsability of its most recent version.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
-- **Control Flow**:
-    - Check if `most_recent_version` is not `None`.
-    - If `most_recent_version` exists, return its `browsable` attribute.
-    - If `most_recent_version` is `None`, return `False`.
+- **Logic and Control Flow**:
+    - Checks if `most_recent_version` is not `None`.
+    - If `most_recent_version` is not `None`, returns the `browsable` attribute of `most_recent_version`.
+    - If `most_recent_version` is `None`, returns `False`.
 - **Output**: A boolean value indicating whether the primary asset is browsable.
-- **See also**: [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead`](<#PrimaryAssetDetailRead>)  (Base Class)
+- **See also**: [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead`](<#primaryassetdetailread>)  (Base Class)
 
 
 
 ---
 ### PrimaryAssetVersionRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetDetailRead.PrimaryAssetVersionRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L170>)
+
 - **Members**:
-    - `root_node`: Represents the root node metadata with a terse sentence description.
-    - `creator`: Represents the user who created the primary asset version.
-- **Description**: The `PrimaryAssetVersionRead` class extends the `VersionRead` class to include additional metadata specific to primary asset versions, such as the root node and the creator of the version. It is used to provide detailed information about a specific version of a primary asset, including its associated root node and the user who created it.
+    - `root_node`: Holds metadata for the root node with a terse sentence description.
+    - `creator`: References the user who created the asset version.
+- **Description**: Extends `VersionRead` to include additional metadata specific to primary asset versions, such as the root node and creator information.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.VersionRead`](<#VersionRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.VersionRead`](<#versionread>)
 
 
 ---
 ### PrimaryAssetTagDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetTagDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L188>)
+
 - **Members**:
-    - `primary_asset`: An instance of PrimaryAssetRead associated with the tag.
-- **Description**: The PrimaryAssetTagDetailRead class extends PrimaryAssetTagRead to include detailed information about the primary asset associated with a tag, represented by the primary_asset attribute.
+    - `primary_asset`: References a `PrimaryAssetRead` instance.
+- **Description**: Extends `PrimaryAssetTagRead` by adding a reference to a `PrimaryAssetRead` instance, providing additional details about the primary asset associated with a tag.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetTagRead`](<#PrimaryAssetTagRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetTagRead`](<#primaryassettagread>)
 
 
 ---
 ### ContentDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.ContentDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L192>)
+
 - **Members**:
-    - `node`: An instance of NodeDetailRead associated with the content.
-- **Description**: The ContentDetailRead class extends ContentRead by adding detailed information about the node associated with the content. It includes a node attribute, which is an instance of NodeDetailRead, providing comprehensive details about the node. This class is part of a schema used for reading detailed content information, and it inherits configuration settings from the Pydantic BaseModel to allow attribute-based initialization.
+    - `node`: Holds detailed information about a node using `NodeDetailRead`.
+- **Description**: Extends `ContentRead` to include detailed node information by incorporating a `NodeDetailRead` instance. This class is part of the detail read schemas, which provide more comprehensive data structures for reading detailed content information.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.ContentRead`](<#ContentRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ContentRead`](<#contentread>)
 
 
 ---
 ### DocumentSourceDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.DocumentSourceDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L199>)
+
 - **Members**:
-    - `source_node`: An instance of NodeDetailRead representing the source node details.
-- **Description**: The DocumentSourceDetailRead class extends DocumentSourceRead to include detailed information about the source node, encapsulated in a NodeDetailRead instance. This class is part of a schema that provides detailed read access to document source data, enhancing the base class with additional node-specific details.
+    - `source_node`: Holds detailed information about the source node using `NodeDetailRead`.
+- **Description**: Extends `DocumentSourceRead` to include detailed information about the source node, represented by `NodeDetailRead`, providing a more comprehensive view of the document source.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.DocumentSourceRead`](<#DocumentSourceRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.DocumentSourceRead`](<#documentsourceread>)
 
 
 ---
 ### TagDetailRead<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.TagDetailRead}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L203>)
+
 - **Members**:
-    - `primary_assets`: A list of primary assets associated with the tag.
-- **Description**: The `TagDetailRead` class extends the `TagRead` class by adding a list of `PrimaryAssetRead` objects, representing the primary assets associated with a specific tag. This class is part of a schema used for detailed read operations, providing a more comprehensive view of a tag's associated assets.
+    - `primary_assets`: A list of `PrimaryAssetRead` objects associated with the tag.
+- **Description**: Extends `TagRead` to include a list of primary assets associated with the tag, providing additional detail about the assets linked to a specific tag.
 - **Inherits From**:
-    - [`python-backend/backend/app/api/routes/v2/schemas.TagRead`](<#TagRead>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.TagRead`](<#tagread>)
 
 
 ---
 ### PrimaryAssetCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetCreate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L210>)
+
 - **Members**:
-    - `display_name`: The name to be displayed for the primary asset.
-    - `kind`: The type of primary asset, defined by the PrimaryAssetKind enum.
-- **Description**: The PrimaryAssetCreate class is a Pydantic model used for creating new primary assets, encapsulating essential attributes such as the display name and the kind of asset. It serves as a schema for validating and managing the data required to instantiate a primary asset within the system.
+    - `display_name`: Stores the display name of the primary asset.
+    - `kind`: Specifies the kind of the primary asset using the `PrimaryAssetKind` enumeration.
+- **Description**: Defines the structure for creating a primary asset with a display name and a kind, inheriting from `BaseModel`.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### PrimaryAssetUpdate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetUpdate}} -->
-- **Decorators**: `@dataclass`
-- **Members**:
-    - `display_name`: Optional string representing the display name of the primary asset.
-    - `codebase_settings_auto_commit_docs`: Optional boolean indicating if the codebase settings should automatically commit documentation.
-- **Description**: The `PrimaryAssetUpdate` class is a Pydantic model used for updating primary asset information, specifically allowing modifications to the display name and the auto-commit documentation setting of the codebase. It provides a structured way to handle updates to these attributes, ensuring data validation and type checking.
-- **Inherits From**:
-    - `BaseModel`
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L215>)
 
-
----
-### VersionCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.VersionCreate}} -->
-- **Decorators**: `@dataclass`
 - **Members**:
-    - `primary_asset_id`: The unique identifier for the primary asset associated with the version.
-    - `display_name`: The display name for the version.
-- **Description**: The `VersionCreate` class is a Pydantic model used to define the schema for creating a new version of a primary asset. It includes essential fields such as `primary_asset_id` to link the version to a specific primary asset and `display_name` to provide a human-readable name for the version. This class ensures that the necessary data is provided when creating a new version in the system.
+    - `display_name`: Optional display name for the primary asset.
+    - `codebase_settings_auto_commit_docs`: Optional flag to auto-commit documentation settings in the codebase.
+- **Description**: Defines the structure for updating a primary asset, allowing optional updates to its display name and codebase documentation auto-commit settings.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### VersionUpdate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.VersionUpdate}} -->
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L220>)
+
 - **Members**:
-    - `display_name`: Optional string representing the display name of the version.
-    - `status`: Optional status of the version, represented by the VersionStatus enum.
-- **Description**: The VersionUpdate class is a data model used to represent updates to a version entity, including optional fields for the display name and status. It extends the BaseModel from Pydantic, allowing for data validation and serialization. This class is typically used in scenarios where partial updates to a version's attributes are required, such as in API endpoints for updating version information.
+    - `status`: Holds the status of the version, which can be a `VersionStatus` or `None`.
+- **Description**: Defines a schema for updating version information, specifically the status of a version, using the `BaseModel` from Pydantic.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### NodeCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.NodeCreate}} -->
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L224>)
+
 - **Members**:
-    - `version_id`: A unique identifier for the version associated with the node.
-    - `relative_path`: The relative path of the node within its version.
-- **Description**: The NodeCreate class is a schema for creating a new node, encapsulating essential information such as the version ID and the node's relative path. It inherits from BaseModel, ensuring data validation and serialization capabilities, and is used to define the structure of data required when creating a node in the system.
+    - `version_id`: Stores the unique identifier for the version.
+    - `relative_path`: Stores the relative path as a string.
+- **Description**: Defines the structure for creating a node with a version identifier and a relative path.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### NodeUpdate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.NodeUpdate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L229>)
+
 - **Members**:
-    - `relative_path`: Optional string representing the relative path of the node.
-- **Description**: The NodeUpdate class is a simple data model used for updating node information, specifically the relative path, within a system. It extends the BaseModel from Pydantic, allowing for data validation and serialization. The class contains a single optional attribute, 'relative_path', which can be set to None if not provided, indicating that the relative path of a node can be updated or left unchanged.
+    - `relative_path`: Optional string that specifies the relative path of the node.
+- **Description**: Defines an update schema for a node, allowing modification of the node's relative path.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### TagCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.TagCreate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L233>)
+
 - **Members**:
-    - `name`: The name of the tag.
-    - `hex_color`: The hexadecimal color code associated with the tag.
-    - `type`: The type or category of the tag.
-- **Description**: The `TagCreate` class is a Pydantic model used for creating new tags, encapsulating essential attributes such as the tag's name, its associated hexadecimal color code, and its type. This class serves as a schema for validating and managing the data required to create a tag within the system.
+    - `name`: Stores the name of the tag as a string.
+    - `hex_color`: Stores the hexadecimal color code of the tag as a string.
+    - `type`: Stores the type of the tag as a string.
+- **Description**: Defines the structure for creating a tag with attributes for name, color, and type.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ContentCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.ContentCreate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L239>)
+
 - **Members**:
-    - `node_id`: A unique identifier for the node associated with the content.
-    - `content_kind`: Specifies the kind of content being created.
-    - `content`: The actual content as a string, which is optional.
-    - `misc_metadata`: A dictionary for storing additional metadata, which is optional.
-- **Description**: The ContentCreate class is a Pydantic model used for creating new content entries, associating them with a specific node and content kind, and optionally including the content itself and any miscellaneous metadata.
+    - `node_id`: Stores the unique identifier for the node.
+    - `content_kind`: Indicates the type of content.
+    - `content`: Holds the content as a string, which can be None.
+    - `misc_metadata`: Contains additional metadata as a dictionary, which can be None.
+- **Description**: Defines a schema for creating content with a node identifier, content type, optional content string, and optional metadata.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DerivedContentUpdate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.DerivedContentUpdate}} -->
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L246>)
+
 - **Members**:
-    - `content`: Optional string representing the content to be updated.
-    - `content_name`: Optional string representing the name of the content to be updated.
-- **Description**: The DerivedContentUpdate class is a schema for updating derived content, allowing optional updates to both the content and its name. It extends the BaseModel from Pydantic, providing a structured way to handle updates to content-related data within the application.
+    - `content`: Optional string representing the content to update.
+    - `content_name`: Optional string representing the name of the content to update.
+- **Description**: Extends `BaseModel` to define a schema for updating derived content with optional fields for content and content name.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### DocumentSourceCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.DocumentSourceCreate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L251>)
+
 - **Members**:
-    - `source_node_id`: A UUID representing the source node identifier.
-    - `page_node_id`: A UUID representing the page node identifier.
-- **Description**: The `DocumentSourceCreate` class is a Pydantic model used for creating a document source, containing identifiers for both the source node and the page node. It serves as a schema for data validation and serialization when creating new document sources in the system.
+    - `source_node_id`: Stores the UUID of the source node.
+    - `page_node_id`: Stores the UUID of the page node.
+- **Description**: Defines the structure for creating a document source with identifiers for both the source node and the page node.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### PrimaryAssetTagCreate<!-- {{#class:python-backend/backend/app/api/routes/v2/schemas.PrimaryAssetTagCreate}} -->
+[View Source →](<../../../../../../../backend/app/api/routes/v2/schemas.py#L256>)
+
 - **Members**:
-    - `tag_id`: A UUID representing the unique identifier for the tag.
-    - `primary_asset_id`: A UUID representing the unique identifier for the primary asset.
-- **Description**: The `PrimaryAssetTagCreate` class is a Pydantic model used to define the schema for creating a relationship between a tag and a primary asset, identified by their respective UUIDs.
+    - `tag_id`: Stores the unique identifier for the tag.
+    - `primary_asset_id`: Stores the unique identifier for the primary asset.
+- **Description**: Defines the structure for creating a relationship between a tag and a primary asset, using unique identifiers for both.
 - **Inherits From**:
     - `BaseModel`
 

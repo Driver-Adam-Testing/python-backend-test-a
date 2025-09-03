@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Files related to subscription data models, including an empty `__init__.py` and `subscription_schema.py`.
+Pydantic models for subscription records and creation requests with computed date fields.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[subscription_schema.py](subscription_schema.py.md)**: The `subscription_schema.py` file defines data models for subscription records and creation requests, including properties for start and end dates based on billing frequency.
+- **[subscription_schema.py](subscription_schema.py.md)**: Defines Pydantic models for subscription records and creation requests with computed date fields.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

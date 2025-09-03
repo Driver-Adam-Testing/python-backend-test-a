@@ -3,68 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `start.sh` file is a shell script for setting up and starting a Python application using Gunicorn, with configurable module names, worker classes, and optional pre-start scripts.
+Shell script to configure and start a Gunicorn server with optional prestart script execution.
 
 # Purpose
-This script is a shell executable designed to configure and launch a Python web application using Gunicorn, a Python WSGI HTTP server. It provides a narrow functionality focused on setting up the environment for running a web application, specifically by determining the module and variable names for the application, configuring Gunicorn settings, and optionally executing a pre-start script if available. The script checks for the presence of specific Python files to set default module names and configuration paths, allowing for flexibility in application structure. It also sets environment variables for Gunicorn configuration and worker class, ensuring that the application is started with the appropriate settings. This script is typically used in deployment scenarios where a consistent and automated startup process is required for Python web applications.
-# Global Variables
-
----
-### DEFAULT\_MODULE\_NAME
-- **Type**: `string`
-- **Description**: The `DEFAULT_MODULE_NAME` is a global variable that holds the default module name for the application, determined by the presence of specific Python files in the directory structure. It is set to 'app.main' if '/app/app/main.py' exists, otherwise it is set to 'main' if '/app/main.py' exists.
-- **Use**: This variable is used to set the `MODULE_NAME` variable, which is part of the configuration for starting the application with Gunicorn.
-
-
----
-### MODULE\_NAME
-- **Type**: `string`
-- **Description**: `MODULE_NAME` is a global variable that determines the module name to be used for the application. It is set to the value of the environment variable `MODULE_NAME` if it exists; otherwise, it defaults to `DEFAULT_MODULE_NAME`, which is determined based on the presence of specific Python files in the application directory.
-- **Use**: This variable is used to construct the `APP_MODULE` environment variable, which specifies the module and variable name for the application to be run by Gunicorn.
-
-
----
-### VARIABLE\_NAME
-- **Type**: `string`
-- **Description**: `VARIABLE_NAME` is a global variable that defaults to the string 'app' if not already set in the environment. It is used to specify the variable name within the module that Gunicorn will use to run the application.
-- **Use**: This variable is used to construct the `APP_MODULE` environment variable, which Gunicorn uses to locate and run the application.
-
-
----
-### APP\_MODULE
-- **Type**: `string`
-- **Description**: `APP_MODULE` is a global environment variable that specifies the module and variable name to be used by Gunicorn when starting the application. It is constructed by combining the `MODULE_NAME` and `VARIABLE_NAME`, defaulting to a format like 'module_name:variable_name'. This allows Gunicorn to know which application instance to run.
-- **Use**: `APP_MODULE` is used to define the entry point for the Gunicorn server to start the application.
-
-
----
-### DEFAULT\_GUNICORN\_CONF
-- **Type**: `string`
-- **Description**: The `DEFAULT_GUNICORN_CONF` variable is a string that holds the file path to the default Gunicorn configuration file. It checks for the presence of a `gunicorn_conf.py` file in specific directories and assigns the path accordingly. If no such file is found, it defaults to `/gunicorn_conf.py`. This variable is used to set the configuration file for the Gunicorn server.
-- **Use**: This variable is used to determine the file path for the Gunicorn configuration, which is then exported to the `GUNICORN_CONF` environment variable for use when starting the Gunicorn server.
-
-
----
-### GUNICORN\_CONF
-- **Type**: `string`
-- **Description**: The `GUNICORN_CONF` variable is a global environment variable that specifies the path to the Gunicorn configuration file. It is set to a default path based on the presence of certain files in the application directory, allowing for flexible configuration management.
-- **Use**: This variable is used to define the configuration file path for Gunicorn when starting the server, ensuring that the server uses the correct settings.
-
-
----
-### WORKER\_CLASS
-- **Type**: `string`
-- **Description**: The `WORKER_CLASS` variable is a global environment variable that specifies the class of worker to be used by Gunicorn, a Python WSGI HTTP server for UNIX. By default, it is set to `uvicorn.workers.UvicornWorker`, which is a worker class provided by Uvicorn, an ASGI server implementation.
-- **Use**: This variable is used to define the type of worker processes that Gunicorn will use to handle requests.
-
-
----
-### PRE\_START\_PATH
-- **Type**: `string`
-- **Description**: The `PRE_START_PATH` variable is a global string variable that holds the file path to a prestart script, which is intended to be executed before the main application starts. It defaults to '/app/prestart.sh' if not explicitly set by the user.
-- **Use**: This variable is used to specify the location of a prestart script that should be run before the application starts, allowing for any necessary setup or initialization tasks to be performed.
-
-
+This script is a shell script intended to configure and start a Gunicorn server for a Python application. It checks for the presence of specific Python files to determine the default module name and sets environment variables such as `APP_MODULE`, `GUNICORN_CONF`, and `WORKER_CLASS` with default values if they are not already set. The script also looks for a `prestart.sh` script in the `/app` directory and executes it if found, allowing for any necessary pre-startup tasks. Finally, it executes the Gunicorn server with the specified worker class and configuration file, using the determined application module.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

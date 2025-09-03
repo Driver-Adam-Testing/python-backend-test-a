@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `business_development.py` file contains a prompt designed to guide content curation for business development professionals interested in analyzing technical products with a focus on scalability, integration, and technological robustness.
+A prompt template for business development professionals analyzing technical products.
 
 # Purpose
-This code is a configuration variable containing a multi-line string that outlines a specific content curation guideline for a business development professional. It provides narrow functionality by defining the target audience and the key aspects of technical products that should be highlighted, such as scalability, integration capabilities, and technological robustness. The purpose of this string is likely to guide content creators or analysts in tailoring their analysis or reports to meet the informational needs of business development professionals, focusing on how a product's technical attributes can contribute to business growth and sustainability. This code is not executable but serves as a reference or template for content creation.
+The code defines a string variable `BUSINESS_DEVELOPMENT` that contains a detailed description of a target reader persona. This persona is a business development professional interested in technical product analysis, focusing on aspects such as scalability, integration capabilities, and technological robustness. The content aims to address how a codebase can contribute to business growth, enhance user experience, and maintain sustainability in a changing market. This string can be used in applications that require tailoring content to specific audience profiles, particularly in business and technical contexts.
 # Global Variables
 
 ---
 ### BUSINESS\_DEVELOPMENT
-- **Type**: `str`
-- **Description**: The `BUSINESS_DEVELOPMENT` variable is a multi-line string that describes the profile and interests of a business development professional. It outlines the key aspects they are interested in, such as product scalability, integration capabilities, and technological robustness, as well as their focus on business growth and user experience.
-- **Use**: This variable is used to define the target audience and content focus for business development professionals in the context of technical product analysis.
+- **Type**: ``str``
+- **Description**: A multi-line string that describes the content curation requirements for a business development professional. It outlines the key areas of interest such as product scalability, integration capabilities, and technological robustness.
+- **Use**: Used to guide content creation for business development professionals by specifying their interests and focus areas.
 
 
 

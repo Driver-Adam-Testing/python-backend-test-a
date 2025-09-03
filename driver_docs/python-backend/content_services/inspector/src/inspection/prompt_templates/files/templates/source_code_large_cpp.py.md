@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_cpp.py` file defines a template for generating structured prompts related to large C++ source code, including sections for purpose, imports, global variables, data structures, and functions.
+Templates for generating structured prompts and analyzing C++ source code components.
 
 # Purpose
-This Python code is a configuration file that defines a template for generating structured prompts related to C++ source code analysis. It imports various components and utilities from shared modules and language specialization modules, specifically for C++ language constructs. The template, `SOURCE_CODE_LARGE_TEMPLATE_CPP`, is a list of tuples, each representing a section of the prompt, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section is associated with specific instructions or methods for extracting and formatting information from C++ code, using both static analysis and language model (LLM) outputs. This file provides narrow functionality focused on creating structured prompts for analyzing and documenting large C++ codebases.
+The code defines a template for generating documentation for C++ source code. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.cpp`, to facilitate the creation of structured prompts and data collections. The `SOURCE_CODE_LARGE_TEMPLATE_CPP` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Global Variables", "Data Structures", and "Functions". Each section uses specific components and instructions to generate content, leveraging static analysis and language model outputs to populate the documentation. This code provides a narrow functionality focused on automating the generation of structured documentation for C++ codebases.
 # Imports and Dependencies
 
 ---
@@ -32,9 +32,9 @@ This Python code is a configuration file that defines a template for generating 
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_CPP
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_CPP` is a list of tuples, each containing structured information for generating prompts related to C++ source code analysis. Each tuple includes a section identifier, a section title, and various components or functions that are used to process or generate content for that section.
-- **Use**: This variable is used to define the structure and content of prompts for analyzing and documenting different aspects of C++ source code, such as purpose, imports, global variables, data structures, and functions.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to C++ code analysis and generation. Each tuple is structured to facilitate the generation of structured prompts and the collection of C++ code elements such as imports, global variables, data structures, and functions.
+- **Use**: Used to define a template for generating structured prompts and collecting C++ code elements for analysis and documentation.
 
 
 

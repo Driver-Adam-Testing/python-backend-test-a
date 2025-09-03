@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `open_file.py` file defines the `OpenFileTool` class, which is an `LlmTool` designed to open a file at a specified path and display its content as a single reference, handling content retrieval and formatting from a database.
+An LlmTool for opening a file, displaying its content as a reference, and handling large text.
 
 # Purpose
-The provided Python code defines a class `OpenFileTool`, which is a specialized tool designed to interact with a database to retrieve and display the content of a file specified by its file path. This class inherits from `LlmTool`, indicating that it is part of a larger framework or system that deals with language model tools. The primary functionality of `OpenFileTool` is to query a database for chunks of content associated with a specific file path, concatenate these chunks while handling any overlapping text, and then format the content as a reference. If the content exceeds a certain length, it is truncated to maintain manageability.
+The code defines a class `OpenFileTool`, which is a specialized tool for opening a file at a specified file path and displaying its content as a single reference. This class inherits from `LlmTool`, indicating that it is part of a larger framework or library for handling language model tools. The primary function of `OpenFileTool` is to retrieve and format the content of a file stored in a database, specifically targeting files classified as `CODEBASE_FILE` in the `ContentKind` enumeration.
 
-The code is structured to be part of a larger application, likely a library or module, given its reliance on external imports and its integration with database models and shared interfaces. It does not define a public API but rather extends existing interfaces, suggesting it is intended for internal use within a system that processes or analyzes codebase files. The class includes methods for executing the file retrieval process and generating a response message, which encapsulates the results or an error message if no content is found. This functionality is crucial for applications that need to dynamically access and manipulate file content stored in a database, particularly in environments where large codebases are managed and analyzed.
+The [`_execute`](<#openfiletool_execute>) method is the core component of the `OpenFileTool` class. It uses SQL queries to fetch file content from the database, specifically from the `ChunkAndEmbedding` and `DerivedContent` models. The method processes the content to remove overlapping text between chunks and concatenates the results into a single string. If the content exceeds 75,000 characters, it truncates the text and appends a notice. The class also includes a method [`to_tool_call_response_message`](<#openfiletoolto_tool_call_response_message>) to generate a response message, which either contains the formatted file content or an error message if no content is found. This class is designed to be part of a system that manages and processes file content, providing a structured way to access and display file data.
 # Imports and Dependencies
 
 ---
@@ -33,53 +33,61 @@ The code is structured to be part of a larger application, likely a library or m
 
 ---
 ### OpenFileTool<!-- {{#class:python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool}} -->
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/open_file.py#L19>)
+
 - **Members**:
     - `file_path`: The path to the file to be opened.
-- **Description**: The OpenFileTool class is a specialized LlmTool that facilitates the opening and reading of a file specified by a given file path, and it displays the file's content as a single reference. It interacts with a database to retrieve content chunks associated with the file, processes these chunks to handle overlaps, and compiles them into a complete text representation. The class also manages the creation of reference messages to be used in tool call responses, ensuring that the content is appropriately formatted and truncated if necessary.
+- **Description**: Represents a tool that opens a file at a specified path and displays its content as a single reference. It retrieves file content from a database, processes it to remove overlapping text between chunks, and stores the result as a reference. If the content exceeds a certain length, it truncates the content. It also provides a response message indicating the results or an error if no content is found.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool._execute`](<#OpenFileTool_execute>)
-    - [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool.to_tool_call_response_message`](<#OpenFileToolto_tool_call_response_message>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool._execute`](<#openfiletool_execute>)
+    - [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool.to_tool_call_response_message`](<#openfiletoolto_tool_call_response_message>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../../../interfaces/llm_tool.py.md#LlmTool>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_tool.LlmTool`](<../../../interfaces/llm_tool.py.md#llmtool>)
 
 **Methods**
 
 ---
 #### OpenFileTool\.\_execute<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool._execute}} -->
-The `_execute` method retrieves and processes file content chunks from a database, formats them to remove overlaps, and stores the result as a reference.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/open_file.py#L30>)
+
+Executes a database query to retrieve and process file content chunks, then adds a reference to the processed content.
 - **Inputs**: None
-- **Control Flow**:
-    - Establishes a database session using [`get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>).
-    - Constructs a SQL query to select `ChunkAndEmbedding` records joined with `DerivedContent` based on specific conditions related to node IDs, file path, and content kind.
+- **Logic and Control Flow**:
+    - Opens a database session using `get_session()` context manager.
+    - Constructs a SQL query to select `ChunkAndEmbedding` records joined with `DerivedContent` where conditions match the `file_path` and `node_id`.
     - Executes the query and retrieves all matching records into `chunks_and_embeddings`.
-    - Checks if `chunks_and_embeddings` is empty and returns early if so.
-    - Iterates over each chunk in `chunks_and_embeddings`, adjusting the text to remove overlaps with the previous chunk's text.
-    - Appends the processed chunk text to `formatted_results`.
-    - Joins all formatted results into a single string `full_text`.
-    - Truncates `full_text` to 75,000 characters if it exceeds this length, appending a truncation notice.
-    - Adds a new [`Reference`](<../../../utils/references.py.md#Reference>) with the `full_text` to the `_references` attribute.
-- **Output**: The method does not return a value but updates the `_references` attribute with a new [`Reference`](<../../../utils/references.py.md#Reference>) object containing the processed file content.
+    - Checks if `chunks_and_embeddings` is empty and returns if true.
+    - Initializes `formatted_results` and `previous_chunk_text` to process the retrieved chunks.
+    - Iterates over each chunk in `chunks_and_embeddings`, adjusting `current_chunk_text` to remove overlapping text with `previous_chunk_text`.
+    - Appends the processed `current_chunk_text` to `formatted_results` and updates `previous_chunk_text`.
+    - Joins all `formatted_results` into `full_text`.
+    - Truncates `full_text` to 75000 characters if it exceeds this length, appending a truncation notice.
+    - Adds a new [`Reference`](<../../../utils/references.py.md#reference>) to `self._references` with the processed `full_text` and other metadata.
+- **Output**: No output is returned; the method modifies the state of `self._references` by adding a new [`Reference`](<../../../utils/references.py.md#reference>) object.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<../../../utils/references.py.md#ReferenceSetadd_reference>)
-    - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<../../../utils/references.py.md#Reference>)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool`](<#OpenFileTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/utils/references.ReferenceSet.add_reference`](<../../../utils/references.py.md#referencesetadd_reference>)
+    - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<../../../utils/references.py.md#reference>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool`](<#openfiletool>)  (Base Class)
 
 
 ---
 #### OpenFileTool\.to\_tool\_call\_response\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool.to_tool_call_response_message}} -->
-The `to_tool_call_response_message` method generates an LlmMessage response based on the presence of file content references.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/tools/open_file.py#L79>)
+
+Generates an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) response for a tool call, indicating success or error based on the presence of references.
 - **Inputs**: None
-- **Control Flow**:
-    - Check if there are no references in `self._references`.
-    - If no references exist, return an LlmMessage indicating an error with a message that no content was found for the specified file path.
-    - If references exist, construct a detailed LlmMessage with the results of the OpenFileTool, including the file path and formatted reference content.
-- **Output**: Returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>) object that either contains an error message or the results of the OpenFileTool operation, depending on whether references are present.
+- **Logic and Control Flow**:
+    - Checks if `_references` is empty.
+    - If `_references` is empty, returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with an error message indicating no content found for the specified file path.
+    - If `_references` is not empty, constructs a detailed [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with the results of the `OpenFileTool`, including the file path and formatted reference content.
+    - Uses `REFERENCE_LIST`, `REFERENCE`, `REFERENCE_CONTENT`, and `REFERENCE_RELATIVE_PATH` to format the reference content in the message.
+- **Output**: An [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) object representing the tool call response, either with an error message or with the results of the `OpenFileTool`.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#LlmMessage>)
-    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#GlossaryDefinitionwrap>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse`](<../../../interfaces/llm_message.py.md#LlmMessage.ToolCallResponse>)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool`](<#OpenFileTool>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
+    - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#glossarydefinitionwrap>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage.ToolCallResponse`](<../../../interfaces/llm_message.py.md#toolcallresponse>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/static/tools/open_file.OpenFileTool`](<#openfiletool>)  (Base Class)
 
 
 

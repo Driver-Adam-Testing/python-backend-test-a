@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase initializes the `audience` package by importing the `fifth_grader` and `software_engineer` modules.
+Imports modules `fifth_grader` and `software_engineer`.
 
 # Purpose
-This code is a module-level import statement, likely part of a larger Python package. It imports two modules, `fifth_grader` and `software_engineer`, from the current package, indicating that these modules are part of the same package or directory structure. The presence of `# flake8: noqa` suggests that the author intends to suppress linting warnings for this file, possibly because the imports are used elsewhere in the package and not directly in this file. The functionality provided by this code is narrow, as it primarily serves to organize and manage dependencies within a package rather than implementing any specific logic or features.
+The code imports two modules, `fifth_grader` and `software_engineer`, from the current package. This indicates that the file is part of a larger package structure and relies on these two modules for its functionality. The `flake8: noqa` comment at the top of the file instructs the `flake8` linter to ignore all style and linting errors in this file. This file serves as a connector or initializer within the package, facilitating access to the `fifth_grader` and `software_engineer` modules.
 # Imports and Dependencies
 
 ---

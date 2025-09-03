@@ -3,25 +3,25 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-FastAPI route definitions for agent execution, codebase management, content handling, document sources, Git operations, health checks, onboarding, organization management, search, subscriptions, tags, uploads, usage, and user accounts.
+API routes for agent sequences, codebase management, content, document sources, Git, health checks, onboarding, organization, search, subscription, tags, upload, usage, and user management using FastAPI.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[agent_pipelines.py](agent_pipelines.py.md)**: The `agent_pipelines.py` file defines API routes for executing agent sequences in various modes (synchronous, asynchronous, and batch) using FastAPI, with support for different block kinds and user permissions.
-- **[codebase.py](codebase.py.md)**: The `codebase.py` file in the `python-backend` codebase defines API routes for managing codebase versions, executing codebase analysis and generation, and triggering codebase onboarding using FastAPI.
-- **[content.py](content.py.md)**: The `content.py` file in the `python-backend` codebase defines a FastAPI router with endpoints for managing content, including listing, retrieving, updating, deleting, and exporting content, as well as handling content tags and document sources.
-- **[document_sources.py](document_sources.py.md)**: The `document_sources.py` file defines API routes for creating, retrieving, and deleting document sources, with permissions enforced for content editors and readonly users.
-- **[git_provider.py](git_provider.py.md)**: The `git_provider.py` file in the `python-backend` codebase defines a FastAPI router for managing Git provider applications, including endpoints for creating, deleting, and authorizing apps, handling webhooks, and managing repository access and events.
-- **[healthcheck.py](healthcheck.py.md)**: The `healthcheck.py` file defines a FastAPI route for performing a health check and includes an endpoint to trigger an error for debugging purposes.
-- **[onboarding.py](onboarding.py.md)**: The `onboarding.py` file defines an API endpoint for triggering asset connections, handling different asset kinds, and updating version statuses based on processing requirements.
-- **[organization.py](organization.py.md)**: The `organization.py` file defines API routes for managing organization roles, members, and invitations using FastAPI, with operations such as listing, modifying, and deleting entities, while handling permissions and exceptions.
-- **[search.py](search.py.md)**: The `search.py` file defines a FastAPI route for searching content, utilizing user and session information to return search results.
-- **[subscription.py](subscription.py.md)**: The `subscription.py` file defines API routes for retrieving active subscription details and creating new subscriptions, utilizing permissions and session management within the FastAPI framework.
-- **[tags.py](tags.py.md)**: The `tags.py` file defines API routes for creating, reading, updating, and deleting tags, as well as listing tag contents, using FastAPI and integrating with a tag service in the `python-backend` codebase.
-- **[upload.py](upload.py.md)**: The `upload.py` file defines API routes for creating upload URLs for files and custom configurations, utilizing FastAPI and requiring content editor permissions.
-- **[usage.py](usage.py.md)**: The `usage.py` file defines API endpoints for managing and retrieving usage data, including balance summaries, detailed summaries, recent charges, and issuing usage credits, within the `python-backend` codebase.
-- **[user.py](user.py.md)**: The `user.py` file defines API routes for changing a user's password and retrieving a list of organizations associated with the user, utilizing FastAPI and Auth0 services.
+- **[agent_pipelines.py](agent_pipelines.py.md)**: API routes for executing agent sequences with different block kinds, supporting synchronous and asynchronous operations.
+- **[codebase.py](codebase.py.md)**: API routes for managing codebase versions, analysis, generation, and onboarding using FastAPI.
+- **[content.py](content.py.md)**: API routes for managing content, including listing, retrieving, updating, deleting, and exporting content.
+- **[document_sources.py](document_sources.py.md)**: API routes for creating, retrieving, and deleting document sources with permission checks.
+- **[git_provider.py](git_provider.py.md)**: API routes and handlers for managing Git provider applications, installations, and webhooks using FastAPI.
+- **[healthcheck.py](healthcheck.py.md)**: Defines health check endpoints using FastAPI, including a status check and an error trigger for debugging.
+- **[onboarding.py](onboarding.py.md)**: Defines an API endpoint to trigger asset connections based on asset kind and request parameters.
+- **[organization.py](organization.py.md)**: API routes for managing organization roles, members, and invitations with Auth0 integration.
+- **[search.py](search.py.md)**: Defines a FastAPI route for searching content with user authentication and session management.
+- **[subscription.py](subscription.py.md)**: API routes for managing subscriptions, including getting active subscription details and creating subscriptions.
+- **[tags.py](tags.py.md)**: API routes for creating, reading, updating, and deleting tags with permission checks.
+- **[upload.py](upload.py.md)**: Defines API endpoints for creating upload URLs for files and custom configurations with permission checks.
+- **[usage.py](usage.py.md)**: API routes for managing usage balance, summaries, charges, and issuing usage credits.
+- **[user.py](user.py.md)**: API routes for changing user passwords and retrieving user organizations using FastAPI and Auth0.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

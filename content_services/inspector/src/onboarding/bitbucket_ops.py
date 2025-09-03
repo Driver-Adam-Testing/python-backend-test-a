@@ -2,11 +2,10 @@ import hashlib
 import json
 import logging
 import os
-from datetime import UTC, datetime
 from uuid import UUID
 
-import modal
 import requests
+from database.models import VcsAutoUpdatePolicy
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
     AuthorInfo,
@@ -172,9 +171,11 @@ def download_repo(
             raise
 
 
-def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
+def get_latest_commit(
+    workspace: str, repo_slug: str, access_token: str, default_branch: str
+) -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits"
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits/{default_branch}"
 
     response = requests.get(url, headers=headers, params={"pagelen": 1})
     response.raise_for_status()
@@ -182,7 +183,7 @@ def get_latest_commit(workspace: str, repo_slug: str, access_token: str) -> str:
     commits = response.json().get("values", [])
     if commits:
         return commits[0]["hash"]
-    raise ValueError("No commits found")
+    raise ValueError(f"No commits found on default branch '{default_branch}'")
 
 
 def fetch_vcs_info(
@@ -254,7 +255,7 @@ def generate_codebase_metadata(
     asset_name: str,
     install_id: str,
 ) -> dict:
-    from database.models_v2_enums import PrimaryAssetKind
+    from database.models_enums import PrimaryAssetKind
 
     return {
         "unhashed_organization_id": org_id,
@@ -274,17 +275,8 @@ def download_and_upload_repo(
 ) -> str | None:
     """Download and upload Bitbucket repository"""
     from database.db import engine
-    from database.models_v1 import (
-        InspectorRun,
-        UsageEvent,
-        UsageEventType,
-        UsageSession,
-    )
-    from database.models_v2 import (
-        PrimaryAsset,
-        Version,
-    )
-    from database.models_v2_enums import (
+    from database.models import PrimaryAsset, Version
+    from database.models_enums import (
         PrimaryAssetKind,
         PrimaryAssetProvider,
         VersionStatus,
@@ -297,7 +289,9 @@ def download_and_upload_repo(
     repo_id = repo.get("repo_id") or metadata.get("id") or metadata.get("uuid")
     repo_name = repo.get("repo_name") or repo.get("name")
     workspace = metadata.get("workspace") or repo.get("workspace")
-    repo_slug = repo_name
+    repo_slug = "-".join(
+        repo_name.split()
+    )  # Bitbucket allows spaces in repo names, which are replaced by dashes in the slug
 
     # Handle missing fields
     if not repo_id:
@@ -325,7 +319,9 @@ def download_and_upload_repo(
 
     if not commit:
         try:
-            commit = get_latest_commit(workspace, repo_slug, access_token)
+            commit = get_latest_commit(
+                workspace, repo_slug, access_token, repo["default_branch"]
+            )
         except Exception as e:
             print(f"Failed to get latest commit for {repo_name}: {e}")
             return repo_name
@@ -409,91 +405,97 @@ def download_and_upload_repo(
                             version_id = new_version.id
                             break
                         elif version.status == VersionStatus.GENERATING:
-                            # Cancel existing run and create new version
-                            run_statement = (
-                                select(InspectorRun)
-                                .where(InspectorRun.version_id == version.id)
-                                .order_by(InspectorRun.created_at.desc())
-                            )
-                            run = session.exec(run_statement).first()
-
-                            if run is not None:
-                                call_id = run.call_id
-                                modal_call = modal.FunctionCall.from_id(call_id)
-                                modal_call.cancel()
-
-                            session.delete(version)
-
-                            # Handle usage credits
-                            usage_session_statement = (
-                                select(UsageSession)
-                                .join(
-                                    UsageEvent, UsageSession.id == UsageEvent.session_id
-                                )
-                                .where(
-                                    UsageSession.session_metadata["version_id"].astext
-                                    == str(version.id)
-                                )
-                                .where(
-                                    UsageEvent.event_type
-                                    == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-                                )
-                                .options(selectinload(UsageSession.usage_events))
-                            )
-                            usage_session = session.exec(
-                                usage_session_statement
-                            ).first()
-
-                            if usage_session is not None:
-                                usage_event = next(
-                                    (
-                                        event
-                                        for event in usage_session.usage_events
-                                        if event.event_type
-                                        == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
-                                    ),
-                                    None,
-                                )
-                                if usage_event is not None:
-                                    new_usage_session = UsageSession(
-                                        status=usage_session.status,
-                                        organization_id=usage_session.organization_id,
-                                        user_id="SYSTEM",
-                                        session_metadata=usage_session.session_metadata,
-                                    )
-                                    session.add(new_usage_session)
-                                    usage_event_credit = UsageEvent(
-                                        **usage_event.dict(
-                                            exclude={
-                                                "id",
-                                                "bytes_in",
-                                                "session_id",
-                                                "timestamp",
-                                                "event_type",
-                                            }
-                                        ),
-                                        event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                                        session_id=new_usage_session.id,
-                                        bytes_in=abs(usage_event.bytes_in),
-                                        timestamp=datetime.now(tz=UTC),
-                                    )
-                                    session.add(usage_event_credit)
-
-                            new_version = Version(
-                                primary_asset_id=primary_asset.id,
-                                vcs_hash=commit,
-                                status=VersionStatus.GENERATING,
-                                previous_version_id=version.previous_version_id,
-                                vcs_metadata=vcs_info.model_dump()
-                                if vcs_info
-                                else None,
-                            )
-                            session.add(new_version)
-                            version_id = new_version.id
+                            # STOPGAP: Ignore push events during active generation to ensure completion
                             print(
-                                f"Version already in generating state for {repo_name}, deleting existing version and restarting inspection with new version..."
+                                f"Generation already in progress for {repo.get('name', 'unknown')}. "
+                                f"Ignoring push event to allow current generation to complete."
                             )
-                            break
+                            return repo
+                            # # Cancel existing run and create new version
+                            # run_statement = (
+                            #     select(InspectorRun)
+                            #     .where(InspectorRun.version_id == version.id)
+                            #     .order_by(InspectorRun.created_at.desc())
+                            # )
+                            # run = session.exec(run_statement).first()
+                            #
+                            # if run is not None:
+                            #     call_id = run.call_id
+                            #     modal_call = modal.FunctionCall.from_id(call_id)
+                            #     modal_call.cancel()
+                            #
+                            # session.delete(version)
+                            #
+                            # # Handle usage credits
+                            # usage_session_statement = (
+                            #     select(UsageSession)
+                            #     .join(
+                            #         UsageEvent, UsageSession.id == UsageEvent.session_id
+                            #     )
+                            #     .where(
+                            #         UsageSession.session_metadata["version_id"].astext
+                            #         == str(version.id)
+                            #     )
+                            #     .where(
+                            #         UsageEvent.event_type
+                            #         == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+                            #     )
+                            #     .options(selectinload(UsageSession.usage_events))
+                            # )
+                            # usage_session = session.exec(
+                            #     usage_session_statement
+                            # ).first()
+                            #
+                            # if usage_session is not None:
+                            #     usage_event = next(
+                            #         (
+                            #             event
+                            #             for event in usage_session.usage_events
+                            #             if event.event_type
+                            #             == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
+                            #         ),
+                            #         None,
+                            #     )
+                            #     if usage_event is not None:
+                            #         new_usage_session = UsageSession(
+                            #             status=usage_session.status,
+                            #             organization_id=usage_session.organization_id,
+                            #             user_id="SYSTEM",
+                            #             session_metadata=usage_session.session_metadata,
+                            #         )
+                            #         session.add(new_usage_session)
+                            #         usage_event_credit = UsageEvent(
+                            #             **usage_event.dict(
+                            #                 exclude={
+                            #                     "id",
+                            #                     "bytes_in",
+                            #                     "session_id",
+                            #                     "timestamp",
+                            #                     "event_type",
+                            #                 }
+                            #             ),
+                            #             event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+                            #             session_id=new_usage_session.id,
+                            #             bytes_in=abs(usage_event.bytes_in),
+                            #             timestamp=datetime.now(tz=UTC),
+                            #         )
+                            #         session.add(usage_event_credit)
+                            #
+                            # new_version = Version(
+                            #     primary_asset_id=primary_asset.id,
+                            #     vcs_hash=commit,
+                            #     status=VersionStatus.GENERATING,
+                            #     previous_version_id=version.previous_version_id,
+                            #     vcs_metadata=vcs_info.model_dump()
+                            #     if vcs_info
+                            #     else None,
+                            # )
+                            # session.add(new_version)
+                            # version_id = new_version.id
+                            # print(
+                            #     f"Version already in generating state for {repo_name}, deleting existing version and restarting inspection with new version..."
+                            # )
+                            # break
                 elif (
                     primary_asset.versions
                     and primary_asset.versions[0].status == VersionStatus.CONNECTING
@@ -514,6 +516,7 @@ def download_and_upload_repo(
                     installation_id=installation_id,
                     codebase_settings_auto_commit_docs=False,
                     provider=PrimaryAssetProvider.BITBUCKET,
+                    vcs_auto_update_policy=VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id

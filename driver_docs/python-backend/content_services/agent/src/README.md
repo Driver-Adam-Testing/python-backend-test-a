@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Main entry point for setting up a modal interface and executing block kind agents, with an empty `__init__.py`.
+Exposes a modal interface for configuring and executing various block kind agents.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase sets up a modal interface for the agent package, configuring an application with specific image and secret settings, and defining a function to execute various block kind agents based on input.
+- **[main.py](main.py.md)**: Exposes a modal interface for the agent package, configuring and executing various block kind agents.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

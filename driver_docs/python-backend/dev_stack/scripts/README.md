@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `scripts` folder in the `python-backend` codebase contains a bash script, `modal_deploy.sh`, which is used for deploying content services to a specified environment using Poetry and the `modal` command.
+Bash script for deploying services to a specified environment using Poetry and Modal.
 
 
 ## Files
-- **[modal_deploy.sh](modal_deploy.sh.md)**: The `modal_deploy.sh` file is a bash script used to deploy various content services to a specified environment using Poetry and the `modal` command.
+- **[modal_deploy.sh](modal_deploy.sh.md)**: Bash script for deploying services to a specified environment using Poetry and Modal.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

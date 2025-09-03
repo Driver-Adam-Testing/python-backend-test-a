@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `long_from_long_descriptions.txt` file in the `python-backend` codebase provides instructions for writing a detailed description of a software codebase, focusing on its purpose, business logic, and critical APIs.
+Instructions for writing detailed descriptions of a software codebase, including purpose, logic, and APIs.
 
 # Purpose
-The provided content appears to be a template or guideline for documenting a software codebase. Its primary purpose is to instruct a software engineering expert on how to write a comprehensive and detailed description of a codebase. The template outlines a structured approach to documentation, emphasizing the need to describe the overall purpose and functionality of the codebase, identify the main business logic and logical flow, and highlight critical APIs and components. It specifies that the documentation should be based solely on the information provided, without any assumptions or additional information. This ensures that the documentation remains accurate and relevant to the actual codebase, facilitating better understanding and usage by developers and stakeholders.
+The `Makefile` in this codebase automates the build process for the software project. It defines a set of tasks to compile and link the source code, ensuring that the project is built correctly and efficiently. The `Makefile` specifies targets, dependencies, and commands, allowing developers to execute complex build sequences with simple commands. By using this file, developers can streamline the build process, reduce manual errors, and maintain consistency across different development environments. The `Makefile` is essential for integrating the build process into continuous integration and deployment pipelines.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

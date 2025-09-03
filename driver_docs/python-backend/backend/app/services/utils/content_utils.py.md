@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `content_utils.py` file provides utility functions for extracting and determining the name of content from a `DerivedContent` object, with considerations for backward compatibility in handling JSON content and document paths.
+Functions to extract and return content names from `DerivedContent` objects, with backward compatibility.
 
 # Purpose
-This Python script provides a narrow functionality focused on extracting and returning the name of a content item from a `DerivedContent` object, which is presumably a model from a database. The script includes a helper function [`_get_name_from_content_json`](<#_get_name_from_content_json>) that attempts to parse a JSON string to extract a "name" field, handling potential JSON decoding errors gracefully. The main function, [`get_content_name`](<#get_content_name>), determines the appropriate name to return based on the type and state of the content, with specific logic for handling "application_note" and "supplemental-document" types to ensure backward compatibility with older data formats. This code is a utility script that aids in managing content names, particularly in scenarios where data formats have evolved over time.
+This code provides a function, [`get_content_name`](<#get_content_name>), which retrieves the name of a `DerivedContent` object. It first checks if the `content_name` attribute is set and returns it if available. For `DerivedContent` objects of type "application_note," it attempts to extract the name from a JSON string stored in the `content` attribute, using the helper function [`_get_name_from_content_json`](<#_get_name_from_content_json>). If the name is not found and the content is present, it returns "Generating content..." to indicate a temporary state. For objects of type "supplemental-document," it removes the "documents/" prefix from the `relative_path` attribute for backward compatibility. The code ensures compatibility with older data formats while providing a consistent interface for accessing content names.
 # Imports and Dependencies
 
 ---
@@ -18,28 +18,32 @@ This Python script provides a narrow functionality focused on extracting and ret
 
 ---
 ### \_get\_name\_from\_content\_json<!-- {{#callable:python-backend/backend/app/services/utils/content_utils._get_name_from_content_json}} -->
-The function `_get_name_from_content_json` attempts to extract the 'name' field from a JSON-formatted string.
+[View Source →](<../../../../../../backend/app/services/utils/content_utils.py#L5>)
+
+Extracts the 'name' field from a JSON string or returns None if the JSON is invalid or the 'name' field is absent.
 - **Inputs**:
-    - `content`: A string that is expected to be in JSON format, from which the 'name' field will be extracted.
-- **Control Flow**:
-    - Attempts to parse the input string `content` as JSON using `json.loads`.
-    - If parsing is successful, it retrieves the value associated with the key 'name' from the resulting dictionary.
-    - If a `json.JSONDecodeError` or `TypeError` occurs during parsing, it catches the exception and returns `None`.
-- **Output**: Returns the value associated with the 'name' key if present and parsing is successful; otherwise, returns `None`.
+    - `content`: A string that represents JSON data from which the 'name' field is to be extracted.
+- **Logic and Control Flow**:
+    - Attempts to parse the input string 'content' as JSON using 'json.loads'.
+    - If parsing is successful, retrieves the value associated with the 'name' key from the parsed JSON object.
+    - If the JSON parsing fails due to a 'json.JSONDecodeError' or 'TypeError', returns None.
+- **Output**: A string representing the 'name' field from the JSON data, or None if the JSON is invalid or the 'name' field is not present.
 
 
 ---
 ### get\_content\_name<!-- {{#callable:python-backend/backend/app/services/utils/content_utils.get_content_name}} -->
-The `get_content_name` function retrieves the name of a content item based on its type and stored attributes, ensuring backward compatibility with older data formats.
+[View Source →](<../../../../../../backend/app/services/utils/content_utils.py#L12>)
+
+Retrieves the name of the content based on its type and attributes, with considerations for backward compatibility.
 - **Inputs**:
-    - `content`: An instance of `DerivedContent` which contains attributes like `content_name`, `content_type`, `content`, and `relative_path`.
-- **Control Flow**:
-    - Check if `content.content_name` is set; if so, return it directly.
-    - If the content type is 'application_note', attempt to extract the name from the JSON content using [`_get_name_from_content_json`](<#_get_name_from_content_json>); if successful, return the name.
-    - If the name is not found and `content.content` is present, return 'Generating content...' to indicate a temporary state.
-    - If the content type is 'supplemental-document', return the `relative_path` with the 'documents/' prefix removed for backward compatibility.
-    - If none of the above conditions are met, return the `relative_path` as is.
-- **Output**: A string representing the name of the content, derived from various attributes of the `DerivedContent` instance.
+    - `content`: An instance of `DerivedContent` that contains attributes like `content_name`, `content_type`, `content`, and `relative_path`.
+- **Logic and Control Flow**:
+    - Check if `content.content_name` is set; if so, return it.
+    - If `content.content_type.type_name` is 'application_note', attempt to extract the name from the JSON content using [`_get_name_from_content_json`](<#_get_name_from_content_json>); if successful, return the name.
+    - If the name is not found and `content.content` is present, return 'Generating content...'.
+    - If `content.content_type.type_name` is 'supplemental-document', return `content.relative_path` with the 'documents/' prefix removed.
+    - If none of the above conditions are met, return `content.relative_path`.
+- **Output**: A string representing the name of the content, or a modified path, depending on the content type and attributes.
 - **Functions Called**:
     - [`python-backend/backend/app/services/utils/content_utils._get_name_from_content_json`](<#_get_name_from_content_json>)
 

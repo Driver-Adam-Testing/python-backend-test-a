@@ -7,14 +7,12 @@ from itertools import groupby
 from uuid import UUID
 
 import modal
-from database.models_v1 import (
+from database.models import (
     GithubAppInstallation,
     GitProviderApp,
     GitProviderAppInstallation,
     GitProviderKind,
 )
-from database.models_v2 import PrimaryAsset
-from database.models_v2_enums import PrimaryAssetKind
 from fastapi import (
     APIRouter,
     Depends,
@@ -38,6 +36,7 @@ from app.core.config import settings
 from app.git_providers.utils.errors import (
     GitProviderAccessTokenError,
 )
+from app.git_providers.utils.vcs_auto_update import is_update_required
 from app.repositories.git_provider_repository import (
     git_provider_app_by_id,
     git_provider_app_installation_by_id,
@@ -66,7 +65,7 @@ NO_OS_REPO_NAME = "no-OS"
 NO_OS_GH_ORG = "analogdevicesinc"
 
 aws_config = AWSClientConfig(
-    region_name="us-east-1",
+    region_name=settings.AWS_REGION,
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
 )
@@ -590,61 +589,42 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
         )
 
-    codebase_asset = get_codebase_asset(
-        session, gh_app_install.organization_id, repo_name
-    )
-    if not codebase_asset:
-        logger.warning(
-            "Codebase primary asset record not found for repo: %s", repo_name
-        )
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={"message": ""},
-        )
-
-    repos_added = []
-    repos_deleted = []
-    repos_pushed = [
-        {
-            "id": repo_id,
-            "name": repo_name,
-            "full_name": repository["full_name"],
-            "commit": commit_hash,
-        }
-    ]
-    handle_github_events = modal.Function.lookup(
-        "inspector-v2",
-        "handle_github_events",
-        environment_name=settings.MODAL_ENVIRONMENT,
-    )
-    handle_github_events.spawn(
-        installation_id,
-        gh_app_install.organization_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
+    process_update, message = is_update_required(
+        session=session, org_id=gh_app_install.organization_id, repo_name=repo_name
     )
 
-    logger.info(
-        f"Push event processed for repo: {repo_name}. Processing in background job."
-    )
+    if process_update:
+        repos_added = []
+        repos_deleted = []
+        repos_pushed = [
+            {
+                "id": repo_id,
+                "name": repo_name,
+                "full_name": repository["full_name"],
+                "commit": commit_hash,
+            }
+        ]
+        handle_github_events = modal.Function.lookup(
+            "inspector-v2",
+            "handle_github_events",
+            environment_name=settings.MODAL_ENVIRONMENT,
+        )
+        handle_github_events.spawn(
+            installation_id,
+            gh_app_install.organization_id,
+            repos_added,
+            repos_deleted,
+            repos_pushed,
+        )
+
+        logger.info(
+            f"Push event processed for repo: {repo_name}. Processing in background job."
+        )
+
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
-        content={"message": ""},
+        content=message,
     )
-
-
-def get_codebase_asset(
-    session: CurrentSession, org_id: str, repo_name: str
-) -> PrimaryAsset:
-    primary_asset = session.exec(
-        select(PrimaryAsset).where(
-            PrimaryAsset.organization_id == org_id,
-            PrimaryAsset.display_name == repo_name,
-            PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
-        )
-    ).one_or_none()
-    return primary_asset
 
 
 def handle_ping_event() -> JSONResponse:
@@ -709,12 +689,12 @@ def git_provider_webhook(
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
         # Delegate everything to the service
-        provider_service.handle_webhook_event(
+        content = provider_service.handle_webhook_event(
             session=session, installation_id=installation_id, headers=headers, body=body
         )
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
-            content={"message": "Event processed"},
+            content=content,
         )
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))

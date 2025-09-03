@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_04_10_1652-61e839b3f9cd_adds_not_started_to_autodoc_status.py` file is an Alembic migration script that adds and removes the 'NOT_STARTED' value to the `autodocstatusmessagekind` type in the database.
+Alembic migration script to add and remove 'NOT_STARTED' from autodocstatusmessagekind type.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality, specifically altering a PostgreSQL enum type by adding and removing a value. The script defines two functions: `upgrade()` and `downgrade()`. The `upgrade()` function adds a new value, 'NOT_STARTED', to the `autodocstatusmessagekind` enum type, while the `downgrade()` function removes this value, allowing for reversible database schema changes. The script includes metadata such as revision identifiers to track the migration's place in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `61e839b3f9cd`, which follows the previous migration `21e1da60676a`. The [`upgrade`](<#upgrade>) function adds a new value, `NOT_STARTED`, to the `autodocstatusmessagekind` enum type in the database. The [`downgrade`](<#downgrade>) function removes the `NOT_STARTED` value from the same enum type, allowing for a rollback of the migration if necessary. This script provides narrow functionality, specifically altering an enum type in the database schema.
 # Imports and Dependencies
 
 ---
@@ -17,52 +17,54 @@ This code is a database migration script using Alembic, a database migration too
 
 ---
 ### revision
-- **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for a specific database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the parent revision of the current migration, ensuring that migrations are applied in the correct order.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of database migrations.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define characteristics of the migration such as branching information.
-- **Use**: This variable is used to indicate that there are no specific branch labels associated with this migration script.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no specific branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used as part of the Alembic migration script to indicate that this migration does not depend on any other migrations to be applied first.
-- **Use**: This variable is used to specify that the current migration can be applied independently of other migrations.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_04_10_1652-61e839b3f9cd_adds_not_started_to_autodoc_status.upgrade}} -->
-The `upgrade` function adds a new value 'NOT_STARTED' to the PostgreSQL enum type `autodocstatusmessagekind` using Alembic.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_04_10_1652-61e839b3f9cd_adds_not_started_to_autodoc_status.py#L18>)
+
+Adds a new value 'NOT_STARTED' to the 'autodocstatusmessagekind' type in the database schema.
 - **Inputs**: None
-- **Control Flow**:
-    - The function uses Alembic's `op.execute` to run a raw SQL command.
-    - The SQL command alters the enum type `autodocstatusmessagekind` by adding a new value 'NOT_STARTED'.
-- **Output**: The function does not return any value.
+- **Logic and Control Flow**:
+    - Executes a SQL command to alter the 'autodocstatusmessagekind' type by adding a new value 'NOT_STARTED'.
+- **Output**: No output is returned as the function returns 'None'.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_04_10_1652-61e839b3f9cd_adds_not_started_to_autodoc_status.downgrade}} -->
-The `downgrade` function removes the 'NOT_STARTED' value from the 'autodocstatusmessagekind' type in the database schema.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_04_10_1652-61e839b3f9cd_adds_not_started_to_autodoc_status.py#L24>)
+
+Reverts the database schema change by removing the 'NOT_STARTED' value from the 'autodocstatusmessagekind' type.
 - **Inputs**: None
-- **Control Flow**:
-    - The function executes a SQL command using Alembic's `op.execute` method.
-    - The SQL command alters the 'autodocstatusmessagekind' type by dropping the 'NOT_STARTED' value.
-- **Output**: The function does not return any value; it performs a schema modification.
+- **Logic and Control Flow**:
+    - Executes a SQL command to alter the 'autodocstatusmessagekind' type by dropping the 'NOT_STARTED' value.
+- **Output**: No output is returned as the function returns None.
 
 
 

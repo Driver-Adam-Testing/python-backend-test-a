@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `unittest.yml` file in the `python-backend` codebase defines a GitHub Actions workflow for running unit tests on the `develop` and `staging` branches, setting up the environment, installing dependencies, executing tests, and archiving code coverage results.
+GitHub Actions workflow for running Python backend unit tests on specific branches with code coverage reporting.
 
 # Purpose
-The provided file is a GitHub Actions workflow configuration written in YAML, designed to automate the execution of unit tests for a software project. This workflow is triggered by events such as pushes and pull requests to the "develop" and "staging" branches, as well as manual dispatches. It sets up a concurrency group to manage simultaneous runs and specifies permissions for accessing GitHub resources. The workflow defines a job named "backend-unit-test" that runs on the latest Ubuntu environment, setting up Python 3.12 and installing dependencies using Poetry. It executes unit tests within the backend directory using pytest, with environment variables configured for a local PostgreSQL database. Finally, it archives the code coverage results and posts a coverage comment using specified GitHub Actions.
+This GitHub Actions workflow file automates the execution of unit tests for a software project. It triggers the workflow on `push` and `pull_request` events to the `develop` and `staging` branches, as well as through manual dispatch. The workflow ensures concurrency by grouping jobs and canceling any in-progress jobs if a new one starts. It sets permissions for `id-token` and `contents` to manage access during the workflow. The job `backend-unit-test` runs on the latest Ubuntu environment and includes steps to set up Python 3.12, install dependencies using Poetry, and execute unit tests with `pytest`. Environment variables are configured for a local PostgreSQL server to support the tests. The workflow also archives code coverage results and posts a coverage comment using specified GitHub Actions.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

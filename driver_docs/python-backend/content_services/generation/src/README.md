@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains the `main.py` file, which defines asynchronous functions for processing inline edits and smart instructions using Modal, with dependencies managed via a Debian Slim image and secrets for external services.
+Defines asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
 
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase defines asynchronous functions for processing inline edits and smart instructions using Modal, with dependencies managed via a Debian Slim image and secrets for external services.
+- **[main.py](main.py.md)**: Defines asynchronous functions for inline editing and smart instruction processing using Modal and Pydantic.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

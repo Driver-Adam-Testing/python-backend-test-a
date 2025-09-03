@@ -1,5 +1,5 @@
 from app.git_providers.core.config import GitProviderConfig
-from database.models_v1 import GitProviderApp, GitProviderKind
+from database.models import GitProviderApp, GitProviderKind
 
 
 def load_provider_config(
@@ -21,5 +21,19 @@ def load_provider_config(
             token_endpoint="oauth/token",
             token_info_endpoint="oauth/token/info",
             user_endpoint="api/v4/user",
+        )
+    elif app.provider_kind == GitProviderKind.BITBUCKET:
+        return GitProviderConfig(
+            application_id=app.id,
+            name=app.name,
+            provider_kind=app.provider_kind,
+            base_url="https://bitbucket.org",
+            client_id=None,
+            client_secret=None,
+            redirect_uri=None,
+            token_endpoint=None,
+            user_endpoint=None,
+            authorize_endpoint=None,
+            scope=None,
         )
     raise ValueError(f"Unsupported provider: {app.provider_kind}")

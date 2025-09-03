@@ -3,13 +3,11 @@ import os
 import re
 from urllib.parse import unquote_plus
 
-from database.models_v2 import (
-    PrimaryAsset,
-    Version,
-)
-from database.models_v2_enums import (
+from database.models import PrimaryAsset, Version
+from database.models_enums import (
     PrimaryAssetKind,
     PrimaryAssetProvider,
+    VcsAutoUpdatePolicy,
     VersionStatus,
 )
 from fastapi import HTTPException
@@ -42,11 +40,13 @@ class UploadService:
             asset_kind = PrimaryAssetKind.CODEBASE
             content_type = "application/zip"
             codebase_settings_auto_commit_docs = False
+            vcs_auto_update_policy = VcsAutoUpdatePolicy.AFTER_EVERY_COMMIT
         elif file_name.lower().endswith(".pdf"):
             asset_name = file_name
             asset_kind = PrimaryAssetKind.FILE
             content_type = "application/pdf"
             codebase_settings_auto_commit_docs = None
+            vcs_auto_update_policy = None
         else:
             raise HTTPException(
                 status_code=400, detail="File must be a zip or pdf file"
@@ -66,6 +66,7 @@ class UploadService:
                     repository_id=None,
                     codebase_settings_auto_commit_docs=codebase_settings_auto_commit_docs,
                     provider=PrimaryAssetProvider.USER,
+                    vcs_auto_update_policy=vcs_auto_update_policy,
                 )
                 self.session.add(new_asset)
                 primary_asset_id = new_asset.id

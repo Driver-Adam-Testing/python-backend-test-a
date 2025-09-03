@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `aws_secrets_manager.py` file provides utility functions for writing, reading, and formatting secrets in AWS Secrets Manager, handling potential errors related to credentials and client operations.
+Functions to read, write, and format AWS Secrets Manager secrets using Boto3.
 
 # Purpose
-This Python code file provides a focused functionality for managing secrets in AWS Secrets Manager. It includes functions to write and read secrets, as well as a utility function to format secret keys. The [`write_secret`](<#write_secret>) function checks if a secret already exists and either updates it or creates a new one, while the [`read_secret`](<#read_secret>) function retrieves the value of a specified secret. Both functions utilize the `boto3` library to interact with AWS services, specifically the Secrets Manager, and handle potential exceptions such as missing or partial credentials and client errors. The [`format_secret_key`](<#format_secret_key>) function is a utility that constructs a standardized secret key string based on organization ID, user ID, and provider, ensuring that user IDs are formatted correctly by replacing any pipe characters with underscores.
+This code provides functionality for managing secrets in AWS Secrets Manager. It includes functions to write and read secrets, as well as a utility function to format secret keys. The [`write_secret`](<#write_secret>) function checks if a secret with a given name already exists. If it does, the function updates the secret; if not, it creates a new secret. The [`read_secret`](<#read_secret>) function retrieves the value of a secret by its name. Both functions use the `boto3` library to interact with AWS Secrets Manager and handle exceptions related to AWS credentials and client errors.
 
-The code is structured to be part of a larger application, as indicated by the import of settings from `app.core.config`, which suggests it is not a standalone script but rather a module intended to be integrated into a broader system. The use of AWS credentials from the settings implies that this module is designed to be used in environments where AWS access is configured through these settings. The code does not define public APIs or external interfaces but provides essential internal functions for secret management within an application, focusing on secure and efficient handling of sensitive information in AWS.
+The code also includes a [`format_secret_key`](<#format_secret_key>) function, which constructs a secret key string based on an organization ID, user ID, and provider. This function replaces any pipe characters in the user ID with underscores to ensure a valid key format. The code relies on configuration settings for AWS credentials and region, which are imported from `app.core.config`. This code is intended to be part of a larger application, providing a specific interface for secret management within AWS.
 # Imports and Dependencies
 
 ---
@@ -23,58 +23,64 @@ The code is structured to be part of a larger application, as indicated by the i
 
 ---
 ### region\_name
-- **Type**: `str`
-- **Description**: The `region_name` variable is a string that specifies the AWS region where the AWS Secrets Manager client will operate. In this case, it is set to 'us-east-1', which is one of the AWS regions.
-- **Use**: This variable is used to configure the AWS client to interact with services in the specified region.
+- **Type**: ``str``
+- **Description**: The `region_name` variable is a string that holds the AWS region identifier. It is assigned the value from `settings.AWS_REGION`, which is expected to be configured in the application's settings.
+- **Use**: Used to specify the AWS region when creating a client for AWS services, such as `secretsmanager`, in the `write_secret` and `read_secret` functions.
 
 
 # Functions
 
 ---
 ### write\_secret<!-- {{#callable:python-backend/backend/app/utils/aws_secrets_manager.write_secret}} -->
-The `write_secret` function manages AWS Secrets Manager secrets by either updating an existing secret or creating a new one based on its existence.
+[View Source →](<../../../../../backend/app/utils/aws_secrets_manager.py#L7>)
+
+Writes or updates a secret in AWS Secrets Manager.
 - **Inputs**:
-    - `secret_name`: The name of the secret to be written or updated in AWS Secrets Manager.
-    - `secret_value`: The value of the secret to be stored or updated in AWS Secrets Manager.
-- **Control Flow**:
-    - A new boto3 session is created and a client for AWS Secrets Manager is initialized with specified credentials and region.
-    - The function attempts to read the existing secret using the [`read_secret`](<#read_secret>) function.
-    - If the secret exists, it updates the secret with the new value using `client.update_secret`.
-    - If the secret does not exist, it creates a new secret with the provided name and value using `client.create_secret`.
-    - The function returns the response from the AWS Secrets Manager client if successful.
-    - If a `ClientError` occurs during the process, an error message is printed and the function returns `None`.
-- **Output**: The function returns the response from the AWS Secrets Manager client if the operation is successful, or `None` if an error occurs.
+    - `secret_name`: The name of the secret to write or update.
+    - `secret_value`: The value of the secret to write or update.
+- **Logic and Control Flow**:
+    - Create a new AWS session using `boto3` and initialize a client for the Secrets Manager service.
+    - Attempt to read the existing secret using the [`read_secret`](<#read_secret>) function.
+    - If the secret exists, print a message indicating the secret will be updated and call `update_secret` on the client.
+    - If the secret does not exist, print a message indicating a new secret will be created and call `create_secret` on the client.
+    - Return the response from the AWS Secrets Manager client.
+    - If a `ClientError` occurs, print an error message and return `None`.
+- **Output**: The response from the AWS Secrets Manager client if successful, or `None` if an error occurs.
 - **Functions Called**:
     - [`python-backend/backend/app/utils/aws_secrets_manager.read_secret`](<#read_secret>)
 
 
 ---
 ### read\_secret<!-- {{#callable:python-backend/backend/app/utils/aws_secrets_manager.read_secret}} -->
-The `read_secret` function retrieves a secret value from AWS Secrets Manager using the provided secret name.
+[View Source →](<../../../../../backend/app/utils/aws_secrets_manager.py#L30>)
+
+Retrieves a secret value from AWS Secrets Manager using the specified secret name.
 - **Inputs**:
     - `secret_name`: The name of the secret to retrieve from AWS Secrets Manager.
-- **Control Flow**:
-    - A new boto3 session is created.
-    - A client for AWS Secrets Manager is initialized with the specified region and credentials from settings.
-    - The function attempts to retrieve the secret value using the `get_secret_value` method with the provided `secret_name`.
-    - If successful, the response containing the secret value is returned.
-    - If a `NoCredentialsError` is raised, a message indicating missing credentials is printed.
-    - If a `PartialCredentialsError` is raised, a message indicating incomplete credentials is printed.
-    - If a `ClientError` is raised, an error message is printed and `None` is returned.
-- **Output**: The function returns the response from AWS Secrets Manager containing the secret value if successful, or `None` if an error occurs.
+- **Logic and Control Flow**:
+    - Create a new session using `boto3.session.Session()`.
+    - Initialize a client for AWS Secrets Manager with the specified region and credentials from `settings`.
+    - Attempt to retrieve the secret value using `client.get_secret_value()` with the provided `secret_name`.
+    - If successful, return the response containing the secret value.
+    - If a `NoCredentialsError` occurs, print a message indicating no credentials were found.
+    - If a `PartialCredentialsError` occurs, print a message indicating incomplete credentials.
+    - If a `ClientError` occurs, print the error message and return `None`.
+- **Output**: The secret value retrieved from AWS Secrets Manager, or `None` if an error occurs.
 
 
 ---
 ### format\_secret\_key<!-- {{#callable:python-backend/backend/app/utils/aws_secrets_manager.format_secret_key}} -->
-The function `format_secret_key` formats a secret key string using organization ID, user ID, and provider, replacing any '|' characters in the user ID with underscores.
+[View Source →](<../../../../../backend/app/utils/aws_secrets_manager.py#L51>)
+
+Formats a secret key string using organization ID, user ID, and provider.
 - **Inputs**:
-    - `org_id`: A string representing the organization ID.
-    - `user_id`: A string representing the user ID, which may contain '|' characters that need to be replaced with underscores.
-    - `provider`: A string representing the provider name.
-- **Control Flow**:
-    - The function replaces any '|' characters in the `user_id` with underscores.
-    - It constructs and returns a formatted string in the pattern 'DRIVER_AI_CUSTOMER/{provider}/{org_id}/{user_id}'.
-- **Output**: A formatted string that represents a secret key, structured as 'DRIVER_AI_CUSTOMER/{provider}/{org_id}/{user_id}'.
+    - `org_id`: The organization ID used in the secret key.
+    - `user_id`: The user ID used in the secret key, with '|' characters replaced by '_'.
+    - `provider`: The provider name used in the secret key.
+- **Logic and Control Flow**:
+    - Replace '|' characters in `user_id` with '_' to ensure the user ID is valid for the secret key format.
+    - Return a formatted string that includes the provider, organization ID, and modified user ID in the format 'DRIVER_AI_CUSTOMER/{provider}/{org_id}/{user_id}'.
+- **Output**: A formatted string representing the secret key.
 
 
 

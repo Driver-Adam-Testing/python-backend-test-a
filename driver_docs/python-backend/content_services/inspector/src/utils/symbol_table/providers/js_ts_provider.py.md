@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `js_ts_provider.py` file defines the `JsTsLanguageProvider` class, which provides JavaScript and TypeScript language support by utilizing a parser and resolver.
+Provides a language provider for JavaScript and TypeScript with parser and resolver functionalities.
 
 # Purpose
-This code defines a class `JsTsLanguageProvider` that extends the `LanguageProvider` class, providing specialized functionality for JavaScript and TypeScript language support. It is a narrowly focused piece of code, serving as a part of a larger system that deals with symbol table management or language processing. The class specifies the language it supports through the `language` attribute and provides two class methods, [`get_parser`](<#JsTsLanguageProviderget_parser>) and [`get_resolver`](<#JsTsLanguageProviderget_resolver>), which return instances of `JsTsParser` and `JsTsResolver`, respectively. These methods suggest that the class is responsible for supplying the appropriate parser and resolver for JavaScript and TypeScript, likely to facilitate tasks such as code analysis or transformation within a broader application.
+The code defines a class `JsTsLanguageProvider` that extends the `LanguageProvider` class. It specifies the language as "js_ts" and provides two class methods, [`get_parser`](<#jstslanguageproviderget_parser>) and [`get_resolver`](<#jstslanguageproviderget_resolver>), which return instances of `JsTsParser` and `JsTsResolver`, respectively. This class is part of a system that manages language-specific operations, specifically for JavaScript and TypeScript, by providing the necessary parser and resolver components. The code imports the required classes from the `utils.symbol_table` package, indicating a modular design for handling different programming languages.
 # Imports and Dependencies
 
 ---
@@ -19,43 +19,51 @@ This code defines a class `JsTsLanguageProvider` that extends the `LanguageProvi
 
 ---
 ### JsTsLanguageProvider<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider}} -->
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.py#L6>)
+
 - **Members**:
     - `language`: Specifies the language as 'js_ts'.
-- **Description**: The JsTsLanguageProvider class is a specialized implementation of the LanguageProvider for JavaScript and TypeScript languages. It defines the language attribute as 'js_ts' and provides class methods to retrieve instances of JsTsParser and JsTsResolver, which are responsible for parsing and resolving symbols in JavaScript and TypeScript codebases.
+- **Description**: Provides language-specific functionality for JavaScript and TypeScript by implementing methods to obtain a parser and a resolver for these languages.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_parser`](<#JsTsLanguageProviderget_parser>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_resolver`](<#JsTsLanguageProviderget_resolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_parser`](<#jstslanguageproviderget_parser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_resolver`](<#jstslanguageproviderget_resolver>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<../base.py.md#LanguageProvider>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<../base.py.md#languageprovider>)
 
 **Methods**
 
 ---
 #### JsTsLanguageProvider\.get\_parser<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_parser}} -->
-The `get_parser` method returns an instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#JsTsParser>) class.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.py#L9>)
+
+Returns an instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) class.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: Represents the class `JsTsLanguageProvider` itself, allowing access to class-level attributes and methods.
-- **Control Flow**:
-    - The method directly returns a new instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#JsTsParser>) class without any additional logic or conditions.
-- **Output**: An instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#JsTsParser>) class.
+    - `cls`: Represents the class `JsTsLanguageProvider` itself, not an instance of the class.
+- **Logic and Control Flow**:
+    - Creates a new instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) class.
+    - Returns the created [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) instance.
+- **Output**: An instance of the [`JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>) class.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/js_ts_parser.JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#JsTsParser>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider`](<#JsTsLanguageProvider>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/js_ts_parser.JsTsParser`](<../symbol_parsers/js_ts_parser.py.md#jstsparser>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider`](<#jstslanguageprovider>)  (Base Class)
 
 
 ---
 #### JsTsLanguageProvider\.get\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider.get_resolver}} -->
-The `get_resolver` method returns an instance of the [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#JsTsResolver>) class.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.py#L13>)
+
+Returns an instance of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `JsTsLanguageProvider` itself, passed automatically as this is a class method.
-- **Control Flow**:
-    - The method directly returns a new instance of the [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#JsTsResolver>) class without any additional logic or conditions.
-- **Output**: An instance of the [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#JsTsResolver>) class.
+    - `cls`: Represents the class `JsTsLanguageProvider` itself, not an instance of the class.
+- **Logic and Control Flow**:
+    - Call the constructor of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
+    - Return the newly created [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>) instance.
+- **Output**: An instance of [`JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>).
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#JsTsResolver>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider`](<#JsTsLanguageProvider>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver`](<../import_resolvers/js_ts_resolver.py.md#jstsresolver>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/js_ts_provider.JsTsLanguageProvider`](<#jstslanguageprovider>)  (Base Class)
 
 
 

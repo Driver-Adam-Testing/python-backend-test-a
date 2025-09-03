@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `upload_service.py` file in the `python-backend` codebase implements the `UploadService` class, which provides functionality for creating asset versions, generating upload URLs for zip, pdf, and toml files, and handling associated metadata and exceptions.
+Handles asset version creation and presigned URL generation for file uploads, supporting zip, pdf, and toml files.
 
 # Purpose
-The provided Python code defines an `UploadService` class, which is part of a larger application, likely a web service, that facilitates the uploading of files to a cloud storage service, such as AWS S3. This service is implemented using FastAPI, a modern web framework for building APIs with Python. The `UploadService` class contains methods to handle the creation of asset versions and the generation of pre-signed URLs for uploading files. The class interacts with a database to create and manage records of assets and their versions, using SQLAlchemy for ORM (Object-Relational Mapping) operations. The service supports uploading files with specific extensions, namely `.zip`, `.pdf`, and `.toml`, and enforces these constraints by raising HTTP exceptions for unsupported file types.
+The code defines an `UploadService` class that provides functionality for handling file uploads, specifically for assets and custom configuration files. The class is designed to be used within a web application, as indicated by the use of FastAPI components such as `HTTPException`. The `UploadService` class includes two main methods: [`create_asset_version_and_upload_url`](<#uploadservicecreate_asset_version_and_upload_url>) and [`create_custom_config_and_upload_url`](<#uploadservicecreate_custom_config_and_upload_url>). These methods generate pre-signed URLs for uploading files to an AWS S3 bucket, ensuring that the files are stored securely and can be accessed later.
 
-The [`create_asset_version_and_upload_url`](<#UploadServicecreate_asset_version_and_upload_url>) method is responsible for handling the upload of `.zip` and `.pdf` files, creating corresponding asset and version records in the database, and generating a pre-signed URL for the client to upload the file directly to the storage service. The method also ensures that file names are sanitized and unique within the context of the organization. The [`create_custom_config_and_upload_url`](<#UploadServicecreate_custom_config_and_upload_url>) method is similar but specifically handles `.toml` files, which are likely used for configuration purposes. Both methods utilize a utility function, `generate_put_presigned_url`, to create the pre-signed URLs, which allow clients to upload files securely without needing direct access to the storage service's credentials. The code is structured to be part of a larger application, with dependencies on other modules for authentication, session management, and logging.
+The [`create_asset_version_and_upload_url`](<#uploadservicecreate_asset_version_and_upload_url>) method handles the creation of new asset versions and generates upload URLs for files with `.zip` or `.pdf` extensions. It interacts with a database to store metadata about the assets and their versions, using SQLAlchemy models such as `PrimaryAsset` and `Version`. The method also ensures that file names are sanitized and unique within the organization. The [`create_custom_config_and_upload_url`](<#uploadservicecreate_custom_config_and_upload_url>) method is similar but is specifically for `.toml` configuration files. Both methods use the `generate_put_presigned_url` utility to create the upload URLs, which include metadata about the organization and the asset.
 # Imports and Dependencies
 
 ---
@@ -19,6 +19,7 @@ The [`create_asset_version_and_upload_url`](<#UploadServicecreate_asset_version_
 - `database.models_v2.PrimaryAsset`
 - `database.models_v2.Version`
 - `database.models_v2_enums.PrimaryAssetKind`
+- `database.models_v2_enums.PrimaryAssetProvider`
 - `database.models_v2_enums.VersionStatus`
 - `fastapi.HTTPException`
 - `sqlalchemy.exc.IntegrityError`
@@ -36,75 +37,80 @@ The [`create_asset_version_and_upload_url`](<#UploadServicecreate_asset_version_
 
 ---
 ### UploadService<!-- {{#class:python-backend/backend/app/services/upload_service.UploadService}} -->
+[View Source →](<../../../../../backend/app/services/upload_service.py#L32>)
+
 - **Members**:
-    - `session`: Holds the current session for database operations.
-- **Description**: The `UploadService` class is responsible for handling the creation of asset versions and generating upload URLs for files, specifically supporting zip, pdf, and toml file types. It manages the process of creating new assets and versions in the database, ensuring that file names are sanitized and unique, and generating presigned URLs for uploading files to a storage service. The class also handles exceptions related to asset creation, such as duplicate asset names, and logs relevant information during the upload URL generation process.
+    - `session`: Stores the current session for database operations.
+- **Description**: Manages the creation of asset versions and upload URLs for files, ensuring they are either zip or pdf format, and handles custom configuration uploads in toml format. It uses the current session to interact with the database and generates presigned URLs for uploading files to AWS S3.
 - **Methods**:
-    - [`python-backend/backend/app/services/upload_service.UploadService.__init__`](<#UploadService__init__>)
-    - [`python-backend/backend/app/services/upload_service.UploadService.create_asset_version_and_upload_url`](<#UploadServicecreate_asset_version_and_upload_url>)
-    - [`python-backend/backend/app/services/upload_service.UploadService.create_custom_config_and_upload_url`](<#UploadServicecreate_custom_config_and_upload_url>)
+    - [`python-backend/backend/app/services/upload_service.UploadService.__init__`](<#uploadservice__init__>)
+    - [`python-backend/backend/app/services/upload_service.UploadService.create_asset_version_and_upload_url`](<#uploadservicecreate_asset_version_and_upload_url>)
+    - [`python-backend/backend/app/services/upload_service.UploadService.create_custom_config_and_upload_url`](<#uploadservicecreate_custom_config_and_upload_url>)
 
 **Methods**
 
 ---
 #### UploadService\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/services/upload_service.UploadService.__init__}} -->
-The `__init__` method initializes an instance of the `UploadService` class by setting up a session for database operations.
+[View Source →](<../../../../../backend/app/services/upload_service.py#L33>)
+
+Initializes an instance of the `UploadService` class with a given session.
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to manage database transactions and operations.
-- **Control Flow**:
+    - `session`: An instance of `CurrentSession` that manages the database session for the `UploadService` instance.
+- **Logic and Control Flow**:
     - Assigns the provided `session` to the instance variable `self.session`.
-- **Output**: This method does not return any value as it is a constructor for the class.
-- **See also**: [`python-backend/backend/app/services/upload_service.UploadService`](<#UploadService>)  (Base Class)
+- **Output**: No output is returned as this is a constructor method.
+- **See also**: [`python-backend/backend/app/services/upload_service.UploadService`](<#uploadservice>)  (Base Class)
 
 
 ---
 #### UploadService\.create\_asset\_version\_and\_upload\_url<!-- {{#callable:python-backend/backend/app/services/upload_service.UploadService.create_asset_version_and_upload_url}} -->
-The `create_asset_version_and_upload_url` method creates a new asset and version in the database and generates a presigned URL for uploading the asset file to S3.
+[View Source →](<../../../../../backend/app/services/upload_service.py#L36>)
+
+Creates a new asset version and generates a presigned URL for uploading a file.
 - **Inputs**:
-    - `user`: A `UserToken` object representing the authenticated user, containing information such as the organization ID and name.
-    - `request`: An `UploadRequest` object containing the file path of the asset to be uploaded.
-- **Control Flow**:
-    - Extract the file name from the request's file path and determine the asset type based on the file extension (either '.zip' or '.pdf').
-    - Raise an HTTPException if the file is not a zip or pdf file.
-    - Sanitize the file name by replacing non-alphanumeric characters and spaces with underscores.
-    - Hash the organization ID to create a unique identifier for the asset's storage path.
-    - Begin a database session and create a new [`PrimaryAsset`](<../../../driver_db/database/models_v2.py.md#PrimaryAsset>) entry with the determined asset name, kind, and organization ID.
-    - Add the new asset to the session and retrieve its ID.
-    - Create a new [`Version`](<../../../driver_db/database/models_v2.py.md#Version>) entry associated with the new asset, set its status to 'CONNECTING', and add it to the session.
-    - Construct the relative path for the asset using the asset and version IDs and the sanitized file name.
-    - Generate a presigned URL for uploading the asset to S3 using the constructed upload key and asset metadata.
-    - Handle `IntegrityError` exceptions by logging an error and raising an HTTPException if an asset with the same name already exists.
-    - Log the successful generation of the upload URL.
-    - Return an [`UploadResponse`](<../schemas/upload_schema.py.md#UploadResponse>) containing the upload URL, primary asset ID, and version ID.
-- **Output**: An [`UploadResponse`](<../schemas/upload_schema.py.md#UploadResponse>) object containing the generated upload URL, the primary asset ID, and the version ID.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `request`: An `UploadRequest` object containing the file path of the asset to upload.
+- **Logic and Control Flow**:
+    - Extracts the file name from the `request.file_path` and checks its extension to determine the asset kind and content type.
+    - Replaces non-alphanumeric characters in the file name with underscores and removes spaces.
+    - Hashes the organization ID from the `user` object to create a unique identifier for the asset.
+    - Begins a database session to create a new [`PrimaryAsset`](<../../../driver_db/database/models_v2.py.md#primaryasset>) and [`Version`](<../../../driver_db/database/models_v2.py.md#version>) entry in the database.
+    - Generates a relative path and upload key for the asset using the asset and version IDs.
+    - Creates asset metadata including organization ID, organization name, provider, version ID, asset name, and asset kind.
+    - Generates a presigned URL for uploading the asset using the [`generate_put_presigned_url`](<../utils/aws_s3.py.md#generate_put_presigned_url>) function.
+    - Handles `IntegrityError` exceptions by logging an error and raising an `HTTPException` if an asset with the same name already exists.
+    - Logs the successful generation of the upload URL.
+- **Output**: An [`UploadResponse`](<../schemas/upload_schema.py.md#uploadresponse>) object containing the presigned upload URL, primary asset ID, and version ID.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../driver_db/database/models_v2.py.md#PrimaryAsset>)
-    - [`python-backend/driver_db/database/models_v2.Version`](<../../../driver_db/database/models_v2.py.md#Version>)
+    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../driver_db/database/models_v2.py.md#primaryasset>)
+    - [`python-backend/driver_db/database/models_v2.Version`](<../../../driver_db/database/models_v2.py.md#version>)
     - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](<../utils/aws_s3.py.md#generate_put_presigned_url>)
-    - [`python-backend/backend/app/schemas/upload_schema.UploadResponse`](<../schemas/upload_schema.py.md#UploadResponse>)
-- **See also**: [`python-backend/backend/app/services/upload_service.UploadService`](<#UploadService>)  (Base Class)
+    - [`python-backend/backend/app/schemas/upload_schema.UploadResponse`](<../schemas/upload_schema.py.md#uploadresponse>)
+- **See also**: [`python-backend/backend/app/services/upload_service.UploadService`](<#uploadservice>)  (Base Class)
 
 
 ---
 #### UploadService\.create\_custom\_config\_and\_upload\_url<!-- {{#callable:python-backend/backend/app/services/upload_service.UploadService.create_custom_config_and_upload_url}} -->
-The `create_custom_config_and_upload_url` method generates a presigned URL for uploading a TOML configuration file to a specific location in an S3 bucket, ensuring the file name is sanitized and the organization ID is hashed.
+[View Source →](<../../../../../backend/app/services/upload_service.py#L111>)
+
+Generates a presigned URL for uploading a TOML configuration file to a specific location in an S3 bucket.
 - **Inputs**:
     - `user`: An instance of `UserToken` representing the authenticated user, which contains the user's organization ID.
-    - `request`: An instance of `UploadAutoDocConfigRequest` containing the file path and page node ID for the upload request.
-- **Control Flow**:
-    - Extracts the file name from the provided file path in the request.
-    - Checks if the file name ends with '.toml'; raises an HTTPException if not.
-    - Sanitizes the file name by replacing non-alphanumeric characters with underscores and removing spaces.
-    - Retrieves the organization ID from the user token and hashes it using SHA-256, truncating the hash to 63 characters.
-    - Constructs the upload key using the hashed organization ID, page node ID, and a fixed file name 'custom_config.toml'.
+    - `request`: An instance of `UploadAutoDocConfigRequest` containing the file path and page node ID for the upload.
+- **Logic and Control Flow**:
+    - Extracts the file name from the `request.file_path` and sets the content type to 'application/toml'.
+    - Checks if the file name ends with '.toml'; if not, raises an `HTTPException` with a 400 status code.
+    - Sanitizes the file name by replacing non-alphanumeric characters with underscores and spaces with underscores.
+    - Retrieves the organization ID from the `user` and generates a SHA-256 hash of it, truncated to 63 characters.
+    - Constructs the `upload_key` using the hashed organization ID, `request.page_node_id`, and a fixed file name 'custom_config.toml'.
     - Creates metadata containing the unhashed organization ID.
-    - Generates a presigned URL for uploading the file using the constructed upload key, content type, and metadata.
-    - Returns an [`UploadAutoDocConfigResponse`](<../schemas/upload_schema.py.md#UploadAutoDocConfigResponse>) containing the generated upload URL.
-- **Output**: An [`UploadAutoDocConfigResponse`](<../schemas/upload_schema.py.md#UploadAutoDocConfigResponse>) object containing the presigned upload URL.
+    - Calls [`generate_put_presigned_url`](<../utils/aws_s3.py.md#generate_put_presigned_url>) with the `upload_key`, content type, and metadata to generate the upload URL.
+    - Returns an [`UploadAutoDocConfigResponse`](<../schemas/upload_schema.py.md#uploadautodocconfigresponse>) containing the generated upload URL.
+- **Output**: An instance of [`UploadAutoDocConfigResponse`](<../schemas/upload_schema.py.md#uploadautodocconfigresponse>) containing the generated presigned upload URL.
 - **Functions Called**:
     - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](<../utils/aws_s3.py.md#generate_put_presigned_url>)
-    - [`python-backend/backend/app/schemas/upload_schema.UploadAutoDocConfigResponse`](<../schemas/upload_schema.py.md#UploadAutoDocConfigResponse>)
-- **See also**: [`python-backend/backend/app/services/upload_service.UploadService`](<#UploadService>)  (Base Class)
+    - [`python-backend/backend/app/schemas/upload_schema.UploadAutoDocConfigResponse`](<../schemas/upload_schema.py.md#uploadautodocconfigresponse>)
+- **See also**: [`python-backend/backend/app/services/upload_service.UploadService`](<#uploadservice>)  (Base Class)
 
 
 

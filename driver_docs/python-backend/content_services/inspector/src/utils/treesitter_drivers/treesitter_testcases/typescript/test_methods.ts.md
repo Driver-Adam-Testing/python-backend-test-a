@@ -3,1025 +3,1173 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_methods.ts` file is a comprehensive test suite for various TypeScript class method features, including access modifiers, static methods, async methods, generators, getters and setters, generics, method overloading, special methods, decorators, abstract methods, private fields, method chaining, complex methods, interface implementation, object literal methods, and mixin methods.
+Test cases for various TypeScript class methods, including access modifiers, async, and static methods.
 
 # Purpose
-This TypeScript file serves as a comprehensive test suite for exploring and demonstrating various method types and features within TypeScript classes. It includes a wide array of method implementations, showcasing different access modifiers (public, private, protected), static methods, asynchronous methods, generators, getters and setters, generic methods, method overloading, and special methods such as those using symbols and computed properties. The file also illustrates advanced concepts like method chaining, complex method patterns (e.g., higher-order functions, currying, and destructured parameters), and the use of decorators. Additionally, it demonstrates the implementation of interfaces, abstract classes, and mixins, providing a rich set of examples for understanding how these features can be utilized in TypeScript.
+The code is a comprehensive test suite for various TypeScript class methods, demonstrating a wide range of method types and features. It includes classes that showcase basic method definitions, access modifiers, static methods, asynchronous methods, generator methods, getters and setters, generic methods, method overloading, and special methods such as those using symbols and computed properties. The code also illustrates advanced concepts like method chaining, complex methods involving higher-order functions, currying, destructured parameters, type predicates, and assertions. Additionally, it covers interface implementation, object literals with methods, and mixin patterns.
 
-The file is structured into multiple classes, each focusing on a specific aspect of method functionality. For instance, `BasicMethods` covers simple method definitions, `AccessModifiers` explores different access levels, and `AsyncMethods` delves into asynchronous operations. The `SpecialMethods` class highlights unique method features like symbol-based methods and computed properties, while `GenericMethods` demonstrates the use of generics in method definitions. The file also includes examples of method overloading, abstract methods, and the implementation of interfaces, as seen in `MethodOverloading`, `AbstractMethods`, and `InterfaceImplementation`, respectively. Furthermore, it provides examples of methods within object literals and the use of mixins to extend class functionality. Overall, this file serves as a detailed reference for understanding the diverse capabilities of methods in TypeScript.
+Each class in the code serves to demonstrate specific TypeScript features and method types. For example, `BasicMethods` shows simple method usage with optional and default parameters, while `AccessModifiers` highlights the use of public, private, and protected access levels. `StaticMethods` and `AsyncMethods` illustrate static and asynchronous method implementations, respectively. The `GenericMethods` class demonstrates the use of generics in methods, and `MethodOverloading` shows how to overload methods. The code also includes examples of abstract methods and their implementation in `AbstractMethods` and `ConcreteImplementation`, as well as the use of private fields and methods in `PrivateFieldMethods`. The `ComplexMethods` class provides examples of higher-order functions, curried methods, and type predicates, while `MethodInterface` and `InterfaceImplementation` demonstrate interface usage. The code concludes with examples of methods in object literals and a mixin pattern using [`Loggable`](<#python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methodsloggable>) and `MixinClass`.
 # Global Variables
 
 ---
 ### objectWithMethods
-- **Type**: `object`
-- **Description**: `objectWithMethods` is a global object that contains a collection of methods, including a regular method, an asynchronous method, a generator method, a getter, a setter, and a computed property method. Each method demonstrates different JavaScript features such as async/await, generators, and computed property names.
-- **Use**: This variable is used to encapsulate various types of methods within a single object, showcasing different JavaScript method types and their usage.
+- **Type**: ``object``
+- **Description**: Contains multiple methods including a regular method, an asynchronous method, a generator method, a getter, a setter, and a computed method. Each method returns a specific string or performs a specific action, such as logging a value.
+- **Use**: Used to group related methods in a single object for easy access and invocation.
 
 
 # Classes
 
 ---
 ### BasicMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods}} -->
-- **Description**: The `BasicMethods` class provides simple method examples in TypeScript, demonstrating the use of optional parameters and default parameter values. It includes two methods: `methodWithOptional`, which checks if an optional parameter is provided, and `methodWithDefault`, which returns a string with a default value if no argument is passed.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L3>)
+
+- **Description**: Defines two methods: `methodWithOptional`, which checks if an optional parameter is provided, and `methodWithDefault`, which returns a string with a default value if none is provided.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithOptional`](<#BasicMethodsmethodWithOptional>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithDefault`](<#BasicMethodsmethodWithDefault>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithOptional`](<#basicmethodsmethodwithoptional>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithDefault`](<#basicmethodsmethodwithdefault>)
 
 **Methods**
 
 ---
 #### BasicMethods\.methodWithOptional<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithOptional}} -->
-The `methodWithOptional` method checks if an optional number parameter is provided and returns a boolean indicating its presence.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L5>)
+
+Checks if the optional parameter is defined.
 - **Inputs**:
-    - `required`: A required string parameter that must be provided when calling the method.
-    - `optional`: An optional number parameter that may or may not be provided when calling the method.
+    - `required`: A required string parameter.
+    - `optional`: An optional number parameter.
 - **Control Flow**:
-    - The method checks if the `optional` parameter is not `undefined`.
-    - If `optional` is not `undefined`, the method returns `true`.
-    - If `optional` is `undefined`, the method returns `false`.
-- **Output**: A boolean value indicating whether the `optional` parameter is defined.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods`](<#BasicMethods>)  (Base Class)
+    - Checks if the `optional` parameter is not `undefined`.
+- **Output**: Returns `true` if `optional` is defined, otherwise returns `false`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods`](<#basicmethods>)  (Base Class)
 
 
 ---
 #### BasicMethods\.methodWithDefault<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithDefault}} -->
-The `methodWithDefault` method returns the provided string value or a default string if no value is provided.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L9>)
+
+Returns the input string or a default string if no input is provided.
 - **Inputs**:
-    - `value`: A string input that defaults to 'default' if not provided.
+    - `value`: A string input with a default value of 'default'.
 - **Control Flow**:
-    - The method checks if a value is provided.
-    - If a value is provided, it returns that value.
-    - If no value is provided, it returns the default value 'default'.
+    - Checks if the 'value' parameter is provided.
+    - If 'value' is not provided, uses the default value 'default'.
+    - Returns the 'value' parameter.
 - **Output**: The method returns a string, which is either the provided input or the default value 'default'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods`](<#BasicMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods`](<#basicmethods>)  (Base Class)
 
 
 
 ---
 ### AccessModifiers<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers}} -->
-- **Description**: The `AccessModifiers` class demonstrates the use of different access modifiers in TypeScript. It includes a public method `publicMethod`, a private method `privateMethod`, and a protected method `protectedMethod`, showcasing how these access levels control the visibility and accessibility of class methods.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L14>)
+
+- **Description**: Defines three methods with different access levels: `publicMethod` is accessible from outside the class, `privateMethod` is only accessible within the class, and `protectedMethod` is accessible within the class and its subclasses.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.publicMethod`](<#AccessModifierspublicMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.privateMethod`](<#AccessModifiersprivateMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.protectedMethod`](<#AccessModifiersprotectedMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.publicMethod`](<#accessmodifierspublicmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.privateMethod`](<#accessmodifiersprivatemethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.protectedMethod`](<#accessmodifiersprotectedmethod>)
 
 **Methods**
 
 ---
 #### AccessModifiers\.publicMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.publicMethod}} -->
-The `publicMethod` logs the string 'public' to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L15>)
+
+Logs the string 'public' to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The method executes a single statement that logs the string 'public' to the console.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#AccessModifiers>)  (Base Class)
+    - Calls `console.log` with the string 'public'.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#accessmodifiers>)  (Base Class)
 
 
 ---
 #### AccessModifiers\.privateMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.privateMethod}} -->
-The `privateMethod` is a private method in the `AccessModifiers` class that returns a string 'private'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L19>)
+
+Returns the string 'private'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as private, meaning it can only be accessed within the `AccessModifiers` class.
-    - The method returns the string 'private' immediately when called.
-- **Output**: A string 'private'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#AccessModifiers>)  (Base Class)
+    - Returns the string 'private'.
+- **Output**: A string with the value 'private'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#accessmodifiers>)  (Base Class)
 
 
 ---
 #### AccessModifiers\.protectedMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.protectedMethod}} -->
-The `protectedMethod` is a protected method in the `AccessModifiers` class that returns the number 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L23>)
+
+Returns the number 42.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as protected, meaning it can only be accessed within its class and by derived classes.
-    - The method directly returns the number 42 without any additional logic or computation.
-- **Output**: The method returns a number, specifically the integer 42.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#AccessModifiers>)  (Base Class)
+    - Returns the number 42.
+- **Output**: A number, specifically 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#accessmodifiers>)  (Base Class)
 
 
 
 ---
 ### StaticMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L28>)
+
 - **Members**:
-    - `#privateStaticField`: A private static field holding a string value.
-- **Description**: The `StaticMethods` class demonstrates the use of static methods and private static fields in TypeScript. It includes a private static method, a protected static method, and a private static field using the ES2022 private field syntax. This class serves as an example of how to encapsulate static functionality and data within a class, ensuring that certain methods and fields are only accessible within the class itself or its subclasses.
+    - `#privateStaticField`: A private static field with ES2022 syntax.
+- **Description**: Contains static methods and a private static field using ES2022 syntax. It includes a private static method `privateStatic` that returns a string, a protected static method `protectedStatic` that returns a boolean, and a private static method `#privateStaticMethod` that accesses the private static field `#privateStaticField`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.privateStatic`](<#StaticMethodsprivateStatic>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.protectedStatic`](<#StaticMethodsprotectedStatic>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.#privateStaticMethod`](<#StaticMethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.privateStatic`](<#staticmethodsprivatestatic>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.protectedStatic`](<#staticmethodsprotectedstatic>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.#privateStaticMethod`](<#staticmethods>)
 
 **Methods**
 
 ---
 #### StaticMethods\.privateStatic<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.privateStatic}} -->
-The `privateStatic` method is a private static method in the `StaticMethods` class that returns a fixed string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L29>)
+
+Returns the string 'private static'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a private static method, meaning it can only be accessed within the `StaticMethods` class and is associated with the class itself rather than any instance.
-    - The method returns the string 'private static' immediately when called.
-- **Output**: A string 'private static'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#StaticMethods>)  (Base Class)
+    - Returns the string 'private static'.
+- **Output**: A string with the value 'private static'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#staticmethods>)  (Base Class)
 
 
 ---
 #### StaticMethods\.protectedStatic<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.protectedStatic}} -->
-The `protectedStatic` method is a protected static method in the `StaticMethods` class that returns a boolean value of `true`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L33>)
+
+Returns a boolean value of `true`.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a static method, meaning it belongs to the class itself rather than an instance of the class.
-    - The method is protected, indicating it can only be accessed within its class and by subclasses.
-    - The method simply returns the boolean value `true`.
-- **Output**: The method returns a boolean value `true`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#StaticMethods>)  (Base Class)
+    - The method returns the boolean value `true`.
+- **Output**: A boolean value `true`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#staticmethods>)  (Base Class)
 
 
 ---
 #### StaticMethods\.\#privateStaticMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.#privateStaticMethod}} -->
-The `#privateStaticMethod` is a private static method that returns the value of a private static field within the `StaticMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L39>)
+
+Returns the value of the private static field `#privateStaticField`.
 - **Inputs**: None
 - **Control Flow**:
-    - The method accesses the private static field `#privateStaticField` of the `StaticMethods` class.
-    - It returns the value of `#privateStaticField`.
-- **Output**: The method returns a string, which is the value of the private static field `#privateStaticField`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#StaticMethods>)  (Base Class)
+    - Accesses the private static field `#privateStaticField` of the `StaticMethods` class.
+    - Returns the value of `#privateStaticField`.
+- **Output**: A string that is the value of the private static field `#privateStaticField`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#staticmethods>)  (Base Class)
 
 
 
 ---
 ### AsyncMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods}} -->
-- **Description**: The `AsyncMethods` class provides a collection of asynchronous methods, including an asynchronous method with parameters that fetches data from a URL, a private asynchronous method returning a number, a static asynchronous method returning a boolean, and an asynchronous generator yielding a sequence of numbers. This class demonstrates various asynchronous programming patterns in TypeScript, showcasing the use of async/await, static async methods, and async generators.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L44>)
+
+- **Description**: Implements asynchronous methods including an `asyncWithParams` method that fetches data from a URL and returns a JSON response, a `privateAsync` method that returns a number, a `staticAsync` method that returns a boolean, and an `asyncGenerator` method that yields a sequence of numbers.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncWithParams`](<#AsyncMethodsasyncWithParams>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.privateAsync`](<#AsyncMethodsprivateAsync>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.staticAsync`](<#AsyncMethodsstaticAsync>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncGenerator`](<#AsyncMethodsasyncGenerator>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncWithParams`](<#asyncmethodsasyncwithparams>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.privateAsync`](<#asyncmethodsprivateasync>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.staticAsync`](<#asyncmethodsstaticasync>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncGenerator`](<#asyncmethodsasyncgenerator>)
 
 **Methods**
 
 ---
 #### AsyncMethods\.asyncWithParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncWithParams}} -->
-The `asyncWithParams` method fetches data from a given URL and returns the parsed JSON response.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L45>)
+
+Fetches data from a given URL and returns the parsed JSON response.
 - **Inputs**:
     - `url`: A string representing the URL from which to fetch data.
 - **Control Flow**:
-    - The method uses the `fetch` API to send a request to the specified URL.
-    - It awaits the response from the `fetch` call.
-    - Once the response is received, it calls the `json()` method on the response to parse the JSON data.
-    - The parsed JSON data is returned as the result of the method.
+    - Uses the `fetch` function to send a request to the specified `url`.
+    - Awaits the response from the `fetch` call.
+    - Calls the `json` method on the response to parse it as JSON.
+    - Returns the parsed JSON data.
 - **Output**: A promise that resolves to the parsed JSON data from the response.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#asyncmethods>)  (Base Class)
 
 
 ---
 #### AsyncMethods\.privateAsync<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.privateAsync}} -->
-The `privateAsync` method is an asynchronous private method that returns a promise resolving to the number 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L50>)
+
+Returns the number 42 asynchronously.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as an asynchronous function, indicated by the `async` keyword.
-    - It immediately returns a promise that resolves to the number 42.
-- **Output**: A promise that resolves to the number 42.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+    - The method is defined as an asynchronous function.
+    - The method immediately returns the number 42 wrapped in a `Promise`.
+- **Output**: A `Promise` that resolves to the number 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#asyncmethods>)  (Base Class)
 
 
 ---
 #### AsyncMethods\.staticAsync<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.staticAsync}} -->
-The `staticAsync` method is a static asynchronous method that returns a resolved promise with a boolean value of `true`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L54>)
+
+Returns a resolved promise with the boolean value `true`.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as static and asynchronous, meaning it can be called on the class itself without an instance and it returns a promise.
-    - The method immediately returns a resolved promise with the boolean value `true`.
+    - The method returns a resolved promise with the value `true`.
 - **Output**: A promise that resolves to the boolean value `true`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#asyncmethods>)  (Base Class)
 
 
 ---
 #### AsyncMethods\.asyncGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncGenerator}} -->
-The `asyncGenerator` method is an asynchronous generator that yields a sequence of numbers.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L58>)
+
+Implements an asynchronous generator that yields a sequence of numbers.
 - **Inputs**: None
 - **Control Flow**:
     - The method is defined as an asynchronous generator using the `async *` syntax.
-    - It yields the number 1, then 2, and finally 3 in sequence.
-- **Output**: An `AsyncGenerator` that yields the numbers 1, 2, and 3 in sequence.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+    - The method yields the number `1`.
+    - The method yields the number `2`.
+    - The method yields the number `3`.
+- **Output**: An `AsyncGenerator` that yields the numbers `1`, `2`, and `3` sequentially.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#asyncmethods>)  (Base Class)
 
 
 
 ---
 ### GeneratorMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods}} -->
-- **Description**: The `GeneratorMethods` class is a collection of generator functions that demonstrate different types of generator usage in TypeScript. It includes a generator method with a return value, a private generator, a static generator, and an implementation of the iterator protocol using a generator. This class serves as an example of how to define and use generator functions in a TypeScript class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L65>)
+
+- **Description**: Defines a class with several generator methods, including a generator with a return value, a private generator, a static generator, and an iterator method that delegates to another generator.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.generatorWithReturn`](<#GeneratorMethodsgeneratorWithReturn>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.privateGenerator`](<#GeneratorMethodsprivateGenerator>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.staticGenerator`](<#GeneratorMethodsstaticGenerator>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.generatorWithReturn`](<#generatormethodsgeneratorwithreturn>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.privateGenerator`](<#generatormethodsprivategenerator>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.staticGenerator`](<#generatormethodsstaticgenerator>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.[Symbol.iterator]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.[Symbol.iterator]>)
 
 **Methods**
 
 ---
 #### GeneratorMethods\.generatorWithReturn<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.generatorWithReturn}} -->
-The `generatorWithReturn` method is a generator function that yields two numbers and then returns a string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L66>)
+
+Generates a sequence of numbers and returns a string upon completion.
 - **Inputs**: None
 - **Control Flow**:
-    - The generator function starts execution and yields the number 1.
-    - It then yields the number 2.
-    - After yielding the second number, the generator function returns the string 'done'.
-- **Output**: The output is a generator that yields the numbers 1 and 2 sequentially, and upon completion, returns the string 'done'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+    - Yields the number 1.
+    - Yields the number 2.
+    - Returns the string 'done'.
+- **Output**: A `Generator` object that yields numbers and returns a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#generatormethods>)  (Base Class)
 
 
 ---
 #### GeneratorMethods\.privateGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.privateGenerator}} -->
-The `privateGenerator` method is a private generator function that yields a single string value 'private'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L72>)
+
+Yields the string 'private' when iterated.
 - **Inputs**: None
 - **Control Flow**:
-    - The generator function is defined as a private method within the `GeneratorMethods` class.
-    - When the generator is invoked, it yields the string 'private'.
-- **Output**: The output is a generator object that yields the string 'private' when iterated.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+    - Yields the string 'private'.
+- **Output**: A generator that yields the string 'private'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#generatormethods>)  (Base Class)
 
 
 ---
 #### GeneratorMethods\.staticGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.staticGenerator}} -->
-The `staticGenerator` method is a static generator function that yields a single string value 'static'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L76>)
+
+Generates a single string value 'static' when iterated.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a static generator function, meaning it can be called on the class itself rather than an instance of the class.
-    - The function uses the `yield` keyword to produce a single value, 'static', when the generator is iterated over.
-- **Output**: The output is a generator object that yields the string 'static' when iterated.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+    - The generator function is defined as a static method within the `GeneratorMethods` class.
+    - When the generator is invoked, it yields the string 'static'.
+- **Output**: A generator object that yields the string 'static'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#generatormethods>)  (Base Class)
 
 
 ---
 #### GeneratorMethods\.\[Symbol\.iterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.[Symbol.iterator]}} -->
-The [Symbol.iterator] method in the GeneratorMethods class returns an iterator that delegates to the simpleGenerator method.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L80>)
+
+Implements the iterator protocol for the `GeneratorMethods` class by delegating to the `simpleGenerator` method.
 - **Inputs**: None
 - **Control Flow**:
-    - The method uses the yield* expression to delegate iteration to the simpleGenerator method.
-- **Output**: An iterator that yields values from the simpleGenerator method.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+    - Uses the `yield*` expression to delegate iteration to the `simpleGenerator` method.
+- **Output**: An iterator object that iterates over the values produced by the `simpleGenerator` method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#generatormethods>)  (Base Class)
 
 
 
 ---
 ### GettersSetters<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L85>)
+
 - **Members**:
-    - `_value`: A private number variable used to store the value for the getter and setter.
-    - `_data`: A private string variable used to store data for the getter and setter.
-- **Description**: The GettersSetters class demonstrates the use of getters and setters in TypeScript, providing both instance and static accessors. It includes private, protected, and public accessors, showcasing different levels of access control. The class also illustrates how getters and setters can handle different data types, with a private variable storing the actual data. This class is useful for understanding encapsulation and data manipulation through accessor methods in TypeScript.
+    - `_value`: Stores a private number value.
+    - `_data`: Stores a private string value.
+- **Description**: Manages access to private properties through getters and setters, including static and protected accessors, and supports type conversion for the `data` property.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value`](<#GettersSettersvalue>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value`](<#GettersSettersvalue>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.readOnlyProp`](<#GettersSettersreadOnlyProp>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.privateGetter`](<#GettersSettersprivateGetter>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.protectedSetter`](<#GettersSettersprotectedSetter>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticGetter`](<#GettersSettersstaticGetter>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticSetter`](<#GettersSettersstaticSetter>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data`](<#GettersSettersdata>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data`](<#GettersSettersdata>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value`](<#getterssettersvalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value`](<#getterssettersvalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.readOnlyProp`](<#getterssettersreadonlyprop>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.privateGetter`](<#getterssettersprivategetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.protectedSetter`](<#getterssettersprotectedsetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticGetter`](<#getterssettersstaticgetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticSetter`](<#getterssettersstaticsetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data`](<#getterssettersdata>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data`](<#getterssettersdata>)
 
 **Methods**
 
 ---
 #### GettersSetters\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value}} -->
-The `value` getter method retrieves the current value of the private `_value` property from the `GettersSetters` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L88>)
+
+Provides access to the private `_value` property of the `GettersSetters` class.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private `_value` property.
-- **Output**: The method returns a number, which is the current value of the `_value` property.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Returns the value of the private `_value` property.
+- **Output**: The method returns a `number` which is the current value of the `_value` property.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value}} -->
-The `value` setter method updates the private `_value` property of the `GettersSetters` class with a new numeric value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L92>)
+
+Sets the private `_value` property to the provided `newValue`.
 - **Inputs**:
-    - `newValue`: A number that represents the new value to be assigned to the private `_value` property.
+    - `newValue`: The new number value to set for the `_value` property.
 - **Control Flow**:
-    - The method takes a single argument `newValue`.
-    - It assigns `newValue` to the private property `_value` of the class instance.
-- **Output**: There is no output as this is a setter method; it modifies the internal state of the class instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Assigns the `newValue` to the private `_value` property of the `GettersSetters` class instance.
+- **Output**: No output is returned as this is a setter method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.readOnlyProp<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.readOnlyProp}} -->
-The `readOnlyProp` method is a getter that returns a constant string value 'read only'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L96>)
+
+Provides a read-only property that returns a fixed string value.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is a getter, so it does not take any parameters.
-    - It directly returns the string 'read only' without any computation or condition.
+    - Returns the string 'read only'.
 - **Output**: A string with the value 'read only'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.privateGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.privateGetter}} -->
-The `privateGetter` method is a private getter that always returns the boolean value `true`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L100>)
+
+Provides a private getter method that always returns `true`.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a private getter within the `GettersSetters` class.
-    - It does not take any input parameters.
-    - The method simply returns the boolean value `true`.
-- **Output**: The output is a boolean value `true`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Returns the boolean value `true`.
+- **Output**: A boolean value `true`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.protectedSetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.protectedSetter}} -->
-The `protectedSetter` method is a protected setter in the `GettersSetters` class that logs a string value to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L104>)
+
+Logs the provided string value to the console.
 - **Inputs**:
-    - `value`: A string value that is logged to the console.
+    - `value`: A string that the method logs to the console.
 - **Control Flow**:
-    - The method takes a single string argument named `value`.
-    - It logs the `value` to the console using `console.log(value)`.
-- **Output**: The method does not return any value.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Logs the input `value` to the console using `console.log`.
+- **Output**: No output is returned.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.staticGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticGetter}} -->
-The staticGetter method is a static getter that returns the number 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L108>)
+
+Provides a static getter that returns the number 42.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the number 42 without any conditions or calculations.
-- **Output**: The output is a number, specifically the integer 42.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Returns the number 42.
+- **Output**: The method returns a number, specifically the integer 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.staticSetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticSetter}} -->
-The staticSetter method is a static setter that logs the provided numeric value to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L112>)
+
+Logs the provided numeric value to the console.
 - **Inputs**:
-    - `value`: A number that is passed to the setter.
+    - `value`: A numeric value to log to the console.
 - **Control Flow**:
-    - The method takes a single numeric input parameter named 'value'.
-    - It logs the input value to the console using console.log().
-- **Output**: This method does not return any value.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Logs the input `value` to the console using `console.log`.
+- **Output**: No output is returned.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.data<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data}} -->
-The `data` getter method retrieves the private `_data` property of the `GettersSetters` class as a string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L119>)
+
+Provides access to the private `_data` property as a string.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private `_data` property.
+    - Returns the value of the private `_data` property.
 - **Output**: The method returns a string, which is the current value of the `_data` property.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 ---
 #### GettersSetters\.data<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data}} -->
-The `data` setter method converts the input value to a string and assigns it to the private `_data` property.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L123>)
+
+Sets the `_data` property to the string representation of the input value.
 - **Inputs**:
-    - `value`: A string or number that will be converted to a string and assigned to the `_data` property.
+    - `value`: A string or number to set as the `_data` property.
 - **Control Flow**:
-    - The method takes a single input parameter `value` which can be either a string or a number.
-    - The method converts the `value` to a string using the `String` constructor.
-    - The converted string is then assigned to the private `_data` property of the class.
-- **Output**: This method does not return any value.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+    - Convert the `value` to a string using `String(value)`.
+    - Assign the converted string to the `_data` property.
+- **Output**: No output is returned as this is a setter method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
 
 ---
 ### GenericMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods}} -->
-- **Description**: The `GenericMethods` class provides a collection of methods that demonstrate the use of generics in TypeScript. It includes methods for identity transformation, mapping over arrays with a transformation function, handling constrained generics, and working with multiple generic types. Additionally, it offers a static method for generic operations, an asynchronous method that works with promises, and a method with a default generic type. This class serves as a versatile utility for operations that require type flexibility and showcases various generic programming techniques.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L128>)
+
+- **Description**: Provides a set of generic methods that operate on various data types. The class includes methods for identity transformation, mapping over arrays, handling constrained generics, and working with multiple generic types. It also includes a static method for generic operations, an asynchronous method for handling promises, and a method with a default generic type.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.identity`](<#GenericMethodsidentity>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.map`](<#GenericMethodsmap>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.constrainedGeneric`](<#GenericMethodsconstrainedGeneric>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.multipleGenerics`](<#GenericMethodsmultipleGenerics>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.staticGeneric`](<#GenericMethodsstaticGeneric>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.asyncGeneric`](<#GenericMethodsasyncGeneric>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.withDefault`](<#GenericMethodswithDefault>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.identity`](<#genericmethodsidentity>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.map`](<#genericmethodsmap>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.constrainedGeneric`](<#genericmethodsconstrainedgeneric>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.multipleGenerics`](<#genericmethodsmultiplegenerics>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.staticGeneric`](<#genericmethodsstaticgeneric>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.asyncGeneric`](<#genericmethodsasyncgeneric>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.withDefault`](<#genericmethodswithdefault>)
 
 **Methods**
 
 ---
 #### GenericMethods\.identity<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.identity}} -->
-The `identity` method returns the input value unchanged, maintaining its type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L129>)
+
+Returns the input value without modification.
 - **Inputs**:
-    - `value`: A generic input value of type T.
+    - `value`: The input value of generic type `T`.
 - **Control Flow**:
-    - The method takes a single input parameter `value` of a generic type `T`.
-    - It directly returns the input `value` without any modification.
-- **Output**: The output is the same as the input value, with the type preserved as T.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+    - Receives an input value of generic type `T`.
+    - Returns the input value without any changes.
+- **Output**: The same value as the input, of type `T`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 ---
 #### GenericMethods\.map<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.map}} -->
-The `map` method applies a provided function to each element of an array and returns a new array with the results.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L133>)
+
+Applies a transformation function to each element in an array and returns a new array with the transformed elements.
 - **Inputs**:
-    - `array`: An array of elements of type T to be transformed.
-    - `fn`: A function that takes an element of type T and returns a transformed element of type U.
+    - `array`: An array of elements of type `T` to be transformed.
+    - `fn`: A function that takes an element of type `T` and returns a transformed element of type `U`.
 - **Control Flow**:
-    - The method uses the built-in `Array.prototype.map` function to iterate over each element in the input array.
-    - For each element, the provided function `fn` is called, transforming the element.
-    - The results of the transformation are collected into a new array.
-- **Output**: A new array containing the results of applying the function `fn` to each element of the input array.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+    - Uses the `map` method of the input `array` to apply the transformation function `fn` to each element.
+    - Returns the new array containing the transformed elements.
+- **Output**: A new array of type `U[]` containing the transformed elements.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 ---
 #### GenericMethods\.constrainedGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.constrainedGeneric}} -->
-The `constrainedGeneric` method returns the input value, constrained to be either a string or a number.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L137>)
+
+Returns the input value if it is a string or number.
 - **Inputs**:
-    - `value`: A value of type T, which must extend either string or number.
+    - `value`: A value of type `T` which must extend `string` or `number`.
 - **Control Flow**:
-    - The method takes a single input parameter `value` of a generic type T, constrained to be either a string or a number.
-    - The method simply returns the input `value` without any modification.
-- **Output**: The method returns the input value of type T, which is constrained to be either a string or a number.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+    - The function takes a single input parameter `value` of a generic type `T` that is constrained to be either a `string` or `number`.
+    - The function returns the input `value` without modification.
+- **Output**: The same value of type `T` that was provided as input.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 ---
 #### GenericMethods\.multipleGenerics<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.multipleGenerics}} -->
-The `multipleGenerics` method returns a tuple containing three elements of potentially different types.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L141>)
+
+Returns a tuple containing the three input arguments of different generic types.
 - **Inputs**:
-    - `a`: The first element of the tuple, of generic type T.
-    - `b`: The second element of the tuple, of generic type U.
-    - `c`: The third element of the tuple, of generic type V.
+    - `a`: The first input argument of generic type `T`.
+    - `b`: The second input argument of generic type `U`.
+    - `c`: The third input argument of generic type `V`.
 - **Control Flow**:
-    - The method takes three arguments, each of a different generic type: T, U, and V.
-    - It constructs and returns a tuple containing the three arguments in the order they were received.
-- **Output**: A tuple containing the three input arguments, with types [T, U, V].
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+    - The function takes three input arguments `a`, `b`, and `c` of generic types `T`, `U`, and `V`, respectively.
+    - It returns a tuple containing the three input arguments in the order they were received.
+- **Output**: A tuple of the form `[T, U, V]` containing the input arguments `a`, `b`, and `c`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 ---
 #### GenericMethods\.staticGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.staticGeneric}} -->
-The `staticGeneric` method is a static generic method that returns the input value of any type without modification.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L145>)
+
+Returns the input value without modification.
 - **Inputs**:
-    - `value`: A value of any type `T` that is passed to the method.
+    - `value`: The input value of generic type `T`.
 - **Control Flow**:
-    - The method takes a single input parameter `value` of generic type `T`.
-    - It immediately returns the input `value` without any modification or processing.
-- **Output**: The output is the same as the input value, of the same type `T`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+    - Receives a generic input `value` of type `T`.
+    - Returns the input `value` without any changes.
+- **Output**: The same value as the input, of type `T`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 ---
 #### GenericMethods\.asyncGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.asyncGeneric}} -->
-The `asyncGeneric` method is an asynchronous function that resolves a given promise and returns its result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L149>)
+
+Awaits and returns the result of a given promise.
 - **Inputs**:
-    - `promise`: A promise of type `T` that is expected to be resolved.
+    - `promise`: A promise of type `T` that the method will await and return.
 - **Control Flow**:
-    - The method awaits the resolution of the input promise.
-    - Once the promise is resolved, the method returns the resolved value.
+    - The method receives a promise as an argument.
+    - It uses the `await` keyword to wait for the promise to resolve.
+    - Once the promise resolves, it returns the resolved value.
 - **Output**: A promise that resolves to the same type `T` as the input promise.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 ---
 #### GenericMethods\.withDefault<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.withDefault}} -->
-The `withDefault` method is a generic function that returns the input value, with a default type of string if no type is specified.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L154>)
+
+Returns the input value with a default generic type of string if not specified.
 - **Inputs**:
-    - `value`: A value of generic type T, which defaults to string if not specified.
+    - `value`: The input value of generic type `T`, which defaults to `string` if not specified.
 - **Control Flow**:
-    - The method takes a single parameter, `value`, of generic type T.
-    - It directly returns the input `value` without any modification or additional logic.
-- **Output**: The method returns the input value of type T.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+    - The method takes a single input parameter `value` of generic type `T`.
+    - The method returns the input parameter `value` without any modification.
+- **Output**: The method returns the input value of type `T`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#genericmethods>)  (Base Class)
 
 
 
 ---
 ### MethodOverloading<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading}} -->
-- **Description**: The `MethodOverloading` class demonstrates method overloading in TypeScript, allowing the `process` method to handle different types of input (string, number, or boolean) and return the appropriate type. It also includes static method overloading with the `create` method, which can be called with or without an `id` parameter to instantiate a new `MethodOverloading` object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L159>)
+
+- **Description**: Implements method overloading for the `process` method, allowing it to handle `string`, `number`, and `boolean` types, and provides a static `create` method with optional overloading to instantiate the class.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.process`](<#MethodOverloadingprocess>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.create`](<#MethodOverloadingcreate>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.process`](<#methodoverloadingprocess>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.create`](<#methodoverloadingcreate>)
 
 **Methods**
 
 ---
 #### MethodOverloading\.process<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.process}} -->
-The `process` method in the `MethodOverloading` class handles different types of input values and returns them appropriately, converting booleans to strings.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L163>)
+
+Processes a value of type string, number, or boolean and returns it as a string or number.
 - **Inputs**:
-    - `value`: A parameter that can be a string, number, or boolean.
+    - `value`: A value that can be a string, number, or boolean.
 - **Control Flow**:
-    - The method checks if the input `value` is of type boolean.
-    - If `value` is a boolean, it converts it to a string using `toString()` and returns it.
-    - If `value` is not a boolean, it returns the `value` as is.
-- **Output**: The method returns a string if the input is a boolean, otherwise it returns the input value as either a string or a number.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading`](<#MethodOverloading>)  (Base Class)
+    - Checks if the type of `value` is 'boolean'.
+    - If `value` is a boolean, converts it to a string using `toString()` and returns it.
+    - If `value` is not a boolean, returns `value` as is.
+- **Output**: Returns the input `value` as a string if it is a boolean, otherwise returns the `value` unchanged as a string or number.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading`](<#methodoverloading>)  (Base Class)
 
 
 ---
 #### MethodOverloading\.create<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.create}} -->
-The `create` method is a static factory method that returns a new instance of the `MethodOverloading` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L173>)
+
+Creates a new instance of the `MethodOverloading` class.
 - **Inputs**:
     - `id`: An optional number parameter that is not used in the method body.
 - **Control Flow**:
-    - The method checks if an `id` parameter is provided, but does not use it in any logic.
+    - The method does not use the `id` parameter.
     - A new instance of the `MethodOverloading` class is created and returned.
 - **Output**: A new instance of the `MethodOverloading` class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading`](<#MethodOverloading>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading`](<#methodoverloading>)  (Base Class)
 
 
 
 ---
 ### SpecialMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L178>)
+
 - **Members**:
-    - `id`: A private string identifier for the instance.
-- **Description**: The `SpecialMethods` class demonstrates various advanced method types and patterns in TypeScript. It includes a constructor that initializes a private identifier, index signatures for dynamic property access, and several special methods utilizing computed properties and symbols. The class also features an async iterator, a method with a `this` parameter, an arrow function property, and a bound method pattern. These elements showcase the flexibility and power of TypeScript in handling complex method definitions and behaviors.
+    - `id`: Stores a private identifier for the instance.
+- **Description**: Implements various special methods and properties, including index signatures, computed property methods, and symbol methods. It supports asynchronous iteration and provides a method to compare instances based on their `id`. The class also includes an arrow function property and a bound method pattern.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.constructor`](<#SpecialMethodsconstructor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.constructor`](<#specialmethodsconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.['computed' + 'Method']`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.['computed' + 'Method']>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toString]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toString]>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toPrimitive]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toPrimitive]>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.asyncIterator]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.asyncIterator]>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.compareWith`](<#SpecialMethodscompareWith>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.regularMethod`](<#SpecialMethodsregularMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.compareWith`](<#specialmethodscomparewith>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.regularMethod`](<#specialmethodsregularmethod>)
 
 **Methods**
 
 ---
 #### SpecialMethods\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.constructor}} -->
-The constructor initializes a new instance of the SpecialMethods class with a private id property.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L180>)
+
+Initializes a new instance of the `SpecialMethods` class with a private `id` property.
 - **Inputs**:
-    - `id`: A string that serves as a unique identifier for the instance, stored as a private property.
+    - `id`: A string that represents the unique identifier for the instance.
 - **Control Flow**:
-    - The constructor is called when a new instance of the SpecialMethods class is created.
-    - The provided id argument is assigned to a private property of the instance.
-- **Output**: An instance of the SpecialMethods class with the id property initialized.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+    - Assigns the provided `id` argument to the private `id` property of the instance.
+- **Output**: An instance of the `SpecialMethods` class with the `id` property set.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.\['computed' \+ 'Method'\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.['computed' + 'Method']}} -->
-The `computedMethod` is a computed property method in the `SpecialMethods` class that returns the string 'computed'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L186>)
+
+Returns the string 'computed'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a computed property using a string concatenation for its name.
-    - It directly returns the string 'computed' without any conditions or iterations.
-- **Output**: The method returns a string 'computed'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+    - Returns the string 'computed'.
+- **Output**: A string with the value 'computed'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.\[Symbol\.toString\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toString]}} -->
-The [Symbol.toString] method returns a string representation of the SpecialMethods class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L191>)
+
+Implements the `Symbol.toString` method to return the string 'SpecialMethods'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a computed property using the Symbol.toString symbol.
-    - It returns the string 'SpecialMethods' when invoked.
+    - Returns the string 'SpecialMethods'.
 - **Output**: A string 'SpecialMethods'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.\[Symbol\.toPrimitive\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toPrimitive]}} -->
-The [Symbol.toPrimitive] method in the SpecialMethods class returns a number or string based on the provided hint.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L195>)
+
+Implements a method to convert an object to a primitive value based on a hint.
 - **Inputs**:
-    - `hint`: A string that indicates the preferred type of conversion, either 'number' or another type.
+    - `hint`: A string that indicates the preferred type of the result, either 'number' or another type.
 - **Control Flow**:
-    - The method checks if the hint is equal to 'number'.
-    - If the hint is 'number', it returns the number 42.
-    - If the hint is not 'number', it returns the string 'string'.
-- **Output**: The method returns either the number 42 or the string 'string', depending on the hint provided.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+    - Checks if the 'hint' is equal to 'number'.
+    - If 'hint' is 'number', returns the number 42.
+    - If 'hint' is not 'number', returns the string 'string'.
+- **Output**: Returns either a number (42) or a string ('string') based on the 'hint' input.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.\[Symbol\.asyncIterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.asyncIterator]}} -->
-The [Symbol.asyncIterator] method in the SpecialMethods class is an asynchronous generator that yields the numbers 1 and 2.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L199>)
+
+Implements an asynchronous iterator that yields the numbers 1 and 2.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as an asynchronous generator using the 'async *' syntax.
-    - It uses the 'yield' keyword to produce the number 1.
-    - It then uses 'yield' again to produce the number 2.
-- **Output**: The method outputs an asynchronous iterator that yields the numbers 1 and 2 sequentially.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+    - The method is defined as an asynchronous generator function using the `async *` syntax.
+    - The method yields the number 1 using the `yield` keyword.
+    - The method yields the number 2 using the `yield` keyword.
+- **Output**: An asynchronous iterator that yields the numbers 1 and 2 sequentially.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.compareWith<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.compareWith}} -->
-The `compareWith` method checks if the `id` property of the current `SpecialMethods` instance is equal to the `id` property of another `SpecialMethods` instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L205>)
+
+Compares the `id` property of the current `SpecialMethods` instance with another `SpecialMethods` instance.
 - **Inputs**:
-    - `this`: The current instance of the `SpecialMethods` class.
-    - `other`: Another instance of the `SpecialMethods` class to compare against.
+    - `this`: The current instance of `SpecialMethods`.
+    - `other`: Another instance of `SpecialMethods` to compare against.
 - **Control Flow**:
-    - The method compares the `id` property of the current instance (`this.id`) with the `id` property of the `other` instance (`other.id`).
+    - Checks if the `id` property of the current instance (`this.id`) is equal to the `id` property of the `other` instance.
 - **Output**: A boolean value indicating whether the `id` properties of the two `SpecialMethods` instances are equal.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.regularMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.regularMethod}} -->
-The `regularMethod` returns the `id` property of the `SpecialMethods` class instance.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L217>)
+
+Returns the `id` property of the `SpecialMethods` instance.
 - **Inputs**: None
 - **Control Flow**:
-    - The method accesses the `id` property of the current instance using `this.id`.
-    - It returns the value of `this.id`.
-- **Output**: The method returns a string, which is the `id` of the `SpecialMethods` instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+    - Accesses the `id` property of the current instance using `this.id`.
+    - Returns the value of `this.id`.
+- **Output**: The `id` property of the `SpecialMethods` instance, which is a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#specialmethods>)  (Base Class)
 
 
 
 ---
 ### DecoratedMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods}} -->
-- **Description**: The `DecoratedMethods` class demonstrates the use of method decorators in TypeScript. It includes methods that are enhanced with decorators to add additional behavior or constraints. The `simpleDecorated` method is decorated with a `log` decorator, which likely adds logging functionality. The `multipleDecorators` method is decorated with both `validate` and `authorize('admin')` decorators, suggesting that it includes validation and authorization logic, possibly restricting access to users with admin privileges.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L222>)
+
+- **Description**: Contains methods that use decorators to add additional behavior. The `simpleDecorated` method logs a message to the console and is decorated with `@log`. The `multipleDecorators` method logs the input data to the console and is decorated with `@validate` and `@authorize('admin')`, which likely add validation and authorization checks.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.simpleDecorated`](<#DecoratedMethodssimpleDecorated>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.multipleDecorators`](<#DecoratedMethodsmultipleDecorators>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.simpleDecorated`](<#decoratedmethodssimpledecorated>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.multipleDecorators`](<#decoratedmethodsmultipledecorators>)
 
 **Methods**
 
 ---
 #### DecoratedMethods\.simpleDecorated<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.simpleDecorated}} -->
-The `simpleDecorated` method logs the string 'decorated' to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L224>)
+
+Logs the string 'decorated' to the console.
 - **Decorators**: `@log`
 - **Inputs**: None
 - **Control Flow**:
-    - The method executes a single statement that logs the string 'decorated' to the console.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
+    - Logs the string 'decorated' to the console using `console.log`.
+- **Output**: No output is returned as the function has a `void` return type.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods`](<#decoratedmethods>)  (Base Class)
 
 
 ---
 #### DecoratedMethods\.multipleDecorators<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.multipleDecorators}} -->
-The `multipleDecorators` method logs the provided data to the console and is decorated with authorization and validation decorators.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L230>)
+
+Logs the provided data to the console after applying validation and authorization checks.
 - **Decorators**: `@validate`, `@authorize`
 - **Inputs**:
-    - `data`: The data to be logged, of any type.
+    - `data`: The data to log to the console, of any type.
 - **Control Flow**:
-    - The method receives a single parameter `data`.
-    - It logs the `data` to the console using `console.log(data)`.
-- **Output**: The method does not return any value (void).
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
+    - The method receives the input `data`.
+    - The `@validate` decorator applies validation logic to the input `data`.
+    - The `@authorize` decorator checks if the current user has 'admin' authorization.
+    - If validation and authorization pass, the method logs the `data` to the console.
+- **Output**: The method does not return any value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods`](<#decoratedmethods>)  (Base Class)
 
 
 
 ---
 ### AbstractMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods}} -->
-- **Description**: The `AbstractMethods` class is an abstract class in TypeScript that defines a structure for classes that extend it. It includes abstract methods and properties that must be implemented by any subclass, such as `abstractMethod`, `abstractGetter`, and `abstractSetter`. Additionally, it provides a concrete method `concreteMethod` that calls the abstract method, and a protected abstract method `protectedAbstract`. The class also includes a static method `staticInAbstract`, demonstrating that static methods can be defined in abstract classes. This class serves as a blueprint for creating classes with a specific set of methods and properties that need to be implemented.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L235>)
+
+- **Description**: Defines an abstract class with abstract methods and properties, concrete methods, and static methods. It includes abstract methods `abstractMethod` and `protectedAbstract`, abstract getters and setters `abstractGetter` and `abstractSetter`, a concrete method `concreteMethod` that calls an abstract method, and a static method `staticInAbstract`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.concreteMethod`](<#AbstractMethodsconcreteMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.staticInAbstract`](<#AbstractMethodsstaticInAbstract>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.concreteMethod`](<#abstractmethodsconcretemethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.staticInAbstract`](<#abstractmethodsstaticinabstract>)
 
 **Methods**
 
 ---
 #### AbstractMethods\.concreteMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.concreteMethod}} -->
-The `concreteMethod` in the `AbstractMethods` class calls the `abstractMethod` which must be implemented by any subclass.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L244>)
+
+Calls the `abstractMethod` defined in the `AbstractMethods` class.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls `this.abstractMethod()`, which is an abstract method that must be implemented by any subclass of `AbstractMethods`.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#AbstractMethods>)  (Base Class)
+    - Calls the `abstractMethod` of the current instance using `this.abstractMethod()`.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#abstractmethods>)  (Base Class)
 
 
 ---
 #### AbstractMethods\.staticInAbstract<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.staticInAbstract}} -->
-The `staticInAbstract` method is a static method in an abstract class that logs a message to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L252>)
+
+Logs a message to the console indicating that the method is a static method in an abstract class.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as static, meaning it can be called on the class itself rather than on instances of the class.
-    - The method logs the string 'static in abstract' to the console using `console.log`.
-- **Output**: The method does not return any value (void).
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#AbstractMethods>)  (Base Class)
+    - Logs the message 'static in abstract' to the console.
+- **Output**: The method does not return any value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#abstractmethods>)  (Base Class)
 
 
 
 ---
 ### ConcreteImplementation<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation}} -->
-- **Description**: The `ConcreteImplementation` class is a concrete subclass of the `AbstractMethods` abstract class, providing specific implementations for the abstract methods and properties defined in its parent class. It implements the `abstractMethod`, `abstractGetter`, and `abstractSetter`, as well as the `protectedAbstract` method, fulfilling the contract of the abstract class. This class demonstrates how to extend an abstract class and provide concrete behavior for its abstract members.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L257>)
+
+- **Description**: Implements abstract methods and properties from the `AbstractMethods` class, providing concrete implementations for `abstractMethod`, `abstractGetter`, `abstractSetter`, and `protectedAbstract`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractMethod`](<#ConcreteImplementationabstractMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractGetter`](<#ConcreteImplementationabstractGetter>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractSetter`](<#ConcreteImplementationabstractSetter>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.protectedAbstract`](<#ConcreteImplementationprotectedAbstract>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractMethod`](<#concreteimplementationabstractmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractGetter`](<#concreteimplementationabstractgetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractSetter`](<#concreteimplementationabstractsetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.protectedAbstract`](<#concreteimplementationprotectedabstract>)
 - **Extends/Implements**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#AbstractMethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#abstractmethods>)
 
 **Methods**
 
 ---
 #### ConcreteImplementation\.abstractMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractMethod}} -->
-The `abstractMethod` in `ConcreteImplementation` logs 'implemented' to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L258>)
+
+Implements the `abstractMethod` by logging 'implemented' to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The method logs the string 'implemented' to the console.
-- **Output**: The method does not return any value (void).
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+    - Logs the string 'implemented' to the console.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#concreteimplementation>)  (Base Class)
 
 
 ---
 #### ConcreteImplementation\.abstractGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractGetter}} -->
-The `abstractGetter` method is a getter that returns a fixed numeric value of 42.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L262>)
+
+Provides a getter that returns the number 42.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the number 42 without any conditions or calculations.
-- **Output**: A number, specifically the integer 42.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+    - Returns the number 42.
+- **Output**: The method returns a number, specifically the integer 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#concreteimplementation>)  (Base Class)
 
 
 ---
 #### ConcreteImplementation\.abstractSetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractSetter}} -->
-The `abstractSetter` method is a setter that logs the provided numeric value to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L266>)
+
+Logs the provided numeric value to the console.
 - **Inputs**:
-    - `value`: A number that is set and logged to the console.
+    - `value`: A numeric value to log to the console.
 - **Control Flow**:
-    - The method takes a single numeric input parameter named `value`.
-    - It logs the `value` to the console using `console.log(value)`.
-- **Output**: There is no return value as it is a setter method.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+    - Logs the input `value` to the console using `console.log`.
+- **Output**: No output is returned.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#concreteimplementation>)  (Base Class)
 
 
 ---
 #### ConcreteImplementation\.protectedAbstract<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.protectedAbstract}} -->
-The `protectedAbstract` method in the `ConcreteImplementation` class provides a concrete implementation for a protected abstract method defined in the `AbstractMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L270>)
+
+Implements a protected method that logs a message to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The method logs the string 'protected implementation' to the console.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+    - Logs the message 'protected implementation' to the console.
+- **Output**: No output is returned as the method's return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#concreteimplementation>)  (Base Class)
 
 
 
 ---
 ### PrivateFieldMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L275>)
+
 - **Members**:
-    - `#privateField`: A private instance field holding a string value 'private'.
-    - `#staticPrivateField`: A private static field holding a string value 'static private'.
-    - `#value`: A private instance field initialized to 0.
-- **Description**: The `PrivateFieldMethods` class demonstrates the use of private fields and methods in TypeScript. It includes both instance and static private fields and methods, showcasing encapsulation and access control. The class provides public methods to access the values of these private fields and methods, illustrating how private members can be utilized internally while still allowing controlled access through public interfaces.
+    - `#privateField`: A private instance variable that stores a string 'private'.
+    - `#value`: A private instance variable that stores a number, initialized to 0.
+    - `#staticPrivateField`: A private static variable that stores a string 'static private'.
+- **Description**: Encapsulates private fields and methods, providing public accessors to interact with them. It includes private instance and static fields, private methods, and a private getter/setter for a numeric value. The class demonstrates the use of TypeScript's private fields and methods to restrict direct access, while offering public methods to access these private members.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateMethod`](<#PrivateFieldMethods>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicAccessor`](<#PrivateFieldMethodspublicAccessor>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#staticPrivateMethod`](<#PrivateFieldMethods>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicStaticAccessor`](<#PrivateFieldMethodspublicStaticAccessor>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue`](<#PrivateFieldMethods>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue`](<#PrivateFieldMethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateMethod`](<#privatefieldmethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicAccessor`](<#privatefieldmethodspublicaccessor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#staticPrivateMethod`](<#privatefieldmethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicStaticAccessor`](<#privatefieldmethodspublicstaticaccessor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue`](<#privatefieldmethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue`](<#privatefieldmethods>)
 
 **Methods**
 
 ---
 #### PrivateFieldMethods\.\#privateMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateMethod}} -->
-The #privateMethod returns the value of the private field #privateField from the PrivateFieldMethods class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L278>)
+
+Returns the value of the private field `#privateField`.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private field #privateField.
-- **Output**: A string representing the value of the private field #privateField.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+    - Accesses the private field `#privateField`.
+    - Returns the value of `#privateField`.
+- **Output**: The method returns a string, which is the value of the private field `#privateField`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#privatefieldmethods>)  (Base Class)
 
 
 ---
 #### PrivateFieldMethods\.publicAccessor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicAccessor}} -->
-The `publicAccessor` method provides public access to a private method within the `PrivateFieldMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L282>)
+
+Provides access to a private method and returns its result.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls the private method `#privateMethod` of the `PrivateFieldMethods` class.
-    - The private method `#privateMethod` returns the value of the private field `#privateField`.
-    - The `publicAccessor` method returns the result obtained from the private method.
-- **Output**: The method returns a string, which is the value of the private field `#privateField`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+    - Calls the private method `#privateMethod` of the `PrivateFieldMethods` class.
+    - Returns the result of the `#privateMethod` call.
+- **Output**: Returns a string value obtained from the private method `#privateMethod`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#privatefieldmethods>)  (Base Class)
 
 
 ---
 #### PrivateFieldMethods\.\#staticPrivateMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#staticPrivateMethod}} -->
-The static private method `#staticPrivateMethod` returns the value of the static private field `#staticPrivateField` from the `PrivateFieldMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L288>)
+
+Returns the value of the static private field `#staticPrivateField`.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the static private field `#staticPrivateField` of the `PrivateFieldMethods` class.
+    - Accesses the static private field `#staticPrivateField` of the class.
     - Returns the value of `#staticPrivateField`.
-- **Output**: A string representing the value of the static private field `#staticPrivateField`, which is 'static private'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+- **Output**: A string that is the value of the static private field `#staticPrivateField`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#privatefieldmethods>)  (Base Class)
 
 
 ---
 #### PrivateFieldMethods\.publicStaticAccessor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicStaticAccessor}} -->
-The `publicStaticAccessor` method provides public access to a static private method within the `PrivateFieldMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L292>)
+
+Provides access to a static private method and returns its result.
 - **Inputs**: None
 - **Control Flow**:
-    - The method calls the static private method `#staticPrivateMethod` of the `PrivateFieldMethods` class.
-    - It returns the result of the `#staticPrivateMethod` call.
-- **Output**: A string value returned by the `#staticPrivateMethod`, which is the value of the static private field `#staticPrivateField`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+    - Calls the static private method `#staticPrivateMethod` of the `PrivateFieldMethods` class.
+    - Returns the result of the `#staticPrivateMethod` call.
+- **Output**: A string that is the result of the `#staticPrivateMethod` call.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#privatefieldmethods>)  (Base Class)
 
 
 ---
 #### PrivateFieldMethods\.\#privateValue<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue}} -->
-The private getter method `#privateValue` retrieves the value of the private field `#value` in the `PrivateFieldMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L299>)
+
+Provides access to the private field `#value` in the `PrivateFieldMethods` class.
 - **Inputs**: None
 - **Control Flow**:
-    - The method accesses the private field `#value` of the class instance.
-    - It returns the current value stored in `#value`.
+    - Returns the value of the private field `#value`.
 - **Output**: The method returns the current value of the private field `#value`, which is a number.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#privatefieldmethods>)  (Base Class)
 
 
 ---
 #### PrivateFieldMethods\.\#privateValue<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue}} -->
-The `#privateValue` setter method assigns a new numeric value to the private `#value` field of the `PrivateFieldMethods` class.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L303>)
+
+Sets the private field `#value` to the given number `val`.
 - **Inputs**:
-    - `val`: A number that will be assigned to the private `#value` field.
+    - `val`: A number to set as the new value of the private field `#value`.
 - **Control Flow**:
-    - The method takes a single argument `val` which is a number.
-    - It assigns the value of `val` to the private field `#value`.
-- **Output**: This method does not return any value.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+    - Assigns the input `val` to the private field `#value`.
+- **Output**: There is no output as this is a setter method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#privatefieldmethods>)  (Base Class)
 
 
 
 ---
 ### MethodChaining<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L308>)
+
 - **Members**:
-    - `value`: A private string variable used to store the accumulated text.
-- **Description**: The MethodChaining class provides a simple interface for method chaining by allowing text to be added to an internal string value. The add method appends the given text to the value and returns the instance itself, enabling the chaining of multiple add calls in a fluent style.
+    - `value`: Stores a string that accumulates text added through the `add` method.
+- **Description**: Enables method chaining by providing an `add` method that appends text to an internal string and returns the instance itself, allowing for consecutive method calls.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining.add`](<#MethodChainingadd>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining.add`](<#methodchainingadd>)
 
 **Methods**
 
 ---
 #### MethodChaining\.add<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining.add}} -->
-The `add` method appends a given string to the `value` property of the `MethodChaining` class and returns the instance for method chaining.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L311>)
+
+Appends a given string to the `value` property of the `MethodChaining` class and returns the instance for method chaining.
 - **Inputs**:
-    - `text`: A string that will be appended to the `value` property of the instance.
+    - `text`: A string to append to the `value` property.
 - **Control Flow**:
-    - The method takes a string input `text`.
-    - It appends the `text` to the `value` property of the instance using the `+=` operator.
-    - The method returns the current instance (`this`) to allow for method chaining.
-- **Output**: The method returns the current instance of the `MethodChaining` class, allowing for method chaining.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining`](<#MethodChaining>)  (Base Class)
+    - Append the `text` input to the `value` property of the instance.
+    - Return the current instance (`this`) to allow method chaining.
+- **Output**: The method returns the current instance of the `MethodChaining` class (`this`).
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining`](<#methodchaining>)  (Base Class)
 
 
 
 ---
 ### ComplexMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods}} -->
-- **Description**: The `ComplexMethods` class provides a collection of advanced method implementations that demonstrate various programming techniques in TypeScript. It includes methods that return functions, handle asynchronous operations, and utilize higher-order functions. The class also showcases currying, destructured parameters, type predicates, and assertion methods, making it a comprehensive example of complex method usage in TypeScript.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L317>)
+
+- **Description**: Implements various complex method patterns including a method that returns a function, an asynchronous method that returns a promise of a function, a higher-order method, a curried method, a method with destructured parameters, a type predicate method, and an assertion method.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.createCallback`](<#ComplexMethodscreateCallback>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.getAsyncCallback`](<#ComplexMethodsgetAsyncCallback>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.higherOrder`](<#ComplexMethodshigherOrder>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.curry`](<#ComplexMethodscurry>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.destructured`](<#ComplexMethodsdestructured>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.isValid`](<#ComplexMethodsisValid>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.assert`](<#ComplexMethodsassert>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.createCallback`](<#complexmethodscreatecallback>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.getAsyncCallback`](<#complexmethodsgetasynccallback>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.higherOrder`](<#complexmethodshigherorder>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.curry`](<#complexmethodscurry>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.destructured`](<#complexmethodsdestructured>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.isValid`](<#complexmethodsisvalid>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.assert`](<#complexmethodsassert>)
 
 **Methods**
 
 ---
 #### ComplexMethods\.createCallback<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.createCallback}} -->
-The `createCallback` method returns a function that doubles its numeric input.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L319>)
+
+Returns a function that multiplies its input by 2.
 - **Inputs**: None
 - **Control Flow**:
-    - The method defines and returns an anonymous function.
-    - The returned function takes a single numeric argument `x`.
-    - The function multiplies `x` by 2 and returns the result.
+    - Returns an anonymous function that takes a single parameter `x`.
+    - The anonymous function multiplies `x` by 2 and returns the result.
 - **Output**: A function that takes a number as input and returns the number multiplied by 2.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 ---
 #### ComplexMethods\.getAsyncCallback<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.getAsyncCallback}} -->
-The `getAsyncCallback` method asynchronously returns a function that converts a string to uppercase.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L324>)
+
+Returns a promise that resolves to a function converting a string to uppercase.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as asynchronous and returns a Promise.
-    - The method immediately returns a function that takes a string `x` as input.
-    - The returned function converts the input string `x` to uppercase using the `toUpperCase` method.
-- **Output**: A Promise that resolves to a function which takes a string and returns its uppercase version.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+    - The method is asynchronous and returns a promise.
+    - The promise resolves to a function that takes a string `x` as input.
+    - The function converts the input string `x` to uppercase using `toUpperCase()` and returns it.
+- **Output**: A promise that resolves to a function which takes a string and returns its uppercase version.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 ---
 #### ComplexMethods\.higherOrder<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.higherOrder}} -->
-The `higherOrder` method applies a transformation function to each element of an input array and returns a new array with the transformed elements.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L329>)
+
+Applies a transformation function to each element of an array and returns a new array with the transformed elements.
 - **Inputs**:
-    - `array`: An array of elements of type T that will be transformed.
-    - `transform`: A function that takes an element of type T and returns a transformed element of type U.
+    - `array`: An array of elements of type `T` to be transformed.
+    - `transform`: A function that takes an element of type `T` and returns a transformed element of type `U`.
 - **Control Flow**:
-    - The method uses the `map` function on the input array.
-    - Each element of the array is passed to the `transform` function.
-    - The result of the `transform` function is collected into a new array.
-- **Output**: An array of elements of type U, which are the results of applying the `transform` function to each element of the input array.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+    - Uses the `map` method on the `array` to apply the `transform` function to each element.
+- **Output**: A new array containing the transformed elements of type `U`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 ---
 #### ComplexMethods\.curry<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.curry}} -->
-The `curry` method is a curried function that takes a number and returns a function that takes another number, which in turn returns a function that takes a third number and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L337>)
+
+Implements a curried function that takes three numbers and returns their sum.
 - **Inputs**:
-    - `a`: The first number to be used in the sum.
+    - `a`: The first number to add.
 - **Control Flow**:
-    - The method takes a single argument `a` and returns a function that takes another argument `b`.
-    - The returned function takes a third argument `c` and returns the sum of `a`, `b`, and `c`.
-- **Output**: A function that takes a number `b` and returns another function that takes a number `c`, which finally returns the sum of `a`, `b`, and `c`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+    - Returns a function that takes a second number `b`.
+    - The returned function takes a third number `c`.
+    - The innermost function returns the sum of `a`, `b`, and `c`.
+- **Output**: A function that takes a number `b` and returns another function that takes a number `c`, which then returns the sum of `a`, `b`, and `c`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 ---
 #### ComplexMethods\.destructured<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.destructured}} -->
-The `destructured` method takes an object with properties `x` and `y`, both numbers, and returns their sum.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L342>)
+
+Calculates the sum of two numbers provided as properties of a destructured object.
 - **Inputs**:
     - `{ x, y }`: An object with two properties: `x` and `y`, both of which are numbers.
 - **Control Flow**:
-    - The method receives an object with properties `x` and `y`.
-    - It calculates the sum of `x` and `y`.
-- **Output**: The method returns a number, which is the sum of `x` and `y`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+    - Destructure the input object to extract `x` and `y`.
+    - Calculate the sum of `x` and `y`.
+- **Output**: The sum of the numbers `x` and `y`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 ---
 #### ComplexMethods\.isValid<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.isValid}} -->
-The `isValid` method checks if a given value is of type string.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L347>)
+
+Checks if the given value is of type string.
 - **Inputs**:
-    - `value`: The value to be checked, of type unknown.
+    - `value`: The value to check, of type unknown.
 - **Control Flow**:
-    - The method uses the `typeof` operator to determine if the input value is a string.
-- **Output**: Returns a boolean indicating whether the input value is a string.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+    - Checks if the type of `value` is 'string'.
+- **Output**: Returns true if `value` is a string, otherwise false.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 ---
 #### ComplexMethods\.assert<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.assert}} -->
-The `assert` method checks a condition and throws an error if the condition is false.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L352>)
+
+Checks if a condition is true and throws an error if it is not.
 - **Inputs**:
-    - `condition`: An unknown type that represents the condition to be checked.
+    - `condition`: The condition to check, which can be of any type.
 - **Control Flow**:
-    - The method checks if the `condition` is falsy.
-    - If the `condition` is falsy, it throws an `Error` with the message 'Assertion failed'.
-- **Output**: The method does not return a value; it either completes successfully if the condition is true or throws an error if the condition is false.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+    - Checks if the `condition` is falsy.
+    - If `condition` is falsy, throws an `Error` with the message 'Assertion failed'.
+- **Output**: There is no return value, but the function asserts the truthiness of the `condition`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#complexmethods>)  (Base Class)
 
 
 
 ---
 ### InterfaceImplementation<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation}} -->
-- **Description**: The `InterfaceImplementation` class is a concrete implementation of the `MethodInterface` interface, providing definitions for the required methods specified by the interface. It includes a `requiredMethod` that logs a message to the console, an `optionalMethod` that is implemented to log a different message, and a `methodWithParams` that takes a number and a string as parameters and returns a boolean based on specific conditions. This class demonstrates how to implement an interface in TypeScript, ensuring that all required methods are defined.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L365>)
+
+- **Description**: Implements the `MethodInterface` by providing concrete implementations for the `requiredMethod`, `optionalMethod`, and `methodWithParams` methods. The `requiredMethod` logs a message to the console, the `optionalMethod` logs a different message, and the `methodWithParams` checks if the first parameter is greater than zero and the second parameter has a length greater than zero, returning a boolean result.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.requiredMethod`](<#InterfaceImplementationrequiredMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.optionalMethod`](<#InterfaceImplementationoptionalMethod>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.methodWithParams`](<#InterfaceImplementationmethodWithParams>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.requiredMethod`](<#interfaceimplementationrequiredmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.optionalMethod`](<#interfaceimplementationoptionalmethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.methodWithParams`](<#interfaceimplementationmethodwithparams>)
 - **Extends/Implements**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodInterface`](<#MethodInterface>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodInterface`](<#methodinterface>)
 
 **Methods**
 
 ---
 #### InterfaceImplementation\.requiredMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.requiredMethod}} -->
-The `requiredMethod` logs the string 'required' to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L366>)
+
+Logs the string 'required' to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - The method executes a single statement that logs the string 'required' to the console.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#InterfaceImplementation>)  (Base Class)
+    - Calls `console.log` with the string 'required'.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#interfaceimplementation>)  (Base Class)
 
 
 ---
 #### InterfaceImplementation\.optionalMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.optionalMethod}} -->
-The `optionalMethod` logs a message indicating that the optional method has been implemented.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L370>)
+
+Logs a message indicating that the optional method is implemented.
 - **Inputs**: None
 - **Control Flow**:
-    - The method logs the message 'optional implemented' to the console.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#InterfaceImplementation>)  (Base Class)
+    - Logs the message 'optional implemented' to the console.
+- **Output**: No output is returned as the method's return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#interfaceimplementation>)  (Base Class)
 
 
 ---
 #### InterfaceImplementation\.methodWithParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.methodWithParams}} -->
-The `methodWithParams` method checks if a given number is positive and a string is non-empty, returning a boolean result.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L374>)
+
+Evaluates if a number is positive and a string is non-empty.
 - **Inputs**:
-    - `x`: A number that is checked to be greater than zero.
-    - `y`: A string that is checked to have a length greater than zero.
+    - `x`: A number to check if it is greater than zero.
+    - `y`: A string to check if it has a length greater than zero.
 - **Control Flow**:
-    - The method evaluates whether the number `x` is greater than zero.
-    - It also checks if the string `y` has a length greater than zero.
-    - The method returns `true` if both conditions are met, otherwise it returns `false`.
-- **Output**: A boolean value indicating whether both the number is positive and the string is non-empty.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#InterfaceImplementation>)  (Base Class)
+    - Checks if `x` is greater than zero.
+    - Checks if the length of `y` is greater than zero.
+    - Returns true if both conditions are met, otherwise returns false.
+- **Output**: A boolean value indicating whether `x` is positive and `y` is non-empty.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#interfaceimplementation>)  (Base Class)
 
 
 
 ---
 ### BaseClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass}} -->
-- **Description**: The `BaseClass` is a simple class that provides a single method, `baseMethod`, which returns a string 'base'. It serves as a foundational class that can be extended or used as a base for other classes, such as in mixin patterns.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L419>)
+
+- **Description**: Provides a method `baseMethod` that returns the string 'base', serving as a foundational class for potential inheritance or extension.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass.baseMethod`](<#BaseClassbaseMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass.baseMethod`](<#baseclassbasemethod>)
 
 **Methods**
 
 ---
 #### BaseClass\.baseMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass.baseMethod}} -->
-The `baseMethod` in the `BaseClass` returns a static string 'base'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L420>)
+
+Returns the string 'base'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the string 'base'.
-- **Output**: A string 'base'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass`](<#BaseClass>)  (Base Class)
+    - Returns the string 'base'.
+- **Output**: A string with the value 'base'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass`](<#baseclass>)  (Base Class)
 
 
 
 ---
 ### MixinClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass}} -->
-- **Description**: The `MixinClass` is a TypeScript class that extends a base class enhanced with logging capabilities through a mixin function. It inherits from `Loggable(BaseClass)`, which means it gains logging methods such as `log` and `logError` in addition to the `baseMethod` from `BaseClass`. The `useLogging` method demonstrates the use of these inherited capabilities by logging a message and calling the base method. This class serves as an example of how mixins can be used to augment class functionality in TypeScript.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L425>)
+
+- **Description**: Extends the `Loggable` mixin applied to `BaseClass`, providing a `useLogging` method that logs a message and calls the `baseMethod` from `BaseClass`.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass.useLogging`](<#MixinClassuseLogging>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass.useLogging`](<#mixinclassuselogging>)
 - **Extends/Implements**:
     - `Loggable(BaseClass)`
 
@@ -1029,13 +1177,15 @@ The `baseMethod` in the `BaseClass` returns a static string 'base'.
 
 ---
 #### MixinClass\.useLogging<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass.useLogging}} -->
-The `useLogging` method logs a message and calls a base method within a class that extends a mixin.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L426>)
+
+Implements a logging mechanism and calls a base method in a mixin class.
 - **Inputs**: None
 - **Control Flow**:
-    - The method logs a message 'Using mixin method' using the `log` method inherited from the `Loggable` mixin.
-    - It then calls the `baseMethod` from the `BaseClass`, which returns a string 'base'.
-- **Output**: The method does not return any value as its return type is `void`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass`](<#MixinClass>)  (Base Class)
+    - Calls the `log` method with the message 'Using mixin method'.
+    - Calls the `baseMethod` method.
+- **Output**: No output is returned as the method has a `void` return type.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass`](<#mixinclass>)  (Base Class)
 
 
 
@@ -1043,108 +1193,124 @@ The `useLogging` method logs a message and calls a base method within a class th
 
 ---
 ### MethodInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodInterface}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L359>)
+
 - **Members**:
-    - `requiredMethod`: A method that must be implemented, returning void.
-    - `optionalMethod`: An optional method that may be implemented, returning void.
-    - `methodWithParams`: A method that takes a number and a string as parameters and returns a boolean.
-- **Description**: The `MethodInterface` defines a contract for objects that require a specific set of methods to be implemented. It includes a mandatory `requiredMethod` that must be implemented by any class adhering to this interface, an optional `optionalMethod` that can be implemented if needed, and a `methodWithParams` that requires two parameters, a number and a string, and returns a boolean. This interface is useful for ensuring that certain functionalities are consistently available across different implementations.
+    - `requiredMethod`: Declares a method that must be implemented and returns void.
+    - `optionalMethod`: Declares an optional method that returns void.
+    - `methodWithParams`: Declares a method that takes a number and a string as parameters and returns a boolean.
+- **Description**: Defines a contract for objects that must implement a `requiredMethod` and can optionally implement an `optionalMethod`. It also specifies a `methodWithParams` that takes a number and a string as parameters and returns a boolean. This interface ensures that any implementing class provides these methods with the specified signatures.
 
 
 # Functions
 
 ---
 ### method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.method}} -->
-The `method` function in the object literal returns the string 'method'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L381>)
+
+Returns the string 'method'.
 - **Inputs**: None
 - **Control Flow**:
-    - The function immediately returns the string 'method'.
-- **Output**: The output is a string with the value 'method'.
+    - Returns the string 'method'.
+- **Output**: A string with the value 'method'.
 
 
 ---
 ### asyncMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.asyncMethod}} -->
-The `asyncMethod` is an asynchronous function that returns a resolved promise with the string 'async'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L385>)
+
+Returns a string 'async' asynchronously.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as an asynchronous method, which means it returns a promise.
-    - The method immediately returns the string 'async', which is automatically wrapped in a resolved promise due to the async nature of the function.
+    - The method is defined as an asynchronous function.
+    - The method immediately returns the string 'async'.
 - **Output**: A promise that resolves to the string 'async'.
 
 
 ---
 ### generatorMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.generatorMethod}} -->
-The `generatorMethod` is a generator function that yields a single string value 'generator'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L389>)
+
+Generates a single value 'generator' when iterated.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as a generator function using the asterisk (*) syntax.
-    - It yields the string 'generator' when iterated over.
-- **Output**: The output is a generator object that yields the string 'generator' when iterated.
+    - The method uses the `yield` keyword to produce the string 'generator'.
+- **Output**: A generator object that yields the string 'generator'.
 
 
 ---
 ### getter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.getter}} -->
-The `getter` method is a simple getter function that returns the string 'getter'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L393>)
+
+Provides a getter method that returns the string 'getter'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a getter, which means it is accessed like a property rather than a function.
-    - When accessed, it immediately returns the string 'getter'.
-- **Output**: The output is the string 'getter'.
+    - Returns the string 'getter'.
+- **Output**: The string 'getter'.
 
 
 ---
 ### setter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.setter}} -->
-The `setter` method is a setter function for an object property that logs the provided string value to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L397>)
+
+Logs the provided string value to the console.
 - **Inputs**:
-    - `value`: A string value that is passed to the setter method.
+    - `value`: A string that the function logs to the console.
 - **Control Flow**:
-    - The method takes a single string argument named `value`.
-    - It logs the `value` to the console using `console.log(value)`.
-- **Output**: This setter method does not return any value.
+    - Logs the input `value` to the console using `console.log`.
+- **Output**: No output is returned.
 
 
 ---
 ### \['computed' \+ 'Method'\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.['computed' + 'Method']}} -->
-The 'computedMethod' is a computed property method that returns the string 'computed'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L401>)
+
+Returns the string 'computed'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as a computed property using bracket notation.
-    - It returns the string 'computed' immediately when called.
-- **Output**: The output is a string with the value 'computed'.
+    - The method returns the string 'computed'.
+- **Output**: A string with the value 'computed'.
 
 
 ---
 ### Loggable<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.Loggable}} -->
-The `Loggable` function is a mixin that extends a given class with logging capabilities, adding methods to log messages and errors.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L407>)
+
+Implements a mixin that adds logging capabilities to a base class.
 - **Inputs**:
-    - `Base`: A class constructor that the mixin will extend, which must be a class with a constructor that can accept any arguments.
+    - `Base`: A class constructor that the mixin will extend.
 - **Control Flow**:
-    - The function takes a class constructor `Base` as an argument.
-    - It returns a new class that extends the `Base` class.
-    - The new class includes a `log` method that logs a message with a timestamp to the console.
-    - The new class also includes a `logError` method that logs an error message to the console with an '[ERROR]' prefix.
-- **Output**: A new class that extends the provided `Base` class with additional logging methods.
+    - Defines a new class that extends the provided `Base` class.
+    - Adds a `log` method to the new class that logs a message with a timestamp.
+    - Adds a `logError` method to the new class that logs an error message with an error prefix.
+- **Output**: A new class that extends the `Base` class with additional logging methods.
 
 
 ---
 ### log<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.log}} -->
-The `log` function logs a message to the console with a timestamp.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L409>)
+
+Logs a message to the console with a timestamp.
 - **Inputs**:
-    - `message`: A string message to be logged to the console.
+    - `message`: The message to log, as a string.
 - **Control Flow**:
-    - The function constructs a log message by prepending the current date and time in ISO format to the input message.
-    - It then outputs this constructed message to the console using `console.log`.
-- **Output**: The function does not return any value (void).
+    - Get the current date and time in ISO string format.
+    - Concatenate the timestamp with the input message.
+    - Output the concatenated string to the console.
+- **Output**: No return value (void).
 
 
 ---
 ### logError<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.logError}} -->
-The `logError` method logs an error message to the console with a specific format.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#L413>)
+
+Logs an error message to the console with a specific format.
 - **Inputs**:
-    - `error`: An instance of the Error object containing the error message to be logged.
+    - `error`: An `Error` object containing the error message to log.
 - **Control Flow**:
-    - The method takes an Error object as an input parameter.
-    - It uses `console.error` to log a formatted error message to the console, which includes the prefix '[ERROR]' followed by the error's message.
-- **Output**: The method does not return any value (void).
+    - Uses `console.error` to output the error message.
+    - Formats the error message by prepending '[ERROR]' to the `error.message`.
+- **Output**: No output is returned as the function's return type is `void`.
 
 
 

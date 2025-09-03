@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-YAML configuration files detailing installation and build instructions for libraries like libiconv, libjansson, libxml2, libyaml, and libz.
+Configuration files for installing and configuring libraries: libiconv, libjansson, libxml2, libyaml, and libz.
 
 
 ## Files
-- **[libiconv.yml](libiconv.yml.md)**: The `libiconv.yml` file in the `python-backend` codebase specifies the configuration and installation details for the libiconv charset conversion library, including its source URL, license information, and build instructions.
-- **[libjansson.yml](libjansson.yml.md)**: The `libjansson.yml` file specifies the configuration and installation details for the Jansson C library, which is used for encoding, decoding, and manipulating JSON, within the `python-backend` codebase.
-- **[libxml2.yml](libxml2.yml.md)**: The `libxml2.yml` file in the `python-backend` codebase specifies the configuration and installation details for the GNOME XML library, including its dependencies and build options.
-- **[libyaml.yml](libyaml.yml.md)**: The `libyaml.yml` file specifies metadata for the libyaml C library, including its source URL, checksum, license, and build system configuration.
-- **[libz.yml](libz.yml.md)**: The `libz.yml` file in the `python-backend` codebase specifies metadata and build instructions for the zlib data compression library, including its source URL, license, and developer information.
+- **[libiconv.yml](libiconv.yml.md)**: Configuration for installing and tweaking the libiconv charset conversion library.
+- **[libjansson.yml](libjansson.yml.md)**: C library for encoding, decoding, and manipulating JSON with installation instructions.
+- **[libxml2.yml](libxml2.yml.md)**: Configuration file for installing the GNOME XML library (libxml2) with specific dependencies and settings.
+- **[libyaml.yml](libyaml.yml.md)**: A C library for parsing and emitting YAML, version 0.2.5, licensed under MIT.
+- **[libz.yml](libz.yml.md)**: Configuration for the zlib data compression library, including source details and build tweaks.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

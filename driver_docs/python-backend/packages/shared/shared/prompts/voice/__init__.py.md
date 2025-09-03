@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase initializes the `voice` package by importing the `copy_editor` and `software_engineer` modules.
+Imports the `copy_editor` and `software_engineer` modules.
 
 # Purpose
-This source code file is a module initializer that imports specific submodules, namely `copy_editor` and `software_engineer`, from the current package. The purpose of this file is to make these submodules accessible when the package is imported, facilitating modular design and organization within the package. The `# flake8: noqa` comment at the top indicates that linting checks by Flake8 are disabled for this file, possibly to bypass style or import-related warnings. This code provides narrow functionality, focusing solely on the importation and exposure of specific components within a package.
+This code is a module that imports two submodules: `copy_editor` and `software_engineer`. The import statement uses relative imports, indicating that these submodules are part of the same package as the current module. The comment `# flake8: noqa` at the top of the file instructs the Flake8 tool to ignore linting errors in this file. This module serves as a connector or aggregator for the `copy_editor` and `software_engineer` submodules, allowing other parts of the package to access their functionality through this module.
 # Imports and Dependencies
 
 ---

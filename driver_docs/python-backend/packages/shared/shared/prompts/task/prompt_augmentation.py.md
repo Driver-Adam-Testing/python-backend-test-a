@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prompt_augmentation.py` file contains a system message template designed to guide a prompt engineer in enhancing user prompts for better results from a language model, with specific instructions on maintaining desired text length and verbosity.
+Defines a system message for enhancing user prompts to improve LLM responses in technical documentation.
 
 # Purpose
-This code defines a configuration for a prompt engineering system, specifically tailored for enhancing user prompts to improve interactions with a language model (LLM). It consists of a single global variable, `PROMPT`, which contains a detailed instruction set for generating concise and effective prompts. The instructions emphasize brevity, clarity, and adherence to user specifications regarding the length and format of the LLM's output. Additionally, a dictionary `MESSAGE` is created to encapsulate the role and content of the prompt, indicating its use in a system that processes and refines user inputs for technical documentation purposes. This code provides narrow functionality, focusing on prompt enhancement for LLM interactions.
+The code defines a constant `PROMPT` that contains a detailed instruction set for a prompt engineer. The purpose of this instruction is to guide the engineer in enhancing user prompts to improve the output from a language model (LLM). The instructions specify that responses should be concise, under 100 words, and tailored to the user's needs, including the desired length and verbosity. Additionally, a `MESSAGE` dictionary is created with a key `role` set to "system" and a key `content` set to the `PROMPT`, which can be used to configure or initialize a system with these instructions.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The `PROMPT` variable is a multi-line string that serves as a template or guideline for generating prompts to enhance user instructions for a language model. It provides detailed instructions on how to construct prompts that are concise, clear, and tailored to the user's needs, particularly in the context of technical documentation.
-- **Use**: This variable is used to define the content of the `MESSAGE` dictionary, specifically as the 'content' for the 'system' role, guiding the language model's prompt generation process.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for enhancing user prompts to improve results from a language model. It includes guidelines on how to handle user input, desired output length, verbosity, and format.
+- **Use**: Used as a template for generating improved prompts for language model interactions.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'system', indicating the type of message or the context in which it is used. The 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing detailed instructions for a prompt engineer.
-- **Use**: This variable is used to define a system message with specific instructions for enhancing prompts to improve interactions with a language model.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a value of `system`, and the `content` key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for a prompt engineer.
+- **Use**: Used to define a system message with specific instructions for a prompt engineer in a structured format.
 
 
 

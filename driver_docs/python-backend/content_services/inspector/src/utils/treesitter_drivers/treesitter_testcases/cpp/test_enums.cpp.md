@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_enums.cpp` file demonstrates various uses of enums in C++, including basic enums, scoped enums, enums with explicit values and underlying types, bit flags, and enums within classes, namespaces, and templates.
+Demonstrates various C++ enum types, including scoped, bit flags, and usage in classes and templates.
 
 # Purpose
-This C++ source code file is a comprehensive demonstration of various ways to define and use enumerations (enums) in C++. It showcases a wide range of enum types, including basic C-style enums, scoped enums (enum class), enums with explicit values, and enums with specified underlying types. The file also illustrates the use of enums in different contexts, such as within classes, namespaces, and templates, as well as their application in function signatures and bit flag operations. Additionally, it includes examples of forward-declared enums, anonymous enums for constants, and conditional compilation with enums. The code provides a rich set of examples that highlight the flexibility and utility of enums in C++ programming, making it a valuable resource for understanding how to effectively use enums in various scenarios.
+The code file demonstrates various uses of enumerations (`enum` and `enum class`) in C++. It includes examples of basic C-style enums, enums with explicit values, scoped enums (introduced in C++11), and enums with specified underlying types. The file also shows how to use enums in different contexts, such as within classes, namespaces, and templates. Additionally, it includes examples of using enums for bit flags, which is a common pattern for representing combinations of options. The code also demonstrates operator overloading for bitwise operations on scoped enums.
 
-The file serves as both an educational tool and a practical reference for C++ developers, demonstrating how enums can be integrated into different programming constructs. It includes operator overloads for bit flag operations, functions that utilize enums, and templates that accept enum parameters, showcasing the versatility of enums in type-safe and expressive code design. The main function ties these examples together by demonstrating the instantiation and use of various enums, providing a clear and practical illustration of their application in real-world programming tasks. Overall, this file is a well-organized collection of enum-related examples that cover a broad spectrum of use cases, emphasizing the importance of enums in creating readable, maintainable, and efficient C++ code.
+The file contains several functions and classes that utilize these enums, such as [`colorToString`](<#colortostring>) and [`getOppositeDirection`](<#getoppositedirection>), which operate on `Color` and `Direction` enums, respectively. It also includes a [`GameEntity`](<#gameentitygameentity>) class that uses enums to define entity types and movement types, and a `Task` template class that uses an enum parameter to determine task priority. The [`main`](<#main>) function provides examples of how to instantiate and use these enums in practice, demonstrating their integration into a C++ program. The code also includes conditional compilation with enums and demonstrates the use of `std::underlying_type` to retrieve the underlying integer type of an enum.
 # Imports and Dependencies
 
 ---
@@ -22,463 +22,515 @@ The file serves as both an educational tool and a practical reference for C++ de
 ---
 ### WeekEnd
 - **Type**: `enum`
-- **Description**: The `WeekEnd` is an enumeration that defines two constants, `SATURDAY` and `SUNDAY`, representing the days of the weekend. It is defined alongside another enumeration, `WeekDay`, which represents the weekdays.
-- **Use**: This variable is used to categorize and represent the weekend days in a program, allowing for easy reference and comparison.
+- **Description**: Defines the `WeekEnd` enumeration which includes the days `SATURDAY` and `SUNDAY`. This enumeration is part of a C-style enum declaration that also includes the `WeekDay` enumeration.
+- **Use**: Used to represent the weekend days in a week.
 
 
 # Data Structures
 
 ---
 ### Color<!-- {{#data_structure:Color}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L5>)
+
 - **Type**: `enum`
 - **Members**:
-    - `RED`: Represents the color red.
-    - `GREEN`: Represents the color green.
-    - `BLUE`: Represents the color blue.
-- **Description**: The `Color` enum is a basic C-style enumeration that defines three constants: `RED`, `GREEN`, and `BLUE`, representing the primary colors. This enum is used to categorize or identify colors in a program, allowing for easy comparison and assignment of color values.
+    - ``RED``: Represents the color red.
+    - ``GREEN``: Represents the color green.
+    - ``BLUE``: Represents the color blue.
+- **Description**: Defines a set of named integer constants for basic colors: red, green, and blue. This enumeration is a simple C-style enum, which means the constants are unscoped and can be used directly without a prefix.
 
 
 ---
 ### StatusCode<!-- {{#data_structure:StatusCode}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L12>)
+
 - **Type**: `enum`
 - **Members**:
     - `SUCCESS`: Represents a successful operation with a value of 0.
     - `ERROR_FILE_NOT_FOUND`: Indicates a file not found error with a value of 404.
-    - `ERROR_PERMISSION_DENIED`: Represents a permission denied error with a value of 403.
-    - `ERROR_INTERNAL`: Indicates an internal error with a value of 500.
-- **Description**: The `StatusCode` enum is a C-style enumeration that defines a set of named integer constants representing various status codes for operations. It includes codes for success, file not found, permission denied, and internal errors, each associated with a specific integer value. This enum is useful for categorizing and handling different outcomes of operations in a program.
+    - `ERROR_PERMISSION_DENIED`: Indicates a permission denied error with a value of 403.
+    - `ERROR_INTERNAL`: Represents an internal error with a value of 500.
+- **Description**: Defines a set of status codes used to represent the outcome of operations, with specific integer values assigned to each code to indicate different types of errors or success.
 
 
 ---
 ### Priority<!-- {{#data_structure:Priority}} -->
-- **Type**: `enum class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L20>)
+
+- **Type**: ``enum class``
 - **Members**:
-    - `LOW`: Represents a low priority level with an integer value of 1.
-    - `MEDIUM`: Represents a medium priority level with an integer value of 5.
-    - `HIGH`: Represents a high priority level with an integer value of 10.
-    - `CRITICAL`: Represents a critical priority level with an integer value of 20.
-- **Description**: The `Priority` enum class defines a set of named integer constants representing different levels of priority, ranging from low to critical. Each priority level is associated with a specific integer value, allowing for easy comparison and ordering of tasks or operations based on their urgency or importance. This enum class is strongly typed and scoped, ensuring type safety and preventing implicit conversions, which is a feature introduced in C++11.
+    - ``LOW``: Represents a low priority level with an integer value of 1.
+    - ``MEDIUM``: Represents a medium priority level with an integer value of 5.
+    - ``HIGH``: Represents a high priority level with an integer value of 10.
+    - ``CRITICAL``: Represents a critical priority level with an integer value of 20.
+- **Description**: Defines a strongly typed enumeration for task priority levels with explicit integer values, allowing for clear and type-safe priority management in applications.
 
 
 ---
 ### Direction<!-- {{#data_structure:Direction}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L28>)
+
 - **Type**: `enum class`
 - **Members**:
     - `NORTH`: Represents the north direction.
     - `SOUTH`: Represents the south direction.
     - `EAST`: Represents the east direction.
     - `WEST`: Represents the west direction.
-- **Description**: The `Direction` enum class is a scoped enumeration that defines four possible cardinal directions: NORTH, SOUTH, EAST, and WEST. It is used to represent directional values in a type-safe manner, leveraging the features of C++11's enum class to prevent implicit conversions and improve code clarity.
+- **Description**: Defines a scoped enumeration for the four cardinal directions: north, south, east, and west. This enum class provides type safety and prevents implicit conversions, ensuring that only valid direction values are used.
 
 
 ---
 ### Grade<!-- {{#data_structure:Grade}} -->
-- **Type**: `enum class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L36>)
+
+- **Type**: ``enum class``
 - **Members**:
-    - `A`: Represents the grade 'A' with a character value of 'A'.
-    - `B`: Represents the grade 'B' with a character value of 'B'.
-    - `C`: Represents the grade 'C' with a character value of 'C'.
-    - `D`: Represents the grade 'D' with a character value of 'D'.
-    - `F`: Represents the grade 'F' with a character value of 'F'.
-- **Description**: The `Grade` enum class is a strongly typed enumeration that represents academic grades using characters as underlying values. It defines five possible grades: A, B, C, D, and F, each associated with its respective character. This enum class provides a type-safe way to handle grades in a program, ensuring that only valid grade values are used.
+    - `A`: Represents the grade 'A' with the character 'A'.
+    - `B`: Represents the grade 'B' with the character 'B'.
+    - `C`: Represents the grade 'C' with the character 'C'.
+    - `D`: Represents the grade 'D' with the character 'D'.
+    - `F`: Represents the grade 'F' with the character 'F'.
+- **Description**: Defines a strongly typed enumeration for academic grades with an underlying type of `char`, where each enumerator corresponds to a letter grade from 'A' to 'F'.
 
 
 ---
 ### RenderMode<!-- {{#data_structure:Graphics::RenderMode}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L56>)
+
 - **Type**: `enum`
 - **Members**:
-    - `WIREFRAME`: Represents a rendering mode where only the edges of the geometry are drawn.
-    - `SOLID`: Represents a rendering mode where the geometry is filled with a solid color.
-    - `TEXTURED`: Represents a rendering mode where textures are applied to the geometry.
-    - `RAYTRACED`: Represents a rendering mode that uses ray tracing for rendering the scene.
-- **Description**: The `RenderMode` enum defines different modes for rendering graphics in a graphical application. Each mode specifies a distinct way of visualizing 3D models, ranging from simple wireframe outlines to complex ray-traced images. This enum is part of the `Graphics` namespace, indicating its use in graphical rendering contexts.
+    - `WIREFRAME`: Represents a rendering mode where only the edges of the shapes are drawn.
+    - `SOLID`: Represents a rendering mode where shapes are filled with a solid color.
+    - `TEXTURED`: Represents a rendering mode where textures are applied to the surfaces of shapes.
+    - `RAYTRACED`: Represents a rendering mode that uses ray tracing to simulate realistic lighting and shadows.
+- **Description**: Defines different modes for rendering graphics, each mode specifying a distinct way to visualize 3D objects in a graphical application.
 
 
 ---
 ### BlendMode<!-- {{#data_structure:Graphics::BlendMode}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L63>)
+
 - **Type**: `enum class`
 - **Members**:
-    - `NORMAL`: Represents the normal blending mode with a value of 0.
-    - `MULTIPLY`: Represents the multiply blending mode with a value of 1.
-    - `SCREEN`: Represents the screen blending mode with a value of 2.
-    - `OVERLAY`: Represents the overlay blending mode with a value of 3.
-    - `SOFT_LIGHT`: Represents the soft light blending mode with a value of 4.
-    - `HARD_LIGHT`: Represents the hard light blending mode with a value of 5.
-- **Description**: The `BlendMode` enum class is a scoped enumeration within the `Graphics` namespace that defines various blending modes used in graphics rendering. Each enumerator represents a different blending technique, such as normal, multiply, screen, overlay, soft light, and hard light, with associated integer values. This enum class provides a strongly typed way to specify blending modes, ensuring type safety and preventing accidental misuse of blending mode values.
+    - ``NORMAL``: Represents the normal blend mode with a value of 0.
+    - ``MULTIPLY``: Represents the multiply blend mode with a value of 1.
+    - ``SCREEN``: Represents the screen blend mode with a value of 2.
+    - ``OVERLAY``: Represents the overlay blend mode with a value of 3.
+    - ``SOFT_LIGHT``: Represents the soft light blend mode with a value of 4.
+    - ``HARD_LIGHT``: Represents the hard light blend mode with a value of 5.
+- **Description**: Defines different blend modes used in graphics rendering, each associated with an integer value to specify the type of blending effect to apply.
 
 
 ---
 ### GameEntity<!-- {{#data_structure:GameEntity}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L74>)
+
+- **Type**: ``class``
 - **Members**:
-    - `type`: Represents the type of the game entity, such as PLAYER, ENEMY, NPC, ITEM, or OBSTACLE.
-    - `movement`: Indicates the movement type of the game entity, which can be STATIC, LINEAR, CURVED, RANDOM, or AI_CONTROLLED.
-- **Description**: The `GameEntity` class is a representation of an entity within a game, characterized by its type and movement behavior. It uses two enumerations: `EntityType` to define the kind of entity (e.g., player, enemy, non-player character, item, or obstacle) and `MovementType` to specify how the entity moves (e.g., static, linear, curved, random, or AI-controlled). The class provides a constructor to initialize these attributes and accessor methods to retrieve the entity's type and movement type.
+    - ``type``: Stores the type of the game entity as an `EntityType`.
+    - ``movement``: Stores the movement type of the game entity as a `MovementType`.
+- **Description**: Represents a game entity with a specific type and movement behavior. The `EntityType` enum defines the possible types of entities, such as `PLAYER`, `ENEMY`, `NPC`, `ITEM`, and `OBSTACLE`. The `MovementType` enum class specifies the movement behavior, including `STATIC`, `LINEAR`, `CURVED`, `RANDOM`, and `AI_CONTROLLED`. The class provides a constructor to initialize these attributes and getter methods to access them.
 - **Member Functions**:
-    - [`GameEntity::GameEntity`](<#GameEntityGameEntity>)
-    - [`GameEntity::getType`](<#GameEntitygetType>)
-    - [`GameEntity::getMovementType`](<#GameEntitygetMovementType>)
+    - [`GameEntity::GameEntity`](<#gameentitygameentity>)
+    - [`GameEntity::getType`](<#gameentitygettype>)
+    - [`GameEntity::getMovementType`](<#gameentitygetmovementtype>)
 
 **Methods**
 
 ---
 #### GameEntity::GameEntity<!-- {{#callable:GameEntity::GameEntity}} -->
-The `GameEntity` constructor initializes a `GameEntity` object with specified entity and movement types.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L97>)
+
+Initializes a `GameEntity` object with specified entity type and movement type.
 - **Inputs**:
-    - `t`: An `EntityType` enum value representing the type of the game entity (e.g., PLAYER, ENEMY, NPC, ITEM, OBSTACLE).
-    - `m`: A `MovementType` enum value representing the movement behavior of the game entity (e.g., STATIC, LINEAR, CURVED, RANDOM, AI_CONTROLLED).
-- **Control Flow**:
-    - The constructor initializes the `type` member variable with the provided `EntityType` argument `t`.
-    - The constructor initializes the `movement` member variable with the provided `MovementType` argument `m`.
-- **Output**: The function does not return a value; it is a constructor for initializing `GameEntity` objects.
-- **See also**: [`GameEntity`](<#GameEntity>)  (Data Structure)
+    - `t`: The `EntityType` of the game entity, which can be `PLAYER`, `ENEMY`, `NPC`, `ITEM`, or `OBSTACLE`.
+    - `m`: The `MovementType` of the game entity, which can be `STATIC`, `LINEAR`, `CURVED`, `RANDOM`, or `AI_CONTROLLED`.
+- **Logic and Control Flow**:
+    - Assigns the input `EntityType` `t` to the private member `type`.
+    - Assigns the input `MovementType` `m` to the private member `movement`.
+- **Output**: A `GameEntity` object initialized with the specified `EntityType` and `MovementType`.
+- **See also**: [`GameEntity`](<#gameentity>)  (Data Structure)
 
 
 ---
 #### GameEntity::getType<!-- {{#callable:GameEntity::getType}} -->
-The `getType` function returns the `EntityType` of a `GameEntity` object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L99>)
+
+Returns the `EntityType` of the `GameEntity` instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is a simple getter method that directly returns the private member variable `type` of the `GameEntity` class.
-- **Output**: The function returns an `EntityType`, which is an enumeration representing the type of the game entity (e.g., PLAYER, ENEMY, NPC, ITEM, OBSTACLE).
-- **See also**: [`GameEntity`](<#GameEntity>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Accesses the private member `type` of the `GameEntity` class.
+    - Returns the value of `type`.
+- **Output**: The `EntityType` of the `GameEntity` instance.
+- **See also**: [`GameEntity`](<#gameentity>)  (Data Structure)
 
 
 ---
 #### GameEntity::getMovementType<!-- {{#callable:GameEntity::getMovementType}} -->
-The `getMovementType` function returns the movement type of a `GameEntity` object.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L100>)
+
+Returns the `MovementType` of the `GameEntity`.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is a simple getter method that directly returns the private member `movement` of the `GameEntity` class.
-- **Output**: The function returns a value of type `MovementType`, which is an enum class defined within the `GameEntity` class.
-- **See also**: [`GameEntity`](<#GameEntity>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Accesses the private member `movement` of the `GameEntity` class.
+    - Returns the value of `movement`.
+- **Output**: The `MovementType` of the `GameEntity` instance.
+- **See also**: [`GameEntity`](<#gameentity>)  (Data Structure)
 
 
 
 ---
 ### EntityType<!-- {{#data_structure:GameEntity::EntityType}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L76>)
+
 - **Type**: `enum`
 - **Members**:
-    - `PLAYER`: Represents a player entity in the game.
-    - `ENEMY`: Represents an enemy entity in the game.
-    - `NPC`: Represents a non-player character entity in the game.
-    - `ITEM`: Represents an item entity in the game.
-    - `OBSTACLE`: Represents an obstacle entity in the game.
-- **Description**: The `EntityType` enum is used within the `GameEntity` class to categorize different types of entities that can exist in a game environment. It includes types such as PLAYER, ENEMY, NPC, ITEM, and OBSTACLE, each representing a distinct kind of entity that can interact within the game world. This enum helps in organizing and managing game logic by providing a clear distinction between various entity roles.
+    - `PLAYER`: Represents a player entity.
+    - `ENEMY`: Represents an enemy entity.
+    - `NPC`: Represents a non-player character entity.
+    - `ITEM`: Represents an item entity.
+    - `OBSTACLE`: Represents an obstacle entity.
+- **Description**: Defines different types of entities that can exist in a game, such as players, enemies, non-player characters, items, and obstacles.
 
 
 ---
 ### MovementType<!-- {{#data_structure:GameEntity::MovementType}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L84>)
+
 - **Type**: `enum class`
 - **Members**:
-    - `STATIC`: Represents a non-moving or stationary movement type.
-    - `LINEAR`: Represents a straight-line movement type.
-    - `CURVED`: Represents a movement type that follows a curved path.
-    - `RANDOM`: Represents a movement type that is unpredictable and random.
-    - `AI_CONTROLLED`: Represents a movement type controlled by artificial intelligence.
-- **Description**: The `MovementType` enum class defines a set of constants representing different types of movement behaviors that can be assigned to game entities. It is strongly typed and uses an underlying type of `unsigned char`, which ensures that the values are compactly stored. This enum class is used within the `GameEntity` class to specify how an entity should move, providing options for static, linear, curved, random, and AI-controlled movements.
+    - `STATIC`: Represents a movement type where the entity does not move.
+    - `LINEAR`: Represents a movement type where the entity moves in a straight line.
+    - `CURVED`: Represents a movement type where the entity moves along a curved path.
+    - `RANDOM`: Represents a movement type where the entity moves in a random pattern.
+    - `AI_CONTROLLED`: Represents a movement type where the entity's movement is controlled by artificial intelligence.
+- **Description**: Defines different types of movement behaviors for a game entity, using an underlying type of `unsigned char` to ensure efficient storage.
 
 
 ---
 ### Task<!-- {{#data_structure:Task}} -->
-- **Type**: `class`
-- **Description**: The `Task` class is a template class that takes a `Priority` enum value as a template parameter. It provides a static method `getPriority()` to retrieve the priority level of the task, and an `execute()` method that outputs the task's priority to the console. This class is designed to encapsulate tasks with varying levels of priority, allowing for operations to be performed based on the priority level specified at compile time.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L104>)
+
+- **Type**: ``class``
+- **Description**: Defines a template class `Task` that takes a `Priority` enum value as a template parameter. It provides a static method `getPriority` to return the priority level and an `execute` method to perform an action, printing the task's priority to the console.
 - **Member Functions**:
-    - [`Task::getPriority`](<#TaskgetPriority>)
-    - [`Task::execute`](<#Taskexecute>)
+    - [`Task::getPriority`](<#taskgetpriority>)
+    - [`Task::execute`](<#taskexecute>)
 
 **Methods**
 
 ---
 #### Task::getPriority<!-- {{#callable:Task::getPriority}} -->
-The `getPriority` function returns the priority level of a `Task` object as defined by the template parameter `P`.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L107>)
+
+Returns the priority level of a `Task` instance as defined by the template parameter `P`.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a static constexpr method within the `Task` class template, which means it can be called without an instance of the class and its value is determined at compile time.
-    - The function simply returns the template parameter `P`, which is of type `Priority`.
-- **Output**: The function returns a `Priority` enum value, which represents the priority level of the `Task`.
-- **See also**: [`Task`](<#Task>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Returns the value of the template parameter `P`.
+- **Output**: The output is a `Priority` enum value, which represents the priority level of the `Task` instance.
+- **See also**: [`Task`](<#task>)  (Data Structure)
 
 
 ---
 #### Task::execute<!-- {{#callable:Task::execute}} -->
-The `execute` function outputs a message indicating the execution of a task with its priority level.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L111>)
+
+Outputs a message indicating the execution of a task with its priority level.
 - **Inputs**: None
-- **Control Flow**:
-    - The function uses `std::cout` to print a message to the standard output.
-    - The message includes the string 'Executing task with priority: ' followed by the integer value of the priority `P`.
-    - The priority `P` is cast to an integer using `static_cast<int>(P)` to display its numeric value.
-- **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Task`](<#Task>)  (Data Structure)
+- **Logic and Control Flow**:
+    - Outputs the string 'Executing task with priority: ' followed by the integer value of the priority `P` to the standard output stream.
+- **Output**: No return value; the function outputs directly to the console.
+- **See also**: [`Task`](<#task>)  (Data Structure)
 
 
 
 ---
 ### FilePermissions<!-- {{#data_structure:FilePermissions}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L117>)
+
 - **Type**: `enum`
 - **Members**:
-    - `NONE`: Represents no permissions with a value of 0.
-    - `READ`: Represents read permission with a value of 1.
-    - `WRITE`: Represents write permission with a value of 2.
-    - `EXECUTE`: Represents execute permission with a value of 4.
-    - `READ_WRITE`: Represents both read and write permissions, combining READ and WRITE.
-    - `ALL`: Represents all permissions (read, write, and execute), combining READ, WRITE, and EXECUTE.
-- **Description**: The `FilePermissions` enum is a C-style enumeration that defines a set of bit flags representing different file access permissions. Each permission is assigned a unique power of two value, allowing them to be combined using bitwise operations to form composite permissions such as `READ_WRITE` and `ALL`. This design enables flexible permission management by allowing combinations of basic permissions to be easily represented and manipulated.
+    - ``NONE``: Represents no permissions with a value of 0.
+    - ``READ``: Represents read permission with a value of 1.
+    - ``WRITE``: Represents write permission with a value of 2.
+    - ``EXECUTE``: Represents execute permission with a value of 4.
+    - ``READ_WRITE``: Represents combined read and write permissions using a bitwise OR of `READ` and `WRITE`.
+    - ``ALL``: Represents all permissions (read, write, execute) using a bitwise OR of `READ`, `WRITE`, and `EXECUTE`.
+- **Description**: Defines a set of file permission flags using bitwise operations to combine different permissions. Each permission is represented by a unique bit, allowing combinations of permissions to be easily managed using bitwise operations.
 
 
 ---
 ### AccessFlags<!-- {{#data_structure:AccessFlags}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L127>)
+
 - **Type**: `enum class`
 - **Members**:
-    - `NONE`: Represents no access with a value of 0.
-    - `READ`: Represents read access with a value of 1.
-    - `WRITE`: Represents write access with a value of 2.
-    - `EXECUTE`: Represents execute access with a value of 4.
-    - `DELETE`: Represents delete access with a value of 8.
-    - `CREATE`: Represents create access with a value of 16.
-    - `MODIFY`: Represents modify access with a value of 32.
-    - `FULL_ACCESS`: Represents full access by combining all other access flags.
-- **Description**: The `AccessFlags` enum class is a strongly-typed enumeration that defines a set of bit flags for various access permissions, such as read, write, execute, delete, create, and modify. Each flag is represented by a unique power of two, allowing them to be combined using bitwise operations to form composite permissions, such as `FULL_ACCESS`, which includes all possible permissions. This design allows for flexible and efficient management of access rights in a type-safe manner.
+    - ``NONE``: Represents no access with a value of `0u`.
+    - ``READ``: Represents read access with a value of `1u`.
+    - ``WRITE``: Represents write access with a value of `2u`.
+    - ``EXECUTE``: Represents execute access with a value of `4u`.
+    - ``DELETE``: Represents delete access with a value of `8u`.
+    - ``CREATE``: Represents create access with a value of `16u`.
+    - ``MODIFY``: Represents modify access with a value of `32u`.
+    - ``FULL_ACCESS``: Represents full access by combining all other access flags.
+- **Description**: Defines a set of access flags using an `enum class` with an underlying type of `unsigned int`, allowing for bitwise operations to manage access permissions such as read, write, execute, delete, create, and modify.
 
 
 ---
 ### NetworkState<!-- {{#data_structure:NetworkState}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L152>)
+
 - **Type**: `enum class`
 - **Members**:
-    - `DISCONNECTED`: Represents a network state where the connection is not established.
-    - `CONNECTING`: Represents a network state where a connection attempt is in progress.
-    - `CONNECTED`: Represents a network state where the connection is successfully established.
-    - `ERROR`: Represents a network state where an error has occurred, with a value of 255.
-- **Description**: The `NetworkState` enum class defines a set of constants representing the various states of a network connection. It uses an underlying type of `unsigned char`, allowing for efficient storage and comparison of these states. The states include `DISCONNECTED`, `CONNECTING`, `CONNECTED`, and `ERROR`, each representing a specific phase or condition of a network connection lifecycle.
+    - `DISCONNECTED`: Represents a state where the network is not connected.
+    - `CONNECTING`: Represents a state where the network is in the process of connecting.
+    - `CONNECTED`: Represents a state where the network is successfully connected.
+    - `ERROR`: Represents a state where there is an error in the network connection.
+- **Description**: Defines the possible states of a network connection using an `unsigned char` as the underlying type, allowing for clear and type-safe representation of network states.
 
 
 ---
 ### Container<!-- {{#data_structure:Container}} -->
-- **Type**: `class`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L160>)
+
+- **Type**: ``class``
 - **Members**:
-    - `policy`: Specifies the insertion policy for the container, determining how duplicate elements are handled.
-    - `order`: Defines the sort order for the container, indicating how elements should be sorted.
-- **Description**: The `Container` class template is a generic data structure designed to store elements of a specified type `T`. It includes two nested enumerations: `InsertionPolicy`, which dictates how the container handles duplicate elements (either replacing existing ones, ignoring duplicates, or always appending), and `SortOrder`, which specifies the order in which elements should be sorted (ascending, descending, or none). The class maintains two private member variables, `policy` and `order`, to store the current insertion policy and sort order, respectively. The `Container` class provides constructors to initialize these policies and offers methods to manipulate and retrieve the stored data.
-- **Member Functions**:
-    - [`Container::Container`](<test_func_calls.cpp.md#ContainerContainer>)
-    - [`Container::get`](<test_func_calls.cpp.md#Containerget>)
-    - [`Container::set`](<test_func_calls.cpp.md#Containerset>)
-    - [`Container::convertFrom`](<test_func_calls.cpp.md#ContainerconvertFrom>)
-    - [`Container::Container`](<test_func_defs.cpp.md#ContainerContainer>)
-    - [`Container::getData`](<test_func_defs.cpp.md#ContainergetData>)
-    - [`Container::setData`](<test_func_defs.cpp.md#ContainersetData>)
-    - [`Container::convertAndSet`](<test_func_defs.cpp.md#ContainerconvertAndSet>)
-    - [`Container::Container`](<test_classes.cpp.md#ContainerContainer>)
-    - [`Container::get`](<test_classes.cpp.md#Containerget>)
-    - [`Container::set`](<test_classes.cpp.md#Containerset>)
-    - [`Container::Container`](<#ContainerContainer>)
+    - ``policy``: Defines the insertion policy for the container.
+    - ``order``: Specifies the sort order for the container.
+- **Description**: Represents a template class `Container` that manages elements with specified insertion and sorting policies. The `InsertionPolicy` enum defines how elements are inserted, with options to replace existing elements, ignore duplicates, or always append. The `SortOrder` enum class specifies the order in which elements are sorted, with options for ascending, descending, or no sorting. The class constructor initializes these policies with default values if not provided.
 
 **Methods**
 
 ---
 #### Container::Container<!-- {{#callable:Container::Container}} -->
-The `Container` constructor initializes a `Container` object with specified insertion policy and sort order, defaulting to replacing existing elements and no sorting.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L180>)
+
+Initializes a `Container` object with specified insertion policy and sort order.
 - **Inputs**:
-    - `p`: An `InsertionPolicy` enum value that determines how elements are inserted into the container, with a default value of `REPLACE_EXISTING`.
-    - `o`: A `SortOrder` enum value that specifies the order in which elements are sorted, with a default value of `SortOrder::NONE`.
-- **Control Flow**:
-    - The constructor initializes the `policy` member variable with the provided `InsertionPolicy` argument `p`.
-    - The constructor initializes the `order` member variable with the provided `SortOrder` argument `o`.
-- **Output**: A `Container` object is created with the specified insertion policy and sort order.
-- **See also**: [`Container`](<#Container>)  (Data Structure)
+    - `p`: An `InsertionPolicy` enum value that specifies how to handle data insertion, with a default value of `REPLACE_EXISTING`.
+    - `o`: A `SortOrder` enum value that specifies the order in which data should be sorted, with a default value of `SortOrder::NONE`.
+- **Logic and Control Flow**:
+    - Assigns the provided `InsertionPolicy` value `p` to the member variable `policy`.
+    - Assigns the provided `SortOrder` value `o` to the member variable `order`.
+- **Output**: A `Container` object initialized with the specified insertion policy and sort order.
+- **See also**: [`Container`](<test_func_calls.cpp.md#container>)  (Data Structure)
 
 
 
 ---
 ### InsertionPolicy<!-- {{#data_structure:Container::InsertionPolicy}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L163>)
+
 - **Type**: `enum`
 - **Members**:
-    - `REPLACE_EXISTING`: Indicates that existing elements should be replaced during insertion.
-    - `IGNORE_DUPLICATES`: Specifies that duplicate elements should be ignored during insertion.
-    - `APPEND_ALWAYS`: Ensures that new elements are always appended, regardless of duplicates.
-- **Description**: The `InsertionPolicy` enum defines three distinct strategies for handling element insertion in a container: replacing existing elements, ignoring duplicates, or always appending new elements. This enum is used to control how elements are managed when added to a data structure, providing flexibility in handling duplicates and existing entries.
+    - ``REPLACE_EXISTING``: Indicates that existing elements should be replaced during insertion.
+    - ``IGNORE_DUPLICATES``: Indicates that duplicate elements should be ignored during insertion.
+    - ``APPEND_ALWAYS``: Indicates that new elements should always be appended during insertion.
+- **Description**: Defines policies for handling element insertion in a container, specifying whether to replace existing elements, ignore duplicates, or always append new elements.
 
 
 ---
 ### SortOrder<!-- {{#data_structure:Container::SortOrder}} -->
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L169>)
+
 - **Type**: `enum class`
 - **Members**:
     - `ASCENDING`: Represents sorting in ascending order.
     - `DESCENDING`: Represents sorting in descending order.
     - `NONE`: Represents no specific sorting order.
-- **Description**: The `SortOrder` enum class defines three possible sorting orders: `ASCENDING`, `DESCENDING`, and `NONE`. It is a scoped enumeration, meaning it is strongly typed and its enumerators are accessed using the `SortOrder::` prefix. This enum is useful for specifying the order in which elements should be sorted, providing a clear and type-safe way to handle sorting preferences in a program.
+- **Description**: Defines sorting order options for a container, allowing specification of ascending, descending, or no sorting order.
 
 
 ---
 ### DebugLevel<!-- {{#data_structure:DebugLevel}} -->
-- **Type**: `enum`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L239>)
+
+- **Type**: ``enum``
 - **Members**:
-    - `DEBUG_NONE`: Represents no debugging information.
-    - `DEBUG_BASIC`: Represents basic level debugging information.
-    - `DEBUG_VERBOSE`: Represents verbose level debugging information.
-    - `DEBUG_FULL`: Represents full debugging information.
-- **Description**: The `DebugLevel` enum is used to define different levels of debugging information that can be enabled in a program. It provides four levels: `DEBUG_NONE` for no debugging, `DEBUG_BASIC` for basic debugging information, `DEBUG_VERBOSE` for more detailed debugging output, and `DEBUG_FULL` for the most comprehensive debugging information. This enum is conditionally compiled with the `DEBUG_MODE` preprocessor directive, meaning it is only included in the build when debugging is enabled.
+    - ``DEBUG_NONE``: Represents no debugging information.
+    - ``DEBUG_BASIC``: Represents basic debugging information.
+    - ``DEBUG_VERBOSE``: Represents verbose debugging information.
+    - ``DEBUG_FULL``: Represents full debugging information.
+- **Description**: Defines different levels of debugging information that can be used to control the amount of detail provided during debugging. The levels range from `DEBUG_NONE`, which provides no information, to `DEBUG_FULL`, which provides the most detailed information.
 
 
 ---
 ### WeekDay<!-- {{#data_structure:WeekDay}} -->
-- **Type**: `enum`
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L248>)
+
+- **Type**: ``enum``
 - **Members**:
-    - `MONDAY`: Represents the first day of the work week.
-    - `TUESDAY`: Represents the second day of the work week.
-    - `WEDNESDAY`: Represents the middle day of the work week.
-    - `THURSDAY`: Represents the fourth day of the work week.
-    - `FRIDAY`: Represents the last day of the work week.
-- **Description**: The `WeekDay` enum is a C-style enumeration that defines constants for the days of the work week, from Monday to Friday. It is used to represent and manage the days of the week in a programmatic way, allowing for easy comparison and iteration over the work week days.
+    - `MONDAY`: Represents Monday.
+    - `TUESDAY`: Represents Tuesday.
+    - `WEDNESDAY`: Represents Wednesday.
+    - `THURSDAY`: Represents Thursday.
+    - `FRIDAY`: Represents Friday.
+- **Description**: Defines the days of the work week as enumerated constants, allowing for easy reference and comparison of weekdays in the program.
 
 
 # Functions
 
 ---
 ### operator|<!-- {{#callable:operator|}} -->
-The `operator|` function performs a bitwise OR operation on two `AccessFlags` enum values and returns the result as an `AccessFlags` type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L139>)
+
+Performs a bitwise OR operation on two `AccessFlags` values and returns the result as an `AccessFlags`.
 - **Inputs**:
-    - `lhs`: The left-hand side operand of type `AccessFlags` for the bitwise OR operation.
-    - `rhs`: The right-hand side operand of type `AccessFlags` for the bitwise OR operation.
-- **Control Flow**:
-    - The function takes two `AccessFlags` enum values as input parameters.
-    - It casts each `AccessFlags` value to an `unsigned int` to perform a bitwise OR operation.
-    - The result of the bitwise OR operation is cast back to the `AccessFlags` type.
-    - The function returns the resulting `AccessFlags` value.
-- **Output**: The function returns an `AccessFlags` value that represents the bitwise OR of the input `AccessFlags` values.
+    - `lhs`: The left-hand side `AccessFlags` operand for the bitwise OR operation.
+    - `rhs`: The right-hand side `AccessFlags` operand for the bitwise OR operation.
+- **Logic and Control Flow**:
+    - Convert `lhs` to its underlying `unsigned int` type.
+    - Convert `rhs` to its underlying `unsigned int` type.
+    - Perform a bitwise OR operation on the two `unsigned int` values.
+    - Cast the result back to `AccessFlags`.
+    - Return the resulting `AccessFlags`.
+- **Output**: The result of the bitwise OR operation as an `AccessFlags`.
 
 
 ---
 ### operator&<!-- {{#callable:operator&}} -->
-The `operator&` function performs a bitwise AND operation on two `AccessFlags` enum values and returns the result as an `AccessFlags` type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L145>)
+
+Performs a bitwise AND operation on two `AccessFlags` values and returns the result as an `AccessFlags`.
 - **Inputs**:
-    - `lhs`: The left-hand side operand of type `AccessFlags` for the bitwise AND operation.
-    - `rhs`: The right-hand side operand of type `AccessFlags` for the bitwise AND operation.
-- **Control Flow**:
-    - The function takes two `AccessFlags` enum values as input parameters.
-    - It casts each `AccessFlags` value to an `unsigned int` to perform the bitwise AND operation.
-    - The result of the bitwise AND operation is cast back to the `AccessFlags` type.
-    - The function returns the resulting `AccessFlags` value.
-- **Output**: The function returns an `AccessFlags` value that represents the result of the bitwise AND operation between the two input `AccessFlags` values.
+    - `lhs`: The left-hand side `AccessFlags` operand for the bitwise AND operation.
+    - `rhs`: The right-hand side `AccessFlags` operand for the bitwise AND operation.
+- **Logic and Control Flow**:
+    - Convert `lhs` to an `unsigned int` using `static_cast`.
+    - Convert `rhs` to an `unsigned int` using `static_cast`.
+    - Perform a bitwise AND operation on the two `unsigned int` values.
+    - Convert the result back to `AccessFlags` using `static_cast`.
+    - Return the resulting `AccessFlags`.
+- **Output**: The result of the bitwise AND operation as an `AccessFlags`.
 
 
 ---
 ### colorToString<!-- {{#callable:colorToString}} -->
-The `colorToString` function converts a `Color` enum value to its corresponding string representation.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L185>)
+
+Converts a `Color` enum value to its corresponding string representation.
 - **Inputs**:
-    - `color`: An enum value of type `Color`, which can be one of `RED`, `GREEN`, or `BLUE`.
-- **Control Flow**:
-    - The function uses a `switch` statement to determine the string representation of the input `color`.
-    - If the `color` is `RED`, it returns the string "Red".
-    - If the `color` is `GREEN`, it returns the string "Green".
-    - If the `color` is `BLUE`, it returns the string "Blue".
-    - If the `color` does not match any of the specified cases, it returns the string "Unknown".
-- **Output**: A `std::string` representing the name of the color, or "Unknown" if the color is not recognized.
+    - `color`: A `Color` enum value that represents a color.
+- **Logic and Control Flow**:
+    - Use a `switch` statement to check the value of `color`.
+    - If `color` is `RED`, return the string "Red".
+    - If `color` is `GREEN`, return the string "Green".
+    - If `color` is `BLUE`, return the string "Blue".
+    - For any other value, return the string "Unknown".
+- **Output**: A `std::string` that represents the name of the color.
 
 
 ---
 ### getOppositeDirection<!-- {{#callable:getOppositeDirection}} -->
-The `getOppositeDirection` function returns the opposite cardinal direction for a given `Direction` enum value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L194>)
+
+Returns the opposite cardinal direction for a given `Direction` enum value.
 - **Inputs**:
-    - `dir`: A `Direction` enum value representing the current direction (NORTH, SOUTH, EAST, or WEST).
-- **Control Flow**:
-    - The function uses a switch statement to determine the opposite direction based on the input `dir`.
-    - If `dir` is `Direction::NORTH`, it returns `Direction::SOUTH`.
-    - If `dir` is `Direction::SOUTH`, it returns `Direction::NORTH`.
-    - If `dir` is `Direction::EAST`, it returns `Direction::WEST`.
-    - If `dir` is `Direction::WEST`, it returns `Direction::EAST`.
-    - The default case returns `Direction::NORTH`, although this case should never be reached if the input is valid.
-- **Output**: The function returns a `Direction` enum value representing the opposite direction of the input.
+    - ``dir``: A `Direction` enum value representing the current direction.
+- **Logic and Control Flow**:
+    - Use a `switch` statement to evaluate the input `dir`.
+    - If `dir` is `Direction::NORTH`, return `Direction::SOUTH`.
+    - If `dir` is `Direction::SOUTH`, return `Direction::NORTH`.
+    - If `dir` is `Direction::EAST`, return `Direction::WEST`.
+    - If `dir` is `Direction::WEST`, return `Direction::EAST`.
+    - If `dir` does not match any case, return `Direction::NORTH` as a default, although this should not occur.
+- **Output**: A `Direction` enum value representing the opposite direction of the input.
 
 
 ---
 ### isValidGrade<!-- {{#callable:isValidGrade}} -->
-The function `isValidGrade` checks if a given `Grade` value is within the valid range of grades from 'F' to 'A'.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L205>)
+
+Checks if a given `Grade` value is within the valid range from `Grade::F` to `Grade::A`.
 - **Inputs**:
-    - `g`: A `Grade` enum value representing a student's grade.
-- **Control Flow**:
-    - The function takes a `Grade` enum value as input.
-    - It checks if the input grade is greater than or equal to `Grade::F` and less than or equal to `Grade::A`.
-    - The function returns the result of this comparison as a boolean value.
-- **Output**: A boolean value indicating whether the input grade is valid (true) or not (false).
+    - `g`: A `Grade` enum value to validate.
+- **Logic and Control Flow**:
+    - Compares the input `Grade` value `g` to `Grade::F` and `Grade::A`.
+    - Returns `true` if `g` is greater than or equal to `Grade::F` and less than or equal to `Grade::A`.
+    - Returns `false` otherwise.
+- **Output**: A boolean value indicating whether the `Grade` is valid.
 
 
 ---
 ### gradeToGPA<!-- {{#callable:gradeToGPA}} -->
-The `gradeToGPA` function converts a `Grade` enum value to its corresponding GPA value as a double.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L209>)
+
+Converts a `Grade` enum value to its corresponding GPA value.
 - **Inputs**:
-    - `g`: A `Grade` enum value representing a student's grade, which can be one of `Grade::A`, `Grade::B`, `Grade::C`, `Grade::D`, or `Grade::F`.
-- **Control Flow**:
-    - The function uses a `switch` statement to determine the GPA value based on the input `Grade` value.
-    - If the `Grade` is `Grade::A`, it returns 4.0.
-    - If the `Grade` is `Grade::B`, it returns 3.0.
-    - If the `Grade` is `Grade::C`, it returns 2.0.
-    - If the `Grade` is `Grade::D`, it returns 1.0.
-    - If the `Grade` is `Grade::F`, it returns 0.0.
-    - If the `Grade` does not match any of the specified cases, it defaults to returning 0.0.
+    - `g`: A `Grade` enum value representing a student's grade.
+- **Logic and Control Flow**:
+    - Use a `switch` statement to check the value of `g`.
+    - If `g` is `Grade::A`, return 4.0.
+    - If `g` is `Grade::B`, return 3.0.
+    - If `g` is `Grade::C`, return 2.0.
+    - If `g` is `Grade::D`, return 1.0.
+    - If `g` is `Grade::F`, return 0.0.
+    - If `g` does not match any case, return 0.0 as a default.
 - **Output**: A `double` representing the GPA value corresponding to the input `Grade`.
 
 
 ---
 ### getDefaultPriority<!-- {{#callable:getDefaultPriority}} -->
-The function `getDefaultPriority` returns the default priority level as a `Priority` enum value.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L221>)
+
+Returns the default priority level as `Priority::MEDIUM`.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined as a `constexpr`, indicating it can be evaluated at compile time.
-    - It directly returns the `Priority::MEDIUM` enum value without any conditions or calculations.
-- **Output**: The function returns a `Priority` enum value, specifically `Priority::MEDIUM`.
+- **Logic and Control Flow**:
+    - Return the value `Priority::MEDIUM`.
+- **Output**: A `Priority` enum value representing the default priority level, specifically `Priority::MEDIUM`.
 
 
 ---
 ### getPriorityValue<!-- {{#callable:getPriorityValue}} -->
-The function `getPriorityValue` converts a `Priority` enum value to its underlying integer representation.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L225>)
+
+Converts a `Priority` enum value to its corresponding integer value.
 - **Inputs**:
-    - `p`: An enum value of type `Priority` which represents different levels of priority with specific integer values.
-- **Control Flow**:
-    - The function takes a `Priority` enum value as input.
-    - It uses `static_cast` to convert the enum value to its underlying integer type.
-    - The function returns the integer representation of the `Priority` enum value.
-- **Output**: An integer representing the underlying value of the `Priority` enum input.
+    - `p`: A `Priority` enum value that represents the priority level.
+- **Logic and Control Flow**:
+    - Use `static_cast<int>` to convert the `Priority` enum value `p` to its underlying integer type.
+- **Output**: Returns the integer value corresponding to the `Priority` enum value.
 
 
 ---
 ### toUnderlying<!-- {{#callable:toUnderlying}} -->
-The `toUnderlying` function converts an enumeration value to its underlying integral type.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L232>)
+
+Converts an enumeration value to its underlying integer type.
 - **Inputs**:
-    - `E`: A template parameter representing an enumeration type.
-    - `e`: An instance of the enumeration type `E` to be converted to its underlying type.
-- **Control Flow**:
-    - The function takes an enumeration value `e` as input.
-    - It uses `std::underlying_type_t<E>` to determine the underlying integral type of the enumeration `E`.
-    - The function then performs a `static_cast` to convert the enumeration value `e` to its underlying type.
-    - The function is marked `constexpr` and `noexcept`, indicating it can be evaluated at compile time and does not throw exceptions.
-- **Output**: The function returns the enumeration value `e` converted to its underlying integral type.
+    - `E e`: An enumeration value of type `E`.
+- **Logic and Control Flow**:
+    - Uses `std::underlying_type_t<E>` to determine the underlying type of the enumeration `E`.
+    - Casts the enumeration value `e` to its underlying type using `static_cast`.
+- **Output**: The underlying integer value of the enumeration `e`.
 
 
 ---
 ### main<!-- {{#callable:main}} -->
-The `main` function demonstrates the usage of various types of enums in C++ by initializing and manipulating them, and printing their values or results of operations to the console.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/cpp/test_enums.cpp#L254>)
+
+Demonstrates the use of various enum types and their applications in C++.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize a `Color` enum variable `favorite_color` with `RED` and print its string representation using [`colorToString`](<#colorToString>).
-    - Initialize a `Direction` enum class variable `current_direction` with `Direction::NORTH` and determine its opposite using [`getOppositeDirection`](<#getOppositeDirection>).
-    - Initialize a `StatusCode` enum variable `result` with `SUCCESS` and print a success message if the result is `SUCCESS`.
-    - Initialize a `Priority` enum class variable `task_priority` with `Priority::HIGH` and print its integer value.
-    - Initialize a `Grade` enum class variable `student_grade` with `Grade::A` and print the corresponding GPA using [`gradeToGPA`](<#gradeToGPA>).
-    - Declare a buffer array with size `BUFFER_SIZE` and print the buffer size.
-    - Initialize a `Graphics::RenderMode` enum variable `render_mode` with `Graphics::TEXTURED` and a `Graphics::BlendMode` enum class variable `blend_mode` with `Graphics::BlendMode::MULTIPLY`.
-    - Create a `GameEntity` object `player` with type `GameEntity::PLAYER` and movement `GameEntity::MovementType::AI_CONTROLLED`, then print the player's type.
-    - Create a `Task` object `high_priority_task` with priority `Priority::HIGH` and execute it, printing the task's priority.
-    - Initialize a `FilePermissions` enum variable `file_perms` with `READ_WRITE` and an `AccessFlags` enum class variable `access_flags` with a combination of `AccessFlags::READ` and `AccessFlags::WRITE`.
-    - Print the underlying integer value of `current_direction` using [`toUnderlying`](<#toUnderlying>).
-    - Create a `Container<int>` object `int_container` with insertion policy `Container<int>::REPLACE_EXISTING` and sort order `Container<int>::SortOrder::ASCENDING`.
-    - Return 0 to indicate successful execution.
-- **Output**: The function returns an integer value `0` indicating successful execution.
+- **Logic and Control Flow**:
+    - Initializes a `Color` enum variable `favorite_color` with `RED` and prints its string representation using [`colorToString`](<#colortostring>).
+    - Initializes a `Direction` enum class variable `current_direction` with `Direction::NORTH` and finds its opposite using [`getOppositeDirection`](<#getoppositedirection>).
+    - Initializes a `StatusCode` enum variable `result` with `SUCCESS` and checks if the operation was successful, printing a message if true.
+    - Initializes a `Priority` enum class variable `task_priority` with `Priority::HIGH` and prints its integer value.
+    - Initializes a `Grade` enum class variable `student_grade` with `Grade::A` and prints the corresponding GPA using [`gradeToGPA`](<#gradetogpa>).
+    - Declares a character buffer with size `BUFFER_SIZE` and prints the buffer size.
+    - Initializes `Graphics::RenderMode` and `Graphics::BlendMode` enum variables with `Graphics::TEXTURED` and `Graphics::BlendMode::MULTIPLY`, respectively.
+    - Creates a `GameEntity` object `player` with type `GameEntity::PLAYER` and movement `GameEntity::MovementType::AI_CONTROLLED`, then prints the player type.
+    - Creates a `Task` object `high_priority_task` with `Priority::HIGH` and executes it, printing the task priority.
+    - Initializes `FilePermissions` and `AccessFlags` variables with `READ_WRITE` and a combination of `AccessFlags::READ` and `AccessFlags::WRITE`, respectively.
+    - Prints the underlying integer value of `current_direction` using [`toUnderlying`](<#tounderlying>).
+    - Creates a `Container<int>` object `int_container` with insertion policy `Container<int>::REPLACE_EXISTING` and sort order `Container<int>::SortOrder::ASCENDING`.
+    - Returns 0 to indicate successful execution.
+- **Output**: Returns an integer value 0 to indicate successful execution.
 - **Functions Called**:
-    - [`colorToString`](<#colorToString>)
-    - [`getOppositeDirection`](<#getOppositeDirection>)
-    - [`gradeToGPA`](<#gradeToGPA>)
-    - [`toUnderlying`](<#toUnderlying>)
+    - [`colorToString`](<#colortostring>)
+    - [`getOppositeDirection`](<#getoppositedirection>)
+    - [`gradeToGPA`](<#gradetogpa>)
+    - [`toUnderlying`](<#tounderlying>)
 
 
 

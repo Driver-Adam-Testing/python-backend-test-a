@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `upload_service_test.py` file contains unit tests for the `UploadService` in the `python-backend` codebase, verifying the functionality of uploading codebases and PDFs, including handling of valid and invalid file paths and user permissions.
+Tests for the upload service, including codebase and PDF upload scenarios with validation and exceptions.
 
 # Purpose
-This Python file is a test suite using the `pytest` framework to validate the functionality of an upload service within an application. It provides narrow functionality focused on testing the upload capabilities for codebases and PDFs, ensuring that the service behaves correctly under various conditions. The file includes fixtures to set up necessary test data, such as a mock `UploadService` and a `Workspace` instance, and defines several test cases to check successful uploads, handling of invalid file paths, and scenarios where no default workspace is available. The tests verify that the service correctly generates upload URLs and raises appropriate exceptions when expected, ensuring robustness and reliability in the upload process.
+This code is a test suite for validating the functionality of an upload service in a FastAPI application. It uses the `pytest` framework to define fixtures and test cases that verify the behavior of the `UploadService` class. The tests cover scenarios such as successful uploads of codebases and PDFs, handling of missing default workspaces, and validation of file paths. The fixtures `upload_service` and `workspace` set up the necessary environment for the tests by providing instances of `UploadService` and `Workspace`. The test cases ensure that the upload service correctly generates URLs with specific prefixes and raises appropriate exceptions when conditions are not met.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

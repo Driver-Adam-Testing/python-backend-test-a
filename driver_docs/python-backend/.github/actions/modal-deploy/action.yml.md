@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `action.yml` file defines a GitHub Action for deploying a modal package, including steps for installing dependencies, running tests, and deploying the package using specified inputs such as working directory, package name, environment, and authentication tokens.
+GitHub Action for deploying a modal package with specified inputs and environment variables.
 
 # Purpose
-The provided content is a configuration file for a GitHub Action workflow designed to automate the deployment of a modal package. It specifies the necessary inputs required for the deployment process, such as the working directory, package name, environment, and authentication tokens, all of which are marked as required. The workflow is defined to run using a composite action, consisting of three main steps: installing dependencies using Poetry, running tests with Pytest, and deploying the specified modal package. The deployment step utilizes environment variables for authentication and environment configuration, and it executes the deployment command with the specified environment and a tag derived from the GitHub commit SHA. This setup ensures a streamlined and automated deployment process within a continuous integration/continuous deployment (CI/CD) pipeline.
+The configuration file defines a workflow for deploying a modal package. It specifies several required inputs, including `working-directory`, `package-name`, `modal-env`, `modal-token-id`, and `modal-token-secret`, which are necessary for the deployment process. The workflow consists of three main steps: installing dependencies using `poetry install --no-root`, running tests with `poetry run pytest`, and deploying the package using `poetry run modal deploy`. The deployment step uses environment variables `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, and `MODAL_ENV` to authenticate and configure the deployment environment. The deployment command also includes a tag derived from the GitHub SHA to ensure version control.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

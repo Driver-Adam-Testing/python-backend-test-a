@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_long_descriptions.txt` file outlines a process for creating a concise, single-sentence summary of a codebase by utilizing detailed descriptions of its modules.
+Instructions for writing a single sentence description of a codebase using detailed module descriptions.
 
 # Purpose
-The provided content outlines a structured approach for generating a concise, single-sentence description of a software codebase. This process involves analyzing detailed descriptions of individual files and folders within the codebase, which are provided in a specific format. Each file and folder is described with its name, path, and a brief explanation of its purpose or content. The goal is to synthesize these detailed descriptions into a coherent summary that accurately reflects the overall purpose and functionality of the entire codebase, without introducing any additional information or assumptions. This method ensures that the final description is both precise and comprehensive, capturing the essence of the codebase based solely on the provided metadata.
+The configuration file defines the structure and organization of a software codebase by providing detailed descriptions of its modules, including files and folders. Each file and folder is identified by its name and path, followed by a description that explains its purpose and functionality within the codebase. This metadata helps developers understand the role of each component, facilitating easier navigation and maintenance of the codebase. By outlining the relationships and dependencies between different parts of the software, the configuration file serves as a guide for developers to efficiently manage and modify the codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

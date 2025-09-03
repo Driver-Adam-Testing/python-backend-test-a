@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Modules and templates for generating structured descriptions and analyses of codebase components.
+Templates, file and folder analysis, symbol management, and codebase description functions.
 
 ## Folders
-- **[prompt_templates](prompt_templates/README.md)**: Subfolders with Python files and text templates for generating structured prompts and summarizing software.
+- **[prompt_templates](prompt_templates/README.md)**: Templates and instructions for analyzing, summarizing, and describing software files, folders, and codebases.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[extensions.py](extensions.py.md)**: The `extensions.py` file lists various code and metadata file extensions, with notes indicating some entries may be removed as the logic is handled elsewhere.
-- **[files.py](files.py.md)**: The `files.py` file in the `python-backend` codebase provides functionality for determining file types and generating descriptions of files using language models, with support for various programming languages and metadata templates.
-- **[folders.py](folders.py.md)**: The `folders.py` file in the `python-backend` codebase provides functionality for generating descriptions of folder contents, including single sentence and paragraph summaries, using a language model to process and compress content from child nodes.
-- **[symbols.py](symbols.py.md)**: The `symbols.py` file in the `python-backend` codebase provides functionality for extracting and documenting symbols from source code files, including handling context size limitations and selecting appropriate models for generating symbol descriptions.
-- **[toplevel.py](toplevel.py.md)**: The `toplevel.py` file in the `python-backend` codebase provides functions for generating and compressing descriptions of codebase content using a language model, including methods for creating various levels of detail such as single sentences, paragraphs, and long descriptions.
+- **[extensions.py](extensions.py.md)**: Defines lists of code and metadata file extensions with comments for potential removal.
+- **[files.py](files.py.md)**: Functions and classes for determining file types, generating descriptions, and handling templates for code inspection.
+- **[folders.py](folders.py.md)**: Functions and classes for generating concise descriptions of folder contents in a codebase.
+- **[symbols.py](symbols.py.md)**: Functions and classes for extracting, documenting, and managing symbols in source code files.
+- **[toplevel.py](toplevel.py.md)**: Functions for generating and processing descriptions of codebase content using language models.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

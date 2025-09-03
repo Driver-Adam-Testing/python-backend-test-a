@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `templates.py` file in the `python-backend` codebase provides a framework for generating and processing template-based outputs using various prompt and conditional constructs, leveraging language models and handling different output configurations.
+Implements a template system for generating structured outputs using language models with conditional logic.
 
 # Purpose
-This Python code defines a framework for processing and generating content using templates and language models, specifically targeting scenarios where conditional logic and structured output are required. The code is structured around several classes and functions, with the primary focus on the `Template` class, which utilizes a list of template sections to generate output based on various conditions and prompts. The `S` class, an enumeration, defines different types of template sections, such as raw text, single or multi-prompt text, JSON outputs, and conditional constructs using either language models or functions. The `Template` class's [`run_with_code`](<#Templaterun_with_code>) method iterates over these template sections, executing the appropriate logic based on the section type, and generating output by interacting with a language model (represented by the `ChatOpenAI` class).
+The code defines a framework for processing templates with various sections that interact with a language model, specifically `ChatOpenAI`. It uses the `pydantic` library to define data models and validate inputs. The `Template` class is central to this framework, containing a method [`run_with_code`](<#templaterun_with_code>) that processes a list of template sections. Each section is defined by a kind, represented by the `S` enumeration, which specifies the type of processing required, such as raw text, single or multiple prompts, and conditional logic based on language model outputs or function evaluations.
 
-The code is designed to be part of a larger system, likely a library, that facilitates the generation of structured content using language models. It imports several utility modules and classes, such as `Lang`, `ReifiedSymbol`, and `OutputConfig`, which are used to handle language-specific details and output configurations. The `Boolean` class provides a mechanism to derive boolean values from language model responses, with error handling for validation issues. The code is modular, with a focus on extensibility, allowing for the addition of new template section types and conditional logic. It is intended to be used as part of a larger application where templates are defined and executed to produce structured outputs, potentially for documentation, code analysis, or other automated content generation tasks.
+The code includes several classes and functions to support this template processing. The `S` class is an enumeration that categorizes different template section types. The `TemplateError` class is a custom exception for handling errors specific to template processing. The `SectionKind` and `Boolean` classes are `pydantic` models that encapsulate section kind and boolean values, respectively. The `Boolean` class includes a class method [`from_llm`](<#booleanfrom_llm>) to generate a boolean value from a language model response. The [`_arity`](<#_arity>) function determines the number of parameters a callable object accepts, which is used to handle different callable actions within the template processing logic. The code is designed to be part of a larger system, likely a library, that can be imported and used to generate structured outputs based on code and language model interactions.
 # Imports and Dependencies
 
 ---
@@ -35,47 +35,56 @@ The code is designed to be part of a larger system, likely a library, that facil
 
 ---
 ### S<!-- {{#class:python-backend/content_services/inspector/src/utils/templates.S}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L20>)
+
 - **Members**:
-    - `RAW`: Represents the raw state with a value of 0.
-    - `SINGLE_PROMPT_TEXT`: Represents a single prompt text state with a value of 1.
-    - `SINGLE_PROMPT_JSON`: Represents a single prompt JSON state with a value of 2.
-    - `LLM_COND_TEXT`: Represents a language model conditional text state with a value of 3.
-    - `LLM_COND_JSON`: Represents a language model conditional JSON state with a value of 4.
-    - `FN_COND_TEXT`: Represents a function conditional text state with a value of 5.
-    - `FN_COND_JSON`: Represents a function conditional JSON state with a value of 6.
-    - `MULTI_PROMPT_TEXT`: Represents a multi-prompt text state with a value of 7.
-    - `MULTI_PROMPT_JSON`: Represents a multi-prompt JSON state with a value of 8.
-    - `SINGLE_PROMPT_CHUNK`: Represents a single prompt chunk state with a value of 9.
-    - `MULTI_LLM_COND_JSON`: Represents a multi-language model conditional JSON state with a value of 10.
-    - `SINGLE_PROMPT_CHUNK_JSON`: Represents a single prompt chunk JSON state with a value of 11.
-- **Description**: The `S` class is an enumeration that extends `IntEnum` to define a set of named integer constants representing different states or modes for handling prompts and conditions in text and JSON formats. Each member of the enumeration corresponds to a specific state, such as raw, single prompt text, or multi-prompt JSON, and is associated with a unique integer value. This class is useful for managing and referencing these states in a structured and readable manner within the code.
+    - `RAW`: Represents the integer value 0.
+    - `SINGLE_PROMPT_TEXT`: Represents the integer value 1.
+    - `SINGLE_PROMPT_JSON`: Represents the integer value 2.
+    - `LLM_COND_TEXT`: Represents the integer value 3.
+    - `LLM_COND_JSON`: Represents the integer value 4.
+    - `FN_COND_TEXT`: Represents the integer value 5.
+    - `FN_COND_JSON`: Represents the integer value 6.
+    - `MULTI_PROMPT_TEXT`: Represents the integer value 7.
+    - `MULTI_PROMPT_JSON`: Represents the integer value 8.
+    - `SINGLE_PROMPT_CHUNK`: Represents the integer value 9.
+    - `MULTI_LLM_COND_JSON`: Represents the integer value 10.
+    - `SINGLE_PROMPT_CHUNK_JSON`: Represents the integer value 11.
+- **Description**: Defines an enumeration of integer constants used to represent different types of prompt and condition handling scenarios in a template processing system.
 - **Inherits From**:
     - `IntEnum`
 
 
 ---
 ### TemplateError<!-- {{#class:python-backend/content_services/inspector/src/utils/templates.TemplateError}} -->
-- **Description**: The `TemplateError` class is a custom exception that inherits from Python's built-in `Exception` class, designed to handle errors specific to template processing within the application.
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L35>)
+
+- **Description**: Defines a custom exception class for handling template-related errors.
 - **Inherits From**:
     - `Exception`
 
 
 ---
 ### SectionKind<!-- {{#class:python-backend/content_services/inspector/src/utils/templates.SectionKind}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L39>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
-    - `kind`: An instance of the S enumeration representing the type of section.
-- **Description**: The SectionKind class is a simple data model that extends Pydantic's BaseModel, designed to encapsulate a section type using an enumeration S. This class is primarily used to categorize different sections within a template, allowing for structured handling of various section types in the template processing logic.
+    - `kind`: Specifies the type of section using the `S` enumeration.
+- **Description**: Defines a model for a section with a specific kind, using the `S` enumeration to categorize the section type.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### Boolean<!-- {{#class:python-backend/content_services/inspector/src/utils/templates.Boolean}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L43>)
+
 - **Members**:
-    - `value`: A boolean value representing the state of the Boolean instance.
-- **Description**: The `Boolean` class is a specialized model that extends the `BaseModel` from Pydantic, designed to encapsulate a boolean value. It includes a class method `from_llm` that facilitates the creation of a `Boolean` instance by interpreting responses from a language model (LLM), with error handling to ensure a valid boolean is set, defaulting to a fallback value if necessary.
+    - `value`: Stores a boolean value.
+- **Description**: Represents a model that holds a boolean value and provides a class method `from_llm` to create an instance from a response generated by a `ChatOpenAI` object. If the response is not valid, it uses a fallback boolean value.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/templates.Boolean.from_llm`](<#Booleanfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/templates.Boolean.from_llm`](<#booleanfrom_llm>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -83,33 +92,38 @@ The code is designed to be part of a larger system, likely a library, that facil
 
 ---
 #### Boolean\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/templates.Boolean.from_llm}} -->
-The `from_llm` method attempts to create a `Boolean` instance from a response generated by a language model, defaulting to a fallback value if the response is invalid.
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L46>)
+
+Creates a `Boolean` instance from a response generated by a language model, with error handling for invalid responses.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `Boolean` itself, used to create an instance.
+    - `cls`: The class itself, used to create an instance.
     - `llm`: An instance of `ChatOpenAI` used to generate a response.
-    - `code`: A string representing the code context for the LLM.
-    - `system_prompt`: A string prompt provided to the LLM to set the system context.
-    - `human_prompt`: A string prompt provided to the LLM to simulate human input.
-    - `fallback`: A boolean value used as a fallback if the LLM response is invalid, defaulting to `True`.
-- **Control Flow**:
-    - Generate a response from the LLM using the provided system and human prompts.
-    - Attempt to create a `Boolean` instance using the LLM's response.
-    - If a `ValidationError` occurs, log a warning and create a `Boolean` instance using the fallback value.
-- **Output**: Returns an instance of `Boolean` with a value derived from the LLM response or the fallback value.
+    - `code`: A string representing the code context for the language model.
+    - `system_prompt`: A string prompt for the system to guide the language model's response.
+    - `human_prompt`: A string prompt for the human to guide the language model's response.
+    - `fallback`: A boolean value used as a fallback if the generated response is invalid, default is `True`.
+- **Logic and Control Flow**:
+    - Calls [`generate_response`](<models.py.md#chatopenaigenerate_response>) on the `llm` object with `system_prompt` and `human_prompt` to get `raw_response`.
+    - Attempts to create a `Boolean` instance with `raw_response` as the value.
+    - If a `ValidationError` occurs, logs a warning message and creates a `Boolean` instance with the `fallback` value instead.
+- **Output**: Returns a `Boolean` instance with a value derived from the language model's response or the fallback value.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/chat_openai.ChatOpenAI.generate_response`](<../../../auto_toml/src/chat_openai.py.md#ChatOpenAIgenerate_response>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/templates.Boolean`](<#Boolean>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<models.py.md#chatopenaigenerate_response>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/templates.Boolean`](<#boolean>)  (Base Class)
 
 
 
 ---
 ### Template<!-- {{#class:python-backend/content_services/inspector/src/utils/templates.Template}} -->
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L67>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
-    - `template`: A list of any type that defines the structure of the template.
-- **Description**: The `Template` class, inheriting from `BaseModel`, is designed to execute a sequence of templated operations using a language model (LLM). It processes a list of template sections, each defined by a kind and associated arguments, to generate structured outputs. The class supports various section types, including raw text, single and multi-prompt text or JSON outputs, and conditional constructs using either LLMs or functions. It is capable of handling complex templating scenarios, such as linking symbols in code to documentation or generating content based on conditional logic.
+    - `template`: Holds a list of any type of elements.
+- **Description**: Defines a structure for executing code templates with various section kinds, using a language model to generate responses based on prompts and conditions.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/templates.Template.run_with_code`](<#Templaterun_with_code>)
+    - [`python-backend/content_services/inspector/src/utils/templates.Template.run_with_code`](<#templaterun_with_code>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -117,34 +131,44 @@ The `from_llm` method attempts to create a `Boolean` instance from a response ge
 
 ---
 #### Template\.run\_with\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/templates.Template.run_with_code}} -->
-The `run_with_code` method processes a template to generate output by executing various sections using a language model and potentially modifying content based on reified symbols and code chunks.
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L70>)
+
+Executes a template-driven process to generate output based on code and language model interactions.
 - **Inputs**:
-    - `llm`: An instance of ChatOpenAI used to generate responses based on prompts.
-    - `root_rel_path`: A Path object representing the root relative path for the code.
-    - `code`: A string containing the code to be processed.
-    - `language`: An instance of Lang indicating the programming language of the code.
-    - `reified_symbols`: An optional list of ReifiedSymbol objects used to replace backticked symbols in the content.
-    - `code_chunks`: An optional list of strings representing chunks of code, used in sections that require multiple prompts.
-    - `max_num_chunks_to_use`: An optional integer specifying the maximum number of code chunks to use in processing.
-- **Control Flow**:
-    - Initialize an empty string `output` to accumulate the final result.
-    - Iterate over each tuple in `self.template`, extracting the section kind and arguments.
-    - Use a match-case structure to handle different section kinds, such as RAW, SINGLE_PROMPT_TEXT, SINGLE_PROMPT_JSON, LLM_COND_TEXT, FN_COND_TEXT, MULTI_PROMPT_TEXT, etc.
-    - For RAW sections, append the raw content to `output`.
-    - For SINGLE_PROMPT_TEXT sections, generate a response using the LLM and append it to `output`, replacing backticked symbols if `reified_symbols` is provided.
-    - For SINGLE_PROMPT_JSON sections, use a function to generate JSON output and append it to `output`.
-    - For conditional sections (LLM_COND_TEXT, FN_COND_TEXT), determine the action based on the output of a conditional function and append the result to `output`.
-    - For MULTI_PROMPT_TEXT sections, iterate over code chunks, generate responses for each, and aggregate them into a final response appended to `output`.
-    - Handle errors by raising a TemplateError for unsupported section kinds or incorrect function arity.
-- **Output**: A string containing the processed output based on the template and code provided.
+    - `self`: Refers to the instance of the class `Template`.
+    - `llm`: An instance of `ChatOpenAI` used to generate responses.
+    - `root_rel_path`: A `Path` object representing the root relative path for the code.
+    - `code`: A string containing the code to process.
+    - `language`: An instance of `Lang` representing the programming language of the code.
+    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, used for symbol linking in the content.
+    - `code_chunks`: A list of code strings or `None`, representing chunks of code to process.
+    - `max_num_chunks_to_use`: An integer or `None`, specifying the maximum number of code chunks to use.
+- **Logic and Control Flow**:
+    - Initialize an empty string `output` to store the final result.
+    - Iterate over each tuple `tup` in `self.template`.
+    - Create a [`SectionKind`](<#sectionkind>) object `tag` with the first element of `tup`.
+    - Extract the remaining elements of `tup` into `args`.
+    - Use a `match` statement to handle different `tag.kind` cases.
+    - For `S.RAW`, append raw content to `output`.
+    - For `S.SINGLE_PROMPT_TEXT`, generate a response using `llm` and append it to `output`.
+    - If `reified_symbols` is not `None`, replace backticked symbols in the content with linkable symbols.
+    - For `S.SINGLE_PROMPT_JSON`, generate a JSON response using `llm` and append it to `output`.
+    - For `S.LLM_COND_TEXT` and `S.LLM_COND_JSON`, execute a conditional LLM function and append the result to `output`.
+    - For `S.FN_COND_TEXT` and `S.FN_COND_JSON`, execute a conditional function and append the result to `output`.
+    - For `S.MULTI_PROMPT_TEXT`, process multiple code chunks and generate a response using `llm`, then append it to `output`.
+    - For `S.SINGLE_PROMPT_CHUNK_JSON`, generate a JSON response for the first code chunk and append it to `output`.
+    - For `S.MULTI_LLM_COND_JSON`, execute a conditional LLM function for multiple code chunks and append the result to `output`.
+    - Raise a [`TemplateError`](<#templateerror>) for unsupported `tag.kind` values.
+    - Return the `output` string.
+- **Output**: A string containing the generated output based on the template and code processing.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/templates.SectionKind`](<#SectionKind>)
-    - [`python-backend/content_services/auto_toml/src/chat_openai.OutputConfig`](<../../../auto_toml/src/chat_openai.py.md#OutputConfig>)
-    - [`python-backend/content_services/auto_toml/src/chat_openai.ChatOpenAI.generate_response`](<../../../auto_toml/src/chat_openai.py.md#ChatOpenAIgenerate_response>)
+    - [`python-backend/content_services/inspector/src/utils/templates.SectionKind`](<#sectionkind>)
+    - [`python-backend/content_services/inspector/src/utils/models.OutputConfig`](<models.py.md#outputconfig>)
+    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](<models.py.md#chatopenaigenerate_response>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<symbol_table/utils.py.md#get_fully_qualified_name>)
     - [`python-backend/content_services/inspector/src/utils/templates._arity`](<#_arity>)
-    - [`python-backend/content_services/inspector/src/utils/templates.TemplateError`](<#TemplateError>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/templates.Template`](<#Template>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/templates.TemplateError`](<#templateerror>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/templates.Template`](<#template>)  (Base Class)
 
 
 
@@ -152,14 +176,16 @@ The `run_with_code` method processes a template to generate output by executing 
 
 ---
 ### \_arity<!-- {{#callable:python-backend/content_services/inspector/src/utils/templates._arity}} -->
-The `_arity` function calculates and returns the number of parameters a given callable function has.
+[View Source →](<../../../../../../content_services/inspector/src/utils/templates.py#L16>)
+
+Calculates the number of parameters a given callable object takes.
 - **Inputs**:
-    - `fn`: A callable object (function or method) whose number of parameters is to be determined.
-- **Control Flow**:
-    - The function uses the `signature` function from the `inspect` module to obtain the signature of the provided callable `fn`.
-    - It then accesses the `parameters` attribute of the signature, which is a mapping of parameter names to their corresponding `Parameter` objects.
-    - The length of this mapping, which represents the number of parameters, is calculated using `len()` and returned.
-- **Output**: An integer representing the number of parameters the callable `fn` has.
+    - `fn`: A callable object (e.g., a function or method) whose number of parameters will be determined.
+- **Logic and Control Flow**:
+    - Uses the `signature` function from the `inspect` module to obtain the signature of the callable `fn`.
+    - Retrieves the `parameters` attribute from the signature, which is a mapping of parameter names to their corresponding `Parameter` objects.
+    - Calculates the length of the `parameters` mapping to determine the number of parameters `fn` takes.
+- **Output**: Returns an integer representing the number of parameters the callable `fn` takes.
 
 
 

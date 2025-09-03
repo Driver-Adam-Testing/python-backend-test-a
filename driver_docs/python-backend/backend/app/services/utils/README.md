@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Utility functions for content extraction and naming, with unit tests for their functionality.
+Functions for extracting content names from `DerivedContent` objects and tests for these functions.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[content_utils.py](content_utils.py.md)**: The `content_utils.py` file provides utility functions for extracting and determining the name of content from a `DerivedContent` object, with considerations for backward compatibility in handling JSON content and document paths.
-- **[content_utils_test.py](content_utils_test.py.md)**: The `content_utils_test.py` file contains unit tests for the functions `_get_name_from_content_json` and `get_content_name` from the `content_utils` module, using the `pytest` framework and `unittest.mock` for mocking.
+- **[content_utils.py](content_utils.py.md)**: Functions to extract and return content names from `DerivedContent` objects, with backward compatibility.
+- **[content_utils_test.py](content_utils_test.py.md)**: Tests for content name extraction functions in `content_utils` using `pytest` and `unittest.mock`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

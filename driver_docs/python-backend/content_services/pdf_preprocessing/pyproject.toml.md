@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for the `pdf-preprocessing` project using Poetry, specifying dependencies and build settings.
+Configuration for the `pdf-preprocessing` package using Poetry, specifying dependencies and build settings.
 
 # Purpose
-The `pyproject.toml` file is a configuration file used by the Poetry tool to manage the dependencies and metadata of a Python project named `pdf-preprocessing`. The project is at version `0.1.0` and is authored by Eric Miller. The file specifies that the project requires Python version `3.12` or higher but less than `3.13`. It lists several dependencies, including `requests`, `pymupdf`, `openai`, `boto3`, `pydantic`, `tiktoken`, and `pillow`, each with specified version constraints. Additionally, it includes local dependencies from paths `../../driver_db` and `../../packages/shared`, marked for development use. The development group dependencies include `pytest` for testing purposes. The build system section indicates that the project uses `poetry-core` as a requirement and specifies `poetry.core.masonry.api` as the build backend.
+The `pyproject.toml` file configures the Python project using Poetry, a dependency management tool. The `[tool.poetry]` section specifies metadata about the project, including its name `pdf-preprocessing`, version `0.1.0`, and author information. It also references a `README.md` file for additional project details. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, specifying compatible versions for each package, such as `requests`, `pymupdf`, and `openai`. It also includes local packages with paths, such as `database` and `shared`, marked for development. The `[tool.poetry.group.dev.dependencies]` section defines development dependencies, including `pytest` for testing. The `[build-system]` section indicates that the project requires `poetry-core` and uses `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

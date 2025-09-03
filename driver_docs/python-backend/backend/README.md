@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Built around FastAPI, featuring API configurations, scripts for operations, and configuration files for Docker, Git, and dependency management.
+FastAPI and GraphQL APIs, scripts for various operations, Docker and Git ignore files, dependency management, and test scripts.
 
 ## Folders
-- **[app](app/README.md)**: API configurations, authentication, core settings, Git provider management, database operations, Pydantic schemas, service implementations, utility functions, and testing infrastructure, all primarily built around FastAPI.
-- **[scripts](scripts/README.md)**: Various Python and shell scripts for database and S3 operations, server configuration, code linting, application startup, and testing with coverage reporting.
+- **[app](app/README.md)**: FastAPI and GraphQL APIs, authentication, configuration, Git provider management, repositories, schemas, services, tests, utilities, and database initialization.
+- **[scripts](scripts/README.md)**: Scripts for asset copying, database migration, server configuration, linting, S3 operations, app startup, and testing.
 
 ## Files
-- **[.dockerignore](.dockerignore.md)**: The `.dockerignore` file in the `python-backend` codebase specifies files and directories to be excluded from Docker builds, such as Python cache files, virtual environments, and coverage reports.
-- **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies files and directories to be ignored by Git, including Python cache files, virtual environment directories, and coverage reports.
-- **[poetry.lock](poetry.lock.md)**: Ensures consistent Python environments by locking dependency versions and verifying package integrity.
-- **[prestart.sh](prestart.sh.md)**: The `prestart.sh` file is a shell script that initializes the database by starting it, running migrations, and creating initial data.
+- **[.dockerignore](.dockerignore.md)**: Specifies files and directories for Docker to ignore in the Python backend project.
+- **[.gitignore](.gitignore.md)**: Specifies files and directories for Git to ignore in the Python backend project.
+- **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
+- **[prestart.sh](prestart.sh.md)**: A shell script to start the database, run migrations, and create initial data.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies, build system, and testing tools.
-- **[README.md](README.md.md)**: The `README.md` file in the `python-backend` codebase provides comprehensive instructions for setting up and developing a FastAPI backend project, including requirements, local development setup with Docker and Poetry, backend testing, and database migrations.
-- **[tests-start.sh](tests-start.sh.md)**: The `tests-start.sh` file is a shell script that executes a Python pre-start test script followed by a test script in the `python-backend` codebase.
-- **[tst.py](tst.py.md)**: The `tst.py` file contains test functions for verifying the behavior of the `LlmConfig` class methods, including `default` and `from_name`, within the `python-backend` codebase.
+- **[README.md](README.md.md)**: Instructions for setting up and developing a FastAPI backend using Docker, Poetry, and VS Code, including testing and database migrations.
+- **[tests-start.sh](tests-start.sh.md)**: Shell script to run pre-start tests and execute the main test script with arguments.
+- **[tst.py](tst.py.md)**: Tests for `LlmConfig` methods including `default` and `from_name` with valid and invalid inputs.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

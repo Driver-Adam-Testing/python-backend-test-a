@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `primary_assets.py` file defines API endpoints for listing, creating, updating, and deleting primary assets in the `python-backend` codebase, utilizing FastAPI and SQLAlchemy for database interactions and AWS S3 for storage management.
+API endpoints for listing, creating, updating, and deleting primary assets with database and AWS S3 interactions.
 
 # Purpose
-This Python file is a FastAPI-based module that provides a RESTful API for managing "Primary Assets" within an application. The code defines several endpoints for CRUD (Create, Read, Update, Delete) operations on primary assets, which are likely a core data entity in the system. The endpoints include listing primary assets with optional filtering and sorting, creating new primary assets, updating existing ones, and deleting them. The code leverages SQLAlchemy and SQLModel for database interactions, using ORM techniques to query and manipulate data. It also integrates with AWS S3 for managing related data storage, specifically for deleting associated files when a primary asset is removed.
+The code defines a FastAPI-based API for managing `PrimaryAsset` entities within an application. It provides endpoints for listing, creating, updating, and deleting primary assets. The API uses SQLAlchemy and SQLModel for database interactions, and it integrates with AWS S3 for managing related data storage. The [`list_primary_assets`](<#list_primary_assets>) function retrieves a list of primary assets, applying filters and sorting based on query parameters. The [`create_primary_asset`](<#create_primary_asset>) function allows users to add new primary assets to the database. The [`update_primary_asset`](<#update_primary_asset>) function updates existing assets, and the [`delete_primary_asset`](<#delete_primary_asset>) function removes assets from both the database and associated S3 storage.
 
-The file imports various models and utilities from other parts of the application, indicating that it is part of a larger codebase. It uses dependency injection to handle user authentication and session management, ensuring that operations are performed within the context of the current user and session. The code also includes logging and error handling to manage exceptions, particularly when interacting with AWS S3. This module is designed to be part of a larger application, providing a specific set of functionalities related to primary asset management, and is intended to be used as part of a web service rather than a standalone script.
+The code imports several modules and components, including database models, authentication utilities, and configuration settings. It uses SQLAlchemy's ORM capabilities to construct and execute database queries, and it leverages AWS S3 for handling asset-related data storage. The code also includes error handling for database operations and S3 interactions, ensuring that operations are performed securely and consistently. The API endpoints are defined using FastAPI's routing capabilities, and they are protected by user authentication to ensure that only authorized users can perform operations on primary assets.
 # Imports and Dependencies
 
 ---
@@ -24,6 +24,7 @@ The file imports various models and utilities from other parts of the applicatio
 - `database.models_v2.PrimaryAssetTag`
 - `database.models_v2.Version`
 - `database.models_v2_enums.ContentKind`
+- `database.models_v2_enums.PrimaryAssetProvider`
 - `fastapi.Body`
 - `fastapi.HTTPException`
 - `fastapi.Path`
@@ -50,117 +51,121 @@ The file imports various models and utilities from other parts of the applicatio
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module, initialized with the name of the current module. This allows for logging messages that are tagged with the module's name, which can be useful for debugging and monitoring purposes.
-- **Use**: The `logger` is used to log warnings and potentially other log levels throughout the module, providing insights into the application's behavior and errors.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the Python `logging` module. It is initialized using the `getLogger` function with the current module's name as the argument.
+- **Use**: Used to log messages, warnings, and errors throughout the module.
 
 
 # Functions
 
 ---
 ### list\_primary\_assets<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_assets.list_primary_assets}} -->
-The `list_primary_assets` function retrieves a list of primary assets with optional filtering and pagination, returning the results along with a total count.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_assets.py#L34>)
+
+Retrieves a list of primary assets with optional filtering and pagination.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `request`: An instance of `Request` containing the HTTP request data.
-    - `session`: An instance of `CurrentSession` representing the database session for executing queries.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `pagination`: An instance of `Pagination` containing pagination and sorting information.
-    - `tag_ids`: An optional string of comma-separated tag IDs to filter the primary assets by associated tags.
-- **Control Flow**:
-    - The function calls the helper function [`_list_primary_assets`](<#_list_primary_assets>) with the provided arguments.
-    - The [`_list_primary_assets`](<#_list_primary_assets>) function constructs a SQL query to select `PrimaryAsset` records, including related data using `selectinload` for efficient loading.
-    - It applies filters to the query based on the request's query parameters and the user's organization ID.
-    - If `tag_ids` is provided, it further filters the query to include only assets associated with the specified tags.
-    - A count query is executed to determine the total number of matching assets.
-    - If the pagination sort field is 'most_recent_version.root_node.total_files', the assets are sorted manually in Python; otherwise, sorting is applied using the query utilities.
-    - The query is executed to retrieve the list of primary assets, which is then returned along with the total count.
-- **Output**: Returns a `ListWithCount` object containing the list of `PrimaryAssetDetailRead` objects and the total count of matching primary assets.
+    - `request`: The HTTP request object containing query parameters for filtering.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing user information, including organization ID.
+    - `pagination`: The pagination object specifying offset, limit, and sorting options.
+    - `tag_ids`: An optional string of comma-separated tag IDs to filter primary assets by tags.
+- **Logic and Control Flow**:
+    - Calls the helper function [`_list_primary_assets`](<#_list_primary_assets>) with the provided arguments to perform the actual retrieval and processing of primary assets.
+- **Output**: Returns a `ListWithCount` object containing the list of primary assets and the total count of assets.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/primary_assets._list_primary_assets`](<#_list_primary_assets>)
 
 
 ---
 ### \_list\_primary\_assets<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_assets._list_primary_assets}} -->
-The function `_list_primary_assets` retrieves a list of primary assets for a user's organization, applying optional filters, sorting, and pagination, and returns the results along with the total count.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_assets.py#L45>)
+
+Retrieves a list of primary assets for a user, applying filters, sorting, and pagination as specified.
 - **Inputs**:
-    - `request`: An instance of `Request` containing query parameters for filtering the primary assets.
+    - `request`: An instance of `Request` containing query parameters for filtering.
     - `session`: An instance of `CurrentSession` used to execute database queries.
     - `user`: An instance of `User` representing the current user, used to filter assets by organization.
     - `pagination`: An instance of `Pagination` containing pagination and sorting information.
-    - `tag_ids`: An optional string of comma-separated tag IDs to filter the primary assets by associated tags.
-- **Control Flow**:
-    - A SQLAlchemy query is constructed to select `PrimaryAsset` records, with eager loading of related `Version` and `Node` data, and filtered by the user's organization ID.
-    - Query parameters from the request are applied as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
-    - If `tag_ids` is provided, the query is further filtered to include only assets associated with the specified tags.
-    - A count query is executed to determine the total number of assets matching the filters.
-    - If the pagination sort field is `most_recent_version.root_node.total_files`, the assets are retrieved, sorted manually by the total files, and sliced according to pagination limits.
-    - Otherwise, sorting is applied to the query using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>), and the assets are retrieved directly from the database.
-    - The function returns a [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of primary assets and the total count.
-- **Output**: A [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of primary assets and the total count of assets matching the query.
+    - `tag_ids`: A string of comma-separated tag IDs to filter assets by tags, or `None` if no tag filtering is needed.
+- **Logic and Control Flow**:
+    - Constructs a SQL query to select `PrimaryAsset` records, preloading related data using `selectinload` and applying a criteria filter with `with_loader_criteria`.
+    - Filters the query based on the organization ID of the user.
+    - Converts query parameters from the request into a dictionary and applies them as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
+    - If `tag_ids` is provided, adds a subquery to filter assets by the specified tags.
+    - Executes a count query to determine the total number of filtered assets.
+    - Checks if the sorting is by `most_recent_version.root_node.total_files` and, if so, retrieves and sorts the assets manually, applying pagination afterwards.
+    - If sorting is not by `total_files`, applies sorting using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>) and retrieves the paginated results directly from the database.
+    - Returns a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of primary assets and the total count.
+- **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of primary assets and the total count of assets matching the filters.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
-    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#ListWithCount>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#listwithcount>)
 
 
 ---
 ### create\_primary\_asset<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_assets.create_primary_asset}} -->
-The `create_primary_asset` function creates a new primary asset in the database using the provided session, user token, and payload data.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_assets.py#L109>)
+
+Creates a new primary asset in the database and returns it.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: A `UserToken` object representing the authenticated user, providing access to the user's organization ID.
-    - `payload`: A `PrimaryAssetCreate` object containing the data required to create a new primary asset, such as display name and kind.
-- **Control Flow**:
-    - A new [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAsset>) object is instantiated using the display name, organization ID from the user token, and kind from the payload.
-    - The new asset is added to the session using `session.add(new_asset)`.
-    - The session is committed to save the new asset to the database with `session.commit()`.
-    - The session is refreshed to update the new asset with any changes made during the commit using `session.refresh(new_asset)`.
-    - The newly created [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAsset>) object is returned.
-- **Output**: The function returns the newly created [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAsset>) object.
+    - `session`: The current database session used to interact with the database.
+    - `user`: The user token containing information about the authenticated user.
+    - `payload`: The data required to create a new primary asset, provided in the request body.
+- **Logic and Control Flow**:
+    - Creates a new [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>) object using the data from `payload` and the `organization_id` from `user`.
+    - Adds the new asset to the database session.
+    - Commits the transaction to save the new asset in the database.
+    - Refreshes the session to update the `new_asset` object with the latest data from the database.
+    - Returns the newly created [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>) object.
+- **Output**: The newly created [`PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>) object.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#PrimaryAsset>)
+    - [`python-backend/driver_db/database/models_v2.PrimaryAsset`](<../../../../../driver_db/database/models_v2.py.md#primaryasset>)
 
 
 ---
 ### update\_primary\_asset<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_assets.update_primary_asset}} -->
-The `update_primary_asset` function updates an existing primary asset's details in the database based on the provided payload and user context.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_assets.py#L127>)
+
+Updates an existing primary asset with new data provided in the payload.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: A `CurrentSession` object representing the current database session.
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `primary_asset_id`: A `UUID` representing the unique identifier of the primary asset to be updated, extracted from the URL path.
-    - `payload`: A `PrimaryAssetUpdate` object containing the new data for the primary asset, extracted from the request body.
-- **Control Flow**:
-    - The function begins by querying the database to find the primary asset with the given `primary_asset_id` and belonging to the user's organization.
-    - If no such asset is found, an `HTTPException` with a 404 status code is raised, indicating that the primary asset was not found.
-    - If the `display_name` in the payload is not `None`, the asset's `display_name` is updated with the new value from the payload.
-    - If the `codebase_settings_auto_commit_docs` in the payload is not `None`, the asset's `codebase_settings_auto_commit_docs` is updated with the new value from the payload.
-    - The updated asset is added to the session, and the session is committed to save the changes to the database.
-    - The session is refreshed to ensure the asset object is up-to-date with the database state.
-    - The updated asset is returned as the response.
-- **Output**: The function returns the updated `PrimaryAsset` object.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing information about the authenticated user.
+    - `primary_asset_id`: The UUID of the primary asset to update, provided as a path parameter.
+    - `payload`: The data for updating the primary asset, provided in the request body.
+- **Logic and Control Flow**:
+    - Selects the primary asset from the database where the asset ID matches `primary_asset_id` and the organization ID matches the user's organization ID.
+    - Checks if the asset exists; if not, raises an HTTP 404 exception with the message 'Primary asset not found'.
+    - Updates the `display_name` of the asset if the `display_name` in the payload is not `None`.
+    - Updates the `codebase_settings_auto_commit_docs` of the asset if the `codebase_settings_auto_commit_docs` in the payload is not `None`.
+    - Adds the updated asset to the session, commits the changes to the database, and refreshes the asset to reflect the latest state.
+    - Returns the updated asset.
+- **Output**: The updated `PrimaryAsset` object.
 
 
 ---
 ### delete\_primary\_asset<!-- {{#callable:python-backend/backend/app/api/routes/v2/primary_assets.delete_primary_asset}} -->
-The `delete_primary_asset` function deletes a primary asset from the database and its associated data from AWS S3 storage.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/primary_assets.py#L156>)
+
+Deletes a primary asset and its associated data from the database and S3 storage.
 - **Decorators**: `@router.delete`
 - **Inputs**:
-    - `session`: A `CurrentSession` object representing the database session used to execute queries and commit changes.
-    - `user`: A `UserToken` object representing the authenticated user, used to verify organization ownership of the asset.
-    - `primary_asset_id`: A `UUID` representing the unique identifier of the primary asset to be deleted, provided via the URL path.
-- **Control Flow**:
-    - Select the primary asset from the database where the asset ID matches `primary_asset_id` and the organization ID matches the user's organization ID.
-    - If the asset is not found, raise an HTTP 404 exception indicating the asset was not found.
-    - Retrieve all `InspectorRun` IDs associated with the asset's versions from the database.
-    - Generate a hash of the user's organization ID to use as the S3 bucket name prefix.
-    - Initialize an S3 resource using AWS credentials from settings.
-    - Attempt to delete all objects in the S3 bucket with the prefix matching the primary asset ID.
-    - If the bucket does not exist, log a warning and continue; otherwise, propagate the error.
-    - For each `InspectorRun` ID, delete associated objects from the inspector bucket in S3.
-    - Delete the primary asset from the database and commit the transaction.
+    - `session`: The current database session used to execute queries and commit changes.
+    - `user`: The user token containing information about the authenticated user, including their organization ID.
+    - `primary_asset_id`: The UUID of the primary asset to delete, provided as a path parameter.
+- **Logic and Control Flow**:
+    - Selects the primary asset from the database where the asset ID matches `primary_asset_id` and the organization ID matches the user's organization ID.
+    - Raises an HTTP 404 exception if the primary asset is not found.
+    - Retrieves all `InspectorRun` IDs associated with the primary asset's versions.
+    - Generates a hash of the user's organization ID to use as the S3 bucket name prefix.
+    - Initializes an S3 resource using AWS credentials from settings.
+    - Attempts to delete objects in the S3 bucket with the prefix matching the primary asset ID.
+    - Logs a warning if the S3 bucket does not exist, but continues to delete the asset from the database.
+    - Deletes objects in the inspector bucket for each `InspectorRun` ID associated with the primary asset.
+    - Deletes the primary asset from the database and commits the transaction.
 - **Output**: Returns the deleted `PrimaryAsset` object.
 
 

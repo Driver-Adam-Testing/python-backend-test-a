@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `js_ts_resolver.py` file implements a class for resolving TypeScript and JavaScript import statements to corresponding project files within a Python backend.
+Resolves TypeScript and JavaScript import statements to corresponding project files.
 
 # Purpose
-The provided code defines a class `JsTsResolver` that extends the `ImportResolver` class, and it is designed to resolve import statements specifically for JavaScript and TypeScript files within a project. This class is part of a larger system, as indicated by its imports from `utils.lang_specialization.symbol_common` and `utils.symbol_table.base`, suggesting it is a component within a broader framework for handling language-specific symbol resolution. The primary functionality of this class is encapsulated in the [`resolve_import`](<#JsTsResolverresolve_import>) method, which takes a current file path, an import symbol, and a set of project files, and attempts to resolve the import to a specific file path within the project.
+The `JsTsResolver` class extends the `ImportResolver` class to provide functionality for resolving import statements in JavaScript and TypeScript files. It is designed to work within a project structure, where it attempts to match import paths to actual files within a given set of project files. The class defines a `language` attribute set to `"js_ts"`, indicating its specialization for JavaScript and TypeScript.
 
-The [`resolve_import`](<#JsTsResolverresolve_import>) method focuses on handling relative import paths, checking if the import string starts with "./" or "../", and then attempts to match these against the provided project files. It considers both direct matches and potential matches with common JavaScript and TypeScript file extensions (".ts" and ".js"), as well as default index files ("index.ts" and "index.js"). This code is likely part of a library or module intended to be used within a larger codebase, providing a specialized utility for resolving module imports in JavaScript and TypeScript projects. It does not define a public API or external interface directly but rather serves as an internal component for import resolution tasks.
+The [`resolve_import`](<#jstsresolverresolve_import>) method is the primary function of this class. It takes three parameters: `current_file`, which is the file from which the import originates; `import_sym`, which is an instance of `RawTreeSitterSymbolData` representing the import statement; and `project_files`, a set of `Path` objects representing all files in the project. The method checks if the import is a relative path and attempts to resolve it to a file with a `.ts` or `.js` extension within the project. It also handles cases where the import might refer to an `index.ts` or `index.js` file within a directory. If a matching file is found, the method returns its path; otherwise, it returns `None`.
 # Imports and Dependencies
 
 ---
@@ -22,37 +22,40 @@ The [`resolve_import`](<#JsTsResolverresolve_import>) method focuses on handling
 
 ---
 ### JsTsResolver<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver}} -->
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.py#L8>)
+
 - **Members**:
-    - `language`: Specifies the language as 'js_ts' for JavaScript and TypeScript.
-- **Description**: The JsTsResolver class extends the ImportResolver class to specifically handle the resolution of import statements in JavaScript and TypeScript files. It provides functionality to resolve relative import paths to actual project files, checking for both '.ts' and '.js' file extensions, and also considers 'index.ts' and 'index.js' files as potential matches for directory imports.
+    - `language`: Specifies the language as 'js_ts'.
+- **Description**: Resolves TypeScript import statements to corresponding project files by checking relative import paths and matching them with available project files.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<#JsTsResolverresolve_import>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import`](<#jstsresolverresolve_import>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<../base.py.md#ImportResolver>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver`](<../base.py.md#importresolver>)
 
 **Methods**
 
 ---
 #### JsTsResolver\.resolve\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver.resolve_import}} -->
-The `resolve_import` method resolves TypeScript import statements to corresponding project file paths.
+[View Source →](<../../../../../../../../content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.py#L11>)
+
+Resolves TypeScript import statements to corresponding project files.
 - **Inputs**:
-    - `current_file`: A `Path` object representing the current file from which the import is being resolved.
-    - `import_sym`: An instance of `RawTreeSitterSymbolData` containing the import symbol data, specifically the name of the import.
-    - `project_files`: A set of `Path` objects representing all the files in the project that could potentially match the import.
-- **Control Flow**:
-    - Convert the set of project files to a list for iteration.
-    - Extract the import string from the `import_sym` object.
-    - Check if the import string is a relative import by verifying it starts with './' or '../'.
-    - If not a relative import, return `None`.
-    - Resolve the import path by combining the current file's parent directory with the import string and normalizing the path.
+    - `current_file`: The `Path` object representing the current file from which the import is made.
+    - `import_sym`: An instance of `RawTreeSitterSymbolData` containing the import symbol data.
+    - `project_files`: A set of `Path` objects representing all files in the project.
+- **Logic and Control Flow**:
+    - Convert the `project_files` set to a list for iteration.
+    - Extract the import string from `import_sym`.
+    - Check if the import string is a relative path; if not, return `None`.
+    - Resolve the import path relative to the `current_file`'s parent directory.
     - Iterate over each file in the project files list.
-    - Check if the resolved import path has a '.ts' or '.js' suffix and matches a project file; if so, return the matching file.
-    - If the resolved import path has a suffix but doesn't match, continue to the next file.
-    - If the resolved import path has no suffix, try appending '.ts' or '.js' and check for a match; return the matching file if found.
-    - Check if the project file is an 'index.ts' or 'index.js' and its parent directory matches the resolved import path; if so, return the matching file.
-    - If no matches are found, return `None`.
-- **Output**: Returns a `Path` object representing the resolved file path if a match is found, otherwise returns `None`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver`](<#JsTsResolver>)  (Base Class)
+    - Check if the resolved import path matches any file with a `.ts` or `.js` suffix; if so, return the matching file.
+    - If the resolved import path has a suffix but does not match, continue to the next file.
+    - If the resolved import path has no suffix, try appending `.ts` or `.js` and check for a match.
+    - Check if the resolved import path matches a directory containing an `index.ts` or `index.js` file; if so, return the matching file.
+    - Return `None` if no match is found.
+- **Output**: A `Path` object representing the resolved file if found, otherwise `None`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/js_ts_resolver.JsTsResolver`](<#jstsresolver>)  (Base Class)
 
 
 

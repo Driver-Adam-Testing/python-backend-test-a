@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files focused on recursive Fibonacci implementations, with two files being empty.
+Calculates and prints Fibonacci numbers using recursive functions.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[empty_file.py](empty_file.py.md)**: Empty file (no analyzable contents).
-- **[file_a.py](file_a.py.md)**: The `file_a.py` file contains a recursive implementation of the Fibonacci sequence and a main function that prints Fibonacci numbers for specific inputs.
-- **[file_b.py](file_b.py.md)**: The `file_b.py` file contains a recursive implementation of the Fibonacci sequence and a main function that prints the first five Fibonacci numbers.
+- **[file_a.py](file_a.py.md)**: Calculates and prints Fibonacci numbers using a recursive function.
+- **[file_b.py](file_b.py.md)**: Defines a recursive function to compute Fibonacci numbers and a main function to print the first five.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

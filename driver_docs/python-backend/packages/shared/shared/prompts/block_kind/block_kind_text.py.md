@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_text.py` file defines the `BlockKindCopyEditorText` class, which represents a structured response for a copy editor agent handling text paragraphs, with functionality to convert the response to markdown.
+A class for a copy editor agent's structured response with markdown text conversion.
 
 # Purpose
-This code defines a Python class `BlockKindCopyEditorText` that extends the `BlockResponse` class, providing a narrow functionality specifically for handling text responses in a structured format. The class is designed to be part of a larger agentic system, likely involving AI or automated agents, where it represents a response block for a copy editor agent dealing with text paragraphs. The primary attribute, `response`, is a string intended to hold markdown-formatted text content. The class includes a method `to_markdown()` that returns the `response` attribute, facilitating the conversion or retrieval of the text in markdown format. This code is a small, focused component within a larger system, emphasizing structured text handling and formatting.
+The code defines a class `BlockKindCopyEditorText` that extends the `BlockResponse` class from the `shared.interfaces.agents.block_response` module. This class is designed to represent a structured response for a copy editor agent that processes paragraphs of text. It includes an attribute `response`, which is a string expected to contain markdown-formatted text. The method [`to_markdown`](<#blockkindcopyeditortextto_markdown>) returns the `response` attribute, allowing the text content to be accessed in markdown format. This code provides narrow functionality, focusing specifically on handling and formatting text responses for a copy editor agent.
 # Imports and Dependencies
 
 ---
@@ -18,39 +18,44 @@ This code defines a Python class `BlockKindCopyEditorText` that extends the `Blo
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that is initialized as an empty multi-line string. It is intended to hold a prompt or template text that can be used in various contexts, such as generating messages or instructions.
-- **Use**: `PROMPT` is used as a placeholder for text content that can be dynamically filled or modified as needed.
+- **Description**: A string variable that contains a multi-line text prompt.
+- **Use**: Used to store a multi-line text prompt for further processing or display.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
-- **Use**: This variable is used to define a structured message format, likely for communication or configuration purposes within a system.
+- **Type**: ``dict``
+- **Description**: A dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to define a message structure with a role and content for system communication.
 
 
 # Classes
 
 ---
 ### BlockKindCopyEditorText<!-- {{#class:python-backend/packages/shared/shared/prompts/block_kind/block_kind_text.BlockKindCopyEditorText}} -->
+[View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_text.py#L9>)
+
 - **Members**:
-    - `response`: A markdown string representing the text content.
-- **Description**: The BlockKindCopyEditorText class is a specialized subclass of BlockResponse designed to handle structured responses for a copy editor agent, specifically dealing with paragraphs of text. It contains a single attribute, 'response', which holds the text content in markdown format. This class is intended to be used in agentic systems where the 'response' attribute is populated with the relevant text content, and it provides a method to return this content as a markdown string.
+    - `response`: A markdown string that represents the text content.
+- **Description**: Represents a structured response for a copy editor agent that manages paragraphs of text. The `response` attribute holds the markdown string of the text content, which an agentic system should populate.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_text.BlockKindCopyEditorText.to_markdown`](<#BlockKindCopyEditorTextto_markdown>)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_text.BlockKindCopyEditorText.to_markdown`](<#blockkindcopyeditortextto_markdown>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](<../../interfaces/agents/block_response.py.md#BlockResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](<../../interfaces/agents/block_response.py.md#blockresponse>)
 
 **Methods**
 
 ---
 #### BlockKindCopyEditorText\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_text.BlockKindCopyEditorText.to_markdown}} -->
-The `to_markdown` method returns the markdown-formatted text stored in the `response` attribute of the `BlockKindCopyEditorText` class.
+[View Source →](<../../../../../../../packages/shared/shared/prompts/block_kind/block_kind_text.py#L22>)
+
+Returns the markdown string stored in the `response` attribute.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the value of the `response` attribute.
-- **Output**: A string containing the markdown-formatted text from the `response` attribute.
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_text.BlockKindCopyEditorText`](<#BlockKindCopyEditorText>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `response` attribute of the instance.
+    - Returns the value of the `response` attribute.
+- **Output**: A string that contains the markdown text from the `response` attribute.
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_text.BlockKindCopyEditorText`](<#blockkindcopyeditortext>)  (Base Class)
 
 
 

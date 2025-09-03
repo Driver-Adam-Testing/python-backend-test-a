@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Python files that define system message prompts and templates for guiding tool execution and response formulation based on context, including modules for batch processing, iteration limits, and technical context handling.
+Imports and defines system message prompts for batch tools, iterations, and technical context interfaces.
 
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `interface` package by importing modules such as `batch_tools`, `maximum_iterations`, `technical_context_interface`, and `think_before_you_speak`.
-- **[batch_tools.py](batch_tools.py.md)**: The `batch_tools.py` file contains a system message prompt that instructs the execution of multiple tools in iterations without inventing or using undefined functions, and explicitly advises against invoking the `multi_tool_use.parallel` function.
-- **[iterations.py](iterations.py.md)**: The `iterations.py` file defines prompt messages for different stages of an iterative process, guiding the execution of tools and the formulation of responses based on retrieved context.
-- **[maximum_iterations.py](maximum_iterations.py.md)**: The `maximum_iterations.py` file defines a prompt template and provides functions to render this prompt with a specified number of maximum iterations, returning it as a string or within a dictionary.
-- **[technical_context_interface.py](technical_context_interface.py.md)**: The `technical_context_interface.py` file defines a system message prompt that instructs a response to be based solely on technical context, delaying final answers until sufficient context is provided and ensuring responses are relevant and supported by source documentation.
-- **[think_before_you_speak.py](think_before_you_speak.py.md)**: The `think_before_you_speak.py` file defines a system message prompt that instructs the user to include a thought explanation with each batch of tool calls.
+- **[__init__.py](__init__.py.md)**: Imports modules for batch tools, maximum iterations, technical context interface, and think before you speak.
+- **[batch_tools.py](batch_tools.py.md)**: Defines a system message prompt for executing multiple tools iteratively without inventing functions.
+- **[iterations.py](iterations.py.md)**: Defines prompts and messages for different stages of tool execution iterations.
+- **[maximum_iterations.py](maximum_iterations.py.md)**: Renders a prompt and message with a specified maximum number of iterations.
+- **[technical_context_interface.py](technical_context_interface.py.md)**: Defines a system message prompt for responding with technical context-specific information.
+- **[think_before_you_speak.py](think_before_you_speak.py.md)**: Defines a system message prompt for explaining thoughts on batches of tool calls to the user.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

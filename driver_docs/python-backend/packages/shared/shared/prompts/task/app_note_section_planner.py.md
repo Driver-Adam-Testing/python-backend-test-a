@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `app_note_section_planner.py` file contains a prompt for creating sections of a detailed technical document called an app note, emphasizing the need for thorough understanding and analysis of the codebase before drafting each section.
+A prompt for creating sections of a detailed technical document called an app note.
 
 # Purpose
-This code defines a constant string `PROMPT` and a dictionary `MESSAGE` that uses this string as part of its content. The `PROMPT` string provides detailed instructions for creating sections of a technical document called an "app note," emphasizing the need for thorough understanding and context analysis before writing. The `MESSAGE` dictionary appears to be structured for use in a system that processes or generates content based on roles and instructions, suggesting that this code is part of a larger application dealing with document generation or AI-driven content creation. The functionality is narrow, focusing specifically on setting up a template or guideline for generating technical documentation sections.
+This code defines a constant `PROMPT` and a dictionary `MESSAGE` that are likely used for generating or managing content related to technical documentation. The `PROMPT` is a multi-line string that outlines a task for creating sections of a technical document called an app note, emphasizing the need for in-depth insights and understanding of a codebase. The `MESSAGE` dictionary contains a key-value pair where the key is `role` with the value `system`, and the key `content` holds the `PROMPT` string. This setup suggests that the code is part of a system that automates or assists in the creation of technical documentation by providing structured guidance on how to approach the task.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that provides detailed instructions for creating sections of a technical document called an app note. It emphasizes the need for in-depth understanding of the technical context and codebase before drafting each section, and suggests using tools to gather additional context.
-- **Use**: This variable is used to store the instructions for generating sections of a technical document, guiding the user through the process of understanding and documenting technical concepts.
+- **Type**: ``PROMPT``
+- **Description**: A multi-line string that provides instructions for creating sections of a technical document called an app note. It emphasizes the need for in-depth insights and understanding of the codebase before writing each section.
+- **Use**: Used as a template or guideline for generating sections of a technical document.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' with the value 'system', and 'content' with the value of the `PROMPT` variable. The `PROMPT` variable is a multi-line string that provides instructions for creating sections of a technical document.
-- **Use**: This variable is used to store and convey system-level instructions for generating technical document sections.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system-level message data with a specific role and content for further processing or communication.
 
 
 

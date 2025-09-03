@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `__init__.py` file in the `python-backend` codebase initializes the `task` package by importing various modules such as `app_note_section_planner`, `code_snippet_extractor`, and `smart_instruction_run`.
+Imports modules for task-related functionalities in the shared prompts package.
 
 # Purpose
-This code is a module import statement that aggregates several components from the same package, indicating a narrow functionality focused on enhancing or manipulating text and code. The imported modules suggest a collection of utilities or tools related to note-taking, code analysis, and document editing, such as planning and writing note sections, extracting code snippets, verifying code quality, augmenting prompts, and running smart instructions. The presence of `codeblock_syntax_mermaid` implies support for visualizing code blocks using the Mermaid syntax. The `# flake8: noqa` comment indicates that linting checks are intentionally disabled for this file, likely to avoid warnings about unused imports, as this file serves as a central point for importing and possibly re-exporting these functionalities.
+This code is a collection of import statements that bring in various modules from the current package. The modules include `app_note_section_planner`, `app_note_section_writer`, `code_snippet_extractor`, `selected_text`, `code_critic_verifier`, `prompt_augmentation`, `smart_instruction_run`, `edit_document`, and `codeblock_syntax_mermaid`. Each module likely provides specific functionality related to application note planning, writing, code extraction, text selection, code verification, prompt augmentation, instruction execution, document editing, and syntax handling for code blocks, respectively. The `# flake8: noqa` comment at the top indicates that linting checks by Flake8 are disabled for this file, possibly to avoid warnings about unused imports. This setup suggests that the file is part of a larger application where these modules are used to perform various tasks.
 # Imports and Dependencies
 
 ---

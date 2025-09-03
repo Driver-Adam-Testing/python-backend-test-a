@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_03_1205-6eef6af4e337_link_run_to_v2_version.py` file contains an Alembic migration script that modifies the database schema by dropping a foreign key constraint, deleting certain records, and updating the `inspectorrun` table to link runs to a `v2_version`.
+Database migration script to link `inspectorrun` to `v2_version` by updating and cleaning records.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema. Alembic is a database migration tool for SQLAlchemy, and this script is part of a version control system for database schemas. The script's primary purpose is to update the database structure and data to align with a new versioning system, specifically linking the `inspectorrun` table to a `v2_version` table. The [`upgrade`](<#upgrade>) function performs several operations: it drops a foreign key constraint from the `inspectorrun` table, deletes records from the `inspection_versions` and `inspectorrun` tables that do not have corresponding entries in the `v2_version` table, and updates the `inspectorrun` table to set the `version_id` to the value of `inspection_version_id`. These operations ensure that the database is consistent with the new versioning requirements.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script is designed to modify the database schema and data to link the `inspectorrun` table to a new versioning system, referred to as "v2 version." The [`upgrade`](<#upgrade>) function performs several operations: it removes a foreign key constraint named `inspectorrun_inspection_version_id_fkey` from the `inspectorrun` table, deletes records from the `inspection_versions` table that do not have a corresponding entry in the `v2_version` table, and deletes records from the `inspectorrun` table that do not have a corresponding entry in the `v2_version` table. Finally, it updates the `inspectorrun` table by setting the `version_id` field to the value of the `inspection_version_id` field.
 
-The script does not define any public APIs or external interfaces, as its sole purpose is to execute database schema changes. The [`downgrade`](<#downgrade>) function is defined but intentionally left empty, indicating that this migration is not designed to be reversed, which is a common practice when the changes are considered irreversible or when a downgrade path is not necessary. This script is a narrow-focused utility within a larger database migration framework, ensuring that the database structure evolves in a controlled and consistent manner as the application it supports is developed.
+The script includes metadata for Alembic, such as `revision`, `down_revision`, `branch_labels`, and `depends_on`, which are used to track the migration's position in the sequence of migrations. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that this migration is not reversible through the script. This script is intended to be part of a series of migrations that manage the evolution of the database schema over time.
 # Imports and Dependencies
 
 ---
@@ -19,53 +19,57 @@ The script does not define any public APIs or external interfaces, as its sole p
 
 ---
 ### revision
-- **Type**: `str`
-- **Description**: The `revision` variable is a string that uniquely identifies the current database schema version in the context of Alembic migrations. It is used to track changes and manage the migration history.
-- **Use**: This variable is used by Alembic to identify the current migration script and ensure the correct application of database schema changes.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a link between the current migration and the one that immediately precedes it, ensuring that migrations are applied in the correct order.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track the order of database schema changes.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for database schema revisions.
-- **Use**: This variable is used to define branch labels for the migration script, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Description**: Represents a global variable that is set to `None`. It is part of the Alembic migration script metadata, which is used to define dependencies between migration scripts.
+- **Use**: Used to indicate that this migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_03_1205-6eef6af4e337_link_run_to_v2_version.upgrade}} -->
-The `upgrade` function modifies the database schema by dropping a foreign key constraint, deleting orphaned records, and updating a column in the `inspectorrun` table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_03_1205-6eef6af4e337_link_run_to_v2_version.py#L18>)
+
+Modifies the database schema and data to link `inspectorrun` to `v2_version` by removing constraints, deleting orphaned records, and updating version references.
 - **Inputs**: None
-- **Control Flow**:
-    - The function starts by dropping a foreign key constraint named `inspectorrun_inspection_version_id_fkey` from the `inspectorrun` table.
-    - It executes a SQL command to delete records from the `inspection_versions` table where the `id` is not present in the `v2_version` table, indicating orphaned records.
-    - Another SQL command is executed to delete records from the `inspectorrun` table where the `inspection_version_id` is not present in the `v2_version` table, also indicating orphaned records.
-    - Finally, it updates the `inspectorrun` table by setting the `version_id` column to the value of the `inspection_version_id` column.
-- **Output**: The function does not return any value; it performs database schema modifications and data cleanup operations.
+- **Logic and Control Flow**:
+    - Remove the foreign key constraint `inspectorrun_inspection_version_id_fkey` from the `inspectorrun` table.
+    - Execute a SQL command to delete records from `inspection_versions` where there is no corresponding record in `v2_version`.
+    - Execute a SQL command to delete records from `inspectorrun` where there is no corresponding record in `v2_version`.
+    - Execute a SQL command to update the `version_id` in `inspectorrun` to match `inspection_version_id`.
+- **Output**: No output is returned as the function modifies the database directly.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_03_1205-6eef6af4e337_link_run_to_v2_version.downgrade}} -->
-The `downgrade` function is a placeholder for reversing database schema changes made in the `upgrade` function.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2025_01_03_1205-6eef6af4e337_link_run_to_v2_version.py#L50>)
+
+Does not perform any operations.
 - **Inputs**: None
-- **Control Flow**:
-    - The function is defined but contains no logic or operations, as it only includes a `pass` statement.
-- **Output**: The function does not return any value or output, as it is currently a no-op (no operation) function.
+- **Logic and Control Flow**:
+    - The function is defined but contains only a `pass` statement, indicating no operations are performed.
+- **Output**: Returns `None` as it does not perform any operations.
 
 
 

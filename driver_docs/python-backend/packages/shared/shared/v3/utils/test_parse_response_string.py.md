@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_parse_response_string.py` file contains test cases for the `parse_response_string` function, which processes various JSON-formatted strings to verify its parsing capabilities and error handling.
+Tests for the `parse_response_string` function using various JSON-formatted test strings.
 
 # Purpose
-This Python script is a short utility designed to test the functionality of a `parse_response_string` function imported from a shared module. It provides narrow functionality by focusing on parsing a series of predefined test strings, which are JSON-like structures embedded within various formats, including plain text and code blocks. The script iterates over a list of these test strings, attempting to parse each one using the `parse_response_string` function, and prints the result or an error message if parsing fails. This setup is typical for testing and debugging purposes, allowing developers to verify the robustness and correctness of the parsing function against different input scenarios.
+This code is a script that tests the functionality of the `parse_response_string` function imported from the `shared.v3.utils.parse_response_string` module. It defines a list of test strings, `TEST_STRINGS`, which contain various JSON-like structures and text formats. The script iterates over each string in the list and attempts to parse it using the `parse_response_string` function. If the function successfully parses a string, the script prints the result; if an error occurs during parsing, it catches the exception and prints an error message. This script provides narrow functionality focused on testing the parsing capabilities of the `parse_response_string` function with different input formats.
 # Imports and Dependencies
 
 ---
@@ -17,9 +17,9 @@ This Python script is a short utility designed to test the functionality of a `p
 
 ---
 ### TEST\_STRINGS
-- **Type**: `list`
-- **Description**: `TEST_STRINGS` is a list of multi-line strings, each containing JSON-like data or JSON-formatted text. These strings appear to be test cases or examples for parsing JSON data, with some including additional fields or formatting variations.
-- **Use**: This variable is used to store a collection of test strings that are likely used for testing the parsing functionality of JSON-like data structures.
+- **Type**: ``list``
+- **Description**: Contains a list of multi-line strings, each representing a JSON-like structure or a narrative related to initializing a driver or configuring a communication interface. The strings include JSON objects with fields such as `search_query`, `parseable_class_name`, and additional fields for configuration details.
+- **Use**: Used to store test strings that simulate responses or configurations for testing the `parse_response_string` function.
 
 
 

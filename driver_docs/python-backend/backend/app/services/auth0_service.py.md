@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth0_service.py` file implements the `Auth0Service` class, which provides various methods for interacting with the Auth0 API, including managing user roles, organizations, invitations, and handling authentication tokens.
+Auth0 service for managing user roles, organizations, invitations, and authentication tokens.
 
 # Purpose
-The provided Python code defines an `Auth0Service` class, which serves as a service layer for interacting with the Auth0 API, specifically focusing on user and organization management functionalities. This class encapsulates various methods that facilitate operations such as refreshing management tokens, verifying user permissions, changing user passwords, listing user organizations, modifying user roles, and managing organization members and invitations. The class is designed to be used within a larger application, likely as part of an authentication and authorization system, given its reliance on Auth0's authentication and management APIs.
+The `Auth0Service` class provides a set of methods to interact with the Auth0 Management API, focusing on user and organization management functionalities. It encapsulates operations such as refreshing management tokens, verifying user permissions, and managing user roles and organizations. The class is designed to handle tasks like changing user passwords, listing user organizations, modifying user roles, and managing organization members and invitations. It uses the `Auth0` and `GetToken` classes from the `auth0` library to authenticate and perform API requests.
 
-The `Auth0Service` class is structured to handle authentication tasks by managing tokens and interfacing with Auth0's management API. It includes methods for obtaining management API tokens, verifying organizational management permissions, and performing CRUD operations on users and organizations. The class also logs significant events and errors, providing a robust mechanism for tracking operations and diagnosing issues. This code is intended to be part of a broader application, likely a backend service, where it acts as a middleware layer between the application and Auth0, abstracting the complexities of direct API interactions and providing a clean interface for managing authentication-related tasks.
+The class includes methods for creating and deleting invitations, listing roles, and retrieving user profiles and organization details. It ensures that users have the necessary permissions before performing operations that modify organization data. The class relies on configuration settings for domain and client credentials, which are used to authenticate API requests. Logging is used to record operations and errors, providing traceability and debugging support. The `Auth0Service` class is intended to be used as a service layer within an application, providing a structured interface for managing Auth0 resources.
 # Imports and Dependencies
 
 ---
@@ -30,330 +30,363 @@ The `Auth0Service` class is structured to handle authentication tasks by managin
 
 ---
 ### logger
-- **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module, configured to use the name of the current module (`__name__`). This allows for logging messages that are specific to the module's context, facilitating easier debugging and log management.
-- **Use**: The `logger` is used throughout the `Auth0Service` class to log informational messages and errors, providing insights into the execution flow and error handling.
+- **Type**: ``Logger``
+- **Description**: The `logger` variable is an instance of the `Logger` class from the `logging` module. It is configured to use the module's name as its logger name, which is obtained using `__name__`.
+- **Use**: Used to log informational and error messages throughout the `Auth0Service` class methods.
 
 
 # Classes
 
 ---
 ### Auth0Service<!-- {{#class:python-backend/backend/app/services/auth0_service.Auth0Service}} -->
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L19>)
+
 - **Members**:
     - `_mgmt_token`: Stores the management token for Auth0 API access.
-    - `_mgmt_token_exp`: Holds the expiration time of the management token in epoch seconds.
-    - `auth0_mgmt_domain`: Domain for the Auth0 management API.
-    - `auth0_mgmt_client_id`: Client ID for the Auth0 management API.
-    - `auth0_mgmt_client_secret`: Client secret for the Auth0 management API.
-    - `auth0_domain`: Domain for the Auth0 service.
-    - `auth0_client_id`: Client ID for the Auth0 service.
-- **Description**: The Auth0Service class provides a comprehensive interface for interacting with the Auth0 Management API, handling tasks such as token management, user role modification, organization membership management, and invitation handling. It encapsulates the logic for refreshing management tokens, verifying user permissions, and executing various operations on users and organizations within the Auth0 ecosystem. The class relies on settings for configuration and uses logging to report errors and significant actions.
+    - `_mgmt_token_exp`: Indicates the expiration time of the management token in epoch seconds.
+    - `auth0_mgmt_domain`: Holds the domain for the Auth0 Management API.
+    - `auth0_mgmt_client_id`: Contains the client ID for the Auth0 Management API.
+    - `auth0_mgmt_client_secret`: Stores the client secret for the Auth0 Management API.
+    - `auth0_domain`: Represents the domain for the Auth0 service.
+    - `auth0_client_id`: Holds the client ID for the Auth0 service.
+- **Description**: Manages interactions with the Auth0 API, including token management, user role modifications, and organization-related operations. It handles authentication and authorization tasks, such as refreshing management tokens, verifying permissions, and executing various user and organization management functions through the Auth0 Management API.
 - **Methods**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.__init__`](<#Auth0Service__init__>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service._refresh_management_token`](<#Auth0Service_refresh_management_token>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service._management_client`](<#Auth0Service_management_client>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](<#Auth0Servicechange_self_password>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_user_organizations`](<#Auth0Servicelist_user_organizations>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](<#Auth0Servicemodify_user_roles>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](<#Auth0Servicelist_members>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](<#Auth0Servicelist_invitations>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_roles`](<#Auth0Servicelist_roles>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](<#Auth0Servicecreate_invitation>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](<#Auth0Servicedelete_user_from_organization>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](<#Auth0Servicedelete_invitation>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_user_profile`](<#Auth0Serviceget_user_profile>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_organization`](<#Auth0Serviceget_organization>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.__init__`](<#auth0service__init__>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service._refresh_management_token`](<#auth0service_refresh_management_token>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service._management_client`](<#auth0service_management_client>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](<#auth0servicechange_self_password>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_user_organizations`](<#auth0servicelist_user_organizations>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](<#auth0servicemodify_user_roles>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](<#auth0servicelist_members>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](<#auth0servicelist_invitations>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_roles`](<#auth0servicelist_roles>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](<#auth0servicecreate_invitation>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](<#auth0servicedelete_user_from_organization>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](<#auth0servicedelete_invitation>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_user_profile`](<#auth0serviceget_user_profile>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_organization`](<#auth0serviceget_organization>)
 
 **Methods**
 
 ---
 #### Auth0Service\.\_\_init\_\_<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.__init__}} -->
-The `__init__` method initializes an instance of the `Auth0Service` class by setting up authentication-related domain and client ID attributes from configuration settings.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L23>)
+
+Initializes the `Auth0Service` class with authentication and domain settings from the configuration.
 - **Inputs**: None
-- **Control Flow**:
-    - The method initializes the `auth0_mgmt_domain` attribute with the value from `settings.AUTH0_MGMT_API_DOMAIN`.
-    - The method initializes the `auth0_mgmt_client_id` attribute with the value from `settings.AUTH0_MGMT_API_CLIENT_ID`.
-    - The method initializes the `auth0_mgmt_client_secret` attribute with the value from `settings.AUTH0_MGMT_API_CLIENT_SECRET`.
-    - The method initializes the `auth0_domain` attribute with the value from `settings.AUTH0_DOMAIN`.
-    - The method initializes the `auth0_client_id` attribute with the value from `settings.AUTH0_CLIENT_ID`.
-- **Output**: The method does not return any output; it initializes instance attributes.
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+- **Logic and Control Flow**:
+    - Assigns `settings.AUTH0_MGMT_API_DOMAIN` to `self.auth0_mgmt_domain`.
+    - Assigns `settings.AUTH0_MGMT_API_CLIENT_ID` to `self.auth0_mgmt_client_id`.
+    - Assigns `settings.AUTH0_MGMT_API_CLIENT_SECRET` to `self.auth0_mgmt_client_secret`.
+    - Assigns `settings.AUTH0_DOMAIN` to `self.auth0_domain`.
+    - Assigns `settings.AUTH0_CLIENT_ID` to `self.auth0_client_id`.
+- **Output**: No output is returned as this is a constructor method.
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.\_refresh\_management\_token<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service._refresh_management_token}} -->
-The `_refresh_management_token` method refreshes the management API token for the Auth0 service by obtaining a new token using client credentials and updating the token and its expiration time.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L30>)
+
+Refreshes the management token for Auth0 API access.
 - **Inputs**: None
-- **Control Flow**:
-    - Instantiate a `GetToken` object with the management domain, client ID, and client secret.
-    - Call the `client_credentials` method on the `GetToken` object to obtain a new token for the management API.
-    - Extract the `access_token` from the token response and assign it to the `_mgmt_token` attribute.
-    - Calculate the token expiration time by adding the current time to the `expires_in` value from the token response, defaulting to 86,400 seconds if not provided, and assign it to the `_mgmt_token_exp` attribute.
-- **Output**: The method does not return any value; it updates the `_mgmt_token` and `_mgmt_token_exp` attributes of the `Auth0Service` instance.
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+- **Logic and Control Flow**:
+    - Creates an instance of `GetToken` with the management domain, client ID, and client secret.
+    - Calls `client_credentials` on the `GetToken` instance to obtain a new token.
+    - Stores the `access_token` from the token in the `_mgmt_token` attribute.
+    - Calculates the token expiration time using the current time and the `expires_in` value from the token, defaulting to 86,400 seconds if not provided, and stores it in `_mgmt_token_exp`.
+- **Output**: No output is returned as the method modifies the instance attributes `_mgmt_token` and `_mgmt_token_exp`.
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.\_management\_client<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service._management_client}} -->
-The `_management_client` method returns an Auth0 management client instance, refreshing the management token if necessary.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L42>)
+
+Creates and returns an `Auth0` management client, refreshing the management token if necessary.
 - **Inputs**: None
-- **Control Flow**:
-    - Checks if the management token (`_mgmt_token`) is `None` or if it is about to expire in less than 60 seconds.
-    - If the token is invalid or about to expire, it calls [`_refresh_management_token`](<#Auth0Service_refresh_management_token>) to obtain a new token.
-    - Returns an instance of the `Auth0` class initialized with the management domain and the current management token.
-- **Output**: An instance of the `Auth0` class initialized with the management domain and the current management token.
+- **Logic and Control Flow**:
+    - Checks if `_mgmt_token` is `None` or if the token is about to expire (less than 60 seconds remaining).
+    - Calls [`_refresh_management_token`](<#auth0service_refresh_management_token>) to refresh the token if the above condition is true.
+    - Returns an `Auth0` object initialized with `auth0_mgmt_domain` and `_mgmt_token`.
+- **Output**: An `Auth0` management client object initialized with the management domain and token.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service._refresh_management_token`](<#Auth0Service_refresh_management_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service._refresh_management_token`](<#auth0service_refresh_management_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.get\_mgmt\_api\_token<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token}} -->
-The `get_mgmt_api_token` method retrieves an access token for the Auth0 Management API using client credentials.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L48>)
+
+Retrieves an access token for the Auth0 Management API using client credentials.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class, providing access to its attributes and methods.
-- **Control Flow**:
-    - Instantiate a GetToken object with the Auth0 management domain, client ID, and client secret from the Auth0Service instance.
-    - Call the client_credentials method on the GetToken object to obtain a token for the Auth0 Management API.
-    - Return the 'access_token' from the obtained token dictionary.
+    - `self`: An instance of the `Auth0Service` class.
+- **Logic and Control Flow**:
+    - Create an instance of `GetToken` with the management domain, client ID, and client secret from the `Auth0Service` instance.
+    - Call the `client_credentials` method on the `GetToken` instance with the management API URL to obtain a token.
+    - Return the `access_token` from the token dictionary.
 - **Output**: A string representing the access token for the Auth0 Management API.
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.verify\_org\_management\_permissions<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions}} -->
-The `verify_org_management_permissions` method checks if a user has the 'ORG_MANAGER' permission and raises a `PermissionError` if not.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L59>)
+
+Checks if a user has the 'ORG_MANAGER' permission and raises an error if not.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user whose permissions are being verified.
-- **Control Flow**:
-    - Check if 'ORG_MANAGER' is not in the user's permissions list.
-    - If 'ORG_MANAGER' is not found, raise a PermissionError with the message 'Insufficient permissions.'
-- **Output**: The method does not return any value; it raises a PermissionError if the user lacks the required permission.
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - `self`: An instance of the 'Auth0Service' class.
+    - `user`: A 'UserToken' object representing the user whose permissions are being verified.
+- **Logic and Control Flow**:
+    - Checks if 'ORG_MANAGER' is in the 'permissions' attribute of the 'user' object.
+    - Raises a 'PermissionError' with the message 'Insufficient permissions.' if 'ORG_MANAGER' is not found in 'user.permissions'.
+- **Output**: None. Raises a 'PermissionError' if the user does not have the required permission.
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.change\_self\_password<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password}} -->
-The `change_self_password` method allows a user to request a password reset for their own account using the Auth0 service.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L65>)
+
+Changes the password for the user associated with the provided access token.
 - **Inputs**:
     - `self`: An instance of the `Auth0Service` class.
     - `user`: A `UserToken` object representing the user requesting the password change.
-    - `access_token`: A string representing the access token used to authenticate the user with Auth0.
-- **Control Flow**:
-    - Create a `Users` object using the Auth0 domain from the `Auth0Service` instance.
-    - Attempt to retrieve the user's profile information using the provided access token.
-    - Initialize a `Database` object with the management domain and client ID from the `Auth0Service` instance.
-    - Call the `change_password` method on the `Database` object to request a password reset, using the user's email, a specified connection, and the user's organization ID.
-    - Log an informational message indicating that a password reset request was sent to the user's email.
-    - Return the response from the `change_password` method.
-    - If an exception occurs, log an error message and re-raise the exception.
-- **Output**: A string response from the `change_password` method, indicating the result of the password reset request.
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - `access_token`: A string representing the access token used to retrieve user information.
+- **Logic and Control Flow**:
+    - Creates a `Users` object with the domain set to `self.auth0_domain`.
+    - Attempts to retrieve the user profile using the `userinfo` method with the provided `access_token`.
+    - Initializes a `Database` object with the management domain and client ID.
+    - Calls the `change_password` method on the `Database` object with the user's email, connection type, and organization ID.
+    - Logs an informational message indicating the password reset request.
+    - Returns the response from the `change_password` method.
+    - Catches any exceptions, logs an error message, and re-raises the exception.
+- **Output**: A string response from the `change_password` method indicating the result of the password change request.
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.list\_user\_organizations<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.list_user_organizations}} -->
-The `list_user_organizations` method retrieves a list of organizations associated with a given user from the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L86>)
+
+Lists the organizations associated with a given user using the Auth0 Management API.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user whose organizations are to be listed.
-- **Control Flow**:
-    - The method attempts to retrieve a management API token by calling [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>) on the Auth0Service instance.
-    - An Auth0 management API client is instantiated using the management domain and the retrieved token.
-    - The method calls `list_organizations` on the management API client, passing the user's ID and a `per_page` parameter set to 100 to retrieve the list of organizations.
-    - If an exception occurs during the process, it logs an error message indicating the failure to list organizations for the specified user and re-raises the exception.
-- **Output**: The method returns the result of the `list_organizations` call, which is a list of organizations associated with the user.
+    - `self`: An instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user whose organizations are to be listed.
+- **Logic and Control Flow**:
+    - Attempts to retrieve a management API token by calling [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>) method.
+    - Initializes an `Auth0` management API client using the retrieved token and the management domain.
+    - Calls `list_organizations` method on the `users` object of the management API client to list organizations for the specified user ID with a maximum of 100 results per page.
+    - Logs an error message if an exception occurs and re-raises the exception.
+- **Output**: Returns the result of the `list_organizations` method call, which is a list of organizations associated with the user.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.modify\_user\_roles<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles}} -->
-The `modify_user_roles` method updates the roles of a specified user within an organization by adding new roles and removing existing ones as necessary.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L98>)
+
+Modifies the roles of a user within an organization using the Auth0 Management API.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user making the request, which includes their permissions and organization ID.
-    - `roles`: A list of role IDs (strings) that the modified user should have after the update.
-    - `modified_user_id`: The ID of the user whose roles are being modified.
-- **Control Flow**:
-    - Verify that the requesting user has organization management permissions.
-    - Retrieve a management API token and initialize the Auth0 management API client.
-    - Fetch the existing roles of the user specified by `modified_user_id` within the organization.
-    - Determine which roles need to be added by comparing the existing roles with the desired roles.
-    - If there are roles to add, call the API to add these roles to the user.
-    - Determine which roles need to be removed by comparing the existing roles with the desired roles.
-    - If there are roles to remove, call the API to remove these roles from the user.
-    - Return a response object containing the user ID, added roles, and removed roles.
+    - `self`: An instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user making the request, which includes their permissions and organization ID.
+    - `roles`: A list of role IDs to assign to the user.
+    - `modified_user_id`: The ID of the user whose roles are to be modified.
+- **Logic and Control Flow**:
+    - Verify that the `user` has organization management permissions.
+    - Retrieve a management API token using [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>).
+    - Create an `Auth0` management API client with the retrieved token.
+    - Fetch the existing roles of the `modified_user_id` within the user's organization.
+    - Determine which roles in `roles` are not currently assigned to the user and add them to `new_role_ids`.
+    - If there are new roles to add, call `create_organization_member_roles` to add them.
+    - Determine which existing roles are not in `roles` and add them to `removed_role_ids`.
+    - If there are roles to remove, call `delete_organization_member_roles` to remove them.
+    - Return a [`ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#modifyuserrolesresponse>) object containing the `modified_user_id`, `added_roles`, and `removed_roles`.
     - Log an error and raise an exception if any error occurs during the process.
-- **Output**: Returns a ModifyUserRolesResponse object containing the modified user's ID, a list of added role IDs, and a list of removed role IDs.
+- **Output**: Returns a [`ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#modifyuserrolesresponse>) object containing the `user_id`, `added_roles`, and `removed_roles`.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-    - [`python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#ModifyUserRolesResponse>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+    - [`python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#modifyuserrolesresponse>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.list\_members<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.list_members}} -->
-The `list_members` method retrieves a paginated list of members from an organization using the Auth0 Management API, ensuring the user has the necessary permissions.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L143>)
+
+Lists all members of an organization using the Auth0 Management API.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user making the request, which includes the user's organization ID and permissions.
-    - `page`: An integer representing the page number of results to retrieve, defaulting to 0.
-    - `per_page`: An integer representing the number of results per page, defaulting to 100.
-- **Control Flow**:
-    - The method starts by verifying that the user has organization management permissions using [`verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>) method.
-    - It then attempts to retrieve a management API token by calling [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>).
-    - An Auth0 management API client is instantiated using the management domain and the retrieved token.
-    - The method calls `all_organization_members` on the management API client to fetch members of the organization, specifying the organization ID, page, per_page, and fields to include in the response.
-    - If an exception occurs during the process, it logs an error message and re-raises the exception.
-- **Output**: The method returns a list of organization members, including their user ID, email, picture, name, and roles, or raises an exception if an error occurs.
+    - `self`: The instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `page`: An integer specifying the page number for pagination, default is 0.
+    - `per_page`: An integer specifying the number of results per page, default is 100.
+- **Logic and Control Flow**:
+    - Calls [`verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>) to ensure the user has the necessary permissions.
+    - Attempts to get a management API token using [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>).
+    - Creates an `Auth0` management API client with the obtained token.
+    - Calls `all_organization_members` on the management API client to retrieve organization members, specifying fields to include roles.
+    - Catches any exceptions, logs an error message, and re-raises the exception.
+- **Output**: Returns a list of organization members with specified fields, or raises an exception if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.list\_invitations<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations}} -->
-The `list_invitations` method retrieves all invitations for a specified organization using the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L163>)
+
+Lists all invitations for a user's organization using the Auth0 Management API.
 - **Inputs**:
-    - `self`: An instance of the `Auth0Service` class.
-    - `user`: A `UserToken` object representing the user making the request, which includes user permissions and organization details.
-    - `page`: An integer specifying the page number of results to retrieve, defaulting to 0.
-    - `per_page`: An integer specifying the number of results per page, defaulting to 100.
-- **Control Flow**:
-    - The method first verifies that the user has organization management permissions by calling [`verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>) with the `user` argument.
-    - It attempts to retrieve a management API token by calling [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>).
-    - An `Auth0` management API client is instantiated using the management domain and the retrieved token.
-    - The method calls `all_organization_invitations` on the management API client to fetch invitations for the user's organization, using the provided `page` and `per_page` parameters.
-    - If an exception occurs during the process, it logs an error message with details about the organization and user, and re-raises the exception.
-- **Output**: The method returns the result of the `all_organization_invitations` call, which is a list of invitations for the specified organization.
+    - `self`: The instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `page`: An integer specifying the page number for pagination, default is 0.
+    - `per_page`: An integer specifying the number of invitations per page, default is 100.
+- **Logic and Control Flow**:
+    - Verify that the user has organization management permissions by calling [`verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>) with the `user` argument.
+    - Attempt to get a management API token by calling [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>).
+    - Create an instance of the `Auth0` management API client using the management domain and the obtained token.
+    - Call `all_organization_invitations` on the `management_api` object to retrieve invitations for the user's organization, using the `organization_id` from the `user` object and the `page` and `per_page` arguments for pagination.
+    - If an exception occurs, log an error message with details about the organization and user, then re-raise the exception.
+- **Output**: Returns a list of invitations for the user's organization, or raises an exception if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.list\_roles<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.list_roles}} -->
-The `list_roles` method retrieves a paginated list of roles from the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L179>)
+
+Lists roles from the Auth0 Management API using pagination.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `page`: An integer representing the page number to retrieve, default is 0.
-    - `per_page`: An integer representing the number of roles to retrieve per page, default is 100.
-- **Control Flow**:
-    - The method attempts to retrieve a management API token using the [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>) method.
-    - It then creates an instance of the Auth0 management API client using the retrieved token and the management domain.
-    - The method calls the `list` method on the roles endpoint of the management API client, passing the `page` and `per_page` parameters.
-    - If an exception occurs during this process, it logs an error message and re-raises the exception.
+    - `self`: An instance of the `Auth0Service` class.
+    - `page`: The page number for pagination, default is 0.
+    - `per_page`: The number of roles to list per page, default is 100.
+- **Logic and Control Flow**:
+    - Attempts to get a management API token by calling [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>) method.
+    - Creates an instance of the `Auth0` management API client using the management domain and token.
+    - Calls the `list` method on the `roles` object of the management API client with the specified `page` and `per_page` parameters.
+    - If an exception occurs, logs an error message and re-raises the exception.
 - **Output**: Returns a list of roles from the Auth0 Management API, or raises an exception if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.create\_invitation<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation}} -->
-The `create_invitation` method creates invitations for users to join an organization using the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L188>)
+
+Creates invitations for users to join an organization in Auth0.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user making the request, which includes permissions and organization details.
-    - `access_token`: A string representing the access token used to authenticate the user with Auth0.
-    - `invitations`: A CreateInvitationInput object containing the details of the invitations to be created, including invitee information and roles.
-- **Control Flow**:
-    - Verify that the user has organization management permissions using [`verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>) method.
-    - Create a Users object to interact with Auth0's user information using the provided access token.
-    - Retrieve user information from Auth0 using the access token.
-    - Obtain a management API token using [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>) method.
-    - Create an Auth0 management API client using the management API token.
-    - Retrieve organization information using the management API client and the user's organization ID.
+    - `self`: An instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `access_token`: A string representing the access token for the user.
+    - `invitations`: A `CreateInvitationInput` object containing the details of the invitations to create.
+- **Logic and Control Flow**:
+    - Verify that the user has organization management permissions.
+    - Create a `Users` object with the Auth0 domain.
+    - Retrieve user information using the provided access token.
+    - Get a management API token and create an `Auth0` management API client.
+    - Retrieve organization information using the user's organization ID.
     - Initialize an empty list to store invitation results.
-    - Iterate over each invitation in the provided invitations input.
-    - For each invitation, construct a payload with inviter's name, invitee details, roles, and client ID.
+    - Iterate over each invitation in the `invitations` input.
+    - For each invitation, create a payload with inviter, invitee, roles, and client ID.
     - If the organization has SSO connection metadata, add the connection ID to the payload.
-    - Create an organization invitation using the management API client and append the result to the invitation results list.
+    - Create an organization invitation using the management API and append the result to the invitation results list.
     - Return the list of invitation results.
     - Log an error and raise an exception if any error occurs during the process.
-- **Output**: A list of results from the creation of each invitation, or raises an exception if an error occurs.
+- **Output**: A list of results from the creation of organization invitations.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_organization`](<#Auth0Serviceget_organization>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_organization`](<#auth0serviceget_organization>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.delete\_user\_from\_organization<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization}} -->
-The `delete_user_from_organization` method removes a specified user from an organization using the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L233>)
+
+Removes a user from an organization using the Auth0 Management API.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user performing the operation, which includes permissions and organization details.
-    - `user_id_to_remove`: A string representing the ID of the user to be removed from the organization.
-- **Control Flow**:
-    - Verify that the user has organization management permissions by calling [`verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>) method.
-    - Attempt to obtain a management API token using [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>).
-    - Create an instance of the Auth0 management API client using the obtained token and the management domain.
-    - Call the `delete_organization_members` method on the management API client to remove the specified user from the organization.
-    - If an exception occurs, log an error message indicating the failure to remove the user and re-raise the exception.
-- **Output**: The method returns the result of the `delete_organization_members` API call, which is typically a response object or any data returned by the Auth0 API.
+    - `self`: An instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user performing the operation.
+    - `user_id_to_remove`: A string representing the ID of the user to remove from the organization.
+- **Logic and Control Flow**:
+    - Verify that the `user` has organization management permissions by calling [`verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>).
+    - Attempt to get a management API token by calling [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>).
+    - Create an instance of the `Auth0` management API client using the management domain and token.
+    - Call `delete_organization_members` on the management API client to remove the specified user from the organization.
+    - If an exception occurs, log an error message and re-raise the exception.
+- **Output**: Returns the result of the `delete_organization_members` API call, or raises an exception if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.delete\_invitation<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation}} -->
-The `delete_invitation` method removes a specified invitation from an organization using the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L250>)
+
+Deletes an invitation from an organization using the Auth0 Management API.
 - **Inputs**:
-    - `self`: An instance of the Auth0Service class.
-    - `user`: A UserToken object representing the user making the request, which includes the user's permissions and organization ID.
-    - `invitation_id`: A string representing the ID of the invitation to be deleted.
-- **Control Flow**:
-    - The method first verifies that the user has organization management permissions by calling [`verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>).
-    - It attempts to obtain a management API token by calling [`get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>).
-    - An Auth0 management API client is instantiated using the management domain and the obtained token.
-    - The method calls `delete_organization_invitation` on the management API client to delete the invitation with the specified `invitation_id` from the user's organization.
-    - If an exception occurs during the process, it logs an error message and re-raises the exception.
-- **Output**: The method returns the result of the `delete_organization_invitation` call, which is typically a response from the Auth0 Management API indicating the success or failure of the deletion operation.
+    - `self`: An instance of the `Auth0Service` class.
+    - `user`: A `UserToken` object representing the user making the request.
+    - `invitation_id`: A string representing the ID of the invitation to delete.
+- **Logic and Control Flow**:
+    - Verifies that the user has organization management permissions by calling [`verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>) with the `user` argument.
+    - Attempts to obtain a management API token by calling [`get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>).
+    - Creates an instance of the `Auth0` management API client using the management domain and token.
+    - Calls `delete_organization_invitation` on the `management_api` object to delete the invitation with the specified `invitation_id` from the organization associated with the `user`.
+    - Logs an error message and raises the exception if an error occurs during the deletion process.
+- **Output**: Returns the result of the `delete_organization_invitation` method call, or raises an exception if an error occurs.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#Auth0Serviceverify_org_management_permissions>)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#Auth0Serviceget_mgmt_api_token>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.verify_org_management_permissions`](<#auth0serviceverify_org_management_permissions>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<#auth0serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.get\_user\_profile<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.get_user_profile}} -->
-The `get_user_profile` method retrieves a user profile from the Auth0 Management API using a specified user ID.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L266>)
+
+Retrieves a user profile from the Auth0 Management API using a specified user ID.
 - **Inputs**:
     - `user_id`: A string representing the unique identifier of the user whose profile is to be retrieved.
-- **Control Flow**:
-    - The method calls the [`_management_client`](<#Auth0Service_management_client>) method to obtain an instance of the Auth0 management client.
-    - It then uses this client to call the `get` method on the `users` endpoint, passing the `user_id` to retrieve the user's profile.
-- **Output**: A dictionary containing the user's profile information as returned by the Auth0 Management API.
+- **Logic and Control Flow**:
+    - Calls the [`_management_client`](<#auth0service_management_client>) method to obtain an instance of the `Auth0` management client.
+    - Uses the `users.get` method of the `Auth0` client to retrieve the user profile associated with the given `user_id`.
+- **Output**: A dictionary containing the user profile data retrieved from the Auth0 Management API.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service._management_client`](<#Auth0Service_management_client>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service._management_client`](<#auth0service_management_client>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 ---
 #### Auth0Service\.get\_organization<!-- {{#callable:python-backend/backend/app/services/auth0_service.Auth0Service.get_organization}} -->
-The `get_organization` method retrieves the Auth0 Organization object for a given organization ID using the Auth0 Management API.
+[View Source →](<../../../../../backend/app/services/auth0_service.py#L273>)
+
+Retrieves the Auth0 Organization object for a given organization ID.
 - **Inputs**:
-    - `org_id`: A string representing the unique identifier of the organization to be retrieved.
-- **Control Flow**:
-    - The method calls the [`_management_client`](<#Auth0Service_management_client>) method to obtain an Auth0 client instance.
-    - It then uses this client to call the `get_organization` method of the `organizations` API, passing the `org_id` as an argument.
-    - The result of this API call, which is the organization object, is returned.
-- **Output**: A dictionary containing the details of the Auth0 Organization object corresponding to the provided `org_id`.
+    - `org_id`: A string representing the organization ID for which to retrieve the Auth0 Organization object.
+- **Logic and Control Flow**:
+    - Call the [`_management_client`](<#auth0service_management_client>) method to obtain an instance of the `Auth0` management client.
+    - Use the `get_organization` method of the `organizations` attribute of the `Auth0` client to retrieve the organization object for the given `org_id`.
+- **Output**: A dictionary representing the Auth0 Organization object for the specified `org_id`.
 - **Functions Called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service._management_client`](<#Auth0Service_management_client>)
-- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#Auth0Service>)  (Base Class)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service._management_client`](<#auth0service_management_client>)
+- **See also**: [`python-backend/backend/app/services/auth0_service.Auth0Service`](<#auth0service>)  (Base Class)
 
 
 

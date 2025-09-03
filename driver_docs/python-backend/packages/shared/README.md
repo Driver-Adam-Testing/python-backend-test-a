@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Essential subfolders and files for managing backend functionalities, with configuration for dependencies and Docker.
+Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, performance testing tools, Docker ignore rules, dependency lock file, and Python package configuration.
 
 ## Folders
-- **[shared](shared/README.md)**: Subfolders and files for managing language model agents, billing, text chunking, embeddings, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and application logic, with an empty `__init__.py` file.
+- **[shared](shared/README.md)**: Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and performance testing tools.
 
 ## Files
-- **[.dockerignore](.dockerignore.md)**: The `.dockerignore` file in the `python-backend` codebase specifies that the `.venv` directory should be ignored when building Docker images.
+- **[.dockerignore](.dockerignore.md)**: Specifies files and directories to ignore in Docker builds, specifically the `.venv` directory.
 - **[poetry.lock](poetry.lock.md)**: Locks specific versions of dependencies for a Python project to ensure consistent environments.
 - **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python package using Poetry, specifying dependencies and build system details.
 - **[README.md](README.md.md)**: Empty file (no analyzable contents).

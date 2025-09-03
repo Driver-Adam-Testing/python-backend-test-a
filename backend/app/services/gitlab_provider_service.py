@@ -3,7 +3,7 @@ import json
 import logging
 import secrets
 
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -38,6 +38,7 @@ from app.schemas.secret_management_schema import (
 logger = logging.getLogger(__name__)
 
 
+# TODO:
 def fetch_git_provider_apps_by_org_id(
     session: Session, organization_id: str
 ) -> list[GitProviderApp]:

@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.py` file contains an Alembic migration script that adds a `workspace_id` column to the `derived_contents` table in the `python-backend` codebase.
+Alembic migration script to add a non-nullable `workspace_id` column to the `derived_contents` table.
 
 # Purpose
-This Python file is a database migration script designed to be used with Alembic, a database migration tool for SQLAlchemy. The script's primary purpose is to modify the database schema by adding a new column, `workspace_id`, to the `derived_contents` table. This column is of type UUID and is initially populated with a default value. The script also includes an SQL command to update the `workspace_id` for existing records by referencing the `workspace_id` from the `source_contents` table, ensuring data consistency and integrity. After populating the column, the script removes the temporary default value to enforce that future entries must explicitly provide a `workspace_id`.
-
-The script defines two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function implements the changes to the database schema, while the `downgrade()` function reverses these changes, allowing for rollback if necessary. The script includes commented-out lines for creating and dropping a foreign key constraint, indicating that the `workspace_id` column is intended to be linked to another table, `workspaces`, although this relationship is not enforced in the current version of the script. This file is a narrowly focused component of a larger database management system, specifically handling schema evolution for the `derived_contents` table.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It adds a new column named `workspace_id` to the `derived_contents` table. The `workspace_id` column is of type UUID, is not nullable, and initially has a default value of `00000000-0000-0000-0000-000000000000`. The script updates the `workspace_id` for each row in `derived_contents` by selecting the corresponding `workspace_id` from the `source_contents` table based on a matching `source_content_id`. After populating the `workspace_id`, the script removes the temporary default value. The [`downgrade`](<#downgrade>) function removes the `workspace_id` column, allowing the migration to be reversed if necessary.
 # Imports and Dependencies
 
 ---
@@ -20,52 +18,56 @@ The script defines two main functions: `upgrade()` and `downgrade()`. The `upgra
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations managed by Alembic. It is used to establish a linear history of database changes, allowing Alembic to determine the order of migrations.
-- **Use**: This variable is used by Alembic to identify the immediate predecessor of the current migration, ensuring that migrations are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to specify labels for the branch in the migration script, but in this case, it is not utilized as it is set to `None`.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.upgrade}} -->
-The `upgrade` function adds a new column `workspace_id` to the `derived_contents` table, populates it with data from `source_contents`, and then removes the default value constraint.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.py#L18>)
+
+Adds a new column `workspace_id` to the `derived_contents` table and populates it with data from the `source_contents` table.
 - **Inputs**: None
-- **Control Flow**:
-    - Add a new column `workspace_id` to the `derived_contents` table with a default UUID value.
-    - Execute an SQL update statement to populate `workspace_id` in `derived_contents` using corresponding values from `source_contents`.
-    - Alter the `workspace_id` column to remove the default value constraint.
-- **Output**: The function does not return any value; it performs database schema and data modifications.
+- **Logic and Control Flow**:
+    - Adds a new column `workspace_id` to the `derived_contents` table with a default UUID value.
+    - Executes an SQL update statement to populate `workspace_id` in `derived_contents` using corresponding values from `source_contents`.
+    - Removes the default value for the `workspace_id` column after populating it.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.downgrade}} -->
-The `downgrade` function removes the `workspace_id` column from the `derived_contents` table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_24_1113-5684bc66ddb3_add_workspace_id_to_derivedcontent.py#L44>)
+
+Removes the `workspace_id` column from the `derived_contents` table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.drop_column` to remove the `workspace_id` column from the `derived_contents` table.
-- **Output**: The function does not return any value; it performs a database schema change by removing a column.
+- **Logic and Control Flow**:
+    - Calls `op.drop_column` to remove the `workspace_id` column from the `derived_contents` table.
+- **Output**: No output is returned.
 
 
 

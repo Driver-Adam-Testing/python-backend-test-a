@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Main logic for handling AWS Lambda events and utility functions for configuration management.
+AWS Lambda function for handling and logging usage events with Pydantic-based configuration management.
 
 ## Folders
-- **[utils](utils/README.md)**: Configuration management functionality using Pydantic, with an empty `__init__.py` file.
+- **[utils](utils/README.md)**: Configuration settings management using Pydantic for environment and database parameters.
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase is responsible for handling AWS Lambda events by logging event details and storing usage events in a database using SQLModel.
+- **[main.py](main.py.md)**: AWS Lambda function for handling and logging usage events with database interaction.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

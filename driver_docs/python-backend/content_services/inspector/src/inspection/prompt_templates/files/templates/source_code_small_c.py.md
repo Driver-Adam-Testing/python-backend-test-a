@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_c.py` file defines a template for generating structured prompts and extracting components such as imports, global variables, data structures, functions, and function declarations from C source code.
+Templates for generating structured prompts and analyzing C code components.
 
 # Purpose
-This Python source code file defines a template for generating structured documentation for small C source code files. It provides narrow functionality focused on creating a systematic way to document various components of C code, such as imports, global variables, data structures, functions, and function declarations. The file imports several modules and classes that facilitate the analysis and transformation of C code elements into structured prompts and components. The template is organized into sections, each corresponding to a specific aspect of the C code, and uses a combination of static analysis and language model (LLM) outputs to populate these sections. This code is part of a larger system that likely automates the generation of documentation for C codebases, ensuring consistency and clarity in how code elements are described.
+This code is a configuration file that defines a template for processing and documenting small C source code files. It imports various components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.c`, to facilitate the generation of structured documentation. The template, `SOURCE_CODE_SMALL_TEMPLATE_C`, consists of several sections, each associated with a specific aspect of the C code, such as imports, global variables, data structures, functions, and function declarations. Each section uses specific collections and prompts to extract and format information from the C code, ensuring that the documentation adheres to a consistent style and structure.
 # Imports and Dependencies
 
 ---
@@ -34,9 +34,9 @@ This Python source code file defines a template for generating structured docume
 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_C
-- **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_C` is a list of tuples, each representing a different section of a code analysis template for C language. Each tuple contains a section identifier, a section title, and a combination of static analysis and LLM-based processing functions to extract and format information about the code, such as imports, global variables, data structures, functions, and public API declarations.
-- **Use**: This variable is used to define a structured template for analyzing and documenting various components of C source code.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to code analysis and transformation. Each tuple is structured to facilitate the generation of structured prompts and the collection of code elements such as imports, global variables, data structures, functions, and declarations.
+- **Use**: Used to define and organize structured prompts and code analysis components for processing C language code.
 
 
 

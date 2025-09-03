@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `config.py` file in the `python-backend` codebase is responsible for loading environment variables from a `.env` file and defining application settings using Pydantic's `BaseSettings`.
+Configuration settings management using Pydantic for environment variables and secrets.
 
 # Purpose
-This Python code is a configuration module that utilizes the `pydantic` library to manage environment variables for an application. It loads environment variables from a `.env` file located two directories above the current file's location using the `dotenv` package. The `Settings` class, which inherits from `BaseSettings`, defines a structured configuration with various optional and required fields for services like AWS, Ngrok, Auth0, PostgreSQL, OpenAI, and Modal. The `Settings` class is configured to read from the `.env` file, ignore empty environment variables, and disregard any extra fields not explicitly defined. This code provides narrow functionality focused on environment configuration management, making it a crucial component for applications that rely on external services and need to manage sensitive credentials securely.
+This code defines a configuration management system using the `pydantic_settings` library to handle environment variables. It loads environment variables from a `.env` file located two directories above the current file's location. The `load_dotenv` function from the `dotenv` library is used to load these variables into the environment. The `Settings` class, which inherits from `BaseSettings`, specifies various configuration parameters that the application can use. These parameters include credentials and configuration details for AWS, Ngrok, Auth0, PostgreSQL, OpenAI, and Modal services.
+
+The `Settings` class uses a `SettingsConfigDict` to configure how environment variables are loaded and managed. This includes specifying the path to the `.env` file, the file encoding, and how to handle extra or empty environment variables. The class defines several attributes, each corresponding to a specific environment variable, with type hints indicating that they can be strings or `None`. The `settings` instance of the `Settings` class is created at the end of the file, making the configuration accessible throughout the application. This code is intended to be part of a larger application where it provides centralized management of environment-based configuration settings.
 # Imports and Dependencies
 
 ---
@@ -20,40 +22,42 @@ This Python code is a configuration module that utilizes the `pydantic` library 
 
 ---
 ### env\_path
-- **Type**: `Path`
-- **Description**: The `env_path` variable is a `Path` object that represents the file path to the `.env` file located two directory levels above the current file's directory. It is constructed using the `Path` class from the `pathlib` module, which resolves the current file's path and navigates up two parent directories to locate the `.env` file.
-- **Use**: This variable is used to specify the location of the `.env` file for loading environment variables into the application using the `load_dotenv` function.
+- **Type**: ``Path` object`
+- **Description**: Represents the file path to the `.env` file located two directories above the current file's directory. It uses the `Path` class from the `pathlib` module to resolve the path.
+- **Use**: Used to specify the location of the `.env` file for loading environment variables with the `load_dotenv` function.
 
 
 ---
 ### settings
-- **Type**: `Settings`
-- **Description**: The `settings` variable is an instance of the `Settings` class, which is a subclass of `BaseSettings` from the `pydantic_settings` module. This class is configured to load environment variables from a specified `.env` file and includes various configuration options such as AWS credentials, Auth0 settings, PostgreSQL database credentials, and API keys for services like Ngrok and OpenAI. The `Settings` class uses Pydantic's data validation and settings management capabilities to ensure that the environment variables are correctly loaded and validated.
-- **Use**: The `settings` variable is used to access application configuration values loaded from environment variables, providing a centralized and validated configuration management system.
+- **Type**: ``Settings``
+- **Description**: Represents the configuration settings for the application, using the `pydantic_settings.BaseSettings` class to manage environment variables. It includes various configuration parameters such as AWS credentials, Auth0 settings, PostgreSQL database credentials, and API keys for services like Ngrok and OpenAI.
+- **Use**: Initializes and provides access to application configuration settings by loading environment variables from a specified `.env` file.
 
 
 # Classes
 
 ---
 ### Settings<!-- {{#class:python-backend/dev_stack/src/config.Settings}} -->
+[View Source →](<../../../../dev_stack/src/config.py#L10>)
+
 - **Members**:
-    - `model_config`: A configuration dictionary for environment settings.
-    - `AWS_ACCESS_KEY_ID`: AWS access key ID, optional.
-    - `AWS_SECRET_ACCESS_KEY`: AWS secret access key, optional.
-    - `AWS_REGION`: AWS region, optional.
-    - `NGROK_API_KEY`: API key for Ngrok.
-    - `AUTH0_URL`: Auth0 URL, optional.
-    - `AUTH0_DOMAIN`: Auth0 domain, optional.
-    - `AUTH0_MGMT_API_CLIENT_ID`: Auth0 management API client ID, optional.
-    - `AUTH0_MGMT_API_CLIENT_SECRET`: Auth0 management API client secret, optional.
-    - `AUTH0_MGMT_API_AUDIENCE`: Auth0 management API audience, optional.
-    - `POSTGRES_USER`: PostgreSQL user, optional.
-    - `POSTGRES_PASSWORD`: PostgreSQL password, optional.
-    - `POSTGRES_DB`: PostgreSQL database name, optional.
-    - `OPENAI_API_KEY`: API key for OpenAI, optional.
-    - `MODAL_TOKEN_ID`: Modal token ID, optional.
-    - `MODAL_TOKEN_SECRET`: Modal token secret, optional.
-- **Description**: The `Settings` class is a configuration handler that extends `BaseSettings` to manage environment variables for various services such as AWS, Ngrok, Auth0, PostgreSQL, OpenAI, and Modal. It uses a configuration dictionary to specify environment file settings and supports optional and required fields for each service's credentials and configuration parameters.
+    - `model_config`: Defines configuration settings for environment file handling.
+    - `AWS_ACCESS_KEY_ID`: Stores the AWS access key ID.
+    - `AWS_SECRET_ACCESS_KEY`: Stores the AWS secret access key.
+    - `AWS_REGION`: Stores the AWS region.
+    - `NGROK_API_KEY`: Stores the Ngrok API key.
+    - `AUTH0_URL`: Stores the Auth0 URL.
+    - `AUTH0_DOMAIN`: Stores the Auth0 domain.
+    - `AUTH0_MGMT_API_CLIENT_ID`: Stores the Auth0 management API client ID.
+    - `AUTH0_MGMT_API_CLIENT_SECRET`: Stores the Auth0 management API client secret.
+    - `AUTH0_MGMT_API_AUDIENCE`: Stores the Auth0 management API audience.
+    - `POSTGRES_USER`: Stores the PostgreSQL user name.
+    - `POSTGRES_PASSWORD`: Stores the PostgreSQL password.
+    - `POSTGRES_DB`: Stores the PostgreSQL database name.
+    - `OPENAI_API_KEY`: Stores the OpenAI API key.
+    - `MODAL_TOKEN_ID`: Stores the Modal token ID.
+    - `MODAL_TOKEN_SECRET`: Stores the Modal token secret.
+- **Description**: Manages application settings by defining environment variables and their configurations, including AWS, Ngrok, Auth0, PostgreSQL, OpenAI, and Modal credentials.
 - **Inherits From**:
     - `BaseSettings`
 

@@ -1,5 +1,8 @@
+import logging
 import ssl
+import urllib.request
 import uuid
+from collections.abc import Generator
 from contextlib import contextmanager
 from urllib.parse import parse_qs, urlparse
 
@@ -7,11 +10,26 @@ from database.config import settings
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=20, pool_pre_ping=True)
+logger = logging.getLogger(__name__)
+
+external_ip = "nopublic"
+try:
+    with urllib.request.urlopen("https://ident.me") as response:
+        external_ip = response.read().decode("utf8")
+except Exception:
+    logger.info("Could not resolve public ip")
+
+app_name = "pback-" + external_ip
+engine = create_engine(
+    str(settings.SQLALCHEMY_DATABASE_URI),
+    pool_size=20,
+    pool_pre_ping=True,
+    connect_args={"application_name": app_name},
+)
 
 
 @contextmanager
-def get_session():
+def get_session() -> Generator[Session, None, None]:
     session = Session(engine)
     try:
         yield session
@@ -50,7 +68,7 @@ if settings.ASYNC_DATABASE_URL:
     # https://github.com/MagicStack/asyncpg/issues/737
     # https://magicstack.github.io/asyncpg/current/api/index.html#asyncpg.connection.connect
     ssl_ctx = None
-    base_async_url, connect_args = parse_db_url(settings.ASYNC_DATABASE_URL)
+    base_async_url, connect_args = parse_db_url(settings.ASYNC_SQLALCHEMY_DATABASE_URI)
     if "sslrootcert" in connect_args:
         ssl_ctx = ssl.create_default_context(
             ssl.Purpose.SERVER_AUTH, cafile=connect_args["sslrootcert"]
@@ -65,14 +83,14 @@ if settings.ASYNC_DATABASE_URL:
             "statement_cache_size": 0,
             "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
             "prepared_statement_cache_size": 0,
+            "server_settings": {"application_name": "as" + app_name},
         },  # Disable prepared statements for PgBouncer compatibility,
         # Verify these below are good values
         future=True,
         pool_size=20,
         max_overflow=10,
-        pool_pre_ping=True
+        pool_pre_ping=True,
     )
 
 
-def init_db(session: Session) -> None:
-    ...
+def init_db(session: Session) -> None: ...

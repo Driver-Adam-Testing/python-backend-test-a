@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for a Python project using Poetry, specifying dependencies and build system.
+Configuration for a Python project using Poetry, specifying dependencies and build system details.
 
 # Purpose
-The file configures a Python project using Poetry. It specifies the project name as `agent`, with version `0.1.0`, and lists Neil Zumwalde as the author. The `README.md` file is designated as the project's readme. The project requires Python version 3.12, and it includes a dependency on a local package `shared` located at `../../packages/shared`, with the `develop` mode enabled. The build system uses `poetry-core` as a requirement and `poetry.core.masonry.api` as the build backend.
+The file configures a Python project using Poetry, a dependency management tool. It specifies the project metadata, including the `name` as `agent`, `version` as `0.1.0`, and `authors` with contact information. The `readme` file is set to `README.md`. The `dependencies` section defines the required Python version as between 3.12 and 3.13 and includes a local package `shared` for development. The `build-system` section indicates that `poetry-core` is required and sets the build backend to `poetry.core.masonry.api`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

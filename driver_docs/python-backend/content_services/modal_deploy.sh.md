@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `modal_deploy.sh` file is a bash script that automates the deployment of multiple services in different directories using a specified environment argument.
+Bash script for deploying multiple services with a specified environment argument.
 
 # Purpose
-This Bash script is designed to automate the deployment of multiple components of a software system across different environments. It provides narrow functionality, specifically focusing on deploying the `main.py` script located in various directories (`inspector`, `onboarding`, `pdf_preprocessing`, and `embedding`) using a tool called `modal`. The script requires an environment argument to be passed when executed, which it uses to specify the deployment environment for each component. By navigating to each directory and executing the `modal deploy` command with the provided environment, the script ensures that the deployment process is consistent and repeatable across different parts of the system. This script is not an executable or a library but rather a utility script intended to streamline deployment tasks.
+This script automates the deployment process for multiple components of a software system. It requires an environment argument to specify the deployment environment, such as development, testing, or production. The script navigates to specific directories, namely `inspector`, `onboarding`, `pdf_preprocessing`, and `embedding`, and executes a `modal deploy` command on the `src/main.py` file within each directory, using the provided environment argument. The `set -e` command ensures that the script stops execution if any command fails, preventing further actions that depend on successful completion of previous steps. This script facilitates consistent and repeatable deployments across different environments.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

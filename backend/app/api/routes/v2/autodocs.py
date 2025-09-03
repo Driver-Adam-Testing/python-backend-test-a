@@ -2,9 +2,14 @@ from enum import StrEnum
 from uuid import UUID
 
 import modal
-from database.models_v1 import DocumentSource
-from database.models_v2 import AutoDocStatusHistory, Node, PrimaryAsset, Version
-from database.models_v2_enums import (
+from database.models import (
+    AutoDocStatusHistory,
+    DocumentSource,
+    Node,
+    PrimaryAsset,
+    Version,
+)
+from database.models_enums import (
     AutoDocConfigKind,
     AutoDocStatusMessageKind,
     PrimaryAssetKind,
@@ -176,9 +181,7 @@ def run_autodoc(
         page_node_id=str(input.page_id),
         config_kind=input.config_kind,
         document_goal=input.document_goal,
-        user_context=_autodoc_size_to_user_context(input.autodoc_size)
-        if input.autodoc_size
-        else None,
+        user_context=input.autodoc_size.value if input.autodoc_size else None,
     )
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,

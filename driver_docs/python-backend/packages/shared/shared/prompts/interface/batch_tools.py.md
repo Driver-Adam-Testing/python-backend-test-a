@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `batch_tools.py` file contains a system message prompt that instructs the execution of multiple tools in iterations without inventing or using undefined functions, and explicitly advises against invoking the `multi_tool_use.parallel` function.
+Defines a system message prompt for executing multiple tools iteratively without inventing functions.
 
 # Purpose
-This code defines a configuration for a messaging system, specifically setting up a system message with a predefined prompt. The `PROMPT` variable contains a detailed instruction set, likely intended for an AI or automated system, guiding it on how to execute tools and interact with a codebase. The `MESSAGE` dictionary then encapsulates this prompt with a role designation, indicating that it is a system-level message. This code provides narrow functionality, serving as a configuration snippet to ensure consistent and controlled behavior of a system that processes or interacts with codebases.
+This code defines a configuration for a system message used in a software application. It includes a string `PROMPT` that provides instructions for executing multiple tools in iterations and emphasizes the importance of using a diverse set of tools. The `PROMPT` also advises against inventing or using undefined functions and specifically prohibits invoking the `multi_tool_use.parallel` function. The `MESSAGE` dictionary assigns the role of "system" to this prompt, associating it with the content defined in `PROMPT`. This setup is likely used to guide the behavior of a system component that processes or executes tasks based on these instructions.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that contains instructions or guidelines for executing multiple tools in iterations, emphasizing the importance of using a diverse set of tools and obtaining full context before responding. It also includes specific prohibitions against inventing or using undefined functions and invoking a particular function, `multi_tool_use.parallel`. This string is likely used as a directive or configuration for a system or process that involves tool execution.
-- **Use**: This variable is used to provide a set of instructions or guidelines for executing tools within a system, ensuring proper context and adherence to specified constraints.
+- **Description**: A string that contains instructions for executing multiple tools in iterations, emphasizing the use of diverse tools and the importance of obtaining full context before responding. It also includes warnings against inventing or using undefined functions and specifically against invoking the `multi_tool_use.parallel` function.
+- **Use**: Used as a guideline or directive for executing tools and managing responses in a codebase.
 
 
 ---
 ### MESSAGE
-- **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing instructions for executing tools and handling responses.
-- **Use**: This variable is used to store system-level instructions that are likely intended for a messaging or command execution context.
+- **Type**: ``dict``
+- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
+- **Use**: Used to store system-level instructions or messages, with content derived from the `PROMPT` variable.
 
 
 

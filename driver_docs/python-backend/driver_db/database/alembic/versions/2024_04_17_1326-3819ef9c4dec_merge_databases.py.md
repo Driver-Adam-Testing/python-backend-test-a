@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_04_17_1326-3819ef9c4dec_merge_databases.py` file contains an Alembic migration script for merging databases by creating and dropping various tables related to content types, organizations, users, workspaces, and codebases.
+Alembic migration script to merge databases by creating and dropping various tables.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify a database schema by creating several new tables. The script is part of a version-controlled database migration system, where each migration is identified by a unique revision ID. The primary purpose of this script is to establish a set of tables that support a complex data model, likely for an application that involves content management, user management, and organizational structures. The tables created include `derived_content_types`, `llms`, `organizations`, `setup_completed`, `source_content_types`, `users`, `workspaces`, `codebases`, `source_contents`, and `derived_contents`. Each table is defined with specific columns, data types, constraints, and relationships, such as foreign keys and unique constraints, to ensure data integrity and enforce business rules.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an [`upgrade`](<#upgrade>) function to create several tables in a PostgreSQL database, and a [`downgrade`](<#downgrade>) function to drop these tables. The tables include `derived_content_types`, `llms`, `organizations`, `setup_completed`, `source_content_types`, `users`, `workspaces`, `codebases`, `source_contents`, and `derived_contents`. Each table is defined with specific columns, data types, constraints, and relationships, such as primary keys, unique constraints, and foreign key constraints. The script also includes a command to ensure the `uuid-ossp` extension is available, which is used to generate UUIDs for primary keys.
 
-The script uses SQLAlchemy and Alembic to define and execute the database operations. It includes an [`upgrade`](<#upgrade>) function to apply the changes and a [`downgrade`](<#downgrade>) function to reverse them, ensuring that the database schema can be rolled back if necessary. The use of UUIDs for primary keys and the inclusion of timestamp columns for creation and update times suggest a focus on scalability and auditability. The script also includes the creation of PostgreSQL-specific features, such as the `uuid-ossp` extension for generating UUIDs and JSONB columns for storing semi-structured data. This migration script is a critical component of a larger system, facilitating the evolution of the database schema in a controlled and reversible manner.
+The [`upgrade`](<#upgrade>) function creates tables that manage various entities like organizations, users, workspaces, and content types. It also defines relationships between these entities, such as linking users to organizations and workspaces to organizations. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the tables in the reverse order of their creation. The script uses SQLAlchemy's data types and constraints to define the schema, and it leverages PostgreSQL-specific features like JSONB columns and UUID generation. The script is part of a version-controlled migration system, as indicated by the `revision` and `down_revision` identifiers, which help track changes to the database schema over time.
 # Imports and Dependencies
 
 ---
@@ -23,62 +23,73 @@ The script uses SQLAlchemy and Alembic to define and execute the database operat
 
 ---
 ### revision
-- **Type**: `str`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration revision. It is used by Alembic, a database migration tool, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the current state of the database schema in the migration history.
+- **Type**: ``str``
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration revision. It is used by Alembic to track the state of the database schema.
+- **Use**: Identifies the current migration revision in the Alembic migration script.
 
 
 ---
 ### down\_revision
-- **Type**: `str | None`
-- **Description**: The `down_revision` variable is a string that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of database migrations, allowing Alembic to understand the order of migrations and apply them correctly.
-- **Use**: This variable is used by Alembic to determine the predecessor of the current migration, ensuring that migrations are applied in the correct order.
+- **Type**: ``str | None``
+- **Description**: The `down_revision` variable is a string or None that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to track the sequence of migrations.
+- **Use**: Used to specify the previous revision ID in an Alembic migration script.
 
 
 ---
 ### branch\_labels
 - **Type**: `str | Sequence[str] | None`
-- **Description**: The `branch_labels` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of database migrations to potentially label branches of database schema revisions.
-- **Use**: This variable is used to specify labels for branches in database schema revisions, aiding in the organization and identification of different schema paths.
+- **Description**: `branch_labels` is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of database migrations to potentially label branches of database revisions.
+- **Use**: Used to label branches in database revision history for Alembic migrations.
 
 
 ---
 ### depends\_on
 - **Type**: `str | Sequence[str] | None`
-- **Description**: The `depends_on` variable is a global variable that can hold a string, a sequence of strings, or be set to None. It is used in the context of database migrations to specify dependencies between different migration scripts.
-- **Use**: This variable is used to define dependencies for the current migration script, indicating which other migrations must be applied before this one.
+- **Description**: Specifies dependencies for the current database migration. It can be a single string, a sequence of strings, or None, indicating no dependencies.
+- **Use**: Used to define the dependencies that must be applied before the current migration in the Alembic migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_04_17_1326-3819ef9c4dec_merge_databases.upgrade}} -->
-The `upgrade` function creates several database tables and extensions necessary for the application's schema using Alembic and SQLAlchemy.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_04_17_1326-3819ef9c4dec_merge_databases.py#L23>)
+
+Creates several database tables and ensures the 'uuid-ossp' extension is available.
 - **Inputs**: None
-- **Control Flow**:
-    - Execute a SQL command to create the 'uuid-ossp' extension if it does not already exist.
-    - Create the 'derived_content_types' table with columns for id, type_name, created_at, and updated_at, including primary and unique constraints.
-    - Create the 'llms' table with columns for id, name, model, training_date, model_owned_by, created_at, and updated_at, including a primary key constraint.
-    - Create the 'organizations' table with columns for id, name, display_name, config, created_at, and updated_at, including primary and unique constraints.
-    - Create the 'setup_completed' table with a single id column and a primary key constraint.
-    - Create the 'source_content_types' table with columns for id, type_name, created_at, and updated_at, including primary and unique constraints.
-    - Create the 'users' table with columns for id, organization_id, first_name, last_name, email, hashed_password, last_login, is_active, is_service_account, created_at, and updated_at, including primary, unique, and foreign key constraints.
-    - Create the 'workspaces' table with columns for id, display_name, description, organization_id, created_at, and updated_at, including primary and foreign key constraints.
-    - Create the 'codebases' table with columns for id, workspace_id, codebase_name, description, status, storage_url, resource_root, creator_id, created_at, and updated_at, including primary, unique, and foreign key constraints.
-    - Create the 'source_contents' table with columns for id, source_content_type_id, workspace_id, codebase_id, relative_path, created_at, and updated_at, including primary and foreign key constraints.
-    - Create the 'derived_contents' table with columns for id, derived_content_type_id, source_content_id, content, metadata, llm_id, status, created_at, and updated_at, including primary and foreign key constraints.
-- **Output**: The function does not return any output; it performs database schema modifications.
+- **Logic and Control Flow**:
+    - Executes a SQL command to create the 'uuid-ossp' extension if it does not exist.
+    - Creates the 'derived_content_types' table with columns for 'id', 'type_name', 'created_at', and 'updated_at', and sets primary and unique constraints.
+    - Creates the 'llms' table with columns for 'id', 'name', 'model', 'training_date', 'model_owned_by', 'created_at', and 'updated_at', and sets a primary key constraint.
+    - Creates the 'organizations' table with columns for 'id', 'name', 'display_name', 'config', 'created_at', and 'updated_at', and sets primary and unique constraints.
+    - Creates the 'setup_completed' table with a single 'id' column and sets a primary key constraint.
+    - Creates the 'source_content_types' table with columns for 'id', 'type_name', 'created_at', and 'updated_at', and sets primary and unique constraints.
+    - Creates the 'users' table with columns for 'id', 'organization_id', 'first_name', 'last_name', 'email', 'hashed_password', 'last_login', 'is_active', 'is_service_account', 'created_at', and 'updated_at', and sets primary, unique, and foreign key constraints.
+    - Creates the 'workspaces' table with columns for 'id', 'display_name', 'description', 'organization_id', 'created_at', and 'updated_at', and sets primary and foreign key constraints.
+    - Creates the 'codebases' table with columns for 'id', 'workspace_id', 'codebase_name', 'description', 'status', 'storage_url', 'resource_root', 'creator_id', 'created_at', and 'updated_at', and sets primary, unique, and foreign key constraints.
+    - Creates the 'source_contents' table with columns for 'id', 'source_content_type_id', 'workspace_id', 'codebase_id', 'relative_path', 'created_at', and 'updated_at', and sets primary and foreign key constraints.
+    - Creates the 'derived_contents' table with columns for 'id', 'derived_content_type_id', 'source_content_id', 'content', 'metadata', 'llm_id', 'status', 'created_at', and 'updated_at', and sets primary and foreign key constraints.
+- **Output**: None
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_04_17_1326-3819ef9c4dec_merge_databases.downgrade}} -->
-The `downgrade` function removes a series of database tables as part of a database schema migration rollback.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_04_17_1326-3819ef9c4dec_merge_databases.py#L276>)
+
+Reverses database schema changes by dropping specified tables.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by executing a series of `op.drop_table` commands.
-    - Each `op.drop_table` command is used to remove a specific table from the database.
-    - The tables are dropped in a specific order, starting with 'derived_contents' and ending with 'derived_content_types'.
-- **Output**: The function does not return any value; it performs operations that modify the database schema by dropping tables.
+- **Logic and Control Flow**:
+    - Drops the table `derived_contents`.
+    - Drops the table `source_contents`.
+    - Drops the table `codebases`.
+    - Drops the table `workspaces`.
+    - Drops the table `users`.
+    - Drops the table `source_content_types`.
+    - Drops the table `setup_completed`.
+    - Drops the table `organizations`.
+    - Drops the table `llms`.
+    - Drops the table `derived_content_types`.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

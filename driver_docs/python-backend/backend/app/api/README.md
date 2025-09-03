@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configurations and definitions for API routes, authentication, logging middleware, and session management using FastAPI.
+FastAPI and GraphQL API routes, authentication, logging middleware, and database session management.
 
 ## Folders
-- **[routes](routes/README.md)**: Subfolders define API routes and functionalities using FastAPI and GraphQL, including legacy support and versioned endpoints.
+- **[routes](routes/README.md)**: FastAPI and GraphQL API routes for health checks, chat, assets, search, user info, and more.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[api_router.py](api_router.py.md)**: The `api_router.py` file configures and includes various API route modules such as search, migrated studio endpoints, user, and ping into a FastAPI router.
-- **[auth.py](auth.py.md)**: The `auth.py` file in the `python-backend` codebase defines authentication and permission dependencies for FastAPI routes, utilizing JWT and API key middleware to enforce access control based on user roles and permissions.
-- **[logging_middleware.py](logging_middleware.py.md)**: The `logging_middleware.py` file implements a FastAPI middleware that logs HTTP request details, including a unique request ID, method, URL path, client IP, status code, and response time.
-- **[session.py](session.py.md)**: The `session.py` file defines a function to generate database sessions using SQLModel and FastAPI's dependency injection system.
-- **[studio_router.py](studio_router.py.md)**: The `studio_router.py` file configures and includes various API routes for the application using FastAPI, organizing them under different prefixes and tags.
-- **[unprotected_router.py](unprotected_router.py.md)**: The `unprotected_router.py` file defines API endpoints that do not require JWT authentication, including routes for health checks, webhooks, and local sandbox tooling, and it uses FastAPI to include various internal routers under the `/studio/v1` prefix.
+- **[api_router.py](api_router.py.md)**: Configures API routes for search, user, ping, and migrated studio endpoints using FastAPI.
+- **[auth.py](auth.py.md)**: Defines authentication and permission dependencies for FastAPI routes using JWT and API key middleware.
+- **[logging_middleware.py](logging_middleware.py.md)**: Middleware for logging HTTP requests and responses with unique IDs and response times.
+- **[session.py](session.py.md)**: Defines a database session generator and an annotated current session dependency for FastAPI.
+- **[studio_router.py](studio_router.py.md)**: Configures and includes various API routes for the studio application using FastAPI.
+- **[unprotected_router.py](unprotected_router.py.md)**: Defines API routes that do not require JWT authentication for uptime checks, web-hooks, and sandbox tools.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agent_code_critic.py` file implements a pipeline for extracting, verifying, and correcting code snippets using an OpenAI-based agent within a multi-step process.
+Implements agents for extracting, verifying, and correcting code snippets using OpenAI models.
 
 # Purpose
-This Python code file is designed to facilitate the extraction, verification, and correction of code snippets using AI agents. It leverages the Pydantic library to define data models, `CodeSnippets` and `CodeVerification`, which encapsulate the details of code snippets and their verification status, respectively. The file includes three main functions: [`run_agent_find_code_snippets`](<#run_agent_find_code_snippets>), [`run_agent_code_critic_verification`](<#run_agent_code_critic_verification>), and [`run_agent_code_critic__extract_verify_correct`](<#run_agent_code_critic__extract_verify_correct>). These functions utilize the `OpenAIStrictAgent` class to interact with AI models, specifically configured to extract code snippets from a given input, verify their correctness, and apply corrections if necessary. The process is orchestrated using a pipeline configuration, and the results are returned in a structured format.
+The code defines a set of functions and data models for processing and verifying code snippets using AI agents. It uses the `pydantic` library to define two data models: `CodeSnippets` and `CodeVerification`. The `CodeSnippets` model represents a collection of code snippets, while the `CodeVerification` model contains details about the verification of a code snippet, including a rationale, supporting evidence paths, the original and corrected code, and a flag indicating if the code was corrected.
 
-The code is structured as a library intended to be integrated into a larger system, likely for automated code review or refactoring tasks. It employs concurrent processing via `ThreadPoolExecutor` to handle multiple code snippets simultaneously, enhancing efficiency. The use of shared components, such as prompts and tools, indicates a modular design where this file acts as a part of a broader framework for AI-driven code analysis. The functions defined here serve as public APIs for interacting with the AI agents, providing a clear interface for extracting and verifying code snippets within a pipeline configuration.
+The code includes three main functions: [`run_agent_find_code_snippets`](<#run_agent_find_code_snippets>), [`run_agent_code_critic_verification`](<#run_agent_code_critic_verification>), and [`run_agent_code_critic__extract_verify_correct`](<#run_agent_code_critic__extract_verify_correct>). These functions utilize the `OpenAIStrictAgent` class to interact with AI models for different purposes. [`run_agent_find_code_snippets`](<#run_agent_find_code_snippets>) extracts code snippets from a given input, [`run_agent_code_critic_verification`](<#run_agent_code_critic_verification>) verifies and potentially corrects these snippets, and [`run_agent_code_critic__extract_verify_correct`](<#run_agent_code_critic__extract_verify_correct>) orchestrates the entire process by extracting, verifying, and correcting code snippets concurrently using a thread pool. The functions return a `PipelineStepResponse` object, which encapsulates the results of the operations. The code is structured to be part of a larger system, likely a library, that processes code snippets through a pipeline of AI-driven tasks.
 # Imports and Dependencies
 
 ---
@@ -30,23 +30,27 @@ The code is structured as a library intended to be integrated into a larger syst
 
 ---
 ### CodeSnippets<!-- {{#class:python-backend/packages/shared/shared/pipelines/agents/agent_code_critic.CodeSnippets}} -->
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/agents/agent_code_critic.py#L17>)
+
+- **Decorators**: `@dataclass`
 - **Members**:
     - `snippets`: A list of code snippets.
-- **Description**: The CodeSnippets class is a simple data model that extends the BaseModel from Pydantic, designed to represent a collection of code snippets. It contains a single attribute, 'snippets', which is a list of strings, each representing a code snippet. This class is used to encapsulate and manage multiple code snippets as a single entity, facilitating operations that involve handling collections of code snippets.
+- **Description**: Represents a collection of code snippets, encapsulating them in a list for further processing or manipulation.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodeVerification<!-- {{#class:python-backend/packages/shared/shared/pipelines/agents/agent_code_critic.CodeVerification}} -->
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/agents/agent_code_critic.py#L28>)
+
 - **Members**:
     - `rationale`: A one-sentence rationale for correcting the code snippet.
     - `supporting_evidence_paths`: A list of paths supporting the verification.
     - `input_code`: The original code snippet.
     - `corrected_code`: The corrected code snippet, if any.
     - `corrected`: A flag indicating whether the code snippet was corrected.
-- **Description**: The CodeVerification class is a data model that encapsulates the details necessary for verifying a code snippet. It includes attributes such as a rationale for any corrections made, paths to supporting evidence, the original and potentially corrected code snippets, and a boolean flag indicating if a correction was applied. This class is used to structure the output of a code verification process, providing a clear and concise representation of the verification results.
+- **Description**: Represents the verification details of a code snippet, including rationale, evidence paths, original and corrected code, and a correction status flag.
 - **Inherits From**:
     - `BaseModel`
 
@@ -55,65 +59,71 @@ The code is structured as a library intended to be integrated into a larger syst
 
 ---
 ### run\_agent\_find\_code\_snippets<!-- {{#callable:python-backend/packages/shared/shared/pipelines/agents/agent_code_critic.run_agent_find_code_snippets}} -->
-The function `run_agent_find_code_snippets` uses an OpenAI agent to extract code snippets from a given input prompt and returns the results in a structured response.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/agents/agent_code_critic.py#L47>)
+
+Finds code snippets using an AI agent based on a given prompt and session configuration.
 - **Inputs**:
-    - `input`: An instance of `PipelineStepConfiguration` that contains the configuration for the pipeline step, including the prompt and scope.
-    - `llm_usage_session`: An instance of `LLMUsageSession` that manages the session for the language model usage.
-- **Control Flow**:
-    - An [`OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#OpenAIStrictAgent>) is instantiated with a default model ID, a response format of `CodeSnippets`, the provided LLM usage session, and the scope from the input.
-    - The agent is configured with two messages: one for the software engineer's voice and another for the code snippet extraction task.
-    - The agent is invoked with the input prompt converted to a string, which triggers the extraction of code snippets.
-    - The extracted code snippets are returned as part of a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>), which includes the agent ID, the result containing the snippets, and an empty list for search results.
-- **Output**: A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) object containing the agent ID, the extracted code snippets as the agent result, and an empty list for search results.
+    - `input`: A `PipelineStepConfiguration` object that contains the prompt and scope for the agent.
+    - `llm_usage_session`: An `LLMUsageSession` object that manages the session for the language model usage.
+- **Logic and Control Flow**:
+    - Create an [`OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#openaistrictagent>) with a default model ID, `CodeSnippets` response format, and the given session and scope.
+    - Add two predefined messages to the agent: one for the software engineer's voice and another for the code snippet extraction task.
+    - Invoke the agent with the string representation of the input prompt to find code snippets.
+    - Return a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>) containing the agent ID, the found code snippets, and an empty list for search results.
+- **Output**: A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>) object containing the agent ID, the found code snippets, and an empty list for search results.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#OpenAIStrictAgent>)
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<../../agent/models/llm_models.py.md#ModelConfigdefault>)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<../../agent/agent_base.py.md#AgentBaseadd_message>)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<../../agent/agent_base.py.md#AgentBaseinvoke>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#openaistrictagent>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<../../agent/models/llm_models.py.md#modelconfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<../../agent/agent_base.py.md#agentbaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<../../agent/agent_base.py.md#agentbaseinvoke>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>)
 
 
 ---
 ### run\_agent\_code\_critic\_verification<!-- {{#callable:python-backend/packages/shared/shared/pipelines/agents/agent_code_critic.run_agent_code_critic_verification}} -->
-The function `run_agent_code_critic_verification` uses an OpenAI agent to verify and potentially correct a code snippet based on a given prompt and returns the verification results.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/agents/agent_code_critic.py#L65>)
+
+Executes a code verification process using an AI agent to critique and verify code snippets.
 - **Inputs**:
-    - `input`: An instance of `PipelineStepConfiguration` that contains the prompt and scope for the agent.
-    - `llm_usage_session`: An instance of `LLMUsageSession` that manages the session for the language model usage.
-- **Control Flow**:
-    - An [`OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#OpenAIStrictAgent>) is instantiated with a default model ID, the provided scope, a maximum of 3 iterations, and tools for searching and opening files.
-    - The agent is configured to produce a `CodeVerification` response format and is associated with the provided `llm_usage_session`.
-    - The agent invokes a prompt for code verification by concatenating a predefined prompt with the input prompt.
-    - The result of the agent's invocation, which is a `CodeVerification` object, is stored in the `response` variable.
-    - A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) is created and returned, containing the agent's ID, the verification result, and any search results obtained by the agent.
-- **Output**: The function returns a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>) object that includes the agent's ID, the verification result as a `CodeVerification` object, and the search results from the agent.
+    - `input`: A `PipelineStepConfiguration` object that contains the configuration for the pipeline step, including the prompt and scope.
+    - `llm_usage_session`: An `LLMUsageSession` object that manages the session for the language model usage.
+- **Logic and Control Flow**:
+    - Creates an [`OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#openaistrictagent>) with a specific model ID, scope, and tools for code verification.
+    - Sets the response format of the agent to `CodeVerification`.
+    - Invokes the agent with a prompt that combines a predefined code critic verifier prompt and the input prompt.
+    - Returns a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>) containing the agent's ID, the result of the code verification, and any search results.
+- **Output**: A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>) object containing the agent ID, the result of the code verification, and search results.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#OpenAIStrictAgent>)
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<../../agent/models/llm_models.py.md#ModelConfigdefault>)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<../../agent/agent_base.py.md#AgentBaseinvoke>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#openaistrictagent>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.default`](<../../agent/models/llm_models.py.md#modelconfigdefault>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<../../agent/agent_base.py.md#agentbaseinvoke>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>)
 
 
 ---
 ### run\_agent\_code\_critic\_\_extract\_verify\_correct<!-- {{#callable:python-backend/packages/shared/shared/pipelines/agents/agent_code_critic.run_agent_code_critic__extract_verify_correct}} -->
-The function extracts code snippets from a document, verifies and corrects them using concurrent processing, and returns the corrected document along with verification results.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/agents/agent_code_critic.py#L87>)
+
+Extracts code snippets from a document, verifies them, and corrects the document if necessary.
 - **Inputs**:
-    - `input`: A PipelineStepConfiguration object containing the prompt and scope for the operation.
-    - `llm_usage_session`: An LLMUsageSession object used to manage the session for language model usage.
-- **Control Flow**:
-    - Extracts the original document from the input configuration.
-    - Calls run_agent_find_code_snippets to extract code snippets from the document.
-    - Initializes a ThreadPoolExecutor to handle concurrent verification of code snippets.
-    - Submits tasks to the executor to verify each code snippet using run_agent_code_critic_verification.
-    - Collects verification results as futures complete.
-    - Iterates over verification results to replace corrected code snippets in the original document.
-    - Compiles final results including the original snippets, verification results, and the corrected document.
-    - Returns a PipelineStepResponse containing the final results.
-- **Output**: A PipelineStepResponse object containing the final results, which include the original snippets, verification results, and the corrected document.
+    - `input`: A [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepconfiguration>) object that contains the prompt and scope for the operation.
+    - `llm_usage_session`: An `LLMUsageSession` object that manages the session for the language model usage.
+- **Logic and Control Flow**:
+    - Extracts the original document from the `input` parameter.
+    - Calls [`run_agent_find_code_snippets`](<#run_agent_find_code_snippets>) to extract code snippets from the document.
+    - Initializes a `ThreadPoolExecutor` to run code verification tasks concurrently for each snippet.
+    - Submits verification tasks to the executor for each code snippet using `run_agent_code_critic_verification`.
+    - Collects verification results as tasks complete using `as_completed`.
+    - Iterates over verification results to check if any code snippet was corrected.
+    - Replaces corrected code snippets in the original document with their corrected versions.
+    - Compiles the final results, including the original snippets, verification results, and the corrected document.
+    - Returns a [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>) containing the final results.
+- **Output**: A [`PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>) object containing the final results, including the original snippets, verification results, and the corrected document.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/agents/agent_code_critic.run_agent_find_code_snippets`](<#run_agent_find_code_snippets>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../interfaces/agents/prompt.py.md#PromptWithContext>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepconfiguration>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../interfaces/agents/prompt.py.md#promptwithcontext>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#pipelinestepresponse>)
 
 
 

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `contents.py` file in the `python-backend` codebase defines API endpoints for listing and creating derived content, including query filtering, sorting, and user authorization checks.
+API endpoints for listing and creating derived content with authorization and query utilities.
 
 # Purpose
-This Python file is a FastAPI-based module that provides API endpoints for managing "DerivedContent" entities within a web application. The code defines two main endpoints: a GET endpoint for listing contents and a POST endpoint for creating new derived content. The GET endpoint, `/contents`, retrieves a list of derived content items associated with the user's organization, applying pagination, filtering, and sorting to the query results. It leverages SQLAlchemy and SQLModel for database interactions, using complex query constructs to efficiently load related data through `selectinload` for performance optimization. The POST endpoint, also at `/contents`, allows for the creation of new derived content, ensuring that the node specified in the request belongs to the user's organization, thus enforcing access control.
+The code defines API endpoints for managing `DerivedContent` entities using the FastAPI framework. It includes two main operations: listing and creating `DerivedContent`. The [`list_contents`](<#list_contents>) function is a GET endpoint that retrieves a list of `DerivedContent` objects, applying pagination, filtering, and sorting based on query parameters. It uses SQLAlchemy and SQLModel to construct and execute database queries, ensuring that the retrieved content is associated with the user's organization. The function returns a `ListWithCount` object, which includes the results and the total count of items.
 
-The file imports various components from other modules, indicating that it is part of a larger application. It uses models from different versions of the database schema, suggesting backward compatibility or a transition between schema versions. The code is structured to be part of a FastAPI application, with the use of decorators like `@router.get` and `@router.post` to define routes. It also defines public APIs for external interaction, as evidenced by the use of FastAPI's routing and request handling mechanisms. The file is designed to be integrated into a larger application, providing specific functionality related to content management within an organizational context.
+The [`create_derived_content`](<#create_derived_content>) function is a POST endpoint that allows the creation of a new `DerivedContent` entity. It verifies that the specified `Node` belongs to the user's organization before proceeding with the creation. If the node is not found or the user is not authorized, it raises an HTTP 404 exception. Upon successful creation, the new `DerivedContent` is added to the session, committed to the database, and returned as a response. The code uses dependency injection to manage the request, session, and user authentication, ensuring secure and efficient API operations.
 # Imports and Dependencies
 
 ---
@@ -38,67 +38,67 @@ The file imports various components from other modules, indicating that it is pa
 
 ---
 ### list\_contents<!-- {{#callable:python-backend/backend/app/api/routes/v2/contents.list_contents}} -->
-The `list_contents` function retrieves a paginated list of content details associated with the user's organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/contents.py#L23>)
+
+Retrieves a list of content details with pagination and filtering options.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `request`: An instance of `Request` containing the HTTP request data.
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `pagination`: An instance of `Pagination` containing pagination parameters for the query.
-- **Control Flow**:
-    - The function calls the helper function [`_list_contents`](<#_list_contents>) with the provided arguments.
-    - In [`_list_contents`](<#_list_contents>), a SQL query is constructed to select `DerivedContent` records, including related `Node`, `Version`, and `PrimaryAsset` data, filtered by the user's organization ID.
-    - Filters from the request's query parameters are applied to the query using `apply_filters_to_query`.
-    - A count query is executed to determine the total number of records matching the filters.
-    - The main query is sorted and paginated using `apply_sorting_to_query`.
-    - The query is executed, and the results are retrieved as a list of content details.
-    - The function returns a `ListWithCount` object containing the list of content details and the total count of matching records.
-- **Output**: A `ListWithCount[ContentDetailRead]` object containing the list of content details and the total count of matching records.
+    - `request`: The HTTP request object containing query parameters for filtering.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing authentication and organization information.
+    - `pagination`: The pagination object containing sorting and pagination details.
+- **Logic and Control Flow**:
+    - Calls the helper function [`_list_contents`](<#_list_contents>) with the provided arguments to perform the actual content retrieval and processing.
+- **Output**: Returns a `ListWithCount` object containing the list of content details and the total count of items.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/contents._list_contents`](<#_list_contents>)
 
 
 ---
 ### \_list\_contents<!-- {{#callable:python-backend/backend/app/api/routes/v2/contents._list_contents}} -->
-The `_list_contents` function retrieves and returns a paginated list of content details filtered and sorted based on the request parameters and user organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/contents.py#L33>)
+
+Retrieves a list of content details filtered and sorted based on user organization and request parameters.
 - **Inputs**:
-    - `request`: An instance of `Request` containing query parameters for filtering the content.
+    - `request`: An instance of `Request` containing query parameters for filtering.
     - `session`: An instance of `CurrentSession` used to execute database queries.
     - `user`: An instance of `User` representing the current user, used to filter content by organization.
-    - `pagination`: An instance of `Pagination` containing pagination details for sorting the query results.
-- **Control Flow**:
-    - Constructs a SQL query to select `DerivedContent` with eager loading of related `Node`, `Version`, `PrimaryAsset`, and `PrimaryAsset.tags` using `selectinload` for performance optimization.
-    - Applies a filter to the query to ensure that the `PrimaryAsset`'s `organization_id` matches the `user`'s `organization_id`.
-    - Converts the request's query parameters into a dictionary and applies these as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
-    - Creates a count query to determine the total number of results that match the filters and executes it to get the `total_count`.
-    - Applies sorting to the query based on the `pagination` details using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
-    - Executes the final query to retrieve the filtered and sorted content results.
-    - Returns a [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of content results and the total count of matching records.
-- **Output**: A [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of `ContentDetailRead` results and the total count of matching records.
+    - `pagination`: An instance of `Pagination` containing pagination and sorting information.
+- **Logic and Control Flow**:
+    - Constructs a SQL query to select `DerivedContent` with related data using `selectinload` for efficient loading.
+    - Filters the query based on the user's organization by checking the `organization_id` of the `PrimaryAsset`.
+    - Converts request query parameters into a dictionary and applies them as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
+    - Creates a count query to determine the total number of filtered results and executes it to get `total_count`.
+    - Applies sorting to the query based on pagination information using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
+    - Executes the final query to retrieve all matching content details.
+    - Returns a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of content details and the total count.
+- **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of `ContentDetailRead` objects and the total count of items.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
-    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#ListWithCount>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#listwithcount>)
 
 
 ---
 ### create\_derived\_content<!-- {{#callable:python-backend/backend/app/api/routes/v2/contents.create_derived_content}} -->
-The `create_derived_content` function creates a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>) entry in the database after verifying the node's association with the user's organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/contents.py#L70>)
+
+Creates a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>) entry in the database after verifying the node's association with the user's organization.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `payload`: A `ContentCreate` object containing the data required to create a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>), provided in the request body.
-- **Control Flow**:
-    - The function begins by executing a database query to verify that the node specified in the payload belongs to the user's organization.
-    - If the node is not found or does not belong to the user's organization, an `HTTPException` with a 404 status code is raised.
-    - If the node is verified, a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>) object is created using the data from the payload.
-    - The new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>) object is added to the session and committed to the database.
-    - The session is refreshed to ensure the new content is up-to-date with the database state.
-    - Finally, the newly created [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>) object is returned.
-- **Output**: The function returns a `ContentDetailRead` object representing the newly created [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>).
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing information about the authenticated user.
+    - `payload`: The data required to create a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>), provided in the request body.
+- **Logic and Control Flow**:
+    - Selects a `Node` from the database by joining with `Version` and `PrimaryAsset` to verify that the node belongs to the user's organization.
+    - Raises an `HTTPException` with a 404 status code if the node is not found or the user is not authorized.
+    - Creates a new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>) object using the data from `payload`.
+    - Adds the new [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>) to the session and commits the transaction to save it to the database.
+    - Refreshes the session to ensure the new content is up-to-date.
+    - Returns the newly created [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>) object.
+- **Output**: The newly created [`DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>) object, returned as a `ContentDetailRead` model.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#DerivedContent>)
+    - [`python-backend/driver_db/database/models_v1.DerivedContent`](<../../../../../driver_db/database/models_v1.py.md#derivedcontent>)
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_08_06_1357-ba2204f9ebda_add_chunk_idx.py` file is an Alembic migration script that adds and removes indexes on the `chunk` and `contentmetadata` tables in the database.
+Alembic migration script to add and remove indexes on "chunk" and "contentmetadata" tables.
 
 # Purpose
-This source code file is an Alembic migration script, which provides narrow functionality specifically for managing database schema changes. It defines a migration identified by the revision ID "ba2204f9ebda" and is intended to be applied after the migration with the ID "d858e8f1ee5e". The script includes two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function creates two non-unique indexes on the "chunk" and "contentmetadata" tables to potentially improve query performance. Conversely, the `downgrade()` function removes these indexes, allowing for a rollback of the schema changes if necessary. This script is part of a version control system for database schemas, facilitating the management of incremental changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an [`upgrade`](<#upgrade>) function to add two indexes: `ix_chunk_content_metadata_id` on the `chunk` table for the `content_metadata_id` column, and `ix_contentmetadata_content_type` on the `contentmetadata` table for the `content_type` column. These indexes are not unique, which means they allow duplicate values. The [`downgrade`](<#downgrade>) function reverses these changes by removing the same indexes. The script includes metadata such as `revision`, `down_revision`, and `Create Date` to track the migration's version and dependencies.
 # Imports and Dependencies
 
 ---
@@ -17,52 +17,56 @@ This source code file is an Alembic migration script, which provides narrow func
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations.
+- **Type**: ``str``
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
 ---
 ### branch\_labels
-- **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which is used to define labels for the migration branch. In this context, it indicates that no specific branch labels are associated with this migration.
-- **Use**: This variable is used to specify branch labels for the Alembic migration, but in this case, it is set to `None`, indicating no labels are applied.
+- **Type**: ``NoneType``
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_06_1357-ba2204f9ebda_add_chunk_idx.upgrade}} -->
-The `upgrade` function creates two new indexes on the 'chunk' and 'contentmetadata' tables to optimize database queries.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_06_1357-ba2204f9ebda_add_chunk_idx.py#L17>)
+
+Creates two database indexes on specified columns in the 'chunk' and 'contentmetadata' tables.
 - **Inputs**: None
-- **Control Flow**:
-    - The function begins by calling `op.create_index` to create an index named 'ix_chunk_content_metadata_id' on the 'chunk' table for the 'content_metadata_id' column, with the index being non-unique.
-    - Next, it calls `op.create_index` again to create another index named 'ix_contentmetadata_content_type' on the 'contentmetadata' table for the 'content_type' column, also as a non-unique index.
-- **Output**: The function does not return any value; it performs operations to modify the database schema by adding indexes.
+- **Logic and Control Flow**:
+    - Calls `op.create_index` to create an index named `ix_chunk_content_metadata_id` on the `content_metadata_id` column of the `chunk` table.
+    - Calls `op.create_index` to create an index named `ix_contentmetadata_content_type` on the `content_type` column of the `contentmetadata` table.
+- **Output**: No output is returned.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_06_1357-ba2204f9ebda_add_chunk_idx.downgrade}} -->
-The `downgrade` function removes specific database indexes from the 'contentmetadata' and 'chunk' tables.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_06_1357-ba2204f9ebda_add_chunk_idx.py#L34>)
+
+Reverts database schema changes by dropping specific indexes.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.drop_index` to remove the index 'ix_contentmetadata_content_type' from the 'contentmetadata' table.
-    - The function calls `op.drop_index` to remove the index 'ix_chunk_content_metadata_id' from the 'chunk' table.
-- **Output**: The function does not return any value; it performs operations to modify the database schema by removing indexes.
+- **Logic and Control Flow**:
+    - Calls `op.drop_index` to remove the index `ix_contentmetadata_content_type` from the `contentmetadata` table.
+    - Calls `op.drop_index` to remove the index `ix_chunk_content_metadata_id` from the `chunk` table.
+- **Output**: No output is returned.
 
 
 

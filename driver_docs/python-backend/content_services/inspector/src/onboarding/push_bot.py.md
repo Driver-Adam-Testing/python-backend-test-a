@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `push_bot.py` file in the `python-backend` codebase provides functionality for extracting values from a presigned URL, running shell commands, pushing documentation updates to GitHub or GitLab repositories, and handling S3 file downloads and directory synchronization.
+Automates the process of extracting, syncing, and pushing documentation updates to version control repositories.
 
 # Purpose
-This Python code file is designed to facilitate the management and deployment of documentation files, specifically focusing on handling versioned documentation stored in a cloud environment, such as AWS S3, and integrating with version control systems like GitHub and GitLab. The file contains several functions that collectively manage the extraction, processing, and synchronization of documentation files. The [`extract_values_from_presigned_url`](<#extract_values_from_presigned_url>) function parses a given URL to extract specific identifiers, which are crucial for identifying and managing the documentation assets. The [`run`](<#run>) function is a utility to execute shell commands, capturing their output and handling errors, which is essential for interacting with the local file system and version control systems.
+The code is a script designed to manage and automate the process of updating and pushing documentation to version control repositories. It includes functions to extract values from a pre-signed URL, execute shell commands, and handle asynchronous operations for pushing documentation updates. The [`push_docs`](<#push_docs>) function is the main component, which orchestrates the process of downloading documentation from an S3 bucket, extracting it, and then pushing it to a repository based on the version control provider (GitHub, Bitbucket, or GitLab). The script uses various utility functions and imports from other modules to interact with databases and version control systems.
 
-The core functionality is encapsulated in the [`push_docs`](<#push_docs>) asynchronous function, which orchestrates the process of downloading documentation from S3, extracting it, and pushing updates to a Git repository. This function uses several imported modules and functions, such as `unpack_archive_to_finalized_path` and `get_version_by_id`, to handle database interactions and file operations. It supports both GitHub and GitLab by determining the appropriate access method based on the presence of an installation ID. The [`sync_directory`](<#sync_directory>) function ensures that the local and remote directories are synchronized, while [`download_file_from_s3`](<#download_file_from_s3>) handles the retrieval of files from S3, including metadata extraction. Overall, this file serves as a backend utility for automating the deployment and version control of technical documentation, making it a critical component in a continuous integration and deployment pipeline for documentation.
+The script defines several key functions, such as [`extract_values_from_presigned_url`](<#extract_values_from_presigned_url>), [`run`](<#run>), [`push_docs`](<#push_docs>), [`sync_directory`](<#sync_directory>), [`download_file_from_s3`](<#download_file_from_s3>), and [`build_s3_path`](<#build_s3_path>). These functions work together to handle tasks like parsing URLs, executing shell commands, synchronizing directories, and interacting with AWS S3 for file downloads. The script is intended to be executed as a standalone program, as indicated by the `if __name__ == "__main__":` block, which demonstrates an example usage of the [`push_docs`](<#push_docs>) function with a specific `version_id`. The script relies on external modules and services, such as `boto3` for AWS interactions and custom database and onboarding modules for repository operations.
 # Imports and Dependencies
 
 ---
@@ -23,132 +23,148 @@ The core functionality is encapsulated in the [`push_docs`](<#push_docs>) asynch
 - `tempfile`
 - `database.db.engine`
 - `database.models_v1.GitProviderAppInstallation`
+- `database.models_v2.PrimaryAssetProvider`
+- `onboarding.bitbucket_ops`
 - `onboarding.gh_ops`
 - `onboarding.gitlab_ops`
 - `onboarding.onboard_utils.unpack_archive_to_finalized_path`
 - `sqlmodel.Session`
 - `sqlmodel.select`
 - `utils.db.get_version_by_id`
+- `utils.db.git_provider_app_installation_by_id`
 - `boto3`
+- `asyncio`
 
 
 # Functions
 
 ---
 ### extract\_values\_from\_presigned\_url<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/push_bot.extract_values_from_presigned_url}} -->
-The function `extract_values_from_presigned_url` extracts specific components from a presigned URL path that follows a predefined structure.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/push_bot.py#L9>)
+
+Extracts specific values from a presigned URL path that follows a predefined structure.
 - **Inputs**:
-    - `url`: A string representing the presigned URL from which values are to be extracted.
-- **Control Flow**:
-    - Parse the input URL using `urlparse` to extract the path component.
-    - Strip leading and trailing slashes from the path.
-    - Define a regex pattern to match the expected URL path structure, which includes four segments: 'driver_docs', a primary asset ID, a version ID, and a filename ending with '.zip'.
-    - Use `re.match` to match the path against the regex pattern.
-    - If the path does not match the pattern, raise a `ValueError` indicating the URL path does not match the expected structure.
-    - Extract the primary asset ID, version ID, and filename from the matched groups of the regex pattern.
-- **Output**: A dictionary containing the extracted 'primary_asset_id', 'version_id', and 'filename' from the URL path.
+    - `url`: A string representing the presigned URL from which to extract values.
+- **Logic and Control Flow**:
+    - Parse the input URL using `urlparse` to obtain the path component.
+    - Remove leading and trailing slashes from the path.
+    - Define a regular expression pattern to match the expected URL path structure.
+    - Use `re.match` to match the path against the pattern.
+    - If the path does not match the pattern, raise a `ValueError`.
+    - Extract `primary_asset_id`, `version_id`, and `filename` from the matched groups.
+- **Output**: A dictionary containing `primary_asset_id`, `version_id`, and `filename` extracted from the URL path.
 
 
 ---
 ### run<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/push_bot.run}} -->
-The `run` function executes a shell command in a subprocess, optionally checking for errors, and returns the result.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/push_bot.py#L28>)
+
+Executes a shell command and returns the result, optionally checking for errors.
 - **Inputs**:
-    - `cmd`: A string representing the shell command to be executed.
-    - `cwd`: An optional string specifying the working directory in which to execute the command; defaults to None.
-    - `check`: A boolean indicating whether to raise an exception if the command exits with a non-zero status; defaults to True.
-- **Control Flow**:
-    - The function imports the subprocess module.
-    - It executes the given command using `subprocess.run` with options to capture output and treat it as text.
-    - If the command produces standard output, it is printed to the console.
-    - If the command produces standard error, it is also printed to the console.
-    - If `check` is True and the command's return code is non-zero, a `subprocess.CalledProcessError` is raised.
-    - The function returns the `CompletedProcess` instance containing the result of the command execution.
-- **Output**: A `subprocess.CompletedProcess` object containing information about the executed command, including its return code, standard output, and standard error.
+    - `cmd`: A string representing the shell command to execute.
+    - `cwd`: An optional string representing the current working directory for the command execution.
+    - `check`: A boolean indicating whether to raise an exception if the command returns a non-zero exit code.
+- **Logic and Control Flow**:
+    - Imports the `subprocess` module to execute shell commands.
+    - Runs the command specified by `cmd` using `subprocess.run` with options to capture output and treat it as text.
+    - Prints the standard output if available.
+    - Prints the standard error if available.
+    - Checks the `check` parameter; if `True` and the command's return code is non-zero, raises a `subprocess.CalledProcessError`.
+    - Returns the `subprocess.CompletedProcess` object containing the command's execution result.
+- **Output**: A `subprocess.CompletedProcess` object containing the result of the executed command.
 
 
 ---
 ### push\_docs<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/push_bot.push_docs}} -->
-The `push_docs` function asynchronously downloads, extracts, and pushes documentation updates to a Git repository, creating a pull or merge request if necessary.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/push_bot.py#L43>)
+
+Pushes documentation updates to a versioned repository based on the primary asset provider.
 - **Decorators**: `@async`
 - **Inputs**:
-    - `version_id`: A UUID representing the version of the documentation to be processed.
-- **Control Flow**:
-    - Retrieve the version details using the provided `version_id`.
-    - Determine if the repository is hosted on GitHub or another Git provider based on the presence of an installation ID.
+    - `version_id`: A UUID representing the version of the documentation to update.
+- **Logic and Control Flow**:
+    - Retrieve the version details using [`get_version_by_id`](<../utils/db.py.md#get_version_by_id>) with the given `version_id`.
+    - Calculate a hash of the organization ID for use in S3 operations.
+    - Determine the primary asset provider from the version details.
     - Create a temporary directory and file to handle the downloaded documentation archive.
-    - Download the documentation archive from S3 using a constructed object key and extract it to a temporary directory.
-    - Generate a branch name using the version's display name and prepare the repository for updates.
-    - Fetch the appropriate access token and repository clone information based on the Git provider.
-    - Clone the repository to a temporary directory if it doesn't already exist.
-    - Check out a new branch for the documentation updates.
-    - Remove any existing `driver_docs` directory in the repository to avoid conflicts.
-    - Synchronize the extracted documentation to the repository's `driver_docs` directory.
+    - Download the documentation archive from S3 using the calculated object key and unpack it to a temporary path.
+    - Determine the repository clone URL and full name based on the primary asset provider (GitHub, Bitbucket, or GitLab).
+    - Clone the repository to a temporary directory if it does not already exist.
+    - Check out a new branch named after the documentation commit slug.
+    - Remove any existing `driver_docs` directory in the repository to prepare for new content.
+    - Synchronize the unpacked documentation to the `driver_docs` directory in the repository.
     - Configure Git user details for committing changes.
-    - Add the updated documentation to the Git staging area and check for any changes.
-    - If changes are detected, commit and push the updates to the remote repository.
-    - Create a pull request on GitHub or a merge request on other Git providers if the push is successful.
-- **Output**: The function does not return any value; it performs operations to update documentation in a Git repository.
+    - Add the `driver_docs` directory to the Git staging area and check for changes.
+    - If there are changes, commit them with a message indicating the update and push the changes to the remote repository.
+    - Create a pull request for the changes based on the primary asset provider.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/db.get_version_by_id`](<../utils/db.py.md#get_version_by_id>)
     - [`python-backend/content_services/inspector/src/onboarding/push_bot.download_file_from_s3`](<#download_file_from_s3>)
     - [`python-backend/content_services/inspector/src/onboarding/onboard_utils.unpack_archive_to_finalized_path`](<onboard_utils.py.md#unpack_archive_to_finalized_path>)
     - [`python-backend/content_services/inspector/src/onboarding/gh_ops.fetch_app_access_token`](<gh_ops.py.md#fetch_app_access_token>)
-    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.get_repo_clone_info_from_id`](<gitlab_ops.py.md#get_repo_clone_info_from_id>)
-    - [`python-backend/content_services/inspector/src/onboarding/gitlab_ops.fetch_access_token`](<gitlab_ops.py.md#fetch_access_token>)
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.exists`](<../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryexists>)
+    - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.get_repo_clone_info_from_id`](<bitbucket_ops.py.md#get_repo_clone_info_from_id>)
+    - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.fetch_access_token`](<bitbucket_ops.py.md#fetch_access_token>)
+    - [`python-backend/content_services/inspector/src/utils/db.git_provider_app_installation_by_id`](<../utils/db.py.md#git_provider_app_installation_by_id>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.exists`](<../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryexists>)
     - [`python-backend/content_services/inspector/src/onboarding/push_bot.run`](<#run>)
     - [`python-backend/content_services/inspector/src/onboarding/push_bot.sync_directory`](<#sync_directory>)
     - [`python-backend/content_services/inspector/src/onboarding/gh_ops.create_pull_request`](<gh_ops.py.md#create_pull_request>)
+    - [`python-backend/content_services/inspector/src/onboarding/bitbucket_ops.create_pull_request_with_bot_cleanup`](<bitbucket_ops.py.md#create_pull_request_with_bot_cleanup>)
 
 
 ---
 ### sync\_directory<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/push_bot.sync_directory}} -->
-The `sync_directory` function synchronizes the contents of a source directory to a destination directory by copying all files and subdirectories.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/push_bot.py#L165>)
+
+Copies the contents of the source directory to the destination directory, replacing the destination if it exists.
 - **Inputs**:
-    - `src`: The path to the source directory whose contents are to be copied.
-    - `dest`: The path to the destination directory where the contents will be copied to.
-- **Control Flow**:
+    - `src`: The path to the source directory to copy from.
+    - `dest`: The path to the destination directory to copy to.
+- **Logic and Control Flow**:
     - Check if the destination directory exists using `os.path.exists(dest)`.
-    - If the destination directory exists, remove it and all its contents using `shutil.rmtree(dest)`.
-    - Copy the entire source directory to the destination path using `shutil.copytree(src, dest)`.
-    - Print a confirmation message indicating the source directory has been synced to the destination.
-- **Output**: The function does not return any value; it performs the side effect of copying directory contents and prints a confirmation message.
+    - If the destination exists, remove it using `shutil.rmtree(dest)`.
+    - Copy the entire source directory to the destination using `shutil.copytree(src, dest)`.
+    - Print a confirmation message indicating the source has been synced to the destination.
+- **Output**: No return value; performs directory synchronization as a side effect.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.exists`](<../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryexists>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.exists`](<../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryexists>)
 
 
 ---
 ### download\_file\_from\_s3<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/push_bot.download_file_from_s3}} -->
-The `download_file_from_s3` function downloads a file from an S3 bucket to a local path and returns the file's metadata.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/push_bot.py#L174>)
+
+Downloads a file from an S3 bucket and returns its metadata.
 - **Inputs**:
-    - `bucket_name`: The name of the S3 bucket from which the file will be downloaded.
-    - `object_key`: The key of the object in the S3 bucket that identifies the file to be downloaded.
+    - `bucket_name`: The name of the S3 bucket from which to download the file.
+    - `object_key`: The key of the object in the S3 bucket to download.
     - `local_file_path`: The local file path where the downloaded file will be saved.
-- **Control Flow**:
-    - Import the boto3 library to interact with AWS S3.
-    - Create an S3 client using boto3.
-    - Use the S3 client to call `head_object` on the specified bucket and object key to retrieve the file's metadata.
-    - Extract the metadata from the response and print it.
-    - Download the file from the S3 bucket to the specified local file path using `download_file`.
-    - Print a confirmation message indicating the file has been downloaded.
-    - Return the extracted metadata.
+- **Logic and Control Flow**:
+    - Import the `boto3` library to interact with AWS S3.
+    - Create an S3 client using `boto3.client('s3')`.
+    - Call `s3.head_object` to retrieve the metadata of the object specified by `bucket_name` and `object_key`.
+    - Extract the metadata from the response using `response.get('Metadata', {})`.
+    - Print the extracted metadata to the console.
+    - Download the file from the S3 bucket using `s3.download_file` with the specified `bucket_name`, `object_key`, and `local_file_path`.
+    - Print a confirmation message indicating the successful download of the file.
 - **Output**: A dictionary containing the metadata of the downloaded file.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../packages/shared/shared/repositories/base_repository.py.md#BaseRepositoryget>)
+    - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
 
 
 ---
 ### build\_s3\_path<!-- {{#callable:python-backend/content_services/inspector/src/onboarding/push_bot.build_s3_path}} -->
-The `build_s3_path` function constructs an S3 path for a driver documentation ZIP file using organization ID hash, primary asset ID, and version ID.
+[View Source →](<../../../../../../content_services/inspector/src/onboarding/push_bot.py#L193>)
+
+Constructs an S3 path for a driver documentation ZIP file using organization ID hash, primary asset ID, and version ID.
 - **Inputs**:
-    - `org_id_hash`: A string representing the hashed organization ID, used to uniquely identify the organization.
-    - `primary_asset_id`: A string representing the primary asset ID, used to identify the specific asset.
-    - `version_id`: A string representing the version ID, used to specify the version of the asset.
-- **Control Flow**:
-    - The function takes three string inputs: `org_id_hash`, `primary_asset_id`, and `version_id`.
-    - It constructs a string that represents the S3 path for a ZIP file containing driver documentation.
-    - The path follows the format: 'driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip'.
-- **Output**: A string representing the constructed S3 path for the driver documentation ZIP file.
+    - `org_id_hash`: A string representing the hashed organization ID.
+    - `primary_asset_id`: A string representing the primary asset ID.
+    - `version_id`: A string representing the version ID.
+- **Logic and Control Flow**:
+    - Concatenates the input parameters into a formatted string that represents the S3 path for a driver documentation ZIP file.
+- **Output**: A string representing the constructed S3 path.
 
 
 

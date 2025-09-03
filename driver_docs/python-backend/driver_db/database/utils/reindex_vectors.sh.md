@@ -3,33 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `reindex_vectors.sh` file is a shell script that prompts the user for PostgreSQL connection details and executes a SQL script to reindex vectors in a specified database, while timing the operation.
+Shell script to reindex vectors in a PostgreSQL database after user confirmation.
 
 # Purpose
-This script is a shell script designed to facilitate the reindexing of a PostgreSQL database by executing a SQL file named `reindex_vectors.sql`. It provides narrow functionality, specifically focusing on confirming user-provided database connection details and executing a reindexing operation. The script prompts the user to verify the correctness of the PostgreSQL user, database, and server details before proceeding. If the user confirms the details, the script measures the time taken to perform the reindexing operation and outputs the elapsed time. This script is intended to be executed directly in a shell environment and is not a library or configuration file meant for importation into other scripts or applications.
-# Global Variables
-
----
-### start\_time
-- **Type**: `integer`
-- **Description**: The `start_time` variable is a global variable that stores the timestamp in seconds since the epoch when the script begins executing the database reindexing command. It is initialized using the `date +%s` command, which captures the current time in seconds.
-- **Use**: This variable is used to calculate the total elapsed time for the reindexing operation by comparing it with the `end_time` variable.
-
-
----
-### end\_time
-- **Type**: `integer`
-- **Description**: The `end_time` variable is a global integer variable that stores the Unix timestamp at the moment the reindexing process completes. It is calculated using the `date +%s` command, which returns the number of seconds since the Unix epoch (January 1, 1970).
-- **Use**: This variable is used to calculate the elapsed time for the reindexing process by subtracting `start_time` from `end_time`.
-
-
----
-### elapsed\_time
-- **Type**: `integer`
-- **Description**: The `elapsed_time` variable is a global integer variable that calculates the duration of the reindexing process in seconds. It is computed by subtracting the `start_time` from the `end_time`, both of which are captured using the Unix timestamp format.
-- **Use**: This variable is used to display the total time taken for the reindexing operation to complete.
-
-
+This script is an executable shell script that facilitates the reindexing of a PostgreSQL database. It prompts the user to confirm the database connection details, including the PostgreSQL user, database name, and server address. If the user confirms the details, the script executes a SQL file named `reindex_vectors.sql` using the `psql` command-line tool, which connects to the specified PostgreSQL database. The script measures and outputs the time taken to complete the reindexing process. If the user does not confirm the details, the script instructs the user to rerun it with the correct information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

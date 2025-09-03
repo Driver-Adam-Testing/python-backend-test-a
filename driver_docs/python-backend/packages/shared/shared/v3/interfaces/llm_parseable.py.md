@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `llm_parseable.py` file defines the `LlmParseable` class, which is a Pydantic base model designed to auto-generate instructions for a language model to produce valid JSON for its subclasses, including methods to generate example values and parsing description messages.
+Defines a base model for auto-generating JSON instructions for subclasses using Pydantic and ABC.
 
 # Purpose
-The provided Python code defines a class `LlmParseable` that serves as a base model for creating subclasses capable of generating instructions for a Language Model (LLM) to produce valid JSON representations. This class is built upon the Pydantic `BaseModel` and the Abstract Base Class (ABC) from Python's `abc` module, indicating that it is intended to be subclassed and not instantiated directly. The primary functionality of `LlmParseable` is to facilitate the automatic generation of example JSON data for its subclasses, which can be used to guide LLMs in understanding the structure and expected content of the JSON data they should produce. This is achieved through methods that recursively generate example values for various field types, including basic types, enums, lists, tuples, and nested Pydantic models.
+The code defines a class `LlmParseable` that extends `BaseModel` from the Pydantic library and the `ABC` class from the `abc` module. This class is designed to facilitate the generation of instructions for a Language Learning Model (LLM) to produce valid JSON representations of its subclasses. The `LlmParseable` class includes methods to generate example values for various field types, such as `Union`, `List`, `Tuple`, `Enum`, and nested `BaseModel` instances. It also handles basic data types like `int`, `float`, `bool`, and `str`. The class ensures that each generated example includes a `parseable_class_name` field, which helps in identifying the correct tool class or response type.
 
-The class includes several key methods, such as [`_generate_example_value`](<#LlmParseable_generate_example_value>) and [`_generate_example_for_model`](<#LlmParseable_generate_example_for_model>), which work together to create a dictionary of example values for all fields in a model. This dictionary is then converted into a JSON string and included in an `LlmMessage` object, which is returned by the [`to_parsing_description_message`](<#LlmParseableto_parsing_description_message>) method. This message includes the class name, the example JSON, and the class docstring, providing a comprehensive description that can be used by LLMs to generate the appropriate response types. The code is structured as a library file intended to be imported and extended by other modules, rather than a standalone script, and it defines a public API through its class methods, which are designed to be used by subclasses to generate parsing instructions.
+The `LlmParseable` class provides a method [`to_parsing_description_message`](<#llmparseableto_parsing_description_message>) that returns an `LlmMessage` object. This object contains a string with the class name, an example JSON structure, and the class docstring. This method is useful for generating a message that can be used to describe the parsing requirements for the LLM. The code imports several constants from a shared module, which are used to provide example values for different data types. The class is intended to be a base class for other models that require automatic JSON generation capabilities for LLM interactions.
 # Imports and Dependencies
 
 ---
@@ -33,12 +33,14 @@ The class includes several key methods, such as [`_generate_example_value`](<#Ll
 
 ---
 ### LlmParseable<!-- {{#class:python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable}} -->
-- **Description**: The `LlmParseable` class is an abstract base model that extends Pydantic's `BaseModel` and is designed to facilitate the generation of JSON instructions for subclasses. It provides methods to recursively generate example values for various field types, including unions, lists, tuples, enums, nested base models, and basic types. The class also includes functionality to produce a parsing description message, which combines the class's docstring with an example JSON structure, aiding in the creation of valid JSON for subclasses.
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_parseable.py#L18>)
+
+- **Description**: Represents a base model that facilitates the auto-generation of instructions for a language model to produce valid JSON for its subclasses. It provides methods to check if a type is an Enum, generate example values for various field types, and create a dictionary with example values for all fields in the model. Additionally, it can return a message containing the class's docstring and an example JSON structure.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._is_enum`](<#LlmParseable_is_enum>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_value`](<#LlmParseable_generate_example_value>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<#LlmParseable_generate_example_for_model>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable.to_parsing_description_message`](<#LlmParseableto_parsing_description_message>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._is_enum`](<#llmparseable_is_enum>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_value`](<#llmparseable_generate_example_value>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<#llmparseable_generate_example_for_model>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable.to_parsing_description_message`](<#llmparseableto_parsing_description_message>)
 - **Inherits From**:
     - `BaseModel`
     - `ABC`
@@ -47,70 +49,80 @@ The class includes several key methods, such as [`_generate_example_value`](<#Ll
 
 ---
 #### LlmParseable\.\_is\_enum<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._is_enum}} -->
-The `_is_enum` method checks if a given type is a subclass of `enum.Enum` without raising errors for non-class type hints.
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_parseable.py#L24>)
+
+Checks if a given type is a subclass of `enum.Enum` without causing errors for non-class type hints.
 - **Decorators**: `@staticmethod`
 - **Inputs**:
-    - `type_`: The type to be checked if it is a subclass of `enum.Enum`.
-- **Control Flow**:
-    - The method first checks if `type_` is an instance of `type`.
-    - If `type_` is a class, it then checks if it is a subclass of `enum.Enum`.
-    - The method returns `True` if both conditions are met, otherwise it returns `False`.
-- **Output**: A boolean value indicating whether `type_` is a subclass of `enum.Enum`.
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#LlmParseable>)  (Base Class)
+    - `type_`: The type to check if it is a subclass of `enum.Enum`.
+- **Logic and Control Flow**:
+    - Use `isinstance` to check if `type_` is a class type.
+    - Use `issubclass` to check if `type_` is a subclass of `enum.Enum`.
+- **Output**: Returns `True` if `type_` is a subclass of `enum.Enum`, otherwise `False`.
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#llmparseable>)  (Base Class)
 
 
 ---
 #### LlmParseable\.\_generate\_example\_value<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_value}} -->
-The `_generate_example_value` method recursively generates an example value for a given field type, handling various data types and structures.
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_parseable.py#L31>)
+
+Recursively generates an example value for a given field type, handling various data structures and types.
 - **Decorators**: `@classmethod`
 - **Inputs**:
+    - `cls`: The class itself, used to access class methods and properties.
     - `field_type`: The type of the field for which an example value is to be generated.
-- **Control Flow**:
-    - Retrieve the origin of the field type using `get_origin`.
-    - If the origin is `Union`, extract the arguments and select the first non-None type to recursively generate an example value.
-    - If the origin is a `list` or `tuple`, extract the item type and generate a list with an example value for that item type.
-    - If the field type is an Enum, return the first enumerated value.
-    - If the field type is a subclass of `BaseModel`, generate an example for the model and include its docstring if available.
-    - For basic types like `int`, `float`, `bool`, and `str`, return predefined example constants.
+- **Logic and Control Flow**:
+    - Get the origin of the `field_type` using `get_origin` function.
+    - If the origin is `Union`, get the arguments of the union and select the first non-`NoneType` argument to generate an example value recursively.
+    - If the origin is `list` or `tuple`, get the item type and generate an example list with one example value of the item type.
+    - If the `field_type` is an enum, return the value of the first enumerated item.
+    - If the `field_type` is a subclass of `BaseModel`, generate an example for the model and include the model's docstring if available.
+    - If the `field_type` is a basic built-in type (`int`, `float`, `bool`, `str`), return a predefined example value for that type.
     - If none of the above conditions are met, return a generic string as a fallback.
-- **Output**: An example value corresponding to the provided field type, which could be of various types such as a list, a model instance, or a basic type.
+- **Output**: An example value for the given `field_type`, which can be of any type.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._is_enum`](<#LlmParseable_is_enum>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<#LlmParseable_generate_example_for_model>)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#LlmParseable>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._is_enum`](<#llmparseable_is_enum>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<#llmparseable_generate_example_for_model>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#llmparseable>)  (Base Class)
 
 
 ---
 #### LlmParseable\.\_generate\_example\_for\_model<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model}} -->
-The `_generate_example_for_model` method generates a dictionary with example values for all fields in a Pydantic model, including a special field for class name identification.
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_parseable.py#L84>)
+
+Generates a dictionary with example values for all fields in the model, including a parseable class name.
 - **Decorators**: `@classmethod`
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize an empty dictionary `example_data` to store example values for each field.
-    - Iterate over each field in `cls.model_fields`, which provides a dictionary of field names and their corresponding `FieldInfo`.
-    - For each field, retrieve its type annotation and generate an example value using the [`_generate_example_value`](<#LlmParseable_generate_example_value>) method, storing it in `example_data` under the field's name.
-    - Add an entry to `example_data` with the key `PARSEABLE_CLASS_NAME` and the value of the class's name (`cls.__name__`).
-    - Return the `example_data` dictionary containing example values for all fields.
-- **Output**: A dictionary containing example values for each field in the model, including a special entry for the class name.
+- **Logic and Control Flow**:
+    - Initialize an empty dictionary `example_data`.
+    - Iterate over each field in `cls.model_fields`, which contains field names and their corresponding `FieldInfo`.
+    - For each field, retrieve its type annotation and generate an example value using [`_generate_example_value`](<#llmparseable_generate_example_value>).
+    - Add the generated example value to `example_data` with the field name as the key.
+    - Include the `PARSEABLE_CLASS_NAME` in `example_data` with the class name as its value.
+    - Return the `example_data` dictionary.
+- **Output**: A dictionary containing example values for all fields in the model, including the parseable class name.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_value`](<#LlmParseable_generate_example_value>)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#LlmParseable>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_value`](<#llmparseable_generate_example_value>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#llmparseable>)  (Base Class)
 
 
 ---
 #### LlmParseable\.to\_parsing\_description\_message<!-- {{#callable:python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable.to_parsing_description_message}} -->
-The `to_parsing_description_message` method generates a message containing the class name, an example JSON representation of the class, and the class docstring, encapsulated in an [`LlmMessage`](<llm_message.py.md#LlmMessage>) object.
+[View Source →](<../../../../../../../packages/shared/shared/v3/interfaces/llm_parseable.py#L102>)
+
+Generates a message containing the class name, an example JSON, and the class docstring for parsing description.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
-- **Control Flow**:
-    - Call the [`_generate_example_for_model`](<#LlmParseable_generate_example_for_model>) class method to create a dictionary with example values for all fields in the model.
+- **Inputs**:
+    - `cls`: The class itself, used to access class methods and properties.
+- **Logic and Control Flow**:
+    - Call the [`_generate_example_for_model`](<#llmparseable_generate_example_for_model>) class method to create a dictionary with example values for the model fields.
     - Convert the example dictionary to a JSON string with indentation for readability.
-    - Create and return an [`LlmMessage`](<llm_message.py.md#LlmMessage>) object with the class name, the example JSON, and the class docstring as its content, and set the message kind to `MessageKind.PARSING_DESCRIPTION`.
-- **Output**: An [`LlmMessage`](<llm_message.py.md#LlmMessage>) object containing the class name, example JSON, and class docstring.
+    - Create and return an [`LlmMessage`](<llm_message.py.md#llmmessage>) object with the class name, the example JSON, and the class docstring as its content, and set the message kind to `MessageKind.PARSING_DESCRIPTION`.
+- **Output**: An [`LlmMessage`](<llm_message.py.md#llmmessage>) object that includes the class name, an example JSON, and the class docstring.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<#LlmParseable_generate_example_for_model>)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<llm_message.py.md#LlmMessage>)
-- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#LlmParseable>)  (Base Class)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable._generate_example_for_model`](<#llmparseable_generate_example_for_model>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<llm_message.py.md#llmmessage>)
+- **See also**: [`python-backend/packages/shared/shared/v3/interfaces/llm_parseable.LlmParseable`](<#llmparseable>)  (Base Class)
 
 
 

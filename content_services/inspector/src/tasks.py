@@ -1,14 +1,17 @@
 import asyncio
 import concurrent.futures
+import os
+import pickle
 import uuid
 from pathlib import Path
 from typing import Optional, Union
 
-from database.models_v1 import (
+import boto3
+from database.models import (
     ChunkAndEmbedding,
     DerivedContent,
 )
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from modal_funcs import (
     make_codebase_tags,
     make_folder_tech_doc,
@@ -150,11 +153,13 @@ class FileTechDocTask(Task):
         task_name: str,
         db_node_id: uuid.UUID,
         symbol_table_task: Optional["CSymbolTableTask"],
+        thread_pool: concurrent.futures.ThreadPoolExecutor | None = None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
         self.symbol_table_task = symbol_table_task
+        self.thread_pool = thread_pool
         super().__init__(
             task_name=task_name,
             node=node,
@@ -175,12 +180,36 @@ class FileTechDocTask(Task):
         else:
             reified_symbols = None
 
+        if reified_symbols is not None:
+            sym_table_s3_key = f"symbol_tables/symbol_table_for_{self.db_node_id}.pkl"
+
+            def _upload(s3_key: str, reif_symbols: list) -> None:
+                data = pickle.dumps(reif_symbols)
+                boto3.client("s3").put_object(
+                    Bucket=os.environ["BUCKET_NAME"],
+                    Key=s3_key,
+                    Body=data,
+                )
+
+            if self.thread_pool:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    self.thread_pool,
+                    _upload,
+                    sym_table_s3_key,
+                    reified_symbols,
+                )
+            else:
+                _upload(sym_table_s3_key, reified_symbols)
+        else:
+            sym_table_s3_key = None
+
         async with tech_docs_sem:
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
                 source_code=self.source_code,
                 codebase_name=self.codebase_name,
-                reified_symbols=reified_symbols,
+                sym_table_s3_key=sym_table_s3_key,
             )
 
         return TaskResult(
@@ -640,7 +669,7 @@ class EmbeddingTask(Task):
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
-        from database.models_v1 import ChunkAndEmbedding
+        from database.models import ChunkAndEmbedding
         from sqlmodel.ext.asyncio.session import AsyncSession
 
         if self.db_node_id:
@@ -738,7 +767,7 @@ class EmbeddingTask(Task):
         content_types: list[str],  # TODO: content_types will be kind
         metadatas: list[dict[str, any]],
     ) -> list[ChunkAndEmbedding]:
-        from database.models_v1 import ChunkAndEmbedding
+        from database.models import ChunkAndEmbedding
         from shared.chunking.text_splitter import split_text
         from shared.embedding.text_embedder import async_batch_embed_text
 

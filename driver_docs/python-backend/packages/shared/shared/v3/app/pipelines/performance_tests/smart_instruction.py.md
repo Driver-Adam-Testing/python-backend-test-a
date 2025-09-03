@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `smart_instruction.py` file in the `python-backend` codebase is responsible for running performance tests on smart instruction pipelines, including generating pipeline requests, processing them with different LLM clients, and timing their execution.
+Implements a performance testing pipeline for smart instructions using various LLM clients and measures execution times.
 
 # Purpose
-This Python script is designed to evaluate the performance of different language model clients by running a series of pipeline requests and measuring the time taken for each request. The script imports several modules and functions, including `concurrent.futures` for parallel execution, and `PrettyTable` for tabulating results. It defines a set of prompts and context data related to the ADXL355 accelerometer, which are used to generate pipeline requests. The [`inject_pipeline_requests`](<#inject_pipeline_requests>) function creates a list of these requests, each containing a prompt and context data. The [`run_and_time_pipeline`](<#run_and_time_pipeline>) function orchestrates the execution of these requests across multiple language model clients, using a thread pool to handle concurrent processing. Each request is processed by the `process_request` function, which measures the time taken to generate a response using the `run_smart_instruction` function. The results, including the time taken for each client, are collected and displayed in a table format, providing insights into the performance of each language model client.
+The code is a script designed to test the performance of different language model clients by executing a series of pipeline requests. It uses the `concurrent.futures` module to run multiple requests in parallel, which helps in measuring the time taken by each client to process the requests. The script imports several components, including `PrettyTable` for displaying results in a tabular format, and various modules from a shared library for handling data scope and running smart instructions.
 
-The script serves as a benchmarking tool for comparing the efficiency of different language model clients in handling specific types of requests. It is structured as a standalone script, with the main execution block calling the [`run_and_time_pipeline`](<#run_and_time_pipeline>) function. The script is not intended to be imported as a library but rather executed directly to produce performance metrics. The use of structured prompts and context data suggests that the script is tailored for a specific application, likely involving the processing of technical documentation or instructions related to the ADXL355 accelerometer. The inclusion of error handling and resource cleanup in the code snippets indicates a focus on robustness and reliability in the execution of the pipeline requests.
+The main functionality involves generating a list of pipeline requests, each containing a prompt and context information. These requests are processed by different language model clients, and the time taken for each request is recorded. The script then aggregates the timing data for each client and displays the best, average, and worst times in a table. This setup allows for a comparative analysis of the performance of different language model clients in handling specific tasks.
 # Imports and Dependencies
 
 ---
@@ -26,65 +26,75 @@ The script serves as a benchmarking tool for comparing the efficiency of differe
 ---
 ### BEFORE
 - **Type**: `list`
-- **Description**: The `BEFORE` variable is a list containing strings that provide detailed setup instructions and configuration guidelines for the ADXL355 No-OS Driver. It includes information on communication protocols, initialization procedures, error checking, and API utilization for the ADXL355 accelerometer.
-- **Use**: This variable is used to store and provide access to the setup and configuration instructions for the ADXL355 driver, which can be referenced during the initialization and configuration of the device.
+- **Description**: Contains a list of strings that provide detailed setup instructions and configuration guidelines for the ADXL355 No-OS Driver. The list includes information on communication protocols, initialization procedures, error checking, and API utilization for the ADXL355 accelerometer.
+- **Use**: Used to store and provide access to the setup and configuration instructions for the ADXL355 driver.
 
 
 ---
 ### AFTER
-- **Type**: `list`
-- **Description**: The `AFTER` variable is a list containing strings that describe various aspects of the ADXL355 accelerometer, including register descriptions, configuration sequences, data acquisition procedures, and error handling mechanisms. It provides detailed information on how to initialize, configure, and manage the ADXL355 device, including its communication protocols and operational modes.
-- **Use**: This variable is used to store detailed documentation and instructions related to the ADXL355 accelerometer, likely for reference or instructional purposes in the context of the code.
+- **Type**: ``list``
+- **Description**: Contains a list of strings that describe various register descriptions, configuration sequences, and operational details for the ADXL355 accelerometer. Each string in the list provides detailed information about specific registers, their functions, and how to configure and use the device.
+- **Use**: Used to store and provide detailed information about the ADXL355 accelerometer's registers and configuration procedures.
 
 
 ---
 ### PROMPTS
-- **Type**: `list`
-- **Description**: The `PROMPTS` variable is a list of strings, each representing a specific question or topic related to the setup and configuration of the ADXL355 accelerometer. These prompts cover various aspects such as interrupt setup procedures, driver initialization, key features, communication interface configuration, error handling, and more.
-- **Use**: This variable is used to provide a set of predefined questions or topics that can be randomly selected and used in the `inject_pipeline_requests` function to generate pipeline requests for processing.
+- **Type**: ``list``
+- **Description**: Contains a list of string prompts related to the setup and configuration of the ADXL355 accelerometer. Each prompt addresses a specific aspect of the device, such as initialization, error handling, and feature descriptions.
+- **Use**: Used to provide a set of predefined questions for generating pipeline requests in the `inject_pipeline_requests` function.
 
 
 # Functions
 
 ---
 ### inject\_pipeline\_requests<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/performance_tests/smart_instruction.inject_pipeline_requests}} -->
-The `inject_pipeline_requests` function generates a list of five pipeline request dictionaries, each containing a random prompt and context data.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/pipelines/performance_tests/smart_instruction.py#L34>)
+
+Generates a list of pipeline request dictionaries with random prompts and context selections.
 - **Inputs**: None
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize an empty list `pipeline_requests`.
     - Iterate five times to create five pipeline request dictionaries.
     - In each iteration, import the `random` module.
-    - Select a random prompt from the `PROMPTS` list and random context data from `BEFORE` and `AFTER` lists.
-    - Append a dictionary with the selected prompt, node IDs, steps, block kind, and context to `pipeline_requests`.
+    - Select a random prompt from the `PROMPTS` list and assign it to the `prompt` key in the dictionary.
+    - Set `node_ids` to a predefined list containing a single UUID string.
+    - Initialize `steps` as an empty list and `block_kind` as 'ANY'.
+    - Create a `context` dictionary with `selected_text` as an empty string.
+    - Select random text from `BEFORE` and `AFTER` lists for `before_selected_text` and `after_selected_text` keys, respectively.
+    - Append the constructed dictionary to the `pipeline_requests` list.
     - Return the `pipeline_requests` list.
-- **Output**: A list of five dictionaries, each representing a pipeline request with a prompt and context data.
+- **Output**: A list of dictionaries, each representing a pipeline request with random prompts and context.
 - **Functions Called**:
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../../content_services/auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../../content_services/auto_toml/src/auto_toml.py.md#autotomlappend>)
 
 
 ---
 ### run\_and\_time\_pipeline<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/performance_tests/smart_instruction.run_and_time_pipeline}} -->
-The `run_and_time_pipeline` function executes a series of requests using multiple LLM clients, measures the execution time for each request, and outputs a performance summary table.
+[View Source →](<../../../../../../../../../packages/shared/shared/v3/app/pipelines/performance_tests/smart_instruction.py#L55>)
+
+Executes a series of pipeline requests using multiple LLM clients and measures the time taken for each request.
 - **Inputs**: None
-- **Control Flow**:
-    - Initialize `pipeline_requests` by calling `inject_pipeline_requests()` to generate a list of requests.
-    - Define a nested function `process_request` that takes a request and a client, executes the request using `run_smart_instruction`, and returns the time taken for execution.
-    - Create a list `llm_clients` containing different LLM client instances.
-    - Use a `ThreadPoolExecutor` to concurrently process each request with each client, storing the future results in a dictionary `futures`.
-    - As each future completes, retrieve the request and client, calculate the time taken, and store it in `client_timings` under the client's model name.
-    - Create a `PrettyTable` to display the best, average, and worst times for each client based on the recorded timings.
-    - Print the table to display the performance summary.
-- **Output**: The function outputs a table displaying the best, average, and worst execution times for each LLM client.
+- **Logic and Control Flow**:
+    - Calls [`inject_pipeline_requests`](<#inject_pipeline_requests>) to generate a list of pipeline requests.
+    - Initializes an empty dictionary `client_timings` to store timing data for each client.
+    - Defines an inner function `process_request` that processes a single request with a given client and returns the time taken.
+    - Creates a list `llm_clients` containing different LLM client instances.
+    - Uses a `ThreadPoolExecutor` to concurrently process each request with each client, storing the future objects in a dictionary `futures`.
+    - Iterates over completed futures, retrieves the request and client, and records the time taken in `client_timings`.
+    - Initializes a `PrettyTable` to display the best, average, and worst times for each client.
+    - Iterates over `client_timings` to calculate and display timing statistics in the table.
+    - Prints the table with timing results.
+- **Output**: None
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/app/pipelines/performance_tests/smart_instruction.inject_pipeline_requests`](<#inject_pipeline_requests>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../interfaces/agents/data_scope.py.md#DataScope>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o`](<../../../llms/config/llm_config.py.md#LlmConfiggpt_4o>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini`](<../../../llms/config/llm_config.py.md#LlmConfiggpt_4o_mini>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini_chat`](<../../../llms/config/llm_config.py.md#LlmConfiggpt_4o_mini_chat>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1`](<../../../llms/config/llm_config.py.md#LlmConfigo1>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1_mini`](<../../../llms/config/llm_config.py.md#LlmConfigo1_mini>)
-    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o3_mini`](<../../../llms/config/llm_config.py.md#LlmConfigo3_mini>)
-    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../../content_services/auto_toml/src/auto_toml.py.md#AutoTomlappend>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../../../interfaces/agents/data_scope.py.md#datascope>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o`](<../../../llms/config/llm_config.py.md#llmconfiggpt_4o>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini`](<../../../llms/config/llm_config.py.md#llmconfiggpt_4o_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.gpt_4o_mini_chat`](<../../../llms/config/llm_config.py.md#llmconfiggpt_4o_mini_chat>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1`](<../../../llms/config/llm_config.py.md#llmconfigo1>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o1_mini`](<../../../llms/config/llm_config.py.md#llmconfigo1_mini>)
+    - [`python-backend/packages/shared/shared/v3/llms/config/llm_config.LlmConfig.o3_mini`](<../../../llms/config/llm_config.py.md#llmconfigo3_mini>)
+    - [`python-backend/content_services/auto_toml/src/auto_toml.AutoToml.append`](<../../../../../../../content_services/auto_toml/src/auto_toml.py.md#autotomlappend>)
 
 
 

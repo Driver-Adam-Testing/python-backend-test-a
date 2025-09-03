@@ -5,6 +5,7 @@ from typing import Any
 
 import modal
 from auto_toml import AutoToml
+from autodoc_log import AutoDocLog, write_autodoc_log
 from autodocs_prototype import (
     AutoDocCfg,
     AutoDocInitState,
@@ -16,6 +17,7 @@ from autodocs_prototype import (
     update_autodocs_status,
 )
 from common import app, wait_for_guard_duty_tag
+from database.models_enums import ContentKind
 
 image = inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -33,7 +35,7 @@ image = inspection_image = (
         [
             "boto3",
             "requests",
-            "openai>=1.40.2",
+            "openai==1.99.1",
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
@@ -59,6 +61,7 @@ image = inspection_image = (
         "database",
         "shared",
         "utils",
+        "autodoc_log",
         copy=True,
         ignore=lambda p: False,
     )
@@ -83,18 +86,25 @@ image = inspection_image = (
     max_containers=5,
 )
 async def run_autodoc(
-    page_node_id: uuid.UUID,
-    config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
+    page_node_id: uuid.UUID,  # TODO: naming here
+    config_kind: Any,  # TODO: the actual type is a deferred import here, not sure how to resolve?
     document_goal: str | None = None,
     user_context: str | None = None,
+    content_kind: ContentKind | None = None,
 ) -> None:
     import hashlib
 
     import boto3
     from database.db import get_session
-    from database.models_v1 import DerivedContent, DocumentSource
-    from database.models_v2 import Node, Version
-    from database.models_v2_enums import (
+    from database.models import (
+        DerivedContent,
+        DocumentSource,
+        Node,
+        UserCache,
+        Version,
+        VersionCreator,
+    )
+    from database.models_enums import (
         AutoDocConfigKind,
         AutoDocStatusMessageKind,
         ContentKind,
@@ -102,7 +112,11 @@ async def run_autodoc(
         VersionStatus,
     )
     from sqlalchemy.orm import selectinload
-    from sqlmodel import select
+    from sqlmodel import delete, select
+
+    is_page = content_kind == ContentKind.application_note or content_kind is None
+
+    toml_content = ""
 
     if config_kind == AutoDocConfigKind.FROM_DOCUMENT_GOAL and not document_goal:
         raise ValueError(
@@ -111,45 +125,61 @@ async def run_autodoc(
 
     try:
         # Get document sources given page id
-        with get_session() as session, session.begin():
-            document_sources = session.exec(
-                select(DocumentSource)
-                .where(DocumentSource.page_node_id == page_node_id)
-                .options(
-                    selectinload(DocumentSource.source_node)
-                    .selectinload(Node.version)
-                    .selectinload(Version.primary_asset)
-                )
-            ).all()
+        if is_page:
+            with get_session() as session, session.begin():
+                document_sources = session.exec(
+                    select(DocumentSource)
+                    .where(DocumentSource.page_node_id == page_node_id)
+                    .options(
+                        selectinload(DocumentSource.source_node)
+                        .selectinload(Node.version)
+                        .selectinload(Version.primary_asset)
+                    )
+                ).all()
 
+                scope = Scope(
+                    preamble="",
+                    code=[],
+                    pdfs=[],
+                )
+
+                org_id = None
+                for source in document_sources:
+                    if not org_id:
+                        org_id = (
+                            source.source_node.version.primary_asset.organization_id
+                        )
+                    if (
+                        source.source_node.version.primary_asset.kind
+                        == PrimaryAssetKind.CODEBASE
+                    ):
+                        code_cfg = FullyQualifiedDriverPathCode(
+                            version_id=str(source.source_node.version_id),
+                            node_path=source.source_node.relative_path.rstrip("/"),
+                        )
+                        scope.code.append(code_cfg)
+                    elif (
+                        source.source_node.version.primary_asset.kind
+                        == PrimaryAssetKind.FILE
+                    ):
+                        pdf_cfg = FullyQualifiedDriverPathPdf(
+                            version_id=str(source.source_node.version_id),
+                            pdf_name=source.source_node.version.primary_asset.display_name,
+                        )
+                        scope.pdfs.append(pdf_cfg)
+        else:
             scope = Scope(
                 preamble="",
                 code=[],
                 pdfs=[],
             )
-
-            org_id = None
-            for source in document_sources:
-                if not org_id:
-                    org_id = source.source_node.version.primary_asset.organization_id
-                if (
-                    source.source_node.version.primary_asset.kind
-                    == PrimaryAssetKind.CODEBASE
-                ):
-                    code_cfg = FullyQualifiedDriverPathCode(
-                        version_id=str(source.source_node.version_id),
-                        node_path=source.source_node.relative_path.rstrip("/"),
-                    )
-                    scope.code.append(code_cfg)
-                elif (
-                    source.source_node.version.primary_asset.kind
-                    == PrimaryAssetKind.FILE
-                ):
-                    pdf_cfg = FullyQualifiedDriverPathPdf(
-                        version_id=str(source.source_node.version_id),
-                        pdf_name=source.source_node.version.primary_asset.display_name,
-                    )
-                    scope.pdfs.append(pdf_cfg)
+            with get_session() as session, session.begin():
+                node = session.get(Node, page_node_id)
+                code_cfg = FullyQualifiedDriverPathCode(
+                    version_id=str(node.version_id),
+                    node_path=node.relative_path.rstrip("/"),
+                )
+                scope.code.append(code_cfg)
 
         match config_kind:
             case AutoDocConfigKind.ADI_DRIVER:
@@ -182,11 +212,19 @@ async def run_autodoc(
                     config = AutoDocCfg.from_file(
                         "/autodocs_configs/custom_config.toml"
                     )
+                    with open("/autodocs_configs/custom_config.toml") as f:
+                        toml_content = f.read()
+
             case AutoDocConfigKind.FROM_DOCUMENT_GOAL:
                 toml_file = "config.toml"
-                auto_toml = AutoToml.from_page_id(
-                    page_node_id, enable_auto_scaling=True
-                )
+                if is_page:
+                    auto_toml = AutoToml.from_page_id(
+                        page_node_id, enable_auto_scaling=True
+                    )
+                else:
+                    auto_toml = AutoToml.from_root_node_id(
+                        root_node_id=page_node_id, enable_auto_scaling=True
+                    )
                 toml_content = await auto_toml.generate(
                     document_goal=document_goal,
                     user_context=user_context if user_context else "",
@@ -220,28 +258,104 @@ async def run_autodoc(
             status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
             content=doc,
         )
-        with get_session() as session, session.begin():
-            derived_content = session.exec(
-                select(DerivedContent).where(
+
+        sections = []
+        section_refs = []
+        for (
+            section_title,
+            source_list,
+        ) in init_state.section_sources.items():
+            section = f"{section_title}\n\n" + "\n".join(source_list)
+            sections.append(section)
+            section_refs.append((section_title, source_list))
+        source_string = "\n\n".join(sections)
+
+        # dataset to return
+        name = None
+        user_context_str = user_context
+        sources = section_refs
+        config_content = toml_content
+        doc_content = doc
+
+        if is_page:
+            with get_session() as session, session.begin():
+                derived_content = session.exec(
+                    select(DerivedContent).where(
+                        DerivedContent.node_id == page_node_id,
+                    )
+                ).first()
+                if not derived_content:
+                    print("No existing derived content found for this page node.")
+                    return
+                else:
+                    derived_content.content = doc
+                node = session.exec(
+                    select(Node)
+                    .where(Node.id == page_node_id)
+                    .options(
+                        selectinload(Node.version).selectinload(Version.primary_asset)
+                    )
+                ).one()
+
+                node.version.status = VersionStatus.GENERATION_COMPLETE
+                session.add(node.version)
+
+                user_cache = session.exec(
+                    select(UserCache)
+                    .join(VersionCreator, UserCache.id == VersionCreator.user_id)
+                    .where(VersionCreator.version_id == node.version_id)
+                ).first()
+
+                env = os.environ.get("MODAL_ENVIRONMENT")
+
+                name = derived_content.content_name if derived_content else "UNKNOWN"
+                if env in ["prod", "staging"]:
+                    print("Writing AutoDoc log to Notion")
+
+                    log = AutoDocLog(
+                        title=name,
+                        user_email=user_cache.email if user_cache else "UNKNOWN",
+                        organization_id=node.version.primary_asset.organization_id
+                        if node
+                        else "UNKNOWN",
+                        sources=source_string,
+                        toml_content=toml_content,
+                        autodoc_content=doc,
+                        user_context=user_context,
+                        env=env,
+                        page_id=str(page_node_id),
+                        config_kind=str(config_kind),
+                    )
+                    write_autodoc_log.spawn(log)
+
+            print("Updated derived content for page node:", page_node_id)
+        else:
+            with get_session() as session, session.begin():
+                node = session.get(Node, page_node_id)
+                dc_delete_query = delete(DerivedContent).where(
                     DerivedContent.node_id == page_node_id,
-                    DerivedContent.content_kind == ContentKind.application_note,
+                    DerivedContent.content_kind == content_kind,
                 )
-            ).first()
-            if not derived_content:
-                print("No existing derived content found for this page node.")
-                return
-            else:
-                derived_content.content = doc
-            node = session.exec(
-                select(Node)
-                .where(Node.id == page_node_id)
-                .options(selectinload(Node.version))
-            ).one()
+                session.exec(dc_delete_query)
 
-            node.version.status = VersionStatus.GENERATION_COMPLETE
-            session.add(node.version)
+                derived_content = DerivedContent(
+                    node_id=page_node_id,
+                    relative_path=node.relative_path,
+                    content_kind=content_kind,  # TODO: doc kind as input
+                    content=doc,
+                    misc_metadata=None,
+                )
+                session.add(derived_content)
 
-        print("Updated derived content for page node:", page_node_id)
+        return (
+            content_kind,
+            name,
+            user_context_str,
+            sources,
+            config_content,
+            doc_content,
+        )
+
     except Exception as e:
         print("Error:", e)
         await update_autodocs_status(
@@ -253,16 +367,24 @@ async def run_autodoc(
             node = session.get(Node, page_node_id)
             node.version.status = VersionStatus.GENERATION_ERROR
             session.add(node.version)
+        raise e
+
+        raise
 
 
 @app.local_entrypoint()
 def main(
     page_node_id: str,
+    document_goal: str,
+    size: str,
 ) -> None:
-    from database.models_v2_enums import AutoDocConfigKind
+    from database.models_enums import AutoDocConfigKind
 
     run_autodoc.remote(
-        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ARCHITECTURE
+        page_node_id=page_node_id,
+        config_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL,
+        document_goal=document_goal,
+        user_context=size,
     )
 
 
@@ -283,9 +405,8 @@ def main(
 )
 async def run_autodoc_cli(toml_content: str, page_node_id: str) -> None:
     from database.db import get_session
-    from database.models_v1 import DocumentSource
-    from database.models_v2 import Node, Version
-    from database.models_v2_enums import (
+    from database.models import DocumentSource, Node, Version
+    from database.models_enums import (
         PrimaryAssetKind,
     )
     from sqlalchemy.orm import selectinload

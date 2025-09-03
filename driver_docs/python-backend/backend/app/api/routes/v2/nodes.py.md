@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `nodes.py` file in the `python-backend` codebase defines API endpoints for listing, creating, and updating nodes, ensuring that operations are authorized based on the user's organization.
+API endpoints for listing, creating, and updating nodes with authorization and query utilities.
 
 # Purpose
-This Python file is a FastAPI-based module that defines a set of RESTful API endpoints for managing "nodes" within a system. The primary functionality provided by this code is the ability to list, create, and update nodes, which are likely entities within a database that are associated with versions and primary assets. The endpoints are secured by user authentication, ensuring that operations are performed only within the context of the user's organization. The code leverages SQLAlchemy and SQLModel for database interactions, utilizing ORM features to construct and execute queries. The endpoints are defined using FastAPI's routing capabilities, with decorators specifying HTTP methods and paths.
+The code defines a set of API endpoints for managing `Node` entities within an application using the FastAPI framework. It provides three main operations: listing nodes, creating a new node, and updating an existing node. These operations are accessible via HTTP methods (GET, POST, and PUT) and are part of a versioned API route (`/nodes`) managed by a FastAPI router. The endpoints interact with a database using SQLAlchemy and SQLModel to perform operations on `Node`, `Version`, and `PrimaryAsset` models.
 
-The file imports several components from other modules, indicating that it is part of a larger application. It uses utility functions for query filtering and sorting, and it defines response models to structure the API responses. The [`list_nodes`](<#list_nodes>) function retrieves nodes with pagination and filtering capabilities, while the [`create_node`](<#create_node>) and [`update_node`](<#update_node>) functions handle the creation and modification of node records, respectively. The code ensures that operations are authorized by checking the user's organization ID against the organization ID associated with the nodes and versions. This file is intended to be part of a web service, providing a public API for node management within an organizational context.
+The [`list_nodes`](<#list_nodes>) function retrieves a list of nodes associated with the user's organization, applying filters and sorting based on query parameters. The [`create_node`](<#create_node>) function allows the creation of a new node, ensuring that the specified version belongs to the user's organization. The [`update_node`](<#update_node>) function updates an existing node's attributes, verifying the node's association with the user's organization. The code uses dependency injection to manage the request context, database session, and user authentication, ensuring that operations are performed securely and within the user's scope of access.
 # Imports and Dependencies
 
 ---
@@ -39,63 +39,69 @@ The file imports several components from other modules, indicating that it is pa
 
 ---
 ### list\_nodes<!-- {{#callable:python-backend/backend/app/api/routes/v2/nodes.list_nodes}} -->
-The `list_nodes` function retrieves a list of nodes associated with the user's organization, applying filters and pagination, and returns the results along with the total count.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/nodes.py#L28>)
+
+Retrieves a list of nodes with pagination and filtering options, specific to the user's organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `request`: The HTTP request object containing query parameters for filtering.
-    - `session`: The current database session used to execute queries.
-    - `user`: The user token object containing information about the authenticated user, including their organization ID.
-    - `pagination`: The pagination object containing information about how to paginate the results.
-- **Control Flow**:
-    - Constructs a SQL query to select nodes, joining with the Version and PrimaryAsset tables, and filters by the user's organization ID.
+    - `request`: An instance of `Request` containing query parameters for filtering.
+    - `session`: An instance of `CurrentSession` to execute database queries.
+    - `user`: An instance of `UserToken` representing the authenticated user.
+    - `pagination`: An instance of `Pagination` to control the pagination of the results.
+- **Logic and Control Flow**:
+    - Constructs a SQL query to select `Node` objects, including related `Version` and `PrimaryAsset` data, filtered by the user's organization ID.
     - Converts query parameters from the request into a dictionary and applies them as filters to the query using [`apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>).
     - Creates a count query to determine the total number of nodes that match the filters and executes it to get the total count.
-    - Applies sorting to the query based on the pagination object using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
+    - Applies sorting to the query based on the pagination parameters using [`apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>).
     - Executes the final query to retrieve the list of nodes and stores the results.
-    - Returns a [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of nodes and the total count.
-- **Output**: A [`ListWithCount`](<schemas.py.md#ListWithCount>) object containing the list of nodes and the total count of nodes that match the query.
+    - Returns a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of nodes and the total count.
+- **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of nodes and the total count of nodes matching the filters.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_sorting_to_query`](<query_utils.py.md#apply_sorting_to_query>)
-    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#ListWithCount>)
+    - [`python-backend/backend/app/api/routes/v2/schemas.ListWithCount`](<schemas.py.md#listwithcount>)
 
 
 ---
 ### create\_node<!-- {{#callable:python-backend/backend/app/api/routes/v2/nodes.create_node}} -->
-The `create_node` function creates a new node in the database after verifying that the specified version belongs to the user's organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/nodes.py#L54>)
+
+Creates a new [`Node`](<../../../../../driver_db/database/models_v2.py.md#node>) object after verifying the version belongs to the user's organization.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: An instance of `UserToken` representing the authenticated user making the request.
-    - `payload`: An instance of `NodeCreate` containing the data required to create a new node, provided in the request body.
-- **Control Flow**:
-    - The function starts by executing a database query to check if the version specified in the payload belongs to the user's organization.
-    - If the version is not found or does not belong to the user's organization, an HTTP 404 exception is raised with a relevant error message.
-    - If the version is valid, a new [`Node`](<../../../../../driver_db/database/models_v2.py.md#Node>) object is created using the version ID and relative path from the payload.
-    - The new node is added to the session, and the session is committed to save the changes to the database.
-    - The session is refreshed to update the new node with any changes made during the commit, and the new node is returned as the response.
-- **Output**: The function returns the newly created [`Node`](<../../../../../driver_db/database/models_v2.py.md#Node>) object.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing information about the authenticated user.
+    - `payload`: The data required to create a new node, including `version_id` and `relative_path`.
+- **Logic and Control Flow**:
+    - Selects the `Version` object by joining with `PrimaryAsset` and checks if it belongs to the user's organization using `version_id` from `payload` and `organization_id` from `user`.
+    - Raises an `HTTPException` with a 404 status code if the version is not found or not authorized.
+    - Creates a new [`Node`](<../../../../../driver_db/database/models_v2.py.md#node>) object with `version_id` and `relative_path` from `payload`.
+    - Adds the new node to the session and commits the transaction to save it to the database.
+    - Refreshes the new node to get the latest state from the database.
+    - Returns the newly created [`Node`](<../../../../../driver_db/database/models_v2.py.md#node>) object.
+- **Output**: The newly created [`Node`](<../../../../../driver_db/database/models_v2.py.md#node>) object.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../../driver_db/database/models_v2.py.md#Node>)
+    - [`python-backend/driver_db/database/models_v2.Node`](<../../../../../driver_db/database/models_v2.py.md#node>)
 
 
 ---
 ### update\_node<!-- {{#callable:python-backend/backend/app/api/routes/v2/nodes.update_node}} -->
-The `update_node` function updates an existing node's details in the database if it belongs to the user's organization.
+[View Source →](<../../../../../../../backend/app/api/routes/v2/nodes.py#L81>)
+
+Updates a node's information if it belongs to the user's organization.
 - **Decorators**: `@router.put`
 - **Inputs**:
-    - `session`: An instance of `CurrentSession` used to interact with the database.
-    - `user`: A `UserToken` object representing the authenticated user making the request.
-    - `node_id`: A `UUID` representing the unique identifier of the node to be updated, extracted from the path.
-    - `payload`: A `NodeUpdate` object containing the data to update the node with, extracted from the request body.
-- **Control Flow**:
-    - The function begins by querying the database to fetch the node with the specified `node_id` and checks if it belongs to the user's organization.
-    - If the node is not found or does not belong to the user's organization, an `HTTPException` with a 404 status code is raised.
-    - If the `relative_path` attribute in the `payload` is not `None`, the node's `relative_path` is updated with the new value.
-    - The updated node is added to the session, and the session is committed to save changes to the database.
-    - The session is refreshed to ensure the node object is up-to-date with the database state.
-    - The updated node is returned as the response.
-- **Output**: The function returns the updated `Node` object.
+    - `session`: The current database session used to execute queries.
+    - `user`: The user token containing authentication and authorization information.
+    - `node_id`: The UUID of the node to update, provided as a path parameter.
+    - `payload`: The data for updating the node, provided in the request body.
+- **Logic and Control Flow**:
+    - Selects the node from the database by joining with `Version` and `PrimaryAsset` tables, ensuring the node belongs to the user's organization.
+    - Raises an `HTTPException` with a 404 status code if the node is not found or the user is not authorized.
+    - Updates the `relative_path` of the node if it is provided in the `payload`.
+    - Adds the node to the session, commits the transaction, and refreshes the node to reflect the changes.
+    - Returns the updated node.
+- **Output**: The updated `Node` object.
 
 
 

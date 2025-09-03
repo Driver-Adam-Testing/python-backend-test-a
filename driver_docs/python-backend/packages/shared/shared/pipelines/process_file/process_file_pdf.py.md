@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `process_file_pdf.py` file in the `python-backend` codebase provides functionality for processing PDF files, including summarizing their content, extracting text, images, and tables, and handling errors during these processes.
+Processes PDF files to extract and summarize text, images, and tables using OpenAI models.
 
 # Purpose
-This Python code is designed to process PDF files by extracting and summarizing their content, including text, images, and tables. It provides a comprehensive solution for analyzing PDF documents, leveraging various libraries such as `fitz` for PDF manipulation, `PIL` for image processing, and `openai` for generating summaries using AI models. The code defines several functions to handle different aspects of PDF processing, such as splitting PDFs into individual pages, converting pages to images, extracting text and images, and summarizing content using OpenAI's language models. It also includes mechanisms for retrying operations and validating the generated summaries to ensure accuracy.
+The code is a Python module designed to process PDF files by extracting and summarizing their content. It uses several libraries, including `fitz` for PDF manipulation, `PIL` for image processing, and `OpenAI` for generating summaries. The module defines functions to split a PDF into individual pages, extract text, images, and tables from each page, and convert pages to images. It also includes functionality to summarize the entire PDF or individual images using OpenAI's language model. The module employs concurrent processing to handle multiple pages simultaneously, improving efficiency.
 
-The code is structured as a library intended for use in larger applications, as it defines multiple functions and classes without a main execution block. It integrates with OpenAI's API to create an assistant for summarizing PDF content and uses concurrent processing to handle multiple pages and images efficiently. The [`run_process_pdf`](<#run_process_pdf>) function orchestrates the overall process, coordinating the extraction and summarization tasks. The code also includes error handling and logging to manage exceptions and ensure robust operation. Overall, this code provides a specialized and detailed approach to PDF content analysis, suitable for applications requiring automated document processing and summarization.
+The module defines a public API for processing PDF files, which includes functions like [`run_process_pdf`](<#run_process_pdf>), [`process_visual_summary`](<#process_visual_summary>), and [`process_extracted_text`](<#process_extracted_text>). These functions return structured data in the form of `ProcessedPdfFileContent` objects, which categorize the extracted content into types such as visual summaries, extracted text, and image summaries. The code also includes error handling mechanisms to manage exceptions during processing and attempts to retry operations when necessary. This module is intended to be used as part of a larger system for analyzing and summarizing PDF documents, potentially in a cloud-based environment.
 # Imports and Dependencies
 
 ---
@@ -36,40 +36,42 @@ The code is structured as a library intended for use in larger applications, as 
 
 ---
 ### client
-- **Type**: `OpenAI`
-- **Description**: The `client` variable is an instance of the `OpenAI` class, which is likely part of the OpenAI Python library. This instance is used to interact with OpenAI's API, allowing the program to perform tasks such as creating assistants or generating completions.
-- **Use**: This variable is used to facilitate communication with OpenAI's API for various operations, such as creating chat completions and managing assistants.
+- **Type**: ``OpenAI``
+- **Description**: The `client` variable is an instance of the `OpenAI` class. This class is likely part of the OpenAI library, which provides functionalities to interact with OpenAI's API services.
+- **Use**: Used to create and manage interactions with OpenAI's API services throughout the code.
 
 
 ---
 ### SUMMARIZE\_PDF\_PROMPT
-- **Type**: `str`
-- **Description**: `SUMMARIZE_PDF_PROMPT` is a string variable that contains a detailed prompt for analyzing and summarizing the contents of a PDF file. The prompt guides the user to provide a high-level overview of the document, including its main focus, key themes, topics, and objectives, as well as detailed descriptions of text, sections, images, diagrams, and tables if available.
-- **Use**: This variable is used as a prompt for summarizing PDF files, guiding the analysis and extraction of key information from the document.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for analyzing and summarizing the contents of a PDF file. It includes guidelines for identifying the main focus, themes, and structure of the document, as well as describing visual content and tables.
+- **Use**: Used as a prompt for summarizing PDF files by providing detailed instructions on how to analyze and summarize the document's contents.
 
 
 ---
 ### DESCRIBE\_IMAGE\_PROMPT
-- **Type**: `str`
-- **Description**: The `DESCRIBE_IMAGE_PROMPT` is a multi-line string variable that provides detailed instructions for describing images. It covers various types of images, including photographs, artwork, diagrams, charts, and technical illustrations, specifying what details should be included in the description, such as scene, subjects, colors, layout, labeled components, and any text visible in the image.
-- **Use**: This variable is used as a prompt to guide the description of images, ensuring comprehensive and detailed image analysis without follow-up questions.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides detailed instructions for describing images. It includes guidelines for describing different types of images such as photographs, artwork, diagrams, charts, and technical illustrations.
+- **Use**: Used as a prompt to guide the description of images in detail without asking follow-up questions.
 
 
 ---
 ### assistant
-- **Type**: `object`
-- **Description**: The `assistant` variable is an instance of an assistant created using the OpenAI client. It is configured with the name 'PDF Summarizer', specific instructions for summarizing PDF content, and utilizes the 'gpt-4o-mini' model. Additionally, it is equipped with a tool for file searching.
-- **Use**: This variable is used to create and configure an AI assistant that can summarize PDF documents by leveraging the OpenAI API.
+- **Type**: ``Assistant``
+- **Description**: Represents an instance of an assistant created using the OpenAI client. This assistant is configured with the name 'PDF Summarizer', specific instructions, a model identifier, and a tool for file search.
+- **Use**: Used to create and manage an assistant for summarizing PDF files with specific capabilities and instructions.
 
 
 # Classes
 
 ---
 ### SummaryValidation<!-- {{#class:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.SummaryValidation}} -->
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L68>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `is_valid_summary_of_a_file`: A boolean indicating if the text is a valid summary of a file.
-- **Description**: The `SummaryValidation` class is a data model that extends `BaseModel` and is used to validate whether a given text is a valid summary of a file. It contains a single boolean attribute, `is_valid_summary_of_a_file`, which is set to true if the text is a valid summary and false if the text indicates missing or inaccessible information.
+    - `is_valid_summary_of_a_file`: Indicates if the text is a valid summary of a file.
+- **Description**: Validates if a given text is a summary of a file or if it indicates missing or inaccessible information.
 - **Inherits From**:
     - `BaseModel`
 
@@ -78,37 +80,40 @@ The code is structured as a library intended for use in larger applications, as 
 
 ---
 ### validate\_summary<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.validate_summary}} -->
-The `validate_summary` function checks if a given text is a valid summary of a file using an OpenAI agent.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L77>)
+
+Validates if a given text is a summary of a file using an AI agent.
 - **Inputs**:
-    - `summary`: A string representing the text to be validated as a summary of a file.
-- **Control Flow**:
-    - An instance of [`OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#OpenAIStrictAgent>) is created with specific parameters including the model, response format, and data scope.
-    - The agent is invoked with a command to return a `ValidateSummary` object based on the provided summary text.
-    - The function returns the `is_valid_summary_of_a_file` attribute of the `SummaryValidation` response, indicating whether the summary is valid.
-- **Output**: A boolean value indicating whether the provided summary is a valid summary of a file.
+    - `summary`: A string representing the text to validate as a summary of a file.
+- **Logic and Control Flow**:
+    - Creates an instance of [`OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#openaistrictagent>) with specific parameters including model, response format, and data scope.
+    - Invokes the agent with a command to return a `ValidateSummary` object based on the provided `summary` text.
+    - Returns the boolean value of `is_valid_summary_of_a_file` from the `ValidateSummary` object.
+- **Output**: A boolean indicating whether the provided text is a valid summary of a file.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#OpenAIStrictAgent>)
-    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../interfaces/agents/data_scope.py.md#DataScope>)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<../../agent/agent_base.py.md#AgentBaseinvoke>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<../../agent/agent_openai_strict.py.md#openaistrictagent>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/data_scope.DataScope`](<../../interfaces/agents/data_scope.py.md#datascope>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<../../agent/agent_base.py.md#agentbaseinvoke>)
 
 
 ---
 ### summarize\_pdf\_with\_retry<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.summarize_pdf_with_retry}} -->
-The `summarize_pdf_with_retry` function attempts to summarize a PDF file by querying an OpenAI model, retrying up to three times if necessary, and returns the summary if successful.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L90>)
+
+Attempts to summarize a PDF file by querying an OpenAI model, retrying up to three times if necessary.
 - **Inputs**:
-    - `file_content`: A `BytesIO` object containing the binary content of the PDF file to be summarized.
-    - `summarization_query`: A string representing the query or prompt to be used for summarizing the PDF content.
-    - `assistant_id`: A string representing the identifier of the assistant to be used for querying the file.
-- **Control Flow**:
-    - Initialize the number of attempts to 3.
-    - Upload the PDF file content to OpenAI and obtain a file ID.
-    - Iterate up to 3 times to attempt summarization.
-    - In each attempt, try to query the file using the provided summarization query and assistant ID.
-    - If the summary is valid, return it immediately.
-    - If the summary is not valid, raise an exception to trigger a retry.
-    - If an exception occurs and it's not the last attempt, print a retry message and wait for 30 seconds before retrying.
+    - `file_content`: A `BytesIO` object containing the PDF file data to be summarized.
+    - `summarization_query`: A string representing the query to be used for summarizing the PDF file.
+    - `assistant_id`: A string representing the identifier of the assistant to be used for querying.
+- **Logic and Control Flow**:
+    - Set the number of attempts to 3.
+    - Upload the PDF file content to OpenAI and get a `file_id`.
+    - Loop through the number of attempts, trying to query the file for a summary each time.
+    - If a valid summary is obtained, return it immediately.
+    - If the summary is not valid, raise an exception to retry.
+    - If an exception occurs and attempts remain, print a retry message and wait for 30 seconds before retrying.
     - If all attempts fail, print a failure message.
-- **Output**: Returns a string containing the summary of the PDF if successful, or `None` if all attempts fail.
+- **Output**: Returns a string containing the summary of the PDF file if successful, or `None` if all attempts fail.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/utils/openai_file.upload_file_to_open_ai`](<../../utils/openai_file.py.md#upload_file_to_open_ai>)
     - [`python-backend/packages/shared/shared/agent/models/openai/file_search.query_file`](<../../agent/models/openai/file_search.py.md#query_file>)
@@ -117,196 +122,221 @@ The `summarize_pdf_with_retry` function attempts to summarize a PDF file by quer
 
 ---
 ### summarize\_images<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.summarize_images}} -->
-The `summarize_images` function encodes a list of images and a prompt into a format suitable for an OpenAI model to generate a summary of the images.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L114>)
+
+Encodes images as base64 strings, appends a prompt, and sends them to an OpenAI model for summarization.
 - **Inputs**:
     - `images`: A list of `io.BytesIO` objects representing the images to be summarized.
-    - `prompt`: An optional string that provides a prompt for the image summarization; if not provided, a default prompt is used.
-- **Control Flow**:
+    - `prompt`: An optional string to guide the summarization; if not provided, a default prompt is used.
+- **Logic and Control Flow**:
     - Initialize an empty list `encoded_images` to store encoded image data.
     - Iterate over each image in the `images` list.
-    - For each image, read and encode the image data in base64 format.
-    - Determine the file extension of the image to identify its media type (e.g., JPEG, PNG, GIF, WEBP).
-    - If the image type is supported, append a dictionary with the encoded image data and media type to `encoded_images`.
-    - If the image type is unsupported, print a message and skip the image.
-    - Append a dictionary containing the prompt text to `encoded_images`, using the provided prompt or a default prompt if none is given.
-    - Send a request to the OpenAI API with the encoded images and prompt to generate a summary.
-    - Return the content of the response from the OpenAI API.
-- **Output**: A string containing the summary of the images generated by the OpenAI model.
+    - For each image, read and encode the image data to a base64 string.
+    - Determine the file extension of the image to set the correct media type.
+    - If the file extension is not supported, print a message and skip the image.
+    - Append a dictionary with the encoded image data and media type to `encoded_images`.
+    - Append a dictionary with the prompt text to `encoded_images`.
+    - Send the `encoded_images` list to the OpenAI model for summarization.
+    - Return the content of the first choice from the model's response.
+- **Output**: A string containing the summarized content of the images as generated by the OpenAI model.
 
 
 ---
 ### process\_visual\_summary<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.process_visual_summary}} -->
-The `process_visual_summary` function processes a PDF page to generate a visual summary using a summarization query and returns the result as a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object or `None` if an error occurs.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L159>)
+
+Processes a PDF page to generate a visual summary using a summarization query and assistant ID.
 - **Inputs**:
-    - `page_content`: A `BytesIO` object representing the content of a PDF page.
+    - `page_content`: A `BytesIO` object containing the content of a PDF page.
     - `index`: An integer representing the page index in the PDF.
-    - `summarization_query`: A string containing the query used for summarizing the PDF content.
-    - `assistant_id`: A string or `None`, representing the ID of the assistant used for summarization.
-- **Control Flow**:
-    - The function attempts to create a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object by calling [`summarize_pdf_with_retry`](<#summarize_pdf_with_retry>) with the provided `page_content`, `summarization_query`, and `assistant_id`.
-    - If [`summarize_pdf_with_retry`](<#summarize_pdf_with_retry>) succeeds, it returns a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object with the summary content, the page number incremented by one, and the content type set to `VISUAL_SUMMARY`.
-    - If an exception occurs during processing, the function catches it and returns `None`.
-- **Output**: The function returns a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object containing the visual summary of the PDF page or `None` if an error occurs.
+    - `summarization_query`: A string containing the query used for summarization.
+    - `assistant_id`: An optional string representing the assistant ID used in the summarization process.
+- **Logic and Control Flow**:
+    - Attempts to create a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object by summarizing the PDF page content using the [`summarize_pdf_with_retry`](<#summarize_pdf_with_retry>) function.
+    - Increments the page index by 1 for the `page` attribute of the [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object.
+    - Sets the `content_type` attribute of the [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object to `ProcessedPdfFileContentType.VISUAL_SUMMARY`.
+    - If an exception occurs during processing, returns `None`.
+- **Output**: Returns a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object containing the visual summary of the PDF page, or `None` if an error occurs.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>)
+    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.summarize_pdf_with_retry`](<#summarize_pdf_with_retry>)
 
 
 ---
 ### process\_extracted\_text<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.process_extracted_text}} -->
-The `process_extracted_text` function extracts text from a PDF page and returns it as a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object with metadata.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L178>)
+
+Creates a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object with extracted text from a PDF page.
 - **Inputs**:
-    - `page_content`: A `BytesIO` object representing the content of a single page from a PDF file.
-    - `index`: An integer representing the page number index, starting from 0.
-- **Control Flow**:
-    - The function calls [`extract_text_from_pdf`](<#extract_text_from_pdf>) with `page_content` to extract text from the PDF page.
-    - It creates a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object with the extracted text, the page number incremented by 1, and a content type of `EXTRACTED_TEXT`.
-    - The function returns the [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object.
-- **Output**: A [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object containing the extracted text, the page number, and the content type as `EXTRACTED_TEXT`.
+    - `page_content`: A `BytesIO` object representing the content of a PDF page.
+    - `index`: An integer representing the page number in the PDF.
+- **Logic and Control Flow**:
+    - Calls [`extract_text_from_pdf`](<#extract_text_from_pdf>) with `page_content` to extract text from the PDF page.
+    - Creates a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object with the extracted text, the page number incremented by one, and the content type set to `ProcessedPdfFileContentType.EXTRACTED_TEXT`.
+    - Returns the created [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object.
+- **Output**: A [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object containing the extracted text, page number, and content type.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>)
+    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.extract_text_from_pdf`](<#extract_text_from_pdf>)
 
 
 ---
 ### process\_extracted\_tables<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.process_extracted_tables}} -->
-The `process_extracted_tables` function extracts tables from a PDF page and returns them as a list of [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) objects.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L188>)
+
+Processes PDF content to extract tables and returns them as a list of processed content objects.
 - **Inputs**:
-    - `page_content`: A `BytesIO` object representing the content of a PDF page from which tables are to be extracted.
-    - `index`: An integer representing the page number index, used to label the extracted content with the correct page number.
-- **Control Flow**:
+    - `page_content`: A `BytesIO` object representing the content of a PDF page.
+    - `index`: An integer representing the page number index.
+- **Logic and Control Flow**:
     - Initialize an empty list `table_contents` to store processed table data.
-    - Iterate over each table extracted from the PDF page using `extract_tables_from_pdf(page_content)`.
-    - For each table, create a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object with the table content converted to a string, the page number incremented by one, and the content type set to `ProcessedPdfFileContentType.EXTRACTED_TABLE`.
-    - Append each [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object to the `table_contents` list.
-    - Return the `table_contents` list containing all processed table data.
-- **Output**: A list of [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) objects, each representing an extracted table from the PDF page, with metadata including the page number and content type.
+    - Iterate over each table extracted from the PDF content using [`extract_tables_from_pdf`](<#extract_tables_from_pdf>).
+    - For each table, create a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object with the table content, incremented page index, and content type `EXTRACTED_TABLE`.
+    - Append the [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object to `table_contents`.
+    - Return the `table_contents` list.
+- **Output**: A list of [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) objects, each representing an extracted table from the PDF page.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.extract_tables_from_pdf`](<#extract_tables_from_pdf>)
-    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>)
+    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>)
 
 
 ---
 ### process\_image<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.process_image}} -->
-The `process_image` function processes an image from a PDF page, generates a summary of the image content, and returns it as a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L203>)
+
+Processes an image from a PDF file and returns a summary of its content.
 - **Inputs**:
-    - `image`: An `io.BytesIO` object representing the image data to be processed.
-    - `index`: An integer representing the page index of the image within the PDF.
-- **Control Flow**:
-    - Prints a message indicating the start of processing for the specified page index.
-    - Calls the [`summarize_images`](<#summarize_images>) function with the image and a predefined prompt to generate a summary of the image content.
-    - Creates and returns a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object with the generated image summary, the page number, and a content type indicating it's an extracted image summary.
+    - `image`: An `io.BytesIO` object representing the image to process.
+    - `index`: An integer representing the page number of the image in the PDF file.
+- **Logic and Control Flow**:
+    - Prints a message indicating the start of processing for the specified page.
+    - Calls the [`summarize_images`](<#summarize_images>) function with the image and a prompt to generate a summary of the image content.
+    - Creates a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object with the generated summary, the page number, and the content type `EXTRACTED_IMAGE_SUMMARY`.
+    - Returns the [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object if successful.
     - Catches any exceptions that occur during processing, prints an error message, and returns `None`.
-- **Output**: Returns a [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) object containing the image summary, page number, and content type, or `None` if an error occurs.
+- **Output**: A [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) object containing the image summary, page number, and content type, or `None` if an error occurs.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.summarize_images`](<#summarize_images>)
-    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>)
+    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>)
 
 
 ---
 ### run\_process\_pdf<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.run_process_pdf}} -->
-The `run_process_pdf` function processes a PDF file to generate summaries and extract content such as text, images, and tables, handling exceptions and utilizing concurrent processing for efficiency.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L217>)
+
+Processes a PDF file to generate summaries and extract content such as images, text, and tables.
 - **Inputs**:
-    - `file_content`: A `io.BytesIO` object representing the PDF file content to be processed.
-- **Control Flow**:
+    - `file_content`: A `BytesIO` object representing the PDF file content to process.
+- **Logic and Control Flow**:
     - Initialize an empty list `processed_contents` to store processed content.
-    - Attempt to summarize the entire PDF using [`summarize_pdf_with_retry`](<#summarize_pdf_with_retry>); if an exception occurs, log the exception details and send an email notification.
-    - If the whole file summary is not available, split the PDF into pages and extract images from the first 7 pages, then summarize these images and append the result to `processed_contents`.
-    - If the whole file summary is available, append it to `processed_contents` as a visual summary.
-    - Split the PDF into individual pages and use a `ThreadPoolExecutor` to concurrently process each page for images, text, and tables.
-    - For each page, attempt to convert it to an image and submit tasks to process the image, extracted text, and tables concurrently.
-    - Collect results from the futures, extending `processed_contents` with the results.
-    - Print the processed contents and return them.
-- **Output**: A list of [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>) objects, each representing a piece of processed content from the PDF, such as summaries, extracted text, or images.
+    - Attempt to summarize the entire PDF using [`summarize_pdf_with_retry`](<#summarize_pdf_with_retry>). If an exception occurs, log the exception details and send an email notification.
+    - If the whole file summary is `None`, split the PDF into pages and extract images from the first 7 pages, then summarize these images and append the result to `processed_contents`.
+    - If a whole file summary is available, append it to `processed_contents` as a visual summary.
+    - Split the PDF into individual pages and use a `ThreadPoolExecutor` to process each page concurrently.
+    - For each page, attempt to convert it to an image and submit tasks to process the image, extracted text, and extracted tables.
+    - Collect results from the futures and append them to `processed_contents`.
+    - Print the final `processed_contents` and return it.
+- **Output**: A list of [`ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>) objects containing the processed content of the PDF.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.summarize_pdf_with_retry`](<#summarize_pdf_with_retry>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.split_pdf_into_pages`](<#split_pdf_into_pages>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.extract_images_from_pdf`](<#extract_images_from_pdf>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.summarize_images`](<#summarize_images>)
-    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#ProcessedPdfFileContent>)
+    - [`python-backend/packages/shared/shared/interfaces/file_content/pdf_file_content.ProcessedPdfFileContent`](<../../interfaces/file_content/pdf_file_content.py.md#processedpdffilecontent>)
     - [`python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.pdf_page_to_image`](<#pdf_page_to_image>)
 
 
 ---
 ### pdf\_page\_to\_image<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.pdf_page_to_image}} -->
-The `pdf_page_to_image` function converts each page of a PDF file into a JPEG image and returns a list of these images as `BytesIO` objects.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L284>)
+
+Converts each page of a PDF file into a JPEG image and returns a list of these images as `BytesIO` objects.
 - **Inputs**:
-    - `file_content`: A `BytesIO` object containing the binary content of a PDF file.
-- **Control Flow**:
-    - Open the PDF document from the `file_content` stream using the `fitz` library.
+    - `file_content`: A `BytesIO` object containing the PDF file data to process.
+- **Logic and Control Flow**:
+    - Open the PDF document from the `file_content` stream using `fitz.open` with the file type set to 'pdf'.
     - Initialize an empty list `images` to store the converted images.
-    - Iterate over each page in the PDF document.
-    - For each page, load the page and create a pixmap representation of it.
-    - Convert the pixmap to an image using the `PIL.Image.frombytes` method.
-    - Check if the image size exceeds a maximum size of 2048 pixels; if so, resize it using the `thumbnail` method with `Image.LANCZOS` filter.
-    - Create a `BytesIO` object to store the image in JPEG format.
-    - Save the image to the `BytesIO` object and reset the stream position to the beginning.
-    - Name the `BytesIO` object using the original file name and the page number.
-    - Append the `BytesIO` object to the `images` list.
-    - Return the list of `BytesIO` objects containing the JPEG images.
-- **Output**: A list of `BytesIO` objects, each containing a JPEG image of a page from the PDF.
+    - Iterate over each page in the PDF document using a loop with `range(len(pdf_document))`.
+    - For each page, load the page using `pdf_document.load_page(page_num)` and get a pixmap representation using `page.get_pixmap()`.
+    - Convert the pixmap to an image using `Image.frombytes` with the RGB mode and the pixmap's width, height, and samples.
+    - Check if the image size exceeds a maximum size of 2048 pixels; if so, resize the image using `img.thumbnail` with the `Image.LANCZOS` filter.
+    - Create a `BytesIO` object `img_bytes_io` to store the image data, save the image in JPEG format to this object, and reset the stream position to the start using `img_bytes_io.seek(0)`.
+    - Set the `name` attribute of `img_bytes_io` to a string indicating the original file name and the page number.
+    - Append the `img_bytes_io` object to the `images` list.
+    - Return the `images` list containing the `BytesIO` objects of the converted images.
+- **Output**: A list of `BytesIO` objects, each containing a JPEG image of a PDF page.
 
 
 ---
 ### split\_pdf\_into\_pages<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.split_pdf_into_pages}} -->
-The function `split_pdf_into_pages` splits a PDF file into individual pages, each saved as a separate PDF file in memory.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L308>)
+
+Splits a PDF file into individual pages and returns them as a list of `BytesIO` objects.
 - **Inputs**:
-    - `file_content`: An `io.BytesIO` object containing the binary content of the PDF file to be split.
-- **Control Flow**:
-    - Open the PDF document from the provided `file_content` using the `fitz` library.
+    - `file_content`: A `BytesIO` object containing the content of the PDF file to split.
+- **Logic and Control Flow**:
+    - Open the PDF document from the `file_content` stream using `fitz.open` with the file type specified as 'pdf'.
     - Initialize an empty list `created_pages` to store the individual page files.
-    - Iterate over each page in the PDF document using a loop.
-    - For each page, create a new PDF document and insert the current page into it.
-    - Save the single-page PDF into a new `io.BytesIO` object and reset its position to the start.
-    - Name the `BytesIO` object using the original file name with a suffix indicating the page number.
-    - Append the `BytesIO` object to the `created_pages` list.
-    - Return the list `created_pages` containing all the individual page files.
-- **Output**: A list of `io.BytesIO` objects, each representing a single page of the original PDF file, saved as a separate PDF file in memory.
+    - Iterate over each page in the PDF document using a loop with `range(len(pdf_document))`.
+    - For each page, create a new `fitz` PDF document `single_page_pdf`.
+    - Insert the current page from the original PDF into `single_page_pdf` using `insert_pdf`.
+    - Create a new `BytesIO` object `page_bytes_io` to store the single page PDF.
+    - Save the `single_page_pdf` into `page_bytes_io` and reset its position to the start using `seek(0)`.
+    - Set the `name` attribute of `page_bytes_io` to a string indicating the original file name and the page number.
+    - Append `page_bytes_io` to the `created_pages` list.
+    - Return the `created_pages` list containing all the individual page files.
+- **Output**: A list of `BytesIO` objects, each representing a single page of the original PDF file.
 
 
 ---
 ### extract\_text\_from\_pdf<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.extract_text_from_pdf}} -->
-The function `extract_text_from_pdf` extracts and returns all text from a PDF file provided as a byte stream.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L325>)
+
+Extracts and concatenates text from all pages of a PDF file.
 - **Inputs**:
-    - `file_content`: A byte stream (`io.BytesIO`) representing the content of a PDF file.
-- **Control Flow**:
-    - Open the PDF document from the byte stream using the `fitz.open` method with the file type specified as 'pdf'.
-    - Initialize an empty string `all_text` to accumulate text from the PDF.
-    - Iterate over each page in the PDF document using a loop that runs from 0 to the number of pages in the document.
-    - For each page, load the page using `pdf_document.load_page(page_num)` and extract the text using `page.get_text()`.
-    - Append the extracted text from each page to the `all_text` string.
-    - Return the accumulated `all_text` string containing all the text from the PDF.
-- **Output**: A string containing all the text extracted from the PDF file.
+    - `file_content`: A `BytesIO` object containing the binary content of a PDF file.
+- **Logic and Control Flow**:
+    - Open the PDF document using `fitz.open` with the provided `file_content` stream.
+    - Initialize an empty string `all_text` to store the extracted text.
+    - Iterate over each page in the PDF document using a loop with `range(len(pdf_document))`.
+    - For each page, load the page using `pdf_document.load_page(page_num)`.
+    - Extract text from the page using `page.get_text()` and append it to `all_text`.
+- **Output**: A string containing the concatenated text extracted from all pages of the PDF.
 
 
 ---
 ### extract\_images\_from\_pdf<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.extract_images_from_pdf}} -->
-The function `extract_images_from_pdf` extracts all images from a PDF file and returns them as a list of `BytesIO` objects.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L336>)
+
+Extracts images from a PDF file and returns them as a list of `BytesIO` objects.
 - **Inputs**:
-    - `file_content`: A `BytesIO` object representing the content of a PDF file from which images are to be extracted.
-- **Control Flow**:
-    - Open the PDF document using the `fitz` library with the provided `file_content`.
-    - Initialize an empty list `images` to store the extracted images.
-    - Iterate over each page in the PDF document using a loop.
-    - For each page, retrieve the list of images using `page.get_images(full=True)`.
-    - Iterate over the list of images, extracting each image using its xref number with `pdf_document.extract_image(xref)`.
-    - For each extracted image, retrieve the image bytes and extension, and create a `BytesIO` object with the image data.
-    - Assign a name to the `BytesIO` object based on the original file name and image index.
-    - Append the `BytesIO` object to the `images` list.
-    - Return the list of `BytesIO` objects containing the extracted images.
-- **Output**: A list of `BytesIO` objects, each containing the data of an extracted image from the PDF, with the `name` attribute set to a filename indicating the original PDF name and image index.
+    - `file_content`: A `BytesIO` object containing the PDF file content from which to extract images.
+- **Logic and Control Flow**:
+    - Open the PDF document using `fitz.open` with the provided `file_content` stream.
+    - Initialize an empty list `images` to store extracted image data.
+    - Iterate over each page in the PDF document using a loop with `range(len(pdf_document))`.
+    - For each page, load the page using `pdf_document.load_page(page_num)` and retrieve the list of images using `page.get_images(full=True)`.
+    - Iterate over each image in the `image_list` using a loop with `enumerate(image_list)`.
+    - For each image, extract the image data using `pdf_document.extract_image(xref)` where `xref` is the reference number of the image.
+    - Retrieve the image bytes and extension from the extracted image data.
+    - Create a filename for the image using the original file name and the image index.
+    - Create a `BytesIO` object from the image bytes, set its `name` attribute to the generated filename, and append it to the `images` list.
+    - Return the `images` list containing all extracted images as `BytesIO` objects.
+- **Output**: A list of `BytesIO` objects, each representing an extracted image from the PDF, with the `name` attribute set to the image's filename.
 
 
 ---
 ### extract\_tables\_from\_pdf<!-- {{#callable:python-backend/packages/shared/shared/pipelines/process_file/process_file_pdf.extract_tables_from_pdf}} -->
-The `extract_tables_from_pdf` function extracts tables from a PDF file using the Tabula library and returns them as a list.
+[View Source →](<../../../../../../../packages/shared/shared/pipelines/process_file/process_file_pdf.py#L356>)
+
+Extracts tables from a PDF file using the Tabula library.
 - **Inputs**:
-    - `file_content`: A `io.BytesIO` object representing the content of the PDF file from which tables are to be extracted.
-- **Control Flow**:
-    - The function imports the Tabula library, which is required for reading tables from PDFs.
-    - It attempts to read tables from the PDF using `tabula.read_pdf` with the `pages="all"` and `multiple_tables=True` options.
-    - If an exception occurs during table extraction, it returns an empty list.
-    - If tables are successfully extracted, it returns the list of tables; otherwise, it returns an empty list.
+    - `file_content`: A `BytesIO` object containing the PDF file content to process.
+- **Logic and Control Flow**:
+    - Imports the Tabula library, which requires a JVM to function.
+    - Attempts to read tables from the PDF using `tabula.read_pdf` with the options to read all pages and multiple tables.
+    - If an exception occurs during table extraction, returns an empty list.
+    - Checks if tables were successfully extracted; if so, returns the tables, otherwise returns an empty list.
 - **Output**: A list of tables extracted from the PDF, or an empty list if no tables are found or an error occurs.
 
 

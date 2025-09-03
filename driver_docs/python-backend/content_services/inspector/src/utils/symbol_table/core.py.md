@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `core.py` file in the `python-backend` codebase provides classes and methods for parsing project files to extract and link symbols, compute file visibility using various algorithms, and create a reified project index with fully linked symbols.
+Implements classes and methods for parsing, linking, and computing visibility of symbols in a project.
 
 # Purpose
-This Python code is a comprehensive module designed to parse, analyze, and link symbols within a software project, focusing on visibility and symbol relationships. It is structured to handle complex symbol parsing tasks, such as resolving symbol definitions, declarations, and usages across multiple files in a project. The code is organized into several classes, each responsible for different stages of the symbol processing pipeline. The `ParsedProject` class parses files to extract symbols and their relationships, while `ParsedProjectWithVisibility` extends this by computing which files are visible from each other using various algorithms like DFS, BFS, and SCC. The `LinkedProject` class further processes these symbols to link usages to their definitions, considering visibility constraints. Finally, the `ReifiedProjectIndex` class creates a fully linked symbol index, including function calls and object memberships, which is crucial for understanding the structure and dependencies within the project.
+The code defines a set of classes and methods for parsing, analyzing, and linking symbols in a software project. It is designed to process source code files, extract symbols, and determine their relationships, such as definitions, declarations, and usages. The primary classes include `ParsedProject`, `ParsedProjectWithVisibility`, `LinkedSymbol`, `LinkedProject`, and `ReifiedProjectIndex`. Each class builds upon the previous one to add more detailed information about the symbols and their interconnections.
 
-The code is intended to be part of a larger system, likely a static analysis tool or a code intelligence platform, where it serves as a backend component for symbol resolution and analysis. It uses multithreading to efficiently process large projects, leveraging Python's `ThreadPoolExecutor` for parallel execution. The module defines a public API through class methods that facilitate the transformation of raw symbol data into a structured and linked format, ready for further analysis or visualization. The use of data classes ensures immutability and clarity in data handling, while the inclusion of timing information allows for performance monitoring. Overall, this code provides a robust framework for symbol analysis in software projects, supporting various programming languages and complex project structures.
+`ParsedProject` is responsible for parsing files to extract symbols and their relationships, such as includes and containment maps. `ParsedProjectWithVisibility` extends this by computing which files are visible from each other using different algorithms like DFS, BFS, and SCC. `LinkedProject` further processes the parsed data to link symbols to their definitions across visible files. Finally, `ReifiedProjectIndex` creates a fully linked representation of the project, including symbol definitions, usages, and object memberships. The code supports parallel processing to handle large projects efficiently and provides options for different visibility computation algorithms.
 # Imports and Dependencies
 
 ---
@@ -40,285 +40,302 @@ The code is intended to be part of a larger system, likely a static analysis too
 
 ---
 ### MAX\_LLM\_CALLS\_PER\_FILE
-- **Type**: `int`
-- **Description**: `MAX_LLM_CALLS_PER_FILE` is a global integer variable set to 25. It represents the maximum number of calls to a language model (LLM) that can be made per file.
-- **Use**: This variable is used to limit the number of LLM calls that can be made for each file during processing.
+- **Type**: ``int``
+- **Description**: Defines the maximum number of calls to a language model (LLM) that can be made per file. This is a constant integer value set to 10.
+- **Use**: Limits the number of LLM calls that can be made for each file to prevent excessive usage.
 
 
 # Classes
 
 ---
 ### VisibilityAlgorithm<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/core.VisibilityAlgorithm}} -->
-- **Decorators**: `@dataclass`
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L27>)
+
 - **Members**:
-    - `DFS`: Original DFS approach for computing file visibility.
-    - `BFS`: BFS with reverse graph for computing file visibility.
-    - `FIXPOINT`: Incremental fixpoint approach for computing file visibility.
-    - `SCC`: Strongly connected components approach for computing file visibility.
-- **Description**: The VisibilityAlgorithm class is an enumeration that defines different algorithmic approaches for computing file visibility in a project. It extends the StrEnum class, allowing each algorithm to be represented as a string. The class provides four distinct algorithms: DFS (Depth-First Search), BFS (Breadth-First Search with reverse graph), FIXPOINT (Incremental fixpoint), and SCC (Strongly Connected Components). These algorithms are used to determine which files are visible from each other within a project's file structure, facilitating tasks such as dependency resolution and code analysis.
+    - `DFS`: Represents the original DFS approach for computing visibility.
+    - `BFS`: Represents the BFS approach with a reverse graph for computing visibility.
+    - `FIXPOINT`: Represents the incremental fixpoint approach for computing visibility.
+    - `SCC`: Represents the strongly connected components approach for computing visibility.
+- **Description**: Defines different algorithm choices for computing file visibility, each represented as a string enumeration.
 - **Inherits From**:
     - `StrEnum`
 
 
 ---
 ### ParsedProject<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L36>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `file_to_symbols`: A dictionary mapping file paths to lists of raw TreeSitter symbol data.
-    - `includes_map`: A dictionary mapping file paths to lists of include strings.
-    - `file_to_containment_map`: A dictionary mapping file paths to containment maps of raw TreeSitter symbol data.
-- **Description**: The `ParsedProject` class is a data structure designed to encapsulate the parsed representation of a project, specifically focusing on the symbols and their relationships within the project's files. It is immutable, as indicated by the `frozen=True` parameter in the `@dataclass` decorator, ensuring that once an instance is created, its state cannot be altered. The class holds three main attributes: `file_to_symbols`, which maps each file to its corresponding list of symbols; `includes_map`, which tracks the include directives for each file; and `file_to_containment_map`, which details the containment relationships between symbols within each file. The class also provides a class method `from_files` to facilitate the creation of a `ParsedProject` instance by parsing a list of file paths using a specified symbol parser, with optional parallel processing support.
+    - `file_to_symbols`: Maps each file path to a list of raw symbol data.
+    - `includes_map`: Maps each file path to a list of include strings.
+    - `file_to_containment_map`: Maps each file path to a containment map of symbols.
+- **Description**: Represents a parsed project with mappings of file paths to their respective symbols, includes, and containment relationships. It provides a class method to create an instance from a list of file paths, using a symbol parser and optional parallel processing.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject.from_files`](<#ParsedProjectfrom_files>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject.from_files`](<#parsedprojectfrom_files>)
 
 **Methods**
 
 ---
 #### ParsedProject\.from\_files<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject.from_files}} -->
-The `from_files` method parses a list of files to extract symbols, includes, and containment maps, and returns an instance of `ParsedProject` with this data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L44>)
+
+Parses a list of files to extract symbols, includes, and containment maps, and returns a `ParsedProject` instance.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `file_paths`: A list of `Path` objects representing the file paths to be parsed.
+    - `cls`: The class `ParsedProject` to instantiate.
+    - `file_paths`: A list of `Path` objects representing the file paths to parse.
     - `project_root`: A `Path` object representing the root directory of the project.
     - `parser`: An instance of `SymbolParser` used to parse the files.
     - `num_workers`: An optional integer specifying the number of worker threads for parallel processing; defaults to `None` for serial processing.
-- **Control Flow**:
-    - Define a nested function `parse_and_handle` to parse individual files and handle exceptions, returning relative file paths, symbols, includes, and containment maps.
-    - Initialize dictionaries `file_to_syms`, `raw_includes`, and `file_to_containment_map` to store parsed data.
-    - Check if `num_workers` is `None` or `1` to decide between serial and parallel processing.
-    - In serial processing, iterate over `file_paths`, parse each file using `parse_and_handle`, and update the dictionaries with the results.
-    - In parallel processing, use `ThreadPoolExecutor` to submit parsing tasks for each file, collect results as they complete, and update the dictionaries.
-    - Return a new instance of `ParsedProject` initialized with the populated dictionaries.
-- **Output**: An instance of `ParsedProject` containing mappings of file paths to their parsed symbols, includes, and containment maps.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.to_root_relative`](<utils.py.md#to_root_relative>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser.parse_file`](<base.py.md#SymbolParserparse_file>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject`](<#ParsedProject>)  (Base Class)
+- **Logic and Control Flow**:
+    - Defines a nested function `parse_and_handle` to parse individual files and handle exceptions.
+    - Initializes dictionaries `file_to_syms`, `raw_includes`, and `file_to_containment_map` to store parsing results.
+    - Checks if `num_workers` is `None` or `1` to decide between serial and parallel processing.
+    - In serial processing, iterates over `file_paths`, parses each file, and updates the dictionaries with results.
+    - In parallel processing, uses `ThreadPoolExecutor` to parse files concurrently and updates the dictionaries with results.
+    - Returns an instance of `ParsedProject` initialized with the populated dictionaries.
+- **Output**: An instance of `ParsedProject` containing the parsed symbols, includes, and containment maps for the given files.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProject`](<#parsedproject>)  (Base Class)
 
 
 
 ---
 ### ParsedProjectWithVisibility<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L103>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `file_to_symbols`: A dictionary mapping file paths to lists of raw TreeSitter symbol data.
-    - `includes_map`: A dictionary mapping file paths to lists of include strings.
-    - `visibility_map`: A dictionary mapping file paths to sets of paths that are transitively visible from each file.
-- **Description**: The ParsedProjectWithVisibility class extends the ParsedProject class by adding a visibility_map, which provides information about the transitive visibility of files within a project. This class is designed to compute and store the visibility relationships between files, allowing for the determination of which files can 'see' other files based on their includes and the chosen visibility algorithm. It supports multiple algorithms for computing visibility, including DFS, BFS, incremental fixpoint, and SCC, and can be constructed from an existing ParsedProject instance.
+    - `file_to_symbols`: Maps each file path to a list of raw symbol data.
+    - `includes_map`: Maps each file path to a list of include strings.
+    - `visibility_map`: Maps each file path to a set of file paths that are transitively visible from it.
+- **Description**: Represents a parsed project with an additional visibility map that indicates which files are transitively visible from each file. This class extends the data from `ParsedProject` by adding a `visibility_map` to track file visibility relationships.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility.from_parsed_project`](<#ParsedProjectWithVisibilityfrom_parsed_project>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_dfs`](<#ParsedProjectWithVisibility_compute_visibility_dfs>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_incremental_fixed_point`](<#ParsedProjectWithVisibility_compute_visibility_incremental_fixed_point>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_reverse_bfs`](<#ParsedProjectWithVisibility_compute_visibility_reverse_bfs>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_scc`](<#ParsedProjectWithVisibility_compute_visibility_scc>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility.from_parsed_project`](<#parsedprojectwithvisibilityfrom_parsed_project>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_dfs`](<#parsedprojectwithvisibility_compute_visibility_dfs>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_incremental_fixed_point`](<#parsedprojectwithvisibility_compute_visibility_incremental_fixed_point>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_reverse_bfs`](<#parsedprojectwithvisibility_compute_visibility_reverse_bfs>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_scc`](<#parsedprojectwithvisibility_compute_visibility_scc>)
 
 **Methods**
 
 ---
 #### ParsedProjectWithVisibility\.from\_parsed\_project<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility.from_parsed_project}} -->
-The `from_parsed_project` method constructs a `ParsedProjectWithVisibility` instance by computing a visibility map for files in a parsed project using a specified algorithm and optionally returns timing information.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L114>)
+
+Builds a visibility map for each file in a parsed project, indicating which files are transitively visible, using a specified algorithm.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `ParsedProjectWithVisibility` itself, used to create an instance.
-    - `parsed`: An instance of `ParsedProject` containing the file-to-symbols and includes map data.
-    - `num_workers`: An optional integer specifying the number of workers for parallel processing.
+    - `parsed`: An instance of `ParsedProject` containing the file-to-symbols and includes map.
+    - `num_workers`: An integer or None, specifying the number of workers for parallel processing.
     - `resolver`: An instance of `ImportResolver` used to resolve file imports.
-    - `algorithm`: An optional `VisibilityAlgorithm` specifying the algorithm to use for computing visibility, defaulting to `VisibilityAlgorithm.SCC`.
+    - `algorithm`: An instance of `VisibilityAlgorithm` specifying the algorithm to use for visibility computation, defaulting to `VisibilityAlgorithm.SCC`.
     - `return_timing`: A boolean indicating whether to return timing information along with the result.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Extracts `file_to_symbols` and `includes_map` from the `parsed` object.
-    - Initializes a [`TimingInfo`](<comparison.py.md#TimingInfo>) object to record timing data.
-    - Uses a [`timer`](<comparison.py.md#timer>) context manager to measure the time taken for visibility computation.
-    - Selects the visibility computation method based on the `algorithm` parameter using a match-case statement.
-    - Computes the visibility map using the selected algorithm method.
+    - Initializes a [`TimingInfo`](<comparison.py.md#timinginfo>) object to record timing information.
+    - Starts a timer to measure the visibility computation time.
+    - Uses a match-case statement to select the visibility computation algorithm based on the `algorithm` parameter.
+    - Calls the appropriate visibility computation method ([`_compute_visibility_dfs`](<#parsedprojectwithvisibility_compute_visibility_dfs>), [`_compute_visibility_reverse_bfs`](<#parsedprojectwithvisibility_compute_visibility_reverse_bfs>), [`_compute_visibility_incremental_fixed_point`](<#parsedprojectwithvisibility_compute_visibility_incremental_fixed_point>), or [`_compute_visibility_scc`](<#parsedprojectwithvisibility_compute_visibility_scc>)) based on the selected algorithm.
+    - Raises a `ValueError` if the provided algorithm is not recognized.
     - Records the elapsed time in the `timing` object.
-    - Creates a `ParsedProjectWithVisibility` instance with the computed visibility map.
-    - Returns the instance and optionally the timing information based on the `return_timing` flag.
-- **Output**: Returns a `ParsedProjectWithVisibility` instance, and optionally a tuple containing the instance and [`TimingInfo`](<comparison.py.md#TimingInfo>) if `return_timing` is True.
+    - Creates an instance of `ParsedProjectWithVisibility` with the computed visibility map.
+    - Returns the instance and timing information if `return_timing` is True, otherwise returns only the instance.
+- **Output**: Returns an instance of `ParsedProjectWithVisibility` or a tuple containing the instance and [`TimingInfo`](<comparison.py.md#timinginfo>) if `return_timing` is True.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<comparison.py.md#TimingInfo>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.TimingInfo`](<comparison.py.md#timinginfo>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/comparison.timer`](<comparison.py.md#timer>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_dfs`](<#ParsedProjectWithVisibility_compute_visibility_dfs>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_reverse_bfs`](<#ParsedProjectWithVisibility_compute_visibility_reverse_bfs>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_incremental_fixed_point`](<#ParsedProjectWithVisibility_compute_visibility_incremental_fixed_point>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_scc`](<#ParsedProjectWithVisibility_compute_visibility_scc>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#ParsedProjectWithVisibility>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_dfs`](<#parsedprojectwithvisibility_compute_visibility_dfs>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_reverse_bfs`](<#parsedprojectwithvisibility_compute_visibility_reverse_bfs>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_incremental_fixed_point`](<#parsedprojectwithvisibility_compute_visibility_incremental_fixed_point>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_scc`](<#parsedprojectwithvisibility_compute_visibility_scc>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#parsedprojectwithvisibility>)  (Base Class)
 
 
 ---
 #### ParsedProjectWithVisibility\.\_compute\_visibility\_dfs<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_dfs}} -->
-The `_compute_visibility_dfs` method computes the transitive visibility of files using a depth-first search (DFS) approach, either serially or in parallel, based on the number of workers specified.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L173>)
+
+Computes a visibility map for files using a depth-first search (DFS) approach.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `file_to_symbols`: A dictionary mapping file paths to lists of symbols, representing the symbols contained in each file.
-    - `includes_map`: A dictionary mapping file paths to lists of include strings, representing the files each file includes.
-    - `resolver`: An instance of `ImportResolver` used to resolve import paths from include strings.
-    - `num_workers`: An optional integer specifying the number of worker threads to use for parallel processing; if `None` or 1, processing is done serially.
-- **Control Flow**:
+    - `file_to_symbols`: A dictionary mapping file paths to lists of symbols.
+    - `includes_map`: A dictionary mapping file paths to lists of include strings.
+    - `resolver`: An instance of `ImportResolver` used to resolve import paths.
+    - `num_workers`: An optional integer specifying the number of worker threads for parallel processing.
+- **Logic and Control Flow**:
     - Initialize an empty dictionary `visibility_map` to store the visibility results.
-    - Define a nested function `dfs` to perform a depth-first search on the includes of a given file, marking visited files.
-    - Define a nested function `compute_visited` that initializes the visited set with the current file and calls `dfs` to populate it.
+    - Define a nested function `dfs` to perform a depth-first search on the includes of a given file path.
+    - In `dfs`, for each include string in the current file, resolve the import path using `resolver` and add it to the visited set if not already visited.
+    - Define a function `compute_visited` that initializes a visited set with the given file path and calls `dfs` to populate it.
     - Determine the total number of files from `file_to_symbols`.
-    - If `num_workers` is `None` or 1, iterate over each file path, compute its visited set using `compute_visited`, and update `visibility_map` serially.
-    - If `num_workers` is greater than 1, use a `ThreadPoolExecutor` to submit `compute_visited` tasks for each file path and update `visibility_map` as tasks complete.
-    - Print progress messages every 25 files or at the end of processing.
+    - If `num_workers` is `None` or 1, process files serially by iterating over `file_to_symbols`, calling `compute_visited` for each file, and updating `visibility_map`.
+    - If `num_workers` is greater than 1, use a `ThreadPoolExecutor` to process files in parallel, submitting `compute_visited` tasks and updating `visibility_map` with the results as they complete.
+    - Return the `visibility_map` containing the visibility sets for each file.
 - **Output**: A dictionary mapping each file path to a set of file paths that are transitively visible from it.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<base.py.md#ImportResolverresolve_import>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#ParsedProjectWithVisibility>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#parsedprojectwithvisibility>)  (Base Class)
 
 
 ---
 #### ParsedProjectWithVisibility\.\_compute\_visibility\_incremental\_fixed\_point<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_incremental_fixed_point}} -->
-The `_compute_visibility_incremental_fixed_point` method computes the transitive visibility of files using an incremental fixpoint approach that handles cycles.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L226>)
+
+Computes a visibility map for files using an incremental fixpoint approach that handles cycles.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `file_to_symbols`: A dictionary mapping file paths to lists of symbols contained in those files.
-    - `includes_map`: A dictionary mapping file paths to lists of include strings, representing direct dependencies.
-    - `resolver`: An instance of `ImportResolver` used to resolve import paths from include strings.
-- **Control Flow**:
-    - Initialize a visibility map where each file path maps to a set containing itself.
-    - Iterate over each file path to populate the visibility map with direct dependencies resolved using the `resolver`.
-    - Enter a loop that continues until no changes are detected in the visibility map, indicating a fixpoint has been reached.
-    - In each iteration, for each file path, expand its visibility set by adding the visibility sets of its currently visible files.
-    - If any file's visibility set grows in size during an iteration, set a flag to continue the loop.
+    - `includes_map`: A dictionary mapping file paths to lists of include strings that the files reference.
+    - `resolver`: An instance of `ImportResolver` used to resolve include strings to file paths.
+- **Logic and Control Flow**:
+    - Initialize `visibility_map` with each file path mapping to a set containing itself.
+    - Iterate over each file path in `file_to_symbols` to build initial direct dependencies using `includes_map` and `resolver`.
+    - For each include string, resolve it to a file path or list of file paths and update the `visibility_map` accordingly.
+    - Enter a loop that continues until no changes occur in the `visibility_map`.
+    - In each iteration, for each file path, calculate the current size of its visibility set.
+    - For each visible file in the current file path's visibility set, add the visibility of that file to the current file path's visibility set.
+    - If the size of the visibility set increases, mark that changes have occurred and continue the loop.
     - Print the number of iterations taken to reach the fixpoint.
 - **Output**: A dictionary mapping each file path to a set of file paths that are transitively visible from it.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<base.py.md#ImportResolverresolve_import>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#ParsedProjectWithVisibility>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#parsedprojectwithvisibility>)  (Base Class)
 
 
 ---
 #### ParsedProjectWithVisibility\.\_compute\_visibility\_reverse\_bfs<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_reverse_bfs}} -->
-The `_compute_visibility_reverse_bfs` method computes the visibility map of files using a reverse graph and breadth-first search (BFS) approach.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L272>)
+
+Computes the visibility of files using a reverse graph and BFS approach.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `file_to_symbols`: A dictionary mapping file paths to lists of symbols contained in those files.
-    - `includes_map`: A dictionary mapping file paths to lists of include strings, representing dependencies.
+    - `file_to_symbols`: A dictionary mapping file paths to lists of symbols.
+    - `includes_map`: A dictionary mapping file paths to lists of include strings.
     - `resolver`: An instance of `ImportResolver` used to resolve import paths.
-    - `num_workers`: An optional integer specifying the number of worker threads for parallel processing.
-- **Control Flow**:
+    - `num_workers`: An integer specifying the number of workers for parallel processing, or `None` for serial processing.
+- **Logic and Control Flow**:
     - Initialize a reverse dependency graph to track which files include each file.
-    - Iterate over each file in `file_to_symbols` and populate the reverse dependency graph using `includes_map` and `resolver`.
-    - Define a nested function `compute_visibility` that performs a BFS to find all files that can see a given file.
+    - Iterate over each file path in `file_to_symbols` to populate the reverse dependency graph using the `resolver` to resolve include paths.
+    - Define a nested function `compute_visibility` that performs a BFS to find all files that can see a given file path.
     - Determine whether to process files serially or in parallel based on `num_workers`.
-    - If processing serially, iterate over each file and compute its visibility using `compute_visibility`.
-    - If processing in parallel, use a `ThreadPoolExecutor` to compute visibility for each file concurrently.
-    - Return the constructed `visibility_map` which maps each file to the set of files that can see it.
-- **Output**: A dictionary mapping each file path to a set of file paths that are transitively visible from it.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<base.py.md#ImportResolverresolve_import>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#ParsedProjectWithVisibility>)  (Base Class)
+    - If processing serially, iterate over each file path and compute its visibility using `compute_visibility`.
+    - If processing in parallel, use a `ThreadPoolExecutor` to submit tasks for computing visibility and collect results as they complete.
+    - Return the `visibility_map` which maps each file path to the set of file paths that can see it.
+- **Output**: A dictionary mapping each file path to a set of file paths that can see it.
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#parsedprojectwithvisibility>)  (Base Class)
 
 
 ---
 #### ParsedProjectWithVisibility\.\_compute\_visibility\_scc<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility._compute_visibility_scc}} -->
-The `_compute_visibility_scc` method computes the transitive visibility of files in a project using Tarjan's algorithm to identify strongly connected components (SCCs) and processes them as a directed acyclic graph (DAG).
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L343>)
+
+Computes the visibility map of files using Tarjan's algorithm to find strongly connected components (SCCs) and processes them as a directed acyclic graph (DAG).
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `file_to_symbols`: A dictionary mapping file paths to lists of symbols contained in those files.
-    - `includes_map`: A dictionary mapping file paths to lists of include strings, representing dependencies between files.
-    - `resolver`: An instance of `ImportResolver` used to resolve import paths from include strings.
-- **Control Flow**:
-    - Initialize an adjacency list `graph` to represent file dependencies based on `includes_map` and resolved paths using `resolver`.
-    - Implement Tarjan's algorithm to find SCCs in the graph, maintaining `index`, `lowlinks`, `stack`, and `on_stack` to track nodes during DFS traversal.
-    - For each node, if it is not indexed, perform a DFS to identify SCCs and store them in `sccs`.
-    - Build a mapping `scc_map` from each node to its SCC index and construct an SCC graph `scc_graph` representing the DAG of SCCs.
-    - Compute reachability in the SCC DAG using a DFS-based approach, storing reachable SCCs in `scc_visibility`.
-    - Convert the SCC reachability information back to file visibility by mapping each file to the set of files in its SCC and all reachable SCCs, storing the result in `visibility_map`.
+    - `includes_map`: A dictionary mapping file paths to lists of include strings that the files reference.
+    - `resolver`: An instance of `ImportResolver` used to resolve include strings to file paths.
+- **Logic and Control Flow**:
+    - Builds an adjacency list `graph` from `file_to_symbols` and `includes_map` using the `resolver` to resolve includes.
+    - Uses Tarjan's algorithm to find all SCCs in the `graph`, storing them in `sccs`.
+    - Builds a mapping `scc_map` from each node to its SCC index.
+    - Constructs an SCC graph `scc_graph` as a DAG by connecting SCCs based on the original graph's edges.
+    - Computes reachability in the SCC DAG using a depth-first search (DFS) to populate `scc_visibility`.
+    - Converts the SCC visibility information back to file visibility by mapping each file to the set of files it can reach, including those in the same SCC and reachable SCCs.
+    - Returns the `visibility_map` which maps each file path to the set of file paths it can transitively see.
 - **Output**: A dictionary mapping each file path to a set of file paths that are transitively visible from it.
-- **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.ImportResolver.resolve_import`](<base.py.md#ImportResolverresolve_import>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#ParsedProjectWithVisibility>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ParsedProjectWithVisibility`](<#parsedprojectwithvisibility>)  (Base Class)
 
 
 
 ---
 ### LinkedSymbol<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedSymbol}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L443>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `raw`: Holds the raw symbol data from RawTreeSitterSymbolData.
+    - `raw`: Holds the raw symbol data from `RawTreeSitterSymbolData`.
     - `is_definition`: Indicates if the symbol is a definition.
     - `is_declaration`: Indicates if the symbol is a declaration.
-    - `is_base_class`: Indicates if the symbol is a base class, defaulting to False.
+    - `is_base_class`: Indicates if the symbol is a base class, default is False.
     - `base_name`: Stores the base class name if applicable, otherwise None.
     - `definition`: Points to the definition of the symbol if it is a usage, otherwise None.
-- **Description**: The LinkedSymbol class extends RawTreeSitterSymbolData by adding metadata to distinguish between symbol definitions, declarations, and usages. It includes a pointer to the definition of a symbol if it is a usage, allowing for the linking of symbols across a project. This class is immutable, as indicated by the frozen=True parameter in the dataclass decorator, ensuring that once a LinkedSymbol is created, its state cannot be altered.
+- **Description**: Extends `RawTreeSitterSymbolData` by adding a pointer to a definition if the symbol is a usage, otherwise the definition is None. It also includes flags to indicate if the symbol is a definition, a declaration, or a base class, and optionally stores the base class name.
 
 
 ---
 ### LinkedProject<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L458>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `linked_symbols`: A dictionary mapping file paths to lists of LinkedSymbol objects.
-    - `visibility_map`: A dictionary mapping file paths to sets of file paths that are transitively visible from each file.
-- **Description**: The LinkedProject class is designed to manage and link symbols across multiple files in a project, ensuring that each symbol's usage is connected to its definition if it is visible. It maintains a mapping of linked symbols for each file and a visibility map that indicates which files are visible from each file, facilitating the resolution of symbol definitions and declarations across the project.
+    - `linked_symbols`: A dictionary mapping each file path to a list of `LinkedSymbol` objects.
+    - `visibility_map`: A dictionary mapping each file path to a set of file paths that are transitively visible from it.
+- **Description**: Represents a project with linked symbols and visibility information, allowing for the association of symbol usage with their definitions across files that are transitively visible.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject.from_parsed_project_with_visibility`](<#LinkedProjectfrom_parsed_project_with_visibility>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject.from_parsed_project_with_visibility`](<#linkedprojectfrom_parsed_project_with_visibility>)
 
 **Methods**
 
 ---
 #### LinkedProject\.from\_parsed\_project\_with\_visibility<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject.from_parsed_project_with_visibility}} -->
-The `from_parsed_project_with_visibility` method links symbol usages to their definitions across all files that are transitively visible within a project.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L469>)
+
+Links symbol usage to definitions across files that are transitively visible.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `project_vis`: An instance of `ParsedProjectWithVisibility` containing the project's symbols and visibility map.
+    - `project_vis`: An instance of `ParsedProjectWithVisibility` that contains file-to-symbol mappings and visibility information.
     - `sep`: A string separator used to construct fully qualified names, defaulting to '::'.
-- **Control Flow**:
+- **Logic and Control Flow**:
     - Initialize dictionaries to store definitions and declarations by fully qualified name (FQN) and by name.
-    - Filter out import symbols from the project's file-to-symbols mapping.
+    - Filter out symbols of kind `IMPORT` from the project's file-to-symbols mapping.
     - Iterate over each file and its symbols to populate the definitions and declarations dictionaries based on whether a symbol is a definition or declaration.
-    - Unify declarations to a single definition if there is exactly one definition for a name.
-    - For each symbol, attempt to link its usage to a definition if the definition is visible, considering direct definitions, declarations, and base classes for data structures.
-    - Return a new instance of `LinkedProject` with the linked symbols and the original visibility map.
-- **Output**: Returns an instance of `LinkedProject` containing a mapping of files to lists of [`LinkedSymbol`](<#LinkedSymbol>) objects, with each symbol linked to its definition if visible.
+    - Create a mapping from declarations to definitions if there is exactly one definition for a name.
+    - Iterate over each file and its symbols to link symbol usage to definitions if they are visible, considering direct definitions, declarations, and base classes for data structures.
+    - Return a new instance of `LinkedProject` with the linked symbols and visibility map.
+- **Output**: Returns an instance of `LinkedProject` with linked symbols and the same visibility map as `project_vis`.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<utils.py.md#get_fully_qualified_name>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.is_definition`](<utils.py.md#is_definition>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.is_declaration`](<utils.py.md#is_declaration>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.disambiguate_call`](<utils.py.md#disambiguate_call>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedSymbol`](<#LinkedSymbol>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.is_data_structure`](<utils.py.md#is_data_structure>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject`](<#LinkedProject>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedSymbol`](<#linkedsymbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.LinkedProject`](<#linkedproject>)  (Base Class)
 
 
 
 ---
 ### ReifiedProjectIndex<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L657>)
+
 - **Decorators**: `@dataclass`
 - **Members**:
-    - `file_to_symbols`: A dictionary mapping file paths to lists of reified symbols.
-- **Description**: The `ReifiedProjectIndex` class represents the final result of a project indexing process, providing a comprehensive mapping of files to their corresponding reified symbols. These symbols are fully linked in both directions, meaning that definitions, usages, and declarations are interconnected. Additionally, the class offers a mapping from object fully qualified names (FQNs) to their member functions and variables, specifically for C++ projects. This class is designed to be immutable, as indicated by the `frozen=True` parameter in the `@dataclass` decorator, ensuring that once an instance is created, it cannot be modified.
+    - `file_to_symbols`: A dictionary that maps file paths to lists of `ReifiedSymbol` objects.
+- **Description**: Represents a mapping of files to reified symbols, where each symbol is fully linked in both directions. It also provides a mapping from object fully qualified names (FQNs) to their member functions and variables, specifically for C++.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex.from_linked_project`](<#ReifiedProjectIndexfrom_linked_project>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex.from_linked_project`](<#reifiedprojectindexfrom_linked_project>)
 
 **Methods**
 
 ---
 #### ReifiedProjectIndex\.from\_linked\_project<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex.from_linked_project}} -->
-The `from_linked_project` method constructs a `ReifiedProjectIndex` by processing linked symbols and containment maps to create fully linked reified symbols grouped by file.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/core.py#L667>)
+
+Creates a `ReifiedProjectIndex` from a `LinkedProject` by processing and linking symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `linked_proj`: An instance of `LinkedProject` containing linked symbols and a visibility map.
-    - `file_to_containment_map`: A dictionary mapping file paths to containment maps, which associate raw symbol data with lists of child raw symbol data.
-- **Control Flow**:
-    - Initialize provisional maps for reified symbols and object symbols/members.
-    - Iterate over linked symbols to create provisional reified symbols.
-    - Build adjacency lists for definitions to usages and declarations.
-    - Create a final map of reified symbols, setting definitions, usages, and declarations.
-    - Gather function calls from the containment map and update reified symbols with call information.
-    - Handle inheritance and partial class structures, especially for C# files.
-    - Build object membership dictionaries for classes and their members.
-    - Group reified symbols by file and return a new `ReifiedProjectIndex` instance.
-- **Output**: Returns an instance of `ReifiedProjectIndex` containing a dictionary mapping file paths to lists of fully linked [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#ReifiedSymbol>) objects.
+    - `cls`: The class itself, used to create an instance of `ReifiedProjectIndex`.
+    - `linked_proj`: An instance of `LinkedProject` containing linked symbols and visibility map.
+    - `file_to_containment_map`: A dictionary mapping file paths to containment maps, which detail the relationships between symbols within each file.
+- **Logic and Control Flow**:
+    - Initialize a provisional map to store [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances for each `LinkedSymbol` in `linked_proj`.
+    - Iterate over each file and its linked symbols in `linked_proj` to populate the provisional map with [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances.
+    - Build adjacency lists for definitions to usages and declarations by iterating over the provisional map.
+    - Create a final map of [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances by setting their definitions, usages, and declarations based on the adjacency lists.
+    - Track class and object definitions and store them in `obj_symbols` if they are data structures.
+    - For function definitions, gather calls from the `file_to_containment_map` and update the [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances with these calls.
+    - Set inheritance for data structures by finding base classes in the same file and updating the [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances accordingly.
+    - Handle partial classes in C# by finding other partial definitions in other files and updating the [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances with these children.
+    - Build object membership dictionaries by associating functions and variables with their parent classes or structures.
+    - Group the final [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances by file and store them in `file_map`.
+- **Output**: Returns an instance of `ReifiedProjectIndex` with a dictionary mapping file paths to lists of [`ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>) instances.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#ReifiedSymbol>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.is_declaration`](<utils.py.md#is_declaration>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.is_data_structure`](<utils.py.md#is_data_structure>)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/utils.get_fully_qualified_name`](<utils.py.md#get_fully_qualified_name>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex`](<#ReifiedProjectIndex>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.ReifiedSymbol`](<../lang_specialization/symbol_common.py.md#reifiedsymbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/core.ReifiedProjectIndex`](<#reifiedprojectindex>)  (Base Class)
 
 
 

@@ -15,7 +15,7 @@ class DataSourceMessage(LlmMessage):
         the provided DataSource for iteration-based usage.
         """
 
-        content = f"{DATA_SOURCES.description}\n{DATA_SOURCES.wrap(datasource.describe_contents_char_limit(char_limit=4000))}"
+        content = f"{DATA_SOURCES.description}\n{DATA_SOURCES.wrap(datasource.describe_contents_char_limit(char_limit=10000))}"
         return cls(message_kind=MessageKind.DEVELOPER, content=content)
 
 

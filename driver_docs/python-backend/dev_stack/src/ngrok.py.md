@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `ngrok.py` file in the `python-backend` codebase provides functionality for managing ngrok tunnels, including creating and deleting reserved domains and TCP addresses, and running HTTP and TCP tunnels using asyncio.
+Manages ngrok tunnels, including creating, deleting, and running HTTP and TCP tunnels asynchronously.
 
 # Purpose
-This Python script is designed to manage ngrok tunnels, providing functionality to create, delete, and manage both HTTP and TCP tunnels using the ngrok service. The script includes functions to interact with the ngrok API, such as [`create_reserved_domain`](<#create_reserved_domain>), [`delete_reserved_domain`](<#delete_reserved_domain>), [`create_reserved_tcp_address`](<#create_reserved_tcp_address>), and [`delete_reserved_tcp_address`](<#delete_reserved_tcp_address>), which handle the creation and deletion of reserved domains and TCP addresses. These functions utilize the `httpx` library to make HTTP requests to the ngrok API, ensuring that the necessary headers and data are included for successful API interactions.
+The code is a Python module designed to manage ngrok tunnels, which are used to expose local servers to the internet. It provides functionality to create and delete reserved domains and TCP addresses using the ngrok API. The module includes functions such as [`create_reserved_domain`](<#create_reserved_domain>), [`delete_reserved_domain`](<#delete_reserved_domain>), [`create_reserved_tcp_address`](<#create_reserved_tcp_address>), and [`delete_reserved_tcp_address`](<#delete_reserved_tcp_address>), which interact with the ngrok API to manage these resources. The [`generate_unique_subdomain`](<#generate_unique_subdomain>) function helps in creating sanitized subdomain names based on a developer's name and a prefix.
 
-The script also defines a `TunnelManager` class, which orchestrates the management of ngrok tunnels. This class is responsible for starting and stopping tunnels, handling server connections, and processing commands. It uses Python's `asyncio` library to manage asynchronous tasks, allowing for concurrent execution of multiple tunnels. The `TunnelManager` class includes methods such as [`run_tunnel`](<#TunnelManagerrun_tunnel>), [`run_tcp_tunnel`](<#TunnelManagerrun_tcp_tunnel>), [`start_all_tunnels`](<#TunnelManagerstart_all_tunnels>), and [`stop_all_tunnels`](<#TunnelManagerstop_all_tunnels>), which facilitate the operation of HTTP and TCP tunnels. Additionally, the script includes a context manager, [`prefixed_output`](<#prefixed_output>), to prefix output streams with a specified string, enhancing log readability. The script is structured to be executed as a standalone application, with the [`run_ngrok_tunnels`](<#run_ngrok_tunnels>) function serving as the main entry point for initiating the tunnel management process.
+The module also defines a `TunnelManager` class, which is responsible for managing the lifecycle of HTTP and TCP tunnels. This class includes methods to start and stop tunnels, send messages, and handle commands from a server. The `TunnelManager` uses asynchronous programming with the `asyncio` library to manage multiple tunnels concurrently. It connects to a FastAPI server to receive commands and manage the tunnels accordingly. The [`run_ngrok_tunnels`](<#run_ngrok_tunnels>) function serves as the main entry point for running the tunnels, initializing a `TunnelManager` instance and executing its [`run`](<#tunnelmanagerrun>) method. The module is intended to be used as part of a larger system that requires dynamic management of ngrok tunnels.
 # Imports and Dependencies
 
 ---
@@ -28,283 +28,316 @@ The script also defines a `TunnelManager` class, which orchestrates the manageme
 
 ---
 ### NGROK\_BASE\_API\_URL
-- **Type**: `str`
-- **Description**: `NGROK_BASE_API_URL` is a string variable that holds the base URL for the ngrok API, which is 'https://api.ngrok.com'. This URL is used as the foundation for constructing specific API endpoint URLs for various operations related to ngrok services.
-- **Use**: This variable is used to construct full API endpoint URLs for making HTTP requests to the ngrok API.
+- **Type**: ``str``
+- **Description**: Defines the base URL for the Ngrok API, which is used to interact with Ngrok services.
+- **Use**: Used as the base endpoint for constructing API URLs in functions that manage Ngrok reserved domains and TCP addresses.
 
 
 # Classes
 
 ---
 ### PrefixedStream<!-- {{#class:python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream}} -->
+[View Source →](<../../../../dev_stack/src/ngrok.py#L150>)
+
 - **Members**:
-    - `original`: The original TextIO stream to which the prefixed output is written.
-    - `prefix`: The prefix string to prepend to each line of text written to the stream.
-- **Description**: The `PrefixedStream` class is a utility that wraps around a given `TextIO` stream, allowing text written to it to be prefixed with a specified string. This is particularly useful for logging or output streams where a consistent prefix is needed for each line of output, such as tagging log entries with a specific identifier or context. The class provides methods to write text with the prefix, flush the stream, and retrieve the file descriptor of the original stream.
+    - `original`: Stores the original text stream to which the class writes.
+    - `prefix`: Stores the prefix string that is added to each line of text written.
+- **Description**: Provides a text stream that prefixes each line of written text with a specified string before writing it to the original stream.
 - **Methods**:
-    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.__init__`](<#prefixed_output.PrefixedStream.__init__>)
-    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.write`](<#prefixed_output.PrefixedStream.write>)
-    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.flush`](<#prefixed_output.PrefixedStream.flush>)
-    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.fileno`](<#prefixed_output.PrefixedStream.fileno>)
+    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.__init__`](<#prefixedstream__init__>)
+    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.write`](<#prefixedstreamwrite>)
+    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.flush`](<#prefixedstreamflush>)
+    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.fileno`](<#prefixedstreamfileno>)
 
 **Methods**
 
 ---
 #### PrefixedStream\.\_\_init\_\_<!-- {{#callable:python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.__init__}} -->
-The `__init__` method initializes a `PrefixedStream` object with a given original stream and a prefix for output.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L151>)
+
+Initializes a `PrefixedStream` object with an original stream and a prefix for output.
 - **Inputs**:
-    - `original`: A `TextIO` object representing the original stream to which the prefixed output will be written.
-    - `prefix`: A string that will be used as a prefix for each line of output written to the original stream.
-- **Control Flow**:
-    - Assigns the `original` parameter to the instance variable `self.original`.
-    - Assigns the `prefix` parameter to the instance variable `self.prefix`.
-- **Output**: This method does not return any value; it initializes the instance variables of the `PrefixedStream` object.
-- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#PrefixedStream>)  (Base Class)
+    - `original`: A `TextIO` object representing the original stream to which output will be written.
+    - `prefix`: A string that will be prefixed to each line of output written to the original stream.
+- **Logic and Control Flow**:
+    - Assigns the `original` parameter to the `self.original` attribute.
+    - Assigns the `prefix` parameter to the `self.prefix` attribute.
+- **Output**: None, as it is a constructor method for initializing an object.
+- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#prefixedstream>)  (Base Class)
 
 
 ---
 #### PrefixedStream\.write<!-- {{#callable:python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.write}} -->
-The `write` method writes text to an original stream, prefixing non-empty lines with a specified prefix.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L155>)
+
+Writes text to the original stream with an optional prefix if the text is not empty.
 - **Inputs**:
-    - `text`: A string representing the text to be written to the stream.
-- **Control Flow**:
-    - Check if the input text, after stripping whitespace, is non-empty.
-    - If the text is non-empty, write the text to the original stream prefixed with the specified prefix enclosed in square brackets.
-    - If the text is empty, write the text to the original stream without any prefix.
-- **Output**: The method does not return any value; it writes the text to the original stream.
-- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#PrefixedStream>)  (Base Class)
+    - `text`: The text to write to the original stream.
+- **Logic and Control Flow**:
+    - Checks if the input `text` is not empty after stripping whitespace.
+    - If the `text` is not empty, writes the `text` to the `original` stream with the `prefix` enclosed in square brackets.
+    - If the `text` is empty, writes the `text` to the `original` stream without any prefix.
+- **Output**: None
+- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#prefixedstream>)  (Base Class)
 
 
 ---
 #### PrefixedStream\.flush<!-- {{#callable:python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.flush}} -->
-The `flush` method in the `PrefixedStream` class calls the `flush` method on the original `TextIO` stream to ensure that all buffered output is written to the underlying stream.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L161>)
+
+Flushes the underlying stream to ensure all buffered data is written.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly calls the `flush` method on the `self.original` object, which is an instance of `TextIO`.
-- **Output**: The method does not return any value; it returns `None`.
-- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#PrefixedStream>)  (Base Class)
+- **Logic and Control Flow**:
+    - Calls the `flush` method on the `original` stream object to flush any buffered data.
+- **Output**: No output is returned as the method returns `None`.
+- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#prefixedstream>)  (Base Class)
 
 
 ---
 #### PrefixedStream\.fileno<!-- {{#callable:python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.fileno}} -->
-The `fileno` method returns the file descriptor of the original stream associated with the `PrefixedStream` instance.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L164>)
+
+Returns the file descriptor of the original stream.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly calls and returns the result of the `fileno` method on the `original` attribute, which is a `TextIO` object.
-- **Output**: The method returns an integer representing the file descriptor of the original stream.
-- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#PrefixedStream>)  (Base Class)
+- **Logic and Control Flow**:
+    - Calls the `fileno` method on the `original` stream object.
+    - Returns the result of the `original.fileno()` call.
+- **Output**: An integer representing the file descriptor of the original stream.
+- **See also**: [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#prefixedstream>)  (Base Class)
 
 
 
 ---
 ### TunnelManager<!-- {{#class:python-backend/dev_stack/src/ngrok.TunnelManager}} -->
+[View Source →](<../../../../dev_stack/src/ngrok.py#L180>)
+
 - **Members**:
-    - `domains`: A list of NgrokReservedDomain objects representing the domains to be managed.
-    - `http_ports`: A list of integers representing the HTTP ports associated with the domains.
-    - `tcp_addresses`: A list of NgrokReservedTcpAddress objects representing the TCP addresses to be managed.
-    - `tcp_ports`: A list of integers representing the TCP ports associated with the TCP addresses.
-    - `processes`: A dictionary mapping domain or address strings to their corresponding asyncio subprocesses.
-    - `tasks`: A list of asyncio tasks for managing asynchronous operations.
-    - `reader`: An optional asyncio StreamReader for reading data from the server.
-    - `writer`: An optional asyncio StreamWriter for writing data to the server.
-    - `_connected`: An asyncio Event used to signal the connection status to the server.
-- **Description**: The TunnelManager class is responsible for managing ngrok tunnels, both HTTP and TCP, by maintaining a list of domains and TCP addresses along with their respective ports. It handles the creation, monitoring, and termination of these tunnels using asyncio for asynchronous operations. The class also manages communication with a FastAPI server to receive commands and send status updates, ensuring that tunnels are started and stopped as needed. It uses subprocesses to execute ngrok commands and maintains a connection to the server to handle commands like starting, stopping, and checking the status of tunnels.
+    - `domains`: Stores a list of `NgrokReservedDomain` objects for HTTP tunnels.
+    - `http_ports`: Stores a list of integers representing HTTP ports.
+    - `tcp_addresses`: Stores a list of `NgrokReservedTcpAddress` objects for TCP tunnels.
+    - `tcp_ports`: Stores a list of integers representing TCP ports.
+    - `processes`: Holds a dictionary mapping domain or address strings to `asyncio.subprocess.Process` objects.
+    - `tasks`: Contains a list of `asyncio.Task` objects for managing asynchronous tasks.
+    - `reader`: Holds an `asyncio.StreamReader` object or `None` for reading data from the server.
+    - `writer`: Holds an `asyncio.StreamWriter` object or `None` for writing data to the server.
+    - `_connected`: An `asyncio.Event` object used to signal server connection status.
+- **Description**: Manages the creation and operation of ngrok tunnels for HTTP and TCP connections. It validates the input lists of domains, HTTP ports, TCP addresses, and TCP ports to ensure they match in length. The class handles the asynchronous execution of ngrok processes, manages server communication, and processes commands to start, stop, and report the status of tunnels. It also maintains the connection to a FastAPI server to receive and execute commands.
 - **Methods**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.__init__`](<#TunnelManager__init__>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tunnel`](<#TunnelManagerrun_tunnel>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tcp_tunnel`](<#TunnelManagerrun_tcp_tunnel>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.start_all_tunnels`](<#TunnelManagerstart_all_tunnels>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.stop_all_tunnels`](<#TunnelManagerstop_all_tunnels>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.get_status`](<#TunnelManagerget_status>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.handle_command`](<#TunnelManagerhandle_command>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.connect_to_server`](<#TunnelManagerconnect_to_server>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run`](<#TunnelManagerrun>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.__init__`](<#tunnelmanager__init__>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tunnel`](<#tunnelmanagerrun_tunnel>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tcp_tunnel`](<#tunnelmanagerrun_tcp_tunnel>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.start_all_tunnels`](<#tunnelmanagerstart_all_tunnels>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.stop_all_tunnels`](<#tunnelmanagerstop_all_tunnels>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.get_status`](<#tunnelmanagerget_status>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.handle_command`](<#tunnelmanagerhandle_command>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.connect_to_server`](<#tunnelmanagerconnect_to_server>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run`](<#tunnelmanagerrun>)
 
 **Methods**
 
 ---
 #### TunnelManager\.\_\_init\_\_<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.__init__}} -->
-The `__init__` method initializes a `TunnelManager` instance with specified domains, HTTP ports, TCP addresses, and TCP ports, ensuring the counts match and setting up necessary attributes for managing tunnels.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L181>)
+
+Initializes a `TunnelManager` instance with domain and port configurations for HTTP and TCP tunnels.
 - **Inputs**:
-    - `domains`: A list of `NgrokReservedDomain` objects representing the domains to be managed.
-    - `http_ports`: A list of integers representing the HTTP ports corresponding to the domains.
-    - `tcp_addresses`: A list of `NgrokReservedTcpAddress` objects representing the TCP addresses to be managed.
-    - `tcp_ports`: A list of integers representing the TCP ports corresponding to the TCP addresses.
-- **Control Flow**:
-    - Check if the length of `domains` matches the length of `http_ports`; raise a `ValueError` if not.
-    - Check if the length of `tcp_addresses` matches the length of `tcp_ports`; raise a `ValueError` if not.
-    - Assign the `domains`, `http_ports`, `tcp_addresses`, and `tcp_ports` to instance variables.
-    - Initialize `self.processes` as an empty dictionary to store subprocesses for tunnels.
-    - Initialize `self.tasks` as an empty list to store asyncio tasks for managing tunnels.
-    - Set `self.reader` and `self.writer` to `None` for future use in server communication.
-    - Initialize `self._connected` as an `asyncio.Event` to manage connection state.
-- **Output**: This method does not return any value; it initializes the instance attributes for managing ngrok tunnels.
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - `domains`: A list of `NgrokReservedDomain` objects representing the reserved domains for HTTP tunnels.
+    - `http_ports`: A list of integers representing the HTTP ports corresponding to the reserved domains.
+    - `tcp_addresses`: A list of `NgrokReservedTcpAddress` objects representing the reserved TCP addresses.
+    - `tcp_ports`: A list of integers representing the TCP ports corresponding to the reserved TCP addresses.
+- **Logic and Control Flow**:
+    - Checks if the length of `domains` matches the length of `http_ports`; raises a `ValueError` if they do not match.
+    - Checks if the length of `tcp_addresses` matches the length of `tcp_ports`; raises a `ValueError` if they do not match.
+    - Assigns the `domains`, `http_ports`, `tcp_addresses`, and `tcp_ports` to instance variables.
+    - Initializes `processes` as an empty dictionary to store subprocesses for tunnels.
+    - Initializes `tasks` as an empty list to store asynchronous tasks.
+    - Initializes `reader` and `writer` as `None` for managing server connections.
+    - Initializes `_connected` as an `asyncio.Event` to signal server connection status.
+- **Output**: None
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.send\_message<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.send_message}} -->
-The `send_message` method asynchronously sends a message to a server using a stream writer if available.
-- **Decorators**: `@asyncio.coroutine`
+[View Source →](<../../../../dev_stack/src/ngrok.py#L203>)
+
+Sends a message to the server using an asynchronous writer.
 - **Inputs**:
-    - `message`: A string representing the message to be sent to the server.
-- **Control Flow**:
-    - Check if the `writer` attribute is not None, indicating a connection is available.
-    - Attempt to write the encoded message followed by a newline to the writer stream.
-    - Await the `drain` method on the writer to ensure the message is sent.
-    - Catch any exceptions that occur during the write or drain process and print an error message.
-- **Output**: The method does not return any value; it performs an action of sending a message.
+    - `message`: A string representing the message to send to the server.
+- **Logic and Control Flow**:
+    - Checks if the `writer` attribute is not `None` before attempting to send the message.
+    - Attempts to write the message, followed by a newline character, to the `writer` stream and encodes it to bytes.
+    - Awaits the `drain` method on the `writer` to ensure the message is sent.
+    - Catches any exceptions during the write or drain process and prints an error message.
+- **Output**: Does not return any value.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.write`](<#prefixed_output.PrefixedStream.write>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream.write`](<#prefixedstreamwrite>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.run\_tunnel<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.run_tunnel}} -->
-The `run_tunnel` method asynchronously starts and manages an HTTP ngrok tunnel for a specified domain and port.
-- **Decorators**: `@asyncio.coroutine`
+[View Source →](<../../../../dev_stack/src/ngrok.py#L212>)
+
+Runs an HTTP ngrok tunnel for a specified domain and port.
 - **Inputs**:
-    - `domain`: An instance of NgrokReservedDomain representing the domain for which the tunnel is to be created.
-    - `port`: An integer representing the port number on which the tunnel will be established.
-- **Control Flow**:
-    - Waits for the server connection to be established using an asyncio event before starting the tunnel.
-    - Constructs the ngrok command to start an HTTP tunnel with the specified domain and port.
-    - Executes the ngrok command as a subprocess and stores the process in the `processes` dictionary using the domain as the key.
+    - `domain`: An instance of `NgrokReservedDomain` representing the domain for the tunnel.
+    - `port`: An integer representing the port number for the tunnel.
+- **Logic and Control Flow**:
+    - Waits for the server connection to be established by awaiting `_connected.wait()`.
+    - Constructs the command to start the ngrok HTTP tunnel using the specified domain and port.
+    - Executes the command asynchronously to start the ngrok process and stores the process in the `processes` dictionary with the domain as the key.
     - Sends a message indicating the start of the HTTP tunnel.
-    - Enters a loop to read lines from the subprocess's stdout, decodes them, and sends each line as a message prefixed with the domain name.
-    - Handles exceptions by sending an error message if any occur during the tunnel operation.
-    - Ensures that the process is removed from the `processes` dictionary when the tunnel is stopped or an error occurs.
-- **Output**: The method does not return any value (returns None) but manages the lifecycle of an HTTP ngrok tunnel and communicates status messages.
+    - Enters a loop to read the output from the ngrok process's stdout, decodes it, and sends it as a message.
+    - Handles exceptions by sending an error message if an exception occurs during the tunnel operation.
+    - Removes the process from the `processes` dictionary in the `finally` block to ensure cleanup.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.run\_tcp\_tunnel<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.run_tcp_tunnel}} -->
-The `run_tcp_tunnel` method establishes and manages a TCP ngrok tunnel for a specified address and port.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L240>)
+
+Runs a TCP ngrok tunnel for a specified address and port, managing the process and output.
 - **Inputs**:
-    - `tcp_address`: An instance of NgrokReservedTcpAddress representing the TCP address for the tunnel.
-    - `port`: An integer representing the port number on which the tunnel will run.
-- **Control Flow**:
-    - Waits for a server connection to be established using an asyncio event before starting the tunnel.
-    - Constructs a command to start a TCP ngrok tunnel using the provided address and port.
-    - Executes the command asynchronously to start the ngrok process and stores the process in a dictionary with the address as the key.
+    - `tcp_address`: An instance of `NgrokReservedTcpAddress` representing the TCP address for the tunnel.
+    - `port`: An integer representing the port number for the tunnel.
+- **Logic and Control Flow**:
+    - Waits for the server connection to be established using `self._connected.wait()` before starting the tunnel.
+    - Constructs the command to run the ngrok TCP tunnel using the provided `tcp_address` and `port`.
+    - Executes the ngrok command as a subprocess and stores the process in `self.processes` using the TCP address as the key.
     - Sends a message indicating the start of the TCP tunnel.
-    - Enters a loop to read the output from the ngrok process's stdout, sending each line as a message until no more lines are available.
+    - Enters a loop to read lines from the subprocess's stdout, decodes them, and sends each line as a message prefixed with the TCP address.
     - Handles exceptions by sending an error message if an exception occurs during the process execution.
-    - Removes the process from the dictionary of active processes when the loop ends or an exception occurs.
-- **Output**: The method does not return any value; it manages the TCP tunnel process and communicates status messages.
+    - Ensures the process is removed from `self.processes` in the `finally` block, regardless of success or failure.
+- **Output**: Does not return any value; it manages the TCP tunnel process and communicates status messages.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.start\_all\_tunnels<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.start_all_tunnels}} -->
-The `start_all_tunnels` method initiates all HTTP and TCP tunnels by creating asynchronous tasks for each tunnel that is not already running.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L270>)
+
+Starts all HTTP and TCP tunnels by creating asynchronous tasks for each tunnel that is not already running.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**: None
-- **Control Flow**:
-    - Iterates over pairs of domains and HTTP ports, checking if each domain is not already in the `processes` dictionary.
-    - For each domain not in `processes`, creates an asynchronous task to run an HTTP tunnel using [`run_tunnel`](<#TunnelManagerrun_tunnel>) and appends it to the `tasks` list.
-    - Iterates over pairs of TCP addresses and TCP ports, checking if each address is not already in the `processes` dictionary.
-    - For each TCP address not in `processes`, creates an asynchronous task to run a TCP tunnel using [`run_tcp_tunnel`](<#TunnelManagerrun_tcp_tunnel>) and appends it to the `tasks` list.
-- **Output**: The method does not return any value; it modifies the `tasks` list by adding new tasks for starting tunnels.
+- **Logic and Control Flow**:
+    - Iterates over `self.domains` and `self.http_ports` using `zip` to pair each domain with its corresponding HTTP port.
+    - Checks if the domain is not already in `self.processes` to avoid starting a duplicate tunnel.
+    - Creates an asynchronous task to run the HTTP tunnel using `self.run_tunnel` and appends it to `self.tasks`.
+    - Iterates over `self.tcp_addresses` and `self.tcp_ports` using `zip` to pair each TCP address with its corresponding TCP port.
+    - Checks if the TCP address is not already in `self.processes` to avoid starting a duplicate tunnel.
+    - Creates an asynchronous task to run the TCP tunnel using `self.run_tcp_tunnel` and appends it to `self.tasks`.
+- **Output**: No output is returned as the method is asynchronous and returns `None`.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tunnel`](<#TunnelManagerrun_tunnel>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tcp_tunnel`](<#TunnelManagerrun_tcp_tunnel>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tunnel`](<#tunnelmanagerrun_tunnel>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run_tcp_tunnel`](<#tunnelmanagerrun_tcp_tunnel>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.stop\_all\_tunnels<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.stop_all_tunnels}} -->
-The `stop_all_tunnels` method terminates all active ngrok tunnel processes managed by the `TunnelManager` and sends a message indicating that all tunnels have been stopped.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L284>)
+
+Stops all active tunnels managed by the `TunnelManager` class.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**: None
-- **Control Flow**:
-    - Iterates over all processes stored in `self.processes` and calls `terminate()` on each to stop them.
-    - Uses `asyncio.gather` to wait for all processes to complete termination by calling `wait()` on each process.
-    - Clears the `self.processes` dictionary to remove all references to the terminated processes.
-    - Sends a message 'All tunnels stopped' using the [`send_message`](<#TunnelManagersend_message>) method to notify that all tunnels have been stopped.
-- **Output**: The method does not return any value (returns `None`).
+- **Logic and Control Flow**:
+    - Iterates over all processes in `self.processes` and calls `terminate()` on each process to stop them.
+    - Uses `asyncio.gather` to wait for all processes to complete their termination.
+    - Clears the `self.processes` dictionary to remove all process entries.
+    - Sends a message 'All tunnels stopped' using the [`send_message`](<#tunnelmanagersend_message>) method.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.get\_status<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.get_status}} -->
-The `get_status` method asynchronously retrieves and sends the status of all active tunnels managed by the `TunnelManager`.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L292>)
+
+Retrieves and sends the status of all active tunnels managed by the `TunnelManager`.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**: None
-- **Control Flow**:
-    - The method constructs a status string by iterating over the `processes` dictionary, which maps tunnel names to their respective subprocesses.
-    - For each process, it checks if the process is still running by evaluating if `proc.returncode` is `None`.
-    - It constructs a string indicating whether each tunnel is 'running' or 'stopped'.
-    - If there are no active tunnels, it defaults the status message to 'No active tunnels'.
-    - Finally, it sends the constructed status message using the [`send_message`](<#TunnelManagersend_message>) method.
-- **Output**: The method does not return any value; it sends a status message to the server.
+- **Logic and Control Flow**:
+    - Iterates over the `processes` dictionary in the `TunnelManager` instance to check the status of each process.
+    - For each process, checks if the `returncode` is `None` to determine if the process is 'running' or 'stopped'.
+    - Joins the status of all processes into a single string, or sets the status to 'No active tunnels' if there are no processes.
+    - Sends the status message using the [`send_message`](<#tunnelmanagersend_message>) method.
+- **Output**: Sends a message with the status of all tunnels to the server.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.handle\_command<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.handle_command}} -->
-The `handle_command` method processes server commands to manage tunnel operations such as starting, stopping, or checking the status of tunnels.
-- **Decorators**: `@asyncio.coroutine`
+[View Source →](<../../../../dev_stack/src/ngrok.py#L303>)
+
+Handles server commands by executing corresponding methods or sending an error message for unknown commands.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `command`: A string representing the command to be handled, which can be 'status', 'stop', or 'start'.
-- **Control Flow**:
-    - A dictionary `commands` maps command strings to their corresponding handler methods: `get_status`, `stop_all_tunnels`, and `start_all_tunnels`.
-    - The method retrieves the handler function from the `commands` dictionary using the provided `command` string.
-    - If a handler is found, it is awaited and executed asynchronously.
-    - If no handler is found, a message indicating an unknown command is sent to the server using [`send_message`](<#TunnelManagersend_message>).
-- **Output**: The method does not return any value; it performs actions based on the command and sends messages to the server.
+    - `command`: A string representing the command to handle.
+- **Logic and Control Flow**:
+    - Defines a dictionary `commands` mapping command strings to corresponding methods (`get_status`, `stop_all_tunnels`, `start_all_tunnels`).
+    - Retrieves the handler function from the `commands` dictionary using the `command` argument.
+    - If a handler is found, it awaits the execution of the handler function.
+    - If no handler is found, it sends an error message indicating the command is unknown.
+- **Output**: Does not return a value; performs actions based on the command or sends a message.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.connect\_to\_server<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.connect_to_server}} -->
-The `connect_to_server` method establishes a connection to a FastAPI server and continuously listens for and handles incoming commands.
-- **Decorators**: `@asyncio.coroutine`
+[View Source →](<../../../../dev_stack/src/ngrok.py#L317>)
+
+Connects to a FastAPI server and handles incoming commands in a loop.
 - **Inputs**: None
-- **Control Flow**:
-    - The method enters an infinite loop to continuously attempt to connect to the server.
-    - Within the loop, it tries to open a connection to 'localhost' on port 9000 using `asyncio.open_connection`.
-    - Upon successful connection, it sends a 'Connected to server' message and sets the `_connected` event to signal that the connection is established.
-    - It enters another loop to read data from the server using `self.reader.readline()`.
-    - If data is received, it decodes and checks if it starts with 'COMMAND:', then extracts and handles the command using `self.handle_command`.
-    - If the connection is refused, it prints an error message and raises the exception.
-    - For other exceptions, it prints the error, closes the writer if open, clears the `_connected` event, and waits for 5 seconds before retrying.
-- **Output**: The method does not return any value, but it manages the connection state and handles server commands.
+- **Logic and Control Flow**:
+    - Enters an infinite loop to continuously attempt connection to the server.
+    - Uses `asyncio.open_connection` to connect to the server at 'localhost' on port 9000.
+    - Upon successful connection, sends a message 'Connected to server' and sets the `_connected` event to signal connection.
+    - Enters another loop to read data from the server using `self.reader.readline()`.
+    - Decodes and strips the received data, checking if it starts with 'COMMAND:'.
+    - If a command is detected, extracts the command and calls `self.handle_command(command)` to process it.
+    - Handles `ConnectionRefusedError` by printing an error message and re-raising the exception.
+    - Handles other exceptions by printing an error message, closing the writer if it exists, clearing the `_connected` event, and sleeping for 5 seconds before retrying.
+- **Output**: Does not return any value.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#TunnelManagersend_message>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.handle_command`](<#TunnelManagerhandle_command>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.send_message`](<#tunnelmanagersend_message>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.handle_command`](<#tunnelmanagerhandle_command>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 ---
 #### TunnelManager\.run<!-- {{#callable:python-backend/dev_stack/src/ngrok.TunnelManager.run}} -->
-The `run` method manages the lifecycle of the tunnel manager, handling server connection, starting tunnels, and ensuring proper shutdown.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L349>)
+
+Manages the lifecycle of the tunnel manager by connecting to a server, starting tunnels, and handling shutdown procedures.
 - **Decorators**: `@asyncio.coroutine`
 - **Inputs**: None
-- **Control Flow**:
-    - The method starts by creating an asynchronous task to connect to the server using [`connect_to_server`](<#TunnelManagerconnect_to_server>) and appends it to the `tasks` list.
-    - It waits for the `_connected` event to be set, indicating a successful server connection, before proceeding to start all tunnels using [`start_all_tunnels`](<#TunnelManagerstart_all_tunnels>).
-    - The method then uses `asyncio.gather` to concurrently run all tasks in the `tasks` list, which includes the server connection and tunnel management tasks.
-    - If a `KeyboardInterrupt` is detected, it calls [`stop_all_tunnels`](<#TunnelManagerstop_all_tunnels>) to terminate all active tunnels.
-    - In the `finally` block, it ensures that if a writer exists, it is properly closed and awaited for closure.
-- **Output**: The method does not return any value; it manages the tunnel manager's operations asynchronously.
+- **Logic and Control Flow**:
+    - Creates a task to connect to the server using [`connect_to_server`](<#tunnelmanagerconnect_to_server>) and appends it to `self.tasks`.
+    - Waits for the `_connected` event to be set, indicating a successful server connection.
+    - Calls [`start_all_tunnels`](<#tunnelmanagerstart_all_tunnels>) to initiate all configured tunnels.
+    - Uses `asyncio.gather` to run all tasks in `self.tasks` concurrently.
+    - Handles `KeyboardInterrupt` to stop all tunnels by calling [`stop_all_tunnels`](<#tunnelmanagerstop_all_tunnels>).
+    - In the `finally` block, checks if `self.writer` is not `None`, closes it, and waits for it to be fully closed.
+- **Output**: Does not return any value.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.connect_to_server`](<#TunnelManagerconnect_to_server>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.start_all_tunnels`](<#TunnelManagerstart_all_tunnels>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.stop_all_tunnels`](<#TunnelManagerstop_all_tunnels>)
-- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)  (Base Class)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.connect_to_server`](<#tunnelmanagerconnect_to_server>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.start_all_tunnels`](<#tunnelmanagerstart_all_tunnels>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.stop_all_tunnels`](<#tunnelmanagerstop_all_tunnels>)
+- **See also**: [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)  (Base Class)
 
 
 
@@ -312,116 +345,133 @@ The `run` method manages the lifecycle of the tunnel manager, handling server co
 
 ---
 ### create\_reserved\_domain<!-- {{#callable:python-backend/dev_stack/src/ngrok.create_reserved_domain}} -->
-The `create_reserved_domain` function creates a reserved domain on the ngrok platform using the provided API key, subdomain, description, and optional region.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L21>)
+
+Creates a reserved domain on the ngrok platform using the provided API key and subdomain.
 - **Inputs**:
-    - `api_key`: A string representing the API key used for authentication with the ngrok API.
-    - `subdomain`: A string representing the desired subdomain to reserve on ngrok.
+    - `api_key`: A string representing the API key for authentication with the ngrok API.
+    - `subdomain`: A string representing the desired subdomain to reserve.
     - `description`: A string providing a description for the reserved domain.
     - `region`: An optional string specifying the region for the reserved domain, defaulting to 'us'.
-- **Control Flow**:
-    - Constructs the full domain name by appending '.ngrok.io' to the subdomain.
-    - Sets up the request headers with authorization, content type, and ngrok version.
-    - Prepares the request payload with the full domain, region, and description.
+- **Logic and Control Flow**:
+    - Constructs the full domain name by appending '.ngrok.io' to the provided subdomain.
+    - Sets the ngrok API URL for reserved domains.
+    - Prepares HTTP headers with authorization, content type, and ngrok version.
+    - Creates a data dictionary containing the full domain, region, and description.
     - Sends a POST request to the ngrok API to create the reserved domain.
     - Checks the response status code: if 201, prints success message and returns the response JSON; if 409, prints a warning about the domain being taken and returns the response JSON; otherwise, prints an error message and raises an exception.
-- **Output**: Returns a dictionary containing the JSON response from the ngrok API if the domain is successfully created or already taken; raises an exception for other errors.
+- **Output**: A dictionary containing the JSON response from the ngrok API if the domain is successfully created or already taken.
 
 
 ---
 ### generate\_unique\_subdomain<!-- {{#callable:python-backend/dev_stack/src/ngrok.generate_unique_subdomain}} -->
-The `generate_unique_subdomain` function creates a sanitized and formatted subdomain string using a developer's name and an optional prefix.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L52>)
+
+Generates a unique subdomain by sanitizing and combining a developer's name and a prefix.
 - **Inputs**:
-    - `developer_name`: A string representing the developer's name, which will be sanitized and used in the subdomain.
-    - `prefix`: An optional string prefix for the subdomain, defaulting to 'app', which will also be sanitized.
+    - `developer_name`: The name of the developer, which will be sanitized and used as part of the subdomain.
+    - `prefix`: An optional prefix for the subdomain, defaulting to 'app', which will also be sanitized.
     - `suffix_length`: An optional integer specifying the length of a suffix, defaulting to 4, though it is not used in the function.
-- **Control Flow**:
-    - Sanitize the developer's name by converting it to lowercase, replacing spaces with hyphens, and removing any characters that are not lowercase letters, numbers, or hyphens.
-    - Sanitize the prefix in a similar manner to the developer's name.
-    - Concatenate the sanitized developer name and prefix with a hyphen in between to form the subdomain.
-- **Output**: A string representing the sanitized and formatted subdomain.
+- **Logic and Control Flow**:
+    - Sanitizes the `developer_name` by converting it to lowercase, replacing spaces with hyphens, and removing any characters that are not lowercase letters, numbers, or hyphens.
+    - Sanitizes the `prefix` in the same manner as `developer_name`.
+    - Combines the sanitized `developer_name` and `prefix` with a hyphen to form the subdomain.
+- **Output**: A string representing the unique subdomain, formatted as '<sanitized_name>-<sanitized_prefix>'.
 
 
 ---
 ### delete\_reserved\_domain<!-- {{#callable:python-backend/dev_stack/src/ngrok.delete_reserved_domain}} -->
-The `delete_reserved_domain` function deletes a reserved domain from the ngrok service using the provided API key and domain ID.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L63>)
+
+Deletes a reserved domain using the ngrok API.
 - **Inputs**:
-    - `api_key`: A string representing the API key used for authentication with the ngrok API.
-    - `domain_id`: A string representing the ID of the reserved domain to be deleted.
-- **Control Flow**:
-    - Construct the ngrok API URL for the reserved domain using the provided domain ID.
-    - Set up the headers for the HTTP request, including the authorization header with the API key and the ngrok version.
-    - Attempt to send a DELETE request to the ngrok API using the constructed URL and headers.
-    - Check the response status code: if it is 204, print a success message and return True; otherwise, print a failure message with the status code and return False.
-    - If an exception occurs during the request, catch it, print an error message, and return False.
-- **Output**: A boolean value indicating whether the reserved domain was successfully deleted (True) or not (False).
+    - `api_key`: A string representing the API key for authentication with the ngrok API.
+    - `domain_id`: A string representing the ID of the reserved domain to delete.
+- **Logic and Control Flow**:
+    - Constructs the ngrok API URL for the reserved domain using the provided `domain_id`.
+    - Sets up the request headers with the `Authorization` and `Ngrok-Version`.
+    - Attempts to send a DELETE request to the ngrok API using `httpx.delete`.
+    - Checks if the response status code is 204, indicating successful deletion, and returns `True`.
+    - If the status code is not 204, prints an error message with the status code and returns `False`.
+    - Catches any exceptions during the request and prints an error message, then returns `False`.
+- **Output**: Returns a boolean indicating whether the deletion was successful (`True`) or not (`False`).
 
 
 ---
 ### create\_reserved\_tcp\_address<!-- {{#callable:python-backend/dev_stack/src/ngrok.create_reserved_tcp_address}} -->
-The `create_reserved_tcp_address` function creates a reserved TCP address using the ngrok API and returns an NgrokReservedTcpAddress object if successful.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L86>)
+
+Creates a reserved TCP address using the ngrok API.
 - **Inputs**:
-    - `api_key`: A string representing the API key used for authentication with the ngrok API.
-    - `description`: A string providing a description for the reserved TCP address.
-    - `region`: An optional string specifying the region for the reserved TCP address, defaulting to 'us'.
-    - `metadata`: An optional string or None, providing additional metadata for the reserved TCP address.
-- **Control Flow**:
-    - Constructs the ngrok API URL for creating reserved TCP addresses.
-    - Sets up the headers for the HTTP request, including authorization and content type.
+    - `api_key`: The API key for authentication with the ngrok API.
+    - `description`: A description for the reserved TCP address.
+    - `region`: The region where the TCP address will be reserved, defaulting to 'us'.
+    - `metadata`: Optional metadata for the reserved TCP address.
+- **Logic and Control Flow**:
+    - Constructs the ngrok API URL for reserved addresses.
+    - Sets up the HTTP headers with authorization and content type information.
     - Prepares the data payload with the description and region, adding metadata if provided.
-    - Sends a POST request to the ngrok API with the headers and data payload.
-    - Checks the response status code; if 201, it indicates success, and the function prints a success message, parses the response JSON, and returns an NgrokReservedTcpAddress object.
-    - If the response status code is not 201, it prints an error message and raises an HTTP error.
-- **Output**: Returns an NgrokReservedTcpAddress object containing the address, description, region, status, and metadata if the TCP address is successfully created; otherwise, raises an HTTP error.
+    - Sends a POST request to the ngrok API to create the reserved TCP address.
+    - Checks the response status code; if 201, it indicates success and returns a `NgrokReservedTcpAddress` object.
+    - If the response status code is not 201, prints an error message and raises an exception.
+- **Output**: Returns a `NgrokReservedTcpAddress` object if the TCP address is successfully created, otherwise raises an exception.
 
 
 ---
 ### delete\_reserved\_tcp\_address<!-- {{#callable:python-backend/dev_stack/src/ngrok.delete_reserved_tcp_address}} -->
-The `delete_reserved_tcp_address` function deletes a reserved TCP address from the ngrok service using the provided API key and address ID.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L122>)
+
+Deletes a reserved TCP address using the ngrok API.
 - **Inputs**:
-    - `api_key`: A string representing the API key used for authentication with the ngrok API.
-    - `address_id`: A string representing the ID of the reserved TCP address to be deleted.
-- **Control Flow**:
-    - Construct the ngrok API URL using the base URL and the provided address ID.
-    - Set up the headers for the HTTP request, including the authorization header with the API key and the ngrok version.
-    - Attempt to send a DELETE request to the constructed ngrok API URL with the specified headers.
-    - Check the response status code: if it is 204, print a success message and return True; otherwise, print a failure message with the status code and return False.
-    - If an exception occurs during the request, catch it, print an error message, and return False.
-- **Output**: A boolean value indicating whether the deletion of the reserved TCP address was successful (True) or not (False).
+    - `api_key`: The API key for authentication with the ngrok API.
+    - `address_id`: The identifier of the reserved TCP address to delete.
+- **Logic and Control Flow**:
+    - Constructs the ngrok API URL for the reserved TCP address using the `address_id`.
+    - Sets the request headers with the `Authorization` and `Ngrok-Version`.
+    - Attempts to send a DELETE request to the ngrok API using `httpx.delete`.
+    - Checks if the response status code is 204, indicating successful deletion, and returns `True`.
+    - If the status code is not 204, prints an error message with the status code and returns `False`.
+    - Catches any exceptions during the request and prints an error message, then returns `False`.
+- **Output**: Returns `True` if the deletion is successful, otherwise returns `False`.
 
 
 ---
 ### prefixed\_output<!-- {{#callable:python-backend/dev_stack/src/ngrok.prefixed_output}} -->
-The `prefixed_output` function is a context manager that temporarily redirects standard output and error streams to include a specified prefix for each line of output.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L145>)
+
+Temporarily redirects standard output and error streams to include a specified prefix in each line of output.
 - **Decorators**: `@contextmanager`
 - **Inputs**:
-    - `prefix`: A string that will be prefixed to each line of output written to the standard output and error streams.
-- **Control Flow**:
-    - The function saves the original `sys.stdout` and `sys.stderr` streams.
-    - A nested class [`PrefixedStream`](<#PrefixedStream>) is defined to wrap an original stream and prepend a prefix to each line of text written to it.
-    - Instances of [`PrefixedStream`](<#PrefixedStream>) are created for both `sys.stdout` and `sys.stderr`, using the provided prefix.
-    - The global `sys.stdout` and `sys.stderr` are replaced with the prefixed versions.
-    - The function yields control back to the caller, allowing code execution within the context manager block.
-    - After the block execution, the original `sys.stdout` and `sys.stderr` are restored in the `finally` block.
-- **Output**: The function does not return any value; it modifies the behavior of output streams within its context.
+    - `prefix`: A string to prepend to each line of output written to the standard output and error streams.
+- **Logic and Control Flow**:
+    - Stores the original standard output and error streams in `original_stdout` and `original_stderr`.
+    - Defines a nested class [`PrefixedStream`](<#prefixedstream>) that wraps a given stream and prepends a prefix to each line of text written to it.
+    - Creates instances of [`PrefixedStream`](<#prefixedstream>) for both standard output and error streams, using the provided prefix.
+    - Replaces the system's standard output and error streams with the prefixed versions.
+    - Yields control back to the caller, allowing the caller to execute code with the modified streams.
+    - Restores the original standard output and error streams after the caller's code execution completes, even if an exception occurs.
+- **Output**: A context manager that modifies the behavior of standard output and error streams within its context.
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#PrefixedStream>)
+    - [`python-backend/dev_stack/src/ngrok.prefixed_output.PrefixedStream`](<#prefixedstream>)
 
 
 ---
 ### run\_ngrok\_tunnels<!-- {{#callable:python-backend/dev_stack/src/ngrok.run_ngrok_tunnels}} -->
-The `run_ngrok_tunnels` function initializes and runs ngrok tunnels for specified domains and TCP addresses using a TunnelManager.
+[View Source →](<../../../../dev_stack/src/ngrok.py#L368>)
+
+Runs ngrok tunnels using specified domains, HTTP ports, TCP addresses, and TCP ports.
 - **Inputs**:
-    - `domains`: A list of NgrokReservedDomain objects representing the domains for which HTTP tunnels will be created.
-    - `http_ports`: A list of integers representing the HTTP ports corresponding to each domain.
-    - `tcp_addresses`: A list of NgrokReservedTcpAddress objects representing the TCP addresses for which TCP tunnels will be created.
-    - `tcp_ports`: A list of integers representing the TCP ports corresponding to each TCP address.
-- **Control Flow**:
-    - A TunnelManager instance is created with the provided domains, HTTP ports, TCP addresses, and TCP ports.
-    - The [`run`](<#TunnelManagerrun>) method of the TunnelManager is called, which handles the connection to the server and starts all specified tunnels.
-- **Output**: The function does not return any value; it operates asynchronously to manage ngrok tunnels.
+    - `domains`: A list of `NgrokReservedDomain` objects representing the domains for the ngrok tunnels.
+    - `http_ports`: A list of integers representing the HTTP ports corresponding to the domains.
+    - `tcp_addresses`: A list of `NgrokReservedTcpAddress` objects representing the TCP addresses for the ngrok tunnels.
+    - `tcp_ports`: A list of integers representing the TCP ports corresponding to the TCP addresses.
+- **Logic and Control Flow**:
+    - Creates an instance of [`TunnelManager`](<#tunnelmanager>) with the provided domains, HTTP ports, TCP addresses, and TCP ports.
+    - Calls the [`run`](<#tunnelmanagerrun>) method on the [`TunnelManager`](<#tunnelmanager>) instance to start managing the ngrok tunnels.
+- **Output**: Does not return any value (returns `None`).
 - **Functions Called**:
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#TunnelManager>)
-    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run`](<#TunnelManagerrun>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager`](<#tunnelmanager>)
+    - [`python-backend/dev_stack/src/ngrok.TunnelManager.run`](<#tunnelmanagerrun>)
 
 
 

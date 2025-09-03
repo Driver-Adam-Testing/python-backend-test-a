@@ -3,12 +3,12 @@ import concurrent.futures
 from pathlib import Path
 from typing import Any
 
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.prompts.structured_prompting import (
+    DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB,
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_MARKDOWN_ONLY_RAW_TEXT_FORMATTING,
-    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
     Component,
     Prompt,
@@ -118,7 +118,7 @@ def toplevel_terse_sentence_from_chunk_descriptions(
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .append(
             Component(
@@ -155,7 +155,7 @@ def toplevel_single_sentence_from_chunk_descriptions(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
             )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
@@ -182,7 +182,7 @@ def toplevel_single_paragraph_from_chunk_descriptions(
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(
             Component(
                 string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
@@ -234,7 +234,7 @@ def toplevel_terse_sentence_from_long_descriptions(
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
         .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
         .into_str()
@@ -260,7 +260,7 @@ def toplevel_single_sentence_from_long_descriptions(
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
         .into_str()
     )
@@ -286,7 +286,7 @@ def toplevel_single_paragraph_from_long_descriptions(
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB)
         .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
         .into_str()
     )

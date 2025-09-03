@@ -3,11 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `resources` folder in the `python-backend` codebase contains a file, `gitlab_resources.py`, which provides functionality for interacting with GitLab through its API.
+Bitbucket and GitLab API resource management for repositories, commits, webhooks, and archives.
 
 
 ## Files
-- **[gitlab_resources.py](gitlab_resources.py.md)**: The `gitlab_resources.py` file provides functionality for interacting with GitLab, including fetching repositories, retrieving project details, and downloading repository archives using the GitLab API.
+- **[bitbucket_api_resources.py](bitbucket_api_resources.py.md)**: Implements Bitbucket API resource management, including repository access, commits, and webhooks.
+- **[gitlab_resources.py](gitlab_resources.py.md)**: GitLab API resource management for fetching repositories, projects, and downloading repository archives.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

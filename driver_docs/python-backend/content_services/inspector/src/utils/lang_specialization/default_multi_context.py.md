@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `default_multi_context.py` file defines a utility function `default_imports_checker_multi_prompt` that utilizes a language model to check code imports, and includes prompts for generating software documentation and explaining code purposes.
+Defines a function to check default imports in code chunks using a language model.
 
 # Purpose
-This Python code file provides a narrow functionality focused on checking default imports within a given context. It imports specific utilities and models, such as `IMPORTS_SYSTEM_PROMPT_JSON` and `_default_checker`, from a utility module and a model class `ChatOpenAI`. The file defines a function [`default_imports_checker_multi_prompt`](<#default_imports_checker_multi_prompt>) that utilizes these imports to perform a check on code chunks, specifically the first chunk in a list, using a predefined system prompt. Additionally, the file contains several string constants that appear to be templates or prompts for generating documentation or explanations, indicating that the code is part of a larger system designed for documentation or code analysis purposes. Overall, this file is a small script that serves as a utility for checking code imports and possibly generating related documentation prompts.
+This code is a Python module that imports specific components from other modules and defines a function named [`default_imports_checker_multi_prompt`](<#default_imports_checker_multi_prompt>). The function takes three parameters: `llm` of type `ChatOpenAI`, `code_chunks` which is a list of strings, and `root_rel_path` which is a string. It calls the `_default_checker` function with these parameters, along with additional arguments such as `system_prompt` set to `IMPORTS_SYSTEM_PROMPT_JSON` and `code` set to the first element of `code_chunks`. The function returns a list of strings or `None`. The module also contains several string constants that appear to be templates or prompts for generating documentation or explanations about software code. These constants suggest that the module is part of a system designed to assist with software documentation or analysis.
 # Imports and Dependencies
 
 ---
@@ -19,37 +19,39 @@ This Python code file provides a narrow functionality focused on checking defaul
 
 ---
 ### SOURCE\_CODE\_SYSTEM\_PROMPT\_GENERAL\_DEFAULT\_MULTI\_CONTEXT
-- **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT_MULTI_CONTEXT` is a string that contains a prompt intended for a software engineering documentation expert. It provides guidance on writing detailed documentation and explaining technical details and conceptual components of software.
-- **Use**: This variable is used as a system prompt to guide a language model or similar system in generating software documentation.
+- **Type**: ``str``
+- **Description**: A multi-line string that describes the role of a software engineering documentation expert. It emphasizes the ability to explain technical details and articulate the key components and purpose of software.
+- **Use**: Used as a system prompt to guide the behavior of a language model in generating documentation.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT\_MULTI\_CONTEXT
-- **Type**: `str`
-- **Description**: `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT` is a string variable that contains a multi-paragraph prompt designed to guide users in explaining the purpose of a given piece of code. The prompt encourages users to consider various aspects of the code, such as its functionality, components, and type, to provide a comprehensive explanation.
-- **Use**: This variable is used to prompt users to generate detailed explanations about the purpose and functionality of a code snippet, focusing on its broader context and components.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides a template for explaining the purpose of a given piece of code. It includes guiding questions to help structure the explanation, such as the scope of functionality, the nature of the code, and whether it defines public APIs or interfaces.
+- **Use**: Used as a prompt template to guide users in writing detailed explanations about the purpose of a code snippet.
 
 
 ---
 ### SOURCE\_CODE\_PURPOSE\_FROM\_CHUNKS
-- **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_PURPOSE_FROM_CHUNKS` is a string that contains a template for generating a cohesive paragraph summarizing the purpose of overlapping chunks of source code. It instructs the user to combine multiple purpose paragraphs into a single, concise paragraph that describes the overall purpose of the code.
-- **Use**: This variable is used as a template or guideline for summarizing the purpose of source code chunks into a single cohesive paragraph.
+- **Type**: ``str``
+- **Description**: A string that provides instructions for combining multiple purpose paragraphs into a single cohesive paragraph. The instructions specify that the input will be two or more paragraphs describing overlapping chunks of source code.
+- **Use**: Used to guide the process of summarizing multiple purpose paragraphs into a single cohesive paragraph.
 
 
 # Functions
 
 ---
 ### default\_imports\_checker\_multi\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/default_multi_context.default_imports_checker_multi_prompt}} -->
-The function `default_imports_checker_multi_prompt` checks the default imports in a given code chunk using a language model and a predefined system prompt.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/default_multi_context.py#L29>)
+
+Checks default imports in a code chunk using a language model.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for checking imports.
-    - `code_chunks`: A list of strings, where each string is a chunk of code to be checked for default imports.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to use for checking imports.
+    - `code_chunks`: A list of strings, where each string is a chunk of code to check for default imports.
     - `root_rel_path`: A string representing the root relative path, though it is not used in the function body.
-- **Control Flow**:
-    - The function calls the [`_default_checker`](<default.py.md#_default_checker>) function, passing the language model (`llm`), an empty user prompt, a predefined system prompt (`IMPORTS_SYSTEM_PROMPT_JSON`), the first code chunk from `code_chunks`, and a flag `as_list_data_ds` set to `True`.
-- **Output**: The function returns a list of strings representing the results of the import check, or `None` if no results are found.
+- **Logic and Control Flow**:
+    - Calls the [`_default_checker`](<default.py.md#_default_checker>) function with the provided language model (`llm`), an empty user prompt, a predefined system prompt (`IMPORTS_SYSTEM_PROMPT_JSON`), the first code chunk from `code_chunks`, and a flag `as_list_data_ds` set to `True`.
+- **Output**: Returns a list of strings representing the results of the import check, or `None` if no results are found.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/default._default_checker`](<default.py.md#_default_checker>)
 

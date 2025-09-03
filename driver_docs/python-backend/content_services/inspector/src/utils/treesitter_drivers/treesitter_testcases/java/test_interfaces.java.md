@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_interfaces.java` file defines several Java interfaces, including `Drawable` with default and static methods, `Resizable` with a nested interface, and a functional interface `Calculator`.
+Java interfaces demonstrating features like constants, abstract, default, static methods, and a functional interface.
 
 # Purpose
-The provided Java source code defines a set of interfaces that demonstrate various features of Java interfaces, including constants, abstract methods, default methods, static methods, and nested interfaces. The primary interface, `Drawable`, serves as a blueprint for objects that can be drawn, specifying a constant `DEFAULT_COLOR`, an abstract method `draw()`, a default method `setColor(String color)`, and a static method `info()`. These components illustrate the capabilities of interfaces in Java, particularly those introduced in Java 8, such as default and static methods, which allow interfaces to have method implementations.
+The code defines several interfaces within the `com.example` package, demonstrating various features of Java interfaces. The primary interface, `Drawable`, includes a constant `DEFAULT_COLOR`, an abstract method `draw()`, a default method `setColor(String color)`, and a static method `info()`. These elements illustrate the capabilities of Java interfaces, such as defining constants, abstract methods, and providing default and static methods starting from Java 8.
 
-Additionally, the code includes the `Resizable` interface, which extends `Drawable` and adds the `resize(int width, int height)` method, along with a nested `ResizeListener` interface for handling resize events. This demonstrates the use of interface inheritance and the ability to define nested interfaces. The `Calculator` interface is marked with the `@FunctionalInterface` annotation, indicating it is intended to be used as a functional interface, suitable for lambda expressions or method references, with a single abstract method `calculate(int a, int b)`. Overall, the code provides a broad overview of interface features in Java, showcasing how interfaces can be used to define contracts for classes, support multiple inheritance, and facilitate functional programming.
+Additionally, the code defines the `Resizable` interface, which extends `Drawable` and adds the `resize(int width, int height)` method. It also includes a nested interface, `ResizeListener`, which provides a method `onResize(int oldWidth, int oldHeight, int newWidth, int newHeight)` to handle resize events. The code also includes a `Calculator` interface, marked with the `@FunctionalInterface` annotation, indicating it is intended to be used as a functional interface with a single abstract method `calculate(int a, int b)`. This collection of interfaces demonstrates the use of inheritance, nested interfaces, and functional interfaces in Java.
 # Imports and Dependencies
 
 ---
@@ -19,7 +19,9 @@ Additionally, the code includes the `Resizable` interface, which extends `Drawab
 
 ---
 ### Drawable<!-- {{#interface:com.example.Drawable}} -->
-- **Description**: The `Drawable` interface is a demonstration of various features available in Java interfaces, particularly from Java 8 onwards. It defines a contract for objects that can be drawn, with a single abstract method `draw()` that must be implemented by any class that implements this interface. Additionally, it includes a constant `DEFAULT_COLOR` set to "black", which is implicitly public, static, and final. The interface also provides a default method `setColor(String color)`, which allows implementing classes to optionally override this behavior to set a color, and a static method `info()` that outputs a message indicating the nature of the interface. These features showcase the ability of interfaces to provide default and static methods, enhancing their functionality beyond simple method declarations.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_interfaces.java#L6>)
+
+- **Description**: Defines a contract for objects that can be drawn. It includes an abstract method `draw()` that must be implemented by any class that implements this interface. It also provides a default method `setColor(String color)` to set the color, which prints the color being set, and a static method `info()` that prints a message about the interface. The constant `DEFAULT_COLOR` is defined as "black" and is implicitly public, static, and final.
 
 **Methods**
 - `draw`<!-- {{#callable:com.example.Drawable.draw}} -->
@@ -29,9 +31,11 @@ Additionally, the code includes the `Resizable` interface, which extends `Drawab
 
 ---
 ### Resizable<!-- {{#interface:com.example.Resizable}} -->
-- **Description**: The `Resizable` interface extends the `Drawable` interface and adds functionality for resizing objects. It includes a method `resize(int width, int height)` that allows implementing classes to define how an object should be resized to the specified dimensions. Additionally, it contains a nested interface `ResizeListener`, which provides a callback method `onResize(int oldWidth, int oldHeight, int newWidth, int newHeight)` to notify listeners about changes in size, allowing for responsive design patterns or event-driven programming.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_interfaces.java#L24>)
+
+- **Description**: Provides the ability to resize objects by defining a `resize` method that takes new width and height parameters. It extends the `Drawable` interface, inheriting its drawing capabilities. Additionally, it includes a nested `ResizeListener` interface, which allows for handling resize events by implementing the `onResize` method to respond to changes in dimensions.
 - **Extends/Implements**:
-    - [`com.example.Drawable`](<#Drawable>)
+    - [`com.example.Drawable`](<#drawable>)
 
 **Methods**
 - `resize`<!-- {{#callable:com.example.Resizable.resize}} -->
@@ -39,7 +43,9 @@ Additionally, the code includes the `Resizable` interface, which extends `Drawab
 
 ---
 ### ResizeListener<!-- {{#interface:com.example.Resizable.ResizeListener}} -->
-- **Description**: The `ResizeListener` interface is a nested interface within the `Resizable` interface, designed to provide a callback mechanism for handling resize events. It contains a single method, `onResize`, which is invoked when a resize operation occurs, providing the old and new dimensions (width and height) of the object being resized. This interface is typically implemented by classes that need to respond to changes in size, allowing them to perform specific actions when the dimensions of a resizable object are altered.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_interfaces.java#L28>)
+
+- **Description**: Defines a contract for objects that need to respond to resize events. The `onResize` method is called when an object changes its size, providing the old and new dimensions as parameters.
 
 **Methods**
 - `onResize`<!-- {{#callable:com.example.Resizable.ResizeListener.onResize}} -->
@@ -47,7 +53,9 @@ Additionally, the code includes the `Resizable` interface, which extends `Drawab
 
 ---
 ### Calculator<!-- {{#interface:com.example.Calculator}} -->
-- **Description**: The `Calculator` interface is a functional interface in Java, which means it is intended to be implemented by a single abstract method, making it suitable for use with lambda expressions and method references. This interface defines a single method, `calculate`, which takes two integer parameters and returns an integer result. The purpose of this interface is to provide a contract for implementing various calculation operations, such as addition, subtraction, multiplication, or division, by defining the specific logic within the `calculate` method.
+[View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/java/test_interfaces.java#L34>)
+
+- **Description**: Defines a functional interface with a single abstract method `calculate`, which takes two integer parameters and returns an integer result. This interface is intended for use in lambda expressions or method references where a calculation involving two integers is required.
 
 **Methods**
 - `calculate`<!-- {{#callable:com.example.Calculator.calculate}} -->

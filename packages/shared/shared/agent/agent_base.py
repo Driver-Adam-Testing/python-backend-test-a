@@ -3,7 +3,7 @@ import uuid
 from abc import ABC, abstractmethod
 
 from database.db import get_session
-from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
+from database.models import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 from pydantic import BaseModel
 
 from shared.agent.models.llm_models import ModelConfig

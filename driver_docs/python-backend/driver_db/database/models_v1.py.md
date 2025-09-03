@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `models_v1.py` file in the `python-backend` codebase defines various SQLAlchemy models and enums for database tables related to runtime logs, document sources, derived content, usage sessions, subscriptions, and Git provider applications, along with their relationships and constraints.
+Defines SQLAlchemy models for logging, content management, usage tracking, and integrations.
 
 # Purpose
-This Python source code file defines a set of SQLAlchemy ORM models using the SQLModel library, which is an extension of SQLAlchemy designed to simplify the creation of database models. The file primarily focuses on defining database tables and their relationships for a system that appears to manage logging, content derivation, usage tracking, and integration with external services like GitHub and GitLab. The models include `RuntimeLogAgentInstance` and `RuntimeLogAgentMessage` for logging runtime events, `DocumentSource` and `DerivedContent` for managing content and its sources, and `Tag` for categorizing content. Additionally, the file defines models for tracking usage sessions and events (`UsageSession` and `UsageEvent`), managing GitHub app installations (`GithubAppInstallation`), and handling subscriptions (`Subscription`). The file also includes several enumerations to define specific statuses and types, such as `UsageSessionStatus`, `UsageEventType`, `PlanType`, `BillingFrequency`, and `SubscriptionStatus`.
+The code defines a set of SQLAlchemy ORM models using the `SQLModel` library, which is an extension of SQLAlchemy and Pydantic. These models represent various entities in a database schema, primarily related to logging, content management, usage tracking, and integration with external services like Git providers. The models include `RuntimeLogAgentInstance`, `RuntimeLogAgentMessage`, `DocumentSource`, `DerivedContent`, `Tag`, `ChunkAndEmbedding`, `InspectorRun`, `UsageSession`, `UsageEvent`, `GithubAppInstallation`, `Subscription`, `GitProviderApp`, and `GitProviderAppInstallation`. Each model corresponds to a database table and includes fields that map to table columns, with relationships defined between models to represent foreign key constraints and associations.
 
-The code is structured as a library file intended to be imported and used within a larger application, likely a backend service that interacts with a PostgreSQL database. It defines public APIs through the SQLModel classes, which represent the database schema and provide methods for querying and manipulating data. The use of SQLAlchemy events, such as `after_update` and `after_insert`, indicates that the code also includes logic for automatically updating related records when certain changes occur. The file includes several TODO comments, suggesting areas for future improvement or refactoring, such as removing deprecated fields or adding indexes. Overall, the code provides a comprehensive set of models and relationships to support a complex application with features related to content management, logging, usage tracking, and third-party integrations.
+The code also includes several enumerations, such as `Enum_Derived_Content_Status`, `UsageSessionStatus`, `UsageEventType`, `PlanType`, `BillingFrequency`, `SubscriptionStatus`, and `GitProviderKind`, which define specific sets of values for certain fields in the models. Additionally, the code uses SQLAlchemy events to trigger updates on related tables, such as updating the `PrimaryAsset` table when a `DerivedContent` record is updated or inserted. The models are designed to be part of a larger application that manages content, tracks usage, and integrates with external services, providing a structured way to interact with the underlying database.
 # Imports and Dependencies
 
 ---
@@ -51,37 +51,46 @@ The code is structured as a library file intended to be imported and used within
 
 ---
 ### RuntimeLogAgentInstance<!-- {{#class:python-backend/driver_db/database/models_v1.RuntimeLogAgentInstance}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L34>)
+
 - **Members**:
-    - `created_at`: Stores the timestamp when the instance was created.
-    - `updated_at`: Stores the timestamp when the instance was last updated.
-    - `id`: Unique identifier for the instance, generated as a UUID.
-    - `model`: Represents the model associated with the log agent instance.
-    - `messages`: List of messages related to this log agent instance.
-    - `organization_id`: Identifier for the organization associated with this instance.
-- **Description**: The `RuntimeLogAgentInstance` class is a SQLModel-based ORM representation of a runtime log agent instance, designed to store and manage log data within a database table. It includes fields for tracking creation and update timestamps, a unique identifier, the model name, associated messages, and an optional organization ID. The class leverages SQLAlchemy's ORM capabilities to define relationships and manage database interactions, particularly focusing on the association with `RuntimeLogAgentMessage` instances.
+    - `created_at`: Stores the creation timestamp of the instance.
+    - `updated_at`: Stores the last updated timestamp of the instance.
+    - `id`: Unique identifier for the instance.
+    - `model`: Specifies the model associated with the instance.
+    - `messages`: Holds a list of related `RuntimeLogAgentMessage` objects.
+    - `organization_id`: Identifier for the organization associated with the instance.
+- **Description**: Represents an instance of a runtime log agent, storing metadata such as creation and update timestamps, a unique identifier, the model name, associated messages, and an optional organization ID.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### RuntimeLogAgentMessage<!-- {{#class:python-backend/driver_db/database/models_v1.RuntimeLogAgentMessage}} -->
-- **Decorators**: `@table`
+[View Source →](<../../../../driver_db/database/models_v1.py#L57>)
+
 - **Members**:
-    - `created_at`: Timestamp indicating when the message was created.
+    - `created_at`: Stores the creation timestamp of the message.
     - `id`: Unique identifier for the message.
-    - `message`: Dictionary containing the message content.
-    - `order`: Integer representing the order of the message.
-    - `agent_instance_id`: Identifier for the associated agent instance.
-    - `agent_instance`: Reference to the associated RuntimeLogAgentInstance.
-- **Description**: The `RuntimeLogAgentMessage` class represents a log message associated with a runtime agent instance. It includes metadata such as creation timestamp, a unique identifier, the message content, and its order. The class also maintains a relationship with the `RuntimeLogAgentInstance` to which it belongs, identified by `agent_instance_id`.
+    - `message`: Contains the message data as a dictionary.
+    - `order`: Indicates the order of the message, auto-incremented.
+    - `agent_instance_id`: References the associated agent instance by its UUID.
+    - `agent_instance`: Represents the relationship to the `RuntimeLogAgentInstance` class.
+- **Description**: Defines a log message associated with a runtime log agent instance, including metadata such as creation time, unique identifier, message content, order, and a reference to the associated agent instance.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### Enum\_Derived\_Content\_Status<!-- {{#class:python-backend/driver_db/database/models_v1.Enum_Derived_Content_Status}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L74>)
+
 - **Decorators**: `@strawberry.enum`
-- **Description**: The `Enum_Derived_Content_Status` class is an enumeration that defines the possible statuses for derived content generation processes. It includes three statuses: `generating`, `generation_complete`, and `generation_error`, which represent the different stages or outcomes of content generation. This enum is decorated with `@strawberry.enum`, indicating its use in a Strawberry GraphQL schema.
+- **Members**:
+    - `generating`: Indicates the content is in the process of being generated.
+    - `generation_complete`: Indicates the content generation process is complete.
+    - `generation_error`: Indicates an error occurred during content generation.
+- **Description**: Defines the status of derived content generation with three possible states: 'generating', 'generation_complete', and 'generation_error'.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -89,90 +98,108 @@ The code is structured as a library file intended to be imported and used within
 
 ---
 ### DocumentSource<!-- {{#class:python-backend/driver_db/database/models_v1.DocumentSource}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L81>)
+
 - **Members**:
+    - `__tablename__`: Defines the name of the table in the database as 'document_sources'.
     - `source_node_id`: Stores the UUID of the source node, acting as a primary key and foreign key.
     - `page_node_id`: Stores the UUID of the page node, acting as a primary key and foreign key.
     - `source_node`: Represents the relationship to the source node with back-population.
     - `page_node`: Represents the relationship to the page node with back-population.
-- **Description**: The `DocumentSource` class is a SQLModel-based table that serves as a link between documents and their sources, using UUIDs to uniquely identify and relate source and page nodes. It defines relationships to the `Node` class for both source and page nodes, facilitating the management of document-source associations within a database schema. The class uses SQLAlchemy's `Field` and `Relationship` to establish foreign key constraints and bidirectional relationships, ensuring referential integrity and enabling cascading deletes.
+- **Description**: Links documents to their sources by defining relationships between source nodes and page nodes in a database table.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### DerivedContent<!-- {{#class:python-backend/driver_db/database/models_v1.DerivedContent}} -->
-- **Decorators**: `@strawberry.enum`
+[View Source →](<../../../../driver_db/database/models_v1.py#L108>)
+
 - **Members**:
-    - `id`: Unique identifier for the derived content.
-    - `content_kind`: Specifies the kind of content, such as text or image.
-    - `node_id`: Identifier for the associated node, if any.
-    - `relative_path`: Path to the content relative to a base directory.
-    - `content`: The actual content data, which can be a string.
-    - `content_name`: Optional name for the content.
-    - `misc_metadata`: Additional metadata associated with the content.
-    - `created_at`: Timestamp indicating when the content was created.
-    - `updated_at`: Timestamp indicating when the content was last updated.
-    - `order`: Order of the content, used for sorting or prioritization.
-    - `chunks_and_embeds`: List of chunks and embeddings related to the content.
-    - `node`: Relationship to the associated node object.
-- **Description**: The DerivedContent class represents a model for storing and managing derived content within a database, utilizing SQLModel for ORM capabilities. It includes various fields to capture metadata, content type, and relationships to other entities such as nodes. The class is designed to handle content that may be associated with a codebase or workspace, and it supports operations like ordering and timestamping for creation and updates. Additionally, it maintains relationships with chunks and embeddings, facilitating complex data structures and interactions.
+    - `__tablename__`: Defines the table name as 'derived_contents'.
+    - `id`: Stores a unique identifier for the derived content.
+    - `content_kind`: Indicates the type of content.
+    - `node_id`: References the associated node's unique identifier.
+    - `relative_path`: Specifies the relative path of the content.
+    - `content`: Holds the actual content as a string.
+    - `content_name`: Stores the name of the content.
+    - `misc_metadata`: Contains additional metadata as a dictionary.
+    - `created_at`: Records the creation timestamp of the content.
+    - `updated_at`: Records the last update timestamp of the content.
+    - `order`: Specifies the order of the content.
+    - `chunks_and_embeds`: Holds a list of related 'ChunkAndEmbedding' objects.
+    - `node`: Represents the relationship to the 'Node' object.
+- **Description**: Manages derived content entities in a database, including their metadata, relationships, and timestamps. It uses SQLModel for ORM capabilities and defines relationships with other entities like 'Node' and 'ChunkAndEmbedding'. The class includes fields for content identification, type, path, and metadata, and it tracks creation and update times.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### Tag<!-- {{#class:python-backend/driver_db/database/models_v1.Tag}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L216>)
+
 - **Members**:
-    - `id`: A unique identifier for the tag, generated by the server.
-    - `name`: The name of the tag, which must be unique per organization.
-    - `hex_color`: The hexadecimal color code associated with the tag.
-    - `organization_id`: The identifier for the organization to which the tag belongs.
-    - `type`: The type of the tag, used for categorization.
-    - `created_at`: The timestamp when the tag was created.
-    - `created_by`: The identifier of the user who created the tag.
-    - `updated_at`: The timestamp when the tag was last updated.
-    - `updated_by`: The identifier of the user who last updated the tag.
-    - `primary_assets`: A list of primary assets associated with the tag.
-- **Description**: The `Tag` class represents a tag entity in a database, designed to categorize and manage resources within an organization. It includes attributes for a unique identifier, name, color, organization association, type, and timestamps for creation and updates. The class also manages relationships with primary assets, ensuring that each tag is uniquely identified within its organization by its name and organization ID.
+    - `__tablename__`: Defines the name of the database table as 'tags'.
+    - `__table_args__`: Specifies unique constraints for the 'name' and 'organization_id' fields.
+    - `id`: Stores the unique identifier for the tag as a UUID.
+    - `name`: Holds the name of the tag with a maximum length of 255 characters.
+    - `hex_color`: Contains the hexadecimal color code for the tag with a maximum length of 7 characters.
+    - `organization_id`: Stores the identifier for the organization associated with the tag.
+    - `type`: Indicates the type of the tag with a maximum length of 255 characters.
+    - `created_at`: Records the timestamp when the tag was created.
+    - `created_by`: Stores the identifier of the user who created the tag.
+    - `updated_at`: Records the timestamp when the tag was last updated.
+    - `updated_by`: Stores the identifier of the user who last updated the tag.
+    - `primary_assets`: Holds a list of primary assets associated with the tag.
+- **Description**: Represents a database model for tags, including fields for unique identification, name, color, organization association, type, and timestamps for creation and updates. It also manages relationships with primary assets.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### ChunkAndEmbedding<!-- {{#class:python-backend/driver_db/database/models_v1.ChunkAndEmbedding}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L277>)
+
 - **Members**:
-    - `id`: A unique identifier for the chunk and embedding, generated by default.
-    - `content_id`: The identifier of the associated derived content.
-    - `content`: A relationship to the DerivedContent object this chunk and embedding belongs to.
-    - `text`: The text content of the chunk.
-    - `text_embedding_3_small`: A list of floats representing the small text embedding vector.
-    - `chunk_number`: The sequence number of the chunk within the content.
-    - `created_at`: The timestamp when the chunk and embedding was created.
-    - `updated_at`: The timestamp when the chunk and embedding was last updated.
-    - `__ts_vector__`: A computed column for full-text search vectorization of the text.
-- **Description**: The ChunkAndEmbedding class represents a database model for storing chunks of text and their corresponding embeddings, along with metadata such as creation and update timestamps. It is designed to work with SQLModel and includes relationships to the DerivedContent class, allowing for the organization of text data into manageable pieces with associated embeddings for further processing or analysis. The class also includes a computed column for full-text search capabilities, enhancing its utility in text retrieval operations.
+    - `id`: Unique identifier for the chunk and embedding.
+    - `content_id`: Identifier for the associated derived content.
+    - `content`: Reference to the related `DerivedContent` object.
+    - `text`: Text content of the chunk.
+    - `text_embedding_3_small`: List of float values representing the text embedding.
+    - `chunk_number`: Number indicating the order of the chunk.
+    - `created_at`: Timestamp of when the chunk and embedding was created.
+    - `updated_at`: Timestamp of when the chunk and embedding was last updated.
+    - `__ts_vector__`: Full-text search vector for the text content.
+- **Description**: Represents a database model for storing text chunks and their embeddings, including metadata such as creation and update timestamps, and a full-text search vector for efficient querying.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### InspectorRun<!-- {{#class:python-backend/driver_db/database/models_v1.InspectorRun}} -->
-- **Decorators**: `@table`
+[View Source →](<../../../../driver_db/database/models_v1.py#L316>)
+
 - **Members**:
-    - `id`: A unique identifier for the InspectorRun instance.
-    - `version_id`: References the associated version with a foreign key constraint.
-    - `created_at`: Timestamp indicating when the InspectorRun was created.
-    - `updated_at`: Timestamp indicating when the InspectorRun was last updated.
-    - `call_id`: Optional identifier for the call associated with the InspectorRun.
-    - `version`: Relationship to the Version model, linking to inspector runs.
-- **Description**: The InspectorRun class represents a database model for tracking individual runs of an inspector process, with fields for unique identification, version association, and timestamps for creation and updates. It includes a relationship to the Version model, allowing for the association of multiple inspector runs with a specific version.
+    - `id`: Unique identifier for the `InspectorRun` instance.
+    - `version_id`: Identifier for the associated version, with a foreign key constraint.
+    - `created_at`: Timestamp indicating when the `InspectorRun` was created.
+    - `updated_at`: Timestamp indicating when the `InspectorRun` was last updated.
+    - `call_id`: Optional identifier for the call associated with the `InspectorRun`.
+    - `version`: Relationship to the `Version` class, linking to the `inspector_runs`.
+- **Description**: Represents a database table for storing information about an inspector run, including its unique identifier, associated version, creation and update timestamps, and optional call identifier. It also establishes a relationship with the `Version` class.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### UsageSessionStatus<!-- {{#class:python-backend/driver_db/database/models_v1.UsageSessionStatus}} -->
-- **Description**: The `UsageSessionStatus` class is an enumeration that inherits from both `str` and `enum.Enum`, representing the status of a usage session with three possible states: RUNNING, COMPLETED, and FAILED. This class is used to define and manage the different states a usage session can be in, providing a clear and standardized way to handle session status within the application.
+[View Source →](<../../../../driver_db/database/models_v1.py#L341>)
+
+- **Members**:
+    - `RUNNING`: Indicates the session is currently running.
+    - `COMPLETED`: Indicates the session has completed successfully.
+    - `FAILED`: Indicates the session has failed.
+- **Description**: Defines the possible statuses for a usage session, including running, completed, and failed states.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -180,25 +207,30 @@ The code is structured as a library file intended to be imported and used within
 
 ---
 ### UsageSession<!-- {{#class:python-backend/driver_db/database/models_v1.UsageSession}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L347>)
+
 - **Members**:
-    - `id`: A unique identifier for the usage session, generated by default as a UUID.
-    - `status`: The current status of the usage session, defaulting to 'RUNNING'.
-    - `organization_id`: The identifier for the organization associated with the session.
-    - `user_id`: The identifier for the user associated with the session.
-    - `session_metadata`: Optional metadata associated with the session, stored as a dictionary.
-    - `created_at`: The timestamp indicating when the session was created, with a default value of the current time.
-    - `updated_at`: The timestamp indicating when the session was last updated, automatically set to the current time on updates.
-    - `usage_events`: A list of usage events associated with the session, with a relationship that supports cascading deletes.
-- **Description**: The UsageSession class represents a session of usage within an application, tracking its status, associated organization and user, and any metadata. It includes timestamps for creation and updates, and maintains a relationship with usage events, allowing for detailed tracking of activities within the session. The class is designed to be used with a SQL database, leveraging SQLModel for ORM capabilities and supporting automatic UUID generation for unique identification.
+    - `__tablename__`: Defines the table name as 'usage_sessions'.
+    - `id`: Stores a unique identifier for the session.
+    - `status`: Indicates the current status of the session.
+    - `organization_id`: Stores the identifier of the organization associated with the session.
+    - `user_id`: Stores the identifier of the user associated with the session.
+    - `session_metadata`: Holds additional metadata for the session.
+    - `created_at`: Records the timestamp when the session was created.
+    - `updated_at`: Records the timestamp when the session was last updated.
+    - `usage_events`: Contains a list of usage events related to the session.
+- **Description**: Manages and represents a session of usage, including its status, associated organization and user, metadata, and related usage events. It is mapped to a database table named 'usage_sessions' and includes timestamps for creation and updates.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### UsageEventType<!-- {{#class:python-backend/driver_db/database/models_v1.UsageEventType}} -->
-- **Description**: The `UsageEventType` class is an enumeration that defines various types of usage events, each associated with a unique integer value. These events include different types of usage debits and credits, such as agent pipeline usage debit, inspector tech doc usage debit, and user seat usage credit. The class inherits from `enum.IntEnum`, allowing the enumeration members to be used as integers, and it provides a custom string representation method to return a human-readable version of the enum names.
+[View Source →](<../../../../driver_db/database/models_v1.py#L376>)
+
+- **Description**: Defines an enumeration for different types of usage events, each associated with a unique integer value. These events include various usage debits and credits, such as agent pipeline usage debit, inspector tech doc usage debit, and user seat usage credit. The `__str__` method provides a human-readable version of the enum name by replacing underscores with spaces and capitalizing the words.
 - **Methods**:
-    - [`python-backend/driver_db/database/models_v1.UsageEventType.__str__`](<#UsageEventType__str__>)
+    - [`python-backend/driver_db/database/models_v1.UsageEventType.__str__`](<#usageeventtype__str__>)
 - **Inherits From**:
     - `enum.IntEnum`
 
@@ -206,58 +238,70 @@ The code is structured as a library file intended to be imported and used within
 
 ---
 #### UsageEventType\.\_\_str\_\_<!-- {{#callable:python-backend/driver_db/database/models_v1.UsageEventType.__str__}} -->
-The `__str__` method provides a human-readable string representation of the enum name by replacing underscores with spaces and capitalizing each word.
-- **Inputs**: None
-- **Control Flow**:
-    - The method accesses the `name` attribute of the enum instance, which is a string representation of the enum member's name.
-    - It replaces all underscores ('_') in the `name` with spaces (' ').
-    - It converts the modified string to title case, capitalizing the first letter of each word.
-    - The method returns the resulting human-readable string.
-- **Output**: A string that is a human-readable version of the enum name, with underscores replaced by spaces and each word capitalized.
-- **See also**: [`python-backend/driver_db/database/models_v1.UsageEventType`](<#UsageEventType>)  (Base Class)
+[View Source →](<../../../../driver_db/database/models_v1.py#L387>)
+
+Converts the enum name to a human-readable string format.
+- **Inputs**:
+    - `self`: The instance of the `UsageEventType` enum.
+- **Logic and Control Flow**:
+    - Accesses the `name` attribute of the enum instance.
+    - Replaces underscores ('_') in the name with spaces (' ').
+    - Converts the modified string to title case, capitalizing the first letter of each word.
+- **Output**: A string that represents the enum name in a human-readable format.
+- **See also**: [`python-backend/driver_db/database/models_v1.UsageEventType`](<#usageeventtype>)  (Base Class)
 
 
 
 ---
 ### UsageEvent<!-- {{#class:python-backend/driver_db/database/models_v1.UsageEvent}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L392>)
+
 - **Members**:
-    - `id`: Unique identifier for the usage event.
-    - `event_type`: Type of the usage event, represented by an enum.
-    - `session_id`: Identifier for the session associated with the usage event.
-    - `organization_id`: Identifier for the organization associated with the usage event.
-    - `user_id`: Identifier for the user associated with the usage event.
-    - `event_source`: Source of the event.
-    - `bytes_in`: Number of bytes received during the event.
-    - `bytes_out`: Number of bytes sent during the event.
-    - `tokens_in`: Number of tokens received during the event.
-    - `tokens_out`: Number of tokens sent during the event.
-    - `timestamp`: Timestamp of when the event occurred.
-    - `event_metadata`: Additional metadata related to the event.
-    - `session`: Relationship to the UsageSession associated with this event.
-- **Description**: The UsageEvent class represents an event that records usage data within a system, capturing details such as the type of event, associated session, organization, user, and data metrics like bytes and tokens transferred. It is designed to be part of a relational database model, with fields for metadata and timestamps, and it maintains a relationship with the UsageSession class to track the session context of the event.
+    - `__tablename__`: Defines the table name as 'usage_events'.
+    - `id`: Stores a unique identifier for the usage event.
+    - `event_type`: Indicates the type of usage event.
+    - `session_id`: References the associated usage session.
+    - `organization_id`: Stores the identifier for the organization.
+    - `user_id`: Stores the identifier for the user.
+    - `event_source`: Indicates the source of the event.
+    - `bytes_in`: Tracks the number of bytes received.
+    - `bytes_out`: Tracks the number of bytes sent.
+    - `tokens_in`: Tracks the number of tokens received.
+    - `tokens_out`: Tracks the number of tokens sent.
+    - `timestamp`: Records the time when the event occurred.
+    - `event_metadata`: Stores additional metadata for the event.
+    - `session`: Represents the relationship to the `UsageSession` class.
+- **Description**: Represents a record of a usage event within a system, capturing details such as event type, session association, data transfer metrics, and metadata. It is part of a relational database model and includes relationships to other entities like `UsageSession`.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### GithubAppInstallation<!-- {{#class:python-backend/driver_db/database/models_v1.GithubAppInstallation}} -->
-- **Decorators**: `@table`
+[View Source →](<../../../../driver_db/database/models_v1.py#L422>)
+
 - **Members**:
-    - `id`: A unique identifier for the GithubAppInstallation instance.
-    - `organization_id`: The ID of the organization associated with the installation.
-    - `github_app_installation_id`: The ID of the GitHub app installation.
-    - `created_at`: The timestamp when the installation was created.
-    - `updated_at`: The timestamp when the installation was last updated.
-    - `__tablename__`: The name of the database table for the class.
-    - `__table_args__`: Additional table arguments, including a unique constraint on github_app_installation_id and organization_id.
-- **Description**: The GithubAppInstallation class represents a database model for storing information about GitHub app installations within an organization. It includes fields for unique identification, organization association, and timestamps for creation and updates. The class also defines a unique constraint to ensure that each combination of GitHub app installation ID and organization ID is unique within the database.
+    - `id`: Unique identifier for the installation.
+    - `organization_id`: Identifier for the organization associated with the installation.
+    - `github_app_installation_id`: Identifier for the GitHub app installation.
+    - `created_at`: Timestamp of when the installation was created.
+    - `updated_at`: Timestamp of when the installation was last updated.
+    - `__tablename__`: Name of the database table for the class.
+    - `__table_args__`: Unique constraint for the combination of GitHub app installation ID and organization ID.
+- **Description**: Represents a GitHub app installation in the database, with fields for unique identification, organization association, and timestamps for creation and updates. It includes a unique constraint to ensure that each combination of GitHub app installation ID and organization ID is unique.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### PlanType<!-- {{#class:python-backend/driver_db/database/models_v1.PlanType}} -->
-- **Description**: The `PlanType` class is an enumeration that defines different types of subscription plans, specifically 'CORE', 'ADVANCED', and 'ENTERPRISE'. It inherits from both `str` and `enum.Enum`, allowing it to be used as a string while also providing enumeration capabilities.
+[View Source →](<../../../../driver_db/database/models_v1.py#L450>)
+
+- **Members**:
+    - `CORE`: Represents the core plan type.
+    - `ADVANCED`: Represents the advanced plan type.
+    - `ENTERPRISE`: Represents the enterprise plan type.
+- **Description**: Defines different types of plans as enumeration values, each represented as a string. This class is used to categorize and differentiate between various service plans such as 'core', 'advanced', and 'enterprise'.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -265,10 +309,12 @@ The `__str__` method provides a human-readable string representation of the enum
 
 ---
 ### BillingFrequency<!-- {{#class:python-backend/driver_db/database/models_v1.BillingFrequency}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L456>)
+
 - **Members**:
     - `MONTHLY`: Represents a monthly billing frequency.
     - `ANNUAL`: Represents an annual billing frequency.
-- **Description**: The `BillingFrequency` class is an enumeration that defines the possible billing frequencies for a subscription, specifically 'monthly' and 'annual'. It inherits from both `str` and `enum.Enum`, allowing it to be used as a string while also providing enumeration capabilities.
+- **Description**: Defines billing frequency options as an enumeration with string values for monthly and annual billing cycles.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -276,11 +322,9 @@ The `__str__` method provides a human-readable string representation of the enum
 
 ---
 ### SubscriptionStatus<!-- {{#class:python-backend/driver_db/database/models_v1.SubscriptionStatus}} -->
-- **Members**:
-    - `ACTIVE`: Represents the active status of a subscription.
-    - `CANCELED`: Represents the canceled status of a subscription.
-    - `SUSPENDED`: Represents the suspended status of a subscription.
-- **Description**: The `SubscriptionStatus` class is an enumeration that defines the possible states of a subscription, such as active, canceled, and suspended. It inherits from both `str` and `enum.Enum`, allowing it to be used as a string while also providing enumeration capabilities. This class is useful for managing and checking the status of subscriptions in a consistent manner across the application.
+[View Source →](<../../../../driver_db/database/models_v1.py#L461>)
+
+- **Description**: Defines the possible states of a subscription, which include `ACTIVE`, `CANCELED`, and `SUSPENDED`. This class inherits from `str` and `enum.Enum`, allowing it to be used as both a string and an enumeration.
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -288,25 +332,29 @@ The `__str__` method provides a human-readable string representation of the enum
 
 ---
 ### Subscription<!-- {{#class:python-backend/driver_db/database/models_v1.Subscription}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L467>)
+
 - **Members**:
-    - `id`: A unique identifier for the subscription, generated by default.
-    - `organization_id`: The identifier for the organization associated with the subscription.
-    - `plan_type`: The type of plan the subscription is associated with, which is non-nullable and indexed.
-    - `status`: The current status of the subscription, defaulting to active.
-    - `billing_frequency`: The frequency at which billing occurs, which is non-nullable.
-    - `created_at`: The timestamp when the subscription was created, with a server default of the current time.
-    - `updated_at`: The timestamp when the subscription was last updated, automatically updated to the current time.
-    - `__table_args__`: Contains SQLAlchemy table arguments, including a unique index for active subscriptions per organization.
-- **Description**: The Subscription class represents a subscription entity in a database, utilizing SQLModel for ORM capabilities. It includes fields for identifying the subscription, such as a unique ID and organization ID, as well as details about the subscription plan, status, and billing frequency. The class also manages timestamps for creation and updates, and enforces a unique constraint on active subscriptions per organization through SQLAlchemy's indexing features.
+    - `id`: Stores a unique identifier for the subscription.
+    - `organization_id`: Stores the identifier of the organization associated with the subscription.
+    - `plan_type`: Indicates the type of plan for the subscription.
+    - `status`: Represents the current status of the subscription.
+    - `billing_frequency`: Specifies the billing frequency for the subscription.
+    - `created_at`: Records the date and time when the subscription was created.
+    - `updated_at`: Records the date and time when the subscription was last updated.
+    - `__table_args__`: Defines table arguments, including a unique index for active subscriptions per organization.
+- **Description**: Manages subscription details for an organization, including plan type, status, and billing frequency, with automatic timestamps for creation and updates. It enforces a unique active subscription per organization through a partial unique index.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### GitProviderKind<!-- {{#class:python-backend/driver_db/database/models_v1.GitProviderKind}} -->
-- **Description**: The `GitProviderKind` class is an enumeration that inherits from both `str` and `enum.Enum`, representing different types of Git providers. It currently defines a single member, `GITLAB_ENTERPRISE_SELF_MANAGED`, which indicates a self-managed GitLab Enterprise instance. The class also overrides the `__str__` method to return the name of the enumeration member, providing a string representation of the enum value.
+[View Source →](<../../../../driver_db/database/models_v1.py#L498>)
+
+- **Description**: Defines an enumeration for different types of Git providers, including GitLab and Bitbucket, with specific variants for enterprise and server versions. This class inherits from both `str` and `enum.Enum`, allowing it to be used as a string while also providing enumeration capabilities.
 - **Methods**:
-    - [`python-backend/driver_db/database/models_v1.GitProviderKind.__str__`](<#GitProviderKind__str__>)
+    - [`python-backend/driver_db/database/models_v1.GitProviderKind.__str__`](<#gitproviderkind__str__>)
 - **Inherits From**:
     - `str`
     - `enum.Enum`
@@ -315,49 +363,59 @@ The `__str__` method provides a human-readable string representation of the enum
 
 ---
 #### GitProviderKind\.\_\_str\_\_<!-- {{#callable:python-backend/driver_db/database/models_v1.GitProviderKind.__str__}} -->
-The `__str__` method returns the name of the enum member as a string.
-- **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `name` attribute of the enum member.
+[View Source →](<../../../../driver_db/database/models_v1.py#L507>)
+
+Returns the name of the enum member as a string.
+- **Inputs**:
+    - `self`: The instance of the `GitProviderKind` enum.
+- **Logic and Control Flow**:
+    - Accesses the `name` attribute of the enum instance.
+    - Returns the `name` attribute as a string.
 - **Output**: A string representing the name of the enum member.
-- **See also**: [`python-backend/driver_db/database/models_v1.GitProviderKind`](<#GitProviderKind>)  (Base Class)
+- **See also**: [`python-backend/driver_db/database/models_v1.GitProviderKind`](<#gitproviderkind>)  (Base Class)
 
 
 
 ---
 ### GitProviderApp<!-- {{#class:python-backend/driver_db/database/models_v1.GitProviderApp}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L512>)
+
 - **Members**:
-    - `id`: A unique identifier for the GitProviderApp instance.
-    - `provider_kind`: Specifies the kind of Git provider associated with the app.
-    - `shared_provider`: Indicates whether the provider is shared across multiple organizations.
-    - `owner_organization_id`: The ID of the organization that owns the GitProviderApp.
-    - `name`: The name of the GitProviderApp.
-    - `base_url`: The base URL for the Git provider.
-    - `client_id`: The client ID used for OAuth authentication.
-    - `redirect_uri`: The redirect URI used in OAuth flows.
-    - `scopes`: The OAuth scopes requested by the app.
-    - `created_at`: The timestamp when the GitProviderApp was created.
-    - `updated_at`: The timestamp when the GitProviderApp was last updated.
-    - `app_installations`: A list of installations associated with the GitProviderApp.
-- **Description**: The GitProviderApp class represents a Git provider application within a database, utilizing SQLModel for ORM capabilities. It includes fields for identifying the app, such as its unique ID, provider kind, and owner organization ID, as well as OAuth-related fields like client ID, redirect URI, and scopes. The class also tracks creation and update timestamps and maintains a relationship with its installations through the app_installations field.
+    - `__tablename__`: Defines the table name as 'git_provider_apps'.
+    - `id`: Stores a unique identifier for each Git provider app.
+    - `provider_kind`: Indicates the type of Git provider.
+    - `shared_provider`: Specifies if the provider is shared.
+    - `owner_organization_id`: Stores the ID of the organization that owns the app.
+    - `name`: Holds the name of the Git provider app.
+    - `base_url`: Contains the base URL for the Git provider.
+    - `client_id`: Stores the client ID used for OAuth.
+    - `redirect_uri`: Holds the redirect URI used for OAuth.
+    - `scopes`: Specifies the OAuth scopes.
+    - `provider_metadata`: Contains provider-specific metadata.
+    - `created_at`: Records the creation timestamp of the app.
+    - `updated_at`: Records the last update timestamp of the app.
+    - `app_installations`: Lists the installations of the Git provider app.
+- **Description**: Represents a Git provider application with attributes for OAuth configuration, provider metadata, and relationships to installations. It includes fields for identifying the app, its owner, and its type, as well as timestamps for creation and updates.
 - **Inherits From**:
     - `SQLModel`
 
 
 ---
 ### GitProviderAppInstallation<!-- {{#class:python-backend/driver_db/database/models_v1.GitProviderAppInstallation}} -->
+[View Source →](<../../../../driver_db/database/models_v1.py#L551>)
+
 - **Members**:
-    - `__tablename__`: Specifies the name of the database table as 'git_provider_app_installations'.
-    - `id`: A unique identifier for each GitProviderAppInstallation instance, generated by default.
-    - `git_provider_app_id`: References the ID of the associated GitProviderApp, with a foreign key constraint.
+    - `__tablename__`: Defines the table name for the database as 'git_provider_app_installations'.
+    - `id`: Stores a unique identifier for each installation using a UUID.
+    - `git_provider_app_id`: References the ID of the associated Git provider app.
     - `organization_id`: Stores the ID of the organization associated with the installation.
-    - `user_id`: Optional field for storing the user ID related to the OAuth process.
+    - `user_id`: Stores the user ID for OAuth purposes, if applicable.
     - `misc_metadata`: Holds additional metadata in a dictionary format, stored as JSONB in the database.
-    - `created_at`: Records the timestamp when the installation was created, with a default value of the current time.
-    - `updated_at`: Records the timestamp when the installation was last updated, automatically updated on changes.
-    - `git_provider_app`: Defines a relationship to the GitProviderApp, allowing access to the associated app details.
-    - `__table_args__`: Defines a unique constraint on the combination of git_provider_app_id, organization_id, and user_id.
-- **Description**: The GitProviderAppInstallation class represents a database model for storing information about installations of Git provider applications within an organization. It includes fields for identifying the installation, associating it with a specific Git provider app and organization, and handling OAuth-related user information. The class also manages metadata and timestamps for creation and updates, and enforces a unique constraint on the combination of app ID, organization ID, and user ID to ensure data integrity.
+    - `created_at`: Records the timestamp when the installation was created.
+    - `updated_at`: Records the timestamp when the installation was last updated.
+    - `git_provider_app`: Represents the relationship to the `GitProviderApp` class.
+    - `__table_args__`: Defines a unique constraint on the combination of 'git_provider_app_id', 'organization_id', and 'user_id'.
+- **Description**: Manages the installation details of a Git provider application for an organization, including metadata and timestamps for creation and updates. It establishes a relationship with the `GitProviderApp` class and enforces a unique constraint on the combination of app ID, organization ID, and user ID.
 - **Inherits From**:
     - `SQLModel`
 
@@ -366,17 +424,20 @@ The `__str__` method returns the name of the enum member as a string.
 
 ---
 ### update\_primary\_asset\_content\_timestamp<!-- {{#callable:python-backend/driver_db/database/models_v1.update_primary_asset_content_timestamp}} -->
-The function updates the 'related_content_last_updated' timestamp of a PrimaryAsset associated with a DerivedContent's node_id.
+[View Source →](<../../../../driver_db/database/models_v1.py#L190>)
+
+Updates the timestamp of the related content in the `PrimaryAsset` table when a `DerivedContent` object is updated or inserted.
 - **Inputs**:
-    - `mapper`: An instance of Mapper[Any] used for ORM mapping, though not directly utilized in the function.
-    - `connection`: A Connection object used to execute SQL statements.
-    - `target`: A DerivedContent object whose node_id is used to identify related PrimaryAssets.
-- **Control Flow**:
-    - Check if the target's node_id is None; if so, return immediately without making any updates.
-    - Select the PrimaryAsset IDs that are associated with the target's node_id by joining the PrimaryAsset, Version, and Node tables.
-    - Construct an update statement to set the 'related_content_last_updated' field to the current timestamp for the selected PrimaryAsset IDs.
-    - Execute the update statement using the provided connection.
-- **Output**: The function does not return any value; it performs an update operation on the database.
+    - `mapper`: An instance of `Mapper` from SQLAlchemy, used for ORM mapping.
+    - `connection`: An instance of `Connection` from SQLAlchemy, used to execute SQL statements.
+    - `target`: An instance of `DerivedContent`, representing the target object that triggers the event.
+- **Logic and Control Flow**:
+    - Check if `target.node_id` is not set; if not, exit the function.
+    - Select the `PrimaryAsset.id` by joining `Version` and `Node` tables where `Node.id` matches `target.node_id`.
+    - Create an update statement for `PrimaryAsset` where the `PrimaryAsset.id` is in the selected `primary_asset` IDs.
+    - Set the `related_content_last_updated` field to the current timestamp using `func.now()`.
+    - Execute the update statement using the provided `connection`.
+- **Output**: No output is returned as the function returns `None`.
 
 
 

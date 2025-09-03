@@ -1,8 +1,8 @@
 from uuid import UUID
 
-from database.models_v2 import ApiKey
+from database.models import ApiKey
 from fastapi import APIRouter, HTTPException, Path, Request
-from sqlmodel import select
+from sqlmodel import func, select
 
 from app.api.auth import UserToken
 from app.api.routes.v2.query_utils import (
@@ -21,7 +21,6 @@ def create_api_key(
     session: CurrentSession,
     user: UserToken,
 ) -> ApiKey:
-    print(user)
     api_key = ApiKey(
         organization_id=user.organization_id,
         user_id=user.user_id,
@@ -32,22 +31,33 @@ def create_api_key(
     return api_key
 
 
-@router.get("/", response_model=list[ApiKey])
+@router.get("/", response_model=ListWithCount[ApiKey])
 def get_api_keys(
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
     request: Request,
 ) -> ListWithCount[ApiKey]:
-    query = select(ApiKey).where(ApiKey.user_id == user.user_id)
+    query = (
+        select(ApiKey)
+        .where(ApiKey.user_id == user.user_id)
+        .where(ApiKey.organization_id == user.organization_id)
+    )
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, ApiKey)
+    count_query = select(func.count()).select_from(query.subquery())
+    total_count = session.exec(count_query).one()
     query = apply_sorting_to_query(query, pagination, ApiKey)
     api_keys = session.exec(query).all()
-    return api_keys
+    for api_key in api_keys:
+        api_key.key = f"drv-{'.' *3}{api_key.key[-3:]}"
+    return ListWithCount(
+        results=api_keys,
+        total_count=total_count,
+    )
 
 
-@router.delete("/{api_key_id}", response_model=ApiKey)
+@router.delete("/{api_key_id}", response_model=None)
 def delete_api_key(
     session: CurrentSession,
     user: UserToken,
@@ -57,6 +67,7 @@ def delete_api_key(
         select(ApiKey)
         .where(ApiKey.id == api_key_id)
         .where(ApiKey.user_id == user.user_id)
+        .where(ApiKey.organization_id == user.organization_id)
     ).one_or_none()
     if not api_key:
         raise HTTPException(status_code=404, detail="API key not found")

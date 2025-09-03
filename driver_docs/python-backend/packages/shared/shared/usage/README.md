@@ -3,14 +3,14 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Manages language model usage sessions, handles usage credits and balances, and provides code conversion utilities.
+Manages LLM sessions, usage events, credits, balances, and provides byte-to-SLOC conversion functions.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[llm_session.py](llm_session.py.md)**: The `llm_session.py` file defines the `LLMUsageSession` class, which manages the lifecycle of a usage session for language model interactions, including starting and ending sessions, sending usage events to AWS, and computing usage metrics.
-- **[usage_service.py](usage_service.py.md)**: The `usage_service.py` file in the `python-backend` codebase implements the `UsageService` class, which provides methods for managing usage credits, retrieving usage balances and summaries, and obtaining usage charges for an organization.
-- **[utils.py](utils.py.md)**: The `utils.py` file contains utility functions for converting between bytes and source lines of code (SLOC) using a defined conversion factor.
+- **[llm_session.py](llm_session.py.md)**: Manages LLM usage sessions, including starting, ending, and sending usage events to AWS.
+- **[usage_service.py](usage_service.py.md)**: Manages usage events, credits, balances, summaries, and charges for organizations.
+- **[utils.py](utils.py.md)**: Functions to convert between bytes and source lines of code (SLOC) using a conversion factor.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

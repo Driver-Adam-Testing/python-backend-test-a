@@ -3,17 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Scripts and configurations for managing the onboarding process of repositories from GitHub and GitLab.
+Functions and utilities for Bitbucket, GitHub, and GitLab operations, language metadata, and version control data models.
 
 
 ## Files
-- **[gh_ops.py](gh_ops.py.md)**: The `gh_ops.py` file in the `python-backend` codebase provides functions for interacting with GitHub, including generating JWTs, fetching access tokens, retrieving repository information, downloading repositories, and creating pull requests.
-- **[gitlab_ops.py](gitlab_ops.py.md)**: The `gitlab_ops.py` file in the `python-backend` codebase provides functions for interacting with GitLab repositories, including fetching access tokens, downloading and uploading repositories, generating codebase metadata, and creating pull requests.
-- **[languages.yml](languages.yml.md)**: The `languages.yml` file in the `python-backend` codebase defines various programming, markup, and data languages known to GitHub, including their properties such as file extensions, color representation, and syntax highlighting modes.
-- **[onboard.py](onboard.py.md)**: The `onboard.py` file in the `python-backend` codebase handles the onboarding process for repositories from GitHub and GitLab, including collecting file paths, processing files, managing repository events, and connecting codebases to a database, while utilizing various external services and configurations.
-- **[onboard_utils.py](onboard_utils.py.md)**: The `onboard_utils.py` file in the `python-backend` codebase provides a comprehensive set of utilities for handling file operations, including downloading, uploading, and processing files with S3, managing file encodings, analyzing file types and sizes, and calculating directory statistics.
-- **[push_bot.py](push_bot.py.md)**: The `push_bot.py` file in the `python-backend` codebase provides functionality for extracting values from a presigned URL, running shell commands, pushing documentation updates to GitHub or GitLab repositories, and handling S3 file downloads and directory synchronization.
-- **[test_onboard_utils.py](test_onboard_utils.py.md)**: The `test_onboard_utils.py` file contains unit tests for the `unpack_archive_to_finalized_path` function, verifying its behavior when unpacking zip archives with various directory structures and optional override names.
+- **[bitbucket_ops.py](bitbucket_ops.py.md)**: Functions for managing Bitbucket repositories, including fetching access tokens, downloading repositories, and handling pull requests.
+- **[gh_ops.py](gh_ops.py.md)**: Functions for interacting with GitHub's API, including generating JWTs, fetching repository data, and managing pull requests.
+- **[gitlab_ops.py](gitlab_ops.py.md)**: Functions for managing GitLab repositories, including fetching access tokens, downloading repositories, and creating pull requests.
+- **[languages.yml](languages.yml.md)**: Defines language metadata for GitHub, including type, color, extensions, and highlighting modes.
+- **[onboard.py](onboard.py.md)**: Handles GitHub, GitLab, and Bitbucket events, processes repositories, and manages codebase connections using AWS S3 and a database.
+- **[onboard_utils.py](onboard_utils.py.md)**: Utilities for handling file operations, S3 interactions, and codebase analysis, including file type detection and encoding management.
+- **[push_bot.py](push_bot.py.md)**: Automates the process of extracting, syncing, and pushing documentation updates to version control repositories.
+- **[test_onboard_utils.py](test_onboard_utils.py.md)**: Tests for unpacking zip archives with various directory structures and optional name overrides.
+- **[vcs_utils.py](vcs_utils.py.md)**: Data models for version control information, including repository, commit, branch, and author details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

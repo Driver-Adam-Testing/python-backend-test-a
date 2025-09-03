@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `verilog.py` file in the `python-backend` codebase provides utilities for analyzing and documenting Verilog code, including modules, functions, tasks, and data types, using structured prompts and static analysis.
+Utilities for analyzing and documenting Verilog code, including modules, functions, tasks, and data types.
 
 # Purpose
-This Python source code file is designed to facilitate the documentation and analysis of Verilog code, specifically focusing on modules, functions, tasks, and data types within Verilog source files. It provides a structured approach to generating detailed documentation by defining classes that represent different Verilog components, such as `VerilogModuleData`, `VerilogFnTaskData`, and `VerilogDataTypeData`. These classes utilize prompts and schemas to guide the generation of documentation, ensuring that the output is consistent and informative. The file also includes collections like `VerilogModuleCollection`, `VerilogFnTaskCollection`, and `VerilogDataTypeCollection`, which aggregate data about these components and facilitate their analysis through static analysis methods.
+The code defines a set of classes and constants for processing and documenting Verilog code, specifically focusing on modules, functions, tasks, and data types. It uses a combination of static analysis and language model processing to extract and document these components. The classes `VerilogModuleData`, `VerilogFnTaskData`, and `VerilogDataTypeData` are designed to generate prompts for language models to create documentation for Verilog modules, functions/tasks, and data types, respectively. Each class provides methods to generate system and user prompts, which are used to guide the language model in producing structured documentation.
 
-The code is structured to be part of a larger system that likely involves natural language processing (NLP) and machine learning models, as indicated by the use of `ChatOpenAI` and the generation of prompts for language models. It imports various utilities and shared components to handle structured prompting and data representation. The file is not a standalone script but rather a library module intended to be integrated into a larger application that processes Verilog code, providing a public API for analyzing and documenting Verilog components. The use of static analysis methods, such as `default_ctags_analysis`, suggests that the code is designed to work with existing tools to extract and process Verilog symbols efficiently.
+The code also includes collections such as `VerilogModuleCollection`, `VerilogFnTaskCollection`, and `VerilogDataTypeCollection`, which manage groups of the respective data types. These collections use static analysis to identify and organize Verilog symbols from source code. The constants defined at the beginning, such as `VERILOG_MODULES`, `VERILOG_FUNCTIONS_AND_TASKS`, and `VERILOG_DATA_TYPES`, categorize different Verilog constructs for analysis. The code is structured to facilitate the extraction and documentation of Verilog code components, making it suitable for integration into a larger system that processes and documents hardware description languages.
 # Imports and Dependencies
 
 ---
@@ -41,106 +41,106 @@ The code is structured to be part of a larger system that likely involves natura
 ---
 ### VERILOG\_MODULES
 - **Type**: `set`
-- **Description**: `VERILOG_MODULES` is a set containing a single string element, 'module'. This set is used to categorize or identify Verilog modules within the codebase.
-- **Use**: This variable is used to specify the kind of Verilog symbols that are considered modules for static analysis or categorization purposes.
+- **Description**: Contains a single string element, 'module', which represents a Verilog module. Verilog modules are reusable blocks of Verilog code that implement specific functionalities.
+- **Use**: Used to specify the kind of Verilog symbols that are considered modules in static analysis.
 
 
 ---
 ### VERILOG\_FUNCTIONS\_AND\_TASKS
 - **Type**: `set`
-- **Description**: `VERILOG_FUNCTIONS_AND_TASKS` is a set containing the strings 'function' and 'task'. This set is used to categorize or identify Verilog constructs that are either functions or tasks, which are fundamental components in Verilog for defining reusable blocks of code.
-- **Use**: This variable is used to identify and categorize Verilog functions and tasks during static analysis or code processing.
+- **Description**: Contains the strings 'function' and 'task', which are keywords in Verilog used to define functions and tasks respectively. Functions in Verilog are used to perform calculations and return a single value, while tasks can perform more complex operations and return multiple values.
+- **Use**: Used to identify and categorize Verilog functions and tasks in the code.
 
 
 ---
 ### VERILOG\_DATA\_TYPES
 - **Type**: `set`
-- **Description**: `VERILOG_DATA_TYPES` is a set containing strings that represent different data types used in Verilog, specifically 'register', 'net', and 'port'. These data types are fundamental in Verilog for defining how data is stored, transmitted, and interfaced between modules.
-- **Use**: This variable is used to categorize and identify Verilog data types within the codebase.
+- **Description**: Contains a set of strings that represent different data types in Verilog. The data types included are 'register', 'net', and 'port', which are fundamental components in Verilog for defining storage elements, connections, and interfaces.
+- **Use**: Used to categorize and identify Verilog data types in the code.
 
 
 ---
 ### VERILOG\_CONSTANTS
-- **Type**: `set`
-- **Description**: `VERILOG_CONSTANTS` is a set containing a single string element, 'constant'. This set is part of a collection of sets that categorize different aspects of Verilog code, such as modules, functions, data types, and ports.
-- **Use**: This variable is used to categorize and identify constants within Verilog code analysis.
+- **Type**: ``set``
+- **Description**: Contains a single string element, 'constant'. This set is part of a collection of Verilog-related constants defined in the code.
+- **Use**: Used to categorize or identify Verilog constants in the code.
 
 
 ---
 ### VERILOG\_PORTS
-- **Type**: `set`
-- **Description**: `VERILOG_PORTS` is a global variable defined as a set containing a single string element, 'port'. This set is used to categorize or identify Verilog data types related to ports, which are signals that act as inputs and outputs between modules in Verilog.
-- **Use**: This variable is used to specify and identify Verilog port data types in the code.
+- **Type**: ``set``
+- **Description**: Contains a single string element, `"port"`. This set is part of a group of constants that categorize different Verilog components.
+- **Use**: Used to identify and categorize Verilog ports in the code.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_VERILOG
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_VERILOG` is a string that contains a prompt designed for a Verilog programmer who is also a technical documentation expert. The prompt instructs the user to write detailed documentation for Verilog code, focusing on explaining technical details and the key conceptual components and purpose of the software.
-- **Use**: This variable is used as a system prompt to guide a Verilog expert in creating detailed documentation for Verilog code.
+- **Description**: A multi-line string that serves as a prompt for a Verilog programmer and technical documentation expert. It instructs the user to write detailed documentation for Verilog code, focusing on explaining technical details and recognizing key components and purposes.
+- **Use**: Used as a prompt to guide the generation of detailed documentation for Verilog code.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_VERILOG
-- **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_VERILOG` is a string that contains a prompt designed for a Verilog programmer who is also a technical documentation expert. The prompt instructs the expert to write detailed documentation for small and simple Verilog source code files, emphasizing clarity and conciseness.
-- **Use**: This variable is used as a system prompt to guide experts in generating documentation for small Verilog source code files.
+- **Type**: ``str``
+- **Description**: This variable is a string that contains a system prompt for a Verilog programmer and technical documentation expert. It instructs the user to write detailed documentation for small and short Verilog source code files, emphasizing clarity and brevity.
+- **Use**: Used to guide the user in documenting small Verilog source code files effectively.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt for explaining the purpose of a Verilog source code file. It instructs the user to write one or two paragraphs explaining the file's purpose without using speculative language and provides guiding questions to consider while writing.
-- **Use**: This variable is used to guide users in writing a comprehensive explanation of a Verilog source code file's purpose.
+- **Description**: A string variable that contains a prompt template for explaining the purpose of a Verilog source code file. The prompt guides the user to write a detailed explanation of the file's purpose, focusing on its functionality, components, and overall theme.
+- **Use**: Used to generate a user prompt for explaining the purpose of a Verilog source code file.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string that contains a prompt for explaining the purpose of a Verilog source code file. It instructs the user to provide a single paragraph explanation, consisting of 3 to 5 sentences, about the purpose of the given Verilog file.
-- **Use**: This variable is used to guide users in summarizing the purpose of small Verilog source code files in a concise manner.
+- **Description**: This variable is a string that contains a prompt for a user to explain the purpose of a Verilog source code file. The prompt instructs the user to provide a single paragraph explanation consisting of 3 to 5 sentences.
+- **Use**: Used to guide users in summarizing the purpose of a Verilog source code file in a concise manner.
 
 
 ---
 ### MODULES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `string`
-- **Description**: The variable `MODULES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating JSON-based documentation for Verilog modules. It provides a structured format for describing the constants, ports, logic and control flow, and a brief description of a Verilog module. This template is designed to ensure consistency and completeness in the documentation of Verilog modules.
-- **Use**: This variable is used as a system prompt to guide the generation of structured JSON documentation for Verilog modules.
+- **Type**: `str`
+- **Description**: Defines a multi-line string that serves as a system prompt for generating JSON documentation for Verilog modules. The prompt instructs the user to provide detailed documentation for Verilog modules using a specific JSON schema.
+- **Use**: Used as a system prompt to guide the generation of JSON documentation for Verilog modules.
 
 
 ---
 ### MODULES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The `MODULES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing Verilog modules in a given code. It explains what a Verilog module is, its potential components, and how to describe them based on their complexity.
-- **Use**: This variable is used as a template or guideline for users to document Verilog modules effectively.
+- **Description**: A multi-line string that provides instructions for summarizing Verilog modules. It explains the characteristics of a Verilog module, such as its reusability, ability to embed other modules, and communication through input and output ports.
+- **Use**: Used to guide users in documenting Verilog modules by providing a structured prompt.
 
 
 ---
 ### FUNCTIONS\_AND\_TASKS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for generating documentation for Verilog functions and tasks. It provides detailed instructions on how to document these elements, including the expected JSON schema for the output.
-- **Use**: This variable is used to guide the generation of documentation for Verilog functions and tasks by providing a structured prompt.
+- **Description**: A multi-line string that provides instructions for documenting Verilog functions and tasks. It includes a JSON schema that specifies how to format the documentation for these functions and tasks.
+- **Use**: Used as a template for generating documentation for Verilog functions and tasks.
 
 
 ---
 ### FUNCTIONS\_AND\_TASKS\_FOUND\_USER\_PROMPT
-- **Type**: `str`
-- **Description**: The variable `FUNCTIONS_AND_TASKS_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing functions and tasks in Verilog code. It explains the difference between Verilog functions and tasks, emphasizing the need for detailed documentation based on their complexity.
-- **Use**: This variable is used as a prompt template to guide users in documenting Verilog functions and tasks.
+- **Type**: ``str``
+- **Description**: A multi-line string that provides instructions for summarizing functions and tasks in Verilog code. It includes guidelines on how to describe Verilog functions and tasks, emphasizing the need for detail proportional to the complexity of the function or task.
+- **Use**: Used as a prompt for users to summarize Verilog functions and tasks.
 
 
 ---
 ### DATA\_TYPES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for generating documentation related to Verilog data types. It provides instructions for documenting ports, registers, and net data types in Verilog, emphasizing the use of a specific JSON schema for the output.
-- **Use**: This variable is used to guide the generation of detailed documentation for Verilog data types by providing a structured prompt.
+- **Description**: A multi-line string that provides instructions for documenting Verilog data types and data structures. It includes guidelines for describing ports, registers, and net data types in Verilog.
+- **Use**: Used as a system prompt to guide the documentation of Verilog data types.
 
 
 ---
 ### DATA\_TYPES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `DATA_TYPES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing data types in Verilog code. It includes guidelines on how to describe ports, registers, and net data types, emphasizing the need for detail proportional to the complexity of the data type.
-- **Use**: This variable is used to prompt users to document data types in Verilog code, ensuring detailed and context-appropriate descriptions.
+- **Description**: This is a multi-line string that provides instructions for summarizing data types in Verilog code. It explains the roles of ports, registers, and net data types in Verilog, and gives guidance on how to describe these data types based on their complexity.
+- **Use**: Used as a prompt to guide users in documenting data types in Verilog code.
 
 
 # Classes
@@ -150,19 +150,19 @@ The code is structured to be part of a larger system that likely involves natura
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L196>)
 
 - **Members**:
-    - `description`: Holds the raw content description of the Verilog module.
-    - `constants`: Stores a list of constants with their descriptions, ensuring no None values.
-    - `ports`: Contains a list of ports with their descriptions, allowing None values.
-    - `logic_and_control_flow`: Includes a list of logic and control flow elements, allowing None values.
-- **Description**: The VerilogModuleData class is a specialized data structure that extends IrData to encapsulate information about Verilog modules. It includes attributes for storing the module's description, constants, ports, and logic and control flow elements. The class provides class methods for generating system and user prompts related to Verilog modules, and it enforces that modules should not have children by raising NotImplementedError for related methods. Additionally, it offers a method to create a default instance of the class with empty or default values for its attributes.
+    - `description`: Stores raw content describing the Verilog module.
+    - `constants`: Holds a list of constants with their descriptions.
+    - `ports`: Contains a list of ports with their descriptions, allowing for None values.
+    - `logic_and_control_flow`: Includes logic and control flow content, allowing for None values.
+- **Description**: Represents data related to a Verilog module, including its description, constants, ports, and logic and control flow. Provides class methods to generate system and user prompts for documentation purposes and to create a default instance of the class.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.system_prompt`](<#VerilogModuleDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.user_prompt`](<#VerilogModuleDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.child_to_ir`](<#VerilogModuleDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.child_to_field_name`](<#VerilogModuleDatachild_to_field_name>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.default_instance`](<#VerilogModuleDatadefault_instance>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.system_prompt`](<#verilogmoduledatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.user_prompt`](<#verilogmoduledatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.child_to_ir`](<#verilogmoduledatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.child_to_field_name`](<#verilogmoduledatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.default_instance`](<#verilogmoduledatadefault_instance>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#irdata>)
 
 **Methods**
 
@@ -170,93 +170,91 @@ The code is structured to be part of a larger system that likely involves natura
 #### VerilogModuleData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L202>)
 
-The `system_prompt` method generates a structured prompt string for documenting Verilog modules.
+Generates a system prompt string for documenting Verilog modules.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the Verilog module to be documented.
-- **Control Flow**:
-    - The method starts by creating an empty `Prompt` object.
-    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the `MODULES_FOUND_SYSTEM_PROMPT_JSON` string to the `Prompt`.
-    - It appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
-    - It appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
-    - Finally, it converts the `Prompt` into a string using `into_str()` and returns it.
-- **Output**: A string representing the structured prompt for documenting Verilog modules.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `MODULES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Appends `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Converts the `Prompt` into a string using `into_str()` and returns it.
+- **Output**: A string representing the system prompt for Verilog module documentation.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#VerilogModuleData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#verilogmoduledata>)  (Base Class)
 
 
 ---
 #### VerilogModuleData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L212>)
 
-The `user_prompt` method generates a user prompt string for a given Verilog module symbol, including its name and code, and optionally the full file code if available.
+Generates a user prompt string for a given Verilog module symbol.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a Verilog module, containing attributes like `name`, `symbol_code`, and optionally `file_code`.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the module's name and code to the `Prompt`.
-    - Check if the `symbol` has `file_code` and, if so, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the full file code to the `Prompt`.
-    - Convert the `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt for the given Verilog module symbol.
+    - `symbol`: An instance of `RawSymbolData` representing a Verilog module symbol.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object and appends a no-restatement style instruction for symbols.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) containing the module's name and code to the `Prompt`.
+    - Checks if `symbol.file_code` is present; if so, appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
+    - Converts the `Prompt` into a string and returns it.
+- **Output**: A string representing the user prompt for the given Verilog module symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#VerilogModuleData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#verilogmoduledata>)  (Base Class)
 
 
 ---
 #### VerilogModuleData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L229>)
 
-The `child_to_ir` method raises a NotImplementedError indicating that modules should not have children.
+Raises a NotImplementedError indicating that modules should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the IR data is being queried.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Modules should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#VerilogModuleData>)  (Base Class)
+    - `symbol`: A `RawSymbolData` object representing the symbol to process.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Modules should not have children'.
+- **Output**: None, as the method raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#verilogmoduledata>)  (Base Class)
 
 
 ---
 #### VerilogModuleData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L233>)
 
-The `child_to_field_name` method raises a `NotImplementedError` indicating that modules should not have children.
+Raises a NotImplementedError indicating that modules should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of `RawSymbolData` representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with the message 'Modules should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#VerilogModuleData>)  (Base Class)
+    - `child`: An instance of RawSymbolData representing a child symbol.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Modules should not have children'.
+- **Output**: Does not return a value; instead, it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#verilogmoduledata>)  (Base Class)
 
 
 ---
 #### VerilogModuleData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData.default_instance}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L237>)
 
-The `default_instance` method creates a default instance of the `VerilogModuleData` class with empty or default values for its attributes.
+Creates a default instance of the `VerilogModuleData` class with empty fields.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method.
-- **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
-    - It returns a new instance of the `VerilogModuleData` class.
-    - The instance is initialized with default values: an empty `description`, empty lists for `constants` and `ports`, and an empty list for `logic_and_control_flow`.
-- **Output**: A new instance of `VerilogModuleData` with default values for all its attributes.
+    - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`.
+- **Logic and Control Flow**:
+    - Calls the class constructor `cls` with default empty values for `description`, `constants`, `ports`, and `logic_and_control_flow`.
+- **Output**: A new instance of `VerilogModuleData` with default empty fields.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#ListedBacktickNameRawContentWithNone>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#ListedRawContentWithNone>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#VerilogModuleData>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#fieldnamewithrawcontent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentWithNone`](<ir_common.py.md#listedbackticknamerawcontentwithnone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentWithNone`](<ir_common.py.md#listedrawcontentwithnone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleData`](<#verilogmoduledata>)  (Base Class)
 
 
 
@@ -265,12 +263,12 @@ The `default_instance` method creates a default instance of the `VerilogModuleDa
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L247>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to VerilogModuleData or lists of VerilogModuleData.
-- **Description**: The VerilogModuleCollection class is a specialized collection that extends the IrCollection class to manage Verilog module data. It holds a dictionary where keys are strings and values are either VerilogModuleData instances or lists of such instances. This class provides a class method, from_llm, to create an instance from a language model and a collection of raw symbols, facilitating the integration of Verilog module data into a larger system.
+    - `data`: Stores a dictionary mapping strings to `VerilogModuleData` or lists of `VerilogModuleData`.
+- **Description**: Manages a collection of Verilog module data, allowing for the organization and retrieval of module information. Inherits from `IrCollection` and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleCollection.from_llm`](<#VerilogModuleCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleCollection.from_llm`](<#verilogmodulecollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -278,17 +276,18 @@ The `default_instance` method creates a default instance of the `VerilogModuleDa
 #### VerilogModuleCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L250>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `VerilogModuleData`, `llm`, and `symbols_list` as arguments.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for data extraction.
-    - `symbols_list`: A `RawSymbolCollection` object containing a collection of symbols to be processed.
-- **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `VerilogModuleData`, `llm`, and `symbols_list` as arguments to create and return an instance of the class.
-- **Output**: Returns an instance of the class initialized with data processed from the language model and symbols list.
+    - `llm`: An instance of `ChatOpenAI` used for language model operations.
+    - `symbols_list`: A `RawSymbolCollection` containing symbols to be processed.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `VerilogModuleData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class (`Self`) initialized with data from the language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleCollection`](<#VerilogModuleCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleCollection`](<#verilogmodulecollection>)  (Base Class)
 
 
 
@@ -296,14 +295,14 @@ The `from_llm` method creates an instance of the class using data from a languag
 ### VerilogFnTaskData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L255>)
 
-- **Description**: The `VerilogFnTaskData` class is a specialized subclass of `FnData` designed to handle Verilog functions and tasks. It provides class methods to generate system and user prompts for documenting these Verilog constructs, ensuring that the documentation is structured and follows specific style instructions. The class also includes methods that raise `NotImplementedError` for operations related to child elements, as functions and tasks in Verilog do not have children. This class is part of a larger framework for processing and documenting Verilog code, focusing on the specific needs of functions and tasks within that language.
+- **Description**: Represents data related to Verilog functions and tasks, providing methods to generate system and user prompts for documentation purposes. It includes class methods to handle prompts and raises errors for unsupported operations like handling children.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.system_prompt`](<#VerilogFnTaskDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.user_prompt`](<#VerilogFnTaskDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.child_to_ir`](<#VerilogFnTaskDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.child_to_field_name`](<#VerilogFnTaskDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.system_prompt`](<#verilogfntaskdatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.user_prompt`](<#verilogfntaskdatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.child_to_ir`](<#verilogfntaskdatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.child_to_field_name`](<#verilogfntaskdatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#FnData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#fndata>)
 
 **Methods**
 
@@ -311,72 +310,74 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### VerilogFnTaskData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L256>)
 
-The `system_prompt` method constructs and returns a structured prompt string for documenting Verilog functions and tasks.
+Generates a system prompt string for documenting Verilog functions and tasks.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty `Prompt` object.
-    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing a JSON string for functions and tasks documentation to the `Prompt`.
-    - It appends general style instructions and backticks style instructions to the `Prompt`.
-    - Finally, it converts the `Prompt` into a string and returns it.
-- **Output**: A string representing the structured prompt for documenting Verilog functions and tasks.
+    - `symbol`: An instance of `RawSymbolData` representing the Verilog function or task to document.
+- **Logic and Control Flow**:
+    - Creates an empty `Prompt` object.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Appends the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Appends the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Converts the `Prompt` into a string using `into_str()` and returns it.
+- **Output**: A string representing the system prompt for documenting Verilog functions and tasks.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#VerilogFnTaskData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#verilogfntaskdata>)  (Base Class)
 
 
 ---
 #### VerilogFnTaskData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L266>)
 
-The `user_prompt` method generates a user prompt string for a given Verilog function or task symbol, including its name and code, and optionally the full file code if available.
+Generates a user prompt string for a given Verilog function or task symbol.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a Verilog function or task, containing its name, symbol code, and optionally the full file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the user prompt string with the symbol's name and code.
-    - Check if the symbol has associated file code; if so, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt for the given symbol.
+    - `cls`: The class `VerilogFnTaskData` to which this method belongs.
+    - `symbol`: An instance of `RawSymbolData` containing information about the Verilog function or task, including its name and code.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with a string that includes the user prompt for functions and tasks, the symbol's name, and its code.
+    - Check if the `symbol` has `file_code`. If it does, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
+    - Convert the `Prompt` object into a string and return it.
+- **Output**: A string representing the user prompt for the given Verilog function or task symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#VerilogFnTaskData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#verilogfntaskdata>)  (Base Class)
 
 
 ---
 #### VerilogFnTaskData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L283>)
 
-The `child_to_ir` method raises a NotImplementedError indicating that functions should not have children.
+Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the IR data is being requested.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#VerilogFnTaskData>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#verilogfntaskdata>)  (Base Class)
 
 
 ---
 #### VerilogFnTaskData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L287>)
 
-The `child_to_field_name` method raises a NotImplementedError indicating that functions should not have children.
+Raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of RawSymbolData representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#VerilogFnTaskData>)  (Base Class)
+    - `child`: An instance of `RawSymbolData` representing a child symbol.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Functions should not have children'.
+- **Output**: Does not return a value; instead, it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskData`](<#verilogfntaskdata>)  (Base Class)
 
 
 
@@ -385,12 +386,12 @@ The `child_to_field_name` method raises a NotImplementedError indicating that fu
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L292>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to VerilogFnTaskData or lists of VerilogFnTaskData.
-- **Description**: The VerilogFnTaskCollection class is a specialized collection that extends the IrCollection class, designed to manage and organize Verilog function and task data. It holds a dictionary where keys are strings and values are either VerilogFnTaskData instances or lists of such instances. This class provides a class method 'from_llm' to create an instance from a language model and a list of raw symbols, facilitating the integration of Verilog function and task data into a structured collection.
+    - `data`: Stores a dictionary mapping strings to `VerilogFnTaskData` or lists of `VerilogFnTaskData`.
+- **Description**: Manages a collection of Verilog function and task data, allowing for the organization and retrieval of these elements. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a list of symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskCollection.from_llm`](<#VerilogFnTaskCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskCollection.from_llm`](<#verilogfntaskcollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -398,18 +399,18 @@ The `child_to_field_name` method raises a NotImplementedError indicating that fu
 #### VerilogFnTaskCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L295>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using LLM and symbol data by calling a specific method with IR data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used for data extraction.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
-- **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `VerilogFnTaskData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call, which is an instance of the class.
-- **Output**: An instance of the class, initialized with data from the language model and the symbol collection.
+    - `llm`: An instance of `ChatOpenAI` used for language model operations.
+    - `symbols_list`: A `RawSymbolCollection` containing symbols to process.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `VerilogFnTaskData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class, initialized with data from the LLM and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskCollection`](<#VerilogFnTaskCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskCollection`](<#verilogfntaskcollection>)  (Base Class)
 
 
 
@@ -417,14 +418,14 @@ The `from_llm` method creates an instance of the class using data from a languag
 ### VerilogDataTypeData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L300>)
 
-- **Description**: The `VerilogDataTypeData` class is a specialized subclass of `VariableData` designed to handle Verilog data types, such as ports, registers, and nets, within a software system. It provides class methods to generate system and user prompts for documenting these data types, ensuring that the documentation is structured and follows specific style instructions. The class also explicitly raises `NotImplementedError` for methods related to child data types, indicating that Verilog data types should not have children in this context.
+- **Description**: Represents a data structure for handling Verilog data types, extending `VariableData`. It provides class methods to generate system and user prompts for Verilog data types and raises `NotImplementedError` for methods related to child data types, indicating that data types should not have children.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.system_prompt`](<#VerilogDataTypeDatasystem_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.user_prompt`](<#VerilogDataTypeDatauser_prompt>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.child_to_ir`](<#VerilogDataTypeDatachild_to_ir>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.child_to_field_name`](<#VerilogDataTypeDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.system_prompt`](<#verilogdatatypedatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.user_prompt`](<#verilogdatatypedatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.child_to_ir`](<#verilogdatatypedatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.child_to_field_name`](<#verilogdatatypedatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#variabledata>)
 
 **Methods**
 
@@ -432,73 +433,74 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### VerilogDataTypeData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L301>)
 
-The `system_prompt` method generates a structured prompt string for documenting Verilog data types.
+Generates a system prompt string for Verilog data types using predefined components and instructions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
-- **Control Flow**:
-    - The method starts by creating an empty `Prompt` object.
-    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing a JSON string for data types found system prompt.
-    - It appends general style instructions for structured prompting.
-    - It appends instructions to use backticks for style.
-    - Finally, it converts the `Prompt` object into a string and returns it.
-- **Output**: A string representing the structured prompt for documenting Verilog data types.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is generated.
+- **Logic and Control Flow**:
+    - Calls `Prompt.empty()` to create an empty prompt object.
+    - Appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the string `DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON` to the prompt.
+    - Appends `GENERAL_STE_STYLE_INSTRUCTION` to the prompt.
+    - Appends `USE_BACKTICKS_STYLE_INSTRUCTION` to the prompt.
+    - Converts the prompt into a string using `into_str()` and returns it.
+- **Output**: A string representing the system prompt for Verilog data types.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#VerilogDataTypeData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#verilogdatatypedata>)  (Base Class)
 
 
 ---
 #### VerilogDataTypeData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.user_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L311>)
 
-The `user_prompt` method generates a user prompt string for a given Verilog symbol, including its name and code, and optionally its full file code.
+Generates a user prompt string for a given Verilog symbol.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a Verilog symbol, containing its name, symbol code, and optionally its full file code.
-- **Control Flow**:
-    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
-    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing the user prompt string with the symbol's name and symbol code.
-    - Check if the symbol has associated file code; if so, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the full file code.
-    - Convert the constructed `Prompt` object into a string and return it.
-- **Output**: A string representing the constructed user prompt for the given symbol.
+    - `cls`: The class `VerilogDataTypeData` to which this method belongs.
+    - `symbol`: An instance of `RawSymbolData` containing information about a Verilog symbol, including its name, symbol code, and optionally file code.
+- **Logic and Control Flow**:
+    - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) containing the user prompt data, including the symbol's name and symbol code.
+    - Check if the `symbol` has `file_code`. If it does, append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>) with the full file code to the `Prompt`.
+    - Convert the `Prompt` object into a string and return it.
+- **Output**: A string representation of the user prompt for the given Verilog symbol.
 - **Functions Called**:
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
-    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#VerilogDataTypeData>)  (Base Class)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#verilogdatatypedata>)  (Base Class)
 
 
 ---
 #### VerilogDataTypeData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.child_to_ir}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L328>)
 
-The `child_to_ir` method raises a NotImplementedError indicating that data types should not have children.
+Raises a NotImplementedError indicating that data types should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the IR data is being requested.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Data types should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#VerilogDataTypeData>)  (Base Class)
+    - `symbol`: An instance of `RawSymbolData` representing the symbol to process.
+- **Logic and Control Flow**:
+    - Raises a `NotImplementedError` with the message 'Data types should not have children'.
+- **Output**: None, as the method raises an exception and does not return a value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#verilogdatatypedata>)  (Base Class)
 
 
 ---
 #### VerilogDataTypeData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData.child_to_field_name}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L332>)
 
-The `child_to_field_name` method raises a NotImplementedError indicating that data types should not have children.
+Raises a NotImplementedError indicating that data types should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `child`: An instance of RawSymbolData representing a child symbol.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Data types should not have children'.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#VerilogDataTypeData>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Data types should not have children'.
+- **Output**: Does not return a value; instead, it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeData`](<#verilogdatatypedata>)  (Base Class)
 
 
 
@@ -507,12 +509,12 @@ The `child_to_field_name` method raises a NotImplementedError indicating that da
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L337>)
 
 - **Members**:
-    - `data`: A dictionary mapping strings to VerilogDataTypeData or lists of VerilogDataTypeData.
-- **Description**: The VerilogDataTypeCollection class is a specialized collection class that extends IrCollection to manage and organize Verilog data types. It holds a dictionary where keys are strings and values are either VerilogDataTypeData instances or lists of such instances. This class provides a class method to create an instance from a language model and a collection of raw symbols, facilitating the integration of Verilog data type information into a structured format.
+    - `data`: Stores a dictionary mapping strings to `VerilogDataTypeData` or lists of `VerilogDataTypeData`.
+- **Description**: Manages a collection of Verilog data types, allowing for the organization and retrieval of `VerilogDataTypeData` instances. It extends the `IrCollection` class and provides a class method `from_llm` to create an instance from a language model and a collection of raw symbols.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeCollection.from_llm`](<#VerilogDataTypeCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeCollection.from_llm`](<#verilogdatatypecollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#ircollection>)
 
 **Methods**
 
@@ -520,18 +522,18 @@ The `child_to_field_name` method raises a NotImplementedError indicating that da
 #### VerilogDataTypeCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L340>)
 
-The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
+Creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used for data extraction.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
-- **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `VerilogDataTypeData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call, which is an instance of the class.
-- **Output**: An instance of the class, created using the language model and symbol collection data.
+    - `llm`: An instance of `ChatOpenAI` that provides language model data.
+    - `symbols_list`: A `RawSymbolCollection` containing a list of symbols to be used in the instance creation.
+- **Logic and Control Flow**:
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method with `VerilogDataTypeData`, `llm`, and `symbols_list` as arguments.
+    - Returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>) method call.
+- **Output**: An instance of the class that is created using the provided language model and symbols list.
 - **Functions Called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeCollection`](<#VerilogDataTypeCollection>)  (Base Class)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#ircollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeCollection`](<#verilogdatatypecollection>)  (Base Class)
 
 
 
@@ -540,14 +542,14 @@ The `from_llm` method creates an instance of the class using data from a languag
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L345>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData or lists of RawSymbolData.
-- **Description**: The VerilogModuleRawSymbolCollection class is a specialized collection for handling raw symbol data related to Verilog modules. It extends the RawSymbolCollection class and is designed to facilitate the static analysis of Verilog code, specifically for module symbols. The class provides a method to create an instance from static analysis, leveraging ctags to identify and collect module symbols from the provided code. The data attribute stores the collected symbols in a dictionary format, allowing easy access and manipulation of the symbol data.
+    - `data`: Stores a dictionary mapping strings to `RawSymbolData` or lists of `RawSymbolData`.
+- **Description**: Collects and manages raw symbol data for Verilog modules. It extends `RawSymbolCollection` and provides methods to create instances from static analysis of Verilog code. The class does not support creation from language models and raises a `NotImplementedError` for such attempts. The `to_dict` method returns the stored symbol data as a dictionary.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.from_static_analysis`](<#VerilogModuleRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.from_llm`](<#VerilogModuleRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.to_dict`](<#VerilogModuleRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.from_static_analysis`](<#verilogmodulerawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.from_llm`](<#verilogmodulerawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.to_dict`](<#verilogmodulerawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -555,47 +557,47 @@ The `from_llm` method creates an instance of the class using data from a languag
 #### VerilogModuleRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L348>)
 
-The `from_static_analysis` method creates an instance of the class by performing a static analysis of Verilog code using default ctags analysis.
+Creates an instance of the class using static analysis of Verilog code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Verilog code to be analyzed.
-    - `root_rel_path`: A Path object representing the root relative path of the code file.
-- **Control Flow**:
-    - The method calls [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) with the class itself (`cls`) as the collection class, along with the provided code and root relative path.
-    - It specifies the symbol kind as `SymbolKind.MODULE` and uses `VERILOG_MODULES` as the ctags kinds.
-    - The method sets the delimiter to `None` and `add_symbol_padding` to `False`.
-    - The result of [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) is returned, which is an instance of the class.
-- **Output**: An instance of the class created by analyzing the provided Verilog code.
+    - `code`: A string containing the Verilog code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path of the code.
+- **Logic and Control Flow**:
+    - Calls the [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) function with the class as the collection class, the provided code, root relative path, and specific parameters for Verilog module analysis.
+    - Specifies `SymbolKind.MODULE` and `VERILOG_MODULES` for the analysis, indicating that the function is analyzing Verilog modules.
+    - Sets `delimiter` to `None` and `add_symbol_padding` to `False` for the analysis.
+- **Output**: Returns an instance of the class populated with the results of the static analysis.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection`](<#VerilogModuleRawSymbolCollection>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection`](<#verilogmodulerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### VerilogModuleRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L360>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Verilog instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for Verilog.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Verilog code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path for the Verilog code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Verilog.
-- **Output**: This method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection`](<#VerilogModuleRawSymbolCollection>)  (Base Class)
+    - `code`: A string representing the Verilog code to analyze.
+    - `root_rel_path`: A string representing the root relative path for the code.
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Static analysis should be used for Verilog'.
+- **Output**: Does not return a value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection`](<#verilogmodulerawsymbolcollection>)  (Base Class)
 
 
 ---
 #### VerilogModuleRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L364>)
 
-The `to_dict` method returns the `data` attribute of the `VerilogModuleRawSymbolCollection` instance as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the instance without any additional processing or logic.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection`](<#VerilogModuleRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with keys as strings and values as `RawSymbolData`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogModuleRawSymbolCollection`](<#verilogmodulerawsymbolcollection>)  (Base Class)
 
 
 
@@ -604,14 +606,14 @@ The `to_dict` method returns the `data` attribute of the `VerilogModuleRawSymbol
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L368>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData or lists of RawSymbolData.
-- **Description**: The VerilogFnTaskRawSymbolCollection class is a specialized collection for handling raw symbol data related to Verilog functions and tasks. It extends the RawSymbolCollection class and provides methods for creating instances from static analysis of Verilog code, specifically targeting callable symbols like functions and tasks. The class is designed to facilitate the organization and retrieval of symbol data, but it does not support creation from language model analysis, emphasizing the use of static analysis for Verilog.
+    - `data`: Stores a dictionary mapping strings to `RawSymbolData` or lists of `RawSymbolData`.
+- **Description**: Collects and manages raw symbol data for Verilog functions and tasks. It uses static analysis to populate its data structure with symbols of kind `CALLABLE`, specifically targeting Verilog functions and tasks. The class does not support analysis from language models and relies on static analysis for symbol extraction.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.from_static_analysis`](<#VerilogFnTaskRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.from_llm`](<#VerilogFnTaskRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.to_dict`](<#VerilogFnTaskRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.from_static_analysis`](<#verilogfntaskrawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.from_llm`](<#verilogfntaskrawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.to_dict`](<#verilogfntaskrawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -619,47 +621,47 @@ The `to_dict` method returns the `data` attribute of the `VerilogModuleRawSymbol
 #### VerilogFnTaskRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L371>)
 
-The `from_static_analysis` method performs static analysis on Verilog code to collect callable symbols using default ctags analysis.
+Creates an instance of the class using static analysis of Verilog code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Verilog code to be analyzed.
-    - `root_rel_path`: A Path object representing the root relative path of the code file.
-- **Control Flow**:
-    - The method calls [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) with the class itself (`cls`) as the collection class, the provided code, and root relative path.
-    - It specifies `SymbolKind.CALLABLE` to focus on callable symbols in the Verilog code.
-    - The method uses `VERILOG_FUNCTIONS_AND_TASKS` to filter for Verilog functions and tasks.
-    - The method sets `delimiter` to `None` and `add_symbol_padding` to `False` for the analysis.
-- **Output**: The method returns an instance of the class (`Self`) containing the results of the static analysis.
+    - `code`: A string containing the Verilog code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path for the code.
+- **Logic and Control Flow**:
+    - Calls the [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) function with the class as `collection_cls`, the provided `code`, `root_rel_path`, and specific parameters for analyzing Verilog functions and tasks.
+    - Sets `symbol_kind` to `SymbolKind.CALLABLE` to specify the type of symbols to analyze.
+    - Uses `VERILOG_FUNCTIONS_AND_TASKS` to define the kinds of ctags to look for in the analysis.
+    - Sets `delimiter` to `None` and `add_symbol_padding` to `False` for the analysis configuration.
+- **Output**: Returns an instance of the class populated with symbols found in the Verilog code.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection`](<#VerilogFnTaskRawSymbolCollection>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection`](<#verilogfntaskrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### VerilogFnTaskRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L383>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Verilog instead of LLM-based methods.
+Raises a NotImplementedError indicating that static analysis should be used for Verilog.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Verilog code to be analyzed.
+    - `code`: A string representing the Verilog code to analyze.
     - `root_rel_path`: A string representing the root relative path for the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Verilog.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection`](<#VerilogFnTaskRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Static analysis should be used for Verilog'.
+- **Output**: Does not return a value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection`](<#verilogfntaskrawsymbolcollection>)  (Base Class)
 
 
 ---
 #### VerilogFnTaskRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L387>)
 
-The `to_dict` method returns the `data` attribute of the `VerilogFnTaskRawSymbolCollection` class as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the class instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection`](<#VerilogFnTaskRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Returns the `data` attribute of the instance.
+- **Output**: A dictionary with keys of type `str` and values of type `RawSymbolData`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogFnTaskRawSymbolCollection`](<#verilogfntaskrawsymbolcollection>)  (Base Class)
 
 
 
@@ -668,14 +670,14 @@ The `to_dict` method returns the `data` attribute of the `VerilogFnTaskRawSymbol
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L391>)
 
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData or lists of RawSymbolData.
-- **Description**: The VerilogDataTypeRawSymbolCollection class is a specialized collection for handling raw symbol data related to Verilog data types, such as registers, nets, and ports. It extends the RawSymbolCollection class and provides methods for creating instances from static analysis of Verilog code. The class is designed to facilitate the organization and retrieval of symbol data specific to Verilog data types, ensuring that the data is structured and accessible for further processing or analysis.
+    - `data`: Stores a dictionary mapping strings to `RawSymbolData` or lists of `RawSymbolData`.
+- **Description**: Collects and manages raw symbol data related to Verilog data types. It provides methods to create instances from static analysis of code, specifically targeting Verilog data types such as registers, nets, and ports. The class does not support creation from language models and relies on static analysis for data collection.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.from_static_analysis`](<#VerilogDataTypeRawSymbolCollectionfrom_static_analysis>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.from_llm`](<#VerilogDataTypeRawSymbolCollectionfrom_llm>)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.to_dict`](<#VerilogDataTypeRawSymbolCollectionto_dict>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.from_static_analysis`](<#verilogdatatyperawsymbolcollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.from_llm`](<#verilogdatatyperawsymbolcollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.to_dict`](<#verilogdatatyperawsymbolcollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#rawsymbolcollection>)
 
 **Methods**
 
@@ -683,47 +685,47 @@ The `to_dict` method returns the `data` attribute of the `VerilogFnTaskRawSymbol
 #### VerilogDataTypeRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.from_static_analysis}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L394>)
 
-The `from_static_analysis` method performs a static analysis on Verilog code to collect raw symbol data related to Verilog data types.
+Creates an instance of the class using static analysis of Verilog code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Verilog source code to be analyzed.
-    - `root_rel_path`: A Path object indicating the root relative path of the source code file.
-- **Control Flow**:
-    - The method calls [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) with the class itself (`cls`) as the collection class, along with the provided `code` and `root_rel_path` arguments.
-    - It specifies `SymbolKind.VARIABLE` to indicate that the analysis is focused on variable symbols.
-    - The method uses `VERILOG_DATA_TYPES` to filter the kinds of symbols to be collected, which include Verilog data types like registers, nets, and ports.
-    - The method sets `delimiter` to `None` and `add_symbol_padding` to `False`, indicating no additional formatting or padding is applied to the symbols.
-- **Output**: Returns an instance of the class (`Self`) containing the results of the static analysis, specifically a collection of raw symbol data for Verilog data types.
+    - `code`: A string containing the Verilog code to analyze.
+    - `root_rel_path`: A `Path` object representing the root relative path for the code analysis.
+- **Logic and Control Flow**:
+    - Calls the [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) function with the class as `collection_cls`, the provided `code`, `root_rel_path`, and specific parameters for Verilog data types.
+    - Specifies `SymbolKind.VARIABLE` for `symbol_kind` and `VERILOG_DATA_TYPES` for `ctags_kinds`.
+    - Sets `delimiter` to `None` and `add_symbol_padding` to `False`.
+- **Output**: Returns an instance of the class populated with symbols from the static analysis of the Verilog code.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection`](<#VerilogDataTypeRawSymbolCollection>)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection`](<#verilogdatatyperawsymbolcollection>)  (Base Class)
 
 
 ---
 #### VerilogDataTypeRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L406>)
 
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Verilog instead of this method.
+Raises a NotImplementedError indicating that static analysis should be used for Verilog.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Verilog code to be analyzed.
+    - `code`: A string representing the code to analyze.
     - `root_rel_path`: A string representing the root relative path for the code.
-- **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Verilog.
-- **Output**: This method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection`](<#VerilogDataTypeRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Raises a NotImplementedError with the message 'Static analysis should be used for Verilog'.
+- **Output**: Does not return a value; instead, it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection`](<#verilogdatatyperawsymbolcollection>)  (Base Class)
 
 
 ---
 #### VerilogDataTypeRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection.to_dict}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/verilog.py#L410>)
 
-The `to_dict` method returns the `data` attribute of the `VerilogDataTypeRawSymbolCollection` class as a dictionary.
+Returns the `data` attribute of the instance.
 - **Inputs**: None
-- **Control Flow**:
-    - The method directly returns the `data` attribute of the class instance.
-- **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection`](<#VerilogDataTypeRawSymbolCollection>)  (Base Class)
+- **Logic and Control Flow**:
+    - Accesses the `data` attribute of the instance.
+    - Returns the `data` attribute.
+- **Output**: A dictionary with keys as strings and values as `RawSymbolData`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/verilog.VerilogDataTypeRawSymbolCollection`](<#verilogdatatyperawsymbolcollection>)  (Base Class)
 
 
 

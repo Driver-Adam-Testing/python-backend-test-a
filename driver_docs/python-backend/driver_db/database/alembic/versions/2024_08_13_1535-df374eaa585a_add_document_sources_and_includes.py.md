@@ -3,10 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.py` file is an Alembic migration script that adds a new table `document_sources` and a new column `include` to the `tags_contents` table in the database.
+Alembic migration script to add a "document_sources" table and modify the "tags_contents" table.
 
 # Purpose
-This Python file is an Alembic migration script used to modify a database schema. It provides narrow functionality, specifically focusing on adding a new table called `document_sources` and a new column `include` to the existing `tags_contents` table. The [`upgrade`](<#upgrade>) function defines the changes to be applied to the database, such as creating the `document_sources` table with specific columns and constraints, and updating the `tags_contents` table to include a new boolean column. The [`downgrade`](<#downgrade>) function reverses these changes, allowing the database to be reverted to its previous state. This script is part of a version control system for database schemas, ensuring that changes can be tracked and managed efficiently.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function creates a new table named `document_sources` with columns `document_id`, `include`, and `source_id`. It also establishes foreign key constraints linking `document_id` and `source_id` to the `id` column of the `derived_contents` table. Additionally, the [`upgrade`](<#upgrade>) function adds a new column `include` to the `tags_contents` table, sets its default value to `true`, and then makes it a non-nullable column.
+
+The [`downgrade`](<#downgrade>) function reverses these changes. It removes the `include` column from the `tags_contents` table and drops the `document_sources` table. The script uses Alembic's operations (`op`) to perform these schema changes, ensuring that the database can be upgraded or downgraded to match the desired state. The script includes revision identifiers, which Alembic uses to track the migration history.
 # Imports and Dependencies
 
 ---
@@ -18,56 +20,58 @@ This Python file is an Alembic migration script used to modify a database schema
 
 ---
 ### revision
-- **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
-- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
+- **Type**: ``str``
+- **Description**: A string that represents the unique identifier for the current database schema revision in Alembic.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
-- **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
+- **Type**: ``str``
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of schema changes.
+- **Use**: Used by Alembic to identify the parent revision of the current migration.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: Indicates that this migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.upgrade}} -->
-The `upgrade` function applies database schema changes by creating a new table and modifying an existing table using Alembic operations.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.py#L18>)
+
+Executes database schema changes to add a new table and modify an existing table.
 - **Inputs**: None
-- **Control Flow**:
-    - Create a new table named 'document_sources' with columns 'document_id', 'include', and 'source_id', where 'document_id' and 'source_id' are UUIDs and 'include' is a Boolean.
-    - Add foreign key constraints on 'document_id' and 'source_id' referencing 'derived_contents.id'.
-    - Set a composite primary key on 'document_id' and 'source_id'.
-    - Add a new column 'include' of type Boolean to the existing 'tags_contents' table, initially allowing null values.
-    - Execute a SQL command to set all 'include' values in 'tags_contents' to true.
-    - Alter the 'include' column in 'tags_contents' to disallow null values.
-- **Output**: The function does not return any value; it performs schema modifications on the database.
+- **Logic and Control Flow**:
+    - Creates a new table named `document_sources` with columns `document_id`, `include`, and `source_id`, and sets foreign key constraints on `document_id` and `source_id` to reference `derived_contents.id`.
+    - Adds a new column `include` to the `tags_contents` table, initially allowing null values.
+    - Executes an SQL command to set the `include` column in `tags_contents` to `true` for all existing records.
+    - Alters the `include` column in `tags_contents` to disallow null values.
+- **Output**: No return value; modifies the database schema.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.downgrade}} -->
-The `downgrade` function reverses database schema changes by dropping a column and a table.
+[View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.py#L41>)
+
+Reverts database schema changes by removing a column and a table.
 - **Inputs**: None
-- **Control Flow**:
-    - The function calls `op.drop_column` to remove the 'include' column from the 'tags_contents' table.
-    - The function calls `op.drop_table` to remove the 'document_sources' table.
-- **Output**: The function does not return any value; it performs schema changes on the database.
+- **Logic and Control Flow**:
+    - Calls `op.drop_column` to remove the `include` column from the `tags_contents` table.
+    - Calls `op.drop_table` to delete the `document_sources` table.
+- **Output**: No output is returned.
 
 
 

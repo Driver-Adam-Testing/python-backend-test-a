@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from database.models_v2 import ApiKey
+from database.models import ApiKey
 from fastapi import APIRouter, HTTPException, Path, Request
 from sqlmodel import func, select
 
@@ -38,7 +38,11 @@ def get_api_keys(
     pagination: Pagination,
     request: Request,
 ) -> ListWithCount[ApiKey]:
-    query = select(ApiKey).where(ApiKey.user_id == user.user_id)
+    query = (
+        select(ApiKey)
+        .where(ApiKey.user_id == user.user_id)
+        .where(ApiKey.organization_id == user.organization_id)
+    )
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, ApiKey)
     count_query = select(func.count()).select_from(query.subquery())
@@ -63,6 +67,7 @@ def delete_api_key(
         select(ApiKey)
         .where(ApiKey.id == api_key_id)
         .where(ApiKey.user_id == user.user_id)
+        .where(ApiKey.organization_id == user.organization_id)
     ).one_or_none()
     if not api_key:
         raise HTTPException(status_code=404, detail="API key not found")

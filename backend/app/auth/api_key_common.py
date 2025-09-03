@@ -1,6 +1,6 @@
 import time
 
-from database.models_v2 import ApiKey
+from database.models import ApiKey
 
 
 def create_api_key_payload(api_key: ApiKey) -> dict:

@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from database.models_v1 import DerivedContent
+from database.models import DerivedContent
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 

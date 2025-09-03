@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from database.models_v1 import UsageEvent, UsageEventType
+from database.models import UsageEvent, UsageEventType
 from pydantic import BaseModel
 
 

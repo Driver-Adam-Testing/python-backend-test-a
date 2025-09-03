@@ -231,8 +231,8 @@ async def create_changelog(
     install_id: str,
 ) -> dict:
     from database.db import engine
-    from database.models_v1 import GitProviderAppInstallation
-    from database.models_v2_enums import PrimaryAssetProvider
+    from database.models import GitProviderAppInstallation
+    from database.models_enums import PrimaryAssetProvider
     from sqlmodel import Session, select
     from utils.db import get_version_by_id, git_provider_app_installation_by_id
 

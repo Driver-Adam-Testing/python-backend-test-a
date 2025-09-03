@@ -2,9 +2,8 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import modal
-from database.models_v1 import UsageEventType
-from database.models_v2 import PrimaryAsset, Version
-from database.models_v2_enums import PrimaryAssetKind, VersionStatus
+from database.models import PrimaryAsset, UsageEventType, Version
+from database.models_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel

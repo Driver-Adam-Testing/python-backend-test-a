@@ -4,7 +4,7 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,

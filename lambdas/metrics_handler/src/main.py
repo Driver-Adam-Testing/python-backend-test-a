@@ -5,7 +5,7 @@ import botocore
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 
 # from database.db import create_engine
-from database.models_v1 import UsageEvent
+from database.models import UsageEvent
 from sqlmodel import Session, create_engine
 from src.utils.config import settings
 

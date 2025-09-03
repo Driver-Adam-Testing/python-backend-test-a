@@ -1,4 +1,4 @@
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from sqlmodel import Session, select
 
 

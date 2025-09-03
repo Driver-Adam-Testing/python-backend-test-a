@@ -2,7 +2,7 @@ import time
 
 import modal
 from database.db import get_session
-from database.models_v2 import PrimaryAsset, Version
+from database.models import PrimaryAsset, Version
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 

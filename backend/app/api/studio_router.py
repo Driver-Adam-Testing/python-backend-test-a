@@ -20,6 +20,7 @@ from app.api.routes.v2 import (
 # ruff: noqa: F401
 from app.api.routes.v2 import (
     autodocs,
+    about_you_survey,
     chat,
     codebase_card,
     contents,
@@ -56,6 +57,7 @@ studio_router.include_router(
 )
 studio_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 studio_router.include_router(user.router, prefix="/user", tags=["user"])
+studio_router.include_router(about_you_survey.router, tags=["about_you_survey"])
 studio_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
 )

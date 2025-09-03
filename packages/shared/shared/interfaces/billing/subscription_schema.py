@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from database.models_v1 import BillingFrequency, PlanType, SubscriptionStatus
+from database.models import BillingFrequency, PlanType, SubscriptionStatus
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, computed_field
 

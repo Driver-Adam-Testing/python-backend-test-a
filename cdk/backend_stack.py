@@ -1,3 +1,4 @@
+import json
 from aws_cdk import Stack
 from constructs import Construct
 
@@ -17,6 +18,8 @@ class BackendStack(Stack):
 
         self.cdkenv = kwargs.get("env")
         print(f"AWS environment set to : {self.cdkenv}")
+        print(f"Rollback set to : {json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())}")
+
 
         cors_origins = (settings.CORS_ORIGINS)
 

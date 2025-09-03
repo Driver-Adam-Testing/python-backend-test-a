@@ -15,6 +15,7 @@ class Settings:
     ONBOARDING_LAMDBA_API_URL:str
     ONBOARDING_LAMDBA_AUTH0_URL:str
     ONBOARDING_LAMDBA_AUTH0_AUDIENCE:str
+    BACKEND_ENABLE_ROLLBACK:str
     #NONE CDK STUFF TODO Remove in setEnh.sh container load world
     POSTGRES_SERVER:str
     POSTGRES_PORT:str

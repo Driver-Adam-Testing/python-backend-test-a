@@ -1,3 +1,4 @@
+import json
 from aws_cdk import (
     CfnOutput,
     Duration,
@@ -150,9 +151,9 @@ class Backend(Construct):
             task_subnets=aws_ec2.SubnetSelection(
                 subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
-            health_check_grace_period=Duration.minutes(6),
+            health_check_grace_period=Duration.minutes(2),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(
-                enable=True, rollback=True
+                enable=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()), rollback=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())
             ),
             min_healthy_percent=100,
             max_healthy_percent=250,

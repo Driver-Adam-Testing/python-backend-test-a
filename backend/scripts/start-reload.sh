@@ -3,9 +3,9 @@ set -e
 
 # If there's a setEnv.sh script in the / directory, run it before starting
 echo "Checking for setEnv script"
-if [ -f "setEnv.sh"] ; then
+if [ -f 'setEnv.sh' ] ; then
     echo "Running script setEnv.sh"
-    source setEnv.sh
+    sh setEnv.sh
 else
     echo "There is no script setEnv.sh"
 fi

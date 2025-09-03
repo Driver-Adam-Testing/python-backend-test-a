@@ -2,9 +2,14 @@ from enum import StrEnum
 from uuid import UUID
 
 import modal
-from database.models_v1 import DocumentSource
-from database.models_v2 import AutoDocStatusHistory, Node, PrimaryAsset, Version
-from database.models_v2_enums import (
+from database.models import (
+    AutoDocStatusHistory,
+    DocumentSource,
+    Node,
+    PrimaryAsset,
+    Version,
+)
+from database.models_enums import (
     AutoDocConfigKind,
     AutoDocStatusMessageKind,
     PrimaryAssetKind,

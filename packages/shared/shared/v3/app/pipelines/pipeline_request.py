@@ -6,7 +6,7 @@ from uuid import UUID
 
 import modal
 from database.db import get_session
-from database.models_v2 import RuntimeLlmSession
+from database.models import RuntimeLlmSession
 from pydantic import BaseModel
 from shared.v3 import LlmClient
 from shared.v3.interfaces.llm_stream_response import (

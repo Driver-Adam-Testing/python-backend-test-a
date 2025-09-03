@@ -1,7 +1,6 @@
 from uuid import UUID
 
-from database.models_v1 import DocumentSource
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import DocumentSource, Node, PrimaryAsset, Version
 from fastapi import Request
 from sqlalchemy.orm import selectinload
 from sqlmodel import delete, func, select

@@ -12,6 +12,7 @@ from app.git_providers.interfaces.provider_interface import (
 )
 from app.git_providers.oauth.gitlab_oauth_strategy import GitLabOAuthStrategy
 from app.git_providers.resources.gitlab_resources import GitLabAPIResources
+from app.git_providers.utils.vcs_auto_update import is_update_required
 from app.schemas.git_provider_schema import (
     AccessTokenData,
     GitProviderAppTokenSecret,
@@ -21,7 +22,7 @@ from app.schemas.git_provider_schema import (
 from app.schemas.secret_management_schema import (
     APP_INSTALL_GAT_NAME_PREFIX,
 )
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
@@ -36,7 +37,7 @@ class GitLabProvider(GitProviderInterface):
 
     def __init__(
         self, config: GitProviderConfig, secrets_manager: AWSSecretManagementStrategy
-    ):
+    ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
         self.auth_strategy = GitLabOAuthStrategy(
@@ -57,7 +58,6 @@ class GitLabProvider(GitProviderInterface):
         config = load_provider_config(app, client_secret=None)
 
         return cls(config, secrets_manager)
-
 
     # TODO: revisit this throw error vs return False
     def validate_access_token(self, token_data: dict) -> tuple[bool, str | None]:
@@ -120,14 +120,16 @@ class GitLabProvider(GitProviderInterface):
         secret_key = format_secret_name(
             APP_INSTALL_GAT_NAME_PREFIX, str(installation.id)
         )
-        
+
         # Fetch existing secrets to preserve webhook secret
         existing_secrets = self.secrets_manager.read_secret(secret_key)
         if not existing_secrets or "secret_token" not in existing_secrets:
-            raise ValueError(f"No existing webhook secret found for installation {installation.id}")
-        
+            raise ValueError(
+                f"No existing webhook secret found for installation {installation.id}"
+            )
+
         webhook_secret = existing_secrets["secret_token"]
-        
+
         # Update only the token, preserve webhook secret
         secret_value = json.dumps(
             GitProviderAppTokenSecret(
@@ -135,7 +137,9 @@ class GitLabProvider(GitProviderInterface):
             ).model_dump()
         )
         self.secrets_manager.write_secret(secret_key, secret_value)
-        logger.info(f"Updated GAT for GitLab installation {installation.id}, webhook secret preserved")
+        logger.info(
+            f"Updated GAT for GitLab installation {installation.id}, webhook secret preserved"
+        )
 
     def fetch_secrets(self, installation: GitProviderAppInstallation) -> dict:
         secret_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, installation.id)
@@ -163,7 +167,10 @@ class GitLabProvider(GitProviderInterface):
             raise
 
     def handle_webhook_event(
-        self, headers: dict, payload: dict, webhook_event_ctx: WebhookEventContext
+        self,
+        headers: dict,
+        payload: dict,
+        webhook_event_ctx: WebhookEventContext,
     ) -> dict:
         """Handle GitLab webhook events"""
         installation_id = webhook_event_ctx.installation_id
@@ -266,30 +273,36 @@ class GitLabProvider(GitProviderInterface):
             installation_id,
         )
 
-        repos_pushed = [
-            {
-                "id": repo_id,
-                "name": repo_name,
-                "repo_name": repo_name,
-                "full_name": full_name,
-                "commit": commit_hash,
-                "metadata": project,
-                "installation_id": installation_id,
-                "latest_commit": {
-                    "commit": {
-                        "id": commit_hash,
+        process_update, message = is_update_required(
+            session=webhook_event_ctx.session,
+            org_id=organization_id,
+            repo_name=repo_name,
+        )
+
+        if process_update:
+            repos_pushed = [
+                {
+                    "id": repo_id,
+                    "name": repo_name,
+                    "repo_name": repo_name,
+                    "full_name": full_name,
+                    "commit": commit_hash,
+                    "metadata": project,
+                    "installation_id": installation_id,
+                    "latest_commit": {
+                        "commit": {
+                            "id": commit_hash,
+                        },
                     },
-                },
-            }
-        ]
-        handle_gitlab_events = modal.Function.lookup(
-            "inspector-v2",
-            "handle_gitlab_events",
-            environment_name=settings.MODAL_ENVIRONMENT,
-        )
-        handle_gitlab_events.spawn(
-            installation_id, organization_id, [], [], repos_pushed
-        )
-        return {
-            "message": "Push event processed successfully.",
-        }
+                }
+            ]
+            handle_gitlab_events = modal.Function.lookup(
+                "inspector-v2",
+                "handle_gitlab_events",
+                environment_name=settings.MODAL_ENVIRONMENT,
+            )
+            handle_gitlab_events.spawn(
+                installation_id, organization_id, [], [], repos_pushed
+            )
+
+        return message

@@ -1,11 +1,8 @@
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v2 import (
-    RuntimeLlmMessage,
-    RuntimeLlmMessageHistory,
-)
-from database.models_v2_enums import LlmPipelineKind
+from database.models import RuntimeLlmMessage, RuntimeLlmMessageHistory
+from database.models_enums import LlmPipelineKind
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionDeveloperMessageParam,

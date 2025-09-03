@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models_v1 import ChunkAndEmbedding, ContentKind, DerivedContent
+from database.models import ChunkAndEmbedding, ContentKind, DerivedContent
 from shared.v3.globals.glossary import (
     REFERENCE,
     REFERENCE_CONTENT,

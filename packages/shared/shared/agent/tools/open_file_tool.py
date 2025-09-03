@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models_v1 import ChunkAndEmbedding, DerivedContent
+from database.models import ChunkAndEmbedding, DerivedContent
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 

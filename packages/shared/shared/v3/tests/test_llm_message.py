@@ -1,5 +1,4 @@
 import pytest  # noqa: I001
-from database.models_v1 import Tag  # type: ignore  # noqa: F401
 
 from anthropic.types.message import Message as AnthropicMessage
 from openai.types.chat import (

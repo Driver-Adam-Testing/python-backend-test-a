@@ -1,5 +1,6 @@
 import os
 from itertools import batched
+from json.decoder import JSONDecodeError
 
 from openai import (
     APIConnectionError,
@@ -50,6 +51,7 @@ def batch_embed_text(
         RateLimitError,
         APIConnectionError,
         InternalServerError,
+        JSONDecodeError,
     ),
 )
 async def async_batch_embed_text(

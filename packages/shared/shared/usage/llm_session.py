@@ -8,7 +8,7 @@ from uuid import UUID
 import boto3
 import openai
 from database.db import engine
-from database.models_v1 import (
+from database.models import (
     UsageEventType,
     UsageSession,
     UsageSessionStatus,

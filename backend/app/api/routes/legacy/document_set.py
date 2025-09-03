@@ -6,13 +6,8 @@ from uuid import UUID
 import strawberry
 from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
-from database.models_v1 import DerivedContent
-from database.models_v2 import (
-    Node,
-    PrimaryAsset,
-    Version,
-)
-from database.models_v2_enums import ContentKind, NodeKind
+from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models_enums import ContentKind, NodeKind
 from fastapi import HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select

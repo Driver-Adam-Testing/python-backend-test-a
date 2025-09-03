@@ -5,7 +5,7 @@ import os
 from uuid import UUID
 
 import requests
-from database.models_v2 import VcsAutoUpdatePolicy
+from database.models import VcsAutoUpdatePolicy
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
     AuthorInfo,
@@ -255,7 +255,7 @@ def generate_codebase_metadata(
     asset_name: str,
     install_id: str,
 ) -> dict:
-    from database.models_v2_enums import PrimaryAssetKind
+    from database.models_enums import PrimaryAssetKind
 
     return {
         "unhashed_organization_id": org_id,
@@ -275,11 +275,8 @@ def download_and_upload_repo(
 ) -> str | None:
     """Download and upload Bitbucket repository"""
     from database.db import engine
-    from database.models_v2 import (
-        PrimaryAsset,
-        Version,
-    )
-    from database.models_v2_enums import (
+    from database.models import PrimaryAsset, Version
+    from database.models_enums import (
         PrimaryAssetKind,
         PrimaryAssetProvider,
         VersionStatus,

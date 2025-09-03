@@ -2,9 +2,8 @@ import logging
 from pathlib import Path
 
 from database.db import get_session
-from database.models_v1 import DerivedContent
-from database.models_v2 import Node
-from database.models_v2_enums import ContentKind, NodeKind
+from database.models import DerivedContent, Node
+from database.models_enums import ContentKind, NodeKind
 from pydantic import BaseModel
 from sqlmodel import Session, select
 

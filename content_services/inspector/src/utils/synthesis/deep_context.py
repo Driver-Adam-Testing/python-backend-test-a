@@ -3,6 +3,8 @@ from typing import Self
 
 from database.models_v2_enums import ContentKind
 from pydantic import BaseModel
+from utils.dag import FlatTopoFileDiffDag
+from utils.update_flow import DiffUpdatable
 
 
 class DeepContextDocKind(StrEnum):
@@ -38,7 +40,7 @@ class DeepContextDocKind(StrEnum):
                 )
 
 
-class DeepContextDoc(BaseModel):
+class DeepContextDoc(DiffUpdatable, BaseModel):
     doc_kind: DeepContextDocKind
     name: str | None
     user_context: dict[str, str] | None
@@ -49,3 +51,14 @@ class DeepContextDoc(BaseModel):
     @property
     def sections(self) -> list[str]:
         return [s for (s, _) in self.sources]
+
+    def update_from_diff(self, diff: FlatTopoFileDiffDag) -> Self:
+        # TODO:
+        # Filter, process, and aggregate on diff nodes.
+        # Branch on complexity for update logic.
+        # Complete the update and return a new doc.
+        pass
+
+
+async def update_deep_context_doc(old_content: str, diff: FlatTopoFileDiffDag) -> str:
+    return old_content

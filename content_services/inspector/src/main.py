@@ -160,8 +160,8 @@ async def inspect_db(
     import tempfile
 
     import boto3
+    from database.models_v2_enums import AutoDocConfigKind, ContentKind, VersionStatus
     from database.models_v2_enums import NodeKind as DbNodeKind
-    from database.models_v2_enums import VersionStatus
     from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
@@ -171,6 +171,7 @@ async def inspect_db(
     from utils.db import (
         create_inspector_run,
         delete_version_by_id,
+        get_all_derived_content_by_node_id,
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
@@ -181,6 +182,7 @@ async def inspect_db(
         compute_and_log_code_diff_size_in_bytes,
     )
     from utils.io import download_all_source_files_in_parallel
+    from utils.synthesis import DeepContextDoc, DeepContextDocKind
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -190,6 +192,7 @@ async def inspect_db(
 
         previous_version = await try_get_prev_version(version_id)
         previous_version_id = previous_version.id if previous_version else None
+        previous_version_root_node_id = previous_version.root_node.id
 
         codebase_name = version.primary_asset.display_name
 
@@ -306,7 +309,7 @@ async def inspect_db(
                         {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY},
                     )
                 )
-                print("Download complete for new version of code")
+                print("Download complete for previous version of code")
 
                 previous_codebase_dag: FileTreeDag = build_dag(
                     root_path=previous_download_root,
@@ -318,6 +321,11 @@ async def inspect_db(
 
                 diff_dag = codebase_dag.compute_diff(
                     previous_codebase_dag, delete_file_nodes=False
+                )
+
+                # TODO: this is effectively computing the diff dag twice (this calls `compute_diff` underneath the hood).
+                flat_topo_file_diff_dag = codebase_dag.into_flat_diff_dag(
+                    old=previous_codebase_dag
                 )
                 print("Diff dag computed")
 
@@ -427,7 +435,34 @@ async def inspect_db(
 
         print("Spawning off deep context docs generation...")
         # TODO: do deep context doc specific I/O or further analysis.
+
+        # TODO: Fetch old document content
+        previous_version_root_content = get_all_derived_content_by_node_id(
+            node_id=previous_version_root_node_id
+        )
+        update_set = {
+            ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+            ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+        }
+        previous_version_content = [
+            DeepContextDoc(
+                doc_kind=DeepContextDocKind.from_content_kind(
+                    content_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL
+                ),
+                name=None,
+                user_context={"desired_length": "SHORT"},
+                sources=[],
+                config_content="",
+                doc_content=c.content,
+            )
+            for c in previous_version_root_content
+            if c.content_kind in update_set
+        ]
+
         _completed_docs = await deep_context_docs.remote.aio(
+            previous_version_id,
+            previous_version_content,
+            flat_topo_file_diff_dag,
             version_id,
             install_id,
         )

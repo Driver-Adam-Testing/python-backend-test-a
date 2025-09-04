@@ -1,7 +1,6 @@
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
-from enum import StrEnum
 from pathlib import Path
 from typing import Self
 
@@ -11,8 +10,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 
-from ..symbol_table_v2.base import SymbolResolver
-from .base import ImportResolver, SymbolParser
+from .base import ImportResolver, SymbolParser, SymbolResolver
 from .comparison import TimingInfo, timer
 from .utils import (
     disambiguate_call,
@@ -25,19 +23,10 @@ from .utils import (
 MAX_LLM_CALLS_PER_FILE = 10
 
 
-class VisibilityAlgorithm(StrEnum):
-    """Algorithm choices for computing file visibility."""
-
-    DFS = "dfs"  # Original DFS approach
-    BFS = "bfs"  # BFS with reverse graph
-    FIXPOINT = "fixpoint"  # Incremental fixpoint
-    SCC = "scc"  # Strongly connected components
-
-
 @dataclass(frozen=True)
 class ParsedProject:
     file_to_symbols: dict[Path, list[RawTreeSitterSymbolData]]
-    includes_map: dict[Path, list[str]]
+    includes_map: dict[Path, list[RawTreeSitterSymbolData]]
     file_to_containment_map: dict[
         Path, dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]
     ]
@@ -118,7 +107,6 @@ class ParsedProjectWithVisibility:
         parsed: ParsedProject,
         num_workers: int | None,
         resolver: SymbolResolver,
-        algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
         return_timing: bool = False,
     ) -> Self | tuple[Self, TimingInfo]:
         """
@@ -133,32 +121,11 @@ class ParsedProjectWithVisibility:
         timing = TimingInfo()
 
         with timer() as visibility_timer:
-            match algorithm:
-                case VisibilityAlgorithm.DFS:
-                    visibility_map = cls._compute_visibility_dfs(
-                        file_to_symbols,
-                        includes_map,
-                        resolver,
-                        num_workers,
-                    )
-                case VisibilityAlgorithm.BFS:
-                    visibility_map = cls._compute_visibility_reverse_bfs(
-                        file_to_symbols,
-                        includes_map,
-                        resolver,
-                        num_workers,
-                    )
-                case VisibilityAlgorithm.FIXPOINT:
-                    visibility_map = cls._compute_visibility_incremental_fixed_point(
-                        file_to_symbols, includes_map, resolver
-                    )
-                case VisibilityAlgorithm.SCC:
-                    visibility_map = cls._compute_visibility_scc(
-                        file_to_symbols, includes_map, resolver
-                    )
-                case _:
-                    raise ValueError(f"Unknown visibility algorithm: {algorithm}")
-
+            visibility_map = resolver.resolve_imports_to_symbols(
+                all_files_imports=includes_map,
+                all_files_symbols=file_to_symbols,
+                project_root=project_root,
+            )
         timing.visibility_time = visibility_timer["elapsed"]
 
         result = cls(

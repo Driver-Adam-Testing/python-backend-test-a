@@ -76,9 +76,8 @@ def create_and_embed_pdf_summaries(
     from tempfile import NamedTemporaryFile
 
     from database.db import engine
-    from database.models_v1 import ChunkAndEmbedding, DerivedContent
-    from database.models_v2 import Node, Version
-    from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
+    from database.models import ChunkAndEmbedding, DerivedContent, Node, Version
+    from database.models_enums import ContentKind, NodeKind, VersionStatus
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
     from shared.file_storage.aws_s3_client import AWSS3Client

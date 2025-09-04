@@ -2,7 +2,7 @@ import os
 from inspect import cleandoc
 from typing import Annotated, Any
 
-from database.models_v2_enums import PrimaryAssetKind
+from database.models_enums import PrimaryAssetKind
 from pydantic import Field
 
 # TODO move this or find somethign cleaner. not sure why we wouldn't want these hard coded.
@@ -11,12 +11,14 @@ FASTMCP_MASK_ERROR_DETAILS = True
 os.environ["FASTMCP_STATELESS_HTTP"] = str(FASTMCP_STATELESS_HTTP)
 os.environ["FASTMCP_MASK_ERROR_DETAILS"] = str(FASTMCP_MASK_ERROR_DETAILS)
 
+from pathlib import Path
+
 import fastmcp
 from database.db import get_session
-from database.models_v1 import DerivedContent
-from database.models_v2 import Node, PrimaryAsset, Version
-from database.models_v2_enums import ContentKind, VersionStatus
+from database.models import DerivedContent, Node, PrimaryAsset, Version
+from database.models_enums import ContentKind, VersionStatus
 from fastmcp import Context, FastMCP
+from shared.prompts.structured_prompting import Component, Prompt
 from sqlmodel import select
 
 from .auth_middleware import McpAuthMiddleware, get_organization_id
@@ -26,7 +28,24 @@ from .mcp_helpers import get_latest_version_for_codebase
 CODEBASE_NAME_PARAM_DESCRIPTION = """Name of the Driver supported codebase.  The 'get_codebase_names' tool can be used to generate a list of supported codebases.  Only codebase names returned by this tool are valid for this parameter.
 """
 
-my_mcp = FastMCP("Driver MCP Server", include_fastmcp_meta=False)
+
+def _get_instructions_from_file(instructions_file: Path) -> str:
+    try:
+        with open(instructions_file) as f:
+            raw_instructions = f.read()
+    except FileNotFoundError:
+        raise ValueError(f"Instructions file not found: {instructions_file}")
+
+    return Prompt.empty().append(Component(string=raw_instructions)).into_str()
+
+
+INSTRUCTIONS_FILE = Path(__file__).parent / "_AGENTS.md"
+
+my_mcp = FastMCP(
+    "Driver MCP Server",
+    include_fastmcp_meta=False,
+    instructions=_get_instructions_from_file(INSTRUCTIONS_FILE),
+)
 assert (
     fastmcp.settings.stateless_http is True
 ), "FastMCP must be configured with stateless HTTP enabled."
@@ -58,27 +77,16 @@ def _get_root_node_content(
         return derived_content
 
 
-@my_mcp.tool(
-    name="get_codebase_entry_points",
+@my_mcp.prompt(
+    name="driver_init",
     description=cleandoc(
         """
-        Get the entry points for a codebase.
-
-        The codebase must be specified by name and a list of relevant entry points with path and a short description provided.
-
-        This can help orient you with important logical starting points for interacting with the codebase.
-    """
+        Initialization and instruction for how an LLM agent should optimally use Driver MCP tools. Call at the beginning of each session or anytime in a long agentic workflow wherein this context may have been lost.
+        """
     ),
 )
-def get_codebase_entry_points(
-    ctx: Context,
-    codebase_name: Annotated[str, Field(description=CODEBASE_NAME_PARAM_DESCRIPTION)],
-) -> str:
-    org_id = get_organization_id(ctx)
-    dc = _get_root_node_content(
-        org_id, codebase_name, ContentKind.CODEBASE_ENTRY_POINTS
-    )
-    return dc.content or str(dc.misc_metadata)
+def driver_init() -> str:
+    return MCP_INSTRUCTIONS
 
 
 @my_mcp.tool(

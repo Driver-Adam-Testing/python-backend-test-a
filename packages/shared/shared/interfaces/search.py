@@ -1,7 +1,7 @@
 from enum import Enum
 from uuid import UUID
 
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 
 from shared.interfaces.request import DriverRequest
 from shared.interfaces.response import DriverResponse

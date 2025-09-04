@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import boto3
-from database.models_v1 import UsageEventType
+from database.models import UsageEventType
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from shared.interfaces.usage.usage_schema import (

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from database.models_v1 import UsageEvent, UsageEventType
+from database.models import UsageEvent, UsageEventType
 from shared.repositories.base_repository import BaseRepository
 from sqlmodel import Session, select
 

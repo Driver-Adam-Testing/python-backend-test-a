@@ -198,6 +198,14 @@ class Backend(Construct):
             "AUTH0_MGMT_API_AUDIENCE": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "AUTH0_MGMT_API_AUDIENCE"
             ),
+            # TODO: This is wrong and gross, but we have stuffed TURNSTILE keys into the Auth0 secret to avoid creating
+            # another secret, since we are abandoning this overall approach very soon.
+            "TURNSTILE_SECRET": aws_ecs.Secret.from_secrets_manager(
+                auth0_secret, "TURNSTILE_SECRET"
+            ),
+            "ENABLE_SIGNUP": aws_ecs.Secret.from_secrets_manager(
+                auth0_secret, "ENABLE_SIGNUP"
+            ),
             "MODAL_TOKEN_ID": aws_ecs.Secret.from_secrets_manager(
                 modal_secret, "MODAL_TOKEN_ID"
             ),

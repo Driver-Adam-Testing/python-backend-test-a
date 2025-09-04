@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from database.db import get_session
-from database.models_v2 import RuntimeLlmMessageHistory, RuntimeLlmSession
-from database.models_v2_enums import LlmPipelineKind
+from database.models import RuntimeLlmMessageHistory, RuntimeLlmSession
+from database.models_enums import LlmPipelineKind
 from shared.v3 import LlmClient, LlmMessage, LlmMessageHistory, MessageKind
 from shared.v3.app.pipelines.pipeline_request import PipelineRequest
 from shared.v3.app.pipelines.pipeline_response import PipelineResponse

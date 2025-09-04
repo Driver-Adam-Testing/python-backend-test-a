@@ -22,7 +22,7 @@ import tqdm
 from aiolimiter import AsyncLimiter
 from botocore.config import Config
 from common import app
-from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
+from database.models_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
 from rich.console import Console
@@ -234,7 +234,7 @@ async def update_autodocs_status(
 ) -> None:
     import modal
     from database.db import async_engine
-    from database.models_v2 import AutoDocStatusHistory
+    from database.models import AutoDocStatusHistory
     from sqlmodel.ext.asyncio.session import AsyncSession
 
     call_id = modal.current_function_call_id()
@@ -253,7 +253,7 @@ async def update_autodocs_status(
 async def get_autodoc_elapsed_time(page_id: str) -> float:
     import modal
     from database.db import async_engine
-    from database.models_v2 import AutoDocStatusHistory
+    from database.models import AutoDocStatusHistory
     from sqlmodel import select
     from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -306,8 +306,8 @@ class DriverDocsContent(BaseModel):
     @classmethod
     def from_db(cls, version_id: str, relative_path: str) -> Self:
         from database.db import get_session
-        from database.models_v2 import Version
-        from database.models_v2_enums import ContentKind
+        from database.models import Version
+        from database.models_enums import ContentKind
         from sqlalchemy.orm import selectinload
         from sqlmodel import select
 
@@ -412,8 +412,7 @@ def _get_derived_contents(
     version_id: str, relative_path: str, dc_kind: ContentKind
 ) -> dict[str, str]:
     from database.db import get_session
-    from database.models_v1 import DerivedContent
-    from database.models_v2 import Node
+    from database.models import DerivedContent, Node
     from sqlmodel import select
 
     with get_session() as session:
@@ -454,7 +453,7 @@ def _get_source_from_s3(
 
 def _download_pdf_from_s3(version_id: str) -> str:
     from database.db import get_session
-    from database.models_v2 import Node, Version
+    from database.models import Node, Version
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
 
@@ -561,7 +560,7 @@ class LlmCfg(BaseModel):
             tag_model="gpt-4.1",
             section_init_model="o3-mini",
             section_update_model="gpt-4.1",
-            section_format_model="o3-mini",
+            section_format_model="gpt-5",
             assembly_model="o3-mini",
             copy_editor_model="gpt-4.1",
         )
@@ -1256,7 +1255,7 @@ Your output should be markdown formatted text.
         tagged_nodes: dict[str, list[Category]] | None,
         tag_idx: int | None,
     ) -> str:
-        llm = ChatOpenAI(model="o3-mini", temperature=0, request_timeout=300)
+        llm = ChatOpenAI(model="gpt-5", temperature=0, request_timeout=300)
         # TODO: this is done naively - if we need to do this, we should keep related content together
         # could be useful to leverage symbol table here
         user_prompts = self.source_code_aggregation_user_prompt_constructor(
@@ -1426,7 +1425,7 @@ Your output should be markdown formatted text.
         file_by_file_content: dict,
         section_name: str,
     ) -> list:
-        model = "o3-mini"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
         user_prompts = self.gather_user_prompt_constructor(
             file_by_file_content, section_name
@@ -1458,7 +1457,7 @@ Your output should be markdown formatted text.
         aggregate_docs: list,
         section_name: str,
     ) -> list:
-        model = "o3-mini"
+        model = "gpt-5"
         llm = ChatOpenAI(model=model, request_timeout=500, temperature=0)
         user_prompts = self.gather_aggregate_user_prompt_constructor(
             aggregate_docs, section_name
@@ -1563,42 +1562,55 @@ Your output should be markdown formatted text.
         file_by_file_content: dict,
         section_name: str,
     ) -> list:
-        chunk_size = 64_000
-        chunk_overlap = 0
-        user_prompt = ""
-        user_prompts = [""]
-        for p, content in file_by_file_content.items():
-            user_prompt += f"{section_name} of file or folder `{p}`:\n\n{content}\n\n"
+        chunk_size = 64_000  # in TOKENS
 
-        chunks_required = split_text(
-            user_prompt, chunk_size=chunk_size, chunk_overlap=chunk_overlap
-        )
-        if len(chunks_required) > 1:
-            num_tokens = get_num_tokens(user_prompt)
-            token_threshold = num_tokens / len(chunks_required)
-            user_prompts = [""]
-            # print(f"Num Tokens: {num_tokens}. Token threshold: {token_threshold}")
-            for p, content in file_by_file_content.items():
-                new_prompt = f"{section_name} of file or folder `{p}`:\n\n{content}\n\n"
-                new_tokens = get_num_tokens(new_prompt)
-                found_prompt = False
-                for idx, prompt in reversed(
-                    list(enumerate(user_prompts))
-                ):  # Reverse order to find most likely to be able to add to
-                    if new_tokens + get_num_tokens(prompt) > token_threshold:
-                        pass
-                        # print(f"Prompt {idx} is too large to add to. Checking next")
-                    else:
-                        user_prompts[idx] += new_prompt
-                        # print(f"Added {p} content to prompt {idx}")
-                        found_prompt = True
-                        break
-                if not found_prompt:
-                    user_prompts.append(new_prompt)
-                    # print(f"Added {p} content to new prompt")
-        else:
-            user_prompts = [user_prompt]
+        # Pre-format each file's section and compute tokens once per section
+        items = list(file_by_file_content.items())
 
+        formatted_sections = []
+        section_token_counts = []
+        total_tokens = 0
+
+        for p, content in items:
+            s = f"{section_name} of file or folder `{p}`:\n\n{content}\n\n"
+            formatted_sections.append(s)
+            t = get_num_tokens(s)  # one tokenization per file
+            section_token_counts.append(t)
+            total_tokens += t
+
+        # If everything fits in one chunk, just join once and return
+        if total_tokens <= chunk_size:
+            return ["".join(formatted_sections)]
+
+        # how many chunk_size buckets are needed for total_tokens?
+        chunks_est = total_tokens / chunk_size
+
+        token_threshold = total_tokens / chunks_est
+
+        # Build chunks greedily (preserve input order), tracking token sums
+        prompts_parts = [[]]  # list[list[str]]
+        prompts_token_sums = [0]  # parallel list[int]
+
+        for s, t in zip(formatted_sections, section_token_counts):
+            placed = False
+            # Try to place into most recent chunk first
+            for idx in range(len(prompts_parts) - 1, -1, -1):
+                # Don't exceed average threshold AND never exceed hard chunk_size
+                next_sum = prompts_token_sums[idx] + t
+                if next_sum <= token_threshold and next_sum <= chunk_size:
+                    prompts_parts[idx].append(s)
+                    prompts_token_sums[idx] = next_sum
+                    placed = True
+                    break
+
+            if not placed:
+                # Start a new chunk; if a single section is larger than threshold,
+                # it can still occupy its own chunk (up to chunk_size).
+                prompts_parts.append([s])
+                prompts_token_sums.append(t)
+
+        # Join buffers into final strings
+        user_prompts = ["".join(parts) for parts in prompts_parts if parts]
         return user_prompts
 
     def gather_aggregate_user_prompt_constructor(

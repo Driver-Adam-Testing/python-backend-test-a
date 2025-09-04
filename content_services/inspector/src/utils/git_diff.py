@@ -109,7 +109,7 @@ def log_code_diff_usage(
 ) -> None:
     from datetime import UTC, datetime
 
-    from database.models_v1 import UsageEventType
+    from database.models import UsageEventType
     from shared.interfaces.usage.event_metadata import (
         UsageEventMetadata,
         UsageMetric,
@@ -150,7 +150,7 @@ def log_code_diff_usage(
 def update_root_node_metadata(version_id: str, diff_size_in_bytes: int) -> None:
     # Without the line below. An error occurs because SQLAlchemy can't find the class `Tag`—ensure it's defined before referencing it in relationships.
     from database.db import engine
-    from database.models_v2 import Node, NodeKind
+    from database.models import Node, NodeKind
     from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.orm.attributes import flag_modified
     from sqlmodel import Session, select

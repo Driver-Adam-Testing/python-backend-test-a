@@ -6,7 +6,7 @@ from app.auth.models import User
 from app.services.auth0_service import Auth0Service
 from cachetools import TTLCache, cached
 from database.db import get_session
-from database.models_v2 import ApiKey
+from database.models import ApiKey
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 from sqlmodel import select

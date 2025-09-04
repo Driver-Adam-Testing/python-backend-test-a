@@ -1,6 +1,6 @@
 from enum import Enum
 
-from database.models_v1 import GitProviderKind
+from database.models import GitProviderKind
 from pydantic import BaseModel, Field
 
 
@@ -17,6 +17,7 @@ class TokenType(str, Enum):
 
 class AccessTokenData(BaseModel):
     """Unified access token model"""
+
     token_type: TokenType = TokenType.GROUP_ACCESS_TOKEN
     token: str
     workspace_or_group: str | None = None
@@ -24,7 +25,10 @@ class AccessTokenData(BaseModel):
     metadata: dict = {}
 
     def is_access_token(self) -> bool:
-        return self.token_type in [TokenType.GROUP_ACCESS_TOKEN, TokenType.WORKSPACE_ACCESS_TOKEN]
+        return self.token_type in [
+            TokenType.GROUP_ACCESS_TOKEN,
+            TokenType.WORKSPACE_ACCESS_TOKEN,
+        ]
 
 
 class GitProvider(BaseModel):

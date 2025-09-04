@@ -17,6 +17,7 @@ from app.api.routes.v1 import (
     git_provider,
     healthcheck,
     onboarding,
+    signup,
     subscription,
 )  # webhook / callback paths
 from app.core.config import settings
@@ -40,6 +41,12 @@ unprotected_router.include_router(
 unprotected_router.include_router(
     subscription.router, prefix="/subscription", tags=["subscription"]
 )
+
+# /studio/v1/signup/** -------------------------------------------------
+if settings.ENABLE_SIGNUP:
+    unprotected_router.include_router(
+        signup.router, prefix="/signup", tags=["signup"]
+    )
 
 
 # Optional local GraphQL sandbox --------------------------------------

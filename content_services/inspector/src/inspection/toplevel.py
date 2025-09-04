@@ -3,7 +3,7 @@ import concurrent.futures
 from pathlib import Path
 from typing import Any
 
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from shared.agent.chat_openai_async import ChatOpenAI as AsyncChatOpenAI
 from shared.prompts.structured_prompting import (
     DESCRIBE_WITH_CATEGORY_AND_ACTION_VERB,

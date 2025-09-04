@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.schemas.git_provider_schema import GitRepository
-from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from database.models import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
+from sqlmodel import Session
 
 
 @dataclass
@@ -24,6 +25,7 @@ class WebhookEventContext:
     app_id: str
     installation_id: str
     organization_id: str
+    session: Session
 
 
 class GitProviderInterface(ABC):
@@ -89,7 +91,7 @@ class GitProviderInterface(ABC):
         Args:
             installation: The installation record
             token_data: Provider-specific token data containing new access token
-        
+
         Note: Default implementation calls store_secrets for backward compatibility.
               Providers should override this to preserve webhook secrets.
         """

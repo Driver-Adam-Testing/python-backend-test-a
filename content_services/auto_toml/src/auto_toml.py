@@ -11,7 +11,7 @@ import tiktoken
 import toml
 from aiolimiter import AsyncLimiter
 from chat_openai import ChatOpenAI
-from database.models_v2_enums import ContentKind, NodeKind
+from database.models_enums import ContentKind, NodeKind
 from logger import logger
 from prompts import (
     _USER_CONTEXT_SIZE_MAP,
@@ -24,6 +24,7 @@ from prompts import (
     summary_system_prompt,
     summary_user_prompt,
 )
+from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     Prompt,
 )
@@ -59,7 +60,7 @@ class AutoToml:
     LLM_SCATTER_MODEL: ClassVar[str] = (
         "o3-mini"  # Due to issues with 4.1 and 4o repeating content, o3-mini used for this stage
     )
-    LLM_TOML_MODEL: ClassVar[str] = "gpt-4.1"
+    LLM_TOML_MODEL: ClassVar[str] = "gpt-5"
 
     MAX_CONCURRENT_SUMMARIES: ClassVar[int] = 300
     SCALING_THRESHOLD: ClassVar[int] = MAX_CONCURRENT_SUMMARIES * 0.5
@@ -84,7 +85,7 @@ class AutoToml:
     @classmethod
     def from_page_id(cls, page_id: UUID, enable_auto_scaling: bool) -> Self:
         from database.db import get_session
-        from database.models_v1 import DocumentSource
+        from database.models import DocumentSource
 
         logger.info(f"Fetching document sources for page ID: {page_id}\n")
         with get_session() as session:
@@ -100,6 +101,12 @@ class AutoToml:
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )
 
+    @classmethod
+    def from_root_node_id(cls, root_node_id: UUID, enable_auto_scaling: bool) -> Self:
+        return cls._initialize(
+            node_ids=[root_node_id], enable_auto_scaling=enable_auto_scaling
+        )
+
     async def generate(self, document_goal: str, user_context: str = "") -> str:
         logger.info(f"Generating TOML from document goal:\n\n{document_goal}\n")
 
@@ -108,11 +115,14 @@ class AutoToml:
         logger.info(
             f"Gathering summaries from {len(self.code_contents)} source files/directories and {len(self.pdf_contents)} PDF pages...\n"
         )
-        user_context = (
-            Prompt.empty()
-            .append(_USER_CONTEXT_SIZE_MAP.get(user_context, USER_CONTEXT_BASE))
-            .into_str()
-        )
+
+        if user_context in _USER_CONTEXT_SIZE_MAP:
+            user_context = (
+                Prompt.empty()
+                .append(_USER_CONTEXT_SIZE_MAP.get(user_context, USER_CONTEXT_BASE))
+                .into_str()
+            )
+
         source_summary = await self._gather_summaries(
             document_goal=document_goal,
             user_context=user_context,
@@ -209,12 +219,37 @@ class AutoToml:
 
         print("Summary length before truncation:")
         print(len(summary))
-        new_summary = self._truncate_text(text=summary, llm=self.llm_toml)
-        print("Summary length after truncation:")
+        # new_summary = self._truncate_text(text=summary, llm=self.llm_toml)
+
+        chunks = split_text(
+            summary, chunk_size=64_000, chunk_overlap=6_400
+        )  # Using 64k chunks since the "breakdown" point for larger context models is still unknown.
+        new_summary = summary
+        if len(chunks) > 1:
+            print("Compressing summary...")
+            new_summary = ""
+            chunk_tasks = []
+            for i, chunk in enumerate(chunks):
+                chunk_tasks.append(
+                    self._generate_summary(
+                        path=f"Chunk {i + 1}",
+                        system_prompt=summary_system_prompt(),
+                        user_prompt=summary_user_prompt(
+                            document_goal=document_goal,
+                            user_context=user_context,
+                            source_content=chunk.text,
+                        ),
+                    )
+                )
+            new_summaries = await tqdm_asyncio.gather(*chunk_tasks)
+            new_summary = "\n\n".join(
+                result.strip() for result in new_summaries if result.strip()
+            )
+        print("Summary length after compression:")
         print(len(new_summary))
 
         if new_summary is not summary:
-            logger.error("Truncated content summary to fit within token limits\n")
+            logger.error("Compressed content summary to fit within token limits\n")
             summary = new_summary
 
         return summary
@@ -415,8 +450,7 @@ class AutoToml:
     @classmethod
     def _get_source_stats(cls, node_ids: list[str]) -> SourceStats:
         from database.db import get_session
-        from database.models_v1 import DerivedContent
-        from database.models_v2 import Node
+        from database.models import DerivedContent, Node
 
         with get_session() as session:
             nodes_query = select(Node).where(Node.id.in_(node_ids))
@@ -508,7 +542,7 @@ class AutoToml:
 
     @classmethod
     def _build_path_conditions(cls, directory_nodes: list["AutoToml.NodeInfo"]) -> list:
-        from database.models_v2 import Node
+        from database.models import Node
 
         path_conditions = []
         for dir_node in directory_nodes:
@@ -523,8 +557,7 @@ class AutoToml:
         cls, stats: SourceStats
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         from database.db import get_session
-        from database.models_v1 import DerivedContent
-        from database.models_v2 import Node
+        from database.models import DerivedContent, Node
 
         with get_session() as session:
             code_contents = []
@@ -604,8 +637,7 @@ class AutoToml:
         cls, stats: SourceStats
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         from database.db import get_session
-        from database.models_v1 import DerivedContent
-        from database.models_v2 import Node
+        from database.models import DerivedContent, Node
 
         with get_session() as session:
             pdf_nodes = stats.pdf_nodes or []

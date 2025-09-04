@@ -1,5 +1,5 @@
 from app.git_providers.core.config import GitProviderConfig
-from database.models_v1 import GitProviderApp, GitProviderKind
+from database.models import GitProviderApp, GitProviderKind
 
 
 def load_provider_config(
@@ -34,6 +34,6 @@ def load_provider_config(
             token_endpoint=None,
             user_endpoint=None,
             authorize_endpoint=None,
-            scope=None
+            scope=None,
         )
     raise ValueError(f"Unsupported provider: {app.provider_kind}")

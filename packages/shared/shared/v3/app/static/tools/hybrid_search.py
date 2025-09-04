@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models_v1 import ChunkAndEmbedding, DerivedContent
+from database.models import ChunkAndEmbedding, DerivedContent
 from shared.embedding.text_embedder import batch_embed_text
 from shared.pipelines.search import (
     get_bm25_scores,

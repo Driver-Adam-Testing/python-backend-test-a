@@ -111,6 +111,7 @@ class Backend(Construct):
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
             "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
             "AWS_REGION": params.aws_region,
+            "ECS_CONTAINER_STOP_TIMEOUT": "2s"
             #TODO POST secets optimzation. Consider removing all of this and just sourcing the setEnv.sh from deplyonments on container startup. 
         }
 
@@ -151,18 +152,24 @@ class Backend(Construct):
             task_subnets=aws_ec2.SubnetSelection(
                 subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
-            health_check_grace_period=Duration.minutes(2),
+            health_check_grace_period=Duration.seconds(120),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(
                 enable=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower()), rollback=json.loads(settings.BACKEND_ENABLE_ROLLBACK.lower())
             ),
             min_healthy_percent=100,
-            max_healthy_percent=250,
+            max_healthy_percent=200,
             cpu=2048,
             memory_limit_mib=4096,
         )
         self.service.target_group.configure_health_check(
-            path="/studio/v1/healthcheck/", port="8000"
+            path="/studio/v1/healthcheck/", port="8000",
+            interval=Duration.seconds(5),  
+            timeout=Duration.seconds(2),  
+            healthy_threshold_count=2,  
+            unhealthy_threshold_count=2,  
+            healthy_http_codes="200",  # 
         )
+        self.service.target_group.deregistration_delay = Duration.seconds(5)
         self.service.task_definition.task_role.attach_inline_policy(
             aws_iam.Policy(
                 self,

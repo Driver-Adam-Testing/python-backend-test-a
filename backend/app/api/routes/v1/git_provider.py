@@ -69,8 +69,8 @@ NO_OS_GH_ORG = "analogdevicesinc"
 
 aws_config = AWSClientConfig(
     region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
 )
 
 provider_service = get_git_provider_service(aws_config)

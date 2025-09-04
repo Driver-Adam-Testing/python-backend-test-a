@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 #If there's a setEnv.sh script in the / directory, run it before starting
 echo "Checking for setEnv script"
 if [ -f "../setEnv.sh" ] ; then
@@ -16,12 +16,15 @@ docker push $AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/python-backend:latest
 npm install -g aws-cdk@latest
 pip install aws-cdk-lib
 pip install aws-cdk.aws-lambda-python-alpha
-if [ "$DEPLOYMENT_ENVIRONMENT" = "production" ]; then
- npx cdk deploy --require-approval never
-else
- npx cdk deploy --require-approval never --no-rollback
-fi
-
+set +e
+npx cdk deploy --require-approval never
+status=$?
+echo $status
+set -e
+# TODO allow pass through during "streaming updates" Other CLIs (PID=77666) are currently reading from cdk.out. Invoke the CLI in sequence, or use '--output' to synth into different directories."
+# if [[ $status -eq 1 ]]; then
+#     exit 1
+# fi
 #add a forced redploy
 CLUSTER_NAME=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'V2BaseInfrastructureStack-BaseInfrastructureCoreInfrastructureCluster')]" --output text)
 
@@ -31,18 +34,42 @@ echo "Forcing redeploy..."
 
 aws --no-cli-pager ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
 
-echo "Waiting for 2min ECS service to stablize..."
+echo "Waiting up to 5min ECS service to stablize..."
 set +e
-timeout 120 aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME
+timeout 300 aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME
 status=$?
 set -e
 
 if [[ $status -eq 0 ]]; then
-  echo "✅ Service became stable."
+    echo "✅ Service became stable."
+
+    URL="https://api.${URL_PREFIX}.driverai.com/api/v1/healthcheck/" 
+    TIMEOUT=120   # 2 minutes in seconds
+    INTERVAL=5    # seconds between retries
+    START=$(date +%s)
+
+    while true; do
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL")
+
+        if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Healthcheck successful: $URL returned 200"
+            curl $URL
+            exit 0
+        fi
+
+        NOW=$(date +%s)
+        ELAPSED=$((NOW - START))
+
+        if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+            echo "❌ Healthcheck failed: $URL did not return 200 within $TIMEOUT seconds"
+        fi
+
+        sleep "$INTERVAL"
+    done
 elif [[ $status -eq 124 ]]; then
-  echo "⏰ Timed out after 120s waiting for service to become stable."
+  echo "⏰ Timed out waiting for service to become stable."
 else
-  echo "❌ Waiter failed with exit code $status (not a timeout). Fetching logs anyway…"
+  echo "❌ Waiter failed with exit code ${status}. Fetching logs anyway…"
 fi
 
 echo "checking server logs..."
@@ -65,7 +92,7 @@ if [[ ${#TASKS[@]} -eq 0 || -z "${TASKS[0]:-}" ]]; then
 fi
 
 if [[ ${#TASKS[@]} -eq 0 || -z "${TASKS[0]:-}" ]]; then
-  echo "No tasks found for service ${SERVICE_NAME} in cluster ${CLUSTER_NAME}."
+  echo "Error: No tasks found for service ${SERVICE_NAME} in cluster ${CLUSTER_NAME}."
   exit 1
 fi
 

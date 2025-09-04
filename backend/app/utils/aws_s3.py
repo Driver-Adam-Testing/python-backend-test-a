@@ -10,8 +10,8 @@ from app.core.logger import logger
 s3_client = boto3.client(
     "s3",
     region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    aws_access_key_id=settings.S3ADMIN_AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.S3ADMIN_AWS_SECRET_ACCESS_KEY,
     endpoint_url=settings.AWS_S3_ENDPOINT_URL if settings.AWS_S3_ENDPOINT_URL else None,
 )
 

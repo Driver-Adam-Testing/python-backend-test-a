@@ -247,7 +247,9 @@ class GitProviderService:
             provider = self.get_provider(installation.git_provider_app)
 
             # Fetch repositories
-            return provider.fetch_repositories(installation)
+            return provider.fetch_repositories(
+                installation, page_size=2, max_pages=1, auto_paginate=False
+            )
 
         except GitProviderAppRevokeError:
             logger.error(f"Access revoked for installation {installation_id}")

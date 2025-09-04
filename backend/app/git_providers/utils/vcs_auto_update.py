@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from database.models_v2 import PrimaryAsset, Version
-from database.models_v2_enums import PrimaryAssetKind, VcsAutoUpdatePolicy
+from database.models import PrimaryAsset, Version
+from database.models_enums import PrimaryAssetKind, VcsAutoUpdatePolicy
 from sqlmodel import Session, select
 
 

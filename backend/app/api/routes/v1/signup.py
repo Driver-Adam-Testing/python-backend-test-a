@@ -6,10 +6,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-from database.models import UsageEventType
+from database.models import BillingFrequency, PlanType, UsageEventType
 from disposable_email_domains import blocklist
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
+from shared.billing.billing_service import BillingService
 from shared.usage.usage_service import UsageService
 from shared.usage.utils import sloc_to_bytes
 
@@ -171,7 +172,12 @@ def signup(
                 exc_info=True,
             )
         raise
-
+    BillingService(session).create_subscription(
+        organization_id=org["id"],
+        plan_type=PlanType.FREE,
+        billing_frequency=BillingFrequency.NEVER,
+        start_date=datetime.now(tz=UTC),
+    )
     # 3) Grant initial platform credits (250k SLoC) to the new organization
     UsageService(session).issue_usage_credits(
         organization_id=org["id"],

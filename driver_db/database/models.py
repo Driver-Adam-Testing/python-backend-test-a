@@ -28,7 +28,7 @@ from sqlalchemy import (
     text,
     update,
 )
-from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapper
 from sqlmodel import JSON, Field, Relationship, SQLModel, select
 
@@ -376,12 +376,14 @@ class GithubAppInstallation(SQLModel, table=True):
 
 
 class PlanType(str, enum.Enum):
+    FREE = "free"
     CORE = "core"
     ADVANCED = "advanced"
     ENTERPRISE = "enterprise"
 
 
 class BillingFrequency(str, enum.Enum):
+    NEVER = "never"
     MONTHLY = "monthly"
     ANNUAL = "annual"
 
@@ -1059,7 +1061,9 @@ class InspectorRun(SQLModel, table=True):
 class AboutYouSurvey(SQLModel, table=True):
     __tablename__ = "about_you_survey"
     __table_args__ = (
-        UniqueConstraint("organization_id", "user_id", name="uq_about_you_survey_org_user"),
+        UniqueConstraint(
+            "organization_id", "user_id", name="uq_about_you_survey_org_user"
+        ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

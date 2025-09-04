@@ -1,23 +1,22 @@
-import re
-import uuid
-from typing import Any
 import logging
+import re
+import time
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
+import httpx
+from database.models import BillingFrequency, PlanType, UsageEventType
+from disposable_email_domains import blocklist
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
-
-from app.core.config import settings
-from app.services.auth0_service import Auth0Service
-from app.api.session import CurrentSession
-
-from database.models import UsageEventType
+from shared.billing.billing_service import BillingService
 from shared.usage.usage_service import UsageService
 from shared.usage.utils import sloc_to_bytes
 
-import time
-from datetime import datetime, timezone
-import httpx
-from disposable_email_domains import blocklist
+from app.api.session import CurrentSession
+from app.core.config import settings
+from app.services.auth0_service import Auth0Service
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -64,9 +63,14 @@ def _verify_turnstile(token: str, remote_ip: str | None) -> dict[str, Any]:
     j = r.json()
 
     if not j.get("success"):
-        raise HTTPException(status_code=403, detail=f"Bot check failed: {j.get('error-codes')}")
+        raise HTTPException(
+            status_code=403, detail=f"Bot check failed: {j.get('error-codes')}"
+        )
 
-    if settings.TURNSTILE_EXPECTED_HOSTNAME and j.get("hostname") != settings.TURNSTILE_EXPECTED_HOSTNAME:
+    if (
+        settings.TURNSTILE_EXPECTED_HOSTNAME
+        and j.get("hostname") != settings.TURNSTILE_EXPECTED_HOSTNAME
+    ):
         raise HTTPException(status_code=403, detail="Bot check hostname mismatch")
 
     if j.get("action") and j["action"] != "signup":
@@ -74,11 +78,16 @@ def _verify_turnstile(token: str, remote_ip: str | None) -> dict[str, Any]:
 
     ts = j.get("challenge_ts")
     if ts:
-        issued = datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=timezone.utc).timestamp()
+        issued = (
+            datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            .replace(tzinfo=UTC)
+            .timestamp()
+        )
         if time.time() - issued > settings.TURNSTILE_MAX_AGE_SEC:
             raise HTTPException(status_code=403, detail="Bot check too old")
 
     return j
+
 
 def _is_disposable(email: str) -> bool:
     domain = email.split("@", 1)[-1].lower()
@@ -86,22 +95,27 @@ def _is_disposable(email: str) -> bool:
 
 
 @router.post("", summary="Create org and invite email")
-def signup(req: Request, request: SignupRequest, session: CurrentSession) -> SignupResponse:
+def signup(
+    req: Request, request: SignupRequest, session: CurrentSession
+) -> SignupResponse:
     service = Auth0Service()
+    email_lowercase = str(request.email).lower()
 
     # 0) Disposable email check using disposable_email_domains blocklist
-    if _is_disposable(str(request.email)):
-        raise HTTPException(status_code=400, detail="Use a non-disposable email address.")
+    if _is_disposable(email_lowercase):
+        raise HTTPException(
+            status_code=400, detail="Use a non-disposable email address."
+        )
 
     # 0b) Turnstile gate
     remote_ip = req.client.host if req.client else None
     _verify_turnstile(request.captcha_token, remote_ip=remote_ip)
 
     # 0c) Check if email already exists - but don't reveal this information to prevent user enumeration
-    existing_users = service.find_users_by_email(str(request.email))
+    existing_users = service.find_users_by_email(email_lowercase)
     if existing_users:
         # Log the attempt for monitoring but don't reveal the email exists
-        email_parts = str(request.email).split('@')
+        email_parts = str(request.email).split("@")
         if len(email_parts) == 2:
             local_part = email_parts[0]
             domain = email_parts[1]
@@ -114,17 +128,17 @@ def signup(req: Request, request: SignupRequest, session: CurrentSession) -> Sig
             masked_email = f"{masked_local}@{domain}"
         else:
             masked_email = "***@***"
-        logger.info(f"Signup attempt with existing email: {masked_email} from IP: {remote_ip}")
-        # Return success to prevent user enumeration
-        return SignupResponse(
-            success=True
+        logger.info(
+            f"Signup attempt with existing email: {masked_email} from IP: {remote_ip}"
         )
+        # Return success to prevent user enumeration
+        return SignupResponse(success=True)
 
     # 1) Create a new organization per signup
-    org_name = _generate_org_slug_from_email(request.email)
+    org_name = _generate_org_slug_from_email(email_lowercase)
     org = service.create_organization(
         name=org_name,
-        display_name=request.display_name or str(request.email),
+        display_name=request.display_name or email_lowercase,
         metadata={"self_service": "true"},
     )
 
@@ -139,18 +153,31 @@ def signup(req: Request, request: SignupRequest, session: CurrentSession) -> Sig
     role_ids: list[str] | None = [admin_role_id]
 
     try:
-        invite = service.invite_email_to_organization(
-            org_id=org["id"], email=request.email, roles=role_ids, inviter_name="System"
+        _ = service.invite_email_to_organization(
+            org_id=org["id"],
+            email=email_lowercase,
+            roles=role_ids,
+            inviter_name="System",
         )
     except Exception:
         # Cleanup org on failure
         try:
             service.delete_organization(org["id"])
-            logger.info(f"Successfully cleaned up organization {org['id']} after invitation failure")
-        except Exception as cleanup_error:
-            logger.error(f"Failed to cleanup organization {org['id']} after invitation failure", exc_info=True)
+            logger.info(
+                f"Successfully cleaned up organization {org['id']} after invitation failure"
+            )
+        except Exception:
+            logger.error(
+                f"Failed to cleanup organization {org['id']} after invitation failure",
+                exc_info=True,
+            )
         raise
-
+    BillingService(session).create_subscription(
+        organization_id=org["id"],
+        plan_type=PlanType.FREE,
+        billing_frequency=BillingFrequency.NEVER,
+        start_date=datetime.now(tz=UTC),
+    )
     # 3) Grant initial platform credits (250k SLoC) to the new organization
     UsageService(session).issue_usage_credits(
         organization_id=org["id"],
@@ -159,8 +186,4 @@ def signup(req: Request, request: SignupRequest, session: CurrentSession) -> Sig
         credit_amount=sloc_to_bytes(250_000),
     )
 
-    return SignupResponse(
-        success=True
-    )
-
-
+    return SignupResponse(success=True)

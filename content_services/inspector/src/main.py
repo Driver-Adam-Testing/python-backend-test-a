@@ -421,7 +421,7 @@ async def inspect_db(
         # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
         # architecture, then uncomment the following line to represent completion of
         # stage 1.
-        # set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)

@@ -195,6 +195,8 @@ class RawSymbolData(BaseModel):
         # Copied logic from ctags symbol construction below
         file_code = None
 
+        # TODO: we want to remove source code from ReifiedSymbol, will need to modify this logic
+        # We have the code passed in here plus byte offsets, we can use that instead.
         if code is not None:
             if use_padding:
                 start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
@@ -218,6 +220,7 @@ class RawSymbolData(BaseModel):
                 symbol_code = s_code
                 file_code = code
         else:
+            # TODO: fix this
             symbol_code = ts_symbol.symbol_code
 
         raw_symbol = cls(

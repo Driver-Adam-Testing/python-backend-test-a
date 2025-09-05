@@ -34,6 +34,7 @@ tree-sitter-c-sharp = "^0.23.1"
 tree-sitter-typescript = "^0.23.2"
 modal = "^1.0.4"
 aiolimiter = "^1.2.1"
+pympler = "^1.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"

@@ -37,6 +37,7 @@ image = (
             "tree-sitter-c-sharp==0.23.1",
             "tree-sitter-typescript==0.23.2",
             "aiolimiter==1.2.1",
+            "pympler"
         ]
     )  # TODO lock versions down
     .add_local_python_source(
@@ -62,16 +63,32 @@ image = (
         modal.Secret.from_name("aws-inspector-s3"),
     ],
     image=image,
+    volumes={"/code": modal.Volume.from_name("my-volume")},
 )
 def make_tech_doc(
     node: LiteNode,
     source_code: str,
     codebase_name: str,
+    version_id: str,
     sym_table_s3_key: str | None,
 ) -> tuple[bool, dict, LiteNode]:
     from utils.models import ChatOpenAI
+    from pympler import asizeof
 
     print(f"Processing tech docs ({node})")
+    # load code from volume
+    volume = modal.Volume.from_name("my-volume")
+    with open(f"/code/{node.root_rel_path}", "r") as f:
+        new_source = f.read()
+
+    if source_code != new_source:
+        print(
+            f"Warning: source code mismatch for {node.root_rel_path}. Using code from volume."
+        )
+        source_code = new_source
+    else:
+        print(f"Source code matches for {node.root_rel_path}")
+
     raise_hard_errors = False
     llm = ChatOpenAI(
         model="gpt-4o-2024-08-06",
@@ -89,7 +106,10 @@ def make_tech_doc(
             s3 = boto3.client("s3")
             bucket_name = os.environ["BUCKET_NAME"]
             obj = s3.get_object(Bucket=bucket_name, Key=sym_table_s3_key)
-            reified_symbols = pickle.loads(obj["Body"].read())
+            read_obj = obj["Body"].read()
+            reified_symbols = pickle.loads(read_obj)
+            print(f"Size of pickle object: {len(read_obj)} for {node.root_rel_path}")
+        print(f"Memory usage for {node.root_rel_path} before tech doc: {asizeof.asizeof(reified_symbols)} bytes for {len(reified_symbols) if reified_symbols else 0} symbols")
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,

@@ -147,6 +147,7 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
+    volumes={"/code": modal.Volume.from_name("my-volume")},
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
@@ -280,6 +281,18 @@ async def inspect_db(
                 install_id = None  # TODO: install id is attached to the zip, and is not available on rerun/resume
                 # NOTE: can still achieve PR of docs by running export_tech_docs_to_zip manually with install_id via local entrypoint
                 print("Download complete")
+            # copy to modal volume
+            volume = modal.Volume.from_name("my-volume")
+            for p in file_paths:
+                dest_path = Path("/code") / p.relative_to(download_root)
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
+                with p.open("rb") as src_f, dest_path.open("wb") as dest_f:
+                    dest_f.write(src_f.read())
+            volume.commit()
+
+            codebase_name = dest_path.parts[2]
+
+            print("Uploaded to volume")
 
             codebase_dag: FileTreeDag = build_dag(
                 root_path=download_root, file_paths=file_paths
@@ -405,6 +418,9 @@ async def inspect_db(
                 result_loading_config=result_loading_config,
                 rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
             )
+
+            # remove from volume after complete
+            volume.remove_file(path=f"{codebase_name}", recursive=True)
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__
@@ -561,6 +577,7 @@ async def inspect_files(
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
+                version_id=version_id,
                 symbol_table_task=c_symbol_table_task,
                 thread_pool=TECH_DOC_THREAD_POOL,
             )

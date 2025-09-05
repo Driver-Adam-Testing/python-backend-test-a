@@ -248,7 +248,7 @@ class GitProviderService:
 
             # Fetch repositories
             return provider.fetch_repositories(
-                installation, page_size=2, max_pages=1, auto_paginate=False
+                installation, page_size=100, max_pages=100, auto_paginate=True
             )
 
         except GitProviderAppRevokeError:

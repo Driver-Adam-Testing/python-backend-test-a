@@ -6,6 +6,7 @@ from uuid import UUID
 
 import requests
 from database.models import VcsAutoUpdatePolicy
+from onboarding.bitbucket_rate_limiter import rate_limiter
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from onboarding.vcs_utils import (
     AuthorInfo,
@@ -49,8 +50,9 @@ def get_default_branch(workspace: str, repo_slug: str, access_token: str) -> str
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers)
+    )
 
     data = response.json()
     # Default branch info is in mainbranch.name
@@ -177,8 +179,9 @@ def get_latest_commit(
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits/{default_branch}"
 
-    response = requests.get(url, headers=headers, params={"pagelen": 1})
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers, params={"pagelen": 1})
+    )
 
     commits = response.json().get("values", [])
     if commits:
@@ -193,8 +196,9 @@ def fetch_vcs_info(
 
     # Fetch repository information
     repo_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
-    repo_response = requests.get(repo_url, headers=headers)
-    repo_response.raise_for_status()
+    repo_response = rate_limiter.execute_with_retry(
+        lambda: requests.get(repo_url, headers=headers)
+    )
     repo_data = repo_response.json()
     logger.info(
         f"Repo information retrieved from Bitbucket API (status code {repo_response.status_code}): {repo_data}"
@@ -204,8 +208,9 @@ def fetch_vcs_info(
 
     # Fetch detailed commit information
     commit_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commit/{commit_sha}"
-    commit_response = requests.get(commit_url, headers=headers)
-    commit_response.raise_for_status()
+    commit_response = rate_limiter.execute_with_retry(
+        lambda: requests.get(commit_url, headers=headers)
+    )
     commit_data = commit_response.json()
     logger.info(
         f"Commit data retrieved from Bitbucket API (status code {commit_response.status_code}): {commit_data}"
@@ -577,8 +582,9 @@ def get_repo_clone_info_from_id(
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
     #
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers)
+    )
 
     data = response.json()
     full_name = data.get("full_name")
@@ -597,8 +603,9 @@ def fetch_bitbucket_default_branch_name(
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers)
+    )
 
     data = response.json()
     return data.get("mainbranch", {}).get("name", "main")
@@ -615,8 +622,9 @@ def list_pull_requests(
 
     # Handle pagination
     while url:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
+        response = rate_limiter.execute_with_retry(
+            lambda u=url, p=params: requests.get(u, headers=headers, params=p)
+        )
 
         data = response.json()
         all_prs.extend(data.get("values", []))
@@ -638,8 +646,9 @@ def get_pull_request_commits(
 
     # Handle pagination
     while url:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+        response = rate_limiter.execute_with_retry(
+            lambda u=url: requests.get(u, headers=headers)
+        )
 
         data = response.json()
         all_commits.extend(data.get("values", []))
@@ -660,7 +669,9 @@ def close_pull_request(
 
     # First, check the PR status
     pr_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}"
-    pr_response = requests.get(pr_url, headers=headers)
+    pr_response = rate_limiter.execute_with_retry(
+        lambda: requests.get(pr_url, headers=headers)
+    )
 
     if pr_response.status_code == 200:
         pr_data = pr_response.json()
@@ -674,10 +685,11 @@ def close_pull_request(
     # Try to decline the PR
     decline_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/decline"
     data = {"message": "Closing this PR - no longer needed"}
-    response = requests.post(decline_url, headers=headers, data=json.dumps(data))
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.post(decline_url, headers=headers, data=json.dumps(data))
+    )
 
     try:
-        response.raise_for_status()
         print(f"Closed pull request #{pr_id}")
     except requests.HTTPError as e:
         print(f"Failed to close pull request #{pr_id}: {e}")
@@ -717,10 +729,11 @@ def create_pull_request(
     }
 
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests"
-    response = requests.post(url, headers=headers, json=pr_data)
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.post(url, headers=headers, json=pr_data)
+    )
 
     try:
-        response.raise_for_status()
         print(
             f"Pull request created successfully: {response.json()['links']['html']['href']}"
         )

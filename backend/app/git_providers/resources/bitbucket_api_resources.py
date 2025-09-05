@@ -78,8 +78,9 @@ class BitbucketAPIResources:
         workspace: str,
         access_token: str,
         page_size: int = 100,
-        page_url: str | None = None,
-        params: dict | None = None,
+        page: int = 1,
+        # page_url: str | None = None,
+        # params: dict | None = None,
     ) -> dict:
         """
         Fetch a single page of repositories with rate limiting.
@@ -98,15 +99,15 @@ class BitbucketAPIResources:
         rate_limit_key = f"token_{access_token[:8]}"
 
         # Use provided URL or construct initial URL
-        url = page_url or f"{self.api_base}/repositories/{workspace}"
+        url = f"{self.api_base}/repositories/{workspace}"
 
         # Only add params if not using a page_url (which includes params)
-        if not page_url and params is None:
-            params = {"pagelen": page_size}
-        elif not page_url:
-            params = {**params, "pagelen": page_size}
-        else:
-            params = {}  # page_url already includes params
+        params = {"pagelen": page_size, "page": page}
+        # if not page_url and params is None:
+        # elif not page_url:
+        #     params = {**params, "pagelen": page_size}
+        # else:
+        #     params = {}  # page_url already includes params
 
         try:
 
@@ -168,7 +169,7 @@ class BitbucketAPIResources:
             return data.get("values", [])
 
         repos = []
-        page_count = 0
+        page_count = 1
         url = None
 
         # Set a reasonable default max_pages if not specified
@@ -179,7 +180,7 @@ class BitbucketAPIResources:
             while page_count < max_pages:
                 # Fetch page
                 data = self.fetch_repositories_page(
-                    workspace, access_token, page_size, page_url=url
+                    workspace, access_token, page_size, page=page_count
                 )
 
                 # Extract repositories

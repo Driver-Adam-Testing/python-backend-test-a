@@ -1,29 +1,27 @@
 import argparse
 from pathlib import Path
 
-from utils.symbol_table.comparison import TimingInfo
-from utils.symbol_table.core import VisibilityAlgorithm
+from utils.symbol_table_v2.comparison import TimingInfo
 
 
 def run_and_print_sym_table(
     project_abspath: Path,
-    algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
     show_timing: bool = True,
 ) -> None:
-    from utils.symbol_table import build_symbol_table, print_summary
+    from utils.symbol_table_v2 import build_symbol_table, print_summary
 
     files = list(project_abspath.rglob("*"))
     files = [f for f in files if f.is_file()]
 
-    print(f"Building symbol table using {algorithm.value} visibility algorithm...")
+    print("Building symbol table...")
 
     if show_timing:
         symbol_table, timing = build_symbol_table(
-            files, project_abspath, algorithm=algorithm, return_timing=True
+            files, project_abspath, return_timing=True
         )
-        print_timing_info(timing, algorithm.value)
+        print_timing_info(timing, "na")
     else:
-        symbol_table = build_symbol_table(files, project_abspath, algorithm=algorithm)
+        symbol_table = build_symbol_table(files, project_abspath)
 
     print_summary(symbol_table)
 
@@ -52,15 +50,8 @@ def main() -> None:
     parser.add_argument(
         "project_path",
         nargs="?",
-        default="/Users/andrewmark/Downloads/chesslib7",
+        default="/Users/shaneghiotto/driver/uploaded_codebases/Avalonia",
         help="Path to the project directory",
-    )
-    parser.add_argument(
-        "--algorithm",
-        type=str,
-        choices=[algo.value for algo in VisibilityAlgorithm],
-        default=VisibilityAlgorithm.SCC.value,
-        help="Visibility algorithm to use (default: scc)",
     )
     parser.add_argument(
         "--timing",
@@ -70,11 +61,8 @@ def main() -> None:
     args = parser.parse_args()
 
     project_abspath = Path(args.project_path).resolve()
-    algorithm = VisibilityAlgorithm(args.algorithm)
 
-    run_and_print_sym_table(
-        project_abspath, algorithm=algorithm, show_timing=args.timing
-    )
+    run_and_print_sym_table(project_abspath, show_timing=args.timing)
 
 
 if __name__ == "__main__":

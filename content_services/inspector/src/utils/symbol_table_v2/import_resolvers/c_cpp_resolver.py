@@ -1,12 +1,35 @@
+from collections import defaultdict
 from pathlib import Path
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
 
-from ..base import ImportResolver
+from ..base import SymbolResolver
 
 
-class CCppResolver(ImportResolver):
+class CCppResolver(SymbolResolver):
     language = "c_cpp"
+
+    # TODO: DFS
+    def resolve_imports_to_symbols(
+        self,
+        all_files_imports: dict[Path, list[RawTreeSitterSymbolData]],
+        all_files_symbols: dict[Path, list[RawTreeSitterSymbolData]],
+        num_workers: int | None,
+    ) -> dict[Path, set[RawTreeSitterSymbolData]]:
+        visible_symbols = defaultdict(set)
+        for file_path in all_files_imports:
+            for import_sym in all_files_imports[file_path]:
+                resolved_path = self.resolve_import(
+                    current_file=file_path,
+                    import_sym=import_sym,
+                    project_files_to_symbols_map=all_files_symbols,
+                )
+                if resolved_path:
+                    visible_symbols[file_path].update(
+                        all_files_symbols.get(resolved_path, [])
+                    )
+        # TODO: handle aliases here?
+        return visible_symbols
 
     def resolve_import(
         self,

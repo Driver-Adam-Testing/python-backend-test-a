@@ -64,7 +64,7 @@ class SymbolResolver(ABC):
         self,
         all_file_imports: dict[Path, list[RawTreeSitterSymbolData]],
         all_files_symbols: dict[Path, list[RawTreeSitterSymbolData]],
-        project_root: Path,
+        num_workers: int | None,
     ) -> dict[Path, set[RawTreeSitterSymbolData]]:
         """
         Given a file's imports, return all symbols visible through those imports.
@@ -73,6 +73,8 @@ class SymbolResolver(ABC):
         - Python: Resolve modules, respect __all__, handle namespaces
         - Java: Resolve packages, handle wildcards
         """
+        # NOTE: consider making this NOT an abstractmethod, and then having abstractmethods for
+        # `resolve_global_imports` (for C#) and `resolve_file_imports` which can be parallelizable
 
     def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003
         super().__init_subclass__(**kwargs)
@@ -92,7 +94,7 @@ class LanguageProvider(ABC):
 
     @classmethod
     @abstractmethod
-    def get_resolver(cls) -> ImportResolver:
+    def get_resolver(cls) -> SymbolResolver:
         """Return the import resolver instance."""
 
     @classmethod

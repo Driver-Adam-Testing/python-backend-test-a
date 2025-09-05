@@ -1,6 +1,6 @@
-from utils.symbol_table.base import LanguageProvider
-from utils.symbol_table.import_resolvers.c_cpp_resolver import CCppResolver
-from utils.symbol_table.symbol_parsers.c_cpp_parser import CCppParser
+from utils.symbol_table_v2.base import LanguageProvider
+from utils.symbol_table_v2.import_resolvers.c_cpp_resolver import CCppResolver
+from utils.symbol_table_v2.symbol_parsers.c_cpp_parser import CCppParser
 
 
 class CCppLanguageProvider(LanguageProvider):

@@ -1,6 +1,6 @@
-from utils.symbol_table.base import LanguageProvider
-from utils.symbol_table.import_resolvers.python_resolver import PythonResolver
-from utils.symbol_table.symbol_parsers.python_parser import PythonParser
+from utils.symbol_table_v2.base import LanguageProvider
+from utils.symbol_table_v2.import_resolvers.python_resolver import PythonResolver
+from utils.symbol_table_v2.symbol_parsers.python_parser import PythonParser
 
 
 class PythonLanguageProvider(LanguageProvider):

@@ -1,6 +1,6 @@
-from utils.symbol_table.base import LanguageProvider
-from utils.symbol_table.import_resolvers.java_resolver import JavaResolver
-from utils.symbol_table.symbol_parsers.java_parser import JavaParser
+from utils.symbol_table_v2.base import LanguageProvider
+from utils.symbol_table_v2.import_resolvers.java_resolver import JavaResolver
+from utils.symbol_table_v2.symbol_parsers.java_parser import JavaParser
 
 
 class JavaLanguageProvider(LanguageProvider):

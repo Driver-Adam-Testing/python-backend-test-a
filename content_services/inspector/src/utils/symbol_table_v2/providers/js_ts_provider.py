@@ -1,6 +1,6 @@
-from utils.symbol_table.base import LanguageProvider
-from utils.symbol_table.import_resolvers.js_ts_resolver import JsTsResolver
-from utils.symbol_table.symbol_parsers.js_ts_parser import JsTsParser
+from utils.symbol_table_v2.base import LanguageProvider
+from utils.symbol_table_v2.import_resolvers.js_ts_resolver import JsTsResolver
+from utils.symbol_table_v2.symbol_parsers.js_ts_parser import JsTsParser
 
 
 class JsTsLanguageProvider(LanguageProvider):

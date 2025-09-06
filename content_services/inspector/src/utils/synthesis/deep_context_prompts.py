@@ -39,6 +39,34 @@ Write an LLM onboarding guide for this codebase for the purpose articulated abov
 )
 
 
+# TODO: Re-use the actual goal to avoid de-sync/DRY
+ARCHITECTURE_RELEVANCE_TAGGING_IN_UPDATE_TASK_DETAILS = Component(
+    string="""
+The document we will update is an Architecture Overview. The Architecture Overview documents and explains the architecture of a particular codebase in a dense manner. The use case is for an LLM agent to consult this architecture overview first so that it can much more efficiently performs subsequent steps to solve a task. An architecture document will take on various forms depending on the exact context (underlying codebase kind, size, etc.), but common elements will be identification of key components and emergent structure, functionality provided by the codebase as a whole, and how key componewnts they fit together. Accordingly there is more focus on the conceptual level than, for example, mechanical information about the directory structure. Specifically, you are to decide which of the following categories the diff content belongs to, in relation to this kind of document:
+
+**very_relevant**: This means the diff content is highly likely to require updates to an archiecture overview document. For example: it represents a major refactor of major existing functionality, new feature development significant enough to affect thinking about architecture, or major changes to interfaces between key components. These are just some specific examples, but this category represents any major changes that would be expected to change how you explain the architecture of the codebase.
+
+**possibly_relevant**: This means the diff content may not be at the level of major overhaul but changes the behavior/nature/interface of the codebase enough that it may be important to reflect in the architecture overview document. Such changes would likely be small but important to reflect the architecture accurately. Renaming of files or moving pieces of code around should probably be tagged as possibly relevant. Even if it doesn't change the architecture, it may be important to update statements about paths/where implementation content is found in the codebase in the architecture overview.
+
+**not_relevant**: This means the diff content is not important to make updates to an architecture overview document. The code changes may be important (bug fix, retire tech debt, performance improvement, part of new feature development, etc.) in various senses of the word "important" to the development of the codebase, but unlikely to require editing and updating of a top level architecture document. The code diff may be substantial in terms of lines of code changes, etc., but does not rise the level of being relevant to changing how an architecture overview is explained.
+    """
+)
+
+
+# TODO: Re-use the actual goal to avoid de-sync/DRY
+LLM_ONBOARDING_RELEVANCE_TAGGING_IN_UPDATE_TASK_DETAILS = Component(
+    string="""
+The document we will update is an LLM Onboarding Guide. The LLM Onboarding Guide document focuses on how best to enable an LLM coding agent to immediately know what to do/where to go next in workflows to accomplish users' tasks (e.g., as input in an IDE chat experience). Content will vary according to the exact context (underlying codebase kind, size, etc.), but common elements will include identifying the major capabilities of they codebase but especially on how they interact, how to navigate the codebase to find more detailed content for specific topics, and important components to consider together/cross-reference.
+
+**very_relevant**: This means the diff content is highly likely to require updates to an LLM onboarding guide document. For example, it represents a major refactor of major existing functionality, significant new feature development, or major changes to interfaces between components and directory structure. These are just some specific examples, but this category represents any major changes that would be expected to change how you onboard a person or LLM to the codebase.
+
+**possibly_relevant**: This means the diff content may not be at the level of major overhaul but changes the behavior/nature/interface of the codebase enough that it may be important to reflect in the LLM onboarding guide document. Such changes would likely be small to the document but important to accurately reflect the codebase when discussing its contents and navigation. Renaming of files or moving pieces of code around should probably be tagged as possible relevant. Even if it doesn't change functionality, it may be important to update statements about paths/where implementation content is found in the codebase in the onboarding guide.
+
+**not_relevant**: This means the diff content is not important to make updates to an LLM onboarding guide. The code changes may be important (bug fix, retire tech debt, performance improvement, part of new feature development, etc.) in various sense of the word "important" to the development of the codebase, but unlikely to require editing and updating of a top level LLM onboarding guide document. The code diff may be substantial in terms of lines of code changes, etc., but does not rise to the level of being relevant to changing how an onboarding guide is built.
+    """
+)
+
+
 ARCHITECTURE_OVERVIEW_INTENT = (
     Prompt.empty()
     .append(_GENERAL_DEEP_CONTEXT_PREFACE)

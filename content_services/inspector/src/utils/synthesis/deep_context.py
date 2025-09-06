@@ -5,7 +5,8 @@ from typing import Self
 from aiolimiter import AsyncLimiter
 from database.models_enums import ContentKind
 from pydantic import BaseModel
-from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig
+from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
+from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
     Component,
     Prompt,
@@ -16,6 +17,13 @@ from utils.update_flow import DiffUpdatable
 OPENAI_SEM = asyncio.Semaphore(300)
 OPENAI_RATE_LIMITER = AsyncLimiter(100, 1)
 CHUNK_SIZE_LIMIT = 96_000
+
+
+# TODO: Redundant with content in places like `entry_point.py`. Unify.
+# TODO: We should ultimately use this _very carefully_ to be robust and not miss out on critical information in the future.
+def _clip_prompt(p: str, chunk_size: int) -> str:
+    prompt_chunks = split_text(p, chunk_size=chunk_size, chunk_overlap=0)
+    return prompt_chunks[0].text if len(prompt_chunks) > 1 else p
 
 
 # TODO: Redundant with content in places like `entry_point.py`. Unify.
@@ -69,7 +77,30 @@ You will be given the output of `git diff` for a specific file and will respond 
             .append(Component(string=task_description))
             .append(doc_specific_details)
             .append(Component(string=task_afterword))
+            .into_str()
         )
+
+    @classmethod
+    async def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        root_rel_path: str,
+        doc_specific_details: Component,
+        diff: str,
+    ) -> Self:
+        system_prompt = cls.system_prompt(doc_specific_details=doc_specific_details)
+        user_prompt = _clip_prompt(
+            p=f"File (`{root_rel_path}`) git diff:\n{diff}", chunk_size=CHUNK_SIZE_LIMIT
+        )
+        content_raw = await bounded_llm_generate(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+        return cls.parse_raw(content_raw)
 
 
 class DeepContextDocKind(StrEnum):
@@ -117,15 +148,36 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
     def sections(self) -> list[str]:
         return [s for (s, _) in self.sources]
 
-    async def update_from_diff(self, diff: FlatTopoFileDiffDag) -> Self:
+    async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
         # TODO:
         # Filter, process, and aggregate on diff nodes.
         # Branch on complexity for update logic.
         # Complete the update and return a new doc.
-        # llm = AsyncChatOpenAI(
-        #     model="gpt-4o-2024-08-06", temperature=0, request_timeout=500
-        # ),
-        pass
+
+        # Step 1: Filter files for relevance.
+        llm = (
+            ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=500),
+        )
+
+        root, tsort_dag = diff_collection
+        async with asyncio.TaskGroup() as tg:
+            relevance_coros = []
+            for node, diff in tsort_dag:
+                relevance_coros.append(
+                    (
+                        node,
+                        diff,
+                        tg.create_task(
+                            RelevanceFlag.from_llm(
+                                llm=llm, root_rel_path=node.root_rel_path, diff=diff
+                            )
+                        ),
+                    )
+                )
+
+        _relevance_list = [(n, d, c.result()) for n, d, c in relevance_coros]
+
+        raise NotImplementedError("WIP: not complete")
 
 
 async def update_deep_context_doc(old_content: str, diff: FlatTopoFileDiffDag) -> str:

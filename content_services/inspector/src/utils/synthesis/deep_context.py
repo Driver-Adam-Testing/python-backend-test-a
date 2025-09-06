@@ -11,7 +11,7 @@ from shared.prompts.structured_prompting import (
     Component,
     Prompt,
 )
-from utils.dag import FlatTopoFileDiffDag
+from utils.dag import FlatTopoFileDiffDag, LiteNode
 from utils.update_flow import DiffUpdatable
 
 OPENAI_SEM = asyncio.Semaphore(300)
@@ -24,6 +24,14 @@ CHUNK_SIZE_LIMIT = 96_000
 def _clip_prompt(p: str, chunk_size: int) -> str:
     prompt_chunks = split_text(p, chunk_size=chunk_size, chunk_overlap=0)
     return prompt_chunks[0].text if len(prompt_chunks) > 1 else p
+
+
+def _combine_diffs(diffs: list[str]) -> str:
+    prompt = Prompt.empty()
+    for d in diffs:
+        prompt.append(Component(string=d))
+
+    return prompt.into_str()
 
 
 # TODO: Redundant with content in places like `entry_point.py`. Unify.
@@ -148,12 +156,20 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
     def sections(self) -> list[str]:
         return [s for (s, _) in self.sources]
 
-    async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
-        # TODO:
-        # Filter, process, and aggregate on diff nodes.
-        # Branch on complexity for update logic.
-        # Complete the update and return a new doc.
+    async def _update_from_llm_single_shot(llm: ChatOpenAI, combined_diff: str) -> Self:
+        raise NotImplementedError()
 
+    async def _update_from_llm_sequential(
+        llm: ChatOpenAI, diff_chunks: list[str]
+    ) -> Self:
+        raise NotImplementedError()
+
+    async def _update_from_llm_scatter_gather(
+        llm: ChatOpenAI, relevant_diffs: list[tuple[LiteNode, str]]
+    ) -> Self:
+        raise NotImplementedError()
+
+    async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
         # Step 1: Filter files for relevance.
         llm = (
             ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=500),
@@ -175,10 +191,48 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
                     )
                 )
 
-        _relevance_list = [(n, d, c.result()) for n, d, c in relevance_coros]
+        relevance_list = [(n, d, c.result()) for n, d, c in relevance_coros]
 
-        raise NotImplementedError("WIP: not complete")
+        is_relevant_list = [
+            (n, d, c)
+            for n, d, c in relevance_list
+            if c.flag == DocUpdateRelevance.VeryRelevant
+            or c.flag == DocUpdateRelevance.PossiblyRelevant
+        ]
+        is_relevant_diffs = [d for _n, d, _c in is_relevant_list]
+        is_relevant_diffs_with_nodes = [(n, d) for n, d, _c in is_relevant_list]
 
+        # If nothing is relevant, return the original document
+        # TODO: should this be a deep copy?
+        if not is_relevant_diffs:
+            return self
 
-async def update_deep_context_doc(old_content: str, diff: FlatTopoFileDiffDag) -> str:
-    return old_content
+        is_relevant_combined_diffs_chunks = split_text(
+            text=_combine_diffs(diffs=is_relevant_diffs),
+            chunk_size=CHUNK_SIZE_LIMIT,
+            chunk_overlap=0,
+        )
+
+        is_relevant_combined_diff_str_chunks = [
+            c.text for c in is_relevant_combined_diffs_chunks
+        ]
+
+        # Step 2: Dispatch to LLM update generation based on size of aggregated `git diff` strings.
+        match len(is_relevant_combined_diff_str_chunks):
+            case 0:
+                raise ValueError("Unreachable")
+            # If everything fits comfortably in a single context window, single shot it.
+            case 1:
+                return await self._update_from_llm_single_shot(
+                    llm=llm, combined_diff=is_relevant_combined_diff_str_chunks[0]
+                )
+            # If there are only a few aggregated chunks, do a short sequential processing.
+            case n if 2 <= n <= 5:
+                return await self._update_from_llm_sequential(
+                    llm=llm, diff_chunks=is_relevant_combined_diff_str_chunks
+                )
+            # For very large diffs, use a scatter-gather approach.
+            case _:
+                return await self._update_from_llm_scatter_gather(
+                    llm=llm, relevant_diffs=is_relevant_diffs_with_nodes
+                )

@@ -2,7 +2,7 @@
 
 import strawberry
 from app.api.routes.legacy.scalars import ID
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import Node, PrimaryAsset, Version
 from sqlmodel import Session, select
 
 

@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import Self
 
 from aiolimiter import AsyncLimiter
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig
 from shared.prompts.structured_prompting import (

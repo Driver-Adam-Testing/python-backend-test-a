@@ -11,7 +11,7 @@
 # from uuid import uuid4
 
 # import pytest
-# from database.models_v1 import (
+# from database.models import (
 #     ChunkAndEmbedding,
 #     DerivedContent,
 # )

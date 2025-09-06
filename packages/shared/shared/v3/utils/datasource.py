@@ -2,9 +2,8 @@ import uuid
 from collections import defaultdict
 
 from database.db import get_session
-from database.models_v1 import DocumentSource
-from database.models_v2 import Node, PrimaryAsset, Version
-from database.models_v2_enums import NodeKind
+from database.models import DocumentSource, Node, PrimaryAsset, Version
+from database.models_enums import NodeKind
 from pydantic import BaseModel, Field, PrivateAttr
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select

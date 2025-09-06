@@ -2,8 +2,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 import boto3
-from database.models_v1 import UsageEvent, UsageEventType, UsageSession
-from database.models_v2 import PrimaryAsset
+from database.models import PrimaryAsset, UsageEvent, UsageEventType, UsageSession
 from sqlmodel import Session, select
 
 from shared.interfaces.usage.event_metadata import (

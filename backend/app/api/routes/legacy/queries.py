@@ -1,12 +1,6 @@
-# mypy: disable_error_code="call-arg"
 import logging
-from datetime import datetime
 
 import strawberry
-from app.api.routes.legacy.api_types import (
-    GitProvider,
-    GitRepository,
-)
 from app.api.routes.legacy.document_set import DocumentSet, get_document_set
 from app.api.routes.legacy.orm_ops import (
     check_access,
@@ -16,7 +10,6 @@ from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
-from app.utils.gh_ops import fetch_repos
 from graphql import GraphQLError
 from strawberry.types import Info
 from strawberry.types.nodes import Selection
@@ -25,8 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 @strawberry.type
-class MeResponse:
-    id: ID
+class GitProvider:
+    display_name: str
+    name: str
+    logo_url: str
 
 
 def is_code_content_requested(info: Info) -> bool:
@@ -47,24 +42,7 @@ def is_code_content_requested(info: Info) -> bool:
 
 
 @strawberry.type
-class OrganizationResult:
-    id: str
-    name: str
-    display_name: str
-    workspaces: list[str]
-
-
-@strawberry.type
 class Query:
-    @strawberry.field
-    def organization(self, info: Info, id: str) -> OrganizationResult:
-        return OrganizationResult(
-            id=info.context.user.organization_id,
-            name=info.context.user.organization_display_name,
-            display_name=info.context.user.organization_display_name,
-            workspaces=[],
-        )
-
     @strawberry.field
     def documentSet(
         self,
@@ -120,11 +98,6 @@ class Query:
         )
 
     @strawberry.field
-    def me(self, info: Info) -> MeResponse:
-        user = info.context.user
-        return MeResponse(id=user.subject)  # type: ignore
-
-    @strawberry.field
     def connectedGitProviders(self, info: Info) -> list[GitProvider]:
         """This endpoint lists which git providers (ie Github, Gitlab, etc)that a user/org has configured. It is polled by the UI."""
         providers = []
@@ -139,26 +112,3 @@ class Query:
                 )
             )
         return providers
-
-    @strawberry.field
-    def reposByGitProvider(self, info: Info, provider: str) -> list[GitRepository]:
-        repos = []
-        user = info.context.user
-        session = info.context.session
-
-        if provider != "github":
-            raise NotImplementedError()
-
-        git_repos = fetch_repos(session, user.organization_id)
-        repos = [
-            GitRepository(
-                provider_name=provider,
-                repo_name=repo["name"],
-                org=repo["owner"]["login"],
-                last_updated=datetime.fromisoformat(repo["updated_at"]),
-                metadata=repo,
-            )
-            for repo in git_repos
-        ]
-        # Assuming the response from fetch_repos is a list of dictionaries
-        return repos

@@ -2,7 +2,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 
-from database.models_v1 import UsageEventType
+from database.models import UsageEventType
 from shared.agent.chat_openai import OutputConfig
 from shared.interfaces.usage.event_metadata import (
     UsageEventMetadata,

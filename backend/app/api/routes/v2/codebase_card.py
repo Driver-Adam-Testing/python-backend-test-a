@@ -4,8 +4,8 @@ from datetime import datetime  # noqa: TCH003
 from typing import Any
 from uuid import UUID  # noqa: TCH003
 
-from database.models_v1 import DerivedContent
-from database.models_v2 import (
+from database.models import (
+    DerivedContent,
     Node,
     PrimaryAsset,
     PrimaryAssetKind,
@@ -13,7 +13,7 @@ from database.models_v2 import (
     PrimaryAssetTag,
     Version,
 )
-from database.models_v2_enums import ContentKind, VcsAutoUpdatePolicy, VersionStatus
+from database.models_enums import ContentKind, VcsAutoUpdatePolicy, VersionStatus
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import and_, func, or_

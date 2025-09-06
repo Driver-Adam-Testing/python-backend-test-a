@@ -4,7 +4,7 @@ import uuid
 
 import modal
 from common import app
-from database.models_v2_enums import ContentKind
+from database.models_enums import ContentKind
 from utils.dag import FlatTopoFileDiffDag
 from utils.synthesis.deep_context import DeepContextDoc
 
@@ -51,6 +51,7 @@ deep_context_image = (
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
         modal.Secret.from_name("open-ai"),
+        modal.Secret.from_name("aws-inspector-s3"),
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB.
@@ -68,7 +69,7 @@ async def make_changelog(
     install_id: str,
 ) -> None:
     from database.db import async_engine
-    from database.models_v1 import DerivedContent
+    from database.models import DerivedContent
     from inspection.changelog import create_changelog
     from sqlmodel import delete
     from sqlmodel.ext.asyncio.session import AsyncSession
@@ -84,8 +85,7 @@ async def make_changelog(
         print("No repo_id found, skipping changelog generation.")
         return content_kind, "", "", [], "", ""
     print(f"Creating changelog for version {version_id}")
-    changelog = await create_changelog(repo_id=repo_id, install_id=install_id)
-    print(f"Changelog created for version {version_id}")
+    changelog = await create_changelog(version_id=version_id, install_id=install_id)
     print("Changelog content:", changelog["overall_changelog"])
 
     # TODO: IO okay here?
@@ -144,7 +144,7 @@ async def deep_context_docs(
     new_version_id: uuid.UUID,
     install_id: str | None,
 ) -> list:
-    from database.models_v2_enums import AutoDocConfigKind, VersionStatus
+    from database.models_enums import AutoDocConfigKind, VersionStatus
     from utils.db import get_version_by_id
     from utils.synthesis.deep_context import (
         DeepContextDoc,

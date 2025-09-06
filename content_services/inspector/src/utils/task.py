@@ -273,8 +273,8 @@ class TaskManager:
     def with_s3_persistence(
         cls,
         bucket_name: str,
-        *args: Any,  # noqa: ANN401
-        **kwargs: Any,  # noqa: ANN401
+        *args: Any,
+        **kwargs: Any,
     ) -> "TaskManager":
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
@@ -289,7 +289,7 @@ class TaskManager:
             f"Initialized progress tracking: {self.progress_state.total_work_units} total work units, {self.progress_state.task_count} tasks"
         )
 
-    def _update_progress(self, completed_task: "Task", threshold: float = 1.0) -> None:
+    def _update_progress(self, completed_task: "Task", threshold: float = 0.1) -> None:
         self.progress_state.completed_work_units += completed_task.work_units
         self.progress_state.completed_task_count += 1
 

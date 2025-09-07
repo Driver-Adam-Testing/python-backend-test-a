@@ -8,15 +8,30 @@ from pydantic import BaseModel
 from shared.agent.chat_openai_async import ChatOpenAI, OutputConfig, OutputConfigKind
 from shared.chunking.text_splitter import split_text
 from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
 from utils.dag import FlatTopoFileDiffDag, LiteNode
+from utils.synthesis.deep_context_prompts import (
+    ARCHITECTURE_DOC_DESCRIPTION,
+    DEEP_CONTEXT_DOCS_PREAMBLE,
+    LLM_ONBOARDING_DOC_DESCRIPTION,
+    UPDATER_IDENTITY_PREAMBLE,
+)
 from utils.update_flow import DiffUpdatable
+
+TAG_MODEL = "gpt-4.1"
+UPDATE_SINGLE_SHOT_MODEL = "gpt-4.1"
+UPDATE_FEW_SHOT_CHUNK_MODEL = "gpt-4.1"
+UPDATE_FEW_SHOT_AGGREGATE_MODEL = "gpt-5"
+UPDATE_MANY_SHOT_CHUNK_MODEL = "gpt-4.1"
+UPDATE_MANY_SHOT_AGGREGATE_MODEL = "gpt-5"
 
 OPENAI_SEM = asyncio.Semaphore(300)
 OPENAI_RATE_LIMITER = AsyncLimiter(100, 1)
 CHUNK_SIZE_LIMIT = 96_000
+CHUNK_SIZE_FOR_DIFF_AGGREGATION = 96_000
 
 
 # TODO: Redundant with content in places like `entry_point.py`. Unify.
@@ -47,68 +62,6 @@ async def bounded_llm_generate(
         return await llm.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt, output_cfg=output_cfg
         )
-
-
-class DocUpdateRelevance(StrEnum):
-    VeryRelevant = "very_relevant"
-    PossiblyRelevant = "possibly_relevant"
-    NotRelevant = "not_relevant"
-
-
-class RelevanceFlag(BaseModel):
-    flag: DocUpdateRelevance
-
-    @staticmethod
-    def system_prompt(doc_specific_details: Component) -> str:
-        identity_preamble = """
-You are an expert software engineer and technical writier that specializes in updating existing documents about a software codebase when changes are made to the underlying code.
-        """
-
-        deep_context_docs_preamble = """
-The kind of document under consideration for being updated is a "deep context document." The specific kind of deep context document is detailed below. But broadly speaking, these documents are intended to be comprehensive and exhaustive on a particular topic, but necessarily high level because they are usually the size of 1 -- 3 pages to cover a large scope such as an entire codebase. Any detail will be specific to the kind of document (e.g., an onboarding guide document may require detailed accounting of file path changes).
-        """
-
-        task_description = """
-Your job is to review a code diff for a file provided to you and decide if it is significant enough to be considered for updating a particular document. Here are the details on the particular document kind under consideration as well as how to think about content being relevant:
-        """
-
-        task_afterword = """
-It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what you mark as very relevant or possibly relevant, erring on the conservative side (i.e., mark as not relevant if it is not clear).
-
-You will be given the output of `git diff` for a specific file and will respond only with your categorization for the relevance of this file in consideration of updating the target document.
-        """
-
-        return (
-            Prompt.empty()
-            .append(Component(string=identity_preamble))
-            .append(Component(string=deep_context_docs_preamble))
-            .append(Component(string=task_description))
-            .append(doc_specific_details)
-            .append(Component(string=task_afterword))
-            .into_str()
-        )
-
-    @classmethod
-    async def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        root_rel_path: str,
-        doc_specific_details: Component,
-        diff: str,
-    ) -> Self:
-        system_prompt = cls.system_prompt(doc_specific_details=doc_specific_details)
-        user_prompt = _clip_prompt(
-            p=f"File (`{root_rel_path}`) git diff:\n{diff}", chunk_size=CHUNK_SIZE_LIMIT
-        )
-        content_raw = await bounded_llm_generate(
-            llm=llm,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            sem=OPENAI_SEM,
-            rate_limiter=OPENAI_RATE_LIMITER,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
-        return cls.parse_raw(content_raw)
 
 
 class DeepContextDocKind(StrEnum):
@@ -144,6 +97,100 @@ class DeepContextDocKind(StrEnum):
                 )
 
 
+class DocUpdateRelevance(StrEnum):
+    VeryRelevant = "very_relevant"
+    PossiblyRelevant = "possibly_relevant"
+    NotRelevant = "not_relevant"
+
+
+class RelevanceFlag(BaseModel):
+    flag: DocUpdateRelevance
+
+    @staticmethod
+    def system_prompt(doc_kind: DeepContextDocKind) -> str:
+        task_description = Component(
+            string="""
+Your job is to review a code diff for a file provided to you and decide if it is significant enough to be considered for updating a particular document. Here are the details on the particular document kind under consideration as well as how to think about content being relevant:
+            """
+        )
+
+        match doc_kind:
+            case DeepContextDocKind.LLM_ONBOARDING:
+                doc_description = LLM_ONBOARDING_DOC_DESCRIPTION
+                tag_descriptions = Component(
+                    string="""
+**very_relevant**: This means the diff content is highly likely to require updates to an LLM onboarding guide document. For example, it represents a major refactor of major existing functionality, significant new feature development, or major changes to interfaces between components and directory structure. These are just some specific examples, but this category represents any major changes that would be expected to change how you onboard a person or LLM to the codebase.
+
+**possibly_relevant**: This means the diff content may not be at the level of major overhaul but changes the behavior/nature/interface of the codebase enough that it may be important to reflect in the LLM onboarding guide document. Such changes would likely be small to the document but important to accurately reflect the codebase when discussing its contents and navigation. Renaming of files or moving pieces of code around should probably be tagged as possible relevant. Even if it doesn't change functionality, it may be important to update statements about paths/where implementation content is found in the codebase in the onboarding guide.
+
+**not_relevant**: This means the diff content is not important to make updates to an LLM onboarding guide. The code changes may be important (bug fix, retire tech debt, performance improvement, part of new feature development, etc.) in various sense of the word "important" to the development of the codebase, but unlikely to require editing and updating of a top level LLM onboarding guide document. The code diff may be substantial in terms of lines of code changes, etc., but does not rise to the level of being relevant to changing how an onboarding guide is built.
+                    """
+                )
+
+            case DeepContextDocKind.ARCHITECTURE:
+                doc_description = ARCHITECTURE_DOC_DESCRIPTION
+                tag_descriptions = Component(
+                    string="""
+**very_relevant**: This means the diff content is highly likely to require updates to an archiecture overview document. For example: it represents a major refactor of major existing functionality, new feature development significant enough to affect thinking about architecture, or major changes to interfaces between key components. These are just some specific examples, but this category represents any major changes that would be expected to change how you explain the architecture of the codebase.
+
+**possibly_relevant**: This means the diff content may not be at the level of major overhaul but changes the behavior/nature/interface of the codebase enough that it may be important to reflect in the architecture overview document. Such changes would likely be small but important to reflect the architecture accurately. Renaming of files or moving pieces of code around should probably be tagged as possibly relevant. Even if it doesn't change the architecture, it may be important to update statements about paths/where implementation content is found in the codebase in the architecture overview.
+
+**not_relevant**: This means the diff content is not important to make updates to an architecture overview document. The code changes may be important (bug fix, retire tech debt, performance improvement, part of new feature development, etc.) in various senses of the word "important" to the development of the codebase, but unlikely to require editing and updating of a top level architecture document. The code diff may be substantial in terms of lines of code changes, etc., but does not rise the level of being relevant to changing how an architecture overview is explained.
+                    """
+                )
+
+            case _:
+                raise ValueError(
+                    f"Relevance tagging in the update flow not supported for doc kind: {doc_kind}"
+                )
+
+        task_afterword = Component(
+            string="""
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what you mark as very relevant or possibly relevant, erring on the conservative side (i.e., mark as not relevant if it is not clear).
+
+You will be given the output of `git diff` for a specific file and will respond only with your categorization for the relevance of this file in consideration of updating the target document.
+            """
+        )
+
+        return (
+            Prompt.empty()
+            .append(UPDATER_IDENTITY_PREAMBLE)
+            .append(DEEP_CONTEXT_DOCS_PREAMBLE)
+            .append(task_description)
+            .append(doc_description)
+            .append(tag_descriptions)
+            .append(task_afterword)
+            .into_str()
+        )
+
+    @classmethod
+    async def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        root_rel_path: str,
+        doc_kind: DeepContextDocKind,
+        diff: str,
+    ) -> Self:
+        system_prompt = cls.system_prompt(doc_kind=doc_kind)
+        user_prompt = _clip_prompt(
+            p=f"File (`{root_rel_path}`) git diff:\n{diff}", chunk_size=CHUNK_SIZE_LIMIT
+        )
+        content_raw = await bounded_llm_generate(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+        return cls.parse_raw(content_raw)
+
+
+# class UpdatedDocument(BaseModel):
+#     updated_content: str
+#     rationale: str
+#
+#
 class DeepContextDoc(DiffUpdatable, BaseModel):
     doc_kind: DeepContextDocKind
     name: str | None
@@ -156,23 +203,81 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
     def sections(self) -> list[str]:
         return [s for (s, _) in self.sources]
 
-    async def _update_from_llm_single_shot(llm: ChatOpenAI, combined_diff: str) -> Self:
-        raise NotImplementedError()
+    @staticmethod
+    def system_prompt_single_shot(doc_kind: DeepContextDocKind) -> str:
+        match doc_kind:
+            case DeepContextDocKind.LLM_ONBOARDING:
+                doc_description = LLM_ONBOARDING_DOC_DESCRIPTION
+            case DeepContextDocKind.ARCHITECTURE:
+                doc_description = ARCHITECTURE_DOC_DESCRIPTION
+            case _:
+                raise ValueError(f"Unsupported doc kind for update flow: {doc_kind}")
+        task_description = Component(
+            string="""
+The code diff content deemed relevant to updating the current document has been previously collected and aggregated together. Your job is to take the collected diff content and update the previous version of this deep context document. Here are some further instruction and consideration for updating the document based on the particular kind of document you will be updating:
+            """
+        )
 
-    async def _update_from_llm_sequential(
-        llm: ChatOpenAI, diff_chunks: list[str]
-    ) -> Self:
+        task_afterword = Component(
+            string="""
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed.
+
+You will be given the aggregated diff content of relevant changed files first followed by the target document's previous version content. You will respond only with your updated/edited version of the target document.
+            """
+        )
+
+        return (
+            Prompt.empty()
+            .append(UPDATER_IDENTITY_PREAMBLE)
+            .append(DEEP_CONTEXT_DOCS_PREAMBLE)
+            .append(task_description)
+            .append(doc_description)
+            .append(task_afterword)
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .into_str()
+        )
+
+    async def _update_from_llm_single_shot(self, combined_diff: str) -> Self:
+        llm = (
+            ChatOpenAI(
+                model=UPDATE_SINGLE_SHOT_MODEL, temperature=0, request_timeout=500
+            ),
+        )
+        system_prompt = type(self).system_prompt_single_shot()
+        user_prompt = f"**Diff content**:\n\n{combined_diff}\n\n**Previous document version**:\n\n{self.doc_content}"
+
+        content_raw = await bounded_llm_generate(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            sem=OPENAI_SEM,
+            rate_limiter=OPENAI_RATE_LIMITER,
+            output_cfg=OutputConfig.default(),
+        )
+        # updated_document = UpdatedDocument.parse_raw(content_raw)
+        updated_document = content_raw
+
+        return Self(
+            doc_kind=self.doc_kind,
+            name=self.name,
+            user_context=self.user_context,
+            sources=self.sources,
+            config_content=self.config_content,
+            doc_content=updated_document,
+        )
+
+    async def _update_from_llm_sequential(diff_chunks: list[str]) -> Self:
         raise NotImplementedError()
 
     async def _update_from_llm_scatter_gather(
-        llm: ChatOpenAI, relevant_diffs: list[tuple[LiteNode, str]]
+        relevant_diffs: list[tuple[LiteNode, str]],
     ) -> Self:
         raise NotImplementedError()
 
     async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
         # Step 1: Filter files for relevance.
-        llm = (
-            ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=500),
+        llm_relevance_tagging = (
+            ChatOpenAI(model=TAG_MODEL, temperature=0, request_timeout=500),
         )
 
         root, tsort_dag = diff_collection
@@ -185,7 +290,10 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
                         diff,
                         tg.create_task(
                             RelevanceFlag.from_llm(
-                                llm=llm, root_rel_path=node.root_rel_path, diff=diff
+                                llm=llm_relevance_tagging,
+                                root_rel_path=node.root_rel_path,
+                                doc_kind=self.doc_kind,
+                                diff=diff,
                             )
                         ),
                     )
@@ -209,7 +317,7 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
 
         is_relevant_combined_diffs_chunks = split_text(
             text=_combine_diffs(diffs=is_relevant_diffs),
-            chunk_size=CHUNK_SIZE_LIMIT,
+            chunk_size=CHUNK_SIZE_FOR_DIFF_AGGREGATION,
             chunk_overlap=0,
         )
 
@@ -224,15 +332,15 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
             # If everything fits comfortably in a single context window, single shot it.
             case 1:
                 return await self._update_from_llm_single_shot(
-                    llm=llm, combined_diff=is_relevant_combined_diff_str_chunks[0]
+                    combined_diff=is_relevant_combined_diff_str_chunks[0]
                 )
             # If there are only a few aggregated chunks, do a short sequential processing.
             case n if 2 <= n <= 5:
                 return await self._update_from_llm_sequential(
-                    llm=llm, diff_chunks=is_relevant_combined_diff_str_chunks
+                    diff_chunks=is_relevant_combined_diff_str_chunks
                 )
             # For very large diffs, use a scatter-gather approach.
             case _:
                 return await self._update_from_llm_scatter_gather(
-                    llm=llm, relevant_diffs=is_relevant_diffs_with_nodes
+                    relevant_diffs=is_relevant_diffs_with_nodes
                 )

@@ -162,7 +162,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
                 workspace, repo_slug, access_token, branch, commit_slug
             )
         elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
-            gitlab_ops.create_pull_request(
+            gitlab_ops.create_pull_request_with_bot_cleanup(
                 base_url, repo_id, access_token, branch, commit_slug
             )
 

@@ -428,19 +428,13 @@ async def inspect_db(
         else:
             print("No changes detected skipping tech doc export.")
 
-        # print("Spawning off deep context docs generation...")
+        print("Spawning off deep context docs generation...")
         # TODO: do deep context doc specific I/O or further analysis.
-        # _completed_docs = await deep_context_docs.remote.aio(
-        #     version_id,
-        #     install_id,
-        # )
-        status_func = modal.Function.from_name(
-            app_name="inspector-v2", name="set_codebase_status_in_container"
+        _completed_docs = await deep_context_docs.remote.aio(
+            version_id,
+            install_id,
         )
-        await status_func.remote.aio(
-            version_id=version_id,
-            status=VersionStatus.GENERATION_COMPLETE,
-        )
+
         try:
             cleanup_old_versions.remote(version_id)
         except Exception as e:

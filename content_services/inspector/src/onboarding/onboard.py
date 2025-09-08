@@ -441,7 +441,7 @@ def handle_bitbucket_events(
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [
             executor.submit(bitbucket_ops.download_and_upload_repo, org_id, repo, token)
             for repo in repos_added

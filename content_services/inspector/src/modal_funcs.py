@@ -246,9 +246,8 @@ def export_tech_docs_to_zip(
 
     import boto3
     from database.db import engine
-    from database.models_v1 import DerivedContent
-    from database.models_v2 import Node, Version
-    from database.models_v2_enums import ContentKind, NodeKind
+    from database.models import DerivedContent, Node, Version
+    from database.models_enums import ContentKind, NodeKind
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
     from utils.export_utils import (

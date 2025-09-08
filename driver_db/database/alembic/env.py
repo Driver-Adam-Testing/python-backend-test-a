@@ -3,17 +3,15 @@ from logging.config import fileConfig
 
 from alembic import context
 from database.config import settings
-from database.models_v1 import SQLModel as V1
-from database.models_v2 import SQLModel as V2
 from sqlalchemy import engine_from_config, inspect, pool, text
 from sqlalchemy.engine import Connection
-from sqlmodel import SQLModel  # Import SQLModel
 
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
 config = context.config
 fileConfig(str(config.config_file_name))
 
-print(V1)
-print(V2)
+from database.models import SQLModel  # noqa PGH004
 
 target_metadata = SQLModel.metadata
 
@@ -85,11 +83,10 @@ def run_migrations_online() -> None:
                     text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
                 )
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.UTC)
             print("Running migrations at", now)
             context.run_migrations()
-            print("Migrations complete at", datetime.datetime.now())
-            # Lock is released when transaction ends
+            print("Migrations complete at", datetime.datetime.now(datetime.UTC))
 
 
 if context.is_offline_mode():

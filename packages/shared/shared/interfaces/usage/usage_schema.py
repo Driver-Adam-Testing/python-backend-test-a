@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from database.models_v1 import UsageEventType
+from database.models import UsageEventType
 from pydantic import BaseModel, Field, computed_field, model_validator
 from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
 

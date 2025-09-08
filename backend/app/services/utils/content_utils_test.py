@@ -1,10 +1,12 @@
-import pytest
 from unittest.mock import Mock
+
+import pytest
+from database.models import DerivedContent
+
 from app.services.utils.content_utils import (
     _get_name_from_content_json,
     get_content_name,
 )
-from database.models_v1 import DerivedContent
 
 
 def test_get_name_from_content_json_valid():

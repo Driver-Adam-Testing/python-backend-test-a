@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models_v1 import ContentKind, DerivedContent
+from database.models import ContentKind, DerivedContent
 from shared.v3.globals.glossary import (
     REFERENCE,
     REFERENCE_CONTENT,

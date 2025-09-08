@@ -3,8 +3,14 @@ import re
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v1 import ChunkAndEmbedding, ContentKind, DerivedContent
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models import (
+    ChunkAndEmbedding,
+    ContentKind,
+    DerivedContent,
+    Node,
+    PrimaryAsset,
+    Version,
+)
 from rank_bm25 import BM25Okapi
 from sqlalchemy import Select
 from sqlalchemy.orm import aliased, selectinload

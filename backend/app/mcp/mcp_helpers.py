@@ -1,5 +1,5 @@
-from database.models_v2 import PrimaryAsset, Version
-from database.models_v2_enums import PrimaryAssetKind, VersionStatus
+from database.models import PrimaryAsset, Version
+from database.models_enums import PrimaryAssetKind, VersionStatus
 from sqlmodel import Session, select
 
 

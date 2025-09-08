@@ -47,8 +47,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
     import tempfile
 
     from database.db import engine
-    from database.models_v1 import GitProviderAppInstallation
-    from database.models_v2 import PrimaryAssetProvider
+    from database.models import GitProviderAppInstallation, PrimaryAssetProvider
     from onboarding import bitbucket_ops, gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,

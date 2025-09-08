@@ -4,9 +4,15 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from database.models_v1 import DerivedContent, InspectorRun
-from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Version
-from database.models_v2_enums import (
+from database.models import (
+    DerivedContent,
+    InspectorRun,
+    Node,
+    PrimaryAsset,
+    PrimaryAssetTag,
+    Version,
+)
+from database.models_enums import (
     ContentKind,
     PrimaryAssetKind,
     PrimaryAssetProvider,

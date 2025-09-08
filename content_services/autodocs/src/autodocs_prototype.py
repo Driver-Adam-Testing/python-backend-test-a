@@ -22,7 +22,7 @@ import tqdm
 from aiolimiter import AsyncLimiter
 from botocore.config import Config
 from common import app
-from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
+from database.models_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
 from rich.console import Console
@@ -234,7 +234,7 @@ async def update_autodocs_status(
 ) -> None:
     import modal
     from database.db import async_engine
-    from database.models_v2 import AutoDocStatusHistory
+    from database.models import AutoDocStatusHistory
     from sqlmodel.ext.asyncio.session import AsyncSession
 
     call_id = modal.current_function_call_id()
@@ -253,7 +253,7 @@ async def update_autodocs_status(
 async def get_autodoc_elapsed_time(page_id: str) -> float:
     import modal
     from database.db import async_engine
-    from database.models_v2 import AutoDocStatusHistory
+    from database.models import AutoDocStatusHistory
     from sqlmodel import select
     from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -306,8 +306,8 @@ class DriverDocsContent(BaseModel):
     @classmethod
     def from_db(cls, version_id: str, relative_path: str) -> Self:
         from database.db import get_session
-        from database.models_v2 import Version
-        from database.models_v2_enums import ContentKind
+        from database.models import Version
+        from database.models_enums import ContentKind
         from sqlalchemy.orm import selectinload
         from sqlmodel import select
 
@@ -412,8 +412,7 @@ def _get_derived_contents(
     version_id: str, relative_path: str, dc_kind: ContentKind
 ) -> dict[str, str]:
     from database.db import get_session
-    from database.models_v1 import DerivedContent
-    from database.models_v2 import Node
+    from database.models import DerivedContent, Node
     from sqlmodel import select
 
     with get_session() as session:
@@ -454,7 +453,7 @@ def _get_source_from_s3(
 
 def _download_pdf_from_s3(version_id: str) -> str:
     from database.db import get_session
-    from database.models_v2 import Node, Version
+    from database.models import Node, Version
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
 

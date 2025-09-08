@@ -163,8 +163,8 @@ async def inspect_db(
     import tempfile
 
     import boto3
-    from database.models_v2_enums import NodeKind as DbNodeKind
-    from database.models_v2_enums import VersionStatus
+    from database.models_enums import NodeKind as DbNodeKind
+    from database.models_enums import VersionStatus
     from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
@@ -421,19 +421,19 @@ async def inspect_db(
         # TODO: Implement checkpoint-based statuses for formalized multi-stage compiler
         # architecture, then uncomment the following line to represent completion of
         # stage 1.
-        # set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
         if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:
             print("No changes detected skipping tech doc export.")
 
-        print("Spawning off deep context docs generation...")
-        # TODO: do deep context doc specific I/O or further analysis.
-        _completed_docs = await deep_context_docs.remote.aio(
-            version_id,
-            install_id,
-        )
+        # print("Spawning off deep context docs generation...")
+        # TODO: Add back in once update flow is in place and switch to spawn call rather than remote.
+        # _completed_docs = await deep_context_docs.remote.aio(
+        #     version_id,
+        #     install_id,
+        # )
 
         try:
             cleanup_old_versions.remote(version_id)
@@ -690,11 +690,8 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""
 
     from database.db import engine
-    from database.models_v1 import (
-        Tag,  # noqa: F401  # Import to ensure Tag is available for PrimaryAsset relationship
-    )
-    from database.models_v2 import Version
-    from database.models_v2_enums import VersionStatus
+    from database.models import Version
+    from database.models_enums import VersionStatus
     from sqlmodel import Session
 
     with Session(engine) as session, session.begin():
@@ -730,8 +727,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
 )
 def cleanup_old_versions(new_version_id: str) -> None:
     from database.db import engine
-    from database.models_v1 import DocumentSource
-    from database.models_v2 import Node, Version
+    from database.models import DocumentSource, Node, Version
     from sqlmodel import Session, select
 
     with Session(engine) as session, session.begin():

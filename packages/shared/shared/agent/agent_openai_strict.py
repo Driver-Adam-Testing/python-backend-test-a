@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import openai
-from database.models_v1 import UsageEventType
+from database.models import UsageEventType
 from openai import OpenAI
 
 from shared.agent.agent_base import AgentBase

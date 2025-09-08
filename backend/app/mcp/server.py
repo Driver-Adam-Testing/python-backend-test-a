@@ -41,10 +41,12 @@ def _get_instructions_from_file(instructions_file: Path) -> str:
 
 INSTRUCTIONS_FILE = Path(__file__).parent / "_AGENTS.md"
 
+MCP_INSTRUCTIONS = _get_instructions_from_file(INSTRUCTIONS_FILE)
+
 my_mcp = FastMCP(
     "Driver MCP Server",
     include_fastmcp_meta=False,
-    instructions=_get_instructions_from_file(INSTRUCTIONS_FILE),
+    instructions=MCP_INSTRUCTIONS,
 )
 assert (
     fastmcp.settings.stateless_http is True

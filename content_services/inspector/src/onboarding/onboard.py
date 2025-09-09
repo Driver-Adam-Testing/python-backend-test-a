@@ -383,6 +383,7 @@ def handle_bitbucket_events(
     )
     from onboarding import bitbucket_ops
     from onboarding.onboard_utils import AccessTokenError
+    from shared.rate_limiting import RateLimitException
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
@@ -436,6 +437,9 @@ def handle_bitbucket_events(
         raise
 
     errant_repos = []
+    rate_limit_failures = 0
+    MAX_RATE_LIMIT_FAILURES = 3  # Exit after 3 consecutive rate limit failures
+
     # Add installation_id to each repo dict if not present
     for repo in repos_added:
         if "installation_id" not in repo:
@@ -446,24 +450,74 @@ def handle_bitbucket_events(
             executor.submit(bitbucket_ops.download_and_upload_repo, org_id, repo, token)
             for repo in repos_added
         ]
-        wait(futures)
-        for f in futures:
-            if f.result():
-                errant_repos.append(f.result())
+
+        # Process futures as they complete to detect rate limit issues early
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                if result:
+                    errant_repos.append(result)
+                # Reset rate limit failure counter on successful processing
+                rate_limit_failures = 0
+            except RateLimitException as e:
+                rate_limit_failures += 1
+                print(f"Rate limit exception encountered: {e}")
+                print(
+                    f"Rate limit failure count: {rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES}"
+                )
+
+                if rate_limit_failures >= MAX_RATE_LIMIT_FAILURES:
+                    print(
+                        f"Exiting due to {MAX_RATE_LIMIT_FAILURES} consecutive rate limit failures"
+                    )
+                    # Cancel remaining futures
+                    for pending_future in futures:
+                        if not pending_future.done():
+                            pending_future.cancel()
+                    raise RuntimeError(
+                        f"Bitbucket rate limit exceeded after {MAX_RATE_LIMIT_FAILURES} consecutive failures. "
+                        "Please wait before retrying."
+                    )
+            except Exception as e:
+                print(f"Error processing repository: {e}")
+                errant_repos.append(str(e))
 
     for repo in repos_pushed:
         # Add installation_id to repo dict if not present
         if "installation_id" not in repo:
             repo["installation_id"] = installation_id
 
-        repo_name_or_none = bitbucket_ops.download_and_upload_repo(
-            org_id=org_id,
-            repo=repo,
-            access_token=token,
-            is_push=True,
-        )
-        if repo_name_or_none is not None:
-            errant_repos.append(repo_name_or_none)
+        try:
+            repo_name_or_none = bitbucket_ops.download_and_upload_repo(
+                org_id=org_id,
+                repo=repo,
+                access_token=token,
+                is_push=True,
+            )
+            if repo_name_or_none is not None:
+                errant_repos.append(repo_name_or_none)
+            # Reset rate limit failure counter on successful processing
+            rate_limit_failures = 0
+        except RateLimitException as e:
+            rate_limit_failures += 1
+            print(f"Rate limit exception encountered during push processing: {e}")
+            print(
+                f"Rate limit failure count: {rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES}"
+            )
+
+            if rate_limit_failures >= MAX_RATE_LIMIT_FAILURES:
+                print(
+                    f"Exiting due to {MAX_RATE_LIMIT_FAILURES} consecutive rate limit failures"
+                )
+                raise RuntimeError(
+                    f"Bitbucket rate limit exceeded after {MAX_RATE_LIMIT_FAILURES} consecutive failures. "
+                    "Please wait before retrying."
+                )
+        except Exception as e:
+            print(f"Error processing pushed repository: {e}")
+            errant_repos.append(str(e))
+
+    print(f"Errant repos: {errant_repos}")
 
 
 @app.function(

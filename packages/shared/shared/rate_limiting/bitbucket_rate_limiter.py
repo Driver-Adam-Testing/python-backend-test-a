@@ -1,3 +1,5 @@
+"""Unified Bitbucket rate limiter that works with both httpx and requests libraries."""
+
 import asyncio
 import logging
 import time
@@ -8,10 +10,18 @@ from enum import Enum
 from threading import Lock
 from typing import Any
 
-import httpx
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+
+class RateLimitException(Exception):
+    """Exception raised when rate limit is exceeded and max retries exhausted"""
+
+    def __init__(self, message: str, key: str = "default", attempts: int = 0):
+        super().__init__(message)
+        self.key = key
+        self.attempts = attempts
 
 
 class RateLimitStrategy(str, Enum):
@@ -78,10 +88,18 @@ class RateLimitState:
 
             # Check if we've hit the limit
             if len(self.request_times) >= self.config.max_requests_per_hour:
+                # Handle edge case where limit is 0
+                if self.config.max_requests_per_hour == 0:
+                    return False, 3600.0  # Wait an hour if limit is 0
+
                 # Calculate wait time until the oldest request expires
-                oldest_request = self.request_times[0]
-                wait_time = (oldest_request + 3600) - now
-                return False, max(0, wait_time)
+                if self.request_times:
+                    oldest_request = self.request_times[0]
+                    wait_time = (oldest_request + 3600) - now
+                    return False, max(0, wait_time)
+                else:
+                    # Edge case: limit reached but no requests in deque
+                    return False, self.config.initial_delay
 
             return True, None
 
@@ -135,7 +153,7 @@ class RateLimitState:
 
 
 class BitbucketRateLimiter:
-    """Rate limiter specifically for Bitbucket API"""
+    """Unified rate limiter for Bitbucket API that works with both httpx and requests"""
 
     def __init__(self, config: RateLimitConfig | None = None):
         self.config = config or RateLimitConfig()
@@ -174,6 +192,7 @@ class BitbucketRateLimiter:
     ) -> Any:
         """
         Execute a function with rate limiting and retry logic.
+        Works with both httpx and requests libraries.
 
         Args:
             func: The function to execute (should make the API call)
@@ -185,7 +204,7 @@ class BitbucketRateLimiter:
 
         for attempt in range(self.config.max_retries):
             # Wait if we need to respect rate limits
-            wait_time = self.wait_if_needed(key)
+            self.wait_if_needed(key)
 
             try:
                 # Record the request
@@ -208,23 +227,45 @@ class BitbucketRateLimiter:
                     except Exception as e:
                         logger.debug(f"Could not extract headers from response: {e}")
 
+                # Handle both httpx and requests responses
+                if hasattr(result, "raise_for_status"):
+                    # This works for both httpx and requests
+                    result.raise_for_status()
+
                 return result
 
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == 429:
+            except Exception as e:
+                # Check if it's a rate limit error (429)
+                status_code = None
+                headers = {}
+
+                # Handle httpx.HTTPStatusError
+                if hasattr(e, "response") and hasattr(e.response, "status_code"):
+                    status_code = e.response.status_code
+                    if hasattr(e.response, "headers"):
+                        headers = dict(e.response.headers)
+
+                # Handle requests.HTTPError
+                elif hasattr(e, "response") and e.response is not None:
+                    status_code = getattr(e.response, "status_code", None)
+                    if hasattr(e.response, "headers"):
+                        headers = dict(e.response.headers)
+
+                if status_code == 429:
                     # Rate limit exceeded
                     last_error = e
 
                     # Check for Retry-After header
                     retry_after = None
-                    if (
-                        self.config.respect_retry_after
-                        and "retry-after" in e.response.headers
-                    ):
-                        try:
-                            retry_after = float(e.response.headers["retry-after"])
-                        except ValueError:
-                            pass
+                    if self.config.respect_retry_after:
+                        retry_after_header = headers.get("retry-after") or headers.get(
+                            "Retry-After"
+                        )
+                        if retry_after_header:
+                            try:
+                                retry_after = float(retry_after_header)
+                            except ValueError:
+                                pass
 
                     # Calculate delay based on strategy
                     if retry_after:
@@ -248,25 +289,51 @@ class BitbucketRateLimiter:
                     )
 
                     # Update state from error response headers
-                    state.update_from_headers(dict(e.response.headers))
+                    state.update_from_headers(headers)
 
                     time.sleep(delay)
                     continue
 
-                else:
-                    # Not a rate limit error, re-raise
+                elif status_code and 400 <= status_code < 500 and status_code != 429:
+                    # Client error (not rate limit), don't retry
                     raise
 
-            except Exception:
-                # Non-HTTP error, re-raise
-                raise
+                elif attempt < self.config.max_retries - 1:
+                    # Server error or other issue, retry with backoff
+                    delay = min(
+                        self.config.initial_delay
+                        * (self.config.backoff_factor**attempt),
+                        self.config.max_delay,
+                    )
+                    logger.warning(
+                        f"Request failed for {key} (attempt {attempt + 1}/{self.config.max_retries}): {e}. "
+                        f"Retrying in {delay:.2f} seconds..."
+                    )
+                    time.sleep(delay)
+                else:
+                    # Final attempt failed
+                    raise
 
         # Max retries exceeded
         if last_error:
             logger.error(f"Max retries ({self.config.max_retries}) exceeded for {key}")
+            # Check if the last error was a rate limit error
+            if (
+                hasattr(last_error, "response")
+                and getattr(last_error.response, "status_code", None) == 429
+            ):
+                raise RateLimitException(
+                    f"Rate limit exceeded after {self.config.max_retries} attempts for {key}",
+                    key=key,
+                    attempts=self.config.max_retries,
+                ) from last_error
             raise last_error
 
-        raise Exception("Max retries exceeded without error")
+        raise RateLimitException(
+            f"Max retries ({self.config.max_retries}) exceeded without error for {key}",
+            key=key,
+            attempts=self.config.max_retries,
+        )
 
     async def execute_with_retry_async(
         self,
@@ -311,23 +378,44 @@ class BitbucketRateLimiter:
                     except Exception as e:
                         logger.debug(f"Could not extract headers from response: {e}")
 
+                # Handle both httpx and requests responses
+                if hasattr(result, "raise_for_status"):
+                    result.raise_for_status()
+
                 return result
 
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == 429:
+            except Exception as e:
+                # Check if it's a rate limit error (429)
+                status_code = None
+                headers = {}
+
+                # Handle httpx.HTTPStatusError
+                if hasattr(e, "response") and hasattr(e.response, "status_code"):
+                    status_code = e.response.status_code
+                    if hasattr(e.response, "headers"):
+                        headers = dict(e.response.headers)
+
+                # Handle requests.HTTPError
+                elif hasattr(e, "response") and e.response is not None:
+                    status_code = getattr(e.response, "status_code", None)
+                    if hasattr(e.response, "headers"):
+                        headers = dict(e.response.headers)
+
+                if status_code == 429:
                     # Rate limit exceeded
                     last_error = e
 
                     # Check for Retry-After header
                     retry_after = None
-                    if (
-                        self.config.respect_retry_after
-                        and "retry-after" in e.response.headers
-                    ):
-                        try:
-                            retry_after = float(e.response.headers["retry-after"])
-                        except ValueError:
-                            pass
+                    if self.config.respect_retry_after:
+                        retry_after_header = headers.get("retry-after") or headers.get(
+                            "Retry-After"
+                        )
+                        if retry_after_header:
+                            try:
+                                retry_after = float(retry_after_header)
+                            except ValueError:
+                                pass
 
                     # Calculate delay based on strategy
                     if retry_after:
@@ -351,25 +439,51 @@ class BitbucketRateLimiter:
                     )
 
                     # Update state from error response headers
-                    state.update_from_headers(dict(e.response.headers))
+                    state.update_from_headers(headers)
 
                     await asyncio.sleep(delay)
                     continue
 
-                else:
-                    # Not a rate limit error, re-raise
+                elif status_code and 400 <= status_code < 500 and status_code != 429:
+                    # Client error (not rate limit), don't retry
                     raise
 
-            except Exception:
-                # Non-HTTP error, re-raise
-                raise
+                elif attempt < self.config.max_retries - 1:
+                    # Server error or other issue, retry with backoff
+                    delay = min(
+                        self.config.initial_delay
+                        * (self.config.backoff_factor**attempt),
+                        self.config.max_delay,
+                    )
+                    logger.warning(
+                        f"Request failed for {key} (attempt {attempt + 1}/{self.config.max_retries}): {e}. "
+                        f"Retrying in {delay:.2f} seconds..."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    # Final attempt failed
+                    raise
 
         # Max retries exceeded
         if last_error:
             logger.error(f"Max retries ({self.config.max_retries}) exceeded for {key}")
+            # Check if the last error was a rate limit error
+            if (
+                hasattr(last_error, "response")
+                and getattr(last_error.response, "status_code", None) == 429
+            ):
+                raise RateLimitException(
+                    f"Rate limit exceeded after {self.config.max_retries} attempts for {key}",
+                    key=key,
+                    attempts=self.config.max_retries,
+                ) from last_error
             raise last_error
 
-        raise Exception("Max retries exceeded without error")
+        raise RateLimitException(
+            f"Max retries ({self.config.max_retries}) exceeded without error for {key}",
+            key=key,
+            attempts=self.config.max_retries,
+        )
 
     def get_stats(self) -> dict[str, dict[str, Any]]:
         """Get current rate limit statistics for monitoring"""
@@ -387,3 +501,7 @@ class BitbucketRateLimiter:
                         "max_requests": state.config.max_requests_per_hour,
                     }
         return stats
+
+
+# Create a global instance with default settings for backward compatibility
+default_rate_limiter = BitbucketRateLimiter()

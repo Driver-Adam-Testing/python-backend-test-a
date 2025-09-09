@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 from app.git_providers.utils.errors import GitProviderAccessTokenError
-from app.git_providers.utils.rate_limiter import (
+from shared.rate_limiting import (
     BitbucketRateLimiter,
     RateLimitConfig,
     RateLimitStrategy,

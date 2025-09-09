@@ -7,7 +7,7 @@ allowing easy adjustment of rate limits without code changes.
 
 import os
 
-from app.git_providers.utils.rate_limiter import RateLimitConfig, RateLimitStrategy
+from shared.rate_limiting import RateLimitConfig, RateLimitStrategy
 
 
 def get_bitbucket_rate_limit_config() -> RateLimitConfig:

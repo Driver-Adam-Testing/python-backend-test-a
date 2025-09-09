@@ -48,9 +48,7 @@ class BitbucketProvider(GitProviderInterface):
         self.secrets_manager = secrets_manager
 
         # Import rate limit config loader
-        from app.git_providers.utils.rate_limit_config import (
-            get_bitbucket_rate_limit_config,
-        )
+        from shared.rate_limiting.config import get_bitbucket_rate_limit_config
 
         # Get rate limit configuration from environment
         rate_limit_config = get_bitbucket_rate_limit_config()

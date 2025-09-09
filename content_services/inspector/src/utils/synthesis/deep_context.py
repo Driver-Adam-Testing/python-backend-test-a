@@ -333,14 +333,7 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
         )
         updated_document = content_raw
 
-        return Self(
-            doc_kind=self.doc_kind,
-            name=self.name,
-            user_context=self.user_context,
-            sources=self.sources,
-            config_content=self.config_content,
-            doc_content=updated_document,
-        )
+        return self.model_copy(update={"doc_content": updated_document})
 
     async def _update_from_llm_sequential(self, diff_chunks: list[str]) -> Self:
         llm = ChatOpenAI(
@@ -360,14 +353,7 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
                 output_cfg=OutputConfig.default(),
             )
 
-        return Self(
-            doc_kind=self.doc_kind,
-            name=self.name,
-            user_context=self.user_context,
-            sources=self.sources,
-            config_content=self.config_content,
-            doc_content=updated_document,
-        )
+        return self.model_copy(update={"doc_content": updated_document})
 
     async def _scatter_edits(self, diffs: list[tuple[LiteNode, str]]) -> list[str]:
         scatter_llm = ChatOpenAI(
@@ -434,14 +420,7 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
         edit_descriptions = await self._scatter_edits(diffs=relevant_diffs)
         updated_document = await self._gather_edits(edits=edit_descriptions)
 
-        return Self(
-            doc_kind=self.doc_kind,
-            name=self.name,
-            user_context=self.user_context,
-            sources=self.sources,
-            config_content=self.config_content,
-            doc_content=updated_document,
-        )
+        return self.model_copy(update={"doc_content": updated_document})
 
     async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
         # Step 1: Filter files for relevance.

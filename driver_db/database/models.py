@@ -578,6 +578,14 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "cascade": "all, delete-orphan",
         },
     )
+    most_recent_completed_version: Optional["Version"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(PrimaryAsset.id == Version.primary_asset_id, Version.status == 'GENERATION_COMPLETE')",
+            "uselist": False,
+            "order_by": "desc(Version.updated_at)",
+            "cascade": "all, delete-orphan",
+        },
+    )
     versions: list["Version"] = Relationship(
         back_populates="primary_asset",
         sa_relationship_kwargs={

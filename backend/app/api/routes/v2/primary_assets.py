@@ -17,6 +17,7 @@ from database.models_enums import (
     PrimaryAssetKind,
     PrimaryAssetProvider,
     VcsAutoUpdatePolicy,
+    VersionStatus,
 )
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload, with_loader_criteria
@@ -71,6 +72,16 @@ def _list_primary_assets(
                 Version.creator
             ),
             selectinload(PrimaryAsset.most_recent_version)
+            .selectinload(Version.root_node)
+            .selectinload(Node.contents),
+            selectinload(PrimaryAsset.most_recent_completed_version),
+            selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
+                Version.root_node
+            ),
+            selectinload(PrimaryAsset.most_recent_completed_version).selectinload(
+                Version.creator
+            ),
+            selectinload(PrimaryAsset.most_recent_completed_version)
             .selectinload(Version.root_node)
             .selectinload(Node.contents),
             with_loader_criteria(

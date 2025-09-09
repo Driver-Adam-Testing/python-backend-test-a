@@ -3,12 +3,14 @@ import logging
 from fastapi import APIRouter, Header, HTTPException
 
 from app.api.auth import OrgManagerPermission, UserToken
+from app.api.session import CurrentSession
 from app.schemas.auth0_schema import (
     CreateInvitationInput,
     ModifyUserRolesInput,
     ModifyUserRolesResponse,
 )
 from app.services.auth0_service import Auth0Service
+from app.services.onboarding_checklist_service import OnboardingChecklistService
 
 router = APIRouter()
 
@@ -106,14 +108,30 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
     user: UserToken,
     invitations: CreateInvitationInput,
     authorization: str | None = Header(None),
+    session: CurrentSession = None,
 ):
     logging.info(f"Listing members of organization = {user.organization_id}")
     access_token = authorization.replace("Bearer ", "")
     try:
         auth0_service = Auth0Service()
-        return auth0_service.create_invitation(
+        result = auth0_service.create_invitation(
             user, access_token=access_token, invitations=invitations
         )
+
+        # Best-effort update of onboarding checklist
+        try:
+            OnboardingChecklistService(
+                session=session,
+                organization_id=user.organization_id,
+                user_id=user.user_id,
+            ).mark_invite_teammate_completed()
+        except Exception as e:  # pragma: no cover - non-critical path
+            logger.error(
+                f"Failed to update onboarding checklist for invitations: {e}",
+                exc_info=True,
+            )
+
+        return result
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
     except Exception as e:

@@ -1,3 +1,4 @@
+from logging import getLogger
 from enum import StrEnum
 from uuid import UUID
 
@@ -25,8 +26,11 @@ from app.api.auth import (
 )
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.services.onboarding_checklist_service import OnboardingChecklistService
 
 router = APIRouter()
+
+logger = getLogger(__name__)
 
 
 class AutoDocSize(StrEnum):
@@ -192,6 +196,20 @@ def run_autodoc(
     session.add(autodoc_status)
     session.commit()
     session.refresh(autodoc_status)
+
+    # Mark onboarding checklist step as completed (best-effort)
+    try:
+        OnboardingChecklistService(
+            session=session,
+            organization_id=user.organization_id,
+            user_id=user.user_id,
+        ).mark_generate_autodoc_completed()
+    except Exception as e:
+        # Non-critical; do not block the endpoint on checklist updates
+        logger.error(
+            f"Failed to update onboarding checklist for autodoc generation: {e}",
+            exc_info=True,
+        )
 
     return autodoc_status
 

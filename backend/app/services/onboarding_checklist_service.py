@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from sqlmodel import Session, select
+
+from database.models import OnboardingChecklist
+
+
+class OnboardingChecklistService:
+    def __init__(self, session: Session, organization_id: str, user_id: str) -> None:
+        self.session = session
+        self.organization_id = organization_id
+        self.user_id = user_id
+
+    def get_or_create(self) -> OnboardingChecklist:
+        """Fetch or create the checklist for this user/org."""
+        checklist = self.session.exec(
+            select(OnboardingChecklist)
+            .where(OnboardingChecklist.organization_id == self.organization_id)
+            .where(OnboardingChecklist.user_id == self.user_id)
+        ).one_or_none()
+
+        if checklist is None:
+            checklist = OnboardingChecklist(
+                organization_id=self.organization_id,
+                user_id=self.user_id,
+            )
+            self.session.add(checklist)
+            self.session.commit()
+            self.session.refresh(checklist)
+
+        return checklist
+
+    def mark_invite_teammate_completed(self, when: datetime | None = None) -> None:
+        checklist = self.get_or_create()
+        if checklist.invite_teammate_completed_at is None:
+            checklist.invite_teammate_completed_at = when or datetime.now(timezone.utc)
+            self.session.add(checklist)
+            self.session.commit()
+
+    def mark_generate_autodoc_completed(self, when: datetime | None = None) -> None:
+        checklist = self.get_or_create()
+        if checklist.generate_autodoc_completed_at is None:
+            checklist.generate_autodoc_completed_at = (
+                when or datetime.now(timezone.utc)
+            )
+            self.session.add(checklist)
+            self.session.commit()
+
+

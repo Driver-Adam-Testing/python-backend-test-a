@@ -1093,3 +1093,58 @@ class AboutYouSurvey(SQLModel, table=True):
         ),
         default=None,
     )
+
+
+class OnboardingChecklist(SQLModel, table=True):
+    __tablename__ = "onboarding_checklist"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "user_id", name="uq_onboarding_checklist_org_user"
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True, nullable=False)
+    user_id: str = Field(index=True, nullable=False)
+
+    # Timestamps for each step
+    connect_codebase_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    generate_document_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    setup_mcp_started_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    setup_mcp_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    enable_export_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    generate_autodoc_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    invite_teammate_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+    checklist_completed_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True), default=None
+    )
+
+    # Standard timestamps
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )

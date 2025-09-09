@@ -149,7 +149,6 @@ async def deep_context_docs(
     from utils.synthesis.deep_context import (
         DeepContextDoc,
         DeepContextDocKind,
-        update_deep_context_doc,
     )
     from utils.synthesis.deep_context_prompts import (
         ARCHITECTURE_OVERVIEW_INTENT,
@@ -172,19 +171,11 @@ async def deep_context_docs(
         }
 
         update_tasks = [
-            update_deep_context_doc(old_content=doc.doc_content, diff=code_diff)
+            doc.update_from_diff(diff_collection=code_diff)
             for doc in old_version_content
             if doc.doc_kind in update_set
         ]
-        updated_contents = await asyncio.gather(*update_tasks)
-
-        completed_docs = [
-            doc.model_copy(update={"doc_content": updated_content})
-            for doc, updated_content in zip(
-                [doc for doc in old_version_content if doc.doc_kind in update_set],
-                updated_contents,
-            )
-        ]
+        completed_docs = await asyncio.gather(*update_tasks)
         # TODO: Add functionality to update the change log.
     else:
         run_autodoc = modal.Function.from_name(app_name="autodocs", name="run_autodoc")

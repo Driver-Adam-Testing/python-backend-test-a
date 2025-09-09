@@ -24,8 +24,8 @@ from utils.update_flow import DiffUpdatable
 TAG_MODEL = "gpt-4.1"
 UPDATE_SINGLE_SHOT_MODEL = "gpt-4.1"
 UPDATE_FEW_SHOT_SEQUENTIAL_MODEL = "gpt-4.1"
-UPDATE_MANY_SHOT_CHUNK_MODEL = "gpt-4.1"
-UPDATE_MANY_SHOT_AGGREGATE_MODEL = "gpt-5"
+UPDATE_MANY_SHOT_SCATTER_MODEL = "gpt-4.1"
+UPDATE_MANY_SHOT_GATHER_MODEL = "gpt-5"
 
 OPENAI_SEM = asyncio.Semaphore(300)
 OPENAI_RATE_LIMITER = AsyncLimiter(100, 1)
@@ -43,12 +43,12 @@ def _clip_prompt(p: str, chunk_size: int) -> str:
     return prompt_chunks[0].text if len(prompt_chunks) > 1 else p
 
 
-def _combine_diffs(diffs: list[str]) -> str:
+def _simple_combine_strings(strings: list[str], sep: str = "\n\n") -> str:
     prompt = Prompt.empty()
-    for d in diffs:
-        prompt.append(Component(string=d))
+    for s in strings:
+        prompt.append(Component(string=s))
 
-    return prompt.into_str()
+    return prompt.into_str(sep=sep)
 
 
 # TODO: Redundant with content in places like `entry_point.py`. Unify.
@@ -121,6 +121,8 @@ Your job is to review a code diff for a file provided to you and decide if it is
                 doc_description = LLM_ONBOARDING_DOC_DESCRIPTION
                 tag_descriptions = Component(
                     string="""
+Specifically, you are to decide which of the following categories the diff content belongs to, in relation to this kind of document:
+
 **very_relevant**: This means the diff content is highly likely to require updates to an LLM onboarding guide document. For example, it represents a major refactor of major existing functionality, significant new feature development, or major changes to interfaces between components and directory structure. These are just some specific examples, but this category represents any major changes that would be expected to change how you onboard a person or LLM to the codebase.
 
 **possibly_relevant**: This means the diff content may not be at the level of major overhaul but changes the behavior/nature/interface of the codebase enough that it may be important to reflect in the LLM onboarding guide document. Such changes would likely be small to the document but important to accurately reflect the codebase when discussing its contents and navigation. Renaming of files or moving pieces of code around should probably be tagged as possible relevant. Even if it doesn't change functionality, it may be important to update statements about paths/where implementation content is found in the codebase in the onboarding guide.
@@ -133,6 +135,8 @@ Your job is to review a code diff for a file provided to you and decide if it is
                 doc_description = ARCHITECTURE_DOC_DESCRIPTION
                 tag_descriptions = Component(
                     string="""
+Specifically, you are to decide which of the following categories the diff content belongs to, in relation to this kind of document:
+
 **very_relevant**: This means the diff content is highly likely to require updates to an archiecture overview document. For example: it represents a major refactor of major existing functionality, new feature development significant enough to affect thinking about architecture, or major changes to interfaces between key components. These are just some specific examples, but this category represents any major changes that would be expected to change how you explain the architecture of the codebase.
 
 **possibly_relevant**: This means the diff content may not be at the level of major overhaul but changes the behavior/nature/interface of the codebase enough that it may be important to reflect in the architecture overview document. Such changes would likely be small but important to reflect the architecture accurately. Renaming of files or moving pieces of code around should probably be tagged as possibly relevant. Even if it doesn't change the architecture, it may be important to update statements about paths/where implementation content is found in the codebase in the architecture overview.
@@ -188,11 +192,6 @@ You will be given the output of `git diff` for a specific file and will respond 
         return cls.parse_raw(content_raw)
 
 
-# class UpdatedDocument(BaseModel):
-#     updated_content: str
-#     rationale: str
-#
-#
 class DeepContextDoc(DiffUpdatable, BaseModel):
     doc_kind: DeepContextDocKind
     name: str | None
@@ -241,6 +240,80 @@ You will be given the aggregated diff content of relevant changed files first fo
             .into_str()
         )
 
+    @staticmethod
+    def system_prompt_scatter(doc_kind: DeepContextDocKind) -> str:
+        match doc_kind:
+            case DeepContextDocKind.LLM_ONBOARDING:
+                doc_description = LLM_ONBOARDING_DOC_DESCRIPTION
+            case DeepContextDocKind.ARCHITECTURE:
+                doc_description = ARCHITECTURE_DOC_DESCRIPTION
+            case _:
+                raise ValueError(
+                    f"Unsupported doc kind for scatter edit creation: {doc_kind}"
+                )
+
+        task_description = Component(
+            string="""
+Code diff content deemed relevant to updating the current document will be provided alongside the previous version of the document. Your job is to describe how to edit the existing document in light of the diff content in no more than 1 -- 3 paragraphs of content. In a later step, many of these edit instructions will be combined and used to perform a bulk update/edit of the document as a whole. It is important, then, to be dense and terse in your content, but clear and complete enough that the existing document and your 1 -- 3 paragraph summary can be used to update the document in a separate step (without access to the full diff content) robustly and accurately.
+            """
+        )
+
+        task_afterword = Component(
+            string="""
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what you describe as needing to be edited/changed in the document. Make sure to edit any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and articulate as few changes to the original document in your edit descriptions as needed. While you are asked to write no more than 1 -- 3 paragraphs, if little to no edits are required in your judgment, then return little or no content back as the suggested edit.
+
+You will be given the diff content for a changed file followed by the target document's previous version content. You will respond with no more than 1 -- 3 paragraphs of content describing how the previous version of the document should be edited to be up-to-date in view of the diff content.
+            """
+        )
+
+        return (
+            Prompt.empty()
+            .append(UPDATER_IDENTITY_PREAMBLE)
+            .append(DEEP_CONTEXT_DOCS_PREAMBLE)
+            .append(task_description)
+            .append(doc_description)
+            .append(task_afterword)
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .into_str()
+        )
+
+    @staticmethod
+    def system_prompt_gather(doc_kind: DeepContextDocKind) -> str:
+        match doc_kind:
+            case DeepContextDocKind.LLM_ONBOARDING:
+                doc_description = LLM_ONBOARDING_DOC_DESCRIPTION
+            case DeepContextDocKind.ARCHITECTURE:
+                doc_description = ARCHITECTURE_DOC_DESCRIPTION
+            case _:
+                raise ValueError(
+                    f"Unsupported doc kind for edits gather step: {doc_kind}"
+                )
+
+        task_description = Component(
+            string="""
+In a previous step, code diffs for files that were changed and that are relevant for the document under consideration and the previous document's version were analyzed together. For each file, a 1 -- 3 paragraph description of how to update the document in light of the code changes was produced. These were produced in isolation and now have been aggregated together. The edit suggestions originating from different files are separated by "---" in the aggregated content given to you. Your job is to update the previous version of the document given this aggregation of suggested edits. You have the advantage of a broader perspective (the suggested edits were written only considering the particular file diff under review) and should consider this broader, more holistic perspective when updating the document. Here are some further instruction and consideration for updating the document based on the particular kind of document you will be updating:
+            """
+        )
+
+        task_afterword = Component(
+            string="""
+It is important for documentation to mostly stay the same between code revisions _unless_ the changes are significant. Be selective in what and how you update the existing document. Make sure to update/replace any content that is outdated or incorrect in view of the new state of the code apparent from the diff content. And if the changes are so significant that the major structure and organization of the document should be significantly altered, make those edits. But generally err on the conservative side and make as few changes to the original document as needed. And keep in mind that the individual edit suggestions were written with only the file diff under review in mind. Since you have a much broader view, you can make important decisions at the higher level on what edits are needed for the document given that we would like to be selective in the changes we apply.
+
+You will be given the aggregated edit suggestions (with edit suggestions originating from different files separate by "---") followed by the target_document's previous version content. You will respond only with your updated/edited version of the target document.
+            """
+        )
+
+        return (
+            Prompt.empty()
+            .append(UPDATER_IDENTITY_PREAMBLE)
+            .append(DEEP_CONTEXT_DOCS_PREAMBLE)
+            .append(task_description)
+            .append(doc_description)
+            .append(task_afterword)
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .into_str()
+        )
+
     async def _update_from_llm_single_shot(self, combined_diff: str) -> Self:
         llm = (
             ChatOpenAI(
@@ -258,7 +331,6 @@ You will be given the aggregated diff content of relevant changed files first fo
             rate_limiter=OPENAI_RATE_LIMITER,
             output_cfg=OutputConfig.default(),
         )
-        # updated_document = UpdatedDocument.parse_raw(content_raw)
         updated_document = content_raw
 
         return Self(
@@ -297,11 +369,79 @@ You will be given the aggregated diff content of relevant changed files first fo
             doc_content=updated_document,
         )
 
+    async def _scatter_edits(self, diffs: list[tuple[LiteNode, str]]) -> list[str]:
+        scatter_llm = ChatOpenAI(
+            model=UPDATE_MANY_SHOT_SCATTER_MODEL, temperature=0, request_timeout=500
+        )
+        system_prompt = type(self).system_prompt_scatter(doc_kind=self.doc_kind)
+        async with asyncio.TaskGroup() as tg:
+            edit_coros = []
+            for node, diff in diffs:
+                # TODO: Handle huge diffs properly and don't clip.
+                diff = _clip_prompt(p=diff, chunk_size=CHUNK_SIZE_LIMIT)
+                user_prompt = f"**Diff content**:\n\n{diff}\n\n**Previous document version**:\n\n{self.doc_content}"
+                edit_coros.append(
+                    (
+                        node,
+                        tg.create_task(
+                            bounded_llm_generate(
+                                llm=scatter_llm,
+                                system_prompt=system_prompt,
+                                user_prompt=user_prompt,
+                                sem=OPENAI_SEM,
+                                rate_limiter=OPENAI_RATE_LIMITER,
+                                output_cfg=OutputConfig.default(),
+                            )
+                        ),
+                    )
+                )
+
+        return [c.result() for _n, c in edit_coros]
+
+    async def _gather_edits(self, edits: list[str]) -> str:
+        gather_llm = ChatOpenAI(
+            model=UPDATE_MANY_SHOT_GATHER_MODEL, temperature=0, request_timeout=500
+        )
+        system_prompt = type(self).system_prompt_gather(doc_kind=self.doc_kind)
+        combined_edits = _simple_combine_strings(strings=edits, sep="\n\n---\n\n")
+
+        edit_chunks = split_text(
+            text=combined_edits,
+            chunk_size=CHUNK_SIZE_LIMIT,
+            chunk_overlap=int(0.05 * CHUNK_SIZE_LIMIT),
+        )
+        updated_document = self.doc_content
+
+        for chunk in edit_chunks:
+            user_prompt = f"**Edit instructions:\n\n{chunk}\n\n**Previous document version:\n\n{updated_document}"
+            updated_document = await bounded_llm_generate(
+                llm=gather_llm,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                sem=OPENAI_SEM,
+                rate_limiter=OPENAI_RATE_LIMITER,
+                output_cfg=OutputConfig.default(),
+            )
+
+        return updated_document
+
     async def _update_from_llm_scatter_gather(
+        self,
         relevant_diffs: list[tuple[LiteNode, str]],
     ) -> Self:
         # TODO: Strategy: emit dense descriptions of how to change the doc from each scatter, combine in gather.
-        raise NotImplementedError()
+
+        edit_descriptions = await self._scatter_edits(diffs=relevant_diffs)
+        updated_document = await self._gather_edits(edits=edit_descriptions)
+
+        return Self(
+            doc_kind=self.doc_kind,
+            name=self.name,
+            user_context=self.user_context,
+            sources=self.sources,
+            config_content=self.config_content,
+            doc_content=updated_document,
+        )
 
     async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
         # Step 1: Filter files for relevance.
@@ -310,6 +450,10 @@ You will be given the aggregated diff content of relevant changed files first fo
         )
 
         root, tsort_dag = diff_collection
+        # TODO: For larger scales, where we don't want to create excessive numbers of tasks,
+        # TODO: refactor to use a set worker pool/queue type of approach.
+        # TODO: Also, the current TaskGroup implementation fails in its entirety if a single
+        # TODO: individual task fails with no retry mechanisms -- very fragile.
         async with asyncio.TaskGroup() as tg:
             relevance_coros = []
             for node, diff in tsort_dag:
@@ -345,7 +489,7 @@ You will be given the aggregated diff content of relevant changed files first fo
             return self
 
         is_relevant_combined_diffs_chunks = split_text(
-            text=_combine_diffs(diffs=is_relevant_diffs),
+            text=_simple_combine_strings(strings=is_relevant_diffs),
             chunk_size=CHUNK_SIZE_FOR_DIFF_AGGREGATION,
             chunk_overlap=0,
         )
@@ -369,7 +513,7 @@ You will be given the aggregated diff content of relevant changed files first fo
                 chunks_with_minor_overlap = [
                     c.text
                     for c in split_text(
-                        text=_combine_diffs(diffs=is_relevant_diffs),
+                        text=_simple_combine_strings(strings=is_relevant_diffs),
                         chunk_size=CHUNK_SIZE_FOR_DIFF_AGGREGATION,
                         chunk_overlap=CHUNK_OVERLAP_FOR_SEQUENTIAL_DIFF_PROCESSING,
                     )

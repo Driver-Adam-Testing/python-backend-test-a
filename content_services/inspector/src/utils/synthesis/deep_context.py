@@ -23,8 +23,7 @@ from utils.update_flow import DiffUpdatable
 
 TAG_MODEL = "gpt-4.1"
 UPDATE_SINGLE_SHOT_MODEL = "gpt-4.1"
-UPDATE_FEW_SHOT_CHUNK_MODEL = "gpt-4.1"
-UPDATE_FEW_SHOT_AGGREGATE_MODEL = "gpt-5"
+UPDATE_FEW_SHOT_SEQUENTIAL_MODEL = "gpt-4.1"
 UPDATE_MANY_SHOT_CHUNK_MODEL = "gpt-4.1"
 UPDATE_MANY_SHOT_AGGREGATE_MODEL = "gpt-5"
 
@@ -32,6 +31,9 @@ OPENAI_SEM = asyncio.Semaphore(300)
 OPENAI_RATE_LIMITER = AsyncLimiter(100, 1)
 CHUNK_SIZE_LIMIT = 96_000
 CHUNK_SIZE_FOR_DIFF_AGGREGATION = 96_000
+CHUNK_OVERLAP_FOR_SEQUENTIAL_DIFF_PROCESSING = int(
+    CHUNK_SIZE_FOR_DIFF_AGGREGATION * 0.05
+)
 
 
 # TODO: Redundant with content in places like `entry_point.py`. Unify.
@@ -211,10 +213,12 @@ class DeepContextDoc(DiffUpdatable, BaseModel):
             case DeepContextDocKind.ARCHITECTURE:
                 doc_description = ARCHITECTURE_DOC_DESCRIPTION
             case _:
-                raise ValueError(f"Unsupported doc kind for update flow: {doc_kind}")
+                raise ValueError(
+                    f"Unsupported doc kind for one-shot update flow: {doc_kind}"
+                )
         task_description = Component(
             string="""
-The code diff content deemed relevant to updating the current document has been previously collected and aggregated together. Your job is to take the collected diff content and update the previous version of this deep context document. Here are some further instruction and consideration for updating the document based on the particular kind of document you will be updating:
+Code diff content deemed relevant to updating the current document has been previously collected and aggregated together. Your job is to take the collected diff content and update the previous version of this deep context document. Here are some further instruction and consideration for updating the document based on the particular kind of document you will be updating:
             """
         )
 
@@ -243,7 +247,7 @@ You will be given the aggregated diff content of relevant changed files first fo
                 model=UPDATE_SINGLE_SHOT_MODEL, temperature=0, request_timeout=500
             ),
         )
-        system_prompt = type(self).system_prompt_single_shot()
+        system_prompt = type(self).system_prompt_single_shot(doc_kind=self.doc_kind)
         user_prompt = f"**Diff content**:\n\n{combined_diff}\n\n**Previous document version**:\n\n{self.doc_content}"
 
         content_raw = await bounded_llm_generate(
@@ -266,12 +270,37 @@ You will be given the aggregated diff content of relevant changed files first fo
             doc_content=updated_document,
         )
 
-    async def _update_from_llm_sequential(diff_chunks: list[str]) -> Self:
-        raise NotImplementedError()
+    async def _update_from_llm_sequential(self, diff_chunks: list[str]) -> Self:
+        llm = ChatOpenAI(
+            model=UPDATE_FEW_SHOT_SEQUENTIAL_MODEL, temperature=0, request_timeout=500
+        )
+        system_prompt = type(self).system_prompt_single_shot(doc_kind=self.doc_kind)
+
+        updated_document = self.doc_content
+        for diff in diff_chunks:
+            user_prompt = f"**Diff content**:\n\n{diff}\n\n**Previous document version**:\n\n{updated_document}"
+            updated_document = await bounded_llm_generate(
+                llm=llm,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                sem=OPENAI_SEM,
+                rate_limiter=OPENAI_RATE_LIMITER,
+                output_cfg=OutputConfig.default(),
+            )
+
+        return Self(
+            doc_kind=self.doc_kind,
+            name=self.name,
+            user_context=self.user_context,
+            sources=self.sources,
+            config_content=self.config_content,
+            doc_content=updated_document,
+        )
 
     async def _update_from_llm_scatter_gather(
         relevant_diffs: list[tuple[LiteNode, str]],
     ) -> Self:
+        # TODO: Strategy: emit dense descriptions of how to change the doc from each scatter, combine in gather.
         raise NotImplementedError()
 
     async def update_from_diff(self, diff_collection: FlatTopoFileDiffDag) -> Self:
@@ -336,8 +365,17 @@ You will be given the aggregated diff content of relevant changed files first fo
                 )
             # If there are only a few aggregated chunks, do a short sequential processing.
             case n if 2 <= n <= 5:
+                # Re-chunk with some overlap to aid sequential procesing.
+                chunks_with_minor_overlap = [
+                    c.text
+                    for c in split_text(
+                        text=_combine_diffs(diffs=is_relevant_diffs),
+                        chunk_size=CHUNK_SIZE_FOR_DIFF_AGGREGATION,
+                        chunk_overlap=CHUNK_OVERLAP_FOR_SEQUENTIAL_DIFF_PROCESSING,
+                    )
+                ]
                 return await self._update_from_llm_sequential(
-                    diff_chunks=is_relevant_combined_diff_str_chunks
+                    diff_chunks=chunks_with_minor_overlap
                 )
             # For very large diffs, use a scatter-gather approach.
             case _:

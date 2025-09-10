@@ -433,8 +433,7 @@ def get_repo_clone_info_from_id(repo_id: str, github_token: str) -> tuple[str, s
     return clone_url, full_name
 
 
-def list_pull_requests(full_name: str, access_token: str) -> list:
-    # Default behavior of Github API fetches only open PRs
+def list_pull_requests(full_name: str, access_token: str, state: str = "open") -> list:
     headers = {
         "Authorization": f"Bearer {access_token}",
     }
@@ -445,6 +444,7 @@ def list_pull_requests(full_name: str, access_token: str) -> list:
         response = client.get(
             url,
             headers=headers,
+            params={"state": state},
         )
         response.raise_for_status()
         all_prs.extend(response.json())
@@ -486,10 +486,22 @@ def close_pull_request(full_name: str, pr_id: int, access_token: str) -> None:
         "Authorization": f"Bearer {access_token}",
     }
     with httpx.Client() as client:
+        # First check if PR is open
         url = f"https://api.github.com/repos/{full_name}/pulls/{pr_id}"
+        response = client.get(url, headers=headers)
+        response.raise_for_status()
+        pr_data = response.json()
+
+        if pr_data.get("state") != "open":
+            print(
+                f"⚠️ PR #{pr_id} is already {pr_data.get('state', 'in unknown state')}, skipping close"
+            )
+            return
+
+        # Close the PR
         response = client.patch(url, headers=headers, json={"state": "closed"})
         response.raise_for_status()
-        print(f"✅ Closed pull request {pr_id} for {full_name}")
+        print(f"✅ Closed pull request #{pr_id} for {full_name}")
 
 
 def create_pull_request_with_bot_cleanup(
@@ -502,15 +514,35 @@ def create_pull_request_with_bot_cleanup(
     BOT_NAME = "docs-bot"
     BOT_EMAIL = "bot@driverai.com"
 
-    print("Checking for existing bot pull requests...")
+    print("Checking for existing open bot pull requests...")
+    pr_already_exists = False
+
     try:
-        existing_prs = list_pull_requests(full_name, access_token)
+        # Explicitly request only open PRs
+        existing_prs = list_pull_requests(full_name, access_token, state="open")
 
         for pr in existing_prs:
+            # Double-check the PR is actually open
+            if pr.get("state") != "open":
+                print(
+                    f"Skipping PR #{pr['number']} - not in open state (state: {pr.get('state')})"
+                )
+                continue
+
             source_branch = pr["head"]["ref"]
             if source_branch.startswith("docs_"):
-                pr_id = pr["id"]
-                commits = get_pull_request_commits(full_name, pr_id, access_token)
+                pr_number = pr["number"]
+
+                # Check if this PR is for the current commit
+                if source_branch == branch:
+                    print(
+                        f"✅ PR #{pr_number} already exists for commit {commit_slug} on branch {source_branch}"
+                    )
+                    pr_already_exists = True
+                    continue  # Don't close the PR for the current commit
+
+                # Only check if it's a bot PR for OTHER commits
+                commits = get_pull_request_commits(full_name, pr_number, access_token)
 
                 is_bot_pr = any(
                     commit["commit"]["author"]["name"] == BOT_NAME
@@ -518,10 +550,19 @@ def create_pull_request_with_bot_cleanup(
                     for commit in commits
                 )
                 if is_bot_pr:
-                    close_pull_request(full_name, pr_id, access_token)
+                    print(
+                        f"Closing outdated bot PR #{pr_number} from branch {source_branch}"
+                    )
+                    close_pull_request(full_name, pr_number, access_token)
 
     except httpx.HTTPError as e:
         print(f"Error checking for existing bot PRs: {e}")
+
+    # Only create a new PR if one doesn't already exist for this commit
+    if not pr_already_exists:
+        create_pull_request(full_name, branch, access_token, commit_slug)
+    else:
+        print(f"Skipping PR creation - PR already exists for branch {branch}")
 
 
 def create_pull_request(

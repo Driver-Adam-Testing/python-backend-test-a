@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import logging
 import os
 import re
 import time
@@ -20,8 +19,6 @@ from onboarding.vcs_utils import (
 )
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-
-logger = logging.getLogger(__name__)
 
 
 def generate_jwt() -> str:
@@ -64,17 +61,17 @@ def fetch_default_branch_and_commit(full_repo_name: str, access_token: str) -> s
 
     repo = requests.get(repo_url, headers=headers)
     repo_data = repo.json()
-    logger.info(
-        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    print(
+        f"INFO: Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
     )
     default_branch = repo_data["default_branch"]
 
     branch_url = f"{repo_url}/branches/{default_branch}"
     branch_response = requests.get(branch_url, headers=headers)
     branch_data = branch_response.json()
-    logger.info(f"Default branch for {full_repo_name} is {default_branch}")
-    logger.info(
-        f"Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
+    print(f"INFO: Default branch for {full_repo_name} is {default_branch}")
+    print(
+        f"INFO: Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
     )
     return branch_data["commit"]["sha"]
 
@@ -87,16 +84,16 @@ def fetch_vcs_info(
 
     repo = requests.get(repo_url, headers=headers)
     repo_data = repo.json()
-    logger.info(
-        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    print(
+        f"INFO: Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
     )
     default_branch = repo_data["default_branch"]
 
     commit_url = f"{repo_url}/commits/{commit_sha}"
     commit_response = requests.get(commit_url, headers=headers)
     commit_data = commit_response.json()
-    logger.info(
-        f"Commit data retrieved from github API (status code {commit_response.status_code}): {commit_data}"
+    print(
+        f"INFO: Commit data retrieved from github API (status code {commit_response.status_code}): {commit_data}"
     )
     author_info = AuthorInfo(
         email=commit_data["commit"]["author"]["email"],
@@ -183,7 +180,7 @@ def download_and_upload_repo(
         try:
             commit = fetch_default_branch_and_commit(repo["full_name"], access_token)
         except KeyError:
-            logger.error(f"Failed to find commit for {repo}, unable to process")
+            print(f"ERROR: Failed to find commit for {repo}, unable to process")
             return repo
     else:
         commit = repo["commit"]
@@ -204,8 +201,8 @@ def download_and_upload_repo(
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
                 if not primary_asset:
-                    logger.error(
-                        f"Failed to find primary asset for {repo} for org: {org_id}, unable to process push event"
+                    print(
+                        f"ERROR: Failed to find primary asset for {repo} for org: {org_id}, unable to process push event"
                     )
                     return repo
                 primary_asset_id = primary_asset.id
@@ -250,14 +247,14 @@ def download_and_upload_repo(
                             break
                         elif version.status == VersionStatus.GENERATING:
                             # STOPGAP: Ignore push events during active generation to ensure completion
-                            logger.warning(
-                                f"Generation already in progress for {repo.get('name', 'unknown')}. "
+                            print(
+                                f"WARNING: Generation already in progress for {repo.get('name', 'unknown')}. "
                                 f"Ignoring push event to allow current generation to complete."
                             )
                             return repo
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
-                    logger.info(
-                        f"Version already in connecting state for {repo['name']}, skipping..."
+                    print(
+                        f"INFO: Version already in connecting state for {repo['name']}, skipping..."
                     )
                     return repo
                 else:
@@ -286,12 +283,12 @@ def download_and_upload_repo(
                 )
                 session.add(version)
                 version_id = version.id
-                logger.info(
-                    f"Creating primary asset and version for {repo['name']}:{commit} for org: {org_id}. Version ID: {version_id}"
+                print(
+                    f"INFO: Creating primary asset and version for {repo['name']}:{commit} for org: {org_id}. Version ID: {version_id}"
                 )
     except IntegrityError:
-        logger.error(
-            f"Failed to create primary asset and version {repo['name']}:{commit} for org: {org_id}"
+        print(
+            f"ERROR: Failed to create primary asset and version {repo['name']}:{commit} for org: {org_id}"
         )
         return repo
 
@@ -307,7 +304,7 @@ def download_and_upload_repo(
     )
 
     zip_content = download_github_repo_zip(repo["full_name"], commit, access_token)
-    logger.info("Repository downloaded successfully. Size: %d bytes", len(zip_content))
+    print(f"INFO: Repository downloaded successfully. Size: {len(zip_content)} bytes")
 
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     # TODO: make a helper for constructing the upload key
@@ -315,7 +312,7 @@ def download_and_upload_repo(
         f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo['name']}.zip"
     )
     upload_to_s3_with_metadata(zip_content, metadata, upload_key)
-    logger.info(f"Repository {repo['name']} uploaded successfully to {upload_key}.")
+    print(f"INFO: Repository {repo['name']} uploaded successfully to {upload_key}.")
 
     return None
 
@@ -398,27 +395,27 @@ def close_pull_request(full_name: str, pr_id: int, access_token: str) -> None:
         pr_data = response.json()
 
         if pr_data.get("state") != "open":
-            logger.warning(
-                f"PR #{pr_id} is already {pr_data.get('state', 'in unknown state')}, skipping close"
+            print(
+                f"WARNING: PR #{pr_id} is already {pr_data.get('state', 'in unknown state')}, skipping close"
             )
             return
 
         # Close the PR
         response = client.patch(url, headers=headers, json={"state": "closed"})
         response.raise_for_status()
-        logger.info(f"Closed pull request #{pr_id} for {full_name}")
+        print(f"INFO: Closed pull request #{pr_id} for {full_name}")
 
 
 def create_pull_request_with_bot_cleanup(
     full_name: str,
-    access_token: str,
     branch: str,
+    access_token: str,
     commit_slug: str,
 ) -> None:
     BOT_NAME = "docs-bot"
     BOT_EMAIL = "bot@driverai.com"
 
-    logger.info("Checking for existing open bot pull requests...")
+    print("INFO: Checking for existing open bot pull requests...")
 
     try:
         existing_prs = list_pull_requests(full_name, access_token, state="open")
@@ -426,8 +423,8 @@ def create_pull_request_with_bot_cleanup(
         for pr in existing_prs:
             # Double-check the PR is actually open
             if pr.get("state") != "open":
-                logger.info(
-                    f"Skipping PR #{pr['number']} - not in open state (state: {pr.get('state')})"
+                print(
+                    f"INFO: Skipping PR #{pr['number']} - not in open state (state: {pr.get('state')})"
                 )
                 continue
 
@@ -437,8 +434,8 @@ def create_pull_request_with_bot_cleanup(
 
                 # Check if this PR is for the current commit
                 if source_branch == branch:
-                    logger.info(
-                        f"PR #{pr_number} already exists for commit {commit_slug} on branch {source_branch}"
+                    print(
+                        f"INFO: PR #{pr_number} already exists for commit {commit_slug} on branch {source_branch}"
                     )
                     continue  # Don't close the PR for the current commit
 
@@ -451,13 +448,13 @@ def create_pull_request_with_bot_cleanup(
                     for commit in commits
                 )
                 if is_bot_pr:
-                    logger.info(
-                        f"Closing outdated bot PR #{pr_number} from branch {source_branch}"
+                    print(
+                        f"INFO: Closing outdated bot PR #{pr_number} from branch {source_branch}"
                     )
                     close_pull_request(full_name, pr_number, access_token)
 
     except httpx.HTTPError as e:
-        logger.error(f"Error checking for existing bot PRs: {e}")
+        print(f"ERROR: Error checking for existing bot PRs: {e}")
 
     create_pull_request(full_name, branch, access_token, commit_slug)
 
@@ -498,11 +495,11 @@ def create_pull_request(
                 json=pr_data,
             )
             response.raise_for_status()
-            logger.info(f"Created PR: {response.json()['html_url']}")
+            print(f"INFO: Created PR: {response.json()['html_url']}")
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 422:
-                logger.warning(
-                    "No changes to create PR for - branch is up to date with main"
+                print(
+                    "WARNING: No changes to create PR for - branch is up to date with main"
                 )
             else:
                 raise

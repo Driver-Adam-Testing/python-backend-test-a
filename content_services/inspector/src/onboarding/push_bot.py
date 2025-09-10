@@ -156,13 +156,15 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
         # Create pull request based on provider
         if provider == PrimaryAssetProvider.GITHUB:
-            gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
+            gh_ops.create_pull_request_with_bot_cleanup(
+                full_name, branch, access_token, commit_slug
+            )
         elif provider == PrimaryAssetProvider.BITBUCKET:
             bitbucket_ops.create_pull_request_with_bot_cleanup(
                 workspace, repo_slug, access_token, branch, commit_slug
             )
         elif provider == PrimaryAssetProvider.GITLAB_SELF_MANAGED:
-            gitlab_ops.create_pull_request(
+            gitlab_ops.create_pull_request_with_bot_cleanup(
                 base_url, repo_id, access_token, branch, commit_slug
             )
 

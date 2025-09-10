@@ -44,7 +44,7 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
             .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
             .where(PrimaryAsset.organization_id == user.organization_id)
             .where(PrimaryAsset.kind == PrimaryAssetKind.CODEBASE)
-            .where(Version.status == VersionStatus.GENERATION_COMPLETE)
+            .where(Version.status.in_([VersionStatus.GENERATION_COMPLETE, VersionStatus.GENERATING]))
             .order_by(Version.created_at.asc())
         ).first()
 

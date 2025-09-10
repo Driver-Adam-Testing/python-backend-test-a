@@ -121,7 +121,6 @@ async def push_docs(version_id: uuid.UUID) -> None:
             raise ValueError(f"Unsupported provider: {provider}")
 
         repo_dir = Path(temp_dir) / full_name
-        print(f"Cloning repository {clone_url} into {repo_dir}")
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
             run(f"git clone {clone_url} {repo_dir}")

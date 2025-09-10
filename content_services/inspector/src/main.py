@@ -163,7 +163,7 @@ async def inspect_db(
     import tempfile
 
     import boto3
-    from database.models_enums import AutoDocConfigKind, ContentKind, VersionStatus
+    from database.models_enums import ContentKind, VersionStatus
     from database.models_enums import NodeKind as DbNodeKind
     from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
@@ -450,7 +450,7 @@ async def inspect_db(
         previous_version_content = [
             DeepContextDoc(
                 doc_kind=DeepContextDocKind.from_content_kind(
-                    content_kind=AutoDocConfigKind.FROM_DOCUMENT_GOAL
+                    content_kind=c.content_kind
                 ),
                 name=None,
                 user_context={"desired_length": "SHORT"},

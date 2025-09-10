@@ -415,8 +415,6 @@ You will be given the aggregated edit suggestions (with edit suggestions origina
         self,
         relevant_diffs: list[tuple[LiteNode, str]],
     ) -> Self:
-        # TODO: Strategy: emit dense descriptions of how to change the doc from each scatter, combine in gather.
-
         edit_descriptions = await self._scatter_edits(diffs=relevant_diffs)
         updated_document = await self._gather_edits(edits=edit_descriptions)
 

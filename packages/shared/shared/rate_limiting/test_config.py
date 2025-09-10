@@ -15,7 +15,7 @@ from shared.rate_limiting.config import (
 class TestBitbucketRateLimitConfig:
     """Test Bitbucket rate limit configuration loading"""
 
-    def test_default_config(self):
+    def test_default_config(self) -> None:
         """Test default configuration when no env vars are set"""
         with patch.dict(os.environ, {}, clear=True):
             config = get_bitbucket_rate_limit_config()
@@ -29,7 +29,7 @@ class TestBitbucketRateLimitConfig:
             assert config.respect_retry_after is True
             assert config.min_request_interval == 0.1
 
-    def test_env_var_override(self):
+    def test_env_var_override(self) -> None:
         """Test configuration override via environment variables"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_PER_HOUR": "500",
@@ -54,7 +54,7 @@ class TestBitbucketRateLimitConfig:
             assert config.respect_retry_after is False
             assert config.min_request_interval == 0.5
 
-    def test_invalid_strategy_fallback(self):
+    def test_invalid_strategy_fallback(self) -> None:
         """Test fallback to default strategy for invalid value"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_STRATEGY": "invalid_strategy",
@@ -66,7 +66,7 @@ class TestBitbucketRateLimitConfig:
             # Should fallback to exponential backoff
             assert config.strategy == RateLimitStrategy.EXPONENTIAL_BACKOFF
 
-    def test_token_bucket_strategy(self):
+    def test_token_bucket_strategy(self) -> None:
         """Test token bucket strategy configuration"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_STRATEGY": "token_bucket",
@@ -77,7 +77,7 @@ class TestBitbucketRateLimitConfig:
 
             assert config.strategy == RateLimitStrategy.TOKEN_BUCKET
 
-    def test_partial_env_override(self):
+    def test_partial_env_override(self) -> None:
         """Test that only specified env vars override defaults"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_PER_HOUR": "2000",
@@ -100,7 +100,7 @@ class TestBitbucketRateLimitConfig:
 class TestProviderConfig:
     """Test provider-specific configurations"""
 
-    def test_bitbucket_provider_config(self):
+    def test_bitbucket_provider_config(self) -> None:
         """Test getting Bitbucket config via provider method"""
         with patch.dict(os.environ, {}, clear=True):
             config = get_rate_limit_config_for_provider("bitbucket")
@@ -108,7 +108,7 @@ class TestProviderConfig:
             assert config is not None
             assert config.max_requests_per_hour == 1000
 
-    def test_github_provider_config(self):
+    def test_github_provider_config(self) -> None:
         """Test GitHub provider configuration"""
         with patch.dict(os.environ, {}, clear=True):
             config = get_rate_limit_config_for_provider("github")
@@ -118,7 +118,7 @@ class TestProviderConfig:
             assert config.max_retries == 3
             assert config.min_request_interval == 0.05
 
-    def test_github_env_override(self):
+    def test_github_env_override(self) -> None:
         """Test GitHub configuration with env vars"""
         env_vars = {
             "GITHUB_RATE_LIMIT_PER_HOUR": "10000",
@@ -131,7 +131,7 @@ class TestProviderConfig:
             assert config.max_requests_per_hour == 10000
             assert config.max_retries == 5
 
-    def test_gitlab_provider_config(self):
+    def test_gitlab_provider_config(self) -> None:
         """Test GitLab provider configuration"""
         with patch.dict(os.environ, {}, clear=True):
             config = get_rate_limit_config_for_provider("gitlab")
@@ -141,7 +141,7 @@ class TestProviderConfig:
             assert config.max_retries == 3
             assert config.min_request_interval == 0.1
 
-    def test_gitlab_env_override(self):
+    def test_gitlab_env_override(self) -> None:
         """Test GitLab configuration with env vars"""
         env_vars = {
             "GITLAB_RATE_LIMIT_PER_HOUR": "3000",
@@ -154,12 +154,12 @@ class TestProviderConfig:
             assert config.max_requests_per_hour == 3000
             assert config.min_request_interval == 0.2
 
-    def test_unsupported_provider(self):
+    def test_unsupported_provider(self) -> None:
         """Test unsupported provider returns None"""
         config = get_rate_limit_config_for_provider("unsupported")
         assert config is None
 
-    def test_provider_case_insensitive(self):
+    def test_provider_case_insensitive(self) -> None:
         """Test provider name is case insensitive"""
         config1 = get_rate_limit_config_for_provider("BITBUCKET")
         config2 = get_rate_limit_config_for_provider("BitBucket")
@@ -174,7 +174,7 @@ class TestProviderConfig:
         assert config2.max_requests_per_hour == 1000
         assert config3.max_requests_per_hour == 1000
 
-    def test_provider_specific_env_isolation(self):
+    def test_provider_specific_env_isolation(self) -> None:
         """Test that provider env vars don't affect each other"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_PER_HOUR": "1000",
@@ -195,7 +195,7 @@ class TestProviderConfig:
 class TestConfigValidation:
     """Test configuration validation and edge cases"""
 
-    def test_negative_values_handling(self):
+    def test_negative_values_handling(self) -> None:
         """Test handling of negative values in env vars"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_PER_HOUR": "-100",  # Negative value
@@ -207,17 +207,16 @@ class TestConfigValidation:
             config = get_bitbucket_rate_limit_config()
             assert config.max_requests_per_hour == -100
 
-    def test_non_numeric_values_handling(self):
+    def test_non_numeric_values_handling(self) -> None:
         """Test handling of non-numeric values in numeric env vars"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_PER_HOUR": "abc",  # Invalid
         }
 
-        with patch.dict(os.environ, env_vars, clear=True):
-            with pytest.raises(ValueError):
-                config = get_bitbucket_rate_limit_config()
+        with patch.dict(os.environ, env_vars, clear=True), pytest.raises(ValueError):
+            get_bitbucket_rate_limit_config()
 
-    def test_boolean_parsing(self):
+    def test_boolean_parsing(self) -> None:
         """Test boolean parsing for respect_retry_after"""
         test_cases = [
             ("true", True),
@@ -242,7 +241,7 @@ class TestConfigValidation:
                     config.respect_retry_after == expected
                 ), f"Failed for value: {value}"
 
-    def test_float_parsing(self):
+    def test_float_parsing(self) -> None:
         """Test float parsing for delay and interval values"""
         env_vars = {
             "BITBUCKET_RATE_LIMIT_INITIAL_DELAY": "1.5",

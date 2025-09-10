@@ -1,6 +1,7 @@
 """Unified Bitbucket rate limiter that works with both httpx and requests libraries."""
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections import deque
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RateLimitException(Exception):
     """Exception raised when rate limit is exceeded and max retries exhausted"""
 
-    def __init__(self, message: str, key: str = "default", attempts: int = 0):
+    def __init__(self, message: str, key: str = "default", attempts: int = 0) -> None:
         super().__init__(message)
         self.key = key
         self.attempts = attempts
@@ -48,7 +49,7 @@ class RateLimitConfig(BaseModel):
 class RateLimitState:
     """Tracks rate limit state for a specific endpoint or token"""
 
-    def __init__(self, config: RateLimitConfig):
+    def __init__(self, config: RateLimitConfig) -> None:
         self.config = config
         self.request_times: deque = deque(maxlen=config.max_requests_per_hour)
         self.lock = Lock()
@@ -72,12 +73,11 @@ class RateLimitState:
                 return False, wait_time
 
             # Check if we have rate limit info from headers
-            if self.tokens_remaining is not None:
-                if self.tokens_remaining <= 0:
-                    if self.reset_time:
-                        wait_time = (self.reset_time - datetime.now()).total_seconds()
-                        return False, max(0, wait_time)
-                    return False, self.config.initial_delay
+            if self.tokens_remaining is not None and self.tokens_remaining <= 0:
+                if self.reset_time:
+                    wait_time = (self.reset_time - datetime.now()).total_seconds()
+                    return False, max(0, wait_time)
+                return False, self.config.initial_delay
 
             # Check rolling window rate limit
             cutoff_time = now - 3600  # 1 hour ago
@@ -103,14 +103,14 @@ class RateLimitState:
 
             return True, None
 
-    def record_request(self):
+    def record_request(self) -> None:
         """Record that a request was made"""
         with self.lock:
             now = time.time()
             self.request_times.append(now)
             self.last_request_time = now
 
-    def update_from_headers(self, headers: dict[str, str]):
+    def update_from_headers(self, headers: dict[str, str]) -> None:
         """Update rate limit state from response headers"""
         with self.lock:
             # Parse Bitbucket rate limit headers
@@ -127,10 +127,8 @@ class RateLimitState:
                     pass
 
             if "x-ratelimit-remaining" in headers:
-                try:
+                with contextlib.suppress(ValueError):
                     self.tokens_remaining = int(headers["x-ratelimit-remaining"])
-                except ValueError:
-                    pass
 
             if "x-ratelimit-reset" in headers:
                 try:
@@ -155,7 +153,7 @@ class RateLimitState:
 class BitbucketRateLimiter:
     """Unified rate limiter for Bitbucket API that works with both httpx and requests"""
 
-    def __init__(self, config: RateLimitConfig | None = None):
+    def __init__(self, config: RateLimitConfig | None = None) -> None:
         self.config = config or RateLimitConfig()
         self.states: dict[str, RateLimitState] = {}
         self.global_lock = Lock()
@@ -262,10 +260,8 @@ class BitbucketRateLimiter:
                             "Retry-After"
                         )
                         if retry_after_header:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 retry_after = float(retry_after_header)
-                            except ValueError:
-                                pass
 
                     # Calculate delay based on strategy
                     if retry_after:
@@ -412,10 +408,8 @@ class BitbucketRateLimiter:
                             "Retry-After"
                         )
                         if retry_after_header:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 retry_after = float(retry_after_header)
-                            except ValueError:
-                                pass
 
                     # Calculate delay based on strategy
                     if retry_after:

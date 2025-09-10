@@ -1,8 +1,10 @@
 """Integration tests for rate limiter with realistic scenarios"""
 
 import asyncio
+import contextlib
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Never
 from unittest.mock import Mock, patch
 
 import pytest
@@ -18,7 +20,7 @@ class TestRealWorldScenarios:
     """Test real-world usage scenarios"""
 
     @patch("time.sleep")
-    def test_bulk_repository_fetch(self, mock_sleep):
+    def test_bulk_repository_fetch(self, mock_sleep: Mock) -> None:
         """Test fetching multiple repositories with rate limiting"""
         config = RateLimitConfig(
             max_requests_per_hour=10,  # Low limit for testing
@@ -37,9 +39,9 @@ class TestRealWorldScenarios:
                 "x-ratelimit-limit": "10",
             }
 
-            def make_request(repo_id=i):
+            def make_request(repo_id: int = i, response: Any = mock_response) -> Any:
                 successful_calls.append(repo_id)
-                return mock_response
+                return response
 
             if i < 10:
                 # First 10 should succeed
@@ -58,7 +60,7 @@ class TestRealWorldScenarios:
 
         assert len(successful_calls) == 10
 
-    def test_multiple_access_tokens(self):
+    def test_multiple_access_tokens(self) -> None:
         """Test using multiple access tokens with separate rate limits"""
         config = RateLimitConfig(max_requests_per_hour=5, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
@@ -86,7 +88,7 @@ class TestRealWorldScenarios:
             assert can_proceed is False
 
     @patch("time.sleep")
-    def test_webhook_event_burst(self, mock_sleep):
+    def test_webhook_event_burst(self, mock_sleep: Mock) -> None:
         """Test handling webhook event bursts with rate limiting"""
         config = RateLimitConfig(
             max_requests_per_hour=100,
@@ -98,7 +100,7 @@ class TestRealWorldScenarios:
         # Simulate 20 webhook events arriving simultaneously
         events_processed = []
 
-        def process_event(event_id):
+        def process_event(event_id: int) -> Any:
             mock_response = Mock()
             mock_response.raise_for_status = Mock()
             mock_response.headers = {}
@@ -120,14 +122,14 @@ class TestRealWorldScenarios:
         assert mock_sleep.call_count > 0
 
     @pytest.mark.asyncio
-    async def test_concurrent_async_requests(self):
+    async def test_concurrent_async_requests(self) -> None:
         """Test concurrent async requests with rate limiting"""
         config = RateLimitConfig(max_requests_per_hour=10, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
 
         successful_requests = []
 
-        async def make_request(request_id):
+        async def make_request(request_id: int) -> Any:
             mock_response = Mock()
             mock_response.raise_for_status = Mock()
             mock_response.headers = {}
@@ -151,7 +153,7 @@ class TestRealWorldScenarios:
             <= 10
         )
 
-    def test_rate_limit_recovery(self):
+    def test_rate_limit_recovery(self) -> None:
         """Test rate limit recovery over time"""
         config = RateLimitConfig(max_requests_per_hour=10, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
@@ -175,7 +177,7 @@ class TestRealWorldScenarios:
         assert can_proceed is True
 
     @patch("time.sleep")
-    def test_error_handling_with_retry(self, mock_sleep):
+    def test_error_handling_with_retry(self, mock_sleep: Mock) -> None:
         """Test error handling and retry logic"""
         config = RateLimitConfig(
             max_retries=3,
@@ -187,7 +189,7 @@ class TestRealWorldScenarios:
 
         call_count = 0
 
-        def flaky_request():
+        def flaky_request() -> Any:
             nonlocal call_count
             call_count += 1
 
@@ -198,7 +200,7 @@ class TestRealWorldScenarios:
                 error.response.status_code = 429
                 error.response.headers = {}
 
-                def raise_error():
+                def raise_error() -> Never:
                     raise error
 
                 error.raise_for_status = raise_error
@@ -227,7 +229,7 @@ class TestRealWorldScenarios:
 class TestConcurrentAccessPatterns:
     """Test concurrent access patterns and thread safety"""
 
-    def test_thread_safety(self):
+    def test_thread_safety(self) -> None:
         """Test thread safety with concurrent requests"""
         config = RateLimitConfig(max_requests_per_hour=100, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
@@ -237,7 +239,7 @@ class TestConcurrentAccessPatterns:
 
         lock = threading.Lock()  # Use real lock for thread-safe list append
 
-        def make_request(thread_id):
+        def make_request(thread_id: int) -> bool:
             state = limiter.get_state("shared_token")
             can_proceed, _ = state.can_make_request()
 
@@ -257,7 +259,7 @@ class TestConcurrentAccessPatterns:
         successful_count = sum(1 for r in results if r)
         assert successful_count == 100
 
-    def test_token_isolation(self):
+    def test_token_isolation(self) -> None:
         """Test that different tokens are properly isolated"""
         limiter = BitbucketRateLimiter()
 
@@ -277,12 +279,12 @@ class TestConcurrentAccessPatterns:
         can_proceed2, _ = state2.can_make_request()
         assert can_proceed2 is True
 
-    def test_header_update_race_condition(self):
+    def test_header_update_race_condition(self) -> None:
         """Test header updates don't cause race conditions"""
         config = RateLimitConfig()
         limiter = BitbucketRateLimiter(config)
 
-        def update_headers(thread_id):
+        def update_headers(thread_id: int) -> int | None:
             state = limiter.get_state("race_token")
             headers = {
                 "x-ratelimit-remaining": str(900 - thread_id),
@@ -305,7 +307,7 @@ class TestConcurrentAccessPatterns:
 class TestEdgeCases:
     """Test edge cases and boundary conditions"""
 
-    def test_zero_rate_limit(self):
+    def test_zero_rate_limit(self) -> None:
         """Test behavior with zero rate limit"""
         config = RateLimitConfig(max_requests_per_hour=0)
         limiter = BitbucketRateLimiter(config)
@@ -317,7 +319,7 @@ class TestEdgeCases:
         assert can_proceed is False
         assert wait_time is not None
 
-    def test_very_high_rate_limit(self):
+    def test_very_high_rate_limit(self) -> None:
         """Test with very high rate limit"""
         config = RateLimitConfig(max_requests_per_hour=1000000, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
@@ -330,7 +332,7 @@ class TestEdgeCases:
             assert can_proceed is True
             state.record_request()
 
-    def test_retry_after_header_with_large_value(self):
+    def test_retry_after_header_with_large_value(self) -> None:
         """Test Retry-After header with large value"""
         config = RateLimitConfig(
             respect_retry_after=True,
@@ -342,7 +344,7 @@ class TestEdgeCases:
 
         # Create proper exception with large Retry-After
         class RateLimitError(Exception):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.response = Mock()
                 self.response.status_code = 429
                 self.response.headers = {"Retry-After": "3600"}  # 1 hour
@@ -350,18 +352,18 @@ class TestEdgeCases:
         # This should respect the retry-after even though it's > max_delay
         with patch("time.sleep") as mock_sleep:
 
-            def mock_func():
+            def mock_func() -> Never:
                 raise RateLimitError()
 
-            try:
+            with contextlib.suppress(
+                Exception
+            ):  # Will raise RateLimitException after max_retries
                 limiter.execute_with_retry(mock_func, key="retry_test")
-            except RateLimitError:
-                pass
 
             # Should have slept for retry-after value
             mock_sleep.assert_called_once_with(3600.0)
 
-    def test_state_cleanup(self):
+    def test_state_cleanup(self) -> None:
         """Test that old request times are cleaned up"""
         config = RateLimitConfig(max_requests_per_hour=10, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)

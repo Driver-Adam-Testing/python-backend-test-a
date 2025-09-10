@@ -1,6 +1,7 @@
 """Unit tests for BitbucketRateLimiter"""
 
 from datetime import datetime, timedelta
+from typing import Any, Never
 from unittest.mock import Mock, patch
 
 import pytest
@@ -17,7 +18,7 @@ from shared.rate_limiting import (
 class TestRateLimitConfig:
     """Test RateLimitConfig model"""
 
-    def test_default_config(self):
+    def test_default_config(self) -> None:
         """Test default configuration values"""
         config = RateLimitConfig()
         assert config.max_requests_per_hour == 1000
@@ -29,7 +30,7 @@ class TestRateLimitConfig:
         assert config.respect_retry_after is True
         assert config.min_request_interval == 0.1
 
-    def test_custom_config(self):
+    def test_custom_config(self) -> None:
         """Test custom configuration values"""
         config = RateLimitConfig(
             max_requests_per_hour=500,
@@ -54,7 +55,7 @@ class TestRateLimitConfig:
 class TestRateLimitState:
     """Test RateLimitState tracking"""
 
-    def test_can_make_request_initial_state(self):
+    def test_can_make_request_initial_state(self) -> None:
         """Test that initial state allows requests"""
         config = RateLimitConfig(min_request_interval=0)
         state = RateLimitState(config)
@@ -62,7 +63,7 @@ class TestRateLimitState:
         assert can_proceed is True
         assert wait_time is None
 
-    def test_minimum_interval_enforcement(self):
+    def test_minimum_interval_enforcement(self) -> None:
         """Test minimum interval between requests"""
         config = RateLimitConfig(min_request_interval=1.0)
         state = RateLimitState(config)
@@ -80,7 +81,7 @@ class TestRateLimitState:
         assert wait_time is not None
         assert 0 < wait_time <= 1.0
 
-    def test_hourly_rate_limit(self):
+    def test_hourly_rate_limit(self) -> None:
         """Test hourly rate limit enforcement"""
         config = RateLimitConfig(max_requests_per_hour=10, min_request_interval=0)
         state = RateLimitState(config)
@@ -96,7 +97,7 @@ class TestRateLimitState:
         assert can_proceed is False
         assert wait_time is not None
 
-    def test_update_from_headers(self):
+    def test_update_from_headers(self) -> None:
         """Test updating state from response headers"""
         config = RateLimitConfig()
         state = RateLimitState(config)
@@ -117,7 +118,7 @@ class TestRateLimitState:
         assert state.reset_time is not None
         assert state.near_limit is False
 
-    def test_near_limit_detection(self):
+    def test_near_limit_detection(self) -> None:
         """Test automatic near limit detection"""
         config = RateLimitConfig(max_requests_per_hour=100)
         state = RateLimitState(config)
@@ -135,14 +136,14 @@ class TestRateLimitState:
 class TestBitbucketRateLimiter:
     """Test BitbucketRateLimiter main functionality"""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test rate limiter initialization"""
         config = RateLimitConfig()
         limiter = BitbucketRateLimiter(config)
         assert limiter.config == config
         assert len(limiter.states) == 0
 
-    def test_get_state_creates_new(self):
+    def test_get_state_creates_new(self) -> None:
         """Test that get_state creates new state if not exists"""
         limiter = BitbucketRateLimiter()
         state1 = limiter.get_state("token1")
@@ -153,7 +154,7 @@ class TestBitbucketRateLimiter:
         assert "token1" in limiter.states
         assert "token2" in limiter.states
 
-    def test_get_state_returns_existing(self):
+    def test_get_state_returns_existing(self) -> None:
         """Test that get_state returns existing state"""
         limiter = BitbucketRateLimiter()
         state1 = limiter.get_state("token1")
@@ -163,7 +164,7 @@ class TestBitbucketRateLimiter:
         assert len(limiter.states) == 1
 
     @patch("time.sleep")
-    def test_wait_if_needed(self, mock_sleep):
+    def test_wait_if_needed(self, mock_sleep: Mock) -> None:
         """Test wait_if_needed functionality"""
         config = RateLimitConfig(max_requests_per_hour=1, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
@@ -182,7 +183,7 @@ class TestBitbucketRateLimiter:
         assert wait_time > 0
         mock_sleep.assert_called_once()
 
-    def test_execute_with_retry_success(self):
+    def test_execute_with_retry_success(self) -> None:
         """Test successful execution without retry"""
         limiter = BitbucketRateLimiter()
 
@@ -199,7 +200,7 @@ class TestBitbucketRateLimiter:
         assert mock_func.call_count == 1
 
     @patch("time.sleep")
-    def test_execute_with_retry_rate_limit(self, mock_sleep):
+    def test_execute_with_retry_rate_limit(self, mock_sleep: Mock) -> None:
         """Test retry on rate limit error"""
         config = RateLimitConfig(
             max_retries=2, initial_delay=1.0, min_request_interval=0
@@ -219,7 +220,7 @@ class TestBitbucketRateLimiter:
         mock_func = Mock(side_effect=[mock_error, mock_success])
 
         # Need to make raise_for_status raise the error on first call
-        def raise_rate_limit():
+        def raise_rate_limit() -> Never:
             raise mock_error
 
         mock_error.raise_for_status = raise_rate_limit
@@ -231,7 +232,7 @@ class TestBitbucketRateLimiter:
         mock_sleep.assert_called_once_with(1.0)
 
     @patch("time.sleep")
-    def test_execute_with_retry_exponential_backoff(self, mock_sleep):
+    def test_execute_with_retry_exponential_backoff(self, mock_sleep: Mock) -> None:
         """Test exponential backoff strategy"""
         config = RateLimitConfig(
             max_retries=3,
@@ -243,43 +244,42 @@ class TestBitbucketRateLimiter:
         limiter = BitbucketRateLimiter(config)
 
         # Mock multiple rate limit errors
-        mock_error = Mock()
-        mock_error.response = Mock()
-        mock_error.response.status_code = 429
-        mock_error.response.headers = {}
+        class RateLimitError(Exception):
+            def __init__(self) -> None:
+                self.response = Mock()
+                self.response.status_code = 429
+                self.response.headers = {}
 
-        mock_func = Mock(side_effect=[mock_error, mock_error, mock_error])
+        # Create multiple instances since each will be raised once
+        errors = [RateLimitError(), RateLimitError(), RateLimitError()]
+        mock_func = Mock(side_effect=errors)
 
-        def raise_rate_limit():
-            raise mock_error
-
-        mock_error.raise_for_status = raise_rate_limit
-
-        with pytest.raises(Exception):
+        with pytest.raises(RateLimitException):
             limiter.execute_with_retry(mock_func)
 
         # Check exponential backoff delays
-        assert mock_sleep.call_count == 2
+        assert mock_sleep.call_count == 3  # Sleeps after each of the 3 429 errors
         delays = [call[0][0] for call in mock_sleep.call_args_list]
         assert delays[0] == 1.0  # First delay
         assert delays[1] == 2.0  # Second delay (1.0 * 2)
+        assert delays[2] == 4.0  # Third delay (2.0 * 2)
 
     @patch("time.sleep")
-    def test_execute_with_retry_respect_retry_after(self, mock_sleep):
+    def test_execute_with_retry_respect_retry_after(self, mock_sleep: Mock) -> None:
         """Test respecting Retry-After header"""
         config = RateLimitConfig(respect_retry_after=True, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
 
         # Create proper exception with Retry-After
         class RateLimitError(Exception):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.response = Mock()
                 self.response.status_code = 429
                 self.response.headers = {"Retry-After": "5"}
 
         call_count = 0
 
-        def mock_func():
+        def mock_func() -> Mock:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -290,18 +290,18 @@ class TestBitbucketRateLimiter:
                 mock_success.headers = {}
                 return mock_success
 
-        result = limiter.execute_with_retry(mock_func)
+        limiter.execute_with_retry(mock_func)
 
         assert call_count == 2
         mock_sleep.assert_called_once_with(5.0)
 
-    def test_execute_with_retry_client_error(self):
+    def test_execute_with_retry_client_error(self) -> None:
         """Test that client errors are not retried"""
         limiter = BitbucketRateLimiter()
 
         # Create a proper exception class
         class ClientError(Exception):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.response = Mock()
                 self.response.status_code = 400
                 self.response.headers = {}
@@ -314,7 +314,7 @@ class TestBitbucketRateLimiter:
         # Should only be called once (no retry)
         assert mock_func.call_count == 1
 
-    def test_execute_with_retry_extract_headers(self):
+    def test_execute_with_retry_extract_headers(self) -> None:
         """Test header extraction functionality"""
         limiter = BitbucketRateLimiter()
 
@@ -327,7 +327,9 @@ class TestBitbucketRateLimiter:
         }
 
         mock_func = Mock(return_value=mock_response)
-        extract_headers = lambda resp: dict(resp.headers)
+
+        def extract_headers(resp: Any) -> dict[str, str]:
+            return dict(resp.headers)
 
         result = limiter.execute_with_retry(
             mock_func, key="test_token", extract_headers=extract_headers
@@ -341,7 +343,7 @@ class TestBitbucketRateLimiter:
         assert state.config.max_requests_per_hour == 1000
 
     @pytest.mark.asyncio
-    async def test_execute_with_retry_async_success(self):
+    async def test_execute_with_retry_async_success(self) -> None:
         """Test async execution success"""
         limiter = BitbucketRateLimiter()
 
@@ -350,7 +352,7 @@ class TestBitbucketRateLimiter:
         mock_response.raise_for_status = Mock()
         mock_response.headers = {}
 
-        async def mock_func():
+        async def mock_func() -> Mock:
             return mock_response
 
         result = await limiter.execute_with_retry_async(mock_func)
@@ -359,7 +361,7 @@ class TestBitbucketRateLimiter:
 
     @pytest.mark.asyncio
     @patch("asyncio.sleep")
-    async def test_execute_with_retry_async_rate_limit(self, mock_sleep):
+    async def test_execute_with_retry_async_rate_limit(self, mock_sleep: Mock) -> None:
         """Test async retry on rate limit"""
         config = RateLimitConfig(max_retries=2, initial_delay=1.0)
         limiter = BitbucketRateLimiter(config)
@@ -376,12 +378,12 @@ class TestBitbucketRateLimiter:
 
         call_count = 0
 
-        async def mock_func():
+        async def mock_func() -> Mock:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
 
-                def raise_rate_limit():
+                def raise_rate_limit() -> Never:
                     raise mock_error
 
                 mock_error.raise_for_status = raise_rate_limit
@@ -395,7 +397,7 @@ class TestBitbucketRateLimiter:
         assert call_count == 2
         mock_sleep.assert_called_once_with(1.0)
 
-    def test_get_stats(self):
+    def test_get_stats(self) -> None:
         """Test statistics retrieval"""
         limiter = BitbucketRateLimiter()
 
@@ -426,7 +428,7 @@ class TestBitbucketRateLimiter:
 class TestRequestsCompatibility:
     """Test compatibility with requests library"""
 
-    def test_requests_response_handling(self):
+    def test_requests_response_handling(self) -> None:
         """Test handling of requests.Response objects"""
         import requests
 
@@ -448,7 +450,7 @@ class TestRequestsCompatibility:
         mock_response.raise_for_status.assert_called_once()
 
     @patch("time.sleep")
-    def test_requests_http_error_429(self, mock_sleep):
+    def test_requests_http_error_429(self, mock_sleep: Mock) -> None:
         """Test handling of requests.HTTPError with 429 status"""
         import requests
 
@@ -477,7 +479,9 @@ class TestRequestsCompatibility:
         mock_sleep.assert_called_once()
 
     @patch("time.sleep")
-    def test_rate_limit_exception_raised_when_max_retries_exceeded(self, mock_sleep):
+    def test_rate_limit_exception_raised_when_max_retries_exceeded(
+        self, mock_sleep: Mock
+    ) -> None:
         """Test that RateLimitException is raised when max retries are exceeded for 429 errors"""
         import requests
 
@@ -503,14 +507,14 @@ class TestRequestsCompatibility:
         assert exc_info.value.key == "test_key"
         assert exc_info.value.attempts == 3
         assert mock_func.call_count == 3
-        # Should have slept between retries (2 times for 3 attempts)
-        assert mock_sleep.call_count == 2
+        # Should have slept after each failed attempt (3 times for 3 attempts with 429)
+        assert mock_sleep.call_count == 3
 
 
 class TestHttpxCompatibility:
     """Test compatibility with httpx library"""
 
-    def test_httpx_response_handling(self):
+    def test_httpx_response_handling(self) -> None:
         """Test handling of httpx.Response objects"""
         # Mock httpx response
         mock_response = Mock()
@@ -529,7 +533,7 @@ class TestHttpxCompatibility:
         mock_response.raise_for_status.assert_called_once()
 
     @patch("time.sleep")
-    def test_httpx_status_error_429(self, mock_sleep):
+    def test_httpx_status_error_429(self, mock_sleep: Mock) -> None:
         """Test handling of httpx.HTTPStatusError with 429 status"""
         config = RateLimitConfig(max_retries=2, min_request_interval=0)
         limiter = BitbucketRateLimiter(config)
@@ -548,7 +552,7 @@ class TestHttpxCompatibility:
         # First call raises error, second succeeds
         mock_func = Mock(side_effect=[mock_error, mock_success])
 
-        def raise_rate_limit():
+        def raise_rate_limit() -> Never:
             raise mock_error
 
         mock_error.raise_for_status = raise_rate_limit

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_access_token(installation_id: str) -> str:
-    print(f"Fetching group access token for installation ID {installation_id}")
+    logger.info(f"Fetching group access token for installation ID {installation_id}")
     install_key = format_secret_name("GIT_PROVIDER_GAT_INSTALL_SECRET", installation_id)
     secrets_manager = AWSSecretManagementStrategy(
         AWSClientConfig(
@@ -191,8 +191,8 @@ def download_and_upload_repo(
                     .options(selectinload(PrimaryAsset.versions))
                 ).first()
                 if not primary_asset:
-                    print(
-                        f"Failed to find primary asset for {repo} for org: {org_id}, unable to process push event, unable to process push event"
+                    logger.error(
+                        f"Failed to find primary asset for {repo} for org: {org_id}, unable to process push event"
                     )
                     return repo
                 primary_asset_id = primary_asset.id
@@ -237,106 +237,13 @@ def download_and_upload_repo(
                             break
                         elif version.status == VersionStatus.GENERATING:
                             # STOPGAP: Ignore push events during active generation to ensure completion
-                            print(
+                            logger.warning(
                                 f"Generation already in progress for {repo.get('repo_name', 'unknown')}. "
                                 f"Ignoring push event to allow current generation to complete."
                             )
                             return repo
-                            # # Delete running version, and restart inspection with the new version,
-                            # # this way the docs we generate reflect the most up to date state
-                            # run_statement = (
-                            #     select(InspectorRun)
-                            #     .where(InspectorRun.version_id == version.id)
-                            #     .order_by(InspectorRun.created_at.desc())
-                            # )
-                            # run = session.exec(run_statement).first()
-                            #
-                            # if run is not None:
-                            #     call_id = run.call_id
-                            #     modal_call = modal.FunctionCall.from_id(call_id)
-                            #     modal_call.cancel()
-                            # # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
-                            # session.delete(version)
-                            # # Find and delete the usage session for the version
-                            # print("Fetching existing usage session...")
-                            # usage_session_statement = (
-                            #     select(UsageSession)
-                            #     .join(
-                            #         UsageEvent, UsageSession.id == UsageEvent.session_id
-                            #     )
-                            #     .where(
-                            #         UsageSession.session_metadata["version_id"].astext
-                            #         == str(version.id)
-                            #     )
-                            #     .where(
-                            #         UsageEvent.event_type
-                            #         == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-                            #     )
-                            #     .options(selectinload(UsageSession.usage_events))
-                            # )
-                            # usage_session = session.exec(
-                            #     usage_session_statement
-                            # ).first()
-                            # print(usage_session)
-                            # if usage_session is not None:
-                            #     usage_event = next(
-                            #         (
-                            #             event
-                            #             for event in usage_session.usage_events
-                            #             if event.event_type
-                            #             == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
-                            #         ),
-                            #         None,
-                            #     )
-                            #     print(
-                            #         f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
-                            #     )
-                            #     if usage_event is not None:
-                            #         new_usage_session = UsageSession(
-                            #             status=usage_session.status,
-                            #             organization_id=usage_session.organization_id,
-                            #             user_id="SYSTEM",
-                            #             session_metadata=usage_session.session_metadata,
-                            #         )
-                            #         session.add(new_usage_session)
-                            #         usage_event_credit = UsageEvent(
-                            #             **usage_event.dict(
-                            #                 exclude={
-                            #                     "id",
-                            #                     "bytes_in",
-                            #                     "session_id",
-                            #                     "timestamp",
-                            #                     "event_type",
-                            #                 }
-                            #             ),
-                            #             event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                            #             session_id=new_usage_session.id,
-                            #             bytes_in=abs(usage_event.bytes_in),
-                            #             timestamp=datetime.now(tz=UTC),
-                            #         )
-                            #         print(usage_event_credit)
-                            #         print(
-                            #             f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
-                            #         )
-                            #         session.add(usage_event_credit)
-                            #
-                            # new_version = Version(
-                            #     primary_asset_id=primary_asset.id,
-                            #     vcs_hash=commit,
-                            #     status=VersionStatus.GENERATING,
-                            #     # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
-                            #     previous_version_id=version.previous_version_id,
-                            #     vcs_metadata=vcs_info.model_dump(),
-                            # )
-                            # session.add(new_version)
-                            # version_id = new_version.id
-                            #
-                            # print(
-                            #     f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
-                            # )
-                            # break
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
-                    print(
+                    logger.info(
                         f"Version already in connecting state for {repo_name}, skipping..."
                     )
                     return repo
@@ -367,11 +274,11 @@ def download_and_upload_repo(
                 )
                 session.add(version)
                 version_id = version.id
-                print(
+                logger.info(
                     f"Creating primary asset and version for {repo_name}:{commit} for org: {org_id}. Version ID: {version_id}"
                 )
     except IntegrityError:
-        print(
+        logger.error(
             f"Failed to create primary asset and version {repo_name}:{commit} for org: {org_id}"
         )
         return repo
@@ -388,14 +295,14 @@ def download_and_upload_repo(
     )
 
     zip_content = download_repo(base_url, repo_id, commit, access_token)
-    print("Repository downloaded successfully. Size: %d bytes", len(zip_content))
+    logger.info(f"Repository downloaded successfully. Size: {len(zip_content)} bytes")
 
     org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
     upload_key = (
         f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo_name}.zip"
     )
     upload_to_s3_with_metadata(zip_content, metadata, upload_key)
-    print(f"Repository {repo_name} uploaded successfully to {upload_key}.")
+    logger.info(f"Repository {repo_name} uploaded successfully to {upload_key}.")
 
     return None
 
@@ -458,14 +365,96 @@ def create_pull_request(
         },
     )
     response.raise_for_status()
-    print(f"Pull request created successfully: {response.json()['web_url']}")
+    logger.info(f"Pull request created successfully: {response.json()['web_url']}")
 
 
 def get_gitlab_username(base_url: str, access_token: str) -> str:
     url = f"{base_url.rstrip('/')}/api/v4/user"
     headers = {"PRIVATE-TOKEN": access_token}
-    print(f"Fetching GitLab username from {url}")
+    logger.debug(f"Fetching GitLab username from {url}")
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    print(response.json())
+    logger.debug(f"GitLab user response: {response.json()}")
     return response.json()["username"]
+
+
+def list_merge_requests(
+    base_url: str, repo_id: str, access_token: str, state: str = "opened"
+) -> list:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # GitLab supports pagination; fetch all pages
+    url = f"{base_url}/api/v4/projects/{repo_id}/merge_requests"
+    params = {"state": state, "per_page": 100, "order_by": "updated_at", "sort": "desc"}
+    all_mrs: list = []
+    while url:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        all_mrs.extend(response.json())
+        # Pagination: look for next page via Link header
+        link = response.headers.get("Link")
+        next_url = None
+        if link:
+            parts = [p.strip() for p in link.split(",")]
+            for part in parts:
+                if 'rel="next"' in part:
+                    start = part.find("<")
+                    end = part.find(">", start + 1)
+                    if start != -1 and end != -1:
+                        next_url = part[start + 1 : end]
+                        break
+        url = next_url
+        params = {}  # clear params when using absolute next_url
+    return all_mrs
+
+
+def get_merge_request_commits(
+    base_url: str, repo_id: str, mr_iid: int, access_token: str
+) -> list:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{base_url}/api/v4/projects/{repo_id}/merge_requests/{mr_iid}/commits"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
+
+
+def close_merge_request(
+    base_url: str, repo_id: str, mr_iid: int, access_token: str
+) -> None:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{base_url}/api/v4/projects/{repo_id}/merge_requests/{mr_iid}"
+    response = requests.put(url, headers=headers, json={"state_event": "close"})
+    response.raise_for_status()
+    logger.info(f"Closed merge request !{mr_iid}")
+
+
+def create_pull_request_with_bot_cleanup(
+    base_url: str,
+    repo_id: str,
+    access_token: str,
+    branch: str,
+    commit_slug: str,
+) -> None:
+    BOT_NAME = "docs-bot"
+    BOT_EMAIL = "bot@driverai.com"
+    try:
+        existing_mrs = list_merge_requests(
+            base_url, repo_id, access_token, state="opened"
+        )
+        for mr in existing_mrs:
+            source_branch = mr.get("source_branch", "")
+            if source_branch.startswith("docs_"):
+                mr_iid = mr.get("iid")  # GitLab uses IID per project
+
+                commits = get_merge_request_commits(
+                    base_url, repo_id, mr_iid, access_token
+                )
+                is_bot_mr = any(
+                    (commit.get("author_email") == BOT_EMAIL)
+                    or (commit.get("author_name") == BOT_NAME)
+                    for commit in commits
+                )
+                if is_bot_mr:
+                    close_merge_request(base_url, repo_id, mr_iid, access_token)
+    except requests.HTTPError as e:
+        logger.error(f"Error checking for existing bot PRs: {e}")
+    create_pull_request(base_url, repo_id, access_token, branch, commit_slug)

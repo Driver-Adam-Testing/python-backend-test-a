@@ -108,23 +108,38 @@ class GitProviderInterface(ABC):
 
     @abstractmethod
     def fetch_repositories(
-        self,
-        installation: GitProviderAppInstallation,
-        page_size: int = 100,
-        max_pages: int | None = None,
-        auto_paginate: bool = True,
+        self, installation: GitProviderAppInstallation
     ) -> list[GitRepository]:
         """Fetch repositories accessible by this installation
 
         Args:
             installation: The installation record
-            page_size: Number of repositories to fetch per API call
-            max_pages: Maximum number of pages to fetch (None for no limit)
-            auto_paginate: Whether to automatically fetch all pages until max_pages or no more pages
 
         Returns:
             List of GitRepository objects
         """
+
+    # @abstractmethod
+    # def clone_repository(
+    #     self,
+    #     repo_info: GitRepository,
+    #     user_id: str,
+    #     org_id: str,
+    #     upload_key: str,
+    #     bucket_name: str,
+    # ) -> str:
+    #     """Clone a repository and upload to S3
+    #
+    #     Args:
+    #         repo_info: Repository information
+    #         user_id: User ID initiating the clone
+    #         org_id: Organization ID
+    #         upload_key: S3 upload key
+    #         bucket_name: S3 bucket name
+    #
+    #     Returns:
+    #         Presigned download URL
+    #     """
 
     @abstractmethod
     def handle_webhook_event(

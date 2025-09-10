@@ -169,18 +169,6 @@ class BitbucketProvider(GitProviderInterface):
         max_pages: int | None = None,
         auto_paginate: bool = True,
     ) -> list[GitRepository]:
-        """
-        Fetch Bitbucket repositories with configurable pagination.
-
-        Args:
-            installation: The app installation
-            page_size: Number of repositories per page (default: 100, max: 100)
-            max_pages: Maximum number of pages to fetch (None = no limit)
-            auto_paginate: If True, fetch all pages automatically (default: True)
-
-        Returns:
-            List of GitRepository objects
-        """
         logger.info(f"Fetching repositories for installation: {installation.id}")
 
         try:
@@ -201,18 +189,6 @@ class BitbucketProvider(GitProviderInterface):
             for repo in repos_data:
                 # Fetch latest commit for each repo if needed
                 latest_commit = None
-
-                # TODO: This seemed to be causing a 429 for workspaces with
-                # many repos. Additional testing is needed to confirm this.
-                # try:
-                #     commit_hash = self.api_strategy.get_latest_commit(
-                #         workspace, repo["slug"], access_token
-                #     )
-                #     latest_commit = {"id": commit_hash}
-                # except Exception as e:
-                #     logger.warning(
-                #         f"Failed to fetch latest commit for {repo['name']}: {e}"
-                #     )
 
                 repos.append(
                     GitRepository(
@@ -266,17 +242,6 @@ class BitbucketProvider(GitProviderInterface):
         page_size: int = 100,
         page_url: str | None = None,
     ) -> dict:
-        """
-        Fetch a single page of repositories for manual pagination control.
-
-        Args:
-            installation: The app installation
-            page_size: Number of repositories per page (default: 100, max: 100)
-            page_url: URL for a specific page (from 'next' in previous response)
-
-        Returns:
-            Dictionary with 'repositories' (list of GitRepository) and 'next_url' (str or None)
-        """
         logger.info(f"Fetching repository page for installation: {installation.id}")
 
         try:

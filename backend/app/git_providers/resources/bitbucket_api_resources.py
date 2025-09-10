@@ -41,9 +41,10 @@ class BitbucketAPIResources:
             headers = {"Authorization": f"Bearer {access_token}"}
             repos_url = f"{self.api_base}/repositories/{workspace}"
 
-            def make_request():
+            def make_request() -> httpx.Response | None:
                 with httpx.Client() as client:
                     return client.get(repos_url, headers=headers, params={"pagelen": 1})
+                return None
 
             # Execute with rate limiting, using the token as the rate limit key
             repos_response = self.rate_limiter.execute_with_retry(
@@ -79,22 +80,7 @@ class BitbucketAPIResources:
         access_token: str,
         page_size: int = 100,
         page: int = 1,
-        # page_url: str | None = None,
-        # params: dict | None = None,
     ) -> dict:
-        """
-        Fetch a single page of repositories with rate limiting.
-
-        Args:
-            workspace: Bitbucket workspace name
-            access_token: Access token for authentication
-            page_size: Number of items per page (default: 100)
-            page_url: Specific page URL to fetch (for pagination)
-            params: Additional query parameters
-
-        Returns:
-            Dictionary with 'values' (repositories) and 'next' (next page URL)
-        """
         headers = {"Authorization": f"Bearer {access_token}"}
         rate_limit_key = f"token_{access_token[:8]}"
 
@@ -103,17 +89,13 @@ class BitbucketAPIResources:
 
         # Only add params if not using a page_url (which includes params)
         params = {"pagelen": page_size, "page": page}
-        # if not page_url and params is None:
-        # elif not page_url:
-        #     params = {**params, "pagelen": page_size}
-        # else:
-        #     params = {}  # page_url already includes params
 
         try:
 
-            def make_request():
+            def make_request() -> httpx.Response | None:
                 with httpx.Client(timeout=30.0) as client:
                     return client.get(url, headers=headers, params=params)
+                return None
 
             response = self.rate_limiter.execute_with_retry(
                 make_request,
@@ -149,20 +131,6 @@ class BitbucketAPIResources:
         auto_paginate: bool = True,
         progress_callback: Callable[[int, int], None] | None = None,
     ) -> list[dict]:
-        """
-        List repositories with flexible pagination control.
-
-        Args:
-            workspace: Bitbucket workspace name
-            access_token: Access token for authentication
-            page_size: Number of items per page (default: 100, max: 100)
-            max_pages: Maximum number of pages to fetch (None = no limit)
-            auto_paginate: If True, automatically fetch all pages (default: True)
-            progress_callback: Optional callback(repos_fetched, page_count) for progress updates
-
-        Returns:
-            List of repository dictionaries
-        """
         if not auto_paginate:
             # Return just the first page if auto_paginate is False
             data = self.fetch_repositories_page(workspace, access_token, page_size)
@@ -231,20 +199,6 @@ class BitbucketAPIResources:
         max_pages: int | None = None,
         auto_paginate: bool = True,
     ) -> list[dict]:
-        """
-        List project repositories with flexible pagination control.
-
-        Args:
-            workspace: Bitbucket workspace name
-            project_key: Project key to filter repositories
-            access_token: Access token for authentication
-            page_size: Number of items per page (default: 100)
-            max_pages: Maximum number of pages to fetch (None = no limit)
-            auto_paginate: If True, automatically fetch all pages (default: True)
-
-        Returns:
-            List of repository dictionaries for the specified project
-        """
         # Use the base list_repositories with project filter
         base_params = {"q": f'project.key="{project_key}"'}
 
@@ -318,9 +272,10 @@ class BitbucketAPIResources:
         try:
             url = f"{self.api_base}/repositories/{workspace}/{repo_slug}"
 
-            def make_request():
+            def make_request() -> httpx.Response | None:
                 with httpx.Client() as client:
                     return client.get(url, headers=headers)
+                return None
 
             response = self.rate_limiter.execute_with_retry(
                 make_request,
@@ -343,10 +298,7 @@ class BitbucketAPIResources:
     def get_latest_commit(
         self, workspace: str, repo_slug: str, access_token: str
     ) -> str:
-        """Get latest commit SHA for default branch"""
-
-        # TODO prior implementation was wrong in that default branch was not specified
-        # this codepath is unused right now so the impl is empty :) use git blame
+        pass
 
     def download_repo(
         self, workspace: str, repo_slug: str, commit: str, access_token: str
@@ -491,9 +443,10 @@ class BitbucketAPIResources:
 
         try:
 
-            def make_request():
+            def make_request() -> httpx.Response | None:
                 with httpx.Client() as client:
                     return client.post(url, headers=headers, json=payload)
+                return None
 
             response = self.rate_limiter.execute_with_retry(
                 make_request,
@@ -537,9 +490,10 @@ class BitbucketAPIResources:
 
         try:
 
-            def make_request():
+            def make_request() -> httpx.Response | None:
                 with httpx.Client() as client:
                     return client.post(url, headers=headers, json=payload)
+                return None
 
             response = self.rate_limiter.execute_with_retry(
                 make_request,

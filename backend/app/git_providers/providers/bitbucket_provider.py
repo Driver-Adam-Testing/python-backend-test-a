@@ -12,7 +12,6 @@ from app.git_providers.interfaces.provider_interface import (
     WebhookEventContext,
 )
 from app.git_providers.resources.bitbucket_api_resources import BitbucketAPIResources
-from app.git_providers.utils.errors import GitProviderAccessTokenError
 from app.git_providers.utils.vcs_auto_update import is_update_required
 from app.schemas.git_provider_schema import (
     AccessTokenData,
@@ -39,21 +38,16 @@ class BitbucketTokenType(str, Enum):
 
 
 class BitbucketProvider(GitProviderInterface):
-    """Bitbucket provider implementation supporting multiple access token types with rate limiting"""
+    """Bitbucket provider implementation supporting multiple access token types"""
 
     def __init__(
         self, config: GitProviderConfig, secrets_manager: AWSSecretManagementStrategy
     ) -> None:
         self.config = config
         self.secrets_manager = secrets_manager
-
-        # Import rate limit config loader
-        from shared.rate_limiting.config import get_bitbucket_rate_limit_config
-
-        # Get rate limit configuration from environment
-        rate_limit_config = get_bitbucket_rate_limit_config()
-
-        self.api_strategy = BitbucketAPIResources(rate_limit_config)
+        self.api_strategy = (
+            BitbucketAPIResources()
+        )  # config.base_url) < TODO this class has a hardcoded base URL...
 
     @classmethod
     def from_config(
@@ -163,12 +157,9 @@ class BitbucketProvider(GitProviderInterface):
         return secret_value
 
     def fetch_repositories(
-        self,
-        installation: GitProviderAppInstallation,
-        page_size: int = 2,
-        max_pages: int | None = None,
-        auto_paginate: bool = True,
+        self, installation: GitProviderAppInstallation
     ) -> list[GitRepository]:
+        """Fetch Bitbucket repositories based on token type"""
         logger.info(f"Fetching repositories for installation: {installation.id}")
 
         try:
@@ -176,19 +167,22 @@ class BitbucketProvider(GitProviderInterface):
             secrets = self.fetch_secrets(installation)
             access_token = secrets["token"]
             workspace = installation.git_provider_app.name
-
-            # Fetch with caller-controlled pagination
-            repos_data = self.api_strategy.list_repositories(
-                workspace,
-                access_token,
-                page_size=page_size,
-                max_pages=max_pages,
-                auto_paginate=auto_paginate,
-            )
+            repos_data = self.api_strategy.list_repositories(workspace, access_token)
             repos = []
             for repo in repos_data:
                 # Fetch latest commit for each repo if needed
                 latest_commit = None
+                # TODO: This seemed to be causing a 429 for workspaces with
+                # many repos. Additional testing is needed to confirm this.
+                # try:
+                #     commit_hash = self.api_strategy.get_latest_commit(
+                #         workspace, repo["slug"], access_token
+                #     )
+                #     latest_commit = {"id": commit_hash}
+                # except Exception as e:
+                #     logger.warning(
+                #         f"Failed to fetch latest commit for {repo['name']}: {e}"
+                #     )
 
                 repos.append(
                     GitRepository(
@@ -221,79 +215,8 @@ class BitbucketProvider(GitProviderInterface):
             )
             return repos
 
-        except GitProviderAccessTokenError as e:
-            # This could be a rate limit error or authentication issue
-            logger.error(f"Access token error while fetching repositories: {e}")
-            raise  # Re-raise with the user-friendly message from BitbucketAPIResources
         except Exception as e:
             logger.error(f"Failed to fetch repositories: {e}")
-            # Provide more context if it's a rate limit issue
-            if "429" in str(e) or "rate limit" in str(e).lower():
-                raise GitProviderAccessTokenError(
-                    f"Bitbucket API rate limit exceeded for workspace '{workspace}'. "
-                    f"Please wait a few minutes before trying again. "
-                    f"If this persists, consider using multiple access tokens or reducing the number of operations."
-                )
-            raise
-
-    def fetch_repositories_page(
-        self,
-        installation: GitProviderAppInstallation,
-        page_size: int = 100,
-        page_url: str | None = None,
-    ) -> dict:
-        logger.info(f"Fetching repository page for installation: {installation.id}")
-
-        try:
-            # Get token and metadata from secrets
-            secrets = self.fetch_secrets(installation)
-            access_token = secrets["token"]
-            workspace = installation.git_provider_app.name
-
-            # Fetch single page
-            page_data = self.api_strategy.fetch_repositories_page(
-                workspace, access_token, page_size=page_size, page_url=page_url
-            )
-
-            # Convert raw repos to GitRepository objects
-            repos = []
-            for repo in page_data.get("values", []):
-                repos.append(
-                    GitRepository(
-                        provider_name=str(installation.git_provider_app.provider_kind),
-                        provider_kind=installation.git_provider_app.provider_kind,
-                        org=repo["workspace"]["name"],
-                        installation_id=str(installation.id),
-                        repo_name=repo["name"],
-                        last_updated=repo.get("updated_on"),
-                        default_branch=repo["mainbranch"]["name"],
-                        latest_commit=None,  # Not fetching commits for pagination performance
-                        metadata={
-                            "id": repo["uuid"],
-                            "workspace": repo["workspace"]["name"],
-                            "slug": repo["slug"],
-                            "project_key": repo.get("project", {}).get("key"),
-                            "project_name": repo.get("project", {}).get("name"),
-                            "is_private": repo.get("is_private", True),
-                            "language": repo.get("language"),
-                            "created_on": repo.get("created_on"),
-                            "updated_on": repo.get("updated_on"),
-                            "full_name": repo["full_name"],
-                            "links": repo.get("links", {}),
-                        },
-                    )
-                )
-
-            return {
-                "repositories": repos,
-                "next_url": page_data.get("next"),
-                "total_fetched": len(repos),
-            }
-
-        except GitProviderAccessTokenError:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to fetch repository page: {e}")
             raise
 
     # https://support.atlassian.com/bitbucket-cloud/docs/manage-webhooks/

@@ -1,262 +1,113 @@
 import logging
-from collections.abc import Callable
 from typing import Any
 
 import httpx
 from app.git_providers.utils.errors import GitProviderAccessTokenError
-from shared.rate_limiting import (
-    BitbucketRateLimiter,
-    RateLimitConfig,
-    RateLimitStrategy,
-)
 
 logger = logging.getLogger(__name__)
 
 
 class BitbucketAPIResources:
-    """API resources for Bitbucket using Workspace Access Tokens with rate limiting"""
+    """API resources for Bitbucket using Workspace Access Tokens"""
 
-    def __init__(self, rate_limit_config: RateLimitConfig | None = None) -> None:
+    def __init__(self) -> None:
         self.api_base = "https://api.bitbucket.org/2.0"
-
-        # Initialize rate limiter with custom config or defaults
-        if rate_limit_config is None:
-            rate_limit_config = RateLimitConfig(
-                max_requests_per_hour=1000,  # Default for authenticated requests
-                max_retries=5,
-                initial_delay=1.0,
-                max_delay=60.0,
-                backoff_factor=2.0,
-                strategy=RateLimitStrategy.EXPONENTIAL_BACKOFF,
-                respect_retry_after=True,
-                min_request_interval=0.5,  # 500ms between requests to be safe
-            )
-        self.rate_limiter = BitbucketRateLimiter(rate_limit_config)
 
     def validate_workspace_access(
         self, workspace: str, access_token: str
     ) -> tuple[bool, str]:
-        """Validate Workspace Access Token by checking actual permissions with rate limiting"""
+        """Validate Workspace Access Token by checking actual permissions"""
         try:
             headers = {"Authorization": f"Bearer {access_token}"}
+
+            # Method 1: Try to list repositories in the workspace
+            # This will fail with 403 if we don't have access
             repos_url = f"{self.api_base}/repositories/{workspace}"
 
-            def make_request() -> httpx.Response | None:
-                with httpx.Client() as client:
-                    return client.get(repos_url, headers=headers, params={"pagelen": 1})
-                return None
-
-            # Execute with rate limiting, using the token as the rate limit key
-            repos_response = self.rate_limiter.execute_with_retry(
-                make_request,
-                key=f"token_{access_token[:8]}",  # Use first 8 chars of token as key
-                extract_headers=lambda resp: dict(resp.headers),
-            )
-
-            if repos_response.status_code == 200:
-                return True, f"Valid workspace access token for {workspace}"
-            elif repos_response.status_code == 403:
-                return (
-                    False,
-                    f"Token does not have access to workspace '{workspace}'",
+            with httpx.Client() as client:
+                repos_response = client.get(
+                    repos_url,
+                    headers=headers,
+                    # params={"pagelen": 1}  # Just need to check access
                 )
-            elif repos_response.status_code == 401:
-                return False, "Invalid token"
-            elif repos_response.status_code == 404:
-                return False, f"Workspace '{workspace}' not found or no access"
-            else:
-                return False, f"Unexpected error: {repos_response.status_code}"
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
-                return False, "Rate limit exceeded. Please try again later."
-            return False, f"HTTP error: {e}"
+                if repos_response.status_code == 200:
+                    # Can list repos = have workspace access
+                    return True, f"Valid workspace access token for {workspace}"
+                elif repos_response.status_code == 403:
+                    return (
+                        False,
+                        f"Token does not have access to workspace '{workspace}'",
+                    )
+                elif repos_response.status_code == 401:
+                    return False, "Invalid token"
+                elif repos_response.status_code == 404:
+                    # Workspace doesn't exist OR we don't have access
+                    # Try to determine which by checking if workspace exists publicly
+                    return False, f"Workspace '{workspace}' not found or no access"
+                else:
+                    return False, f"Unexpected error: {repos_response.status_code}"
+
         except Exception as e:
             return False, f"Connection error: {e!s}"
 
-    def fetch_repositories_page(
-        self,
-        workspace: str,
-        access_token: str,
-        page_size: int = 100,
-        page: int = 1,
-    ) -> dict:
+    def list_repositories(self, workspace: str, access_token: str) -> list[dict]:
         headers = {"Authorization": f"Bearer {access_token}"}
-        rate_limit_key = f"token_{access_token[:8]}"
-
-        # Use provided URL or construct initial URL
-        url = f"{self.api_base}/repositories/{workspace}"
-
-        # Only add params if not using a page_url (which includes params)
-        params = {"pagelen": page_size, "page": page}
+        repos = []
 
         try:
+            url = f"{self.api_base}/repositories/{workspace}"
+            params = {"pagelen": 100}
 
-            def make_request() -> httpx.Response | None:
-                with httpx.Client(timeout=30.0) as client:
-                    return client.get(url, headers=headers, params=params)
-                return None
+            with httpx.Client() as client:
+                while url:
+                    response = client.get(url, headers=headers, params=params)
+                    response.raise_for_status()
 
-            response = self.rate_limiter.execute_with_retry(
-                make_request,
-                key=rate_limit_key,
-                extract_headers=lambda resp: dict(resp.headers),
-            )
+                    data = response.json()
+                    repos.extend(data.get("values", []))
 
-            response.raise_for_status()
-            return response.json()
+                    # Handle pagination
+                    url = data.get("next")
+                    params = {}  # Next URL includes params
+
+            return repos
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                logger.error("Authentication failed with access token")
-                raise GitProviderAccessTokenError("Invalid access token")
-            elif e.response.status_code == 429:
-                logger.error(
-                    f"Rate limit exceeded while fetching repositories from {workspace}"
-                )
-                raise GitProviderAccessTokenError(
-                    "Rate limit exceeded. Please wait a few minutes and try again."
-                )
-            raise
-        except Exception as e:
-            logger.error(f"Error fetching repository page from {workspace}: {e}")
-            raise
-
-    def list_repositories(
-        self,
-        workspace: str,
-        access_token: str,
-        page_size: int = 100,
-        max_pages: int | None = None,
-        auto_paginate: bool = True,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[dict]:
-        if not auto_paginate:
-            # Return just the first page if auto_paginate is False
-            data = self.fetch_repositories_page(workspace, access_token, page_size)
-            return data.get("values", [])
-
-        repos = []
-        page_count = 1
-        url = None
-
-        # Set a reasonable default max_pages if not specified
-        if max_pages is None:
-            max_pages = 1000  # Very high limit as safety measure
-
-        try:
-            while page_count < max_pages:
-                # Fetch page
-                data = self.fetch_repositories_page(
-                    workspace, access_token, page_size, page=page_count
-                )
-
-                # Extract repositories
-                page_repos = data.get("values", [])
-                if not page_repos:
-                    break  # No more data
-
-                repos.extend(page_repos)
-                page_count += 1
-
-                # Call progress callback if provided
-                if progress_callback:
-                    progress_callback(len(repos), page_count)
-
-                # Log progress periodically
-                if page_count % 5 == 0:
-                    logger.info(
-                        f"Fetched {len(repos)} repositories from {workspace} (page {page_count})"
-                    )
-
-                # Check for next page
-                url = data.get("next")
-                if not url:
-                    break  # No more pages
-
-                # Optional delay between pages to be respectful
-                # Only if we're fetching multiple pages
-                if url and page_count > 1:
-                    import time
-
-                    time.sleep(0.05)  # 50ms delay between pages
-
-            logger.info(
-                f"Successfully fetched {len(repos)} repositories from {workspace} in {page_count} pages"
-            )
-            return repos
-
-        except Exception as e:
-            logger.error(f"Error during pagination: {e}")
+                logger.error("Authentication failed with WAT")
+                raise GitProviderAccessTokenError("Invalid workspace access token")
             raise
 
     def list_project_repositories(
-        self,
-        workspace: str,
-        project_key: str,
-        access_token: str,
-        page_size: int = 100,
-        max_pages: int | None = None,
-        auto_paginate: bool = True,
+        self, workspace: str, project_key: str, access_token: str
     ) -> list[dict]:
-        # Use the base list_repositories with project filter
-        base_params = {"q": f'project.key="{project_key}"'}
-
-        if not auto_paginate:
-            data = self.fetch_repositories_page(
-                workspace, access_token, page_size, params=base_params
-            )
-            repos = data.get("values", [])
-            logger.info(
-                f"Found {len(repos)} repositories in project {project_key} (first page)"
-            )
-            return repos
-
-        # For auto-pagination, we need to handle it ourselves due to the query parameter
+        headers = {"Authorization": f"Bearer {access_token}"}
         repos = []
-        page_count = 0
-        url = None
-        max_pages = max_pages or 1000
 
         try:
-            while page_count < max_pages:
-                # Fetch page with project filter
-                data = self.fetch_repositories_page(
-                    workspace,
-                    access_token,
-                    page_size,
-                    page_url=url,
-                    params=base_params
-                    if not url
-                    else None,  # Only add params on first request
-                )
+            url = f"{self.api_base}/repositories/{workspace}"
+            params = {"pagelen": 100, "q": f'project.key="{project_key}"'}
 
-                # Extract repositories
-                page_repos = data.get("values", [])
-                if not page_repos:
-                    break
+            with httpx.Client() as client:
+                while url:
+                    response = client.get(url, headers=headers, params=params)
+                    response.raise_for_status()
 
-                repos.extend(page_repos)
-                page_count += 1
+                    data = response.json()
+                    repos.extend(data.get("values", []))
 
-                # Check for next page
-                url = data.get("next")
-                if not url:
-                    break
+                    # Handle pagination
+                    url = data.get("next")
+                    params = {}  # Next URL includes params
 
-                # Small delay between pages
-                if url and page_count > 1:
-                    import time
-
-                    time.sleep(0.05)
-
-            logger.info(
-                f"Found {len(repos)} repositories in project {project_key} ({page_count} pages)"
-            )
+            logger.info(f"Found {len(repos)} repositories in project {project_key}")
             return repos
 
-        except Exception as e:
-            logger.error(f"Error fetching project repositories: {e}")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                logger.error("Authentication failed with project access token")
+                raise GitProviderAccessTokenError("Invalid project access token")
             raise
 
     def get_default_branch(self, workspace: str, repo_slug: str) -> str:
@@ -265,40 +116,30 @@ class BitbucketAPIResources:
     def get_repository(
         self, workspace: str, repo_slug: str, access_token: str
     ) -> dict | None:
-        """Get repository details with rate limiting"""
         headers = {"Authorization": f"Bearer {access_token}"}
-        rate_limit_key = f"token_{access_token[:8]}"
 
         try:
             url = f"{self.api_base}/repositories/{workspace}/{repo_slug}"
 
-            def make_request() -> httpx.Response | None:
-                with httpx.Client() as client:
-                    return client.get(url, headers=headers)
-                return None
-
-            response = self.rate_limiter.execute_with_retry(
-                make_request,
-                key=rate_limit_key,
-                extract_headers=lambda resp: dict(resp.headers),
-            )
-            response.raise_for_status()
-            return response.json()
+            with httpx.Client() as client:
+                response = client.get(url, headers=headers)
+                response.raise_for_status()
+                return response.json()
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return None
             if e.response.status_code == 401:
                 raise GitProviderAccessTokenError("Invalid access token")
-            if e.response.status_code == 429:
-                logger.warning(f"Rate limit hit when fetching repository {repo_slug}")
-                return None  # Return None instead of raising for single repo fetches
             raise
 
     def get_latest_commit(
         self, workspace: str, repo_slug: str, access_token: str
     ) -> str:
-        pass
+        """Get latest commit SHA for default branch"""
+
+        # TODO prior implementation was wrong in that default branch was not specified
+        # this codepath is unused right now so the impl is empty :) use git blame
 
     def download_repo(
         self, workspace: str, repo_slug: str, commit: str, access_token: str
@@ -422,13 +263,12 @@ class BitbucketAPIResources:
     def create_workspace_webhook(
         self, workspace: str, config: dict[str, Any], access_token: str
     ) -> dict[str, Any]:
-        """Create a workspace-level webhook with rate limiting"""
+        """Create a workspace-level webhook"""
         url = f"{self.api_base}/workspaces/{workspace}/hooks"
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-        rate_limit_key = f"token_{access_token[:8]}"
 
         payload = {
             "description": config["description"],
@@ -442,25 +282,11 @@ class BitbucketAPIResources:
             payload["secret"] = config["secret"]
 
         try:
-
-            def make_request() -> httpx.Response | None:
-                with httpx.Client() as client:
-                    return client.post(url, headers=headers, json=payload)
-                return None
-
-            response = self.rate_limiter.execute_with_retry(
-                make_request,
-                key=rate_limit_key,
-                extract_headers=lambda resp: dict(resp.headers),
-            )
-            response.raise_for_status()
-            return response.json()
+            with httpx.Client() as client:
+                response = client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                return response.json()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
-                logger.error("Rate limit exceeded when creating webhook")
-                raise GitProviderAccessTokenError(
-                    "Rate limit exceeded. Please wait and try again."
-                )
             logger.error(
                 f"Failed to create workspace webhook: {e.response.status_code} - {e.response.text}"
             )
@@ -469,13 +295,12 @@ class BitbucketAPIResources:
     def create_repository_webhook(
         self, workspace: str, repo_slug: str, config: dict[str, Any], access_token: str
     ) -> dict[str, Any]:
-        """Create a repository-level webhook with rate limiting"""
+        """Create a repository-level webhook"""
         url = f"{self.api_base}/repositories/{workspace}/{repo_slug}/hooks"
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-        rate_limit_key = f"token_{access_token[:8]}"
 
         payload = {
             "description": config["description"],
@@ -489,25 +314,11 @@ class BitbucketAPIResources:
             payload["secret"] = config["secret"]
 
         try:
-
-            def make_request() -> httpx.Response | None:
-                with httpx.Client() as client:
-                    return client.post(url, headers=headers, json=payload)
-                return None
-
-            response = self.rate_limiter.execute_with_retry(
-                make_request,
-                key=rate_limit_key,
-                extract_headers=lambda resp: dict(resp.headers),
-            )
-            response.raise_for_status()
-            return response.json()
+            with httpx.Client() as client:
+                response = client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                return response.json()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
-                logger.error("Rate limit exceeded when creating webhook")
-                raise GitProviderAccessTokenError(
-                    "Rate limit exceeded. Please wait and try again."
-                )
             logger.error(
                 f"Failed to create repository webhook: {e.response.status_code} - {e.response.text}"
             )

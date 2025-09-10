@@ -334,7 +334,7 @@ class CppCDriverTree(DriverTree):
                     end_byte=ts_node.end_byte,
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_path,
-                    symbol_code=None,  # node_to_text(ts_node),
+                    symbol_code=node_to_text(ts_node),
                     delimiter="::",
                 )
             )
@@ -383,7 +383,7 @@ class CppCDriverTree(DriverTree):
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
-                symbol_code=None,  # node_to_text(ts_node),
+                symbol_code=node_to_text(ts_node),
                 delimiter="::",
             )
             functions.append(func)
@@ -594,7 +594,7 @@ class CppCDriverTree(DriverTree):
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
-                symbol_code=None,  # node_to_text(ts_node),
+                symbol_code=node_to_text(ts_node),
                 delimiter="::",
                 base_class_names=[bc.name for bc in base_class_info]
                 if base_class_info
@@ -732,7 +732,7 @@ class CppCDriverTree(DriverTree):
                             end_byte=ts_node.end_byte,
                             file_path=self.file_path,
                             fully_qualified_parent_path=fully_qualified_path,
-                            symbol_code=None,  # node_to_text(ts_node),
+                            symbol_code=node_to_text(ts_node),
                             delimiter="::",
                         )
                         variables.append(var)
@@ -773,7 +773,7 @@ class CppCDriverTree(DriverTree):
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
-                symbol_code=None,  # node_to_text(ts_node),
+                symbol_code=node_to_text(ts_node),
                 delimiter="::",
             )
 
@@ -852,7 +852,7 @@ class CppCDriverTree(DriverTree):
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
-                symbol_code=None,  # node_to_text(ts_node),
+                symbol_code=node_to_text(ts_node),
                 delimiter="::",
             )
             declarations.append(func)

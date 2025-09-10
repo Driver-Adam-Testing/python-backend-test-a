@@ -1,8 +1,10 @@
 import os
+import pickle
 import uuid
+from pathlib import Path
 
 import modal
-from common import app
+from common import MODAL_VOLUME_MOUNT_POINT, app, volume
 from inspection.files import comprehend_file_top_down
 from utils.dag import LiteNode
 
@@ -37,7 +39,7 @@ image = (
             "tree-sitter-c-sharp==0.23.1",
             "tree-sitter-typescript==0.23.2",
             "aiolimiter==1.2.1",
-            "pympler"
+            "pympler",
         ]
     )  # TODO lock versions down
     .add_local_python_source(
@@ -63,31 +65,22 @@ image = (
         modal.Secret.from_name("aws-inspector-s3"),
     ],
     image=image,
-    volumes={"/code": modal.Volume.from_name("my-volume")},
+    volumes={MODAL_VOLUME_MOUNT_POINT: volume},
 )
 def make_tech_doc(
     node: LiteNode,
-    source_code: str,
     codebase_name: str,
-    version_id: str,
-    sym_table_s3_key: str | None,
+    symbol_table_storage_path: str,
+    codebase_storage_path: str,
 ) -> tuple[bool, dict, LiteNode]:
     from utils.models import ChatOpenAI
-    from pympler import asizeof
 
     print(f"Processing tech docs ({node})")
-    # load code from volume
-    volume = modal.Volume.from_name("my-volume")
-    with open(f"/code/{node.root_rel_path}", "r") as f:
-        new_source = f.read()
 
-    if source_code != new_source:
-        print(
-            f"Warning: source code mismatch for {node.root_rel_path}. Using code from volume."
-        )
-        source_code = new_source
-    else:
-        print(f"Source code matches for {node.root_rel_path}")
+    with open(
+        Path(MODAL_VOLUME_MOUNT_POINT) / codebase_storage_path / node.root_rel_path
+    ) as f:
+        source_code = f.read()
 
     raise_hard_errors = False
     llm = ChatOpenAI(
@@ -97,19 +90,9 @@ def make_tech_doc(
     )
 
     reified_symbols = None
-    if sym_table_s3_key is not None:
-        import pickle
-
-        import boto3
-
-        if sym_table_s3_key is not None:
-            s3 = boto3.client("s3")
-            bucket_name = os.environ["BUCKET_NAME"]
-            obj = s3.get_object(Bucket=bucket_name, Key=sym_table_s3_key)
-            read_obj = obj["Body"].read()
-            reified_symbols = pickle.loads(read_obj)
-            print(f"Size of pickle object: {len(read_obj)} for {node.root_rel_path}")
-        print(f"Memory usage for {node.root_rel_path} before tech doc: {asizeof.asizeof(reified_symbols)} bytes for {len(reified_symbols) if reified_symbols else 0} symbols")
+    with open(Path(MODAL_VOLUME_MOUNT_POINT) / symbol_table_storage_path, "rb") as f:
+        full_symbol_table = pickle.load(f)
+    reified_symbols = full_symbol_table.get(node.root_rel_path, None)
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,

@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import os
 import uuid
@@ -53,7 +54,8 @@ inspection_image = (
     )
 )
 
-from common import app  # noqa: E402
+
+from common import MODAL_VOLUME_MOUNT_POINT, app, volume  # noqa: E402
 from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
 
 with inspection_image.imports():
@@ -147,7 +149,7 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    volumes={"/code": modal.Volume.from_name("my-volume")},
+    volumes={MODAL_VOLUME_MOUNT_POINT: volume},
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
@@ -281,16 +283,17 @@ async def inspect_db(
                 install_id = None  # TODO: install id is attached to the zip, and is not available on rerun/resume
                 # NOTE: can still achieve PR of docs by running export_tech_docs_to_zip manually with install_id via local entrypoint
                 print("Download complete")
+
             # copy to modal volume
-            volume = modal.Volume.from_name("my-volume")
+            source_code_storage_path = str(version_id)
             for p in file_paths:
-                dest_path = Path("/code") / p.relative_to(download_root)
+                dest_path = Path(
+                    f"{MODAL_VOLUME_MOUNT_POINT}/{source_code_storage_path}"
+                ) / p.relative_to(download_root)
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
                 with p.open("rb") as src_f, dest_path.open("wb") as dest_f:
                     dest_f.write(src_f.read())
             volume.commit()
-
-            codebase_name = dest_path.parts[2]
 
             print("Uploaded to volume")
 
@@ -409,18 +412,24 @@ async def inspect_db(
             for node, sc_id in nodes_with_id:
                 print(node.root_rel_path, sc_id)
 
-            await inspect_files(
-                version_id=version_id,
-                codebase_root=download_root,
-                nodes_with_id=nodes_with_id,
-                codebase_name=codebase_name,
-                run_id=run_id,
-                result_loading_config=result_loading_config,
-                rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
-            )
-
-            # remove from volume after complete
-            volume.remove_file(path=f"{codebase_name}", recursive=True)
+            symbol_table_storage_path = f"{version_id}_symbol_table.pkl"
+            try:
+                await inspect_files(
+                    version_id=version_id,
+                    codebase_root=download_root,
+                    nodes_with_id=nodes_with_id,
+                    codebase_name=codebase_name,
+                    run_id=run_id,
+                    result_loading_config=result_loading_config,
+                    rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
+                    symbol_table_storage_path=symbol_table_storage_path,
+                    source_code_storage_path=source_code_storage_path,
+                )
+            finally:
+                # remove from volume after complete
+                volume.remove_file(path=source_code_storage_path, recursive=True)
+                with contextlib.suppress(Exception):
+                    volume.remove_file(path=symbol_table_storage_path)
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__
@@ -483,6 +492,8 @@ async def inspect_files(
     run_id: UUID,
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
     rel_path_to_previous_version_db_node_ids: dict[Path, uuid.UUID],
+    symbol_table_storage_path: str,
+    source_code_storage_path: str,
 ) -> None:
     from utils.db import get_all_derived_content_by_node_id
 
@@ -522,6 +533,7 @@ async def inspect_files(
             for node, _ in nodes_with_id
             if node.kind == NodeKind.FILE
         ],
+        storage_path=symbol_table_storage_path,
     )
     tasks.append(c_symbol_table_task)
     for node, db_node_id in nodes_with_id:
@@ -577,7 +589,7 @@ async def inspect_files(
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
-                version_id=version_id,
+                codebase_storage_path=source_code_storage_path,
                 symbol_table_task=c_symbol_table_task,
                 thread_pool=TECH_DOC_THREAD_POOL,
             )

@@ -15,6 +15,10 @@ from onboarding.vcs_utils import (
     VersionControlInfo,
 )
 from shared.interfaces.aws_client_config import AWSClientConfig
+
+# Import unified rate limiter from shared package
+from shared.rate_limiting import BitbucketRateLimiter, RateLimitException
+from shared.rate_limiting.config import get_bitbucket_rate_limit_config
 from shared.secret_management.aws_secret_management import (
     AWSSecretManagementStrategy,
     format_secret_name,
@@ -23,6 +27,9 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
+
+# Create rate limiter instance with configuration from environment
+rate_limiter = BitbucketRateLimiter(get_bitbucket_rate_limit_config())
 
 
 def fetch_access_token(installation_id: str) -> str:
@@ -49,8 +56,11 @@ def get_default_branch(workspace: str, repo_slug: str, access_token: str) -> str
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     data = response.json()
     # Default branch info is in mainbranch.name
@@ -177,8 +187,11 @@ def get_latest_commit(
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits/{default_branch}"
 
-    response = requests.get(url, headers=headers, params={"pagelen": 1})
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers, params={"pagelen": 1}),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     commits = response.json().get("values", [])
     if commits:
@@ -193,8 +206,11 @@ def fetch_vcs_info(
 
     # Fetch repository information
     repo_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
-    repo_response = requests.get(repo_url, headers=headers)
-    repo_response.raise_for_status()
+    repo_response = rate_limiter.execute_with_retry(
+        lambda: requests.get(repo_url, headers=headers),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
     repo_data = repo_response.json()
     logger.info(
         f"Repo information retrieved from Bitbucket API (status code {repo_response.status_code}): {repo_data}"
@@ -204,8 +220,11 @@ def fetch_vcs_info(
 
     # Fetch detailed commit information
     commit_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commit/{commit_sha}"
-    commit_response = requests.get(commit_url, headers=headers)
-    commit_response.raise_for_status()
+    commit_response = rate_limiter.execute_with_retry(
+        lambda: requests.get(commit_url, headers=headers),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
     commit_data = commit_response.json()
     logger.info(
         f"Commit data retrieved from Bitbucket API (status code {commit_response.status_code}): {commit_data}"
@@ -322,6 +341,9 @@ def download_and_upload_repo(
             commit = get_latest_commit(
                 workspace, repo_slug, access_token, repo["default_branch"]
             )
+        except RateLimitException:
+            # Re-raise rate limit exceptions to be handled by the caller
+            raise
         except Exception as e:
             print(f"Failed to get latest commit for {repo_name}: {e}")
             return repo_name
@@ -339,6 +361,9 @@ def download_and_upload_repo(
             access_token=access_token,
             commit_sha=commit,
         )
+    except RateLimitException:
+        # Re-raise rate limit exceptions to be handled by the caller
+        raise
     except Exception as e:
         print(f"Failed to fetch VCS info for {repo_name}: {e}")
         vcs_info = None
@@ -411,91 +436,6 @@ def download_and_upload_repo(
                                 f"Ignoring push event to allow current generation to complete."
                             )
                             return repo
-                            # # Cancel existing run and create new version
-                            # run_statement = (
-                            #     select(InspectorRun)
-                            #     .where(InspectorRun.version_id == version.id)
-                            #     .order_by(InspectorRun.created_at.desc())
-                            # )
-                            # run = session.exec(run_statement).first()
-                            #
-                            # if run is not None:
-                            #     call_id = run.call_id
-                            #     modal_call = modal.FunctionCall.from_id(call_id)
-                            #     modal_call.cancel()
-                            #
-                            # session.delete(version)
-                            #
-                            # # Handle usage credits
-                            # usage_session_statement = (
-                            #     select(UsageSession)
-                            #     .join(
-                            #         UsageEvent, UsageSession.id == UsageEvent.session_id
-                            #     )
-                            #     .where(
-                            #         UsageSession.session_metadata["version_id"].astext
-                            #         == str(version.id)
-                            #     )
-                            #     .where(
-                            #         UsageEvent.event_type
-                            #         == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-                            #     )
-                            #     .options(selectinload(UsageSession.usage_events))
-                            # )
-                            # usage_session = session.exec(
-                            #     usage_session_statement
-                            # ).first()
-                            #
-                            # if usage_session is not None:
-                            #     usage_event = next(
-                            #         (
-                            #             event
-                            #             for event in usage_session.usage_events
-                            #             if event.event_type
-                            #             == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
-                            #         ),
-                            #         None,
-                            #     )
-                            #     if usage_event is not None:
-                            #         new_usage_session = UsageSession(
-                            #             status=usage_session.status,
-                            #             organization_id=usage_session.organization_id,
-                            #             user_id="SYSTEM",
-                            #             session_metadata=usage_session.session_metadata,
-                            #         )
-                            #         session.add(new_usage_session)
-                            #         usage_event_credit = UsageEvent(
-                            #             **usage_event.dict(
-                            #                 exclude={
-                            #                     "id",
-                            #                     "bytes_in",
-                            #                     "session_id",
-                            #                     "timestamp",
-                            #                     "event_type",
-                            #                 }
-                            #             ),
-                            #             event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                            #             session_id=new_usage_session.id,
-                            #             bytes_in=abs(usage_event.bytes_in),
-                            #             timestamp=datetime.now(tz=UTC),
-                            #         )
-                            #         session.add(usage_event_credit)
-                            #
-                            # new_version = Version(
-                            #     primary_asset_id=primary_asset.id,
-                            #     vcs_hash=commit,
-                            #     status=VersionStatus.GENERATING,
-                            #     previous_version_id=version.previous_version_id,
-                            #     vcs_metadata=vcs_info.model_dump()
-                            #     if vcs_info
-                            #     else None,
-                            # )
-                            # session.add(new_version)
-                            # version_id = new_version.id
-                            # print(
-                            #     f"Version already in generating state for {repo_name}, deleting existing version and restarting inspection with new version..."
-                            # )
-                            # break
                 elif (
                     primary_asset.versions
                     and primary_asset.versions[0].status == VersionStatus.CONNECTING
@@ -555,6 +495,9 @@ def download_and_upload_repo(
     try:
         zip_content = download_repo(workspace, repo_slug, commit, access_token)
         print(f"Repository downloaded successfully. Size: {len(zip_content)} bytes")
+    except RateLimitException:
+        # Re-raise rate limit exceptions to be handled by the caller
+        raise
     except Exception as e:
         print(f"Failed to download repository {repo_name}: {e}")
         return repo_name
@@ -576,9 +519,12 @@ def get_repo_clone_info_from_id(
     """Get repository clone URL and full name"""
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
-    #
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     data = response.json()
     full_name = data.get("full_name")
@@ -597,8 +543,11 @@ def fetch_bitbucket_default_branch_name(
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}"
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.get(url, headers=headers),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     data = response.json()
     return data.get("mainbranch", {}).get("name", "main")
@@ -615,8 +564,11 @@ def list_pull_requests(
 
     # Handle pagination
     while url:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
+        response = rate_limiter.execute_with_retry(
+            lambda u=url, p=params: requests.get(u, headers=headers, params=p),
+            key=f"token_{access_token[:8]}",
+            extract_headers=lambda resp: dict(resp.headers),
+        )
 
         data = response.json()
         all_prs.extend(data.get("values", []))
@@ -638,8 +590,11 @@ def get_pull_request_commits(
 
     # Handle pagination
     while url:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+        response = rate_limiter.execute_with_retry(
+            lambda u=url: requests.get(u, headers=headers),
+            key=f"token_{access_token[:8]}",
+            extract_headers=lambda resp: dict(resp.headers),
+        )
 
         data = response.json()
         all_commits.extend(data.get("values", []))
@@ -660,7 +615,11 @@ def close_pull_request(
 
     # First, check the PR status
     pr_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}"
-    pr_response = requests.get(pr_url, headers=headers)
+    pr_response = rate_limiter.execute_with_retry(
+        lambda: requests.get(pr_url, headers=headers),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     if pr_response.status_code == 200:
         pr_data = pr_response.json()
@@ -674,10 +633,13 @@ def close_pull_request(
     # Try to decline the PR
     decline_url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/decline"
     data = {"message": "Closing this PR - no longer needed"}
-    response = requests.post(decline_url, headers=headers, data=json.dumps(data))
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.post(decline_url, headers=headers, data=json.dumps(data)),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     try:
-        response.raise_for_status()
         print(f"Closed pull request #{pr_id}")
     except requests.HTTPError as e:
         print(f"Failed to close pull request #{pr_id}: {e}")
@@ -717,10 +679,13 @@ def create_pull_request(
     }
 
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests"
-    response = requests.post(url, headers=headers, json=pr_data)
+    response = rate_limiter.execute_with_retry(
+        lambda: requests.post(url, headers=headers, json=pr_data),
+        key=f"token_{access_token[:8]}",
+        extract_headers=lambda resp: dict(resp.headers),
+    )
 
     try:
-        response.raise_for_status()
         print(
             f"Pull request created successfully: {response.json()['links']['html']['href']}"
         )

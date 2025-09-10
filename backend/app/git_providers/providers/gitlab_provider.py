@@ -149,7 +149,11 @@ class GitLabProvider(GitProviderInterface):
         return secret_value
 
     def fetch_repositories(
-        self, installation: GitProviderAppInstallation
+        self,
+        installation: GitProviderAppInstallation,
+        page_size: int = 100,
+        max_pages: int | None = None,
+        auto_paginate: bool = True,
     ) -> list[GitRepository]:
         """Fetch GitLab repositories using GAT"""
         logger.info(f"Fetching repositories for installation: {installation.id}")

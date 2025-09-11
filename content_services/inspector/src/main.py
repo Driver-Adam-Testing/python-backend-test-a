@@ -12,6 +12,7 @@ from deep_context_docs import deep_context_docs
 from onboarding.onboard import (
     connect_unconnected_repos,
 )
+from utils.synthesis.deep_context import DeepContextDoc
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -54,7 +55,13 @@ inspection_image = (
 )
 
 from common import app  # noqa: E402
-from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
+from utils.dag import (  # noqa: E402
+    FileTreeDag,
+    FlatTopoFileDiffDag,
+    Node,
+    NodeKind,
+    NodeStatus,
+)
 
 with inspection_image.imports():
     from tasks import (
@@ -185,7 +192,7 @@ async def inspect_db(
         compute_and_log_code_diff_size_in_bytes,
     )
     from utils.io import download_all_source_files_in_parallel
-    from utils.synthesis import DeepContextDoc, DeepContextDocKind
+    from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -697,6 +704,181 @@ def get_file_content(path: Path) -> str:
     return Path(path).read_text()
 
 
+# TODO: Remove, rename, or refactor. Created for easy local testing.
+async def prepare_deep_context_args(
+    version_id: uuid.UUID,
+) -> tuple[
+    uuid.UUID | None,
+    list[DeepContextDoc] | None,
+    FlatTopoFileDiffDag | None,
+    uuid.UUID,
+    str | None,
+]:
+    """
+    Returns a tuple of (previous_version_id, previous_version_content, flat_topo_file_diff_dag, version_id, install_id)
+    """
+    import tempfile
+
+    import boto3
+    from database.models_enums import ContentKind, VersionStatus
+    from database.models_enums import NodeKind as DbNodeKind
+    from onboarding.onboard_utils import (
+        process_and_upload_all_files_in_parallel,
+        unpack_archive_to_finalized_path,
+    )
+    from utils.db import (
+        get_all_derived_content_by_node_id,
+        get_analyzable_nodes_by_version_id,
+        get_version_by_id,
+        try_get_prev_version,
+    )
+    from utils.io import download_all_source_files_in_parallel
+    from utils.synthesis.deep_context import DeepContextDoc, DeepContextDocKind
+
+    # Get the Version and check if it has previous_version_id
+    version = await get_version_by_id(version_id)
+    org_id = version.primary_asset.organization_id
+    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+    previous_version = await try_get_prev_version(version_id)
+    previous_version_id = previous_version.id if previous_version else None
+    codebase_name = version.primary_asset.display_name
+
+    # Get content records for version_id
+    db_file_nodes = await get_analyzable_nodes_by_version_id(
+        version_id, {DbNodeKind.CODEBASE_FILE}
+    )
+
+    flat_topo_file_diff_dag = None
+    previous_version_content = []
+    install_id = None  # We don't have install_id in this context, will need to be passed separately
+
+    if previous_version is not None:
+        previous_version_root_node_id = previous_version.root_node.id
+
+        # Get content records for previous_version_id
+        db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
+            previous_version_id, {DbNodeKind.CODEBASE_FILE}
+        )
+
+        # Download files for both versions to compute diff
+        s3_client = boto3.client(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+
+        with (
+            tempfile.TemporaryDirectory() as download_dir,
+            tempfile.TemporaryDirectory() as previous_download_dir,
+        ):
+            download_root = Path(download_dir)
+            previous_download_root = Path(previous_download_dir)
+
+            # Download current version files
+            if (
+                version.status == VersionStatus.CONNECTED
+                or version.status == VersionStatus.GENERATING
+            ):
+                # Handle zip archive case
+                download_archive_key = (
+                    f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
+                )
+                download_path = Path(download_dir) / f"{version_id}.zip"
+                metadata = s3_client.head_object(
+                    Bucket=org_hashed_id, Key=download_archive_key
+                )
+                install_id = metadata["Metadata"].get("install_id")
+                s3_client.download_file(
+                    org_hashed_id, download_archive_key, download_path
+                )
+
+                extracted_path = unpack_archive_to_finalized_path(
+                    archive_path=download_path,
+                    extraction_root=Path(download_dir),
+                    override_codebase_name=codebase_name,
+                )
+
+                db_node_paths = {node.relative_path for node in db_file_nodes}
+                file_paths = process_and_upload_all_files_in_parallel(
+                    s3_client=s3_client,
+                    org_hashed_id=org_hashed_id,
+                    primary_asset_id=version.primary_asset_id,
+                    version_id=version_id,
+                    extracted_path=extracted_path,
+                    download_dir=download_dir,
+                    db_node_paths=db_node_paths,
+                    max_workers=10,
+                )
+            else:
+                # Download individual files
+                file_paths = download_all_source_files_in_parallel(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(version.primary_asset.id),
+                    version_id=str(version_id),
+                    node_rel_paths=[node.relative_path for node in db_file_nodes],
+                    download_root=download_root,
+                    max_workers=8,
+                )
+
+            # Download previous version files
+            previous_file_paths = download_all_source_files_in_parallel(
+                s3_client=s3_client,
+                bucket_name=org_hashed_id,
+                primary_asset_id=str(previous_version.primary_asset.id),
+                version_id=str(previous_version.id),
+                node_rel_paths=[
+                    prev_node.relative_path for prev_node in db_previous_file_nodes
+                ],
+                download_root=previous_download_root,
+                max_workers=8,
+            )
+
+            # Build DAGs and compute diff
+            codebase_dag: FileTreeDag = build_dag(
+                root_path=download_root, file_paths=file_paths
+            )
+
+            previous_codebase_dag: FileTreeDag = build_dag(
+                root_path=previous_download_root,
+                file_paths=previous_file_paths,
+            )
+
+            flat_topo_file_diff_dag = codebase_dag.into_flat_diff_dag(
+                old=previous_codebase_dag
+            )
+
+        # Prepare previous version content
+        previous_version_root_content = await get_all_derived_content_by_node_id(
+            node_id=previous_version_root_node_id
+        )
+        update_set = {
+            ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+            ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+        }
+        previous_version_content = [
+            DeepContextDoc(
+                doc_kind=DeepContextDocKind.from_content_kind(
+                    content_kind=c.content_kind
+                ),
+                name=None,
+                user_context={"desired_length": "SHORT"},
+                sources=[],
+                config_content="",
+                doc_content=c.content,
+            )
+            for c in previous_version_root_content
+            if c.content_kind in update_set
+        ]
+
+    return (
+        previous_version_id,
+        previous_version_content,
+        flat_topo_file_diff_dag,
+        version_id,
+        install_id,
+    )
+
+
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
@@ -824,19 +1006,50 @@ def main(
 
 
 @app.local_entrypoint()
-def run_deep_context(
+async def run_deep_context(
     version_id: str,
-    install_id: str | None = None,
+    local_update: bool = False,
 ) -> None:
     """Run deep context docs generation"""
 
     try:
-        deep_context_docs.remote(version_id, install_id)
+        # Prepare all arguments needed for deep_context_docs.remote.aio
+        (
+            previous_version_id,
+            previous_version_content,
+            flat_topo_file_diff_dag,
+            current_version_id,
+            install_id,
+        ) = await prepare_deep_context_args(uuid.UUID(version_id))
+
+        for idx, doc in enumerate(previous_version_content):
+            print(f"Doc Index {idx}\nDoc Contents:\n\n{doc.doc_content}")
+        # if local_update:
+        #     assert previous_version_id is not None
+        #     update_set = {
+        #         ContentKind.DEEP_CONTEXT_ARCHITECTURE,
+        #         ContentKind.DEEP_CONTEXT_LLM_ONBOARDING,
+        #     }
+        #
+        #     update_tasks = [
+        #         doc.update_from_diff(diff_collection=flat_topo_file_diff_dag)
+        #         for doc in previous_version_content
+        #         if doc.doc_kind in update_set
+        #     ]
+        #     _completed_docs = await asyncio.gather(*update_tasks)
+        # else:
+        #     # Call the remote deep context docs function
+        #     _completed_docs = await deep_context_docs.remote.aio(
+        #         previous_version_id,
+        #         previous_version_content,
+        #         flat_topo_file_diff_dag,
+        #         current_version_id,
+        #         install_id,
+        #     )
+        print(f"Deep context docs generation completed for version {version_id}")
     except Exception as e:
         print(f"Error while generating deep context docs for version {version_id}: {e}")
         raise
-    else:
-        print(f"Deep context docs generation completed for version {version_id}")
 
 
 @app.local_entrypoint()

@@ -33,10 +33,7 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
         ).first()
 
         if first_codebase is not None:
-            checklist.connect_codebase_completed_at = first_codebase.created_at
-            session.add(checklist)
-            session.commit()
-            session.refresh(checklist)
+            svc.mark_connect_codebase_completed(first_codebase.created_at)
 
     # If generate codebase is not marked complete, infer from earliest completed version
     if checklist.generate_codebase_completed_at is None:
@@ -50,10 +47,7 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
         ).first()
 
         if first_completed_version is not None:
-            checklist.generate_codebase_completed_at = first_completed_version.created_at
-            session.add(checklist)
-            session.commit()
-            session.refresh(checklist)
+            svc.mark_generate_codebase_completed(first_completed_version.created_at)
 
     # If setup MCP is not marked complete, infer from API key last_used_at
     if checklist.setup_mcp_completed_at is None:
@@ -66,10 +60,7 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
         ).first()
 
         if api_key is not None:
-            checklist.setup_mcp_completed_at = api_key.last_used_at
-            session.add(checklist)
-            session.commit()
-            session.refresh(checklist)
+            svc.mark_setup_mcp_completed(api_key.last_used_at)
 
     # If enable export is not marked complete, infer from any codebase with auto commit enabled
     if checklist.enable_export_completed_at is None:
@@ -82,10 +73,9 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
         ).first()
 
         if auto_export_codebase is not None:
-            checklist.enable_export_completed_at = auto_export_codebase.updated_at or auto_export_codebase.created_at
-            session.add(checklist)
-            session.commit()
-            session.refresh(checklist)
+            svc.mark_enable_export_completed(
+                auto_export_codebase.updated_at or auto_export_codebase.created_at
+            )
 
     # If all steps are complete, set the checklist_completed_at to the newest timestamp
     completed_dates = [

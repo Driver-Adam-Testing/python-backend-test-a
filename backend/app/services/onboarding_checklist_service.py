@@ -67,4 +67,56 @@ class OnboardingChecklistService:
             self.session.commit()
         return self
 
+    def mark_connect_codebase_completed(
+        self, when: datetime | None = None
+    ) -> "OnboardingChecklistService":
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        if self._checklist.connect_codebase_completed_at is None:
+            self._checklist.connect_codebase_completed_at = (
+                when or datetime.now(timezone.utc)
+            )
+            self.session.add(self._checklist)
+            self.session.commit()
+        return self
+
+    def mark_generate_codebase_completed(
+        self, when: datetime | None = None
+    ) -> "OnboardingChecklistService":
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        if self._checklist.generate_codebase_completed_at is None:
+            self._checklist.generate_codebase_completed_at = (
+                when or datetime.now(timezone.utc)
+            )
+            self.session.add(self._checklist)
+            self.session.commit()
+        return self
+
+    def mark_setup_mcp_completed(
+        self, when: datetime | None = None
+    ) -> "OnboardingChecklistService":
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        if self._checklist.setup_mcp_completed_at is None:
+            self._checklist.setup_mcp_completed_at = (
+                when or datetime.now(timezone.utc)
+            )
+            self.session.add(self._checklist)
+            self.session.commit()
+        return self
+
+    def mark_enable_export_completed(
+        self, when: datetime | None = None
+    ) -> "OnboardingChecklistService":
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        if self._checklist.enable_export_completed_at is None:
+            self._checklist.enable_export_completed_at = (
+                when or datetime.now(timezone.utc)
+            )
+            self.session.add(self._checklist)
+            self.session.commit()
+        return self
+
 

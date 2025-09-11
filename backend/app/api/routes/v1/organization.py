@@ -108,7 +108,7 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
     user: UserToken,
     invitations: CreateInvitationInput,
     authorization: str | None = Header(None),
-    session: CurrentSession = None,
+    session: CurrentSession,
 ):
     logging.info(f"Listing members of organization = {user.organization_id}")
     access_token = authorization.replace("Bearer ", "")
@@ -118,18 +118,12 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
             user, access_token=access_token, invitations=invitations
         )
 
-        # Best-effort update of onboarding checklist
-        try:
-            OnboardingChecklistService(
-                session=session,
-                organization_id=user.organization_id,
-                user_id=user.user_id,
-            ).mark_invite_teammate_completed()
-        except Exception as e:  # pragma: no cover - non-critical path
-            logger.error(
-                f"Failed to update onboarding checklist for invitations: {e}",
-                exc_info=True,
-            )
+        # Update onboarding checklist
+        OnboardingChecklistService(
+            session=session,
+            organization_id=user.organization_id,
+            user_id=user.user_id,
+        ).mark_invite_teammate_completed()
 
         return result
     except PermissionError:

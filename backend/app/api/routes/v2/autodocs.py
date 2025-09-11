@@ -197,19 +197,11 @@ def run_autodoc(
     session.commit()
     session.refresh(autodoc_status)
 
-    # Mark onboarding checklist step as completed (best-effort)
-    try:
-        OnboardingChecklistService(
-            session=session,
-            organization_id=user.organization_id,
-            user_id=user.user_id,
-        ).mark_generate_autodoc_completed()
-    except Exception as e:
-        # Non-critical; do not block the endpoint on checklist updates
-        logger.error(
-            f"Failed to update onboarding checklist for autodoc generation: {e}",
-            exc_info=True,
-        )
+    OnboardingChecklistService(
+        session=session,
+        organization_id=user.organization_id,
+        user_id=user.user_id,
+    ).mark_generate_autodoc_completed()
 
     return autodoc_status
 

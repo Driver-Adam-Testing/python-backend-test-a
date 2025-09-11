@@ -19,16 +19,15 @@ class PythonResolver(SymbolResolver):
         visible_symbols = defaultdict(set)
         for file_path in all_files_imports:
             for import_sym in all_files_imports[file_path]:
-                resolved_paths = self.resolve_import(
+                resolved_path = self.resolve_import(
                     current_file=file_path,
                     import_sym=import_sym,
                     project_files_to_symbols_map=all_files_symbols,
                 )
-                if resolved_paths is not None:
-                    for path in resolved_paths:
-                        visible_symbols[file_path].update(
-                            all_files_symbols.get(path, [])
-                        )
+                if resolved_path is not None:
+                    visible_symbols[file_path].update(
+                        all_files_symbols.get(resolved_path, [])
+                    )
         # TODO: handle aliases here?
         return visible_symbols
 

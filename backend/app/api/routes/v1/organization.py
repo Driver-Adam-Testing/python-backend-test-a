@@ -123,7 +123,7 @@ def create_invitation(  # noqa: ANN201 disable to proxy Auth0 any typed response
             session=session,
             organization_id=user.organization_id,
             user_id=user.user_id,
-        ).mark_invite_teammate_completed()
+        ).get_or_create().mark_invite_teammate_completed()
 
         return result
     except PermissionError:

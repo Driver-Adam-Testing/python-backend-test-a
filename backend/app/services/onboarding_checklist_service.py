@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Optional
 
 from sqlmodel import Session, select
 
@@ -12,9 +13,10 @@ class OnboardingChecklistService:
         self.session = session
         self.organization_id = organization_id
         self.user_id = user_id
+        self._checklist: Optional[OnboardingChecklist] = None
 
-    def get_or_create(self) -> OnboardingChecklist:
-        """Fetch or create the checklist for this user/org."""
+    def get_or_create(self) -> "OnboardingChecklistService":
+        """Ensure the checklist exists for this user/org and return self for chaining."""
         checklist = self.session.exec(
             select(OnboardingChecklist)
             .where(OnboardingChecklist.organization_id == self.organization_id)
@@ -30,22 +32,39 @@ class OnboardingChecklistService:
             self.session.commit()
             self.session.refresh(checklist)
 
-        return checklist
+        self._checklist = checklist
+        return self
 
-    def mark_invite_teammate_completed(self, when: datetime | None = None) -> None:
-        checklist = self.get_or_create()
-        if checklist.invite_teammate_completed_at is None:
-            checklist.invite_teammate_completed_at = when or datetime.now(timezone.utc)
-            self.session.add(checklist)
-            self.session.commit()
+    @property
+    def checklist(self) -> OnboardingChecklist:
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        return self._checklist
 
-    def mark_generate_autodoc_completed(self, when: datetime | None = None) -> None:
-        checklist = self.get_or_create()
-        if checklist.generate_autodoc_completed_at is None:
-            checklist.generate_autodoc_completed_at = (
+    def mark_invite_teammate_completed(
+        self, when: datetime | None = None
+    ) -> "OnboardingChecklistService":
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        if self._checklist.invite_teammate_completed_at is None:
+            self._checklist.invite_teammate_completed_at = (
                 when or datetime.now(timezone.utc)
             )
-            self.session.add(checklist)
+            self.session.add(self._checklist)
             self.session.commit()
+        return self
+
+    def mark_generate_autodoc_completed(
+        self, when: datetime | None = None
+    ) -> "OnboardingChecklistService":
+        if self._checklist is None:
+            raise RuntimeError("Checklist not loaded. Call get_or_create() first.")
+        if self._checklist.generate_autodoc_completed_at is None:
+            self._checklist.generate_autodoc_completed_at = (
+                when or datetime.now(timezone.utc)
+            )
+            self.session.add(self._checklist)
+            self.session.commit()
+        return self
 
 

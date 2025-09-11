@@ -16,11 +16,12 @@ router = APIRouter()
 @router.get("/onboarding-checklist", response_model=OnboardingChecklist)
 def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> OnboardingChecklist:
     # Fetch or create the checklist record
-    checklist = OnboardingChecklistService(
+    svc = OnboardingChecklistService(
         session=session,
         organization_id=user.organization_id,
         user_id=user.user_id,
     ).get_or_create()
+    checklist = svc.checklist
 
     # If connect codebase is not marked complete, attempt to infer it
     if checklist.connect_codebase_completed_at is None:

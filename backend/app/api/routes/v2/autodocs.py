@@ -201,7 +201,7 @@ def run_autodoc(
         session=session,
         organization_id=user.organization_id,
         user_id=user.user_id,
-    ).mark_generate_autodoc_completed()
+    ).get_or_create().mark_generate_autodoc_completed()
 
     return autodoc_status
 

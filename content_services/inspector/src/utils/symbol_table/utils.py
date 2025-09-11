@@ -136,9 +136,9 @@ def disambiguate_call(
             )
 
     if not use_llm:
-        print(
-            f"[FALLBACK] LLM cap reached for file {call_symbol.file_path}, using first candidate for call '{call_symbol.name}'"
-        )
+        # print(
+        #     f"[FALLBACK] LLM cap reached for file {call_symbol.file_path}, using first candidate for call '{call_symbol.name}'. Candidates: {len(candidates)}"
+        # )
         return 0, False
 
     # Cache miss - proceed with LLM

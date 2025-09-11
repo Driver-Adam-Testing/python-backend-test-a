@@ -1,14 +1,14 @@
 import argparse
 from pathlib import Path
 
-from utils.symbol_table_v2.comparison import TimingInfo
+from utils.symbol_table.comparison import TimingInfo
 
 
 def run_and_print_sym_table(
     project_abspath: Path,
     show_timing: bool = True,
 ) -> None:
-    from utils.symbol_table_v2 import build_symbol_table, print_summary
+    from utils.symbol_table import build_symbol_table, print_summary
 
     files = list(project_abspath.rglob("*"))
     files = [f for f in files if f.is_file()]
@@ -50,7 +50,7 @@ def main() -> None:
     parser.add_argument(
         "project_path",
         nargs="?",
-        default="/Users/shaneghiotto/driver/uploaded_codebases/Avalonia",
+        default="/Users/shaneghiotto/driver/uploaded_codebases/test_c/deep-includes-demo",
         help="Path to the project directory",
     )
     parser.add_argument(

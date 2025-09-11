@@ -37,8 +37,8 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
             session.commit()
             session.refresh(checklist)
 
-    # If generate document is not marked complete, infer from earliest completed version
-    if checklist.generate_document_completed_at is None:
+    # If generate codebase is not marked complete, infer from earliest completed version
+    if checklist.generate_codebase_completed_at is None:
         first_completed_version = session.exec(
             select(Version)
             .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
@@ -49,7 +49,7 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
         ).first()
 
         if first_completed_version is not None:
-            checklist.generate_document_completed_at = first_completed_version.created_at
+            checklist.generate_codebase_completed_at = first_completed_version.created_at
             session.add(checklist)
             session.commit()
             session.refresh(checklist)
@@ -91,7 +91,7 @@ def get_onboarding_checklist(session: CurrentSession, user: UserToken) -> Onboar
         completed_at
         for completed_at in [
             checklist.connect_codebase_completed_at,
-            checklist.generate_document_completed_at,
+            checklist.generate_codebase_completed_at,
             checklist.setup_mcp_completed_at,
             checklist.enable_export_completed_at,
             checklist.generate_autodoc_completed_at,

@@ -31,7 +31,7 @@ def upgrade() -> None:
             "connect_codebase_completed_at", sa.DateTime(timezone=True), nullable=True
         ),
         sa.Column(
-            "generate_document_completed_at", sa.DateTime(timezone=True), nullable=True
+            "generate_codebase_completed_at", sa.DateTime(timezone=True), nullable=True
         ),
         sa.Column("setup_mcp_started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(

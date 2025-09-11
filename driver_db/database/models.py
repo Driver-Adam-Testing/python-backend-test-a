@@ -1111,7 +1111,7 @@ class OnboardingChecklist(SQLModel, table=True):
     connect_codebase_completed_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=True), default=None
     )
-    generate_document_completed_at: None | datetime = Field(
+    generate_codebase_completed_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=True), default=None
     )
     setup_mcp_started_at: None | datetime = Field(

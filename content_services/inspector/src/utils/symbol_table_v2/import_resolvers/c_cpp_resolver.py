@@ -6,6 +6,104 @@ from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
 from ..base import SymbolResolver
 
 
+def _compute_visibility_scc(
+    file_to_symbols: dict[Path, list[RawTreeSitterSymbolData]],
+    includes_map: dict[Path, list[RawTreeSitterSymbolData]],
+    resolver: SymbolResolver,
+) -> dict[Path, set[Path]]:
+    """Use Tarjan's algorithm to find SCCs and process as DAG."""
+    # Build adjacency list
+    graph: dict[Path, set[Path]] = defaultdict(set)
+    for fpath in file_to_symbols:
+        for inc_sym in includes_map.get(fpath, []):
+            inc_path = resolver.resolve_import(fpath, inc_sym, file_to_symbols)
+            if isinstance(inc_path, list):
+                for p in inc_path:
+                    graph[fpath].add(p)
+            elif inc_path:
+                graph[fpath].add(inc_path)
+
+    # Tarjan's algorithm for SCCs
+    index_counter = [0]
+    stack = []
+    lowlinks = {}
+    index = {}
+    on_stack = defaultdict(bool)
+    sccs = []
+
+    def strongconnect(v: Path) -> None:
+        index[v] = index_counter[0]
+        lowlinks[v] = index_counter[0]
+        index_counter[0] += 1
+        stack.append(v)
+        on_stack[v] = True
+
+        for w in graph[v]:
+            if w not in index:
+                strongconnect(w)
+                lowlinks[v] = min(lowlinks[v], lowlinks[w])
+            elif on_stack[w]:
+                lowlinks[v] = min(lowlinks[v], index[w])
+
+        if lowlinks[v] == index[v]:
+            scc = []
+            while True:
+                w = stack.pop()
+                on_stack[w] = False
+                scc.append(w)
+                if w == v:
+                    break
+            sccs.append(scc)
+
+    # Find all SCCs
+    for v in file_to_symbols:
+        if v not in index:
+            strongconnect(v)
+
+    # Build SCC graph (DAG)
+    scc_map = {}
+    for i, scc in enumerate(sccs):
+        for node in scc:
+            scc_map[node] = i
+
+    scc_graph = defaultdict(set)
+    for v in graph:
+        for w in graph[v]:
+            if scc_map[v] != scc_map[w]:
+                scc_graph[scc_map[v]].add(scc_map[w])
+
+    # Compute reachability in SCC DAG
+    scc_visibility = defaultdict(set)
+
+    def dfs_scc(scc_id: int, visited: set[int]) -> None:
+        for neighbor in scc_graph[scc_id]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                dfs_scc(neighbor, visited)
+
+    for i in range(len(sccs)):
+        reachable = {i}
+        dfs_scc(i, reachable)
+        scc_visibility[i] = reachable
+
+    # Convert back to file visibility
+    visibility_map = {}
+    for fpath in file_to_symbols:
+        visible = {fpath}
+        my_scc = scc_map[fpath]
+
+        # Add all files in same SCC
+        visible.update(sccs[my_scc])
+
+        # Add all files in reachable SCCs
+        for reachable_scc in scc_visibility[my_scc]:
+            visible.update(sccs[reachable_scc])
+
+        visibility_map[fpath] = visible
+
+    return visibility_map
+
+
 class CCppResolver(SymbolResolver):
     language = "c_cpp"
 
@@ -17,18 +115,14 @@ class CCppResolver(SymbolResolver):
         num_workers: int | None,
     ) -> dict[Path, set[RawTreeSitterSymbolData]]:
         visible_symbols = defaultdict(set)
-        for file_path in all_files_imports:
-            for import_sym in all_files_imports[file_path]:
-                resolved_path = self.resolve_import(
-                    current_file=file_path,
-                    import_sym=import_sym,
-                    project_files_to_symbols_map=all_files_symbols,
-                )
-                if resolved_path:
-                    visible_symbols[file_path].update(
-                        all_files_symbols.get(resolved_path, [])
-                    )
-        # TODO: handle aliases here?
+        file_visibility_map = _compute_visibility_scc(
+            file_to_symbols=all_files_symbols,
+            includes_map=all_files_imports,
+            resolver=self,
+        )
+        for fpath, visible_files in file_visibility_map.items():
+            for vf in visible_files:
+                visible_symbols[fpath].update(all_files_symbols.get(vf, []))
         return visible_symbols
 
     def resolve_import(

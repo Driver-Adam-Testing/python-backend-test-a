@@ -6,7 +6,9 @@
 Configures and includes various API routes for the studio application using FastAPI.
 
 # Purpose
-This code configures an API router using FastAPI's `APIRouter` to organize and manage various API endpoints for a web application. It imports multiple route modules from different versions and sections of the application, such as `v1` and `v2`, and includes them in the `studio_router` with specific URL prefixes and tags. The routes cover a range of functionalities, including handling user data, managing content, interacting with codebases, and providing search capabilities. Additionally, the code conditionally includes a `sandbox_router` for non-production environments, allowing for testing or development features. This setup facilitates modular and organized API endpoint management within the application.
+The code defines an API router configuration using FastAPI's `APIRouter`. It organizes and includes various API route modules into a single `studio_router` object. This router serves as a central point for managing different API endpoints, each associated with specific functionalities. The code imports route modules from different versions and categories, such as `v1` and `v2`, and includes them with specific URL prefixes and tags. These routes cover a wide range of functionalities, including `graphql`, `api_key`, `git_provider`, `search`, `content`, `codebase`, `tags`, `upload`, `agent_pipelines`, `usage`, `user`, `about_you_survey`, `onboarding_checklist`, `organization`, `node`, `generate`, `chat`, `autodocs`, and `codebase_card`.
+
+The `studio_router` is configured to include routes conditionally based on the environment settings, specifically excluding the `sandbox_router` in a production environment. This setup allows for modular and organized management of API endpoints, facilitating the development and maintenance of the application. Each included router is associated with a specific prefix and tag, which helps in categorizing and accessing the endpoints efficiently. The code is intended to be part of a larger application where it serves as a configuration file for routing API requests to the appropriate handlers.
 # Imports and Dependencies
 
 ---
@@ -25,6 +27,7 @@ This code configures an API router using FastAPI's `APIRouter` to organize and m
 - `app.api.routes.v1.user`
 - `app.api.routes.v2.api_key`
 - `app.api.routes.v2.autodocs`
+- `app.api.routes.v2.about_you_survey`
 - `app.api.routes.v2.chat`
 - `app.api.routes.v2.codebase_card`
 - `app.api.routes.v2.contents`
@@ -37,6 +40,7 @@ This code configures an API router using FastAPI's `APIRouter` to organize and m
 - `app.api.routes.v2.versions`
 - `app.api.routes.v2.router`
 - `app.api.routes.v2.tags`
+- `app.api.routes.v2.onboarding_checklist`
 - `app.core.config.settings`
 
 
@@ -45,8 +49,8 @@ This code configures an API router using FastAPI's `APIRouter` to organize and m
 ---
 ### studio\_router
 - **Type**: ``APIRouter``
-- **Description**: Initializes an instance of the `APIRouter` class from FastAPI. This instance is used to define and manage a collection of API routes for the application.
-- **Use**: Used to include various routers with specific prefixes and tags, organizing the API endpoints for the application.
+- **Description**: An instance of the `APIRouter` class from FastAPI. It is used to define and manage a collection of API routes for the application.
+- **Use**: Organizes and includes various API route modules with specific prefixes and tags.
 
 
 

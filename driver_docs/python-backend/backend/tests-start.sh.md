@@ -6,7 +6,7 @@
 Shell script to run pre-start tests and execute the main test script with arguments.
 
 # Purpose
-The script is a Bash executable that automates the execution of a test suite for a Python application. It begins by setting the script to exit immediately if a command fails (`set -e`) and to print each command before executing it (`set -x`). The script first runs a Python script located at `/app/app/tests_pre_start.py`, which likely performs pre-test setup or checks. After the Python script, it executes another script, `./scripts/test.sh`, passing any additional arguments received by the Bash script. This setup is typically used in development environments to ensure that tests are run consistently and automatically.
+The script is a Bash executable that automates the execution of a test suite for a Python application. It begins by setting the script to exit immediately if a command fails (`set -e`) and to print each command before executing it (`set -x`). The script first runs a Python script located at `/app/app/tests_pre_start.py`, which likely performs pre-test setup or checks. After the Python script completes, the script executes another Bash script located at `./scripts/test.sh`, passing any arguments received by the current script to it. This setup is typically used in a continuous integration or development environment to ensure that tests are run consistently.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

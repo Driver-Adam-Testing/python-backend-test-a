@@ -3,22 +3,22 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agent classes, billing management, text chunking, embedding, file storage, interfaces, pipelines, prompts, repositories, secret management, usage tracking, utilities, and performance testing tools.
+Functions, classes, and tools for agent creation, billing, text processing, file storage, and usage management.
 
 ## Folders
-- **[agent](agent/README.md)**: Agent classes for Anthropic and OpenAI, chat interfaces, agent factory, and tools for codebase management.
-- **[billing](billing/README.md)**: Manages subscription services and defines pricing tiers for consumption and seats.
+- **[agent](agent/README.md)**: Functions for formatting, parsing, and language model configurations, tools for codebase analysis, and classes for agent creation and chat interfaces with OpenAI and Anthropic.
+- **[billing](billing/README.md)**: Subscription management and pricing tier definitions for organizations.
 - **[chunking](chunking/README.md)**: Splits text into chunks and counts tokens using a specified model and tokenization method.
-- **[embedding](embedding/README.md)**: Functions for S3 file download, text embedding, and error handling using OpenAI models.
-- **[file_storage](file_storage/README.md)**: AWS S3 client and functions for creating buckets, presigned URLs, and file operations.
-- **[interfaces](interfaces/README.md)**: Agent and billing models, file content processing, usage metrics, AWS config, and request/response models.
-- **[pipelines](pipelines/README.md)**: Agents for code extraction, editing, execution, file processing, and search using OpenAI models.
-- **[prompts](prompts/README.md)**: Prompt templates, Pydantic models, system message prompts, task modules, and structured text prompt management.
-- **[repositories](repositories/README.md)**: Generic SQLModel repository for CRUD and querying; usage event repository for categorization.
+- **[embedding](embedding/README.md)**: Functions for downloading files from S3 and text embedding using OpenAI models with error handling.
+- **[file_storage](file_storage/README.md)**: AWS S3 client and presigned URL generation for file operations.
+- **[interfaces](interfaces/README.md)**: Agent configuration models, billing and file content Pydantic models, usage metrics, AWS client config, and search algorithms.
+- **[pipelines](pipelines/README.md)**: Agents for code extraction and execution, block agents for code generation, file processing, and search algorithms.
+- **[prompts](prompts/README.md)**: Prompt templates, Pydantic models, system message prompts, task-related modules, and structured text classes.
+- **[repositories](repositories/README.md)**: Generic repository class for SQLModel and usage event management by type, date, and organization.
 - **[secret_management](secret_management/README.md)**: Manages AWS Secrets Manager operations including writing, reading, and deleting secrets.
-- **[usage](usage/README.md)**: Manages LLM sessions, usage events, credits, balances, and provides byte-to-SLOC conversion functions.
-- **[utils](utils/README.md)**: Classes for text styling, decorators for caching and logging, Mermaid rendering, OpenAI file upload, and Puppeteer configuration.
-- **[v3](v3/README.md)**: Performance testing, LLM pipelines, JSON parsing, LLM clients, tests, utilities, and package initialization.
+- **[usage](usage/README.md)**: Manages LLM usage sessions, usage events, balances, summaries, and conversions between bytes and SLOC.
+- **[utils](utils/README.md)**: Classes for terminal text styling, function decorators, tests, Mermaid rendering, OpenAI file upload, and Puppeteer configuration.
+- **[v3](v3/README.md)**: Performance testing, LLM clients, interfaces, utilities, global messages, and tests for LLM and DataSource.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).

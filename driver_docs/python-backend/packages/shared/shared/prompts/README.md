@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Prompt templates, Pydantic models, system message prompts, task modules, and structured text prompt management.
+Prompt templates, Pydantic models, system message prompts, task-related modules, and structured text classes.
 
 ## Folders
-- **[audience](audience/README.md)**: Prompt templates for business development, product managers, fifth graders, and software engineers.
-- **[block_kind](block_kind/README.md)**: Pydantic models and classes for markdown content conversion, including code, diagrams, lists, tables, and text.
-- **[interface](interface/README.md)**: Imports and defines system message prompts for batch tools, iterations, and technical context interfaces.
+- **[audience](audience/README.md)**: Prompt templates and message structures for different audiences: business development, fifth grader, product manager, and software engineer.
+- **[block_kind](block_kind/README.md)**: Pydantic models and classes for a copy editor agent to convert various content types into markdown.
+- **[interface](interface/README.md)**: Imports and defines system message prompts for batch tools, iterations, technical context, and user explanations.
 - **[task](task/README.md)**: Task-related prompts and modules for technical document creation, code verification, and prompt enhancement.
-- **[tools](tools/README.md)**: Initialization file for the shared prompts tools package and defines an empty string constant named PROMPT.
-- **[voice](voice/README.md)**: Imports and system message prompts for copy editor and software engineer roles, and pipeline configuration.
+- **[tools](tools/README.md)**: Initialization file and empty string constant PROMPT definition in the `tools` package.
+- **[voice](voice/README.md)**: Imports and defines prompts and pipelines for technical copy editing and content creation roles.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Imports modules: audience, interface, task, and voice.

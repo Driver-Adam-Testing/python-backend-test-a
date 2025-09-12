@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Public key certificate for the production database in the Python backend.
+Production database public key certificate for secure communication.
 
 # Purpose
-The content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. This certificate is used to establish a secure connection between a client and a server by verifying the server's identity. It contains information such as the issuer's name, the subject's name, and the public key. The certificate also includes validity dates, indicating the time period during which the certificate is considered valid. This certificate is part of the Secure Sockets Layer (SSL) or Transport Layer Security (TLS) protocols, which are used to encrypt data transmitted over the internet.
+The content is a digital certificate encoded in the Privacy-Enhanced Mail (PEM) format. This certificate is used to establish a secure connection between a client and a server by verifying the server's identity. It contains information such as the issuer's name, the subject's name, and the public key, which is used in the encryption process. The certificate also includes validity dates, indicating the time period during which the certificate is considered valid. This ensures that the communication is encrypted and secure, preventing unauthorized access or data interception.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,9 +6,9 @@
 API routes for managing codebase versions, analysis, generation, and onboarding using FastAPI.
 
 # Purpose
-The code defines a FastAPI router that provides several endpoints for managing and analyzing codebase versions. It includes functionality to retrieve available codebase versions, execute codebase analysis, generate codebases, and trigger codebase onboarding. The endpoints are secured with permissions, such as `ContentReadonlyPermission` and `ContentEditorPermission`, to control access based on user roles. The code interacts with a database to fetch and manipulate data related to codebase versions and uses services like `CodebaseService` and `UsageService` to perform operations such as analysis execution and usage balance checks.
+The code defines a FastAPI router that provides several endpoints for managing and interacting with codebase versions. It includes functionality to retrieve available codebase versions, execute codebase analysis, generate codebases, and trigger codebase onboarding. The endpoints are protected by permissions, such as `ContentReadonlyPermission` and `ContentEditorPermission`, to ensure that only authorized users can access or modify the data. The code interacts with a database to fetch and manipulate data related to codebase versions, using SQLModel for ORM operations.
 
-The code defines several Pydantic models, such as `VersionResponse` and `CodebaseVersionsResponse`, to structure the data returned by the API. The [`get_codebase_versions`](<#get_codebase_versions>) function retrieves versions of a specified codebase, while [`exec_codebase_analysis`](<#exec_codebase_analysis>) and [`exec_codebase_generation`](<#exec_codebase_generation>) handle the analysis and generation of codebases, respectively. The [`trigger_codebase_onboarding`](<#trigger_codebase_onboarding>) function initiates the onboarding process for a codebase. The code uses SQLModel for database interactions and includes logic to handle pagination, usage balance checks, and error handling through HTTP exceptions.
+The code also integrates with external services and utilities, such as `UsageService` for managing usage balances and `LLMUsageSession` for logging usage metrics. The endpoints return structured responses using Pydantic models like `CodebaseVersionsResponse` and `CodebaseAnalysisResponse`. The code is designed to be part of a larger application, likely serving as a backend API for a system that manages codebases, allowing users to perform operations like analysis and generation while tracking usage and permissions.
 # Imports and Dependencies
 
 ---
@@ -16,11 +16,11 @@ The code defines several Pydantic models, such as `VersionResponse` and `Codebas
 - `datetime.datetime`
 - `uuid.UUID`
 - `modal`
-- `database.models_v1.UsageEventType`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.Version`
-- `database.models_v2_enums.PrimaryAssetKind`
-- `database.models_v2_enums.VersionStatus`
+- `database.models.PrimaryAsset`
+- `database.models.UsageEventType`
+- `database.models.Version`
+- `database.models_enums.PrimaryAssetKind`
+- `database.models_enums.VersionStatus`
 - `fastapi.APIRouter`
 - `fastapi.HTTPException`
 - `fastapi.Query`
@@ -63,20 +63,20 @@ The code defines several Pydantic models, such as `VersionResponse` and `Codebas
 
 ---
 ### VersionResponse<!-- {{#class:python-backend/backend/app/api/routes/v1/codebase.VersionResponse}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L38>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L37>)
 
 - **Members**:
-    - `id`: Unique identifier for the version.
-    - `vcs_hash`: Version control system hash, which can be null.
-    - `created_at`: Timestamp indicating when the version was created.
-- **Description**: Represents a version response with an identifier, optional version control system hash, and creation timestamp.
+    - `id`: Stores a unique identifier for the version as a UUID.
+    - `vcs_hash`: Stores the version control system hash as a string or None.
+    - `created_at`: Records the creation date and time of the version as a datetime object.
+- **Description**: Represents a response model for a version, including its unique identifier, version control system hash, and creation timestamp.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseVersionsResponse<!-- {{#class:python-backend/backend/app/api/routes/v1/codebase.CodebaseVersionsResponse}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L44>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L43>)
 
 - **Members**:
     - `versions`: A list of `VersionResponse` objects representing codebase versions.
@@ -92,22 +92,24 @@ The code defines several Pydantic models, such as `VersionResponse` and `Codebas
 
 ---
 ### get\_codebase\_versions<!-- {{#callable:python-backend/backend/app/api/routes/v1/codebase.get_codebase_versions}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L51>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L50>)
 
-Retrieves available versions of a codebase for a given codebase ID, with pagination support.
+Retrieves available versions of a specified codebase for a user.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: The current database session used to execute queries.
-    - `user`: The user token containing user and organization information.
-    - `codebase_id`: The unique identifier of the codebase to retrieve versions for.
+    - `user`: The user token containing user information, including organization ID.
+    - `codebase_id`: The UUID of the codebase for which versions are requested.
     - `limit`: The maximum number of versions to return, with a default value of 10.
     - `offset`: The number of versions to skip before starting to collect the result set, with a default value of 0.
 - **Logic and Control Flow**:
-    - Assigns the `codebase_id` to `primary_asset_id` and queries the database to find the primary asset that matches the given `codebase_id`, `organization_id`, and is of kind `CODEBASE`.
-    - Raises an `HTTPException` with a 404 status code if the primary asset is not found.
-    - Constructs a SQL query to select versions associated with the primary asset, ordered by creation date in descending order, and applies the specified `limit` and `offset`.
-    - Executes the query to retrieve the list of versions and counts the total number of versions for pagination purposes.
-    - Creates a list of [`VersionResponse`](<#versionresponse>) objects from the retrieved versions, each containing the version ID, VCS hash, and creation date.
+    - Assigns the `codebase_id` to `primary_asset_id` as a URL misnomer.
+    - Executes a query to find the primary asset that matches the `codebase_id`, organization ID, and is of kind `CODEBASE`.
+    - If no primary asset is found, raises an `HTTPException` with a 404 status code indicating 'Codebase not found'.
+    - Constructs a query to select versions associated with the primary asset, ordered by creation date in descending order, limited by `limit`, and offset by `offset`.
+    - Executes the query to retrieve the list of versions.
+    - Executes a query to count the total number of versions associated with the primary asset for pagination purposes.
+    - Creates a list of [`VersionResponse`](<#versionresponse>) objects from the retrieved versions.
     - Returns a [`CodebaseVersionsResponse`](<#codebaseversionsresponse>) containing the list of version responses, total count, limit, and offset.
 - **Output**: A [`CodebaseVersionsResponse`](<#codebaseversionsresponse>) object containing the list of versions, total count, limit, and offset.
 - **Functions Called**:
@@ -118,15 +120,15 @@ Retrieves available versions of a codebase for a given codebase ID, with paginat
 
 ---
 ### exec\_codebase\_analysis<!-- {{#callable:python-backend/backend/app/api/routes/v1/codebase.exec_codebase_analysis}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L110>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L109>)
 
 Executes a codebase analysis for a given user and request.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `user`: A `UserToken` object representing the user initiating the request.
-    - `request`: A `CodebaseAnalysisRequest` object containing the details of the codebase analysis request.
+    - `user`: A `UserToken` object representing the authenticated user making the request.
+    - `request`: A `CodebaseAnalysisRequest` object containing the details of the codebase analysis request, including the download URL.
 - **Logic and Control Flow**:
-    - Calls the [`execute_codebase_analysis`](<../../../services/codebase_service.py.md#codebaseserviceexecute_codebase_analysis>) method of `CodebaseService` with the user's organization ID and the download URL from the request.
+    - Calls the [`execute_codebase_analysis`](<../../../services/codebase_service.py.md#codebaseserviceexecute_codebase_analysis>) method of the `CodebaseService` class, passing the user's organization ID and the download URL from the request.
 - **Output**: Returns a `CodebaseAnalysisResponse` object containing the results of the codebase analysis.
 - **Functions Called**:
     - [`python-backend/backend/app/services/codebase_service.CodebaseService.execute_codebase_analysis`](<../../../services/codebase_service.py.md#codebaseserviceexecute_codebase_analysis>)
@@ -134,24 +136,24 @@ Executes a codebase analysis for a given user and request.
 
 ---
 ### exec\_codebase\_generation<!-- {{#callable:python-backend/backend/app/api/routes/v1/codebase.exec_codebase_generation}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L124>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L123>)
 
 Executes the codebase generation process by validating version IDs, checking usage balance, and initiating codebase inspection.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: A `CurrentSession` object representing the current database session.
-    - `user`: A `UserToken` object representing the authenticated user.
-    - `request`: A `CodebaseGenerationRequest` object containing the version IDs to process.
+    - `session`: A `CurrentSession` object that manages the database session.
+    - `user`: A `UserToken` object that contains user authentication and organization information.
+    - `request`: A `CodebaseGenerationRequest` object that includes the version IDs to process.
 - **Logic and Control Flow**:
     - Constructs a query to select `Version` objects joined with `PrimaryAsset` based on the provided version IDs and user organization ID.
-    - Executes the query and checks if the number of results matches the number of requested version IDs; raises an `HTTPException` if not.
+    - Executes the query and retrieves all matching versions.
+    - Checks if the number of retrieved versions matches the number of requested version IDs; raises an `HTTPException` with status code 404 if not.
     - Calculates the total codebase size in bytes from the metadata of each version's root node.
-    - Retrieves the usage balance for the user's organization and raises an `HTTPException` if the codebase size exceeds the balance.
-    - For each version, creates a [`UsageSessionMetadata`](<../../../../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>) and initiates an [`LLMUsageSession`](<../../../../../packages/shared/shared/usage/llm_session.py.md#llmusagesession>) to log usage metrics.
-    - Updates the status of each version to `GENERATING` and commits the changes to the session.
-    - Looks up the `inspect_db` function and spawns it for each version ID.
-    - Returns a [`CodebaseGenerationResponse`](<../../../schemas/codebase_schema.py.md#codebasegenerationresponse>) with a call ID.
-- **Output**: A [`CodebaseGenerationResponse`](<../../../schemas/codebase_schema.py.md#codebasegenerationresponse>) object containing a call ID.
+    - Retrieves the usage balance for the user's organization and checks if the total codebase size exceeds the balance; raises an `HTTPException` with status code 402 if it does.
+    - For each version, creates a [`UsageSessionMetadata`](<../../../../../packages/shared/shared/interfaces/usage/event_metadata.py.md#usagesessionmetadata>) and starts an [`LLMUsageSession`](<../../../../../packages/shared/shared/usage/llm_session.py.md#llmusagesession>) to log usage metrics.
+    - Updates the status of each version to `GENERATING` and commits the changes to the database.
+    - Looks up the `inspect_db` function and spawns an inspection process for each version.
+- **Output**: Returns a [`CodebaseGenerationResponse`](<../../../schemas/codebase_schema.py.md#codebasegenerationresponse>) object with a call ID.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>)
     - [`python-backend/packages/shared/shared/usage/usage_service.UsageService.get_usage_balance`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_balance>)
@@ -166,17 +168,17 @@ Executes the codebase generation process by validating version IDs, checking usa
 
 ---
 ### get\_codebase\_analysis<!-- {{#callable:python-backend/backend/app/api/routes/v1/codebase.get_codebase_analysis}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L211>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L210>)
 
 Retrieves codebase analysis results for a given call ID and handles error or expired statuses.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `call_id`: A string representing the unique identifier for the codebase analysis request.
 - **Logic and Control Flow**:
-    - Calls `CodebaseService.get_codebase_analysis_results` with `call_id` to retrieve analysis results.
+    - Calls `CodebaseService.get_codebase_analysis_results` with `call_id` to retrieve the analysis results.
     - Checks if the `status` of `analysis_response` is either 'error' or 'expired'.
     - Raises an `HTTPException` with status code 400 and detail 'Bad Request' if the status is 'error' or 'expired'.
-    - Returns `analysis_response` if no error or expiration is detected.
+    - Returns the `analysis_response` if no exception is raised.
 - **Output**: Returns a `CodebaseAnalysisResult` object containing the analysis results.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
@@ -185,9 +187,9 @@ Retrieves codebase analysis results for a given call ID and handles error or exp
 
 ---
 ### trigger\_codebase\_onboarding<!-- {{#callable:python-backend/backend/app/api/routes/v1/codebase.trigger_codebase_onboarding}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L228>)
+[View Source →](<../../../../../../../backend/app/api/routes/v1/codebase.py#L227>)
 
-Initiates the onboarding process for a codebase after verifying analysis completion and usage balance.
+Triggers the onboarding process for a codebase after verifying analysis completion and usage balance.
 - **Decorators**: `@router.post`
 - **Inputs**:
     - `session`: The current session object, used to interact with the database.
@@ -198,10 +200,10 @@ Initiates the onboarding process for a codebase after verifying analysis complet
     - Check if the analysis status is 'completed'; if not, raise an HTTP 400 error with 'Bad Request'.
     - Extract the analyzable source lines of code (SLOC) from the analysis results.
     - Get the available usage balance for the user's organization.
-    - Compare the analyzable SLOC with the available usage balance; if the SLOC exceeds the balance, raise an HTTP 400 error with 'Bad Request'.
+    - Compare the analyzable SLOC with the available usage balance; if SLOC exceeds the balance, raise an HTTP 400 error with 'Bad Request'.
     - Trigger the codebase onboarding process using the user's organization ID and the codebase object key from the request.
-    - Return a JSON response with HTTP status 202 and a message indicating acceptance.
-- **Output**: A JSON response with HTTP status 202 and a message indicating that the request is accepted.
+    - Return a JSON response with status code 202 and a message indicating acceptance.
+- **Output**: A JSON response with status code 202 and a message indicating that the request is accepted.
 - **Functions Called**:
     - [`python-backend/backend/app/services/codebase_service.CodebaseService.get_codebase_analysis_results`](<../../../services/codebase_service.py.md#codebaseserviceget_codebase_analysis_results>)
     - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>)

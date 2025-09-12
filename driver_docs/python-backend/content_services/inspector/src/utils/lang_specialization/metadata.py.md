@@ -3,66 +3,66 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines prompts for explaining and documenting metadata and configuration files in a software codebase.
+Prompts for generating documentation and summarizing metadata or configuration files in a software codebase.
 
 # Purpose
-The code defines several metadata prompts used for generating documentation for software codebases. These prompts are categorized based on the size and complexity of the content they describe, such as `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT`, `METADATA_SMALL_SYSTEM_PROMPT`, `PURPOSE_PROMPT_LARGE`, `PURPOSE_PROMPT_MEDIUM`, `PURPOSE_PROMPT_SMALL`, `CONTENT_SUMMARY_PROMPT`, `PURPOSE_FROM_CHUNKS`, and `CONTENT_SUMMARY_FROM_CHUNKS`. Each prompt provides specific instructions for writing documentation, focusing on explaining the purpose and summarizing the content of configuration or metadata files. The prompts guide the documentation process by outlining the key questions and considerations for effectively describing the technical details and purpose of the files within a software codebase.
+The code defines several metadata prompts used for generating technical documentation. These prompts are categorized based on the size and complexity of the content they describe, such as `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT`, `METADATA_SMALL_SYSTEM_PROMPT`, `PURPOSE_PROMPT_LARGE`, `PURPOSE_PROMPT_MEDIUM`, `PURPOSE_PROMPT_SMALL`, `CONTENT_SUMMARY_PROMPT`, `PURPOSE_FROM_CHUNKS`, and `CONTENT_SUMMARY_FROM_CHUNKS`. Each prompt provides specific instructions for creating documentation, focusing on explaining the purpose and summarizing the content of metadata or configuration files. The prompts guide the documentation process by outlining questions and considerations to ensure clear and concise explanations, tailored to the file's size and complexity.
 # Global Variables
 
 ---
 ### METADATA\_MEDIUM\_AND\_LARGE\_SYSTEM\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a detailed prompt for a software engineering documentation expert. It outlines the expert's skills in explaining technical details and describing configuration and metadata files.
-- **Use**: Used as a prompt to guide the behavior of a documentation expert in generating detailed software documentation.
+- **Description**: A multi-line string that provides a prompt for a software engineering documentation expert. It outlines the expert's skills in explaining technical details and describing configuration and metadata files.
+- **Use**: Used as a prompt to guide the behavior or responses of a system or individual acting as a documentation expert.
 
 
 ---
 ### METADATA\_SMALL\_SYSTEM\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a detailed description of the role and skills of a software engineering documentation expert. It emphasizes the ability to explain technical details and articulate the purpose of software, particularly in the context of small configuration and metadata files.
-- **Use**: Used to define the role and skills of a documentation expert in the context of software engineering.
+- **Description**: A multi-line string that provides instructions for writing technical documentation. It emphasizes the importance of explaining technical details and recognizing key components and purposes of software. The prompt also advises against speculation and encourages a confident tone in writing.
+- **Use**: Used as a prompt or guideline for generating documentation content.
 
 
 ---
 ### PURPOSE\_PROMPT\_LARGE
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a detailed prompt for explaining the purpose of metadata or configuration file contents. It instructs the user to write a paragraph that explains the purpose of the file contents in a technical documentation context.
-- **Use**: Used to guide the generation of technical documentation for metadata or configuration files by providing a structured prompt.
+- **Description**: A multi-line string that provides a prompt for explaining the purpose of metadata or configuration file contents. It guides the user to write a paragraph that explains the purpose of the file contents in a technical documentation context.
+- **Use**: Used to instruct users on how to document the purpose of metadata or configuration files in a software codebase.
 
 
 ---
 ### PURPOSE\_PROMPT\_MEDIUM
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for explaining the purpose of contents from a metadata or configuration file. It specifies that the explanation should be concise, consisting of a single paragraph with 3 to 5 sentences, and should be suitable for technical documentation.
-- **Use**: Used as a prompt or guideline for generating explanations of file contents in technical documentation.
+- **Description**: A multi-line string that provides instructions for explaining the purpose of metadata or configuration file contents. It guides the user to write a single paragraph of 3 to 5 sentences that explains the purpose of the file contents without referring to the source of the information.
+- **Use**: Used as a prompt to instruct users on how to document the purpose of metadata or configuration file contents in technical documentation.
 
 
 ---
 ### PURPOSE\_PROMPT\_SMALL
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for explaining the purpose of small metadata or configuration files. It specifies that the explanation should be concise, consisting of 1 to 3 sentences, and should not include any reference to the fact that the content was provided.
-- **Use**: Used as a prompt or guideline for generating concise explanations of small file contents in technical documentation.
+- **Description**: A multi-line string that provides instructions for explaining the purpose of a small metadata or configuration file. It guides the user to write a concise explanation of the file's purpose in 1 to 3 sentences.
+- **Use**: Used to instruct users on how to document the purpose of small metadata or configuration files in a software codebase.
 
 
 ---
 ### CONTENT\_SUMMARY\_PROMPT
 - **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for summarizing the functional details of a metadata or configuration file. It guides the user to consider the most important technical details that a developer should know about the file's contents.
-- **Use**: Used to prompt users to create a detailed summary of a file's functional details, focusing on technical aspects relevant to developers.
+- **Use**: Used to prompt users to create a detailed summary of a file's contents, focusing on technical details relevant to developers.
 
 
 ---
 ### PURPOSE\_FROM\_CHUNKS
 - **Type**: ``str``
-- **Description**: A multi-line string that provides instructions for combining multiple purpose paragraphs into a single cohesive paragraph. It is intended for use in the context of metadata or configuration files.
-- **Use**: Used to guide the creation of a single paragraph that summarizes the purpose of an entire file from multiple overlapping purpose paragraphs.
+- **Description**: A multi-line string that provides instructions for combining multiple purpose paragraphs into a single cohesive paragraph. It is intended to describe the purpose of overlapping chunks of a metadata or configuration file.
+- **Use**: Used to guide the creation of a single cohesive paragraph from multiple purpose paragraphs.
 
 
 ---
 ### CONTENT\_SUMMARY\_FROM\_CHUNKS
 - **Type**: ``str``
 - **Description**: A multi-line string that provides instructions for summarizing the content of overlapping chunks from a metadata or configuration file. It guides the user to combine multiple technical summary paragraphs into cohesive paragraphs that describe the entire file's technical content.
-- **Use**: Used to instruct on how to create a cohesive summary of technical content from multiple paragraphs.
+- **Use**: Used to instruct on how to create a cohesive summary from multiple content summaries of file chunks.
 
 
 

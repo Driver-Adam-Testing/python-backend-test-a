@@ -6,7 +6,7 @@
 Defines a global system message for the LLM Framework, detailing universal behaviors for LLM calls.
 
 # Purpose
-The code defines a class `GlobalSystemMessage` that extends the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. This class represents a global system message for a Language Learning Model (LLM) Framework, specifying behaviors that are consistent across all LLM calls. It ensures that the message does not assume specifics about the API, model, or pipeline being used. The class outlines that inputs will have XML tags for request components, tool calls must be formatted as JSON, and glossary terms like "Tools" and "Final Assistant Response" are defined with specific formats. The `content` attribute provides a template for how the assistant should respond to requests, either through tool calls or final responses, emphasizing the use of JSON for tool calls and markdown for final responses, without including XML tags or describing tool requests in the final output.
+The code defines a class `GlobalSystemMessage` that extends the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. This class represents a global system message for a Language Learning Model (LLM) Framework, specifying behaviors that are universally applicable to all LLM calls. The `GlobalSystemMessage` class includes a `message_kind` attribute set to `MessageKind.SYSTEM` and a `content` attribute that provides detailed instructions for how the assistant should respond to requests. The instructions specify that responses can be either tool calls formatted as JSON or final assistant responses in markdown format, without XML tags, and emphasize that the assistant should not describe tool calls in the final response. The class ensures that the assistant adheres to a consistent response format and behavior across different API calls, models, and pipelines.
 # Imports and Dependencies
 
 ---
@@ -21,9 +21,9 @@ The code defines a class `GlobalSystemMessage` that extends the `LlmMessage` cla
 [View Source →](<../../../../../../../packages/shared/shared/v3/globals/global_messages.py#L4>)
 
 - **Members**:
-    - `message_kind`: Defines the type of message as a system message.
-    - `content`: Contains the instructions for how the assistant should respond to requests.
-- **Description**: Represents a global system message for the LLM Framework, defining universal behaviors for all LLM calls. It specifies that inputs will have XML tags, tool calls must be formatted as JSON, and the final assistant response should be in markdown format without XML tags. The class ensures that the message does not assume specifics about the API, model, or pipeline being used.
+    - `message_kind`: Specifies the kind of message as `MessageKind.SYSTEM`.
+    - `content`: Contains the predefined message content for the assistant's response behavior.
+- **Description**: Represents a global system message for the LLM Framework, defining universal behaviors for all LLM calls without assuming specific API, model, or pipeline contexts. It ensures inputs have XML tags for request components, tool calls are formatted as JSON, and final responses are in markdown without XML tags unless requested. The class also defines universal glossary terms for tools and responses.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../interfaces/llm_message.py.md#llmmessage>)
 

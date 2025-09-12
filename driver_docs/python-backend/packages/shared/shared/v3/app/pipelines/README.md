@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Performance testing pipeline, imports/exports for inline edit, reformat, smart instruction, and LLM-based pipelines.
+Performance testing pipeline and various pipelines for inline edit, reformat, chat, and smart instruction.
 
 ## Folders
-- **[performance_tests](performance_tests/README.md)**: Performance testing pipeline for smart instructions using various LLM clients, measuring execution times.
+- **[performance_tests](performance_tests/README.md)**: Performance testing pipeline for smart instructions using multiple LLM clients.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Imports and exports pipeline request and response classes for inline edit, reformat, and smart instruction.
 - **[abbreviate_page_content.py](abbreviate_page_content.py.md)**: A pipeline for summarizing page content using language model clients, with support for concurrent processing.
-- **[chat.py](chat.py.md)**: Implements a chat pipeline with message history management and interaction with an LLM client.
+- **[chat.py](chat.py.md)**: Defines classes and methods for handling chat pipeline requests and responses with message history management.
 - **[inline_edit.py](inline_edit.py.md)**: Implements an inline edit pipeline for processing user prompts and page content using LLMs.
-- **[pipeline_request.py](pipeline_request.py.md)**: Defines an abstract base class for pipeline requests with methods for running and streaming sessions.
-- **[pipeline_response.py](pipeline_response.py.md)**: Defines a Pydantic model for pipeline responses with post-processing for mermaid syntax and reference handling.
-- **[reformat.py](reformat.py.md)**: Implements a reformatting pipeline using LLM clients to process and stream responses.
+- **[pipeline_request.py](pipeline_request.py.md)**: Defines an abstract base class for handling pipeline requests with session management and streaming capabilities.
+- **[pipeline_response.py](pipeline_response.py.md)**: Defines a Pydantic model for pipeline responses with post-processing for references and mermaid syntax.
+- **[reformat.py](reformat.py.md)**: Defines classes and methods for reformatting text using a language model client.
 - **[smart_instruction.py](smart_instruction.py.md)**: Implements a pipeline for processing smart instructions using LLM clients and various tools.
 
 ---

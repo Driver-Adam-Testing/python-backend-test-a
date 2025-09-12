@@ -6,7 +6,7 @@
 Alembic migration script to add and index a "content_name" column in the "derived_contents" table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines two functions, [`upgrade`](<#upgrade>) and [`downgrade`](<#downgrade>), to manage schema changes in a database. The [`upgrade`](<#upgrade>) function adds a new column named `content_name` of type `Text` to the `derived_contents` table and creates an index on this column to improve query performance. The [`downgrade`](<#downgrade>) function reverses these changes by removing the index and the column, allowing for a rollback of the schema update. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines an upgrade and a downgrade function to modify the database schema. The [`upgrade`](<#upgrade>) function adds a new column named `content_name` of type `Text` to the `derived_contents` table and creates an index on this column to improve query performance. The [`downgrade`](<#downgrade>) function reverses these changes by removing the index and the column, allowing for schema rollback if necessary. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific state of the database schema at a given point in time.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic to determine the order of migrations.
-- **Use**: Used by Alembic to track and apply database schema changes in the correct order.
+- **Description**: A string that specifies the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic to track the order of migrations.
+- **Use**: Used to define the predecessor of the current migration in Alembic's migration scripts.
 
 
 ---
@@ -53,20 +53,20 @@ This code is a database migration script using Alembic, a database migration too
 Adds a new column named `content_name` to the `derived_contents` table and creates an index for it.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Adds a new column `content_name` of type `Text` to the `derived_contents` table, allowing null values.
-    - Creates an index named `ix_derived_contents_content_name` on the `content_name` column in the `derived_contents` table.
-- **Output**: No output is returned.
+    - Calls `op.add_column` to add a new column `content_name` of type `Text` to the `derived_contents` table, allowing null values.
+    - Calls `op.create_index` to create an index named `ix_derived_contents_content_name` on the `content_name` column of the `derived_contents` table.
+- **Output**: No return value; modifies the database schema by adding a column and an index.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_09_10_0843-c3c66c4c4201_add_content_name_to_derived_content.py#L29>)
 
-Reverts database schema changes by removing an index and a column from the `derived_contents` table.
+Reverts the database schema changes by removing the 'content_name' column and its associated index from the 'derived_contents' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.drop_index` to remove the index `ix_derived_contents_content_name` from the `derived_contents` table.
-    - Calls `op.drop_column` to remove the `content_name` column from the `derived_contents` table.
+    - Calls `op.drop_index` to remove the index 'ix_derived_contents_content_name' from the 'derived_contents' table.
+    - Calls `op.drop_column` to remove the 'content_name' column from the 'derived_contents' table.
 - **Output**: No output is returned.
 
 

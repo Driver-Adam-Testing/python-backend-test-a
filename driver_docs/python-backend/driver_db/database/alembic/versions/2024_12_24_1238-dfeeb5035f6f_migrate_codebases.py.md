@@ -6,7 +6,7 @@
 Alembic migration script to execute the `MIGRATE_CODEBASE` operation during upgrade.
 
 # Purpose
-This code is an Alembic migration script used to manage database schema changes. It defines a specific migration identified by the `revision` ID `dfeeb5035f6f`, which follows the previous revision `3465397ed16c`. The [`upgrade`](<#upgrade>) function executes a migration operation by calling `MIGRATE_CODEBASE` from the `migrate_codebases` module, which likely contains the SQL or logic needed to perform the migration. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration does not support automatic reversal. This script is part of a version control system for database schemas, facilitating the transition between different database states.
+This code is an Alembic migration script used to manage changes in a database schema. It includes a unique `revision` identifier `dfeeb5035f6f` and specifies a `down_revision` of `3465397ed16c`, indicating its position in the migration sequence. The [`upgrade`](<#upgrade>) function executes a migration operation defined in `MIGRATE_CODEBASE` from the `database.nodes_v2_sql.migrate_codebases` module, which applies the necessary changes to the database. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration does not support a rollback. This script provides narrow functionality focused on applying a specific database schema change.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is an Alembic migration script used to manage database schema changes.
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database migration revision.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration script. It is used by Alembic to track the version of the database schema that this script represents.
+- **Use**: Used by Alembic to identify the current migration script version.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in a migration script. It is used by Alembic to determine the order of migrations.
-- **Use**: Used to track the predecessor of the current migration in the Alembic migration framework.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic, a database migration tool, to determine the order of migrations.
+- **Use**: Indicates the parent revision in a database migration sequence.
 
 
 ---
@@ -41,7 +41,7 @@ This code is an Alembic migration script used to manage database schema changes.
 ### depends\_on
 - **Type**: ``NoneType``
 - **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that this migration does not depend on any other migration.
+- **Use**: Indicates that this migration does not depend on any other migrations.
 
 
 # Functions
@@ -65,7 +65,7 @@ Defines a placeholder for downgrading a database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Contains no logic or operations, as it uses the `pass` statement.
-- **Output**: No output is produced as the function body is empty.
+- **Output**: No output is produced as the function is not implemented.
 
 
 

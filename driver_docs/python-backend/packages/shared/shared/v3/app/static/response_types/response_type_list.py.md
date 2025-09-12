@@ -6,7 +6,7 @@
 A response type class for generating and formatting a list of items in markdown.
 
 # Purpose
-The `ListResponse` class is a specialized response type that inherits from `LlmResponseType`. It is designed to generate and manage a list of items in a markdown format. The class contains two attributes: `list_formatted_response`, which holds the markdown representation of the list, and `rationale`, which explains the reasoning behind the list's creation and formatting. The [`to_markdown`](<#listresponseto_markdown>) method returns the `list_formatted_response`, allowing the list to be easily converted to markdown format for display purposes.
+The code defines a class `ListResponse` that extends the `LlmResponseType` class, which is imported from the `shared.v3.interfaces.llm_response_type` module. The `ListResponse` class is designed to represent a response type that generates a list of items. It includes two attributes: `list_formatted_response`, which holds a markdown-formatted string of the list, and `rationale`, which explains the reasoning behind the list's creation and formatting. The class provides a method [`to_markdown`](<#listresponseto_markdown>) that returns the `list_formatted_response` attribute, allowing the list to be output in markdown format.
 # Imports and Dependencies
 
 ---
@@ -34,12 +34,12 @@ The `ListResponse` class is a specialized response type that inherits from `LlmR
 #### ListResponse\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/response_types/response_type_list.ListResponse.to_markdown}} -->
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/response_types/response_type_list.py#L14>)
 
-Returns the markdown formatted response stored in the `list_formatted_response` attribute.
+Returns the markdown-formatted response string from the `list_formatted_response` attribute.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `list_formatted_response` attribute of the `ListResponse` instance.
     - Returns the value of `list_formatted_response`.
-- **Output**: A string containing the markdown formatted response.
+- **Output**: A string containing the markdown-formatted response.
 - **See also**: [`python-backend/packages/shared/shared/v3/app/static/response_types/response_type_list.ListResponse`](<#listresponse>)  (Base Class)
 
 

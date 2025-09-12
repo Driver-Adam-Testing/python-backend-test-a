@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Abstract base class and functions for scoring tags relevant to a software codebase.
+Defines an abstract base class for scoring tags in a codebase and includes a prompt template for scoring.
 
 # Purpose
-The code defines an abstract base class `Scorable` that extends `BaseModel` from the `pydantic` library and the `ABC` class from the `abc` module. The `Scorable` class is designed to be a template for creating objects that can generate and manage scores associated with tags. It includes abstract class methods such as [`tag_descriptions`](<#scorabletag_descriptions>), [`system_prompt`](<#scorablesystem_prompt>), and [`from_llm`](<#scorablefrom_llm>), which must be implemented by any subclass. The class also defines an abstract method [`to_tag_and_score_pairs`](<#scorableto_tag_and_score_pairs>) for generating a list of tag-score pairs. The [`sorted_list`](<#scorablesorted_list>) property sorts these pairs in descending order based on the score. The [`take`](<#scorabletake>) method retrieves a specified number of top-scoring pairs, optionally filtered by a predicate, and the [`top`](<#scorabletop>) method returns the highest-scoring pair.
+The code defines an abstract base class `Scorable` that extends `BaseModel` from the `pydantic` library and the `ABC` class from the `abc` module. The `Scorable` class is designed to be a template for creating models that can generate and manage scores associated with tags. It includes abstract class methods such as [`tag_descriptions`](<#scorabletag_descriptions>), [`system_prompt`](<#scorablesystem_prompt>), and [`from_llm`](<#scorablefrom_llm>), which must be implemented by any subclass. The class also defines an abstract method [`to_tag_and_score_pairs`](<#scorableto_tag_and_score_pairs>) for generating a list of tag-score pairs. The [`sorted_list`](<#scorablesorted_list>) property sorts these pairs in descending order based on the score. The [`take`](<#scorabletake>) method retrieves a specified number of top-scoring pairs, optionally filtered by a predicate, and the [`top`](<#scorabletop>) method returns the highest-scoring pair.
 
-Additionally, the code includes a template string `CODEBASE_SCORING_PROMPT_TEMPLATE` for generating prompts related to scoring tags for software codebases. The function [`build_scoring_user_prompt_from_docs`](<#build_scoring_user_prompt_from_docs>) constructs a user prompt from a dictionary of documents, which are organized by `LiteNode` objects. The function processes these documents to create a structured prompt, which is then split into chunks if necessary. This code is likely part of a larger system for evaluating and scoring software codebases based on specific tags, providing a structured way to assess the relevance of different tags to a given codebase.
+Additionally, the code includes a template string `CODEBASE_SCORING_PROMPT_TEMPLATE` for generating prompts related to scoring tags for software codebases. The function [`build_scoring_user_prompt_from_docs`](<#build_scoring_user_prompt_from_docs>) constructs a user prompt from a dictionary of documents, where each document is associated with a `LiteNode` and contains metadata. The function processes these documents to create a structured prompt, which is then split into chunks if it exceeds a certain size. This code is likely part of a larger system for evaluating and scoring software codebases based on predefined tags, providing a structured approach to assess the relevance of different tags to a given codebase.
 # Imports and Dependencies
 
 ---
@@ -32,8 +32,8 @@ Additionally, the code includes a template string `CODEBASE_SCORING_PROMPT_TEMPL
 ---
 ### CODEBASE\_SCORING\_PROMPT\_TEMPLATE
 - **Type**: ``str``
-- **Description**: A multi-line string template that provides instructions for generating relevance scores for tags applicable to a software codebase. The template includes placeholders for specific context and tag descriptions, which are to be filled in when the template is used.
-- **Use**: Used as a template to guide the generation of relevance scores for tags related to a software codebase.
+- **Description**: Defines a template string for generating a relevance scoring prompt. The template includes placeholders for specific context and tag descriptions, which are used to evaluate the relevance of tags to a software codebase.
+- **Use**: Used to create a prompt for scoring the relevance of tags to a codebase based on provided context and tag descriptions.
 
 
 # Classes
@@ -42,10 +42,10 @@ Additionally, the code includes a template string `CODEBASE_SCORING_PROMPT_TEMPL
 ### Scorable<!-- {{#class:python-backend/content_services/inspector/src/utils/tags/scoring.Scorable}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/scoring.py#L15>)
 
-- **Decorators**: `@abstractclassmethod`
+- **Decorators**: `@cached_property`
 - **Members**:
-    - `sorted_list`: Stores a sorted list of tag and score pairs.
-- **Description**: Defines an abstract base class for objects that can be scored based on tags. It requires subclasses to implement methods for providing tag descriptions, generating system prompts, creating instances from a language model, and converting to tag and score pairs. The class includes a cached property to store a sorted list of tag and score pairs and provides methods to retrieve a specified number of top-scoring pairs or the highest-scoring pair.
+    - `sorted_list`: Stores a sorted list of tag and score pairs in descending order of scores.
+- **Description**: Represents an abstract base class for scoring systems, requiring implementation of methods to describe tags, generate system prompts, create instances from language models, and convert to tag-score pairs. It provides functionality to sort and retrieve top scoring tags.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.tag_descriptions`](<#scorabletag_descriptions>)
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.system_prompt`](<#scorablesystem_prompt>)
@@ -64,13 +64,13 @@ Additionally, the code includes a template string `CODEBASE_SCORING_PROMPT_TEMPL
 #### Scorable\.tag\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.tag_descriptions}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/scoring.py#L16>)
 
-Defines an abstract class method that returns a dictionary mapping tag names to their descriptions.
+Defines a class method that must return a dictionary mapping tag names to their descriptions.
 - **Decorators**: `@abstractclassmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The method is defined as an abstract class method, indicating that subclasses must implement this method.
+    - The method is defined as an abstract class method, indicating that any subclass must implement this method.
     - The method does not have an implementation in the `Scorable` class, as it is intended to be overridden by subclasses.
-- **Output**: A dictionary where keys are tag names (strings) and values are their descriptions (strings).
+- **Output**: A dictionary where keys are tag names (strings) and values are tag descriptions (strings).
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable`](<#scorable>)  (Base Class)
 
 
@@ -78,14 +78,14 @@ Defines an abstract class method that returns a dictionary mapping tag names to 
 #### Scorable\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.system_prompt}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/scoring.py#L20>)
 
-Defines an abstract class method that must return a string representing a system prompt.
+Defines an abstract class method that returns a system prompt as a string.
 - **Decorators**: `@abstractclassmethod`
 - **Inputs**:
     - `cls`: Represents the class itself, not an instance of the class.
 - **Logic and Control Flow**:
     - The method is abstract and must be implemented by any subclass of `Scorable`.
-    - The method does not contain any logic in its current form, as it is a placeholder for subclasses to define.
-- **Output**: A string that represents a system prompt.
+    - The method does not contain any logic or control flow as it is not implemented in the `Scorable` class.
+- **Output**: A string representing a system prompt.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable`](<#scorable>)  (Base Class)
 
 
@@ -93,14 +93,14 @@ Defines an abstract class method that must return a string representing a system
 #### Scorable\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.from_llm}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/scoring.py#L24>)
 
-Defines an abstract class method that must be implemented by subclasses to create an instance from a language model (LLM).
+Defines an abstract class method to create an instance of the class from a language model.
 - **Decorators**: `@abstractclassmethod`
 - **Inputs**:
-    - `cls`: Represents the class itself, not an instance of the class, and is used to call class methods.
+    - `cls`: Represents the class itself, used to create an instance of the class.
 - **Logic and Control Flow**:
-    - The method is defined as an abstract class method, indicating that it must be implemented by any subclass of `Scorable`.
-    - The method does not contain any implementation in the `Scorable` class, as it is intended to be overridden by subclasses.
-- **Output**: Returns an instance of the class (`Self`) that implements this method.
+    - The method is defined as an abstract class method, indicating that subclasses must implement this method.
+    - The method does not contain any implementation in the base class, as it is intended to be overridden by subclasses.
+- **Output**: Returns an instance of the class (`Self`).
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable`](<#scorable>)  (Base Class)
 
 
@@ -112,9 +112,9 @@ Defines an abstract method to return a list of tag and score pairs.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - The method is abstract and does not contain any implementation.
-    - Subclasses must implement this method to provide specific functionality.
-- **Output**: A list of tuples, where each tuple contains a string (tag) and a float (score).
+    - The method is abstract and must be implemented by subclasses.
+    - The method should return a list of tuples, where each tuple contains a string and a float.
+- **Output**: A list of tuples, each containing a string and a float, representing tag and score pairs.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable`](<#scorable>)  (Base Class)
 
 
@@ -129,7 +129,7 @@ Sorts a list of tag and score pairs in descending order based on the score.
     - Calls the [`to_tag_and_score_pairs`](<#scorableto_tag_and_score_pairs>) method to get a list of tuples, each containing a tag and its corresponding score.
     - Uses the `sorted` function to sort the list of tuples by the second element (score) in each tuple.
     - Sorts the list in descending order by setting the `reverse` parameter to `True`.
-- **Output**: A list of tuples, where each tuple contains a string (tag) and a float (score), sorted in descending order by score.
+- **Output**: A list of tuples, each containing a tag and a score, sorted in descending order by score.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable.to_tag_and_score_pairs`](<#scorableto_tag_and_score_pairs>)
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable`](<#scorable>)  (Base Class)
@@ -142,12 +142,12 @@ Sorts a list of tag and score pairs in descending order based on the score.
 Selects the top `n` elements from a sorted list, optionally filtered by a predicate.
 - **Inputs**:
     - `n`: The number of elements to select from the sorted list.
-    - `pred`: An optional predicate function to filter elements before selection.
+    - `pred`: An optional predicate function to filter elements; defaults to `None`.
 - **Logic and Control Flow**:
     - Check if `pred` is `None`.
     - If `pred` is `None`, return the first `n` elements from `self.sorted_list`.
     - If `pred` is not `None`, filter `self.sorted_list` using `pred` and return the first `n` elements from the filtered list.
-- **Output**: A list of tuples, each containing a string and a float, representing the selected elements.
+- **Output**: A list of tuples, each containing a string and a float, representing the top `n` elements from the sorted list, optionally filtered by the predicate.
 - **See also**: [`python-backend/content_services/inspector/src/utils/tags/scoring.Scorable`](<#scorable>)  (Base Class)
 
 
@@ -158,7 +158,7 @@ Selects the top `n` elements from a sorted list, optionally filtered by a predic
 Returns the top element from a sorted list of tag and score pairs.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the [`take`](<#scorabletake>) method with an argument of `1` to retrieve the top element from the sorted list.
+    - Calls the [`take`](<#scorabletake>) method with an argument of 1 to retrieve the top element from the sorted list.
     - Accesses the first element of the list returned by [`take`](<#scorabletake>) and returns it.
 - **Output**: A tuple containing a string and a float, representing the top tag and its score.
 - **Functions Called**:
@@ -173,7 +173,7 @@ Returns the top element from a sorted list of tag and score pairs.
 ### build\_scoring\_user\_prompt\_from\_docs<!-- {{#callable:python-backend/content_services/inspector/src/utils/tags/scoring.build_scoring_user_prompt_from_docs}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/tags/scoring.py#L69>)
 
-Builds a user prompt string from a dictionary of document nodes and their associated data.
+Builds a structured user prompt from a dictionary of document nodes and their associated data.
 - **Inputs**:
     - `docs`: A dictionary where keys are `LiteNode` objects and values are dictionaries containing string keys and any type of values.
 - **Logic and Control Flow**:
@@ -188,7 +188,7 @@ Builds a user prompt string from a dictionary of document nodes and their associ
     - Convert `user_prompt_structured` to a string and assign it to `user_prompt`.
     - Split `user_prompt` into chunks of size 96,000 with no overlap using [`split_text`](<../../../../../packages/shared/shared/chunking/text_splitter.py.md#split_text>).
     - If there is more than one chunk, set `user_prompt` to the text of the first chunk.
-- **Output**: A string representing the user prompt built from the document nodes and their data.
+- **Output**: A string representing the structured user prompt.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptempty>)
     - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#promptappend>)

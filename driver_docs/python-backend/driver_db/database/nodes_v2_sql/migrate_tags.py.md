@@ -6,14 +6,16 @@
 SQL script for migrating tags to associate them with primary asset IDs in a database.
 
 # Purpose
-The code is a SQL migration script embedded in a Python file, designed to transfer data related to tags and their associated primary asset IDs. It defines a Common Table Expression (CTE) named `tags_primary_asset_ids` to select distinct pairs of `tag_id` and `primary_asset_id` from the `tags_contents` and `derived_contents` tables, with additional joins to `v2_node` and `v2_version` tables to ensure the `primary_asset_id` is not null. The script then inserts these pairs into the `v2_primary_asset_tag` table. The `RETURNING` clause is used to output the `tag_id` of the inserted records, which can be useful for verification or logging purposes.
+The code defines a SQL query stored in the `MIGRATE_TAGS` variable. This query is used to migrate tag data from existing tables to a new table, `v2_primary_asset_tag`. The query first creates a Common Table Expression (CTE) named `tags_primary_asset_ids`, which selects distinct pairs of `tag_id` and `primary_asset_id` from the `tags_contents` and `derived_contents` tables. It joins these tables with `v2_node` and `v2_version` to ensure that only records with a non-null `primary_asset_id` are included.
+
+The main operation of the query is to insert the selected `tag_id` and `primary_asset_id` pairs into the `v2_primary_asset_tag` table. The `RETURNING` clause at the end of the query specifies that the `tag_id` values of the inserted records should be returned. This code is likely part of a database migration script, intended to update the database schema by transferring data to a new structure while preserving the association between tags and their primary assets.
 # Global Variables
 
 ---
 ### MIGRATE\_TAGS
 - **Type**: ``str``
-- **Description**: Contains a SQL query string that performs a data migration operation. The query selects distinct tag IDs and their associated primary asset IDs from the `tags_contents` and `derived_contents` tables, and inserts them into the `v2_primary_asset_tag` table. It returns the tag IDs that were inserted.
-- **Use**: Used to execute a SQL query for migrating tag and primary asset data into a new table.
+- **Description**: Contains a SQL query string that performs a data migration operation. The query identifies distinct tag and primary asset ID pairs from the `tags_contents` and `derived_contents` tables, and inserts them into the `v2_primary_asset_tag` table.
+- **Use**: Used to execute a SQL migration that maps tags to their corresponding primary asset IDs in a database.
 
 
 

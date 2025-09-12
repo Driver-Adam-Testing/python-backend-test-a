@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Manages LLM sessions, usage events, credits, balances, and provides byte-to-SLOC conversion functions.
+Manages LLM usage sessions, usage events, balances, summaries, and conversions between bytes and SLOC.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[llm_session.py](llm_session.py.md)**: Manages LLM usage sessions, including starting, ending, and sending usage events to AWS.
-- **[usage_service.py](usage_service.py.md)**: Manages usage events, credits, balances, summaries, and charges for organizations.
+- **[usage_service.py](usage_service.py.md)**: Manages usage events, balances, summaries, and charges for organizations using a database and AWS.
 - **[utils.py](utils.py.md)**: Functions to convert between bytes and source lines of code (SLOC) using a conversion factor.
 
 ---

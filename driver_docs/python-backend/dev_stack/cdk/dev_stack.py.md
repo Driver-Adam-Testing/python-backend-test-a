@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a development stack for deploying additional infrastructure with S3 bucket and Lambda functions.
+Defines a CDK stack for deploying additional infrastructure in a development environment.
 
 # Purpose
-The code defines a `DevStack` class, which is a specialized AWS Cloud Development Kit (CDK) stack. This stack is designed to deploy additional infrastructure components for development and testing purposes. The `DevStack` class inherits from the `Stack` class provided by the AWS CDK and is initialized with parameters encapsulated in the `DevStackParams` dataclass. These parameters include the environment, a CDK prefix, and a database URL, which are used to configure the stack's resources.
+The code defines a `DevStack` class, which is a specialized AWS Cloud Development Kit (CDK) stack. This stack is designed to deploy additional infrastructure components for development and testing purposes. The `DevStack` class inherits from the `Stack` class provided by the AWS CDK and is initialized with parameters encapsulated in the `DevStackParams` dataclass. These parameters include the environment, a CDK prefix, and a database URL, which are used to configure the resources within the stack.
 
-Within the `DevStack`, the code creates an Amazon S3 bucket named `asset_dropzone_bucket`. This bucket is configured with specific properties such as automatic deletion of objects, public access blocking, and server-side encryption. Additionally, the stack includes two Lambda functions: `AssetOnboardingLambda` and `MetricsLambda`. These functions are instantiated with parameters that include environment-specific settings and references to the S3 bucket and other environment variables. The `DevStack` is intended for temporary use, allowing developers to deploy and test additional infrastructure components alongside existing resources in a development environment.
+The primary components of the `DevStack` include an Amazon S3 bucket and two AWS Lambda functions. The S3 bucket, named `asset_dropzone_bucket`, is configured with specific properties such as versioning, encryption, and CORS rules to control access. The `AssetOnboardingLambda` and `MetricsLambda` are two Lambda functions integrated into the stack, each initialized with parameters that include environment-specific configurations and references to other resources like the S3 bucket. These components are intended to facilitate asset onboarding and metrics collection within a development environment. The stack is designed to be temporary and may be deleted after use, as indicated by the `RemovalPolicy.DESTROY` setting for the S3 bucket.
 # Imports and Dependencies
 
 ---
@@ -43,10 +43,10 @@ Within the `DevStack`, the code creates an Amazon S3 bucket named `asset_dropzon
 [View Source →](<../../../../dev_stack/cdk/dev_stack.py#L28>)
 
 - **Members**:
-    - `asset_dropzone_bucket`: Stores an S3 bucket for asset dropzone with specific configurations.
-    - `onboarding_lambda`: Holds an instance of `AssetOnboardingLambda` for asset onboarding operations.
-    - `metrics_lambda`: Contains an instance of `MetricsLambda` for handling metrics operations.
-- **Description**: Implements a development stack for deploying additional infrastructure for testing purposes. It creates an S3 bucket with specific configurations and integrates two Lambda functions: one for asset onboarding and another for metrics handling. The stack is intended for temporary use and may be deleted after its purpose is fulfilled.
+    - `asset_dropzone_bucket`: An S3 bucket configured for asset dropzone with specific CORS rules and encryption.
+    - `onboarding_lambda`: An instance of `AssetOnboardingLambda` configured with environment and API details.
+    - `metrics_lambda`: An instance of `MetricsLambda` configured with environment and database details.
+- **Description**: Implements a development stack for deploying additional infrastructure for testing purposes, including an S3 bucket for asset management and Lambda functions for asset onboarding and metrics collection.
 - **Methods**:
     - [`python-backend/dev_stack/cdk/dev_stack.DevStack.__init__`](<#devstack__init__>)
 - **Inherits From**:
@@ -58,22 +58,21 @@ Within the `DevStack`, the code creates an Amazon S3 bucket named `asset_dropzon
 #### DevStack\.\_\_init\_\_<!-- {{#callable:python-backend/dev_stack/cdk/dev_stack.DevStack.__init__}} -->
 [View Source →](<../../../../dev_stack/cdk/dev_stack.py#L29>)
 
-Initializes a `DevStack` instance by setting up an S3 bucket and two Lambda functions for asset onboarding and metrics.
+Initializes a `DevStack` instance with an S3 bucket and two Lambda functions for asset onboarding and metrics.
 - **Inputs**:
     - `scope`: A `Construct` object that defines the scope in which this construct is created.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
     - `params`: A `DevStackParams` object containing configuration parameters such as environment and CDK prefix.
-    - `kwargs`: Additional keyword arguments that are passed to the parent class `Stack`.
+    - `kwargs`: Additional keyword arguments passed to the parent class `Stack`.
 - **Logic and Control Flow**:
-    - Calls the parent class `Stack`'s [`__init__`](<constructs/metrics_lambda.py.md#metricslambda__init__>) method with `scope`, `construct_id`, and `kwargs`.
-    - Extracts and processes the `cdk_prefix` from `params` to create a `prefix` string by removing hyphens, spaces, and trimming whitespace.
-    - Extracts the `environment` from `params`.
-    - Creates an S3 bucket named using the `prefix` with specific configurations such as removal policy, auto-deletion of objects, public access blocking, encryption, versioning, and CORS rules.
-    - Initializes an [`AssetOnboardingLambda`](<../../cdk/constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>) with parameters including the environment, API URL, Auth0 URL, and the created S3 bucket.
-    - Initializes a [`MetricsLambda`](<constructs/metrics_lambda.py.md#metricslambda>) with parameters including the environment and database URL.
-- **Output**: No return value; initializes the `DevStack` instance with configured resources.
+    - Calls the parent class `Stack`'s `__init__` method with `scope`, `construct_id`, and `kwargs`.
+    - Extracts and processes the `cdk_prefix` from `params` to create a `prefix` variable by removing hyphens, spaces, and trimming whitespace.
+    - Extracts the `environment` from `params` and assigns it to `env`.
+    - Creates an S3 bucket named `asset_dropzone_bucket` with specific configurations such as removal policy, encryption, and CORS rules.
+    - Initializes an [`AssetOnboardingLambda`](<../../cdk/constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>) with parameters including `environment`, API URLs, and the created S3 bucket.
+    - Initializes a [`MetricsLambda`](<constructs/metrics_lambda.py.md#metricslambda>) with parameters including `environment` and database URL.
+- **Output**: None
 - **Functions Called**:
-    - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda.__init__`](<constructs/metrics_lambda.py.md#metricslambda__init__>)
     - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<../../cdk/constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>)
     - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](<../../cdk/constructs/asset_onboarding_lambda.py.md#assetonboardinglambdaparams>)
     - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda`](<constructs/metrics_lambda.py.md#metricslambda>)

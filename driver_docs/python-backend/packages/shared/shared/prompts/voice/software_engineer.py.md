@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a system message for a software engineer voice prompt with specific guidelines.
+Defines a system message for a software engineer voice prompt.
 
 # Purpose
-The code defines two global variables, `VOICE_PROMPT` and `MESSAGE`. The `VOICE_PROMPT` variable is a multi-line string that contains a set of instructions or guidelines for a software engineer's role and responsibilities. The `MESSAGE` variable is a dictionary with two keys: `role`, which is set to the string "system", and `content`, which is set to the value of the `VOICE_PROMPT` string. This code is likely used to configure or initialize a system message with specific content and role attributes.
+The code defines two global variables, `VOICE_PROMPT` and `MESSAGE`. The `VOICE_PROMPT` variable is a multi-line string that contains a set of instructions or guidelines for a software engineer. The `MESSAGE` variable is a dictionary with two keys: `role` and `content`. The `role` key has the value `"system"`, and the `content` key holds the value of the `VOICE_PROMPT` string. This code is likely used to configure or initialize a system message with specific instructions for a role, possibly in a conversational or AI-driven application.
 # Global Variables
 
 ---
 ### VOICE\_PROMPT
 - **Type**: ``str``
-- **Description**: A multi-line string that provides a detailed description of a role or persona for a software engineer. It includes specific instructions on how the engineer should behave and what they should focus on.
-- **Use**: Used as a prompt or guideline for defining the behavior and responsibilities of a software engineer in a system.
+- **Description**: A multi-line string that describes the role and behavior of an expert software engineer. It specifies that the engineer writes code and documentation, does not instruct others, and only writes things that are true based on recent data.
+- **Use**: Used as the `content` value in the `MESSAGE` dictionary to define the system's role.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has the value `'system'`, and the `content` key holds the value of the `VOICE_PROMPT` variable.
-- **Use**: Used to store system role information and a predefined voice prompt message.
+- **Description**: A dictionary that contains two key-value pairs: `role` and `content`. The `role` key has a string value 'system', and the `content` key is assigned the value of the `VOICE_PROMPT` variable.
+- **Use**: Used to store system role information and a predefined voice prompt for further processing or communication.
 
 
 

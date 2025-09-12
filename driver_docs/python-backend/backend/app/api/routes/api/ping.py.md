@@ -6,7 +6,7 @@
 Defines a FastAPI route for a ping endpoint that returns the user ID from an API key token.
 
 # Purpose
-This code defines a FastAPI router that provides a single endpoint for a basic health check or "ping" operation. The endpoint is defined using the `@router.get("/")` decorator, which maps HTTP GET requests to the root path ("/"). The [`ping`](<#ping>) function is asynchronous and requires an `ApiKeyToken` object as a parameter, which is used to authenticate the caller. The function returns a dictionary containing the `user_id` of the authenticated caller, indicating that the endpoint is protected and requires valid API key authentication. This code provides narrow functionality, focusing on a simple authenticated endpoint within a FastAPI application.
+The code defines a FastAPI router that provides a single endpoint for a basic health check or "ping" operation. It imports `ApiKeyToken` from `app.api.auth` to authenticate the caller of the endpoint. The [`ping`](<#ping>) function is an asynchronous GET request handler that returns a dictionary containing the `user_id` of the authenticated caller. This code provides narrow functionality, focusing on verifying the caller's identity and returning a simple response.
 # Imports and Dependencies
 
 ---
@@ -19,8 +19,8 @@ This code defines a FastAPI router that provides a single endpoint for a basic h
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage a group of related API routes.
-- **Use**: Facilitates the organization and handling of API endpoints within the application.
+- **Description**: The `router` is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage routes for the application, allowing the organization of endpoints and their corresponding request handlers.
+- **Use**: Used to register and manage HTTP routes and their handlers in the FastAPI application.
 
 
 # Functions
@@ -32,9 +32,9 @@ This code defines a FastAPI router that provides a single endpoint for a basic h
 Handles a GET request to return the user ID from the provided API key token.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `caller`: An instance of `ApiKeyToken` that contains the user's authentication information.
+    - `caller`: An instance of `ApiKeyToken` that contains authentication information, including the user ID.
 - **Logic and Control Flow**:
-    - Extracts the `user_id` from the `caller` object.
+    - Extracts the `user_id` attribute from the `caller` object.
     - Returns a dictionary containing the `user_id`.
 - **Output**: A dictionary with a single key `user_id` and its corresponding value from the `caller` object.
 

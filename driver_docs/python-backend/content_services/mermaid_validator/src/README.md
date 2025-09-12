@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Validates Mermaid diagram syntax and checks CLI version using a Modal app with Node.js and Chromium.
+Validates Mermaid diagram syntax using a Modal app with Node.js and Chromium dependencies.
 
 
 ## Files
-- **[main.py](main.py.md)**: Validates Mermaid diagram syntax and checks CLI version using a Modal app with Node.js and Chromium.
+- **[main.py](main.py.md)**: Validates Mermaid diagram syntax using a Modal app with Node.js and Chromium dependencies.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

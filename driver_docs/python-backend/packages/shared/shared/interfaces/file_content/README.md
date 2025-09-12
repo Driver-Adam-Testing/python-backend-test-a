@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Pydantic model for file content and enums with a class for PDF content processing.
+Pydantic models and types for processed file content and PDF file content.
 
 
 ## Files
 - **[file_content.py](file_content.py.md)**: Defines a Pydantic model for processed file content with a string attribute.
-- **[pdf_file_content.py](pdf_file_content.py.md)**: Defines enums and a class for processing PDF file content with various extraction types.
+- **[pdf_file_content.py](pdf_file_content.py.md)**: Defines types and structure for processed PDF file content, including extracted and summarized data.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

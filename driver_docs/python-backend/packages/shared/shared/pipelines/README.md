@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Agents for code extraction, editing, execution, file processing, and search using OpenAI models.
+Agents for code extraction and execution, block agents for code generation, file processing, and search algorithms.
 
 ## Folders
-- **[agents](agents/README.md)**: Agents for code extraction, editing, prompt augmentation, and execution using OpenAI models and pipelines.
-- **[block_kind_pipelines](block_kind_pipelines/README.md)**: Executes block agents for code, diagram, list, and table generation using LLM sessions and prompt augmentation.
-- **[process_file](process_file/README.md)**: Processes files with a focus on PDF extraction and summarization using OpenAI models.
+- **[agents](agents/README.md)**: Agents for code extraction, verification, editing, prompt augmentation, and pipeline execution.
+- **[block_kind_pipelines](block_kind_pipelines/README.md)**: Executes block agents to generate and validate code snippets, mermaid diagrams, lists, and tables.
+- **[process_file](process_file/README.md)**: Processes files with a focus on PDF files, including summarization and extraction of text, images, and tables.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[search.py](search.py.md)**: Implements search functionality using keyword, semantic, and hybrid algorithms with SQLModel and BM25.
+- **[search.py](search.py.md)**: Implements keyword, semantic, and hybrid search algorithms using BM25 and semantic scoring.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,17 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-SQL script to update content kinds in the `derived_contents` table to top-level descriptions.
+SQL script to update content kinds in the `derived_contents` table based on specific conditions.
 
 # Purpose
-The code defines a SQL migration script stored in the `MIGRATE_TOP_LEVEL` variable. This script updates the `content_kind` field in the `derived_contents` table for specific records. It changes the `content_kind` of entries that are linked to a `source_content_id` with a `content_kind` of 'codebase'. The updates are made to transform 'terse_sentence_description', 'short_sentence_description', 'short_paragraph_description', and 'long_description' into 'TOP_LEVEL_TERSE_SENTENCE', 'TOP_LEVEL_SHORT_SENTENCE', 'TOP_LEVEL_SHORT_PARAGRAPH', and 'TOP_LEVEL_LONG_DESCRIPTION', respectively. The script uses a transaction block with `BEGIN` and `COMMIT` to ensure that all updates are applied atomically.
+The code is a SQL migration script stored in the `MIGRATE_TOP_LEVEL` variable. It updates the `content_kind` field in the `derived_contents` table for specific records. The script changes the `content_kind` of entries that are linked to a `source_content_id` with a `content_kind` of 'codebase'. It updates 'terse_sentence_description' to 'TOP_LEVEL_TERSE_SENTENCE', 'short_sentence_description' to 'TOP_LEVEL_SHORT_SENTENCE', 'short_paragraph_description' to 'TOP_LEVEL_SHORT_PARAGRAPH', and 'long_description' to 'TOP_LEVEL_LONG_DESCRIPTION'. The script uses a transaction block with `BEGIN` and `COMMIT` to ensure that all updates are applied atomically.
 # Global Variables
 
 ---
 ### MIGRATE\_TOP\_LEVEL
 - **Type**: ``str``
 - **Description**: Contains a multi-line SQL script that updates the `content_kind` field in the `derived_contents` table. The script changes the `content_kind` to a top-level category based on the existing `content_kind` and its relation to a `codebase` entry.
-- **Use**: Used to execute a series of SQL updates to migrate content descriptions to top-level categories in a database.
+- **Use**: Used to execute a series of SQL `UPDATE` statements to migrate content descriptions to top-level categories in a database.
 
 
 

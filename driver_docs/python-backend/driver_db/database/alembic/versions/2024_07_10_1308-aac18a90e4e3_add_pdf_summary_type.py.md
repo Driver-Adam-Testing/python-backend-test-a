@@ -6,7 +6,7 @@
 Alembic migration script to add 'PDF_SUMMARY' to the 'contenttype' enum.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `aac18a90e4e3`, which follows the previous revision `b133aee202aa`. The [`upgrade`](<#upgrade>) function executes an SQL command to alter an existing enum type `contenttype` by adding a new value `'PDF_SUMMARY'`. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration cannot be reversed through this script.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `aac18a90e4e3`, which follows the previous revision `b133aee202aa`. The [`upgrade`](<#upgrade>) function executes an SQL command to alter an existing enum type `contenttype` by adding a new value, `'PDF_SUMMARY'`. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration cannot be reversed using this script. The script uses Alembic's `op` module to execute the SQL command, ensuring the migration is applied correctly.
 # Imports and Dependencies
 
 ---
@@ -19,29 +19,29 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: Holds the unique identifier for the current database schema revision in Alembic.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema revision. It is used by Alembic to track changes in the database schema over time.
+- **Use**: Used as a unique identifier for the current database schema revision in Alembic migrations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str | None``
-- **Description**: The `down_revision` variable is a string or None that indicates the identifier of the previous database schema revision in a sequence of migrations. It is used in Alembic migrations to establish a link between the current revision and its predecessor.
-- **Use**: Used to specify the parent revision ID in Alembic migration scripts.
+- **Description**: The `down_revision` variable is a string or None that indicates the identifier of the previous database schema revision in a sequence of migrations. It is used in Alembic migrations to establish a linear history of changes.
+- **Use**: Used to specify the parent revision ID that the current migration depends on.
 
 
 ---
 ### branch\_labels
-- **Type**: `str | Sequence[str] | None`
-- **Description**: `branch_labels` is a global variable that can hold a string, a sequence of strings, or a `None` value. It is used in the context of Alembic migrations to label branches of database schema revisions.
-- **Use**: Used to label branches in database schema revisions for Alembic migrations.
+- **Type**: ``str | Sequence[str] | None``
+- **Description**: This variable can hold a string, a sequence of strings, or a None value. It is used to label branches in the context of database schema migrations managed by Alembic.
+- **Use**: Used to specify branch labels for a particular database schema revision.
 
 
 ---
 ### depends\_on
 - **Type**: ``str | Sequence[str] | None``
-- **Description**: A variable that can hold a string, a sequence of strings, or a None value. It is used to specify dependencies for a database migration script.
-- **Use**: Indicates dependencies for the Alembic migration script.
+- **Description**: Specifies dependencies for the current database migration script. It can be a single string, a sequence of strings, or `None`. This variable is used to indicate which other migrations this migration depends on.
+- **Use**: Used to define dependencies for the Alembic migration script.
 
 
 # Functions
@@ -50,11 +50,11 @@ This code is a database migration script using Alembic, a database migration too
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_10_1308-aac18a90e4e3_add_pdf_summary_type.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_10_1308-aac18a90e4e3_add_pdf_summary_type.py#L20>)
 
-Executes a SQL command to add a new value 'PDF_SUMMARY' to the 'contenttype' enum type in the database.
+Executes a SQL command to add a new value 'PDF_SUMMARY' to the 'contenttype' enum type.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the `op.execute` function with a SQL command to alter the 'contenttype' type.
-    - Adds the value 'PDF_SUMMARY' to the 'contenttype' enum type.
+    - Adds a new value 'PDF_SUMMARY' to the 'contenttype' enum type.
 - **Output**: No output is returned as the function returns `None`.
 
 
@@ -62,11 +62,11 @@ Executes a SQL command to add a new value 'PDF_SUMMARY' to the 'contenttype' enu
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_07_10_1308-aac18a90e4e3_add_pdf_summary_type.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_07_10_1308-aac18a90e4e3_add_pdf_summary_type.py#L24>)
 
-Defines a placeholder for downgrading a database schema.
+Defines a placeholder for the downgrade operation in a database migration script.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Contains no implementation, serving as a placeholder for future downgrade logic.
-- **Output**: No output is produced as the function body is empty.
+- **Output**: Returns `None`, indicating no operation is performed.
 
 
 

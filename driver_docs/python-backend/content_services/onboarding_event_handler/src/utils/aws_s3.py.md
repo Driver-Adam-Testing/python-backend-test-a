@@ -6,9 +6,9 @@
 Utilities for interacting with AWS S3, including generating presigned URLs and checking object tags.
 
 # Purpose
-This code provides functionality for interacting with Amazon S3 using the `boto3` library. It initializes an S3 client with specific configuration settings, such as the AWS region and an optional endpoint URL, which are imported from a configuration module. The code defines three main functions: [`generate_get_presigned_url`](<#generate_get_presigned_url>), [`head_object`](<#head_object>), and [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>). 
+This code provides functionality for interacting with Amazon S3 using the `boto3` library. It initializes an S3 client configured with settings from an external configuration module, `src.utils.config`. The code defines three main functions: [`generate_get_presigned_url`](<#generate_get_presigned_url>), [`head_object`](<#head_object>), and [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>). 
 
-The [`generate_get_presigned_url`](<#generate_get_presigned_url>) function creates a presigned URL for accessing an S3 object, allowing temporary access to the object without requiring AWS credentials. The [`head_object`](<#head_object>) function retrieves metadata for a specified S3 object, which can be useful for checking the existence or properties of the object. The [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>) function checks if an S3 object has a specific tag related to AWS GuardDuty malware scan status, ensuring that the object is either free of threats or marked as unsupported due to size or file count limitations. This code is likely intended to be part of a larger application or library that requires interaction with S3 objects, particularly in contexts where security and access control are important.
+The [`generate_get_presigned_url`](<#generate_get_presigned_url>) function creates a presigned URL for accessing an S3 object, allowing temporary access to the object without requiring AWS credentials. The [`head_object`](<#head_object>) function retrieves metadata for a specified S3 object. The [`has_allowed_guard_duty_tag`](<#has_allowed_guard_duty_tag>) function checks if an S3 object has a specific tag, `GuardDutyMalwareScanStatus`, with values indicating no threats or unsupported status. This code is likely intended to be part of a larger application or library that requires S3 object management and security checks.
 # Imports and Dependencies
 
 ---
@@ -41,7 +41,7 @@ Generates a presigned URL for accessing an S3 object with a specified expiration
     - Specifies the `ClientMethod` as `get_object` to indicate the operation for which the URL is generated.
     - Passes the `bucket` and `key` as parameters to identify the S3 object.
     - Sets the `ExpiresIn` parameter to the `expires` value to define the URL's validity period.
-- **Output**: A presigned URL as a string that allows access to the specified S3 object.
+- **Output**: A presigned URL as a string that allows access to the specified S3 object for the given expiration time.
 
 
 ---
@@ -53,7 +53,7 @@ Retrieves metadata of an S3 object from a specified bucket and key.
     - `bucket`: The name of the S3 bucket where the object is stored.
     - `key`: The key (path) of the object within the S3 bucket.
 - **Logic and Control Flow**:
-    - Calls the `head_object` method of the `s3_client` to get metadata of the specified S3 object.
+    - Calls the `head_object` method of the `s3_client` to get the metadata of the specified S3 object.
     - Passes the `bucket` and `key` as parameters to the `head_object` method.
 - **Output**: A dictionary containing the metadata of the specified S3 object.
 
@@ -68,8 +68,8 @@ Checks if an S3 object has a specific tag with allowed values.
     - `key`: The key (path) of the S3 object within the bucket.
 - **Logic and Control Flow**:
     - Retrieve the tags of the specified S3 object using `s3_client.get_object_tagging` with the given `bucket` and `key`.
-    - Define a list `supported_tags` containing the values 'NO_THREATS_FOUND' and 'UNSUPPORTED'.
-    - Iterate over the tags in the `TagSet` of the object to check if there is a tag with the key 'GuardDutyMalwareScanStatus' and a value in `supported_tags`.
+    - Define a list `supported_tags` containing the allowed tag values: `NO_THREATS_FOUND` and `UNSUPPORTED`.
+    - Iterate over the `TagSet` of the retrieved tags to find tags with the key `GuardDutyMalwareScanStatus` and a value in `supported_tags`.
     - Return `True` if exactly one tag matches the criteria, otherwise return `False`.
 - **Output**: A boolean value indicating whether the S3 object has the 'GuardDutyMalwareScanStatus' tag with an allowed value.
 

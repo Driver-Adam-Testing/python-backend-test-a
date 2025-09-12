@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A text file that describes how to determine the type of source content, using integers 0, 1, or 2.
+A metadata or configuration file classifier for determining the type of source content.
 
 # Purpose
 2

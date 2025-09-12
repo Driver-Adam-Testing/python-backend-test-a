@@ -6,15 +6,15 @@
 API routes for managing usage balance, summaries, charges, and issuing usage credits.
 
 # Purpose
-The code defines a FastAPI router that provides an API for managing and retrieving usage data and credits. It includes four main endpoints: [`get_usage_balance`](<#get_usage_balance>), [`get_usage_summary`](<#get_usage_summary>), [`get_charges`](<#get_charges>), and [`credit_usage`](<#credit_usage>). These endpoints allow users to retrieve a summary of their usage balance, obtain detailed usage summaries within a specified date range, get recent usage charges with pagination support, and issue usage credits, respectively. The endpoints interact with a `UsageService` to perform operations related to usage data and credits.
+The code defines a FastAPI router that provides an API for managing and retrieving usage data and credits. It includes four main endpoints: [`get_usage_balance`](<#get_usage_balance>), [`get_usage_summary`](<#get_usage_summary>), [`get_charges`](<#get_charges>), and [`credit_usage`](<#credit_usage>). These endpoints allow users to retrieve a summary of their usage balance, obtain detailed usage summaries within a specified date range, get recent usage charges with pagination support, and issue usage credits, respectively. The endpoints use the `UsageService` class to interact with the underlying data and perform the necessary operations.
 
-The code imports several modules and classes to support its functionality, including `boto3` for AWS client interactions, `UsageService` for handling usage-related operations, and various models and schemas for data representation. The [`credit_usage`](<#credit_usage>) endpoint also uses AWS services to issue usage credits, requiring AWS credentials and region information from the application settings. The code enforces security by using tokens and permissions, such as `M2MToken` and `UsageCreditPermission`, to control access to certain operations.
+The code imports several modules and classes to support its functionality, including `boto3` for AWS client interactions, `UsageService` for handling usage-related operations, and various FastAPI components for defining the API routes and handling requests. The [`credit_usage`](<#credit_usage>) endpoint also integrates with AWS EventBridge to issue usage credits, using credentials and settings specified in the application's configuration. The code is structured to be part of a larger application, with dependencies on shared modules and services, and it defines public APIs for external interaction.
 # Imports and Dependencies
 
 ---
 - `datetime.datetime`
 - `boto3`
-- `database.models_v1.UsageEventType`
+- `database.models.UsageEventType`
 - `fastapi.APIRouter`
 - `fastapi.HTTPException`
 - `fastapi.Query`
@@ -39,8 +39,8 @@ The code imports several modules and classes to support its functionality, inclu
 ---
 ### router
 - **Type**: ``APIRouter``
-- **Description**: Provides a routing mechanism for defining API endpoints in a FastAPI application. It allows the organization of routes in a modular way, enabling the grouping of related endpoints.
-- **Use**: Used to define and manage API routes for usage balance, usage summary, usage charges, and issuing usage credits.
+- **Description**: Defines a router for handling API routes in a FastAPI application. It is used to organize and manage the endpoints related to usage balance, usage summary, usage charges, and issuing usage credits.
+- **Use**: Used to register and manage API endpoints for usage-related operations in the FastAPI application.
 
 
 # Functions
@@ -53,10 +53,10 @@ Retrieves the usage balance for a user's organization.
 - **Decorators**: `@router.get`
 - **Inputs**:
     - `session`: A `CurrentSession` object that represents the current session.
-    - `user`: A `UserToken` object that contains information about the authenticated user, including their organization ID.
+    - `user`: A `UserToken` object that contains information about the user, including their organization ID.
 - **Logic and Control Flow**:
     - Create an instance of [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) using the provided `session`.
-    - Extract the `organization_id` from the `user` token.
+    - Extract the `organization_id` from the `user` object.
     - Call the [`get_usage_balance`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_balance>) method of [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) with the `organization_id`.
     - Return the result of the [`get_usage_balance`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_balance>) method.
 - **Output**: A `UsageBalance` object representing the usage balance for the user's organization.
@@ -73,16 +73,16 @@ Retrieves the usage balance for a user's organization.
 Retrieves a detailed usage summary for a user's organization within an optional date range.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: The current session object, which provides context for the request.
-    - `user`: The user token object, which contains information about the authenticated user.
+    - `session`: The current session object, which provides context for the database operations.
+    - `user`: A token representing the authenticated user, which includes the user's organization ID.
     - `start_date`: An optional query parameter specifying the start date for the usage summary.
     - `end_date`: An optional query parameter specifying the end date for the usage summary.
 - **Logic and Control Flow**:
     - Create an instance of [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) using the provided `session`.
     - Extract the `organization_id` from the `user` token.
-    - Call the [`get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_summary>) method of [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) with `organization_id`, `start_date`, and `end_date` to retrieve the usage summary.
-    - Return the retrieved `usage_summary`.
-- **Output**: A `UsageEventSummary` object containing the detailed usage summary for the specified organization and date range.
+    - Call the [`get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_summary>) method of [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) with the `organization_id`, `start_date`, and `end_date`.
+    - Return the result of the [`get_usage_summary`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_usage_summary>) method call.
+- **Output**: An instance of `UsageEventSummary` containing the detailed usage summary for the specified organization and date range.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/repositories/base_repository.BaseRepository.get`](<../../../../../packages/shared/shared/repositories/base_repository.py.md#baserepositoryget>)
     - [`python-backend/packages/shared/shared/usage/usage_service.UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>)
@@ -96,9 +96,9 @@ Retrieves a detailed usage summary for a user's organization within an optional 
 Retrieves recent usage charges for a user based on pagination parameters.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `session`: The current session object, which provides context for the database operations.
-    - `user`: The user token object, which contains information about the authenticated user, including their organization ID.
-    - `pagination`: The pagination object, which includes parameters like limit, offset, and sort direction for paginating the results.
+    - `session`: The current session object, which provides access to the database and other session-specific data.
+    - `user`: A token representing the authenticated user, which includes the user's organization ID.
+    - `pagination`: An object containing pagination parameters such as limit, offset, and sort direction.
 - **Logic and Control Flow**:
     - Extracts the `limit`, `offset`, and `sort_direction` from the `pagination` object.
     - Calls the [`get_charges`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceget_charges>) method of the [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) class, passing the user's organization ID and the extracted pagination parameters.
@@ -114,18 +114,18 @@ Retrieves recent usage charges for a user based on pagination parameters.
 ### credit\_usage<!-- {{#callable:python-backend/backend/app/api/routes/v1/usage.credit_usage}} -->
 [View Source →](<../../../../../../../backend/app/api/routes/v1/usage.py#L69>)
 
-Issues usage credits to an organization based on a credit usage event.
+Issues usage credits for a specified organization and user based on a credit usage event.
 - **Decorators**: `@router.post`
 - **Inputs**:
-    - `session`: The current database session, represented by `CurrentSession`, used to interact with the database.
-    - `current_token`: An instance of `M2MToken` representing the current machine-to-machine authentication token.
-    - `credit_usage_event`: An instance of `CreditUsageEvent` containing details about the credit usage event, including organization ID and SLOC credit amount.
+    - `session`: The current database session used for operations.
+    - `current_token`: The machine-to-machine token for authentication.
+    - `credit_usage_event`: The event containing details about the credit usage, including organization ID and SLOC credit amount.
 - **Logic and Control Flow**:
-    - Checks if `current_token` is `None` and raises an `HTTPException` with status code 403 if true.
+    - Checks if the `current_token` is `None` and raises an `HTTPException` with status 403 if true.
     - Creates an AWS client for the 'events' service using credentials and region from settings.
     - Extracts `organization_id` and `user_id` from `credit_usage_event`, defaulting `user_id` to 'SYSTEM' if not provided.
     - Converts the SLOC credit amount to bytes using [`sloc_to_bytes`](<../../../../../packages/shared/shared/usage/utils.py.md#sloc_to_bytes>).
-    - Calls [`issue_usage_credits`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceissue_usage_credits>) on [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) with the session, AWS client, organization ID, user ID, event type, and credit amount.
+    - Calls [`issue_usage_credits`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageserviceissue_usage_credits>) on [`UsageService`](<../../../../../packages/shared/shared/usage/usage_service.py.md#usageservice>) with the organization ID, user ID, event type, and credit amount.
     - Returns a `JSONResponse` with status code 202 and a message indicating acceptance.
 - **Output**: A `JSONResponse` with status code 202 and a message indicating the request was accepted.
 - **Functions Called**:

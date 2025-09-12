@@ -6,7 +6,7 @@
 Alembic migration script to rename a column in the 'source_contents' table.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality to rename a column in a PostgreSQL database table. Specifically, it changes the column name from `analysis_metadata` to `metadata` in the `source_contents` table during the upgrade process. The [`downgrade`](<#downgrade>) function reverses this change by renaming the column back to `analysis_metadata`. The script includes revision identifiers to track the migration's position in the sequence of database changes.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a single migration that renames a column in the `source_contents` table. The [`upgrade`](<#upgrade>) function changes the column name from `analysis_metadata` to `metadata`, while the [`downgrade`](<#downgrade>) function reverses this change, renaming `metadata` back to `analysis_metadata`. The column type is specified as `postgresql.JSONB` with an `astext_type` of `sa.Text()`, indicating that the column stores JSON data. The script includes revision identifiers to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -20,15 +20,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
-- **Use**: Used by Alembic to track and apply database schema changes.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script. It is used to track the specific state of the database schema at a given point in time.
+- **Use**: Used by Alembic to identify the current revision of the database schema for migration purposes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
-- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
+- **Description**: A string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
 ---
@@ -40,9 +40,9 @@ This code is a database migration script using Alembic, a database migration too
 
 ---
 ### depends\_on
-- **Type**: `NoneType`
-- **Description**: The `depends_on` variable is set to `None`, indicating that this Alembic migration script does not depend on any other migrations to be applied before it. It is a part of the Alembic migration configuration.
-- **Use**: Indicates the absence of dependencies for the migration script.
+- **Type**: ``NoneType``
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -66,8 +66,9 @@ Renames the column 'analysis_metadata' to 'metadata' in the 'source_contents' ta
 Renames the column 'metadata' back to 'analysis_metadata' in the 'source_contents' table.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.alter_column` to change the column name from 'metadata' to 'analysis_metadata'.
-- **Output**: No output is returned.
+    - Calls `op.alter_column` to change the column name from 'metadata' to 'analysis_metadata' in the 'source_contents' table.
+    - Specifies the existing column type as `postgresql.JSONB` with `astext_type` set to `sa.Text()`.
+- **Output**: No output is returned as this function performs a database schema alteration.
 
 
 

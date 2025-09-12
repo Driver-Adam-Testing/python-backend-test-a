@@ -6,15 +6,15 @@
 Defines data models and conversion utilities for tracking and managing usage metrics and events.
 
 # Purpose
-The code defines a set of classes and enumerations for managing and converting usage metrics related to software usage events. The `UsageMetricUnitType` enumeration specifies the units of measurement, either `BYTES` or `SLOC` (Source Lines of Code). The `CreditUsageEvent` class models a credit usage event with attributes for credit amount, organization ID, and an optional user ID. The `UsageBalance` class represents a balance of credits and debits, with methods to compute the balance and convert it between units using utility functions `bytes_to_sloc` and `sloc_to_bytes`.
+The code defines a set of classes and enumerations for managing and converting usage metrics related to software usage events. The `UsageMetricUnitType` enumeration specifies the units of measurement, either `BYTES` or `SLOC` (Source Lines of Code). The `CreditUsageEvent` class models a credit usage event with attributes for credit amount, organization ID, and an optional user ID. The `UsageBalance` class represents a balance of credits and debits, providing a method to convert these values between the defined units. It also includes a computed property to calculate the balance by subtracting debits from credits.
 
-The `UsageEventSummary` class provides a summary of usage events by type, including onboarding, technical documentation, code differences, agent pipeline usage, and PDF summarization, along with platform usage credits and user seat count. It also includes a method to convert usage values to a specified unit. The `UsageCharge` class models a usage charge with attributes for asset name, timestamp, and event type, and provides computed properties for [`sloc`](<#usagechargesloc>) and [`change_type`](<#usagechargechange_type>). The `UsageEventRange` class defines a range of usage events with start and end dates, including validation to ensure these dates are timezone-aware. The code is structured as a library file intended for import and use in other parts of a software system, providing a consistent interface for handling usage metrics and events.
+The `UsageEventSummary` class summarizes usage events by type, such as onboarding, tech documentation, and code differences, and allows conversion of these usage values between units. The `UsageCharge` class models a usage charge with attributes for asset name, timestamp, and event type, and includes computed properties to convert bytes to SLOC and determine the change type based on the event type. The `UsageEventRange` class defines a date range for usage events, with validators ensuring that the start and end dates are timezone-aware. The code is structured to be used as a library, providing functionality for tracking and converting usage metrics in a consistent manner.
 # Imports and Dependencies
 
 ---
 - `datetime.datetime`
 - `enum.Enum`
-- `database.models_v1.UsageEventType`
+- `database.models.UsageEventType`
 - `pydantic.BaseModel`
 - `pydantic.Field`
 - `pydantic.computed_field`
@@ -32,7 +32,7 @@ The `UsageEventSummary` class provides a summary of usage events by type, includ
 - **Members**:
     - `BYTES`: Represents the unit type for bytes.
     - `SLOC`: Represents the unit type for source lines of code (SLOC).
-- **Description**: Defines an enumeration for usage metric units, specifically for bytes and source lines of code (SLOC).
+- **Description**: Defines unit types for usage metrics, specifically 'bytes' and 'sloc' (source lines of code), as string-based enumeration values.
 - **Inherits From**:
     - `str`
     - `Enum`
@@ -46,7 +46,7 @@ The `UsageEventSummary` class provides a summary of usage events by type, includ
     - `sloc_credit_amount`: Stores the amount of source lines of code (SLOC) credit.
     - `organization_id`: Stores the identifier for the organization.
     - `user_id`: Stores the identifier for the user, which can be None.
-- **Description**: Represents an event related to the usage of credits, specifically in terms of source lines of code (SLOC), for a given organization and optionally a user.
+- **Description**: Represents an event where a certain amount of SLOC credit is used by an organization, optionally associated with a specific user.
 - **Inherits From**:
     - `BaseModel`
 
@@ -59,7 +59,7 @@ The `UsageEventSummary` class provides a summary of usage events by type, includ
     - `credits`: Stores the number of credits.
     - `debits`: Stores the number of debits.
     - `unit`: Indicates the unit of measurement for credits and debits.
-- **Description**: Represents a balance of usage credits and debits, allowing conversion between different units of measurement. The class calculates the balance by subtracting debits from credits and provides a method to convert these values to a specified unit. The configuration of the class is immutable, ensuring that instances cannot be modified after creation.
+- **Description**: Represents a balance of usage credits and debits, allowing conversion between different units of measurement. The class includes a computed property `balance` that calculates the net balance by subtracting debits from credits. It also provides a method to convert the credits, debits, and balance to a specified unit, ensuring consistency in unit representation.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.balance`](<#usagebalancebalance>)
     - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.convert_to`](<#usagebalanceconvert_to>)
@@ -88,16 +88,15 @@ Calculates the balance by subtracting debits from credits.
 #### UsageBalance\.convert\_to<!-- {{#callable:python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance.convert_to}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L30>)
 
-Converts the `credits`, `debits`, and `balance` of a `UsageBalance` object to a specified unit.
+Converts the credits, debits, and balance of a `UsageBalance` object to a specified unit.
 - **Inputs**:
-    - `target_unit`: The target unit to which the `UsageBalance` should be converted, specified as a `UsageMetricUnitType`.
+    - `target_unit`: The target unit to which the credits, debits, and balance should be converted. It is of type `UsageMetricUnitType`.
 - **Logic and Control Flow**:
-    - Check if the current unit of the `UsageBalance` is the same as the `target_unit`.
-    - If the units are the same, return the current `UsageBalance` object without changes.
-    - Determine the conversion function to use based on the `target_unit`.
-    - Convert `credits` and `debits` using the selected conversion function.
-    - Create and return a new `UsageBalance` object with the converted `credits`, `debits`, and the `target_unit`.
-- **Output**: A new `UsageBalance` object with `credits`, `debits`, and `unit` converted to the specified `target_unit`.
+    - Check if the current unit is the same as the target unit; if so, return the current `UsageBalance` object.
+    - Determine the conversion function based on the target unit: use `sloc_to_bytes` if converting to `UsageMetricUnitType.BYTES`, otherwise use `bytes_to_sloc`.
+    - Apply the conversion function to `credits` and `debits` to get `new_credits` and `new_debits`.
+    - Create and return a new `UsageBalance` object with the converted credits, debits, and the target unit.
+- **Output**: A new `UsageBalance` object with credits, debits, and unit converted to the specified target unit.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageBalance`](<#usagebalance>)  (Base Class)
 
 
@@ -116,15 +115,15 @@ Converts the `credits`, `debits`, and `balance` of a `UsageBalance` object to a 
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L63>)
 
 - **Members**:
-    - `onboarding_usage`: Stores the usage count for onboarding activities.
-    - `tech_doc_usage`: Stores the usage count for technical documentation activities.
-    - `code_diff_usage`: Stores the usage count for code difference activities.
-    - `agent_pipeline_usage`: Stores the usage count for agent pipeline activities.
-    - `pdf_summarization_usage`: Stores the usage count for PDF summarization activities.
+    - `onboarding_usage`: Stores the usage count for onboarding.
+    - `tech_doc_usage`: Stores the usage count for technical documentation.
+    - `code_diff_usage`: Stores the usage count for code differences.
+    - `agent_pipeline_usage`: Stores the usage count for agent pipelines.
+    - `pdf_summarization_usage`: Stores the usage count for PDF summarization.
     - `platform_usage_credits`: Stores the number of platform usage credits.
     - `user_seat_count`: Stores the count of user seats.
-    - `unit`: Indicates the unit of measurement for usage metrics.
-- **Description**: Represents a summary of usage events categorized by different usage types, such as onboarding, technical documentation, and code differences. It includes usage counts for various activities and platform usage credits, along with the unit of measurement. The class provides functionality to convert usage values to a specified unit.
+    - `unit`: Specifies the unit of measurement for usage metrics.
+- **Description**: Represents a summary of usage events categorized by different usage types, such as onboarding, technical documentation, and code differences. It includes usage counts for various activities and the number of platform usage credits. The class supports conversion of usage values to different units of measurement.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary.convert_to`](<#usageeventsummaryconvert_to>)
 - **Inherits From**:
@@ -136,16 +135,15 @@ Converts the `credits`, `debits`, and `balance` of a `UsageBalance` object to a 
 #### UsageEventSummary\.convert\_to<!-- {{#callable:python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary.convert_to}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L79>)
 
-Converts usage values to a specified unit and returns a new `UsageEventSummary` instance with the converted values.
+Converts usage values to a specified unit and returns a new `UsageEventSummary` object with the converted values.
 - **Inputs**:
-    - `target_unit`: The target unit to which the usage values will be converted, specified as a `UsageMetricUnitType`.
+    - `target_unit`: The target unit to which the usage values will be converted, of type `UsageMetricUnitType`.
 - **Logic and Control Flow**:
-    - Check if the current unit is the same as the `target_unit`.
-    - If the units are the same, return the current instance (`self`).
-    - Determine the conversion function based on the `target_unit`.
-    - Apply the conversion function to each usage attribute (`onboarding_usage`, `tech_doc_usage`, `code_diff_usage`, `agent_pipeline_usage`, `pdf_summarization_usage`, `platform_usage_credits`).
-    - Create and return a new `UsageEventSummary` instance with the converted usage values and the `target_unit`.
-- **Output**: A new `UsageEventSummary` instance with usage values converted to the `target_unit`.
+    - Check if the current unit is the same as the target unit; if so, return the current instance.
+    - Select the conversion function based on the target unit: `sloc_to_bytes` for converting to bytes or `bytes_to_sloc` for converting to SLOC.
+    - Apply the conversion function to each usage attribute: `onboarding_usage`, `tech_doc_usage`, `code_diff_usage`, `agent_pipeline_usage`, `pdf_summarization_usage`, and `platform_usage_credits`.
+    - Create and return a new `UsageEventSummary` object with the converted usage values and the target unit.
+- **Output**: A new `UsageEventSummary` object with usage values converted to the specified target unit.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventSummary`](<#usageeventsummary>)  (Base Class)
 
 
@@ -155,10 +153,10 @@ Converts usage values to a specified unit and returns a new `UsageEventSummary` 
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L112>)
 
 - **Members**:
-    - `asset_name`: Stores the name of the asset.
-    - `timestamp`: Records the date and time of the usage event.
-    - `bytes`: Holds the byte count for the usage event, excluded from the model.
-    - `event_type`: Specifies the type of usage event, excluded from the model.
+    - `asset_name`: Name of the asset related to the usage charge.
+    - `timestamp`: Date and time when the usage charge occurred.
+    - `bytes`: Number of bytes used, excluded from the model.
+    - `event_type`: Type of usage event, excluded from the model.
 - **Description**: Represents a usage charge with details about the asset, timestamp, and event type. It includes computed properties to convert bytes to source lines of code (SLOC) and to determine the change type based on the event type.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge.sloc`](<#usagechargesloc>)
@@ -172,13 +170,14 @@ Converts usage values to a specified unit and returns a new `UsageEventSummary` 
 #### UsageCharge\.sloc<!-- {{#callable:python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge.sloc}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L119>)
 
-Calculates the source lines of code (SLOC) from the byte count.
+Calculates the source lines of code (SLOC) from the byte count for a usage charge.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the [`bytes_to_sloc`](<../../usage/utils.py.md#bytes_to_sloc>) function with `self.bytes` as the argument.
+    - Accesses the `bytes` attribute of the `UsageCharge` instance.
+    - Calls the [`bytes_to_sloc`](<../../usage/utils.py.md#bytes_to_sloc>) function with the `bytes` attribute as an argument.
     - Returns the result of the [`bytes_to_sloc`](<../../usage/utils.py.md#bytes_to_sloc>) function call.
-- **Output**: An integer representing the source lines of code (SLOC).
+- **Output**: An integer representing the source lines of code (SLOC) calculated from the byte count.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/usage/utils.bytes_to_sloc`](<../../usage/utils.py.md#bytes_to_sloc>)
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge`](<#usagecharge>)  (Base Class)
@@ -188,15 +187,15 @@ Calculates the source lines of code (SLOC) from the byte count.
 #### UsageCharge\.change\_type<!-- {{#callable:python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge.change_type}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L124>)
 
-Determines the type of change based on the `event_type` attribute of the `UsageCharge` instance.
+Determines the type of change based on the event type of a usage charge.
 - **Decorators**: `@computed_field`, `@property`
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Accesses the `event_type` attribute of the `UsageCharge` instance.
-    - Uses a dictionary to map specific `UsageEventType` values to corresponding change types ('new', 'update', 'add').
-    - Returns the mapped change type if the `event_type` is found in the dictionary.
+    - Uses a dictionary to map specific `UsageEventType` values to corresponding change type strings.
+    - Returns the mapped change type string if the `event_type` is found in the dictionary.
     - Returns 'unknown' if the `event_type` is not found in the dictionary.
-- **Output**: A string representing the change type ('new', 'update', 'add', or 'unknown').
+- **Output**: A string representing the change type, such as 'new', 'update', 'add', or 'unknown'.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageCharge`](<#usagecharge>)  (Base Class)
 
 
@@ -208,7 +207,7 @@ Determines the type of change based on the `event_type` attribute of the `UsageC
 - **Members**:
     - `start_date`: Optional start date for the usage event range.
     - `end_date`: Optional end date for the usage event range.
-- **Description**: Defines a range for usage events with optional start and end dates, ensuring that both dates are timezone-aware.
+- **Description**: Defines a range for usage events with optional start and end dates, ensuring that these dates are timezone-aware.
 - **Methods**:
     - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventRange.validate_start_date`](<#usageeventrangevalidate_start_date>)
     - [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventRange.validate_end_date`](<#usageeventrangevalidate_end_date>)
@@ -221,17 +220,17 @@ Determines the type of change based on the `event_type` attribute of the `UsageC
 #### UsageEventRange\.validate\_start\_date<!-- {{#callable:python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventRange.validate_start_date}} -->
 [View Source →](<../../../../../../../packages/shared/shared/interfaces/usage/usage_schema.py#L142>)
 
-Ensures the `start_date` in the input dictionary is timezone-aware.
+Ensures the 'start_date' in the input dictionary is timezone-aware.
 - **Decorators**: `@model_validator`
 - **Inputs**:
-    - `cls`: The class to which this method belongs, typically `UsageEventRange`.
-    - `values`: A dictionary containing the values to validate, expected to include a `start_date` key.
+    - `cls`: The class to which this method belongs, typically 'UsageEventRange'.
+    - `values`: A dictionary containing the values to validate, expected to include 'start_date'.
 - **Logic and Control Flow**:
-    - Retrieve the `start_date` from the `values` dictionary.
-    - Check if `start_date` is not `None` and if it lacks timezone information (`tzinfo`).
-    - Raise a `ValueError` if `start_date` is not timezone-aware, with a message indicating the requirement for timezone awareness and ISO 8601 format.
-    - Return the `values` dictionary if no error is raised.
-- **Output**: A dictionary of values, potentially modified, if no validation error occurs.
+    - Retrieve 'start_date' from the 'values' dictionary.
+    - Check if 'start_date' exists and if it is not timezone-aware (i.e., 'tzinfo' is None).
+    - Raise a 'ValueError' if 'start_date' is not timezone-aware, with a message indicating the requirement for timezone awareness.
+    - Return the 'values' dictionary if 'start_date' is valid or not present.
+- **Output**: A dictionary of values, potentially modified if validation passes.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventRange`](<#usageeventrange>)  (Base Class)
 
 
@@ -248,7 +247,7 @@ Ensures the 'end_date' in the input dictionary is timezone-aware.
     - Retrieve 'end_date' from the 'values' dictionary.
     - Check if 'end_date' is not None and if it lacks timezone information ('tzinfo').
     - Raise a 'ValueError' if 'end_date' is not timezone-aware, with a message indicating the requirement for timezone awareness and ISO 8601 format.
-    - Return the 'values' dictionary if 'end_date' is valid or not present.
+    - Return the 'values' dictionary if 'end_date' is valid.
 - **Output**: A dictionary with the validated 'end_date' value.
 - **See also**: [`python-backend/packages/shared/shared/interfaces/usage/usage_schema.UsageEventRange`](<#usageeventrange>)  (Base Class)
 

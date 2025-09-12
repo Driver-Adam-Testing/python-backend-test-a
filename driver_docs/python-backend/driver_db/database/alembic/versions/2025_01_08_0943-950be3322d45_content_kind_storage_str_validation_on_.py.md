@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to alter the "content_kind" column type in the "derived_contents" table.
+Alembic migration script to change `content_kind` column type from ENUM to String in `derived_contents`.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to modify the schema of a database table named `derived_contents`. The primary operation in the [`upgrade`](<#upgrade>) function is to alter the `content_kind` column from an ENUM type to a `String` type. This change allows for more flexible data storage in the `content_kind` column, which previously was restricted to a predefined set of ENUM values. The [`downgrade`](<#downgrade>) function reverses this change, converting the `content_kind` column back to its original ENUM type, thus restoring the original constraints.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script is designed to modify the schema of a database by altering the `content_kind` column in the `derived_contents` table. Specifically, it changes the column type from a PostgreSQL ENUM type to a SQLAlchemy `String` type. This change is implemented in the [`upgrade`](<#upgrade>) function, which is executed when the migration is applied.
 
-The script includes metadata for Alembic, such as `revision`, `down_revision`, `branch_labels`, and `depends_on`, which are used to track the migration's position in the sequence of database changes. The `revision` identifier is unique to this migration, while `down_revision` indicates the immediate predecessor migration. This script is part of a series of migrations that manage changes to the database schema over time, ensuring that the database structure evolves in a controlled manner.
+The script also includes a [`downgrade`](<#downgrade>) function, which reverses the changes made by the [`upgrade`](<#upgrade>) function. In the [`downgrade`](<#downgrade>) function, the `content_kind` column is altered back to its original PostgreSQL ENUM type. The ENUM type includes a list of predefined values that the column can take, such as "pdf-visual-summary", "template", and "codebase-file". The script uses Alembic's `op.alter_column` function to perform these schema changes. The revision identifiers `revision` and `down_revision` are used by Alembic to track the migration's position in the sequence of migrations.
 # Imports and Dependencies
 
 ---
@@ -22,29 +22,29 @@ The script includes metadata for Alembic, such as `revision`, `down_revision`, `
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Description**: Stores the unique identifier for the current database schema revision in Alembic.
 - **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: A string variable that holds the identifier of the previous database schema revision in an Alembic migration script.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of migrations.
 - **Use**: Used by Alembic to determine the order of database schema migrations.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
 - **Use**: Indicates that there are no branch labels associated with this migration script.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: Represents a global variable that is set to `None`. It is used as a placeholder for dependencies in Alembic migration scripts.
-- **Use**: Indicates that there are no dependencies for the current Alembic migration revision.
+- **Description**: Represents a global variable that is set to `None`. It is used in the context of Alembic migrations to specify dependencies between revisions.
+- **Use**: Indicates that there are no dependencies on other Alembic revisions for this migration.
 
 
 # Functions
@@ -57,10 +57,10 @@ Alters the 'content_kind' column in the 'derived_contents' table from an ENUM ty
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls the 'alter_column' function from the 'op' module to modify the 'content_kind' column.
-    - Specifies the existing type of the column as a PostgreSQL ENUM with various content kinds.
+    - Specifies the existing type of the column as an ENUM with various content kinds.
     - Changes the column type to 'sa.String()'.
     - Keeps the existing nullable property of the column as True.
-- **Output**: No output is returned as this function performs a database schema migration.
+- **Output**: No return value; the function performs a database schema migration.
 
 
 ---
@@ -70,10 +70,11 @@ Alters the 'content_kind' column in the 'derived_contents' table from an ENUM ty
 Reverts the database schema change by altering the 'content_kind' column in the 'derived_contents' table to use a PostgreSQL ENUM type.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Uses the Alembic operation 'op.alter_column' to modify the 'content_kind' column in the 'derived_contents' table.
-    - Changes the column type from 'sa.String()' to a PostgreSQL ENUM with specified values.
-    - Maintains the existing nullable property of the column.
-- **Output**: No explicit output; modifies the database schema as a side effect.
+    - Calls the `op.alter_column` function to modify the 'content_kind' column in the 'derived_contents' table.
+    - Specifies the existing type of the column as `sa.String()`.
+    - Changes the column type to a PostgreSQL ENUM with a specified list of values.
+    - Keeps the existing nullable property of the column as `True`.
+- **Output**: No return value; modifies the database schema as part of a migration script.
 
 
 

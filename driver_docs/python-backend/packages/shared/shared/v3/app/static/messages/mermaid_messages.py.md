@@ -6,9 +6,9 @@
 Defines a system message for reviewing and correcting mermaid.js code blocks to ensure proper rendering.
 
 # Purpose
-The code defines a class `MermaidSyntaxSystemMessage` that extends the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. The primary purpose of this class is to provide a system message that contains instructions for reviewing and correcting Mermaid code blocks within a document. The `content` attribute of the class is a string that outlines specific guidelines for ensuring that Mermaid diagrams render correctly. These guidelines include avoiding forbidden characters such as parentheses and double hyphens in element labels, using the correct syntax for lists within Mermaid blocks, and ensuring that subgraph names do not contain spaces. The message also emphasizes the importance of not creating cycles by setting an element as a parent of itself.
+The code defines a class `MermaidSyntaxSystemMessage` that extends the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. The primary purpose of this class is to provide a system message that instructs a user or system on how to handle and correct Mermaid.js code blocks within a document. The `content` attribute contains detailed guidelines for reviewing and correcting Mermaid code to ensure proper rendering. These guidelines include avoiding forbidden characters, correcting syntax for lists, and ensuring that subgraph names do not contain spaces. The message also emphasizes the importance of not using parentheses in the diagrams and provides examples of correct and incorrect Mermaid syntax.
 
-The `message_kind` attribute is set to `MessageKind.SYSTEM`, indicating that this message is intended for system-level communication. The class is part of a broader system that likely involves processing or generating Mermaid diagrams, and it provides a standardized way to communicate the necessary syntax corrections and best practices for rendering these diagrams accurately. This code is likely part of a library or framework that deals with document processing or diagram generation, and it defines a specific type of message that can be used within that context.
+The `message_kind` attribute is set to `MessageKind.SYSTEM`, indicating that this message is intended for system-level processing or instructions. This class is likely part of a larger system that processes or generates Mermaid.js diagrams, ensuring they adhere to specific syntax rules to prevent rendering errors. The class does not define any public APIs or external interfaces beyond the attributes inherited from `LlmMessage`.
 # Imports and Dependencies
 
 ---
@@ -25,7 +25,7 @@ The `message_kind` attribute is set to `MessageKind.SYSTEM`, indicating that thi
 - **Members**:
     - `content`: Contains instructions for reviewing and correcting mermaid code blocks.
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
-- **Description**: Facilitates the review and correction of mermaid code blocks by providing guidelines to ensure proper rendering and syntax adherence.
+- **Description**: Provides a system message for reviewing and correcting mermaid.js code blocks, ensuring proper syntax and rendering by removing forbidden characters and correcting list syntax.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 

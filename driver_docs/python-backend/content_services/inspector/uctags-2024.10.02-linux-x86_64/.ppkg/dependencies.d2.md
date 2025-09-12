@@ -6,7 +6,7 @@
 Dependency graph for uctags and its related libraries.
 
 # Purpose
-The content defines dependencies between software libraries. The `uctags` library depends on `libjansson`, `libyaml`, `libxml2`, and `libiconv`. Additionally, `libxml2` depends on `libiconv` and `libz`. This information is used to manage and resolve library dependencies during the build or installation process.
+The content defines dependencies between software libraries. The `uctags` library depends on `libjansson`, `libyaml`, `libxml2`, and `libiconv`. The `libxml2` library depends on `libiconv` and `libz`. This information is used to manage and resolve library dependencies in a software project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

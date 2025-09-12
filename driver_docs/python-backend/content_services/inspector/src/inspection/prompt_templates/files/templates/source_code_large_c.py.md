@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating structured prompts and analyzing C code components like functions and data structures.
+Templates for generating structured prompts and analyzing C source code components.
 
 # Purpose
 The code defines a structured template for generating documentation related to C source code. It imports several components and utilities from different modules, which are used to create a template for documenting various aspects of C code. The template includes sections for the purpose of the code, imports and dependencies, global variables, data structures, functions, and function declarations that form the public API. Each section is associated with specific components and instructions that guide the generation of documentation content.
 
-The template uses a combination of static analysis and language model (LLM) outputs to populate the documentation sections. For example, collections such as `CIncludeRawSymbolCollection`, `CVariableRawSymbolCollection`, and `CFunctionRawSymbolCollection` are used to gather information from static analysis, while corresponding collections like `CVariableCollection` and `CFunctionCollection` use LLM outputs to refine the data. The template is designed to ensure that the documentation adheres to specific style instructions, such as using backticks for code references and following Simplified Technical English guidelines.
+The template uses a combination of static analysis and language model (LLM) outputs to populate the documentation sections. For example, collections such as `CIncludeRawSymbolCollection`, `CVariableRawSymbolCollection`, and `CFunctionRawSymbolCollection` are used to gather information from static analysis, while corresponding collections like `CVariableCollection` and `CFunctionCollection` use LLM outputs to refine the data. The template is designed to ensure that the generated documentation adheres to specific style instructions, such as using backticks for code references and following Simplified Technical English guidelines.
 # Imports and Dependencies
 
 ---
@@ -36,9 +36,9 @@ The template uses a combination of static analysis and language model (LLM) outp
 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_C
-- **Type**: `list`
-- **Description**: A list of tuples, where each tuple contains a prompt type, a section header, and a series of components or functions related to C code analysis and documentation. Each tuple is designed to handle a specific aspect of C code, such as purpose, imports, global variables, data structures, functions, and public API declarations.
-- **Use**: Used to define structured prompts and processing logic for analyzing and documenting various components of C source code.
+- **Type**: ``list``
+- **Description**: A list of tuples, where each tuple contains a structured prompt configuration for different sections of C source code analysis. Each tuple includes a section identifier, a section title, and various components or functions to process or generate content for that section.
+- **Use**: Used to define and organize structured prompts for analyzing and documenting different aspects of C source code.
 
 
 

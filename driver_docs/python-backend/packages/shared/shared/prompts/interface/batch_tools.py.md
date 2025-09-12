@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines a system message prompt for executing multiple tools iteratively without inventing functions.
+Defines a system message prompt for executing multiple tools iteratively with specific constraints.
 
 # Purpose
-This code defines a configuration for a system message used in a software application. It includes a string `PROMPT` that provides instructions for executing multiple tools in iterations and emphasizes the importance of using a diverse set of tools. The `PROMPT` also advises against inventing or using undefined functions and specifically prohibits invoking the `multi_tool_use.parallel` function. The `MESSAGE` dictionary assigns the role of "system" to this prompt, associating it with the content defined in `PROMPT`. This setup is likely used to guide the behavior of a system component that processes or executes tasks based on these instructions.
+The code defines a configuration for a system message used in a software application. It consists of a single global variable, `PROMPT`, which contains a string that provides instructions for executing multiple tools in iterations and emphasizes the importance of using a diverse set of tools. The instructions also include a warning against inventing or using undefined functions and specifically advise against invoking the `multi_tool_use.parallel` function. The `MESSAGE` dictionary is then created with two keys: `role`, set to `"system"`, and `content`, set to the value of `PROMPT`. This setup is likely used to configure or initialize a system component that requires these specific instructions.
 # Global Variables
 
 ---
 ### PROMPT
-- **Type**: `str`
-- **Description**: A string that contains instructions for executing multiple tools in iterations, emphasizing the use of diverse tools and the importance of obtaining full context before responding. It also includes warnings against inventing or using undefined functions and specifically against invoking the `multi_tool_use.parallel` function.
-- **Use**: Used as a guideline or directive for executing tools and managing responses in a codebase.
+- **Type**: ``str``
+- **Description**: A string that provides instructions or guidelines for executing multiple tools in iterations. It emphasizes the importance of using a diverse set of tools, searching descriptions, and not responding until full context is obtained. It also includes a warning against inventing or using undefined functions and specifically against invoking the `multi_tool_use.parallel` function.
+- **Use**: Used as a guideline or instruction set for executing tools in a controlled manner.
 
 
 ---
 ### MESSAGE
 - **Type**: ``dict``
-- **Description**: Contains a dictionary with two keys: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key is assigned the value of the `PROMPT` variable.
-- **Use**: Used to store system-level instructions or messages, with content derived from the `PROMPT` variable.
+- **Description**: Contains a dictionary with two key-value pairs: `role` and `content`. The `role` key has a fixed string value 'system', and the `content` key holds the value of the `PROMPT` variable.
+- **Use**: Used to store system-level instructions or messages, with the content derived from the `PROMPT` variable.
 
 
 

@@ -9,8 +9,8 @@ Utilities for AWS S3, AWS Secrets Manager, and GitHub operations.
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[aws_s3.py](aws_s3.py.md)**: Utilities for AWS S3 operations, including presigned URL generation, file deletion, and object copying.
-- **[aws_secrets_manager.py](aws_secrets_manager.py.md)**: Functions to read, write, and format AWS Secrets Manager secrets using Boto3.
-- **[gh_ops.py](gh_ops.py.md)**: Functions for GitHub OAuth token management, repository data retrieval, and S3 upload operations.
+- **[aws_secrets_manager.py](aws_secrets_manager.py.md)**: Manages AWS Secrets Manager operations, including writing, reading, and formatting secret keys.
+- **[gh_ops.py](gh_ops.py.md)**: Functions for GitHub OAuth token management, repository access, and S3 upload operations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,19 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for retrieving derived content by ID and checking access permissions in a database session.
+Checks access permissions for various entities in a database session.
 
 # Purpose
-The code provides functionality for interacting with a database using SQLModel. It includes two main functions: [`get_derived_content_by_id`](<#get_derived_content_by_id>) and [`check_access`](<#check_access>). The [`get_derived_content_by_id`](<#get_derived_content_by_id>) function retrieves a `DerivedContent` object from the database based on a given identifier. It uses a SQL `select` statement to query the `DerivedContent` model and returns the first result found.
-
-The [`check_access`](<#check_access>) function determines if access is permitted to certain database entities based on an `organization_id` and optional identifiers for `derived_content_id`, `node_id`, `version_id`, and `primary_asset_id`. It performs a series of database queries to verify that the specified entities are associated with the given organization. The function returns a boolean value indicating whether all specified access checks pass. The code imports models from `database.models_v1` and `database.models_v2`, indicating that it is part of a larger system that manages different versions of database models.
+The code defines a function [`check_access`](<#check_access>) that verifies access permissions for various database entities within an organization. It uses SQLModel to perform database queries on models such as `DerivedContent`, `Node`, `Version`, and `PrimaryAsset`. The function takes a `Session` object and several optional identifiers (`derived_content_id`, `node_id`, `version_id`, `primary_asset_id`) to check if the specified entities belong to the given `organization_id`. It returns a boolean indicating whether all specified entities are accessible by the organization. The code includes comments suggesting potential future changes to the function.
 # Imports and Dependencies
 
 ---
-- `database.models_v1.DerivedContent`
-- `database.models_v2.Node`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.Version`
+- `database.models.DerivedContent`
+- `database.models.Node`
+- `database.models.PrimaryAsset`
+- `database.models.Version`
 - `sqlmodel.Session`
 - `sqlmodel.select`
 
@@ -23,23 +21,8 @@ The [`check_access`](<#check_access>) function determines if access is permitted
 # Functions
 
 ---
-### get\_derived\_content\_by\_id<!-- {{#callable:python-backend/backend/app/api/routes/legacy/orm_ops.get_derived_content_by_id}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/legacy/orm_ops.py#L8>)
-
-Retrieves a `DerivedContent` object by its ID from the database session.
-- **Inputs**:
-    - `session`: A `Session` object used to execute the database query.
-    - `id`: A string representing the ID of the `DerivedContent` to retrieve.
-- **Logic and Control Flow**:
-    - Creates a SQL statement to select a `DerivedContent` where the `id` matches the provided `id` argument.
-    - Executes the SQL statement using the provided `session`.
-    - Returns the first result from the executed query, which is a `DerivedContent` object or `None` if no match is found.
-- **Output**: A `DerivedContent` object if found, otherwise `None`.
-
-
----
 ### check\_access<!-- {{#callable:python-backend/backend/app/api/routes/legacy/orm_ops.check_access}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/legacy/orm_ops.py#L15>)
+[View Source →](<../../../../../../../backend/app/api/routes/legacy/orm_ops.py#L11>)
 
 Checks if access is allowed based on the provided identifiers and organization ID.
 - **Inputs**:
@@ -51,10 +34,10 @@ Checks if access is allowed based on the provided identifiers and organization I
     - `primary_asset_id`: An optional string representing the ID of the primary asset to check.
 - **Logic and Control Flow**:
     - Initialize an empty list `access_checks` to store the results of access checks.
-    - If `derived_content_id` is provided, execute a query to retrieve the `DerivedContent` object and check if its organization ID matches `organization_id`. Append the result to `access_checks`.
-    - If `node_id` is provided, execute a query to retrieve the `Node` object and check if its version's primary asset organization ID matches `organization_id`. Append the result to `access_checks`.
-    - If `version_id` is provided, execute a query to retrieve the `Version` object and check if its primary asset organization ID matches `organization_id`. Append the result to `access_checks`.
-    - If `primary_asset_id` is provided, execute a query to retrieve the `PrimaryAsset` object and check if its organization ID matches `organization_id`. Append the result to `access_checks`.
+    - If `derived_content_id` is provided, execute a query to select `DerivedContent` joined with `Node`, `Version`, and `PrimaryAsset` where the `DerivedContent` ID matches `derived_content_id` and the `PrimaryAsset` organization ID matches `organization_id`. Append the result of the check to `access_checks`.
+    - If `node_id` is provided, execute a query to select `Node` where the `Node` ID matches `node_id`. Append the result of the check to `access_checks`.
+    - If `version_id` is provided, execute a query to select `Version` where the `Version` ID matches `version_id`. Append the result of the check to `access_checks`.
+    - If `primary_asset_id` is provided, execute a query to select `PrimaryAsset` where the `PrimaryAsset` ID matches `primary_asset_id`. Append the result of the check to `access_checks`.
     - Return `True` if all checks in `access_checks` are `True`, otherwise return `False`.
 - **Output**: A boolean value indicating whether all access checks passed.
 

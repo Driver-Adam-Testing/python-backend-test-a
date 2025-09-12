@@ -6,16 +6,16 @@
 Test cases for various TypeScript class features, including inheritance, generics, and decorators.
 
 # Purpose
-The code is a comprehensive test suite for TypeScript class definitions, demonstrating a wide range of class features and patterns. It includes basic class structures, classes with properties and methods, and more advanced concepts such as inheritance, abstract classes, and generics. The code also explores TypeScript-specific features like parameter properties, access modifiers, and decorators. Additionally, it covers modern JavaScript features such as private fields, static blocks, and class expressions.
+The code is a comprehensive test suite for various TypeScript class definitions, demonstrating a wide range of object-oriented programming concepts and features. It includes basic class structures, classes with properties and methods, and more advanced constructs such as inheritance, abstract classes, and generic classes. The code also explores TypeScript-specific features like parameter properties, access modifiers (public, private, protected, readonly), and static members. Additionally, it showcases the use of decorators, mixins, async methods, generator functions, and index signatures.
 
-The file serves as a reference for various TypeScript and JavaScript class functionalities, including mixins, async methods, generator methods, and index signatures. It also demonstrates the use of interfaces, method and constructor overloads, and the implementation of classes as namespaces. The code includes examples of conditional types, symbol members, and readonly properties, providing a broad overview of class capabilities in TypeScript. This file is intended to be a learning resource or a testing ground for developers to understand and experiment with different class-related features in TypeScript.
+The file further illustrates complex patterns such as class expressions, nested classes, and the mixin pattern. It includes examples of method and constructor overloads, classes as namespaces, and declaration merging. The code also demonstrates the use of conditional types, abstract generic classes, and classes with symbol members. It provides examples of readonly properties, brand checking with private fields, and assertion signatures. This test suite serves as a reference for understanding and testing the diverse capabilities of TypeScript's class system, making it a valuable resource for developers looking to explore and validate different class-related features in TypeScript.
 # Global Variables
 
 ---
 ### mixedInstance
 - **Type**: ``MixedClass``
-- **Description**: Creates an instance of the `MixedClass`, which is a class that combines the functionalities of the `Timestamped` and `Tagged` mixins applied to the `BasicClass`. The `MixedClass` instance has properties and methods from both mixins, such as `timestamp` and `tags`, along with the `id` property from `BasicClass`. The `MixedClass` is instantiated with an `id` of 1.
-- **Use**: Used to create an instance of `MixedClass` with an `id` of 1, which includes timestamp and tagging functionalities.
+- **Description**: Creates an instance of the `MixedClass`, which is a class that combines functionalities from the `Timestamped` and `Tagged` mixins applied to the `BasicClass`. The `MixedClass` instance has properties and methods from both mixins, such as `timestamp` and `tags`, along with the `id` property from `BasicClass`.
+- **Use**: Used to instantiate a `MixedClass` object with an `id` of 1, providing access to timestamp and tagging functionalities.
 
 
 ---
@@ -86,7 +86,7 @@ Initializes the properties of the `ClassWithProperties` class with default value
 ### ClassWithMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassWithMethods}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L27>)
 
-- **Description**: Defines methods with different access levels: `publicMethod` is accessible publicly, `privateMethod` is private to the class, `protectedMethod` is accessible within the class and its subclasses, and `staticMethod` is a static method accessible on the class itself.
+- **Description**: Defines methods with different access levels: `publicMethod` is accessible publicly, `privateMethod` is private, `protectedMethod` is protected, and `staticMethod` is a static method accessible on the class itself.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassWithMethods.publicMethod`](<#classwithmethodspublicmethod>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassWithMethods.privateMethod`](<#classwithmethodsprivatemethod>)
@@ -99,11 +99,11 @@ Initializes the properties of the `ClassWithProperties` class with default value
 #### ClassWithMethods\.publicMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassWithMethods.publicMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L28>)
 
-Logs the message 'public method' to the console.
+Logs a message to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `console.log` with the string 'public method'.
-- **Output**: No output is returned as the method's return type is `void`.
+    - Logs the string 'public method' to the console.
+- **Output**: No output is returned as the method has a void return type.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassWithMethods`](<#classwithmethods>)  (Base Class)
 
 
@@ -126,8 +126,8 @@ Returns the string 'private'.
 Returns the number 42.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the number 42.
-- **Output**: A number with the value 42.
+    - Return the number 42.
+- **Output**: A number, specifically 42.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassWithMethods`](<#classwithmethods>)  (Base Class)
 
 
@@ -153,7 +153,7 @@ Logs the message 'static method' to the console.
     - `age`: A private number property.
     - `email`: A protected string property.
     - `id`: A readonly string property.
-- **Description**: Represents a class with parameter properties that are defined directly in the constructor. The class includes a public property `name`, a private property `age`, a protected property `email`, and a readonly property `id`. These properties are initialized through the constructor parameters.
+- **Description**: Represents a class with parameter properties that are defined directly in the constructor, allowing for public, private, protected, and readonly access modifiers.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ParameterProperties.constructor`](<#parameterpropertiesconstructor>)
 
@@ -170,11 +170,11 @@ Initializes a new instance of the `ParameterProperties` class with specified pro
     - `email`: A protected string property representing the email.
     - `id`: A readonly string property representing the ID.
 - **Control Flow**:
-    - Assigns the provided `name` to the public `name` property of the instance.
-    - Assigns the provided `age` to the private `age` property of the instance.
-    - Assigns the provided `email` to the protected `email` property of the instance.
-    - Assigns the provided `id` to the readonly `id` property of the instance.
-- **Output**: A new instance of the `ParameterProperties` class with initialized properties.
+    - Assigns the `name` parameter to a public property `name`.
+    - Assigns the `age` parameter to a private property `age`.
+    - Assigns the `email` parameter to a protected property `email`.
+    - Assigns the `id` parameter to a readonly property `id`.
+- **Output**: An instance of the `ParameterProperties` class with initialized properties.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ParameterProperties`](<#parameterproperties>)  (Base Class)
 
 
@@ -184,8 +184,8 @@ Initializes a new instance of the `ParameterProperties` class with specified pro
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L56>)
 
 - **Members**:
-    - `_value`: Stores a private number value.
-- **Description**: Manages a private number value with public getter and setter methods, and includes additional read-only and protected accessors.
+    - `_value`: Stores the numeric value for the class.
+- **Description**: Manages a numeric value with getter and setter methods, and includes additional read-only and protected setter methods.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters.value`](<#getterssettersvalue>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters.value`](<#getterssettersvalue>)
@@ -199,11 +199,12 @@ Initializes a new instance of the `ParameterProperties` class with specified pro
 #### GettersSetters\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters.value}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L59>)
 
-Provides access to the private `_value` property of the `GettersSetters` class.
+Retrieves the current value of the private `_value` property.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the value of the private `_value` property.
-- **Output**: The method returns a `number` which is the current value of the `_value` property.
+    - Accesses the private `_value` property of the `GettersSetters` class.
+    - Returns the value of the `_value` property.
+- **Output**: The current value of the private `_value` property as a number.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
@@ -216,7 +217,7 @@ Sets the private `_value` property to the provided `newValue`.
     - `newValue`: The new numeric value to set for the `_value` property.
 - **Control Flow**:
     - Assigns the `newValue` to the private `_value` property of the class instance.
-- **Output**: There is no output as this is a setter method.
+- **Output**: No output is returned as this is a setter method.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
@@ -224,7 +225,7 @@ Sets the private `_value` property to the provided `newValue`.
 #### GettersSetters\.readOnly<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters.readOnly}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L67>)
 
-Returns the string 'readonly'.
+Provides a read-only string value 'readonly'.
 - **Inputs**: None
 - **Control Flow**:
     - Returns the string 'readonly'.
@@ -236,11 +237,11 @@ Returns the string 'readonly'.
 #### GettersSetters\.privateGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters.privateGetter}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L71>)
 
-Provides a private getter that returns the number 42.
+Returns the constant number 42.
 - **Inputs**: None
 - **Control Flow**:
-    - Returns the number 42.
-- **Output**: A number, specifically 42.
+    - Return the number 42.
+- **Output**: The method returns a number, specifically the constant 42.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
@@ -250,10 +251,10 @@ Provides a private getter that returns the number 42.
 
 Logs the provided string value to the console.
 - **Inputs**:
-    - `value`: A string that the method logs to the console.
+    - `value`: A string that the method will log to the console.
 - **Control Flow**:
     - Logs the input `value` to the console using `console.log`.
-- **Output**: No output is returned.
+- **Output**: No output is returned as the method's return type is `void`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GettersSetters`](<#getterssetters>)  (Base Class)
 
 
@@ -264,7 +265,7 @@ Logs the provided string value to the console.
 
 - **Members**:
     - `name`: Stores the name of the animal.
-- **Description**: Represents an animal with a name and a method to make a sound. The `speak` method outputs a message indicating that the animal makes a sound, using the animal's name.
+- **Description**: Represents an animal with a name and a method to make a sound. The `Animal` class has a constructor that initializes the `name` property and a `speak` method that logs a message indicating the animal makes a sound.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Animal.constructor`](<#animalconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Animal.speak`](<#animalspeak>)
@@ -277,10 +278,10 @@ Logs the provided string value to the console.
 
 Initializes an `Animal` instance with a given name.
 - **Inputs**:
-    - `name`: A string that represents the name of the animal.
+    - `name`: A string representing the name of the animal.
 - **Control Flow**:
     - Assigns the input `name` to the `name` property of the `Animal` instance.
-- **Output**: An instance of the `Animal` class with the `name` property set to the provided input.
+- **Output**: An instance of the `Animal` class with the `name` property set.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Animal`](<#animal>)  (Base Class)
 
 
@@ -291,8 +292,9 @@ Initializes an `Animal` instance with a given name.
 Logs a message indicating that the animal makes a sound.
 - **Inputs**: None
 - **Control Flow**:
-    - Uses `console.log` to output a string that includes the `name` property of the instance and the phrase 'makes a sound'.
-- **Output**: No output is returned as the method's return type is `void`.
+    - Uses `console.log` to output a message to the console.
+    - The message includes the `name` property of the instance, followed by the text 'makes a sound'.
+- **Output**: No return value; the function outputs a message to the console.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Animal`](<#animal>)  (Base Class)
 
 
@@ -303,7 +305,7 @@ Logs a message indicating that the animal makes a sound.
 
 - **Members**:
     - `breed`: Stores the breed of the dog.
-- **Description**: Represents a dog that extends the `Animal` class, adding a `breed` property and overriding the `speak` method to specify that the dog barks. It also includes a `wagTail` method to simulate the dog wagging its tail.
+- **Description**: Represents a dog that extends the `Animal` class, adding a `breed` property and overriding the `speak` method to simulate a dog barking. It also includes a `wagTail` method to simulate the dog wagging its tail.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Dog.constructor`](<#dogconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Dog.speak`](<#dogspeak>)
@@ -332,12 +334,11 @@ Initializes a new instance of the `Dog` class with a specified name and breed.
 #### Dog\.speak<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Dog.speak}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L101>)
 
-Outputs a message to the console indicating that the dog barks.
+Logs a message indicating that the dog barks.
 - **Inputs**: None
 - **Control Flow**:
-    - Uses `console.log` to output a string to the console.
-    - The string includes the `name` property of the `Dog` instance followed by the word 'barks'.
-- **Output**: No return value; the function outputs a message to the console.
+    - Logs a message to the console using the dog's name followed by the word 'barks'.
+- **Output**: No output is returned as the method's return type is `void`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Dog`](<#dog>)  (Base Class)
 
 
@@ -348,8 +349,8 @@ Outputs a message to the console indicating that the dog barks.
 Logs the message 'Wagging tail' to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - Logs the message 'Wagging tail' to the console.
-- **Output**: No output is returned as the method has a void return type.
+    - Calls `console.log` with the string 'Wagging tail'.
+- **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Dog`](<#dog>)  (Base Class)
 
 
@@ -358,7 +359,7 @@ Logs the message 'Wagging tail' to the console.
 ### Shape<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Shape}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L111>)
 
-- **Description**: Represents an abstract class that defines the structure for shapes with methods to calculate area and perimeter. It includes an abstract `area` method, an abstract `perimeter` method, and a `describe` method that returns a string representation of the shape's area and perimeter.
+- **Description**: Represents an abstract class that defines the structure for shapes, requiring subclasses to implement the `area` and `perimeter` methods. It includes a `describe` method that returns a string with the area and perimeter of the shape.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Shape.describe`](<#shapedescribe>)
 
@@ -374,7 +375,7 @@ Provides a string description of the shape's area and perimeter.
     - Calls the `area` method to get the area of the shape.
     - Calls the `perimeter` method to get the perimeter of the shape.
     - Returns a string that includes the area and perimeter values.
-- **Output**: A string that describes the area and perimeter of the shape.
+- **Output**: A string in the format `Area: <area>, Perimeter: <perimeter>`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Shape`](<#shape>)  (Base Class)
 
 
@@ -383,9 +384,7 @@ Provides a string description of the shape's area and perimeter.
 ### Circle<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L120>)
 
-- **Members**:
-    - `radius`: Stores the radius of the circle.
-- **Description**: Represents a circle shape that extends the `Shape` class, providing methods to calculate the area and perimeter based on its radius.
+- **Description**: Represents a circle shape and calculates its area and perimeter based on its radius.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle.constructor`](<#circleconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle.area`](<#circlearea>)
@@ -399,13 +398,13 @@ Provides a string description of the shape's area and perimeter.
 #### Circle\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle.constructor}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L121>)
 
-Initializes a `Circle` instance with a specified radius and calls the parent class constructor.
+Initializes a `Circle` instance with a specified `radius` and calls the parent `Shape` class constructor.
 - **Inputs**:
     - `radius`: A number representing the radius of the circle.
 - **Control Flow**:
-    - The constructor takes a single parameter `radius` and assigns it to a private property `radius`.
-    - The `super()` function is called to invoke the constructor of the parent class `Shape`.
-- **Output**: An instance of the `Circle` class is created with the specified radius.
+    - The constructor takes a `radius` parameter and assigns it to a private property `radius`.
+    - The constructor calls the `super()` function to invoke the constructor of the parent `Shape` class.
+- **Output**: An instance of the `Circle` class is created with the specified `radius`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle`](<#circle>)  (Base Class)
 
 
@@ -416,10 +415,9 @@ Initializes a `Circle` instance with a specified radius and calls the parent cla
 Calculates the area of a circle using its radius.
 - **Inputs**: None
 - **Control Flow**:
-    - Uses the `Math.PI` constant to represent the value of π.
-    - Squares the `radius` property of the `Circle` instance.
-    - Multiplies π by the squared radius to compute the area.
-- **Output**: Returns the area of the circle as a number.
+    - Calculates the area by squaring the `radius` property of the `Circle` instance.
+    - Multiplies the squared radius by `Math.PI` to get the area.
+- **Output**: Returns the calculated area as a number.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle`](<#circle>)  (Base Class)
 
 
@@ -430,8 +428,8 @@ Calculates the area of a circle using its radius.
 Calculates the perimeter of a circle using its radius.
 - **Inputs**: None
 - **Control Flow**:
-    - Multiplies `Math.PI` by 2 and the circle's `radius`.
-- **Output**: Returns the calculated perimeter as a number.
+    - Returns the result of the expression `2 * Math.PI * this.radius`.
+- **Output**: A number representing the perimeter of the circle.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Circle`](<#circle>)  (Base Class)
 
 
@@ -456,7 +454,7 @@ Calculates the perimeter of a circle using its radius.
 
 Initializes a `Container` instance with a given value of generic type `T`.
 - **Inputs**:
-    - `value`: The initial value of generic type `T` to store in the `Container` instance.
+    - `value`: The initial value of type `T` to store in the `Container` instance.
 - **Control Flow**:
     - Assigns the input `value` to the private member `this.value`.
 - **Output**: A new instance of the `Container` class with the `value` property set to the provided input.
@@ -467,12 +465,12 @@ Initializes a `Container` instance with a given value of generic type `T`.
 #### Container\.getValue<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Container.getValue}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L142>)
 
-Returns the current value of the `value` property in the `Container` class.
+Retrieves the current value stored in the `Container` class instance.
 - **Inputs**: None
 - **Control Flow**:
     - Accesses the private `value` property of the `Container` instance.
     - Returns the value of the `value` property.
-- **Output**: The output is the current value of the `value` property, which is of the generic type `T`.
+- **Output**: The method returns the value of type `T` stored in the `Container` instance.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Container`](<#container>)  (Base Class)
 
 
@@ -485,7 +483,7 @@ Sets the internal `value` property of the `Container` class to the provided argu
     - `value`: The new value to set, of generic type `T`.
 - **Control Flow**:
     - Assigns the input `value` to the private `value` property of the `Container` instance.
-- **Output**: No output is returned as the method's return type is `void`.
+- **Output**: No output, as the method returns `void`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Container`](<#container>)  (Base Class)
 
 
@@ -494,10 +492,7 @@ Sets the internal `value` property of the `Container` class to the provided argu
 ### TwoTypeContainer<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L151>)
 
-- **Members**:
-    - `first`: Stores the first value of type `T`.
-    - `second`: Stores the second value of type `U`.
-- **Description**: Represents a generic container that holds two values of potentially different types, `T` and `U`. It provides methods to retrieve each of these values.
+- **Description**: Represents a generic container that holds two values of potentially different types, `T` and `U`, and provides methods to access these values.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer.constructor`](<#twotypecontainerconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer.getFirst`](<#twotypecontainergetfirst>)
@@ -516,7 +511,7 @@ Initializes a `TwoTypeContainer` instance with two private properties of generic
 - **Control Flow**:
     - Assigns the `first` parameter to the private property `first` of the instance.
     - Assigns the `second` parameter to the private property `second` of the instance.
-- **Output**: No output is returned as this is a constructor function.
+- **Output**: No output is returned as this is a constructor.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer`](<#twotypecontainer>)  (Base Class)
 
 
@@ -524,12 +519,12 @@ Initializes a `TwoTypeContainer` instance with two private properties of generic
 #### TwoTypeContainer\.getFirst<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer.getFirst}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L157>)
 
-Returns the value of the private property `first` from the `TwoTypeContainer` class.
+Retrieves the first element of the `TwoTypeContainer` class.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the private property `first` of the `TwoTypeContainer` instance.
+    - Accesses the private field `first` of the `TwoTypeContainer` instance.
     - Returns the value of `first`.
-- **Output**: The output is the value of type `T` stored in the private property `first` of the `TwoTypeContainer` instance.
+- **Output**: The output is the value of type `T` stored in the `first` property of the `TwoTypeContainer` instance.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer`](<#twotypecontainer>)  (Base Class)
 
 
@@ -537,12 +532,12 @@ Returns the value of the private property `first` from the `TwoTypeContainer` cl
 #### TwoTypeContainer\.getSecond<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer.getSecond}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L161>)
 
-Retrieves the second element of the `TwoTypeContainer` class.
+Returns the value of the private property `second` from the `TwoTypeContainer` class.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the `second` property of the `TwoTypeContainer` instance.
-    - Returns the value of the `second` property.
-- **Output**: The value of type `U` stored in the `second` property of the `TwoTypeContainer` instance.
+    - Accesses the private property `second` of the `TwoTypeContainer` instance.
+    - Returns the value of `second`.
+- **Output**: The method returns a value of type `U`, which is the type of the `second` property in the `TwoTypeContainer` class.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.TwoTypeContainer`](<#twotypecontainer>)  (Base Class)
 
 
@@ -551,7 +546,7 @@ Retrieves the second element of the `TwoTypeContainer` class.
 ### ConstrainedContainer<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConstrainedContainer}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L167>)
 
-- **Description**: Represents a generic container that enforces a constraint on its type parameter, requiring it to have a `length` property. The class provides a method to retrieve the length of the contained value.
+- **Description**: Represents a generic container that holds a value with a constraint that the value must have a `length` property. The class provides a method to get the length of the contained value.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConstrainedContainer.constructor`](<#constrainedcontainerconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConstrainedContainer.getLength`](<#constrainedcontainergetlength>)
@@ -562,12 +557,12 @@ Retrieves the second element of the `TwoTypeContainer` class.
 #### ConstrainedContainer\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConstrainedContainer.constructor}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L168>)
 
-Initializes a new instance of the `ConstrainedContainer` class with a value that has a `length` property.
+Initializes a `ConstrainedContainer` instance with a value that has a `length` property.
 - **Inputs**:
-    - `value`: A generic type `T` that must have a `length` property.
+    - `value`: A generic parameter `T` that must have a `length` property.
 - **Control Flow**:
-    - Assigns the input `value` to the private member `value`.
-- **Output**: A new instance of the `ConstrainedContainer` class.
+    - Assigns the input `value` to the private member `value` of the `ConstrainedContainer` instance.
+- **Output**: An instance of `ConstrainedContainer` with the `value` property initialized.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConstrainedContainer`](<#constrainedcontainer>)  (Base Class)
 
 
@@ -590,8 +585,8 @@ Returns the length of the `value` property of the `ConstrainedContainer` instanc
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L186>)
 
 - **Members**:
-    - `altitude`: Represents the current altitude of the bird.
-- **Description**: Represents a bird that can fly, implementing the `Flyable` interface. The `Bird` class has an `altitude` property to track its current altitude and a `fly` method that sets the altitude to 100 and logs a message indicating that the bird is flying.
+    - `altitude`: Stores the current altitude of the bird.
+- **Description**: Represents a bird that can fly, implementing the `Flyable` interface. The class includes an `altitude` property to track the bird's current altitude. The `fly` method simulates the bird flying by setting the `altitude` to 100 and logging a message to the console.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Bird.fly`](<#birdfly>)
 - **Extends/Implements**:
@@ -603,12 +598,12 @@ Returns the length of the `value` property of the `ConstrainedContainer` instanc
 #### Bird\.fly<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Bird.fly}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L189>)
 
-Sets the `altitude` of a `Bird` instance to 100 and logs 'Flying' to the console.
+Sets the `altitude` property to 100 and logs 'Flying' to the console.
 - **Inputs**: None
 - **Control Flow**:
     - Logs the message 'Flying' to the console.
-    - Sets the `altitude` property of the `Bird` instance to 100.
-- **Output**: No output is returned as the method has a `void` return type.
+    - Sets the `altitude` property of the instance to 100.
+- **Output**: No output is returned as the method's return type is `void`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Bird`](<#bird>)  (Base Class)
 
 
@@ -618,8 +613,8 @@ Sets the `altitude` of a `Bird` instance to 100 and logs 'Flying' to the console
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L195>)
 
 - **Members**:
-    - `depth`: Represents the depth at which the duck swims.
-- **Description**: Represents a `Duck` class that extends the `Bird` class and implements the `Swimmable` interface. It includes a `depth` property to track the swimming depth and a `swim` method to simulate swimming behavior by setting the depth to 5.
+    - `depth`: Represents the depth of the duck while swimming.
+- **Description**: Represents a duck that extends the `Bird` class and implements the `Swimmable` interface, allowing it to swim and manage its swimming depth.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Duck.swim`](<#duckswim>)
 - **Extends/Implements**:
@@ -646,9 +641,9 @@ Implements the swimming behavior for a `Duck` by setting its depth to 5 and logg
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L205>)
 
 - **Members**:
-    - `altitude`: Represents the current altitude of the amphibian.
-    - `depth`: Represents the current depth of the amphibian.
-- **Description**: Implements the `Flyable` and `Swimmable` interfaces, allowing an amphibian to both fly and swim by adjusting its `altitude` and `depth` properties.
+    - `altitude`: Stores the current altitude of the amphibian.
+    - `depth`: Stores the current depth of the amphibian.
+- **Description**: Implements the `Flyable` and `Swimmable` interfaces, allowing an amphibian to both fly and swim. The class maintains `altitude` and `depth` properties to track its position in the air and water, respectively. The `fly` method sets the `altitude` to 50, and the `swim` method sets the `depth` to 10.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Amphibian.fly`](<#amphibianfly>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Amphibian.swim`](<#amphibianswim>)
@@ -665,8 +660,8 @@ Implements the swimming behavior for a `Duck` by setting its depth to 5 and logg
 Sets the `altitude` property of the `Amphibian` class to 50.
 - **Inputs**: None
 - **Control Flow**:
-    - Sets the `altitude` property of the `Amphibian` instance to 50.
-- **Output**: The method does not return any value.
+    - Assigns the value 50 to the `altitude` property of the `Amphibian` instance.
+- **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Amphibian`](<#amphibian>)  (Base Class)
 
 
@@ -677,7 +672,7 @@ Sets the `altitude` property of the `Amphibian` class to 50.
 Sets the `depth` property of the `Amphibian` class to 10.
 - **Inputs**: None
 - **Control Flow**:
-    - Assigns the value 10 to the `depth` property of the `Amphibian` instance.
+    - Assigns the value 10 to the `depth` property of the current instance.
 - **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Amphibian`](<#amphibian>)  (Base Class)
 
@@ -689,10 +684,10 @@ Sets the `depth` property of the `Amphibian` class to 10.
 
 - **Decorators**: `@Component`
 - **Members**:
-    - `title`: A string input property with a default value of 'My App'.
-    - `clicked`: An output event emitter for click events.
-    - `divElement`: A view child element reference to a DOM element with the template reference variable 'myDiv'.
-- **Description**: Defines a component with a selector 'app-root' and a simple template. It includes an input property 'title', an output event emitter 'clicked', and a view child 'divElement'. The class listens for click events on the host element and emits the event through the 'clicked' emitter.
+    - `title`: Holds the title of the application.
+    - `clicked`: An event emitter for click events.
+    - `divElement`: A reference to a DOM element with the identifier 'myDiv'.
+- **Description**: Defines a component with a root selector 'app-root' and a simple template. It includes an input property 'title', an output event emitter 'clicked', and a view child 'divElement'. The class listens for click events on the host element and emits the event through the 'clicked' emitter.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AppComponent.onClick`](<#appcomponentonclick>)
 
@@ -702,13 +697,13 @@ Sets the `depth` property of the `Amphibian` class to 10.
 #### AppComponent\.onClick<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AppComponent.onClick}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L228>)
 
-Emits a `MouseEvent` through the `clicked` event emitter when a click event occurs.
+Emits a click event when a mouse click occurs.
 - **Decorators**: `@HostListener`
 - **Inputs**:
-    - `event`: A `MouseEvent` object that represents the click event.
+    - `event`: The mouse event object that contains details about the click event.
 - **Control Flow**:
-    - The method is triggered by a click event on the host element due to the `@HostListener` decorator.
-    - The method calls the `emit` method on the `clicked` event emitter, passing the `event` as an argument.
+    - The method listens for a click event on the host element.
+    - When a click event occurs, it emits the event using the `clicked` event emitter.
 - **Output**: The method does not return a value.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AppComponent`](<#appcomponent>)  (Base Class)
 
@@ -718,7 +713,7 @@ Emits a `MouseEvent` through the `clicked` event emitter when a click event occu
 ### ServiceClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L237>)
 
-- **Description**: Defines methods with decorators for logging, validation, deprecation, and memoization. The `performAction` method logs and validates input data. The `oldMethod` is marked as deprecated, suggesting the use of `newMethod` instead. The `expensiveOperation` method uses memoization to optimize the calculation of the Fibonacci sequence.
+- **Description**: Defines methods with decorators to log, validate, deprecate, and memoize actions.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass.performAction`](<#serviceclassperformaction>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass.oldMethod`](<#serviceclassoldmethod>)
@@ -744,12 +739,12 @@ Logs a message indicating an action is being performed with the provided data.
 #### ServiceClass\.oldMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass.oldMethod}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L245>)
 
-Logs a message indicating the invocation of an old method.
+Logs a message indicating the use of an old method.
 - **Decorators**: `@Deprecated`
 - **Inputs**: None
 - **Control Flow**:
     - Logs the message 'Old method' to the console.
-- **Output**: No output is returned as the method's return type is `void`.
+- **Output**: No output is returned as the method has a void return type.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass`](<#serviceclass>)  (Base Class)
 
 
@@ -757,13 +752,13 @@ Logs a message indicating the invocation of an old method.
 #### ServiceClass\.expensiveOperation<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass.expensiveOperation}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L250>)
 
-Calculates the Fibonacci number for a given integer input.
+Calculates the Fibonacci number for a given integer `n`.
 - **Decorators**: `@Memoize`
 - **Inputs**:
     - `n`: An integer for which the Fibonacci number is calculated.
 - **Control Flow**:
     - Calls the `fibonacci` function with the input `n`.
-- **Output**: Returns the Fibonacci number corresponding to the input integer `n`.
+- **Output**: The Fibonacci number corresponding to the input integer `n`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ServiceClass`](<#serviceclass>)  (Base Class)
 
 
@@ -773,10 +768,10 @@ Calculates the Fibonacci number for a given integer input.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L256>)
 
 - **Members**:
-    - `count`: A static number variable initialized to 0.
-    - `VERSION`: A static readonly string variable set to '1.0.0'.
-    - `instance`: A private static variable of type `StaticExample`.
-- **Description**: Manages a singleton instance of itself using static methods and a static initialization block to set initial values.
+    - `count`: A static number that starts at 0 and is set to 1 in the static block.
+    - `VERSION`: A static readonly string that holds the version '1.0.0'.
+    - `instance`: A private static variable that holds an instance of `StaticExample`.
+- **Description**: Manages a singleton instance of itself with static properties and methods. It includes a static initialization block that sets the `count` to 1 and logs a message. The class provides methods to get or reset the singleton instance.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.StaticExample.getInstance`](<#staticexamplegetinstance>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.StaticExample.resetInstance`](<#staticexampleresetinstance>)
@@ -790,9 +785,9 @@ Calculates the Fibonacci number for a given integer input.
 Provides a singleton instance of the `StaticExample` class.
 - **Inputs**: None
 - **Control Flow**:
-    - Checks if `this.instance` is not defined.
-    - If `this.instance` is not defined, creates a new instance of `StaticExample` and assigns it to `this.instance`.
-    - Returns `this.instance`.
+    - Checks if the static `instance` property is `null` or `undefined`.
+    - If `instance` is `null` or `undefined`, assigns a new `StaticExample` object to `instance`.
+    - Returns the `instance` property.
 - **Output**: A singleton instance of the `StaticExample` class.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.StaticExample`](<#staticexample>)  (Base Class)
 
@@ -814,7 +809,7 @@ Sets the static `instance` property of the `StaticExample` class to `null`.
 ### PrivateFields<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PrivateFields}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L280>)
 
-- **Description**: Encapsulates private fields and methods using the `#` syntax, providing methods to access these private members. It includes a private instance field `#privateField` and a private static field `#privateStatic`, along with corresponding private methods `#privateMethod` and `#privateStaticMethod` to access these fields. The class provides public methods `getPrivate` and `getStaticPrivate` to retrieve the values of the private fields through the private methods.
+- **Description**: Encapsulates private fields and methods using the `#` syntax, providing methods to access these private members. The class includes a private instance field `#privateField` and a private static field `#privateStatic`, along with corresponding private methods `#privateMethod` and `#privateStaticMethod` to access these fields. Public methods `getPrivate` and `getStaticPrivate` are available to retrieve the values of the private fields through the private methods.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PrivateFields.#privateMethod`](<#privatefields>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PrivateFields.#privateStaticMethod`](<#privatefields>)
@@ -830,7 +825,7 @@ Sets the static `instance` property of the `StaticExample` class to `null`.
 Returns the value of the private field `#privateField`.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the private field `#privateField` of the `PrivateFields` class.
+    - Accesses the private field `#privateField` of the class instance.
     - Returns the value of `#privateField`.
 - **Output**: The method returns a string, which is the value of the private field `#privateField`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PrivateFields`](<#privatefields>)  (Base Class)
@@ -853,7 +848,7 @@ Returns the value of the private static field `#privateStatic` from the `Private
 #### PrivateFields\.getPrivate<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PrivateFields.getPrivate}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L292>)
 
-Returns the value of the private field `#privateField` from the `PrivateFields` class.
+Returns the value of a private field by calling a private method.
 - **Inputs**: None
 - **Control Flow**:
     - Calls the private method `#privateMethod` of the `PrivateFields` class.
@@ -881,7 +876,7 @@ Returns the value of a private static field from the `PrivateFields` class.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L308>)
 
 - **Members**:
-    - `className`: A static property that holds the name of the class.
+    - `className`: Holds the name of the class as a static string.
 - **Description**: Represents a class expression with a static property `className` and a method `getName` that returns the class name.
 
 
@@ -889,7 +884,7 @@ Returns the value of a private static field from the `PrivateFields` class.
 ### Outer<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Outer}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L328>)
 
-- **Description**: Defines a class with a static nested class `NestedClass` that contains a method `nestedMethod`. The `createInner` method instantiates and returns an instance of the `NestedClass`.
+- **Description**: Defines a class with a static nested class `NestedClass` that contains a method `nestedMethod`. The `createInner` method in the outer class instantiates and returns an instance of the `NestedClass`.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Outer.nestedMethod`](<#outernestedmethod>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Outer.createInner`](<#outercreateinner>)
@@ -912,11 +907,11 @@ Returns the string 'nested'.
 #### Outer\.createInner<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Outer.createInner}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L335>)
 
-Creates and returns an instance of the `NestedClass` from the `Outer` class.
+Creates and returns an instance of the `NestedClass` defined within the `Outer` class.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls the constructor of `Outer.NestedClass` to create a new instance.
-    - Returns the newly created instance of `Outer.NestedClass`.
+    - Call the constructor of `Outer.NestedClass` to create a new instance.
+    - Return the newly created instance of `Outer.NestedClass`.
 - **Output**: An instance of `Outer.NestedClass`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Outer`](<#outer>)  (Base Class)
 
@@ -928,7 +923,7 @@ Creates and returns an instance of the `NestedClass` from the `Outer` class.
 
 - **Members**:
     - `id`: Stores a numeric identifier for the instance.
-- **Description**: Represents a basic class with a single numeric identifier property, initialized through the constructor.
+- **Description**: Represents a simple class with a single numeric property `id`, which is set through the constructor.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.BasicClass.constructor`](<#basicclassconstructor>)
 
@@ -943,7 +938,7 @@ Initializes a new instance of the `BasicClass` with a specified `id`.
     - `id`: A number that represents the identifier for the instance.
 - **Control Flow**:
     - Assigns the input `id` to the instance's `id` property.
-- **Output**: An instance of `BasicClass` with the `id` property set to the provided `id` value.
+- **Output**: A new instance of `BasicClass` with the `id` property set to the provided `id` value.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.BasicClass`](<#basicclass>)  (Base Class)
 
 
@@ -952,7 +947,7 @@ Initializes a new instance of the `BasicClass` with a specified `id`.
 ### AsyncClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L374>)
 
-- **Description**: Defines asynchronous methods for data fetching, asynchronous iteration, and static asynchronous operations. The `fetchData` method retrieves data from a specified API endpoint and returns the parsed JSON response. The `asyncGenerator` method is an asynchronous generator that yields a sequence of numbers. The `privateAsync` method is a private asynchronous method that simulates a delay using a promise. The `staticAsync` method is a static asynchronous method that returns a string.
+- **Description**: Implements asynchronous operations including fetching data from an API, generating asynchronous sequences, and providing static asynchronous functionality.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass.fetchData`](<#asyncclassfetchdata>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass.asyncGenerator`](<#asyncclassasyncgenerator>)
@@ -968,9 +963,9 @@ Initializes a new instance of the `BasicClass` with a specified `id`.
 Fetches data from the '/api/data' endpoint and returns the parsed JSON response.
 - **Inputs**: None
 - **Control Flow**:
-    - Uses the `fetch` function to send a request to the '/api/data' endpoint.
-    - Awaits the response from the `fetch` call.
-    - Calls the `json` method on the response to parse it as JSON.
+    - Uses the `fetch` function to make an HTTP GET request to the '/api/data' endpoint.
+    - Awaits the completion of the fetch request to receive the response.
+    - Calls the `json` method on the response object to parse the response body as JSON.
     - Returns the parsed JSON data.
 - **Output**: A promise that resolves to the parsed JSON data from the response.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass`](<#asyncclass>)  (Base Class)
@@ -994,12 +989,12 @@ Generates an asynchronous sequence of numbers.
 #### AsyncClass\.privateAsync<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass.privateAsync}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L386>)
 
-Implements a private asynchronous method that pauses execution for 1 second.
+Implements an asynchronous delay of 1 second.
 - **Inputs**: None
 - **Control Flow**:
     - Creates a new `Promise` that resolves after a 1-second delay using `setTimeout`.
-    - Awaits the resolution of the `Promise`, effectively pausing execution for 1 second.
-- **Output**: Returns a `Promise` that resolves to `void` after a 1-second delay.
+    - Awaits the resolution of the `Promise` to introduce the delay.
+- **Output**: A `Promise` that resolves to `void` after a 1-second delay.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass`](<#asyncclass>)  (Base Class)
 
 
@@ -1010,7 +1005,8 @@ Implements a private asynchronous method that pauses execution for 1 second.
 Returns a static string asynchronously.
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns the string 'static async'.
+    - The method is defined as an `async` function, indicating it returns a `Promise`.
+    - The method immediately returns the string 'static async'.
 - **Output**: A `Promise` that resolves to the string 'static async'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AsyncClass`](<#asyncclass>)  (Base Class)
 
@@ -1037,7 +1033,7 @@ Generates a sequence of numbers from 1 to 3.
     - Yields the number 1.
     - Yields the number 2.
     - Yields the number 3.
-- **Output**: A generator that produces the numbers 1, 2, and 3 in sequence.
+- **Output**: A generator that produces a sequence of numbers: 1, 2, and 3.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.GeneratorClass`](<#generatorclass>)  (Base Class)
 
 
@@ -1059,10 +1055,10 @@ Implements the iterator protocol for the `GeneratorClass` by delegating iteratio
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L411>)
 
 - **Members**:
-    - `[key: string]`: Defines an index signature for string keys with any type values.
-    - `[index: number]`: Defines an index signature for number keys with string type values.
+    - `[key: string]`: Defines an index signature for string keys with any type of value.
+    - `[index: number]`: Defines an index signature for number keys with string type of value.
     - `[propertyName]`: Holds a string value initialized to 'dynamic value'.
-- **Description**: Represents a class with index signatures for both string and number keys, allowing dynamic property access and storage. It also includes a computed property method that returns a string value.
+- **Description**: Defines a class with index signatures for both string and number keys, allowing dynamic property access and assignment. It also includes a computed property method that returns a string value.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.IndexedClass.['computed' + 'Property']`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.IndexedClass.['computed' + 'Property']>)
 
@@ -1075,7 +1071,7 @@ Implements the iterator protocol for the `GeneratorClass` by delegating iteratio
 Returns the string 'computed'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns the string 'computed'.
+    - Return the string 'computed'.
 - **Output**: A string with the value 'computed'.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.IndexedClass`](<#indexedclass>)  (Base Class)
 
@@ -1086,8 +1082,8 @@ Returns the string 'computed'.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L423>)
 
 - **Members**:
-    - `value`: Stores the current string value.
-- **Description**: Provides a fluent interface for building and manipulating a string value. It allows setting an initial value with `setValue`, appending additional text with `append`, and retrieving the final string with `build`. The class uses method chaining to enable a fluent API style.
+    - `value`: Stores the current string value being built.
+- **Description**: Provides a fluent interface for building a string by allowing method chaining. The class maintains a private string `value` and offers methods to set this value, append additional text, and retrieve the final string. The methods `setValue` and `append` return the instance itself, enabling method chaining, while the `build` method returns the constructed string.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.FluentAPI.setValue`](<#fluentapisetvalue>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.FluentAPI.append`](<#fluentapiappend>)
@@ -1113,12 +1109,12 @@ Sets the `value` property of the `FluentAPI` class and returns the current insta
 #### FluentAPI\.append<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.FluentAPI.append}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L431>)
 
-Appends a given string to the current value of the `FluentAPI` instance and returns the instance.
+Appends a given string to the current value of the `FluentAPI` instance and returns the instance itself.
 - **Inputs**:
     - `text`: The string to append to the current value.
 - **Control Flow**:
-    - Concatenates the `text` argument to the `value` property of the instance.
-    - Returns the current instance (`this`) after appending the text.
+    - Concatenate the `text` parameter to the `value` property of the instance.
+    - Return the instance (`this`) to allow method chaining.
 - **Output**: The method returns the current instance of the `FluentAPI` class, allowing for method chaining.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.FluentAPI`](<#fluentapi>)  (Base Class)
 
@@ -1127,12 +1123,12 @@ Appends a given string to the current value of the `FluentAPI` instance and retu
 #### FluentAPI\.build<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.FluentAPI.build}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L436>)
 
-Returns the current value of the `value` property in the `FluentAPI` class.
+Returns the current value of the `value` property as a string.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the `value` property of the `FluentAPI` instance.
+    - Accesses the `value` property of the class instance.
     - Returns the `value` property as a string.
-- **Output**: The method returns a string that represents the current value of the `value` property.
+- **Output**: A string representing the current value of the `value` property.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.FluentAPI`](<#fluentapi>)  (Base Class)
 
 
@@ -1144,7 +1140,7 @@ Returns the current value of the `value` property in the `FluentAPI` class.
 - **Members**:
     - `name`: Stores the name of the instance.
     - `age`: Stores the age of the instance, defaulting to 0 if not provided.
-- **Description**: Represents a class with overloaded constructors that can initialize an instance with a name and optionally an age, defaulting the age to 0 if not specified.
+- **Description**: Represents a class with overloaded constructors that can initialize an instance with a name and optionally an age. If the age is not provided, it defaults to 0.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedConstructor.constructor`](<#overloadedconstructorconstructor>)
 
@@ -1157,10 +1153,10 @@ Returns the current value of the `value` property in the `FluentAPI` class.
 Initializes an instance of the `OverloadedConstructor` class with a `name` and an optional `age`, defaulting `age` to 0 if not provided.
 - **Inputs**:
     - `name`: A string representing the name of the instance.
-    - `age`: An optional number representing the age of the instance, defaulting to 0 if not provided.
+    - `age`: An optional number representing the age of the instance.
 - **Control Flow**:
     - Assigns the `name` parameter to the `name` property of the instance.
-    - Assigns the `age` parameter to the `age` property of the instance, using 0 as a default value if `age` is not provided.
+    - Assigns the `age` parameter to the `age` property of the instance, defaulting to 0 if `age` is not provided.
 - **Output**: An instance of the `OverloadedConstructor` class with initialized `name` and `age` properties.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedConstructor`](<#overloadedconstructor>)  (Base Class)
 
@@ -1170,7 +1166,7 @@ Initializes an instance of the `OverloadedConstructor` class with a `name` and a
 ### OverloadedMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L455>)
 
-- **Description**: Defines methods with overloads for processing values of type `string` or `number`, and provides static factory methods to create instances of the class with optional parameters.
+- **Description**: Defines overloaded methods for processing values and creating instances. The `process` method can handle both `string` and `number` types, returning the same type as the input. The `create` method is a static method that can be called with or without an `id` parameter to instantiate a new `OverloadedMethods` object.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods.process`](<#overloadedmethodsprocess>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods.create`](<#overloadedmethodscreate>)
@@ -1181,13 +1177,13 @@ Initializes an instance of the `OverloadedConstructor` class with a `name` and a
 #### OverloadedMethods\.process<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods.process}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L458>)
 
-Processes a given value and returns it without modification.
+Returns the input value without modification.
 - **Inputs**:
-    - `value`: A value that can be either a string or a number.
+    - `value`: A string or number to process.
 - **Control Flow**:
-    - The method receives an input `value` which can be a string or a number.
-    - The method returns the input `value` without any modification.
-- **Output**: The same value that was provided as input, either a string or a number.
+    - The method takes a single argument `value` which can be a string or a number.
+    - The method returns the `value` as it is, without any modification.
+- **Output**: The same string or number that was provided as input.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods`](<#overloadedmethods>)  (Base Class)
 
 
@@ -1195,13 +1191,12 @@ Processes a given value and returns it without modification.
 #### OverloadedMethods\.create<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods.create}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L464>)
 
-Creates and returns a new instance of the `OverloadedMethods` class.
+Creates a new instance of the `OverloadedMethods` class.
 - **Inputs**:
     - `id`: An optional number parameter that is not used in the method body.
 - **Control Flow**:
     - The method checks if an `id` is provided, but does not use it.
-    - A new instance of the `OverloadedMethods` class is created.
-    - The new instance is returned.
+    - A new instance of the `OverloadedMethods` class is created and returned.
 - **Output**: A new instance of the `OverloadedMethods` class.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.OverloadedMethods`](<#overloadedmethods>)  (Base Class)
 
@@ -1211,7 +1206,10 @@ Creates and returns a new instance of the `OverloadedMethods` class.
 ### ClassNamespace<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassNamespace}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L470>)
 
-- **Description**: Defines a class that acts as a namespace, containing static nested classes and types. The `Utils` static class provides a `helper` method, while the `Types` object contains two static classes, `TypeA` and `TypeB`, each with a single property.
+- **Members**:
+    - `Utils`: A static nested class with a helper method.
+    - `Types`: An object containing two static nested classes, `TypeA` and `TypeB`, each with a single property.
+- **Description**: Defines a class that acts as a namespace, containing static nested classes and objects to organize utility functions and type definitions.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ClassNamespace.helper`](<#classnamespacehelper>)
 
@@ -1234,7 +1232,7 @@ Returns the string 'helper'.
 ### MergedClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.MergedClass}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L484>)
 
-- **Description**: Represents a class that includes a method and is extended with an interface to add additional properties and methods.
+- **Description**: Implements a method that logs a message to the console.
 
 **Methods**
 
@@ -1245,7 +1243,7 @@ Returns the string 'helper'.
 Logs the string 'method' to the console.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls `console.log` with the argument 'method'.
+    - Logs the string 'method' to the console using `console.log`.
 - **Output**: No output is returned as the method has a `void` return type.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.MergedClass`](<#mergedclass>)  (Data Structure)
 
@@ -1257,7 +1255,7 @@ Logs the string 'method' to the console.
 
 - **Members**:
     - `obj`: Stores the object of type `T` for property access.
-- **Description**: Represents a generic class that provides methods to get and set properties on an object of type `T` using TypeScript's `keyof` operator to ensure type safety.
+- **Description**: Represents a generic class that provides methods to get and set properties of an object using TypeScript's `keyof` operator. The class constructor takes an object of type `T` and allows access to its properties through the `get` and `set` methods, which use generic constraints to ensure type safety.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PropertyAccess.constructor`](<#propertyaccessconstructor>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PropertyAccess.get`](<#propertyaccessget>)
@@ -1273,8 +1271,8 @@ Initializes a new instance of the `PropertyAccess` class with a private object o
 - **Inputs**:
     - `obj`: A private object of generic type `T` that the `PropertyAccess` class will use for property access.
 - **Control Flow**:
-    - Assigns the input parameter `obj` to a private member of the class.
-- **Output**: There is no output as this is a constructor method.
+    - Assigns the input parameter `obj` to a private member variable within the class.
+- **Output**: There is no output as this is a constructor for initializing an instance of the `PropertyAccess` class.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PropertyAccess`](<#propertyaccess>)  (Base Class)
 
 
@@ -1282,13 +1280,13 @@ Initializes a new instance of the `PropertyAccess` class with a private object o
 #### PropertyAccess\.get<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PropertyAccess.get}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L499>)
 
-Retrieves the value of a specified property from an object.
+Retrieves the value of a specified property from the object `obj`.
 - **Inputs**:
-    - `key`: A key of type `K` which extends the keys of the object `T`, representing the property to retrieve from the object.
+    - `key`: A key of type `K` which extends the keys of the object `T`, representing the property to retrieve from `obj`.
 - **Control Flow**:
-    - Accesses the property of the object `this.obj` using the provided `key`.
+    - Accesses the property of `this.obj` using the provided `key`.
     - Returns the value of the property accessed.
-- **Output**: The value of the property specified by `key` from the object `T`.
+- **Output**: The value of the property `key` from the object `obj`, with the type `T[K]`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PropertyAccess`](<#propertyaccess>)  (Base Class)
 
 
@@ -1298,11 +1296,11 @@ Retrieves the value of a specified property from an object.
 
 Sets a property on the internal object to a specified value.
 - **Inputs**:
-    - `key`: The key of the property to set on the internal object, constrained to the keys of the object type `T`.
-    - `value`: The value to assign to the property, constrained to the type of the property specified by the key.
+    - `key`: The key of the property to set, constrained to the keys of the object type `T`.
+    - `value`: The value to assign to the property, matching the type of the property specified by `key`.
 - **Control Flow**:
-    - Assigns the provided `value` to the property of the internal object `obj` identified by the `key`.
-- **Output**: No output is returned as the method's return type is `void`.
+    - Assigns the `value` to the property of `this.obj` identified by `key`.
+- **Output**: No output, as the method returns `void`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.PropertyAccess`](<#propertyaccess>)  (Base Class)
 
 
@@ -1323,12 +1321,12 @@ Sets a property on the internal object to a specified value.
 #### ConditionalClass\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConditionalClass.constructor}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L512>)
 
-Initializes a `ConditionalClass` instance with a value that is either an array of strings or a generic type `T`, depending on whether `T` extends `string`.
+Initializes the `value` property of the `ConditionalClass` instance based on the type of `T`.
 - **Inputs**:
-    - `value`: A value of type `T` extends string ? string[] : T`, which means it is an array of strings if `T` is a string, otherwise it is of type `T`.
+    - `value`: A parameter that is either an array of strings if `T` is a string, or of type `T` otherwise.
 - **Control Flow**:
     - Assigns the input `value` to the instance property `this.value`.
-- **Output**: An instance of `ConditionalClass` with the `value` property set to the provided input.
+- **Output**: There is no output as this is a constructor function.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConditionalClass`](<#conditionalclass>)  (Base Class)
 
 
@@ -1347,12 +1345,12 @@ Initializes a `ConditionalClass` instance with a value that is either an array o
 #### AbstractGeneric\.execute<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AbstractGeneric.execute}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L521>)
 
-Executes a process on a given value using an abstract method.
+Executes the `process` method on the given value.
 - **Inputs**:
-    - `value`: The input value of generic type `T` to process.
+    - `value`: The input value of generic type `T` to be processed.
 - **Control Flow**:
     - Calls the `process` method with the input `value`.
-- **Output**: Returns the result of the `process` method, which is of the same generic type `T` as the input.
+- **Output**: The result of the `process` method, which is of the same generic type `T` as the input.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.AbstractGeneric`](<#abstractgeneric>)  (Base Class)
 
 
@@ -1361,7 +1359,7 @@ Executes a process on a given value using an abstract method.
 ### ConcreteGeneric<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConcreteGeneric}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L526>)
 
-- **Description**: Extends the `AbstractGeneric` class with a concrete implementation for the `string` type, providing a `process` method that converts a given string to uppercase.
+- **Description**: Extends the `AbstractGeneric` class with a type parameter of `string` and implements the `process` method to convert a given string to uppercase.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ConcreteGeneric.process`](<#concretegenericprocess>)
 - **Extends/Implements**:
@@ -1391,7 +1389,7 @@ Converts a given string to uppercase.
 
 - **Members**:
     - `[Symbol.toStringTag]`: Defines a custom string tag for the class.
-- **Description**: Represents a class that uses symbol-based properties and methods to define custom behaviors for string conversion, iteration, and instance checking.
+- **Description**: Represents a class that uses symbol members to define custom behavior for `Symbol.toStringTag`, `Symbol.iterator`, and `Symbol.hasInstance`. The `Symbol.toStringTag` property sets a custom string tag for the class. The `Symbol.iterator` method returns an iterator over a fixed array of numbers. The `Symbol.hasInstance` method checks if an instance is of the `SymbolClass` type.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass.[Symbol.iterator]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass.[Symbol.iterator]>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass.[Symbol.hasInstance]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass.[Symbol.hasInstance]>)
@@ -1402,11 +1400,11 @@ Converts a given string to uppercase.
 #### SymbolClass\.\[Symbol\.iterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass.[Symbol.iterator]}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L536>)
 
-Implements the iterator protocol for the `SymbolClass` class by returning an iterator over a fixed array of numbers.
+Implements the iterator protocol for the `SymbolClass` class, allowing iteration over a fixed array of numbers.
 - **Inputs**: None
 - **Control Flow**:
-    - The method returns the result of calling the `[Symbol.iterator]()` method on the array `[1, 2, 3]`.
-- **Output**: An iterator object that iterates over the numbers 1, 2, and 3.
+    - Returns the iterator of the array `[1, 2, 3]`.
+- **Output**: An iterator object for the array `[1, 2, 3]`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass`](<#symbolclass>)  (Base Class)
 
 
@@ -1420,7 +1418,7 @@ Determines if an instance is of the `SymbolClass` type.
 - **Control Flow**:
     - Checks if `instance` is an instance of `SymbolClass` using the `instanceof` operator.
     - Returns the result of the `instanceof` check.
-- **Output**: A boolean value indicating whether `instance` is an instance of `SymbolClass`.
+- **Output**: A boolean value indicating whether the `instance` is an instance of `SymbolClass`.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.SymbolClass`](<#symbolclass>)  (Base Class)
 
 
@@ -1430,8 +1428,8 @@ Determines if an instance is of the `SymbolClass` type.
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L546>)
 
 - **Members**:
-    - `#brand`: A unique symbol used for brand checking.
-- **Description**: Represents a class that uses a private unique symbol for brand checking. The `isBrandedClass` static method checks if an object is an instance of `BrandedClass` by verifying the presence of the `#brand` symbol in the object.
+    - `#brand`: A unique symbol used for branding the class.
+- **Description**: Represents a class with a private unique symbol for branding, which can be used to check if an object is an instance of the class using the static method `isBrandedClass`.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.BrandedClass.isBrandedClass`](<#brandedclassisbrandedclass>)
 
@@ -1443,7 +1441,7 @@ Determines if an instance is of the `SymbolClass` type.
 
 Checks if an object is an instance of `BrandedClass` by verifying the presence of a private `#brand` symbol.
 - **Inputs**:
-    - `obj`: The object to check if it is an instance of `BrandedClass`.
+    - `obj`: The object to check for the `BrandedClass` brand.
 - **Control Flow**:
     - Checks if the private `#brand` symbol is present in the `obj` using the `in` operator.
 - **Output**: Returns `true` if `obj` contains the `#brand` symbol, indicating it is a `BrandedClass`; otherwise, returns `false`.
@@ -1459,7 +1457,7 @@ Checks if an object is an instance of `BrandedClass` by verifying the presence o
     - `id`: A read-only string identifier for the class instance.
     - `data`: A read-only array of numbers.
     - `config`: A read-only configuration object with URL and timeout properties.
-- **Description**: Represents a class with read-only properties, including an identifier, a numeric data array, and a configuration object, initialized through the constructor.
+- **Description**: Represents a class with read-only properties, including an identifier, a numeric data array, and a configuration object. The constructor initializes these properties with default values, ensuring they cannot be modified after instantiation.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ReadonlyClass.constructor`](<#readonlyclassconstructor>)
 
@@ -1474,7 +1472,7 @@ Initializes a `ReadonlyClass` instance with a given `id`, and sets `data` and `c
     - `id`: A string that uniquely identifies the instance.
 - **Control Flow**:
     - Assigns the input `id` to the instance's `id` property.
-    - Initializes the `data` property with a read-only array containing the numbers 1, 2, and 3.
+    - Sets the `data` property to a read-only array containing the numbers 1, 2, and 3.
     - Sets the `config` property to a read-only object with a `url` of '/api' and a `timeout` of 5000.
 - **Output**: An instance of `ReadonlyClass` with initialized `id`, `data`, and `config` properties.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ReadonlyClass`](<#readonlyclass>)  (Base Class)
@@ -1485,7 +1483,7 @@ Initializes a `ReadonlyClass` instance with a given `id`, and sets `data` and `c
 ### Validator<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L568>)
 
-- **Description**: Provides methods to assert conditions and validate that a value is a string. The `assert` method throws an error if the given condition is false, while the `assertIsString` method checks if a value is a string and throws an error if it is not.
+- **Description**: Implements assertion methods to validate conditions and ensure that a value is a string. The `assert` method throws an error if a given condition is false, while the `assertIsString` method checks if a value is a string and throws an error if it is not.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator.assert`](<#validatorassert>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator.assertIsString`](<#validatorassertisstring>)
@@ -1496,14 +1494,14 @@ Initializes a `ReadonlyClass` instance with a given `id`, and sets `data` and `c
 #### Validator\.assert<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator.assert}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L569>)
 
-Checks a condition and throws an error if the condition is false.
+Throws an error if the given condition is false.
 - **Inputs**:
-    - `condition`: The condition to check, of type `unknown`.
-    - `message`: An optional error message to display if the condition is false.
+    - `condition`: The condition to evaluate, of unknown type.
+    - `message`: An optional string message to include in the error if the assertion fails.
 - **Control Flow**:
-    - Checks if the `condition` is false.
-    - If `condition` is false, throws an `Error` with the provided `message` or a default message 'Assertion failed'.
-- **Output**: The function does not return a value but asserts the truthiness of the `condition`.
+    - Check if the `condition` is false.
+    - If `condition` is false, throw an `Error` with the provided `message` or a default message 'Assertion failed'.
+- **Output**: No output is returned; the function either completes successfully or throws an error.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator`](<#validator>)  (Base Class)
 
 
@@ -1511,13 +1509,13 @@ Checks a condition and throws an error if the condition is false.
 #### Validator\.assertIsString<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator.assertIsString}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L575>)
 
-Checks if a given value is a string and throws an error if it is not.
+Asserts that a given value is of type string.
 - **Inputs**:
-    - `value`: The value to check, which can be of any type.
+    - ``value``: The value to check if it is a string.
 - **Control Flow**:
-    - Calls the `assert` method of the `Validator` class with a condition that checks if `value` is of type 'string'.
+    - Calls the `assert` method of the `Validator` class with a condition that checks if `value` is of type string.
     - If the condition is false, the `assert` method throws an error with the message 'Value must be a string'.
-- **Output**: The function does not return a value but asserts that `value` is a string, otherwise it throws an error.
+- **Output**: The function does not return a value but asserts that `value` is a string, allowing TypeScript to narrow the type of `value` to `string` in the calling context.
 - **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Validator`](<#validator>)  (Base Class)
 
 
@@ -1531,7 +1529,7 @@ Checks if a given value is a string and throws an error if it is not.
 - **Members**:
     - `additionalProp`: Defines a string property for additional data.
     - `additionalMethod`: Declares a method that performs an action without returning a value.
-- **Description**: Defines a contract for objects that must include a string property `additionalProp` and a method `additionalMethod` that does not return a value. This interface is used to extend the functionality of the `MergedClass` by adding these additional properties and methods.
+- **Description**: Defines a contract for objects that include an additional string property and a method that performs an action without returning a value. This interface is used in conjunction with a class to extend its functionality through declaration merging.
 
 **Methods**
 
@@ -1556,7 +1554,7 @@ Logs the string 'method' to the console.
 
 - **Members**:
     - `className`: A static property that holds the name of the class, 'MyClass'.
-- **Description**: The `MyClass` is a named class expression that defines a class with a static property `className` and a method `getName`. The `getName` method returns the value of the static `className` property, which is 'MyClass'. This class provides a simple structure to demonstrate the use of static properties and methods in a class expression.
+- **Description**: `MyClass` is a class expression that defines a class with a static property `className` and a method `getName`. The `getName` method returns the value of the static `className` property, which is 'MyClass'. This class provides a simple structure to demonstrate the use of static properties and methods in TypeScript.
 
 
 # Functions
@@ -1576,10 +1574,10 @@ Returns the string 'class expression'.
 ### getName<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.getName}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L311>)
 
-Returns the static `className` property of the `MyClass` class.
+Returns the static property `className` from the `MyClass` class.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the static `className` property of the `MyClass` class.
+    - Accesses the static property `className` of the `MyClass` class.
     - Returns the value of `MyClass.className`.
 - **Output**: A string representing the class name of `MyClass`.
 
@@ -1588,10 +1586,10 @@ Returns the static `className` property of the `MyClass` class.
 ### constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.constructor}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L318>)
 
-Initializes an instance of the `ExtendedAnonymous` class by calling the parent `Animal` class constructor with the name 'Anonymous'.
+Initializes an instance of the `ExtendedAnonymous` class by calling the `Animal` class constructor with the name 'Anonymous'.
 - **Inputs**: None
 - **Control Flow**:
-    - Calls the `super` function with the argument 'Anonymous' to invoke the constructor of the parent `Animal` class.
+    - Calls the `super` function with the argument 'Anonymous' to invoke the constructor of the `Animal` class.
 - **Output**: An instance of the `ExtendedAnonymous` class is created with the name property set to 'Anonymous'.
 
 
@@ -1610,14 +1608,14 @@ Logs a message indicating that an anonymous entity speaks.
 ### Timestamped<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.Timestamped}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L343>)
 
-Creates a mixin class that extends a given base class with a timestamp property and a method to retrieve it.
+Adds a timestamp property and a method to retrieve it to a class.
 - **Inputs**:
-    - `Base`: A constructor function that serves as the base class to be extended.
+    - `TBase`: A class constructor that the mixin will extend.
 - **Control Flow**:
-    - Defines a new class that extends the provided `Base` class.
-    - Initializes a `timestamp` property with the current date and time using `Date.now()`.
-    - Implements a `getTimestamp` method that returns the value of the `timestamp` property.
-- **Output**: A new class that extends the `Base` class, adding a `timestamp` property and a `getTimestamp` method.
+    - Defines a class that extends the provided `Base` class.
+    - Adds a `timestamp` property initialized with the current date and time.
+    - Implements a `getTimestamp` method that returns the `timestamp` property.
+- **Output**: A new class that extends the `Base` class with an additional `timestamp` property and a `getTimestamp` method.
 
 
 ---
@@ -1627,9 +1625,8 @@ Creates a mixin class that extends a given base class with a timestamp property 
 Returns the `timestamp` property of the class instance.
 - **Inputs**: None
 - **Control Flow**:
-    - Accesses the `timestamp` property of the class instance.
-    - Returns the value of the `timestamp` property.
-- **Output**: The value of the `timestamp` property, which is a number representing the time in milliseconds since the Unix epoch.
+    - Return the value of `this.timestamp`.
+- **Output**: The value of the `timestamp` property from the class instance.
 
 
 ---
@@ -1643,20 +1640,20 @@ Creates a mixin class that extends a given base class with tagging functionality
     - Defines a new class that extends the provided `Base` class.
     - Initializes a `tags` property as an empty array in the new class.
     - Adds a method `addTag` to the new class, which appends a given tag to the `tags` array.
-- **Output**: A new class that extends the `Base` class with an additional `tags` property and an `addTag` method.
+- **Output**: A new class that extends the `Base` class with additional tagging functionality.
 
 
 ---
 ### addTag<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.addTag}} -->
 [View Source →](<../../../../../../../../../content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_classes.ts#L357>)
 
-Adds a new tag to the `tags` array of the class instance.
+Adds a tag to the `tags` array of the class instance.
 - **Inputs**:
-    - `tag`: A string representing the tag to add to the `tags` array.
+    - `tag`: A string representing the tag to add.
 - **Control Flow**:
-    - The method receives a `tag` as an input parameter.
-    - It pushes the `tag` into the `tags` array of the class instance.
-- **Output**: The method does not return any value.
+    - Accesses the `tags` array property of the class instance.
+    - Appends the `tag` argument to the `tags` array.
+- **Output**: No output is returned.
 
 
 

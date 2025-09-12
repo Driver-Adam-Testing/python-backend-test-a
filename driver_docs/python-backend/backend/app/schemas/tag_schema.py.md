@@ -6,17 +6,17 @@
 Defines Pydantic models for tag-related input and output schemas, including validation for tag attributes.
 
 # Purpose
-The code defines a set of data models using the `pydantic` library, which are used for input validation and data serialization in a tagging system. The models include `ListTagsInput`, `TagInputBase`, `NewTagInput`, `EditTagInput`, `CollectionSourceInput`, `ListTagsResults`, and `ListTagContentsResults`. These models facilitate the handling of tag-related data, such as creating new tags, editing existing tags, and listing tags with pagination support. The `TagType` is defined as a `Literal` type, allowing only specific string values ("tag" or "collection") for the type of tags.
+The code defines a set of data models and input validation logic for managing tags and collections within an application. It uses the `pydantic` library to create models that ensure data integrity and validation. The primary components include `ListTagsInput`, `TagInputBase`, `NewTagInput`, `EditTagInput`, `CollectionSourceInput`, `ListTagsResults`, and `ListTagContentsResults`. These models are used to handle input data for listing tags, creating new tags, editing existing tags, and managing collections. The `TagInputBase` class includes validators to strip whitespace from string fields and to ensure that the `hex_color` field follows a valid hexadecimal color format.
 
-The `TagInputBase` class includes field validators to ensure that the `name` and `hex_color` fields are properly formatted. The [`strip_whitespace`](<#taginputbasestrip_whitespace>) validator removes any leading or trailing whitespace from these fields, while the [`validate_hex_color`](<#taginputbasevalidate_hex_color>) validator checks that the `hex_color` field is a valid hexadecimal color code. The `ListTagsResults` and `ListTagContentsResults` classes are used to structure the output of tag listing operations, including pagination details such as `offset`, `limit`, and `count`. The code is intended to be part of a larger application, likely serving as a schema definition for API endpoints related to tag management.
+The code also defines the `TagType` as a `Literal` type, which restricts the values to either "tag" or "collection". The `ListTagsResults` and `ListTagContentsResults` classes are used to structure the output of tag-related queries, including pagination details such as `offset`, `limit`, and `count`. The models are designed to be used as part of a larger application, likely in conjunction with a database, as indicated by the import of the `Tag` model from `database.models`. The code does not define any public APIs or external interfaces directly but provides a structured way to handle tag-related data within the application.
 # Imports and Dependencies
 
 ---
 - `typing.Literal`
-- `database.models_v1.Tag`
+- `app.schemas.content_schema.ListContentResult`
+- `database.models.Tag`
 - `pydantic.BaseModel`
 - `pydantic.field_validator`
-- `app.schemas.content_schema.ListContentResult`
 
 
 # Global Variables
@@ -24,20 +24,20 @@ The `TagInputBase` class includes field validators to ensure that the `name` and
 ---
 ### TagType
 - **Type**: ``Literal``
-- **Description**: Represents a type alias for a string literal that can be either 'tag' or 'collection'. This restricts the values of variables using this type to these two specific strings.
-- **Use**: Used to define the type of tags in the application, ensuring that only 'tag' or 'collection' are valid values.
+- **Description**: Defines a type that can be either the string 'tag' or 'collection'. It is used to specify the type of a tag in the application.
+- **Use**: Used to enforce type constraints on variables that represent tag types, ensuring they are either 'tag' or 'collection'.
 
 
 # Classes
 
 ---
 ### ListTagsInput<!-- {{#class:python-backend/backend/app/schemas/tag_schema.ListTagsInput}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L11>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L10>)
 
 - **Members**:
     - `name`: Optional string for the tag name.
     - `type`: Optional tag type, either 'tag' or 'collection'.
-    - `limit`: Integer to limit the number of tags returned.
+    - `limit`: Integer to specify the maximum number of tags to return.
     - `offset`: Integer to specify the starting point for the list of tags.
 - **Description**: Defines the input structure for listing tags, including optional filters for name and type, and pagination controls with limit and offset.
 - **Inherits From**:
@@ -46,12 +46,12 @@ The `TagInputBase` class includes field validators to ensure that the `name` and
 
 ---
 ### TagInputBase<!-- {{#class:python-backend/backend/app/schemas/tag_schema.TagInputBase}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L18>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L17>)
 
 - **Members**:
     - `name`: Stores the name of the tag as a string.
-    - `hex_color`: Stores the hexadecimal color code of the tag as a string.
-- **Description**: Represents a base model for tag input with fields for the tag's name and hexadecimal color code. It includes validators to strip whitespace from these fields and to ensure the hex color code is in a valid format.
+    - `hex_color`: Stores the hexadecimal color code as a string.
+- **Description**: Represents a base model for tag input with fields for `name` and `hex_color`, and includes validators to strip whitespace and ensure the `hex_color` is in a valid hexadecimal format.
 - **Methods**:
     - [`python-backend/backend/app/schemas/tag_schema.TagInputBase.strip_whitespace`](<#taginputbasestrip_whitespace>)
     - [`python-backend/backend/app/schemas/tag_schema.TagInputBase.validate_hex_color`](<#taginputbasevalidate_hex_color>)
@@ -62,13 +62,13 @@ The `TagInputBase` class includes field validators to ensure that the `name` and
 
 ---
 #### TagInputBase\.strip\_whitespace<!-- {{#callable:python-backend/backend/app/schemas/tag_schema.TagInputBase.strip_whitespace}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L22>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L21>)
 
-Removes leading and trailing whitespace from string values.
+Removes leading and trailing whitespace from string values of specified fields.
 - **Decorators**: `@field_validator`, `@classmethod`
 - **Inputs**:
-    - `cls`: The class on which this method is called.
-    - `value`: The value to process, expected to be a string.
+    - `cls`: The class object that the method is bound to.
+    - `value`: The value to validate and potentially strip whitespace from.
 - **Logic and Control Flow**:
     - Check if `value` is an instance of `str`.
     - If `value` is a string, return `value.strip()` to remove leading and trailing whitespace.
@@ -79,37 +79,38 @@ Removes leading and trailing whitespace from string values.
 
 ---
 #### TagInputBase\.validate\_hex\_color<!-- {{#callable:python-backend/backend/app/schemas/tag_schema.TagInputBase.validate_hex_color}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L29>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L28>)
 
-Validates if a given string is a valid hexadecimal color code.
+Validates if a given string is a valid hex color code.
 - **Decorators**: `@field_validator`, `@classmethod`
 - **Inputs**:
     - `cls`: The class object, used to access class-level attributes and methods.
-    - `value`: The string value to validate as a hexadecimal color code.
+    - `value`: The string value to validate as a hex color code.
 - **Logic and Control Flow**:
     - Check if the string `value` starts with a '#' character.
     - Verify that the length of `value` is exactly 7 characters.
-    - Ensure all characters in `value` (excluding the first '#') are valid hexadecimal digits (0-9, A-F, a-f).
+    - Ensure all characters in `value` after the '#' are valid hexadecimal digits (0-9, A-F, a-f).
     - Raise a `ValueError` if any of the above conditions are not met.
-- **Output**: Returns the validated hexadecimal color string if it is in the correct format.
+    - Return the `value` if it is a valid hex color code.
+- **Output**: The validated hex color string if it is in the correct format, otherwise raises a `ValueError`.
 - **See also**: [`python-backend/backend/app/schemas/tag_schema.TagInputBase`](<#taginputbase>)  (Base Class)
 
 
 
 ---
 ### NewTagInput<!-- {{#class:python-backend/backend/app/schemas/tag_schema.NewTagInput}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L42>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L41>)
 
 - **Members**:
     - `type`: Specifies the type of the tag, which can be either 'tag' or 'collection'.
-- **Description**: Extends `TagInputBase` to include a `type` attribute, defining the tag's classification.
+- **Description**: Extends `TagInputBase` to include a `type` attribute, which defines the category of the tag.
 - **Inherits From**:
     - [`python-backend/backend/app/schemas/tag_schema.TagInputBase`](<#taginputbase>)
 
 
 ---
 ### EditTagInput<!-- {{#class:python-backend/backend/app/schemas/tag_schema.EditTagInput}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L46>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L45>)
 
 - **Members**:
     - `name`: Optional string for the tag name.
@@ -121,24 +122,24 @@ Validates if a given string is a valid hexadecimal color code.
 
 ---
 ### CollectionSourceInput<!-- {{#class:python-backend/backend/app/schemas/tag_schema.CollectionSourceInput}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L51>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L50>)
 
 - **Members**:
     - `include`: Indicates if the collection source is included.
-- **Description**: Defines input data for a collection source, specifying whether to include the source.
+- **Description**: Represents input data for a collection source, specifying whether to include the source.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### ListTagsResults<!-- {{#class:python-backend/backend/app/schemas/tag_schema.ListTagsResults}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L55>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L54>)
 
 - **Members**:
     - `results`: A list of `Tag` objects.
-    - `offset`: An integer that indicates the starting point of the results.
-    - `limit`: An integer that specifies the maximum number of results to return.
-    - `count`: An integer that represents the total number of available results.
+    - `offset`: An integer representing the starting point of the list of results.
+    - `limit`: An integer indicating the maximum number of results to return.
+    - `count`: An integer representing the total number of available results.
 - **Description**: Represents the results of a tag listing operation, including the list of tags, pagination offset, limit, and total count of tags.
 - **Inherits From**:
     - `BaseModel`
@@ -146,16 +147,15 @@ Validates if a given string is a valid hexadecimal color code.
 
 ---
 ### ListTagContentsResults<!-- {{#class:python-backend/backend/app/schemas/tag_schema.ListTagContentsResults}} -->
-[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L62>)
+[View Source →](<../../../../../backend/app/schemas/tag_schema.py#L61>)
 
-- **Decorators**: `@dataclass`
 - **Members**:
     - `tag`: Holds a `Tag` object.
     - `results`: Contains a list of `ListContentResult` objects.
     - `offset`: Indicates the starting point for the list of results.
     - `limit`: Specifies the maximum number of results to return.
-    - `count`: Represents the total number of results available.
-- **Description**: Represents the results of listing contents associated with a specific tag, including pagination details.
+    - `count`: Represents the total number of available results.
+- **Description**: Represents the results of listing contents associated with a specific tag, including pagination details such as offset, limit, and total count.
 - **Inherits From**:
     - `BaseModel`
 

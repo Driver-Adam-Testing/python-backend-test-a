@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Implements PDF preprocessing and embedding functions with exception handling and database persistence.
+Processes PDF files by creating summaries, handling exceptions, and managing database updates.
 
 
 ## Files
-- **[main.py](main.py.md)**: Implements PDF preprocessing and embedding functions, including exception handling and database persistence.
+- **[main.py](main.py.md)**: Processes PDF files by creating and embedding summaries, handling exceptions, and managing database updates.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

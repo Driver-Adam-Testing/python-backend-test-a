@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines API routes and data models for managing and retrieving codebase card information.
+Defines API routes for retrieving `CodebaseCard` objects with filtering, sorting, and pagination.
 
 # Purpose
-The code defines an API endpoint using FastAPI to retrieve a list of `CodebaseCard` objects. These objects represent metadata and version control information about codebases stored in a database. The code imports various models and utilities from SQLAlchemy and Pydantic to facilitate database interactions and data validation. The `CodebaseCard` class, along with several other Pydantic models like `VersionControlInfo`, `MostRecentMetadata`, and `MostRecentVersionContent`, encapsulates the structure of the data returned by the API.
+The code defines an API endpoint using FastAPI to retrieve a list of `CodebaseCard` objects. These objects represent metadata and version control information about codebases stored in a database. The code uses SQLAlchemy and SQLModel to construct and execute database queries, which retrieve and filter data based on various parameters such as `id`, `primary_asset_kind`, `codebase_kind`, `codebase_domain`, `codebase_audience`, `top_language`, and `tag_ids`. The endpoint supports pagination and sorting to efficiently manage large datasets.
 
-The main functionality is implemented in the [`codebase_card`](<#codebase_card>) function, which is decorated as a GET endpoint. This function constructs a complex SQL query using SQLAlchemy to filter and sort codebase data based on various query parameters such as `id`, `primary_asset_kind`, `codebase_kind`, and others. The function uses helper functions to parse and apply filters, sort the results, and paginate the output. The endpoint returns a `ListWithCount` object containing the filtered list of `CodebaseCard` objects and the total count of matching records. The code is structured to minimize database round-trips by using techniques like batched loading and subqueries.
+The code includes several Pydantic models, such as `CommitAuthor`, `CommitInfo`, `BranchInfo`, `RepositoryInfo`, `VersionControlInfo`, `MostRecentMetadata`, `MostRecentVersionContent`, and `CodebaseCard`, to structure the data returned by the API. Helper functions like [`_provider_to_source_type`](<#_provider_to_source_type>), [`_safe_commit_sha`](<#_safe_commit_sha>), [`_parse_asset_kinds`](<#_parse_asset_kinds>), and [`_extract_ordered_keys`](<#_extract_ordered_keys>) are used to process and format data. The endpoint is designed to minimize database round-trips by using techniques like batched loading and subqueries, ensuring efficient data retrieval.
 # Imports and Dependencies
 
 ---
@@ -16,15 +16,16 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 - `datetime.datetime`
 - `typing.Any`
 - `uuid.UUID`
-- `database.models_v1.DerivedContent`
-- `database.models_v2.Node`
-- `database.models_v2.PrimaryAsset`
-- `database.models_v2.PrimaryAssetKind`
-- `database.models_v2.PrimaryAssetProvider`
-- `database.models_v2.PrimaryAssetTag`
-- `database.models_v2.Version`
-- `database.models_v2_enums.ContentKind`
-- `database.models_v2_enums.VersionStatus`
+- `database.models.DerivedContent`
+- `database.models.Node`
+- `database.models.PrimaryAsset`
+- `database.models.PrimaryAssetKind`
+- `database.models.PrimaryAssetProvider`
+- `database.models.PrimaryAssetTag`
+- `database.models.Version`
+- `database.models_enums.ContentKind`
+- `database.models_enums.VcsAutoUpdatePolicy`
+- `database.models_enums.VersionStatus`
 - `fastapi.APIRouter`
 - `fastapi.Query`
 - `fastapi.Request`
@@ -50,9 +51,9 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 
 ---
 ### router
-- **Type**: `APIRouter`
-- **Description**: Initializes an instance of the `APIRouter` class from the FastAPI framework. This instance is used to define and manage API routes within the application.
-- **Use**: Used to register and handle HTTP routes and endpoints for the application.
+- **Type**: ``APIRouter``
+- **Description**: Creates an instance of `APIRouter` from the FastAPI framework. This instance is used to define and manage API routes within the application.
+- **Use**: Used to define and manage API routes for the application.
 
 
 # Classes
@@ -63,9 +64,9 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 
 - **Members**:
     - `name`: Optional string for the author's name.
-    - `email`: Optional string for the author's email address.
+    - `email`: Optional string for the author's email.
     - `date`: Datetime object for the commit date.
-- **Description**: Defines the author of a commit with optional name and email, and a required commit date.
+- **Description**: Represents the author of a commit with optional name and email, and a required commit date.
 - **Inherits From**:
     - `BaseModel`
 
@@ -80,7 +81,7 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
     - `message`: Contains the commit message.
     - `url`: Holds the URL to the commit.
     - `author`: Represents the author of the commit as a `CommitAuthor` object.
-- **Description**: Defines the structure for storing information about a commit, including its SHA, message, URL, and author details.
+- **Description**: Represents information about a commit in a version control system, including its SHA hash, message, URL, and author details.
 - **Inherits From**:
     - `BaseModel`
 
@@ -90,8 +91,8 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 [View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L47>)
 
 - **Members**:
-    - `name`: Optional string that represents the name of the branch.
-    - `protected`: Boolean indicating if the branch is protected, default is False.
+    - `name`: Stores the name of the branch, which can be `None`.
+    - `protected`: Indicates if the branch is protected, defaulting to `False`.
 - **Description**: Represents information about a branch in a version control system, including its name and protection status.
 - **Inherits From**:
     - `BaseModel`
@@ -106,7 +107,7 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
     - `namespace`: Stores the namespace of the repository, if available.
     - `full_name`: Stores the full name of the repository.
     - `url`: Stores the URL of the repository, if available.
-- **Description**: Represents information about a repository, including its name, namespace, full name, and URL. This class is a subclass of `BaseModel` from Pydantic, which provides data validation and settings management.
+- **Description**: Represents information about a repository, including its name, namespace, full name, and URL. It extends the `BaseModel` from Pydantic, allowing for data validation and serialization.
 - **Inherits From**:
     - `BaseModel`
 
@@ -116,11 +117,11 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 [View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L59>)
 
 - **Members**:
-    - `provider`: Specifies the version control provider as a string.
-    - `repository`: Holds information about the repository using the `RepositoryInfo` class.
-    - `branch`: Contains details about the branch using the `BranchInfo` class.
-    - `commit`: Stores commit information using the `CommitInfo` class.
-- **Description**: Represents version control information, including the provider, repository, branch, and commit details, using associated data classes for each component.
+    - `provider`: Stores the name of the version control provider.
+    - `repository`: Holds information about the repository.
+    - `branch`: Contains details about the branch.
+    - `commit`: Includes information about the commit.
+- **Description**: Encapsulates version control information, including the provider, repository, branch, and commit details.
 - **Inherits From**:
     - `BaseModel`
 
@@ -133,54 +134,56 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 - **Members**:
     - `id`: Unique identifier for the metadata.
     - `root_node_id`: Identifier for the root node, if available.
-    - `total_files`: Total number of files in the metadata.
+    - `total_files`: Total number of files in the dataset.
     - `driver_ignored_files`: Number of files ignored by the driver, if available.
     - `status`: Current status of the metadata.
     - `total_sloc`: Total source lines of code, if available.
     - `analyzable_sloc`: Number of analyzable source lines of code, if available.
     - `top_language`: Most used programming language, if available.
-    - `analyzable_sloc_by_type`: Mapping of analyzable source lines of code by type, if available.
-- **Description**: Stores metadata about the most recent version of a codebase, including file counts, status, and source lines of code information.
+    - `analyzable_sloc_by_type`: Dictionary mapping file types to analyzable source lines of code, if available.
+    - `analyzable_files_by_type`: Dictionary mapping file types to analyzable files, if available.
+- **Description**: Represents metadata for the most recent version of a codebase, including file counts, source lines of code, and language information.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### MostRecentVersionContent<!-- {{#class:python-backend/backend/app/api/routes/v2/codebase_card.MostRecentVersionContent}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L78>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L79>)
 
 - **Members**:
-    - `root_node_id`: Optional UUID for the root node identifier.
-    - `kind`: Optional list of strings representing the kind of content.
-    - `domain`: Optional list of strings representing the domain of the content.
-    - `audience`: Optional list of strings representing the audience for the content.
-    - `content`: Optional string containing the content itself.
-- **Description**: Stores information about the most recent version of content, including its root node ID, kind, domain, audience, and the content itself.
+    - `root_node_id`: Optional UUID that identifies the root node.
+    - `kind`: Optional list of strings that specify the kind of content.
+    - `domain`: Optional list of strings that specify the domain of content.
+    - `audience`: Optional list of strings that specify the audience for the content.
+    - `content`: Optional string that contains the content itself.
+- **Description**: Represents the most recent version of content with optional metadata such as root node ID, kind, domain, audience, and the content itself.
 - **Inherits From**:
     - `BaseModel`
 
 
 ---
 ### CodebaseCard<!-- {{#class:python-backend/backend/app/api/routes/v2/codebase_card.CodebaseCard}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L86>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L87>)
 
 - **Members**:
     - `id`: Unique identifier for the codebase card.
-    - `organization_id`: Identifier for the organization associated with the codebase card.
-    - `kind`: Type of the codebase card.
-    - `source_type`: Source type of the codebase card.
-    - `version_control`: Information about version control, if available.
-    - `display_name`: Display name of the codebase card.
+    - `vcs_auto_update_policy`: Policy for automatic updates from version control system.
+    - `organization_id`: Identifier for the organization associated with the codebase.
+    - `kind`: Type of the primary asset.
+    - `source_type`: Type of source from which the codebase originates.
+    - `version_control`: Information about the version control system.
+    - `display_name`: Human-readable name for the codebase card.
     - `primary_asset_created_at`: Timestamp when the primary asset was created.
     - `primary_asset_updated_at`: Timestamp when the primary asset was last updated.
-    - `codebase_settings_auto_commit_docs`: Indicates if auto-commit documentation settings are enabled.
+    - `codebase_settings_auto_commit_docs`: Flag indicating if auto-commit documentation is enabled.
     - `status`: Current status of the codebase card.
-    - `browsable`: Indicates if the codebase card is browsable.
+    - `browsable`: Flag indicating if the codebase is browsable.
     - `tags`: List of tags associated with the codebase card.
     - `most_recent_metadata`: Metadata of the most recent version of the codebase.
-    - `most_recent_version_content`: Content of the most recent version, if available.
-    - `model_config`: Configuration for the model, including name population settings.
-- **Description**: Represents a codebase card with details such as unique identifiers, organization association, type, source, version control information, display name, timestamps for creation and updates, status, browsability, tags, and metadata for the most recent version. It includes configuration settings for model behavior.
+    - `most_recent_version_content`: Content of the most recent version of the codebase.
+    - `model_config`: Configuration settings for the model.
+- **Description**: Represents a codebase card with details about the codebase, including version control information, metadata, and settings. It includes identifiers, timestamps, and status information, as well as configuration for automatic updates and documentation.
 - **Inherits From**:
     - `BaseModel`
 
@@ -189,7 +192,7 @@ The main functionality is implemented in the [`codebase_card`](<#codebase_card>)
 
 ---
 ### \_provider\_to\_source\_type<!-- {{#callable:python-backend/backend/app/api/routes/v2/codebase_card._provider_to_source_type}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L105>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L107>)
 
 Maps a `PrimaryAssetProvider` and `PrimaryAssetKind` to a corresponding source type string.
 - **Inputs**:
@@ -203,57 +206,56 @@ Maps a `PrimaryAssetProvider` and `PrimaryAssetKind` to a corresponding source t
 
 ---
 ### \_safe\_commit\_sha<!-- {{#callable:python-backend/backend/app/api/routes/v2/codebase_card._safe_commit_sha}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L121>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L123>)
 
 Returns a safe commit SHA or None based on the version's VCS hash or display name.
 - **Inputs**:
     - `version`: An instance of the `Version` class, which may have attributes like `vcs_hash` and `display_name`.
 - **Logic and Control Flow**:
     - Get the `display_name` attribute from the `version` object, defaulting to `None` if it does not exist.
-    - Set `cand` to the `vcs_hash` of the `version` or the `display_name` if `vcs_hash` is not available.
-    - Check if `cand` is not `None` and if its string representation is 'unversioned' (case-insensitive).
+    - Set `cand` to the `vcs_hash` of the `version` if it exists, otherwise use `disp`.
+    - Check if `cand` is not `None` and if its string representation is 'unversioned' (case insensitive).
     - Return `None` if `cand` is 'unversioned'.
     - Return the string representation of `cand` if it is not `None`, otherwise return `None`.
-- **Output**: A string representing the commit SHA or `None` if the commit is 'unversioned' or not available.
+- **Output**: A string representing the commit SHA if available and valid, otherwise `None`.
 
 
 ---
 ### \_parse\_asset\_kinds<!-- {{#callable:python-backend/backend/app/api/routes/v2/codebase_card._parse_asset_kinds}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L129>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L131>)
 
-Parses a list of string values into a list of [`PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>) enums.
+Parses a list of asset kind strings into a list of [`PrimaryAssetKind`](<../../../../../driver_db/database/models_enums.py.md#primaryassetkind>) enum values.
 - **Inputs**:
-    - `values`: A list of strings or None, representing asset kinds to parse.
+    - `values`: A list of strings representing asset kinds, or `None`.
 - **Logic and Control Flow**:
-    - Check if `values` is None or empty; if so, return an empty list.
-    - Initialize an empty list `kinds` to store parsed [`PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>) values.
+    - Check if `values` is `None` or empty; if so, return an empty list.
+    - Initialize an empty list `kinds` to store parsed [`PrimaryAssetKind`](<../../../../../driver_db/database/models_enums.py.md#primaryassetkind>) values.
     - Iterate over each string `raw` in `values`.
-    - Attempt to convert `raw` to uppercase and retrieve the corresponding [`PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>) enum; append to `kinds` if successful.
-    - If a `KeyError` occurs, attempt to convert `raw` to lowercase and retrieve the corresponding [`PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>) enum; append to `kinds` if successful.
-    - If a `ValueError` occurs during the lowercase conversion, continue to the next iteration without appending.
-    - Return the list `kinds` containing the parsed [`PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>) values.
-- **Output**: A list of [`PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>) enums parsed from the input strings.
+    - Attempt to convert `raw` to uppercase and use it as a key to access [`PrimaryAssetKind`](<../../../../../driver_db/database/models_enums.py.md#primaryassetkind>); append the result to `kinds`.
+    - If a `KeyError` occurs, attempt to convert `raw` to lowercase and use it to instantiate a [`PrimaryAssetKind`](<../../../../../driver_db/database/models_enums.py.md#primaryassetkind>); append the result to `kinds`.
+    - If a `ValueError` occurs during the lowercase conversion, skip the current `raw` and continue with the next item.
+- **Output**: A list of [`PrimaryAssetKind`](<../../../../../driver_db/database/models_enums.py.md#primaryassetkind>) enum values corresponding to the input strings.
 - **Functions Called**:
-    - [`python-backend/driver_db/database/models_v2_enums.PrimaryAssetKind`](<../../../../../driver_db/database/models_v2_enums.py.md#primaryassetkind>)
+    - [`python-backend/driver_db/database/models_enums.PrimaryAssetKind`](<../../../../../driver_db/database/models_enums.py.md#primaryassetkind>)
 
 
 ---
 ### \_extract\_ordered\_keys<!-- {{#callable:python-backend/backend/app/api/routes/v2/codebase_card._extract_ordered_keys}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L144>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L146>)
 
-Extracts and returns the top three keys from a dictionary, sorted by their values in descending order and then by keys in ascending order.
+Extracts and returns the top three keys from a dictionary, ordered by their associated values in descending order and then by key in ascending order.
 - **Inputs**:
     - `md`: A dictionary with string keys and any type of values, or None.
 - **Logic and Control Flow**:
-    - Checks if the input `md` is None or empty; if so, returns None.
-    - Sorts the items of the dictionary `md` by their values in descending order and by keys in ascending order.
-    - Extracts the keys from the sorted items and returns the first three keys as a list.
-- **Output**: A list of the top three keys from the dictionary, sorted as specified, or None if the input is None or empty.
+    - Check if the input `md` is None or empty; if so, return None.
+    - Sort the items of the dictionary `md` by their values in descending order and by keys in ascending order.
+    - Extract the keys from the sorted items and return the first three keys as a list.
+- **Output**: A list of the top three keys from the input dictionary, ordered by their values and keys, or None if the input is None or empty.
 
 
 ---
 ### codebase\_card<!-- {{#callable:python-backend/backend/app/api/routes/v2/codebase_card.codebase_card}} -->
-[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L153>)
+[View Source →](<../../../../../../../backend/app/api/routes/v2/codebase_card.py#L155>)
 
 Returns a list of [`CodebaseCard`](<#codebasecard>) objects with optimized database queries to reduce round-trips.
 - **Decorators**: `@router.get`
@@ -261,29 +263,29 @@ Returns a list of [`CodebaseCard`](<#codebasecard>) objects with optimized datab
     - `request`: The HTTP request object.
     - `session`: The current database session.
     - `user`: The user token containing user information.
-    - `pagination`: Pagination parameters for the query.
-    - `id`: Optional list of UUIDs to filter the codebase cards.
-    - `primary_asset_kind`: Optional list of primary asset kinds to filter the codebase cards.
-    - `codebase_kind`: Optional codebase kind to filter the codebase cards.
-    - `codebase_domain`: Optional codebase domain to filter the codebase cards.
-    - `codebase_audience`: Optional codebase audience to filter the codebase cards.
-    - `top_language`: Optional top language to filter the codebase cards.
-    - `tag_ids`: Optional tag IDs to filter the codebase cards.
+    - `pagination`: The pagination object to control the number of results.
+    - `id`: An optional list of UUIDs to filter the codebase cards.
+    - `primary_asset_kind`: An optional list of primary asset kinds to filter the codebase cards, aliased as 'asset_kind'.
+    - `codebase_kind`: An optional string to filter by codebase kind.
+    - `codebase_domain`: An optional string to filter by codebase domain.
+    - `codebase_audience`: An optional string to filter by codebase audience.
+    - `top_language`: An optional string to filter by top language.
+    - `tag_ids`: An optional string of tag IDs to filter the codebase cards.
 - **Logic and Control Flow**:
     - Create aliased versions of `PrimaryAsset` and `Node` for query building.
     - Build a subquery to select the latest completed version IDs for each primary asset.
-    - Filter primary assets by organization ID and join with the root node based on the latest completed version ID.
-    - Parse and filter primary assets by kind using [`_parse_asset_kinds`](<#_parse_asset_kinds>) function.
-    - Apply additional filters based on provided IDs, top language, and derived content keys.
-    - Determine if pagination should be applied based on the presence of codebase kind, domain, or audience filters.
+    - Filter the base subquery by organization ID and join with the root node based on version ID and depth.
+    - Parse and filter primary asset kinds, defaulting to `CODEBASE` and `FILE` if none are provided.
+    - Apply additional filters based on provided IDs, top language, and derived content keys for kind, domain, and audience.
+    - Determine if pagination should be applied based on the presence of kind, domain, or audience filters.
     - Create subqueries to select the most recent and most recent completed versions for each primary asset.
-    - Join the primary asset with its most recent and most recent completed versions and their root nodes.
-    - Apply additional filters and sorting to the query based on request parameters and pagination.
-    - Execute the query to retrieve assets with their versions and root nodes.
-    - Check if there are no recent root IDs and handle the case for codebases in 'Connecting'.
-    - Create [`CodebaseCard`](<#codebasecard>) objects for each asset with its metadata and version content.
-    - Return a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the list of [`CodebaseCard`](<#codebasecard>) objects and the total count.
-- **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing a list of [`CodebaseCard`](<#codebasecard>) objects and the total count of codebase cards.
+    - Build the main query to select primary assets and their associated versions, joining with the subqueries and applying filters.
+    - Execute the query to retrieve assets with versions and calculate the total count.
+    - If no recent root IDs are found, handle the case for codebases in 'Connecting' state and return early.
+    - Rank derived content by node ID and content kind, selecting the most recent for each kind.
+    - Iterate over the assets with versions, filtering and constructing [`CodebaseCard`](<#codebasecard>) objects based on the derived content and metadata.
+    - Return a [`ListWithCount`](<schemas.py.md#listwithcount>) object containing the constructed [`CodebaseCard`](<#codebasecard>) objects and the total count.
+- **Output**: A [`ListWithCount`](<schemas.py.md#listwithcount>) object containing [`CodebaseCard`](<#codebasecard>) objects and the total count of results.
 - **Functions Called**:
     - [`python-backend/backend/app/api/routes/v2/codebase_card._parse_asset_kinds`](<#_parse_asset_kinds>)
     - [`python-backend/backend/app/api/routes/v2/query_utils.apply_filters_to_query`](<query_utils.py.md#apply_filters_to_query>)

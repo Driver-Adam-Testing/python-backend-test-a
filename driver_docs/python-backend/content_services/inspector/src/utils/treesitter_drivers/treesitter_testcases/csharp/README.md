@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Test cases for C# class, enum, interface, method, namespace, struct definitions, invocations, and using directives.
+Test cases for C# class, enum, interface, method, namespace, struct definitions, and using directives.
 
 
 ## Files
@@ -11,7 +11,7 @@ Test cases for C# class, enum, interface, method, namespace, struct definitions,
 - **[test_enums.cs](test_enums.cs.md)**: Test cases for various C# enum definitions, including usage examples and extension methods.
 - **[test_interfaces.cs](test_interfaces.cs.md)**: Test cases for various C# interface definitions, including inheritance, generics, and default implementations.
 - **[test_invocations.cs](test_invocations.cs.md)**: Test cases for various C# method invocation types, including constructors, static, instance, and async methods.
-- **[test_methods.cs](test_methods.cs.md)**: Test cases for various C# method definitions, including constructors, properties, and operators.
+- **[test_methods.cs](test_methods.cs.md)**: Test cases for C# method definitions, including constructors, properties, methods, and events.
 - **[test_namespaces.cs](test_namespaces.cs.md)**: Test cases for C# namespace definitions, including global, traditional, and file-scoped styles.
 - **[test_structs.cs](test_structs.cs.md)**: Test cases for various C# struct definitions, including simple, readonly, ref, generic, and record structs.
 - **[test_usings.cs](test_usings.cs.md)**: Test cases for C# using directives, including aliases, static, global, and file-scoped namespaces.

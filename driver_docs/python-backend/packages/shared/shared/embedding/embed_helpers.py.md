@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for downloading files from S3 and generating embeddings for text content.
+Functions for downloading source content files from S3 and generating embeddings for text strings.
 
 # Purpose
 The code provides functionality for downloading a file from an Amazon S3 bucket and generating text embeddings asynchronously. It includes two main functions: [`download_source_content_file`](<#download_source_content_file>) and [`generate_embeddings_for_string`](<#generate_embeddings_for_string>). The [`download_source_content_file`](<#download_source_content_file>) function downloads a file from a specified S3 bucket to a local path. It constructs the S3 key from the provided URL and relative path, then uses the `s3_client` to download the file to the local system. The function ensures that the necessary directories exist before downloading the file.
 
-The [`generate_embeddings_for_string`](<#generate_embeddings_for_string>) function processes a given text string by splitting it into smaller documents using the `split_text` function from the `shared.chunking.text_splitter` module. It then attempts to generate embeddings for these documents using the `async_batch_embed_text` function from the `shared.embedding.text_embedder` module. The function includes a retry mechanism to handle potential failures during the embedding process, with a maximum of 10 attempts. If successful, it returns a tuple containing the split documents and their corresponding embeddings.
+The [`generate_embeddings_for_string`](<#generate_embeddings_for_string>) function processes a given text string by splitting it into smaller documents using the `split_text` function from the `shared.chunking.text_splitter` module. It then attempts to generate embeddings for these documents using the `async_batch_embed_text` function from the `shared.embedding.text_embedder` module. The function includes a retry mechanism to handle potential failures during the embedding process, retrying up to ten times with a short delay between attempts. The function returns a tuple containing the split documents and their corresponding embeddings.
 # Imports and Dependencies
 
 ---
@@ -27,18 +27,17 @@ The [`generate_embeddings_for_string`](<#generate_embeddings_for_string>) functi
 Downloads a file from an S3 bucket to a local path.
 - **Inputs**:
     - `s3_client`: An S3 client object used to interact with the S3 service.
-    - `codebase_storage_url`: A string representing the URL of the codebase storage, which includes the bucket name.
+    - `codebase_storage_url`: A string representing the URL of the codebase storage.
     - `codebase_root`: A string representing the root directory of the codebase (not used in the function).
     - `source_content_rel_path`: A string representing the relative path of the source content to download.
     - `download_root`: A `Path` object representing the root directory where the file will be downloaded.
 - **Logic and Control Flow**:
-    - Parse the `codebase_storage_url` to extract the bucket name and construct the S3 key.
-    - Create the local download path by combining `download_root` and `source_content_rel_path`.
-    - Ensure the parent directory of the local download path exists by creating it if necessary.
-    - Use the `s3_client` to download the file from the S3 bucket using the bucket name and S3 key.
+    - Parse the `codebase_storage_url` to extract the bucket name and S3 key.
+    - Construct the local download path by combining `download_root` and `source_content_rel_path`.
+    - Create the parent directories for the local download path if they do not exist.
+    - Use the `s3_client` to download the file from the S3 bucket to the local path.
     - Print a message indicating the file has been downloaded.
-    - Return the local download path.
-- **Output**: A `Path` object representing the local path where the file was downloaded.
+- **Output**: A `Path` object representing the local path where the file is downloaded.
 
 
 ---
@@ -46,17 +45,20 @@ Downloads a file from an S3 bucket to a local path.
 [View Source →](<../../../../../../packages/shared/shared/embedding/embed_helpers.py#L31>)
 
 Generates embeddings for a given string by splitting it into documents and processing each document asynchronously.
+- **Decorators**: `@async`
 - **Inputs**:
-    - `content`: A string that contains the text to process and generate embeddings for.
+    - `content`: A string that needs to be split into documents and embedded.
 - **Logic and Control Flow**:
-    - Split the input `content` into `split_documents` using the [`split_text`](<../chunking/text_splitter.py.md#split_text>) function.
+    - Call [`split_text`](<../chunking/text_splitter.py.md#split_text>) to divide the input `content` into smaller documents.
     - Check if `split_documents` is not empty.
-    - If not empty, set `max_retries` to 10 and attempt to generate embeddings up to `max_retries` times.
-    - In each attempt, call [`async_batch_embed_text`](<text_embedder.py.md#async_batch_embed_text>) to generate embeddings for the text of each document in `split_documents`.
-    - If an exception occurs, print a retry message and wait for 0.5 seconds before retrying, unless it is the last attempt.
-    - If all attempts fail, raise the exception.
+    - Set `max_retries` to 10 for retry attempts in case of failure.
+    - Iterate over a range of `max_retries` to attempt embedding.
+    - In each attempt, call [`async_batch_embed_text`](<text_embedder.py.md#async_batch_embed_text>) to generate embeddings for the text of each document.
+    - If an exception occurs, check if the current attempt is less than `max_retries - 1`.
+    - If so, print a retry message, wait for 0.5 seconds, and print the exception.
+    - If the maximum number of retries is reached, print a failure message and raise the exception.
     - Return the `split_documents` and their corresponding `embeds` if successful.
-    - If `split_documents` is empty, return two empty lists.
+    - Return empty lists if `split_documents` is empty.
 - **Output**: A tuple containing a list of split documents and a list of their corresponding embeddings.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/chunking/text_splitter.split_text`](<../chunking/text_splitter.py.md#split_text>)

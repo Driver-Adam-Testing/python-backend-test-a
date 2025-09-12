@@ -6,7 +6,7 @@
 A Java symbol parser using a tree-sitter driver for parsing Java code.
 
 # Purpose
-The code defines a class `JavaParser` that extends the `SymbolParser` class. It is designed to parse Java code by setting the `language` attribute to "java" and using a fully qualified name delimiter of `.`. The `tree` attribute is assigned the `JavaDriverTree` class, which likely provides the necessary functionality to parse Java syntax trees. This code provides narrow functionality, specifically for parsing Java code, by leveraging the `JavaDriverTree` for syntax tree operations.
+The code defines a class `JavaParser` that extends the `SymbolParser` class. It is designed to parse Java code by setting the `language` attribute to "java" and using a fully qualified name delimiter of `.`. The `tree` attribute is assigned to `JavaDriverTree`, which likely provides the functionality to parse Java syntax trees. This code provides narrow functionality, specifically for parsing Java code using a tree-sitter driver.
 # Imports and Dependencies
 
 ---
@@ -24,7 +24,7 @@ The code defines a class `JavaParser` that extends the `SymbolParser` class. It 
     - `language`: Specifies the programming language as 'java'.
     - `fqn_delimiter`: Defines the delimiter for fully qualified names as '.'.
     - `tree`: References the `JavaDriverTree` for parsing operations.
-- **Description**: Parses Java code by extending the `SymbolParser` class, setting language-specific attributes and utilizing the `JavaDriverTree` for syntax tree operations.
+- **Description**: Parses Java code by extending the `SymbolParser` class, using `JavaDriverTree` for tree operations and '.' as the delimiter for fully qualified names.
 - **Inherits From**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#symbolparser>)
 

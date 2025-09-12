@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines classes for system and user messages in a copy editing context, with detailed editing instructions.
+Defines system and user messages for a copy editor, focusing on editing technical documents.
 
 # Purpose
-This code defines two classes, `CopyEditorSystemMessage` and `CopyEditorUserMessage`, which extend the `LlmMessage` class. These classes are part of a system for handling messages related to technical copy editing tasks. The `CopyEditorSystemMessage` class represents a system message with predefined content that outlines the role and instructions for a technical copy editor. The `CopyEditorUserMessage` class represents a user message and includes a class method [`from_context`](<#copyeditorusermessagefrom_context>) to create an instance from given text and context parameters. The code imports constants and classes from shared modules to facilitate message creation and management, indicating a narrow functionality focused on message handling within a larger system.
+This code defines two classes, `CopyEditorSystemMessage` and `CopyEditorUserMessage`, which extend the `LlmMessage` class from the `shared.v3.interfaces.llm_message` module. The `CopyEditorSystemMessage` class represents a system message with a predefined `content` string that outlines instructions for a technical copy editor to refine technical documents by removing unnecessary and redundant information. The `CopyEditorUserMessage` class represents a user message and includes a class method [`from_context`](<#copyeditorusermessagefrom_context>) that constructs a message from given text segments, wrapping them with specific identifiers imported from `shared.v3.globals.glossary`. This code provides narrow functionality focused on creating structured messages for a copy editing system, likely used in a larger application involving language model interactions.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ This code defines two classes, `CopyEditorSystemMessage` and `CopyEditorUserMess
 
 - **Members**:
     - `message_kind`: Specifies the type of message as `MessageKind.SYSTEM`.
-    - `content`: Contains detailed instructions for technical copy editing.
-- **Description**: Defines a system message for a technical copy editor, providing detailed instructions for editing technical documents to ensure clarity, conciseness, and relevance.
+    - `content`: Contains detailed instructions for a technical copy editor to edit documents.
+- **Description**: Inherits from `LlmMessage` and provides a system message with specific instructions for a technical copy editor to refine and edit technical documents, ensuring clarity, conciseness, and relevance.
 - **Inherits From**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
 
@@ -37,8 +37,8 @@ This code defines two classes, `CopyEditorSystemMessage` and `CopyEditorUserMess
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/copy_editor_messages.py#L42>)
 
 - **Members**:
-    - `message_kind`: Specifies the kind of message as `MessageKind.USER`.
-- **Description**: Represents a user message in the context of a copy editing task, inheriting from `LlmMessage`. It includes a class method `from_context` to create an instance using text to edit, the original user prompt, and content surrounding the cursor position.
+    - `message_kind`: Specifies the type of message as `MessageKind.USER`.
+- **Description**: Inherits from `LlmMessage` and represents a user message in the context of a copy editing task. It includes a class method `from_context` to create an instance using text to edit, the original user prompt, and surrounding page content.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/static/messages/copy_editor_messages.CopyEditorUserMessage.from_context`](<#copyeditorusermessagefrom_context>)
 - **Inherits From**:
@@ -50,7 +50,7 @@ This code defines two classes, `CopyEditorSystemMessage` and `CopyEditorUserMess
 #### CopyEditorUserMessage\.from\_context<!-- {{#callable:python-backend/packages/shared/shared/v3/app/static/messages/copy_editor_messages.CopyEditorUserMessage.from_context}} -->
 [View Source →](<../../../../../../../../../packages/shared/shared/v3/app/static/messages/copy_editor_messages.py#L45>)
 
-Creates a `CopyEditorUserMessage` instance using wrapped text and context information.
+Creates a `CopyEditorUserMessage` instance using provided text and context information.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `text_to_edit`: The text that needs editing.
@@ -63,8 +63,8 @@ Creates a `CopyEditorUserMessage` instance using wrapped text and context inform
     - Wraps `page_content_before_cursor` using `DOCUMENT_CONTENT_BEFORE_CURSOR.wrap`.
     - Wraps `page_content_after_cursor` using `DOCUMENT_CONTENT_AFTER_CURSOR.wrap`.
     - Concatenates all wrapped strings into a single `content` string.
-    - Returns a new instance of `CopyEditorUserMessage` with the `content` string.
-- **Output**: A `CopyEditorUserMessage` instance with the concatenated and wrapped content.
+    - Returns a new `CopyEditorUserMessage` instance with the `content`.
+- **Output**: A `CopyEditorUserMessage` instance with the concatenated content.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#glossarydefinitionwrap>)
 - **See also**: [`python-backend/packages/shared/shared/v3/app/static/messages/copy_editor_messages.CopyEditorUserMessage`](<#copyeditorusermessage>)  (Base Class)

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for extracting content names from `DerivedContent` objects and tests for these functions.
+Functions to extract content names from `DerivedContent` objects and tests for these functions.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
 - **[content_utils.py](content_utils.py.md)**: Functions to extract and return content names from `DerivedContent` objects, with backward compatibility.
-- **[content_utils_test.py](content_utils_test.py.md)**: Tests for content name extraction functions in `content_utils` using `pytest` and `unittest.mock`.
+- **[content_utils_test.py](content_utils_test.py.md)**: Tests for functions that extract or determine content names from JSON or mock objects.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

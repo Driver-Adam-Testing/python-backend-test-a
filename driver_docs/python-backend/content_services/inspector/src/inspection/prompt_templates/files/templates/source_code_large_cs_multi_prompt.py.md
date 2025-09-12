@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates for generating multi-prompt structures for C# source code inspection.
+Templates for generating multi-prompt structured prompts for C# source code inspection.
 
 # Purpose
-The code defines a template for generating structured prompts related to C# source code analysis. It imports several components and instructions from different modules, which are used to construct prompts for analyzing and documenting C# code. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS`, is a list of tuples, each specifying a different aspect of the analysis, such as the purpose of the code, imports and dependencies, classes, structs, and interfaces. Each tuple contains a specific type of prompt or function that processes the C# code to extract relevant information.
+The code defines a structured template for generating multi-prompt instructions related to C# source code analysis. It imports several components and utilities from different modules, which are used to construct prompts and handle C# language specializations. The main purpose of the code is to create a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS`, which consists of a series of tuples. Each tuple represents a specific aspect of the C# source code, such as purpose, imports, classes, structs, and interfaces. These tuples contain instructions and methods for processing and analyzing these aspects using both static analysis and language model (LLM) outputs.
 
-The template uses components like `Prompt`, `Component`, and various collections for C# classes, structs, and interfaces. These components help in creating structured prompts that guide the analysis of C# code. The template is designed to handle large systems by breaking down the analysis into manageable parts, such as identifying imports, classes, structs, and interfaces. The use of `Prompt.empty()` and `Component` allows for the dynamic construction of prompts based on the specific needs of the analysis. This code is intended to be part of a larger system that automates the documentation and analysis of C# source code.
+The template is designed to facilitate the generation of structured prompts for analyzing large C# codebases. It includes instructions for maintaining a consistent style, such as using backticks for code references and avoiding restatements. The code leverages components like `Component`, `Prompt`, and various collections for classes, structs, and interfaces to organize and process the information extracted from the C# code. This setup is intended for use in environments where automated analysis and documentation of C# code are required, providing a systematic approach to extract and present relevant information.
 # Imports and Dependencies
 
 ---
@@ -34,7 +34,7 @@ The template uses components like `Prompt`, `Component`, and various collections
 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_CS
-- **Type**: ``list``
+- **Type**: `list`
 - **Description**: A list of tuples, where each tuple contains a string identifier, a description, and a series of `Prompt` objects or functions related to C# code analysis and documentation. Each tuple represents a different aspect of the code, such as purpose, imports, classes, structs, and interfaces.
 - **Use**: Used to define a structured template for generating multi-prompt documentation for C# source code.
 

@@ -6,7 +6,7 @@
 Fetches an Auth0 access token using client credentials.
 
 # Purpose
-The code defines a function [`get_auth0_token`](<#get_auth0_token>) that retrieves an authentication token from the Auth0 service using client credentials. It constructs a URL using the `AUTH0_DOMAIN` from the application's configuration settings and sends a POST request to the Auth0 OAuth token endpoint. The request includes a JSON payload with the grant type, client ID, client secret, audience, and organization, all of which are sourced from the application's configuration. The function raises an error if the request fails and returns the access token from the response if successful. This code provides a narrow functionality focused on obtaining an Auth0 token for authentication purposes.
+The code defines a function [`get_auth0_token`](<#get_auth0_token>) that retrieves an authentication token from the Auth0 service using the client credentials grant type. It constructs a URL using the `AUTH0_DOMAIN` from the `settings` module and sends a POST request with a JSON payload containing the `client_id`, `client_secret`, `grant_type`, `audience`, and a fixed `organization` value. The function uses the `requests` library to handle the HTTP request and raises an exception if the request fails. Upon a successful request, it returns the `access_token` from the JSON response. This code provides a narrow functionality focused on obtaining an Auth0 token for API authentication.
 # Imports and Dependencies
 
 ---
@@ -23,13 +23,13 @@ The code defines a function [`get_auth0_token`](<#get_auth0_token>) that retriev
 Requests an access token from the Auth0 API using client credentials.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Constructs the URL for the Auth0 token endpoint using the `AUTH0_DOMAIN` from the `settings`.
-    - Creates a payload dictionary with `grant_type`, `client_id`, `client_secret`, `audience`, and `organization` values from the `settings`.
+    - Constructs the URL for the Auth0 token endpoint using the `AUTH0_DOMAIN` from settings.
+    - Creates a payload dictionary with `grant_type`, `client_id`, `client_secret`, `audience`, and `organization` values from settings and a hardcoded organization ID.
     - Sets the request headers to specify JSON content type.
     - Sends a POST request to the Auth0 token endpoint with the payload and headers.
     - Raises an HTTP error if the response status is not successful.
     - Extracts and returns the `access_token` from the JSON response.
-- **Output**: Returns the access token as a string.
+- **Output**: Returns the access token as a string from the Auth0 API response.
 
 
 

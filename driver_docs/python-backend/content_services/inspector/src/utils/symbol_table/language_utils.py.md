@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines language providers and retrieves supported programming languages.
+Defines language providers for Python, C/C++, Java, C#, and JavaScript/TypeScript.
 
 # Purpose
-This code defines a set of language providers and functions to manage them. It imports various language provider classes from different modules, each corresponding to a specific programming language, such as Python, C/C++, Java, C#, and JavaScript/TypeScript. The [`get_language_providers`](<#get_language_providers>) function returns a dictionary mapping language identifiers to their respective provider instances. The [`get_supported_languages`](<#get_supported_languages>) function returns a list of the supported language identifiers by extracting the keys from the dictionary returned by [`get_language_providers`](<#get_language_providers>). This code provides a narrow functionality focused on managing and retrieving language provider instances.
+This code defines a utility for managing language providers in a software system. It imports several language provider classes, such as `CCppLanguageProvider`, `CSharpLanguageProvider`, `JavaLanguageProvider`, `JsTsLanguageProvider`, and `PythonLanguageProvider`, from their respective modules. The function [`get_language_providers`](<#get_language_providers>) returns a dictionary mapping language identifiers to their corresponding provider instances. The function [`get_supported_languages`](<#get_supported_languages>) returns a list of strings representing the keys of the language providers, indicating the languages supported by the system. This code provides a narrow functionality focused on language provider management.
 # Imports and Dependencies
 
 ---
@@ -24,12 +24,12 @@ This code defines a set of language providers and functions to manage them. It i
 ### get\_language\_providers<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/language_utils.get_language_providers}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/symbol_table/language_utils.py#L9>)
 
-Returns a dictionary mapping language identifiers to their respective `LanguageProvider` instances.
+Returns a dictionary mapping language identifiers to their respective language provider instances.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Creates a dictionary with keys as language identifiers and values as instances of `LanguageProvider` subclasses.
+    - Creates a dictionary with keys as language identifiers and values as instances of language provider classes.
     - Returns the created dictionary.
-- **Output**: A dictionary where keys are strings representing programming languages and values are instances of `LanguageProvider` subclasses.
+- **Output**: A dictionary where keys are strings representing language identifiers and values are instances of `LanguageProvider` subclasses.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/python_provider.PythonLanguageProvider`](<providers/python_provider.py.md#pythonlanguageprovider>)
     - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider`](<providers/c_cpp_provider.py.md#ccpplanguageprovider>)

@@ -6,7 +6,7 @@
 Alembic migration script to move top-level content to new enum values.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `e07bf18dd991`, which follows the previous revision `18c0caf4bc99`. The [`upgrade`](<#upgrade>) function executes a migration operation defined in `MIGRATE_TOP_LEVEL` from the `migrate_top_level_content` module, which likely involves moving top-level content to new enumeration values. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that this migration is not reversible through this script.
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. It defines a migration identified by the revision ID `e07bf18dd991`, which follows the previous revision `18c0caf4bc99`. The [`upgrade`](<#upgrade>) function executes a migration operation defined in `MIGRATE_TOP_LEVEL` from the `migrate_top_level_content` module, which likely involves moving top-level content to new enumeration values. The [`downgrade`](<#downgrade>) function is defined but does not perform any operations, indicating that reversing this migration is not implemented.
 # Imports and Dependencies
 
 ---
@@ -19,15 +19,15 @@ This code is a database migration script using Alembic, a database migration too
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: A string that represents the unique identifier for a specific database schema migration in Alembic.
-- **Use**: Used by Alembic to track and apply the correct migration order.
+- **Description**: A string that represents the unique identifier for the current database schema revision in an Alembic migration script.
+- **Use**: Used by Alembic to track and apply database schema changes.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Used by Alembic to identify the parent revision of the current migration.
+- **Description**: A string that represents the identifier of the previous database schema revision in an Alembic migration script. It is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations by specifying the immediate predecessor of the current revision.
 
 
 ---
@@ -53,7 +53,7 @@ This code is a database migration script using Alembic, a database migration too
 Executes a database migration to move top-level content to new enum values.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls the `op.execute` function with the `MIGRATE_TOP_LEVEL` argument to perform the migration.
+    - Calls the `op.execute` function with the `MIGRATE_TOP_LEVEL` argument to perform the migration operation.
 - **Output**: No output is returned.
 
 

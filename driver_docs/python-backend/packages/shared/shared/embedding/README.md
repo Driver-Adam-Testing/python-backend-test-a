@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Functions for S3 file download, text embedding, and error handling using OpenAI models.
+Functions for downloading files from S3 and text embedding using OpenAI models with error handling.
 
 
 ## Files
-- **[embed_helpers.py](embed_helpers.py.md)**: Functions for downloading files from S3 and generating embeddings for text content.
+- **[embed_helpers.py](embed_helpers.py.md)**: Functions for downloading source content files from S3 and generating embeddings for text strings.
 - **[text_embedder.py](text_embedder.py.md)**: Functions for synchronous and asynchronous text embedding using OpenAI models with error handling.
 
 ---

@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alters timestamp columns to use timezone-aware types in multiple database tables.
+Alters timestamp columns to use timezone-aware types with non-null constraints and default values.
 
 # Purpose
-This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script alters the columns of several tables to change their data types and properties. Specifically, it modifies the `created_at` and `updated_at` columns in the `codebases`, `contentmetadata`, `derived_content_types`, `derived_contents`, `runtimelogagenterror`, `runtimelogagentinstance`, `runtimelogagentmessage`, and `workspaces` tables. The changes involve converting the columns from `TIMESTAMP` to `TIMESTAMP` with timezone support (`TIMESTAMP(timezone=True)`) and setting them to be non-nullable with a default value of the current timestamp (`now()`).
+This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script alters the columns of several tables to change their data types and properties. Specifically, it updates the `created_at` and `updated_at` columns in the `codebases`, `contentmetadata`, `derived_content_types`, `derived_contents`, `runtimelogagenterror`, `runtimelogagentinstance`, `runtimelogagentmessage`, and `workspaces` tables. The changes involve converting the columns from `TIMESTAMP` to `TIMESTAMP` with timezone support (`TIMESTAMP(timezone=True)`) and setting them to be non-nullable with a default value of the current time (`now()`).
 
-The script defines an [`upgrade`](<#upgrade>) function that executes the column alterations using the `op.alter_column` function from Alembic. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that the migration is not reversible through this script. The script includes revision identifiers, which Alembic uses to track the migration's position in the sequence of database changes.
+The script defines an [`upgrade`](<#upgrade>) function that performs these alterations using the `op.alter_column` function from Alembic. The [`downgrade`](<#downgrade>) function is defined but does not contain any operations, indicating that the migration is not reversible through this script. The script includes revision identifiers, which Alembic uses to track the migration's position in the sequence of database changes.
 # Imports and Dependencies
 
 ---
@@ -22,29 +22,29 @@ The script defines an [`upgrade`](<#upgrade>) function that executes the column 
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema.
-- **Use**: Used to identify the current migration version in Alembic operations.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database migration revision. It is used by Alembic, a database migration tool for SQLAlchemy, to track the state of the database schema.
+- **Use**: Used to identify the current migration revision in Alembic operations.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
-- **Use**: Indicates the parent revision for the current migration script in Alembic.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of migrations applied to the database.
+- **Use**: Used by Alembic to determine the order of migration scripts and ensure that migrations are applied in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Used to define branch labels for the migration script, but currently not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: ``NoneType``
-- **Description**: Represents a variable that is set to `None`, indicating that there are no dependencies for this migration script. It is used in the context of Alembic, a database migration tool for SQLAlchemy.
-- **Use**: Indicates that the migration script does not depend on any other migration scripts.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata.
+- **Use**: Indicates that this migration script does not depend on any other migration scripts.
 
 
 # Functions
@@ -56,21 +56,22 @@ The script defines an [`upgrade`](<#upgrade>) function that executes the column 
 Alters the timestamp columns in several database tables to include timezone information and sets default values.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Calls `op.alter_column` for each specified table and column to change the column type to `TIMESTAMP` with timezone.
-    - Sets `nullable` to `False` for all columns to ensure they cannot be null.
-    - Applies `server_default=sa.text("now()")` to set the default value of the columns to the current timestamp.
-- **Output**: No output is returned as this function performs database schema alterations.
+    - Calls `op.alter_column` for each specified table and column to change the `existing_type` from `postgresql.TIMESTAMP()` to `postgresql.TIMESTAMP(timezone=True)` where applicable.
+    - Sets `nullable` to `False` for all altered columns, ensuring that these columns cannot have null values.
+    - Sets `server_default` to `sa.text("now()")` for all columns, ensuring that the current timestamp is used as the default value.
+    - Alters columns in the following tables: `codebases`, `contentmetadata`, `derived_content_types`, `derived_contents`, `runtimelogagenterror`, `runtimelogagentinstance`, `runtimelogagentmessage`, and `workspaces`.
+- **Output**: No return value; the function performs database schema alterations.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_07_1956-95c5d718968c_alter_columns_for_timestamp_for_real.downgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_08_07_1956-95c5d718968c_alter_columns_for_timestamp_for_real.py#L140>)
 
-Does not perform any operations and serves as a placeholder for future downgrade logic.
+Does not perform any operations and serves as a placeholder for downgrading the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Contains no logic or control flow as it is currently a placeholder function.
-- **Output**: No output is produced as the function body is empty.
+    - The function body contains only the `pass` statement, indicating no operations are performed.
+- **Output**: No output is produced as the function does not perform any actions.
 
 
 

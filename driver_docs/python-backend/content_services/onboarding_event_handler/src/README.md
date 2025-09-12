@@ -9,7 +9,7 @@ AWS Lambda function for S3 event processing and utilities for AWS S3 and environ
 - **[utils](utils/README.md)**: Utilities for AWS S3 interactions and configuration settings for environment variables.
 
 ## Files
-- **[main.py](main.py.md)**: AWS Lambda function for processing S3 events, handling secrets, and executing onboarding services.
+- **[main.py](main.py.md)**: AWS Lambda function for processing S3 events, handling secrets, and interacting with Auth0 and an onboarding service.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

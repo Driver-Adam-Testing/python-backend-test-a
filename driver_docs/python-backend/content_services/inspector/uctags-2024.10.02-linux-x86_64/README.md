@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration files for library installation, dependency graphs, license, manifest, and documentation for uctags.
+Configuration files for library installation, dependency graphs, license text, release notes, and package metadata.
 
 ## Folders
-- **[.ppkg](.ppkg/README.md)**: Configuration files for library installation, dependency graphs, license, manifest, and documentation for uctags.
+- **[.ppkg](.ppkg/README.md)**: Configuration files for library installation, dependency graphs, license text, release notes, and package metadata.
 
 
 ---

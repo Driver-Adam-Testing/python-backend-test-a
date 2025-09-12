@@ -7,9 +7,9 @@ Scoring classes, entry point identification, and abstract base class for scoring
 
 
 ## Files
-- **[codebase_wide.py](codebase_wide.py.md)**: Implements scoring classes for codebase kinds, domains, and audiences with tag descriptions and prompts.
-- **[entry_point.py](entry_point.py.md)**: Identifies and describes entry points in a codebase using AI models and structured prompts.
-- **[scoring.py](scoring.py.md)**: Abstract base class and functions for scoring tags relevant to a software codebase.
+- **[codebase_wide.py](codebase_wide.py.md)**: Implements scoring classes for codebase kinds, domains, and audiences with tagging and scoring logic.
+- **[entry_point.py](entry_point.py.md)**: Implements classes and functions to identify and describe entry points in a codebase using AI.
+- **[scoring.py](scoring.py.md)**: Defines an abstract base class for scoring tags in a codebase and includes a prompt template for scoring.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

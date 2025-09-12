@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Defines templates for generating structured prompts and analyzing Java source code components.
+Templates for generating structured prompts and analyzing Java source code components.
 
 # Purpose
-This code defines a template for generating documentation for small Java source code files. It imports various components and utilities from different modules to facilitate the creation of structured prompts and collections. The `SOURCE_CODE_SMALL_TEMPLATE_JAVA` list contains tuples that define sections of the documentation, such as "Purpose", "Imports and Dependencies", "Interfaces", and "Classes". Each section uses specific prompts and data extraction methods to gather and format information about the Java code. The template uses components like `Prompt`, `Component`, and collections like `JavaClassCollection` to organize and present the documentation content systematically.
+The code defines a template for generating documentation for small Java source code files. It imports several components and utilities from different modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.java`, to facilitate the creation of structured prompts and data extraction. The `SOURCE_CODE_SMALL_TEMPLATE_JAVA` variable is a list of tuples, each representing a section of the documentation, such as "Purpose", "Imports and Dependencies", "Interfaces", and "Classes". Each section uses specific components and functions to generate content, including prompts and data extraction methods, to provide detailed information about the Java source code. This code provides narrow functionality focused on generating structured documentation for Java code.
 # Imports and Dependencies
 
 ---
@@ -32,7 +32,7 @@ This code defines a template for generating documentation for small Java source 
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_JAVA
 - **Type**: ``list``
 - **Description**: A list of tuples, where each tuple contains a string identifier, a section header, and a series of components or functions related to Java code analysis and transformation. Each tuple is structured to facilitate the generation of structured prompts and the extraction of Java code elements such as imports, interfaces, and classes.
-- **Use**: Used to define a template for generating structured prompts and extracting Java code elements.
+- **Use**: Used to define structured templates for processing and analyzing Java source code.
 
 
 

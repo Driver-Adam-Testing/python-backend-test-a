@@ -3,33 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-HTML page for managing Ngrok tunnels with controls and WebSocket connectivity.
+Web interface for managing Ngrok tunnels with controls for status, start, and stop actions.
 
 # Purpose
-The HTML file defines a user interface for managing Ngrok tunnels. It includes a styled webpage with a title "Ngrok Tunnel Manager" and provides interactive controls for users to start, stop, and check the status of all tunnels. The page uses a combination of HTML, CSS, and JavaScript to create a responsive and interactive experience. The CSS styles the page elements, such as buttons and log areas, to enhance usability and readability. The JavaScript code manages WebSocket connections to a server, allowing real-time updates and interactions. It also handles user commands by sending requests to specific endpoints and updating the status display based on server responses. This file is integral to the codebase as it provides a graphical interface for users to interact with the Ngrok tunnel management system.
+The HTML file defines a user interface for managing Ngrok tunnels. It includes a styled webpage with a title "Ngrok Tunnel Manager" and provides interactive controls for users to start, stop, and check the status of all tunnels. The page uses CSS to style elements such as buttons and log displays, ensuring a consistent and user-friendly appearance. JavaScript is used to handle WebSocket connections and HTTP requests, allowing real-time communication with a server to execute commands and update the status and log information dynamically. This file is integral to the codebase as it provides the front-end interface for interacting with the Ngrok tunnel management system.
 # Content Summary
-The provided HTML document is a user interface for managing Ngrok tunnels. It includes a title, "Ngrok Tunnel Manager," and uses a combination of HTML, CSS, and JavaScript to create a functional web page.
+The provided HTML document is a user interface for managing Ngrok tunnels. It includes a title, "Ngrok Tunnel Manager," and a set of controls for interacting with the tunnels. The document uses CSS to style the page, ensuring a consistent appearance across different platforms and devices. The body of the page is styled with a maximum width, centered layout, and a light background color. The controls section contains buttons for checking the status, stopping all tunnels, and starting all tunnels. These buttons are styled with padding, color, and hover effects.
 
-**HTML Structure:**
-- The document defines a basic HTML structure with a `<head>` section containing the title and CSS styles, and a `<body>` section with the main content.
-- The body includes a header (`<h1>`) and two main divisions: one for controls and another for logging.
+The document includes a `<div>` element for displaying logs and another for showing the connection status. The log area is styled to resemble a console with a dark background and monospaced font, allowing for easy reading of log messages.
 
-**CSS Styling:**
-- The CSS styles define the appearance of the page, including font settings, layout dimensions, and color schemes.
-- The `.controls` class styles the control panel, which contains buttons for user interaction.
-- The `#log` ID styles the log display area, which shows messages from the server.
-- The `.status` class styles the status display area, which shows the connection status.
-
-**JavaScript Functionality:**
-- The script establishes a WebSocket connection to the server using the `connectWebSocket` function. This function handles connection events, such as opening, closing, and receiving messages.
-- The `sendCommand` function sends HTTP requests to specific endpoints (`/status`, `/stop`, `/start`) when buttons are clicked. It updates the status display based on the server's response.
-- The WebSocket connection automatically attempts to reconnect if it closes, ensuring continuous communication with the server.
-
-**User Interaction:**
-- The interface provides three buttons: "Status," "Stop All," and "Start All." These buttons trigger commands to manage Ngrok tunnels.
-- The status of the connection and any server messages are displayed in the designated areas, providing feedback to the user.
-
-This document serves as a simple web-based control panel for managing Ngrok tunnels, allowing users to start, stop, and check the status of tunnels through a graphical interface.
+A JavaScript script is embedded in the document to handle WebSocket connections and HTTP requests. The script establishes a WebSocket connection to the server when the page loads, updating the status display based on the connection state. It also listens for messages from the server, appending them to the log display. The `sendCommand` function sends HTTP requests to specified endpoints when buttons are clicked, updating the status display with the server's response or an error message if the request fails. The script ensures the WebSocket connection attempts to reconnect automatically if it closes unexpectedly.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

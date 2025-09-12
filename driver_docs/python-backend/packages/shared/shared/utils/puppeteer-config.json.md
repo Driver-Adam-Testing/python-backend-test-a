@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for Puppeteer with arguments to disable sandboxing.
+Configuration for Puppeteer with no-sandbox and disable-setuid-sandbox arguments.
 
 # Purpose
-The JSON configuration file specifies command-line arguments for a process. The `args` array contains two flags: `--no-sandbox` and `--disable-setuid-sandbox`. These flags are used to disable the sandboxing features of a process, which can be necessary for certain environments or debugging purposes.
+The JSON configuration file specifies command-line arguments for a process. The `args` array contains two flags: `--no-sandbox` and `--disable-setuid-sandbox`. These flags are used to disable the sandboxing features, which can be necessary for certain environments where sandboxing is not supported or causes issues.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

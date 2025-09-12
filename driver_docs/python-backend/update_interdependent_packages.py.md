@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Automates running 'poetry lock' in interdependent Python projects by determining execution order.
+Automates the execution of 'poetry lock' for interdependent Python projects in a specified directory.
 
 # Purpose
-This script automates the process of running the `poetry lock` command in multiple interdependent Python projects within a directory structure, such as a monorepo. It ensures that dependencies are locked in the correct order by analyzing the interdependencies between projects. The script first checks if the installed Poetry version is 2.x, as this is a requirement. It then locates all `pyproject.toml` files in the specified root directory, extracts project names and dependencies, and constructs a dependency graph. Using this graph, it determines the correct execution order for running `poetry lock` to prevent errors or inconsistent lock files due to unresolved dependencies.
+This script automates the process of running the `poetry lock` command in multiple interdependent Python projects within a directory structure, such as a monorepo. It ensures that dependencies are locked in the correct order by analyzing the interdependencies between projects. The script first checks for the required version of Poetry, then locates all `pyproject.toml` files in the specified root directory, excluding certain directories like `.venv` and `dev_stack`. It extracts project information and dependencies from these files to create a dependency graph.
 
-The script provides a command-line interface using the `argparse` module, allowing users to specify the root directory to search for `pyproject.toml` files and to perform a dry run to see the planned actions without executing them. The main components include functions for checking the Poetry version, locating `pyproject.toml` files, extracting project information, creating a dependency graph, determining execution order, and executing the `poetry lock` command in the correct sequence. The script is intended to be run as a standalone tool and does not define public APIs or external interfaces for use in other modules.
+The script uses a topological sort to determine the correct execution order for running `poetry lock` based on the dependencies between projects. It then executes the `poetry lock` command in each project directory in the determined order, optionally performing a dry run to show the planned actions without executing them. The script is designed to be run from the command line, with options to specify the root directory and whether to perform a dry run.
 # Imports and Dependencies
 
 ---
@@ -34,7 +34,7 @@ Checks if the installed Poetry version is 2.x and exits with an error if not.
     - Strips the output to get the version string.
     - Checks if the version string contains ' 2.' to verify it is version 2.x.
     - Raises a `ValueError` if the version is not 2.x.
-    - Catches `subprocess.CalledProcessError` exceptions, prints an error message, and exits the program with a status code of 1.
+    - Catches `subprocess.CalledProcessError` if the `subprocess.run` command fails, prints an error message, and exits the program with a status code of 1.
 - **Output**: No output is returned; the function raises an error or exits the program if conditions are not met.
 
 
@@ -42,25 +42,25 @@ Checks if the installed Poetry version is 2.x and exits with an error if not.
 ### locate\_pyproject\_files<!-- {{#callable:python-backend/update_interdependent_packages.locate_pyproject_files}} -->
 [View Source →](<../../update_interdependent_packages.py#L23>)
 
-Searches for all `pyproject.toml` files within a specified root directory and returns their paths.
+Identifies and returns a list of `pyproject.toml` files in a given directory, excluding those in `.venv` and `dev_stack` directories.
 - **Inputs**:
     - `root_dir`: The root directory path as a string where the function will search for `pyproject.toml` files.
 - **Logic and Control Flow**:
-    - Use the `Path` class from the `pathlib` module to create a `Path` object from the `root_dir` string.
-    - Call the `rglob` method on the `Path` object to recursively search for all files named `pyproject.toml` within the directory tree starting at `root_dir`.
-    - Convert the result of `rglob` into a list and return it.
-- **Output**: A list of `Path` objects, each representing the path to a `pyproject.toml` file found within the specified root directory.
+    - Uses `Path.rglob` to recursively find all `pyproject.toml` files in the specified `root_dir`.
+    - Filters out any paths that contain `.venv` or `dev_stack` in their directory parts.
+    - Returns the filtered list of `Path` objects representing the `pyproject.toml` files.
+- **Output**: A list of `Path` objects representing the filtered `pyproject.toml` files.
 
 
 ---
 ### extract\_project\_info<!-- {{#callable:python-backend/update_interdependent_packages.extract_project_info}} -->
-[View Source →](<../../update_interdependent_packages.py#L27>)
+[View Source →](<../../update_interdependent_packages.py#L35>)
 
 Extracts the project name and dependencies from a given `pyproject.toml` file.
 - **Inputs**:
     - `pyproject_path`: A `Path` object representing the path to the `pyproject.toml` file.
 - **Logic and Control Flow**:
-    - Load the TOML data from the file at `pyproject_path`.
+    - Load the TOML data from the specified `pyproject.toml` file using `toml.load`.
     - Attempt to retrieve the project name from the TOML data under the key `tool.poetry.name`.
     - If the project name is not found, raise a `KeyError` with a specific error message.
     - Attempt to retrieve the dependencies from the TOML data under the key `tool.poetry.dependencies`.
@@ -72,7 +72,7 @@ Extracts the project name and dependencies from a given `pyproject.toml` file.
 
 ---
 ### create\_dependency\_graph<!-- {{#callable:python-backend/update_interdependent_packages.create_dependency_graph}} -->
-[View Source →](<../../update_interdependent_packages.py#L45>)
+[View Source →](<../../update_interdependent_packages.py#L53>)
 
 Creates a dependency graph from a list of `pyproject.toml` files.
 - **Inputs**:
@@ -93,7 +93,7 @@ Creates a dependency graph from a list of `pyproject.toml` files.
 
 ---
 ### determine\_execution\_order<!-- {{#callable:python-backend/update_interdependent_packages.determine_execution_order}} -->
-[View Source →](<../../update_interdependent_packages.py#L68>)
+[View Source →](<../../update_interdependent_packages.py#L76>)
 
 Determines the execution order of projects based on their dependencies using topological sorting.
 - **Inputs**:
@@ -101,45 +101,46 @@ Determines the execution order of projects based on their dependencies using top
 - **Logic and Control Flow**:
     - Create a `TopologicalSorter` object with the given project dependencies.
     - Attempt to return a list of projects in topological order using `static_order()`.
-    - If a `CycleError` occurs, print an error message indicating a circular dependency and exit the program with a status code of 1.
+    - If a `CycleError` occurs, print an error message about circular dependencies and exit the program.
 - **Output**: A list of project names sorted in an order that respects their dependencies.
 
 
 ---
 ### execute\_poetry\_lock<!-- {{#callable:python-backend/update_interdependent_packages.execute_poetry_lock}} -->
-[View Source →](<../../update_interdependent_packages.py#L79>)
+[View Source →](<../../update_interdependent_packages.py#L87>)
 
 Executes the 'poetry lock' command in each project directory, providing reasons for each action based on project dependencies.
 - **Inputs**:
     - `ordered_project_names_and_dirs`: A list of tuples, where each tuple contains a project name and its corresponding directory path.
-    - `project_name_to_project_deps`: A dictionary mapping project names to a list of their local project dependencies.
-    - `dry_run`: A boolean flag indicating whether to perform a dry run (only print actions without executing them).
+    - `project_name_to_project_deps`: A dictionary mapping project names to a list of their dependencies.
+    - `dry_run`: A boolean flag indicating whether to perform a dry run (True) or execute the command (False).
 - **Logic and Control Flow**:
     - Iterates over each project name and directory in the provided list.
     - For each project, retrieves its dependencies from the dictionary.
-    - Constructs a text message explaining the reason for running 'poetry lock', based on whether the project has dependencies.
-    - Prints a message indicating whether it would run or is running 'poetry lock', depending on the 'dry_run' flag.
-    - If 'dry_run' is False, attempts to execute the 'poetry lock' command in the project's directory using 'subprocess.run'.
-    - Catches 'subprocess.CalledProcessError' exceptions to handle errors during command execution, printing an error message and exiting the program with a non-zero status.
-- **Output**: No return value; performs actions and prints messages to the console.
+    - Constructs a reason text based on whether the project has dependencies or not.
+    - Determines the action text based on the 'dry_run' flag, either 'Would run' or 'Running'.
+    - Prints a message indicating the action and reason for each project.
+    - If 'dry_run' is False, attempts to execute the 'poetry lock' command in the project's directory.
+    - Catches and handles any 'subprocess.CalledProcessError' exceptions, printing an error message and exiting the program with a status code of 1.
+- **Output**: No output is returned; the function performs actions and prints messages to the console.
 
 
 ---
 ### main<!-- {{#callable:python-backend/update_interdependent_packages.main}} -->
-[View Source →](<../../update_interdependent_packages.py#L107>)
+[View Source →](<../../update_interdependent_packages.py#L115>)
 
 Automates the process of running 'poetry lock' in multiple interdependent Python projects within a directory structure.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Initializes an argument parser with a description of the script's purpose and usage.
-    - Adds command-line arguments '--root-dir' and '--dry-run' to the parser.
-    - Parses the command-line arguments to obtain user inputs.
-    - Calls 'locate_pyproject_files' to find all 'pyproject.toml' files in the specified root directory.
-    - Calls 'create_dependency_graph' to build a dependency graph and map project names to their directories.
-    - Determines the execution order of projects using 'determine_execution_order' based on the dependency graph.
-    - Creates a list of tuples containing project names and their directories in the determined execution order.
-    - Calls 'execute_poetry_lock' to run 'poetry lock' in each project directory, considering the '--dry-run' option.
-- **Output**: No output is returned as the function is designed to execute a series of operations based on command-line arguments.
+    - Creates an argument parser with a description of the script's purpose and usage.
+    - Adds arguments '--root-dir' and '--dry-run' to the parser to specify the root directory and enable dry run mode, respectively.
+    - Parses command-line arguments to obtain user inputs.
+    - Calls 'locate_pyproject_files' to find all 'pyproject.toml' files in the specified root directory, excluding certain directories.
+    - Calls 'create_dependency_graph' to build a graph of project dependencies and their directories from the located 'pyproject.toml' files.
+    - Calls 'determine_execution_order' to compute the correct order to process projects based on their dependencies.
+    - Prepares a list of project names and directories in the determined execution order.
+    - Calls 'execute_poetry_lock' to run 'poetry lock' in each project directory, considering the dry run option.
+- **Output**: No output is returned as the function is of type 'None' and performs its operations through side effects such as executing commands and printing messages.
 - **Functions Called**:
     - [`python-backend/update_interdependent_packages.locate_pyproject_files`](<#locate_pyproject_files>)
     - [`python-backend/update_interdependent_packages.create_dependency_graph`](<#create_dependency_graph>)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration file for LLM models and document structure in the architecture documentation process.
+Configuration for LLM models and document structure to create an architecture document.
 
 # Purpose
-The configuration file defines settings for a document generation process. In the `[llm]` section, it specifies different language models for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing, using models like `gpt-4o` and `o3-mini`. The `[document]` section outlines the goal of creating a detailed architecture document for the codebase, with a specified format of `defined_sections` and tagging enabled. It also includes metadata such as the configuration name "Architecture Custom" and version "[V1]". The `[[sections]]` array defines individual document sections, such as an "Overview" with a level of 1, marked as required, and provides instructions for content structure and creation method.
+The configuration file defines settings for a document generation process. In the `[llm]` section, it specifies different models for various tasks such as tagging, section initialization, updating, formatting, assembly, and copy editing, using models like `gpt-4o` and `o3-mini`. The `[document]` section outlines the goal of creating a detailed architecture document for the codebase, with a specified format of `defined_sections` and tagging enabled. It also includes metadata such as the configuration name and version. The `[[sections]]` array describes individual sections of the document, such as an "Overview" section, which is required and should provide an introduction to the library, including its purpose, scope, and capabilities, using a "scatter_gather" method for section creation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

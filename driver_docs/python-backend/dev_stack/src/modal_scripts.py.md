@@ -6,9 +6,9 @@
 Generates a bash script for deploying services to a specified environment using modal and poetry.
 
 # Purpose
-The function [`build_modal_deploy_script`](<#build_modal_deploy_script>) generates a shell script for deploying various services to a specified environment using the `modal` command-line tool. The function takes two parameters: `token_id` and `token_secret`, which are used to set authentication credentials for the `modal` tool. The generated script checks if an environment argument is provided and exits with an error message if it is not. It then sets the `modal` token and activates a profile named `driver-ai`.
+The function [`build_modal_deploy_script`](<#build_modal_deploy_script>) generates a Bash script for deploying various services to a specified environment using the `modal` command-line tool. The function takes two parameters: `token_id` and `token_secret`, which are used to set authentication tokens for the `modal` tool. The script checks if an environment argument is provided and exits with an error message if it is not. It then sets the `modal` token and activates a profile named `driver-ai`.
 
-The script navigates through several directories related to different content services, such as `inspector`, `agent`, `pdf_preprocessing`, and `autodocs`. In each directory, it installs dependencies using `poetry` and deploys the service by running `modal deploy` with the specified environment. The function returns the complete shell script as a string, which can be executed to automate the deployment process across multiple services.
+The script navigates through several directories related to different content services, such as `inspector`, `agent`, `pdf_preprocessing`, and `autodocs`. In each directory, it installs dependencies using `poetry` without installing the root package and deploys the service using the `modal deploy` command with the specified environment. The function returns the complete Bash script as a string, which can be executed to automate the deployment process across multiple services.
 # Functions
 
 ---
@@ -23,8 +23,8 @@ Generates a bash script to deploy services to a specified environment using Moda
     - Creates a bash script with a shebang line for execution in a bash shell.
     - Sets the shell options to exit on error and disable filename expansion.
     - Checks if an environment argument is provided; if not, it prints an error message and exits.
-    - Assigns the first command line argument to the `environment` variable and prints the deployment environment.
-    - Sets the Modal token using the provided `token_id` and `token_secret`, and activates the 'driver-ai' profile.
+    - Assigns the first command-line argument to the `environment` variable and prints the deployment environment.
+    - Sets the Modal token using the provided `token_id` and `token_secret` and activates the `driver-ai` profile.
     - Navigates to each service directory, installs dependencies using Poetry, and deploys the service using Modal with the specified environment.
 - **Output**: A string containing the bash script for deploying services.
 

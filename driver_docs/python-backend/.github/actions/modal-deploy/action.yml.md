@@ -6,7 +6,7 @@
 GitHub Action for deploying a modal package with specified inputs and environment variables.
 
 # Purpose
-The configuration file defines a workflow for deploying a modal package. It specifies several required inputs, including `working-directory`, `package-name`, `modal-env`, `modal-token-id`, and `modal-token-secret`, which are necessary for the deployment process. The workflow consists of three main steps: installing dependencies using `poetry install --no-root`, running tests with `poetry run pytest`, and deploying the package using `poetry run modal deploy`. The deployment step uses environment variables `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, and `MODAL_ENV` to authenticate and configure the deployment environment. The deployment command also includes a tag derived from the GitHub SHA to ensure version control.
+The configuration file defines a workflow for deploying a modal package. It specifies several required inputs, including the `working-directory`, `package-name`, `modal-env`, `modal-token-id`, and `modal-token-secret`, which are necessary for the deployment process. The workflow uses a composite run strategy and includes steps to install dependencies, run tests, and deploy the package. The deployment step uses environment variables to pass the modal token ID, token secret, and environment to the deployment command. The deployment command uses `poetry` to execute the `modal deploy` command with the specified environment and a tag derived from the GitHub SHA.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

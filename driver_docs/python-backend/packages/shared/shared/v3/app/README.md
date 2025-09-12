@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Performance testing and LLM-based pipelines, enums, message classes, and file handling tools.
+Performance testing and various pipelines, enumerations, message classes, and document tools.
 
 ## Folders
-- **[pipelines](pipelines/README.md)**: Performance testing pipeline, imports/exports for inline edit, reformat, smart instruction, and LLM-based pipelines.
-- **[static](static/README.md)**: Enums, message classes, response type management, and tools for summaries and file handling.
+- **[pipelines](pipelines/README.md)**: Performance testing pipeline and various pipelines for inline edit, reformat, chat, and smart instruction.
+- **[static](static/README.md)**: Enumerations, message classes, response type management, and tools for document processing and retrieval.
 
 
 ---

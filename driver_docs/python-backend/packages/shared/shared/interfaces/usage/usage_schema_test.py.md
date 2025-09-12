@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Tests for usage schema conversions and balance computations using pytest fixtures.
+Tests for usage schema conversions and balances using pytest fixtures and assertions.
 
 # Purpose
-This code is a test suite for validating the functionality of usage-related components in a software system. It uses the `pytest` framework to define a series of test cases that verify the behavior of classes and functions related to usage metrics, such as `UsageBalance`, `UsageEventSummary`, and `UsageEventRange`. The tests focus on operations like converting between different units of measurement (e.g., SLOC to bytes and vice versa), computing balances, and ensuring the integrity of date ranges.
-
-The test suite includes several `pytest` fixtures that provide predefined instances of `UsageBalance` and `UsageEventSummary` with various configurations. These fixtures are used in the test functions to check the correctness of conversion methods and balance calculations. The tests also ensure that the conversion methods maintain the original values and correctly transform them into the desired units. Additionally, the suite tests the validation of date ranges in `UsageEventRange`, ensuring that invalid date ranges raise appropriate exceptions.
+This code is a test suite for validating the functionality of usage metrics and conversions between different units of measurement, specifically Source Lines of Code (SLOC) and bytes. It uses the `pytest` framework to define fixtures and test cases that check the correctness of operations such as balance computation, unit conversion, and event summary handling. The fixtures provide predefined instances of `UsageBalance` and `UsageEventSummary` with various configurations, which are then used in the test functions to assert expected outcomes. The tests ensure that conversions between SLOC and bytes maintain data integrity and that the `UsageEventRange` correctly handles date parsing and validation.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

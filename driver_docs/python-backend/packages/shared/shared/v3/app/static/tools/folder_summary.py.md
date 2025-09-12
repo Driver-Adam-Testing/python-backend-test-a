@@ -3,18 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-A tool for generating and returning long description summaries of folders in a codebase.
+A tool for generating and returning long description summaries of specified folders in a codebase.
 
 # Purpose
-The `FolderSummaryTool` class is a specialized tool designed to generate summaries for a specified folder, typically at the root of a codebase. It extends the `LlmTool` class and is part of a larger system that interacts with a database to retrieve and process content descriptions. The primary function of this tool is to gather content labeled as `LONG_DESCRIPTION` or `TOP_LEVEL_LONG_DESCRIPTION` from a database, convert these into `Reference` objects, and make them available for citation by an assistant. The tool uses SQL queries to filter and select relevant content based on the folder path provided.
+The `FolderSummaryTool` class is a specialized tool that extends the `LlmTool` interface. Its primary function is to generate long description summaries for a specified folder, typically at the root of a codebase. The tool is designed to be used in contexts where no prior searches have been conducted, and a top-level or second-level folder is in focus. The class includes an attribute `folder_path`, which specifies the relative path to the folder that needs summarization.
 
-The class includes methods for executing the summary generation process and for formatting the results into a response message. The [`_execute`](<#foldersummarytool_execute>) method retrieves the relevant content from the database and creates `Reference` objects for each piece of content. The [`to_tool_call_response_message`](<#foldersummarytoolto_tool_call_response_message>) method formats these references into a message that can be returned to the user, including handling cases where no summaries are found. The class also provides a [`status`](<#foldersummarytoolstatus>) property to report on the readiness of folder summaries. This tool is intended to be used in environments where folder-level content summaries are needed to provide context or information about a codebase.
+The [`_execute`](<#foldersummarytool_execute>) method is a key component of the `FolderSummaryTool`. It retrieves content of the kind `LONG_DESCRIPTION` or `TOP_LEVEL_LONG_DESCRIPTION` from a database for the specified folder path. This content is then converted into `Reference` objects, which can be cited later by the assistant. The [`to_tool_call_response_message`](<#foldersummarytoolto_tool_call_response_message>) method constructs a response message in a format that is visible to the assistant, wrapping the results in a glossary format. If no summaries are found, it returns an error message. The [`status`](<#foldersummarytoolstatus>) property provides a summary of the tool's current state, indicating whether folder summaries are ready or if the summarization process is ongoing.
 # Imports and Dependencies
 
 ---
 - `database.db.get_session`
-- `database.models_v1.ContentKind`
-- `database.models_v1.DerivedContent`
+- `database.models.ContentKind`
+- `database.models.DerivedContent`
 - `shared.v3.globals.glossary.REFERENCE`
 - `shared.v3.globals.glossary.REFERENCE_CONTENT`
 - `shared.v3.globals.glossary.REFERENCE_LIST`
@@ -36,7 +36,7 @@ The class includes methods for executing the summary generation process and for 
 
 - **Members**:
     - `folder_path`: Relative path to the folder to summarize.
-- **Description**: Provides long description summaries for a specified folder, typically the root of a codebase, by gathering and converting relevant content into references for later citation.
+- **Description**: Returns long description summaries for a specified folder, typically the root of a codebase, in a new architecture. It gathers content related to the folder and converts it into references for later citation by an assistant.
 - **Methods**:
     - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool._execute`](<#foldersummarytool_execute>)
     - [`python-backend/packages/shared/shared/v3/app/static/tools/folder_summary.FolderSummaryTool.to_tool_call_response_message`](<#foldersummarytoolto_tool_call_response_message>)
@@ -59,7 +59,7 @@ Gathers and converts content from a specified folder into references for citatio
     - Iterates over each `DerivedContent` entry in the result set.
     - For each entry, retrieves the associated node and determines the version display name.
     - Creates a [`Reference`](<../../../utils/references.py.md#reference>) object for each entry with relevant metadata and adds it to the `_references` collection.
-- **Output**: Does not return any value; modifies the `_references` collection in place.
+- **Output**: No output is returned as the method's return type is `None`; it modifies the state of the `_references` attribute.
 - **Functions Called**:
     - [`python-backend/driver_db/database/db.get_session`](<../../../../../../../driver_db/database/db.py.md#get_session>)
     - [`python-backend/packages/shared/shared/v3/utils/references.Reference`](<../../../utils/references.py.md#reference>)
@@ -74,11 +74,11 @@ Gathers and converts content from a specified folder into references for citatio
 Builds a response message for the assistant, wrapping folder summary results or an error message if no summaries are found.
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Checks if `_references` is empty; if true, returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with an error message indicating no summaries found for the specified folder path.
-    - If `_references` is not empty, serializes each reference into a compact list format, wrapping content and paths with glossary terms.
+    - Checks if `_references` is empty; if true, returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with an error message indicating no summaries were found for the specified folder path.
+    - If `_references` is not empty, serializes each reference into a compact list format, wrapping the content and path information.
     - Truncates the serialized references to 75000 characters if they exceed this length and sets an error message indicating the truncation.
-    - Returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with the serialized references and a tool response indicating the results for the folder path.
-- **Output**: An [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) object containing either an error message or the serialized folder summary results.
+    - Returns an [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) with the serialized folder summary results wrapped in a specific format.
+- **Output**: An [`LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>) object containing either an error message or the folder summary results.
 - **Functions Called**:
     - [`python-backend/packages/shared/shared/v3/interfaces/llm_message.LlmMessage`](<../../../interfaces/llm_message.py.md#llmmessage>)
     - [`python-backend/packages/shared/shared/v3/globals/glossary.GlossaryDefinition.wrap`](<../../../globals/glossary.py.md#glossarydefinitionwrap>)

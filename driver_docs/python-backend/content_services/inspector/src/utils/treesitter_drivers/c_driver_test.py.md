@@ -6,7 +6,7 @@
 Tests for extracting C/C++ code elements like imports, functions, enums, structs, unions, globals, and function calls using `CppCDriverTree`.
 
 # Purpose
-This code is a test suite for a Python module that uses the `pytest` framework to validate the functionality of a C/C++ code analysis tool. The tests focus on extracting various elements from C/C++ source code, such as import statements, function definitions, enums, structs, unions, global variables, function calls, and function declarations. The `CppCDriverTree` class is used to parse the C/C++ code and extract these elements. The test cases use fixtures to load test code from files and employ parameterized tests to check for expected names and line ranges of the extracted elements. The tests also include checks for known issues, such as the inability to capture unnamed elements, and ensure that duplicate declarations are not present.
+This code is a test suite for verifying the functionality of the `CppCDriverTree` class, which is part of a C/C++ code analysis tool. It uses the `pytest` framework to define multiple test cases that check the extraction of various code elements such as imports, function definitions, enums, structs, unions, global variables, function calls, and function declarations from C source code. The tests use fixtures to load C code from files and parameterized test cases to validate the expected results against the actual output from the `CppCDriverTree` methods. The test suite ensures that the `CppCDriverTree` can accurately parse and extract these elements, and it also includes tests for known issues where certain elements are not captured correctly.
 # Imports and Dependencies
 
 ---
@@ -22,7 +22,7 @@ This code is a test suite for a Python module that uses the `pytest` framework t
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L503>)
 
 - **Decorators**: `@pytest.mark.parametrize`
-- **Description**: Tests the extraction of function declarations from C code using the `CppCDriverTree` class. It verifies that the extracted declarations match expected function names and line ranges, ensuring that only function declarations are included and not definitions or non-function declarations.
+- **Description**: Tests the extraction of function declarations from C code using the `CppCDriverTree` class. It verifies that function declarations are correctly identified, ensuring that definitions and non-function declarations are excluded.
 - **Methods**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_driver_test.TestDelcarations.test_extract_function_declarations`](<#testdelcarationstest_extract_function_declarations>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_driver_test.TestDelcarations.test_declarations_not_definitions`](<#testdelcarationstest_declarations_not_definitions>)
@@ -34,19 +34,19 @@ This code is a test suite for a Python module that uses the `pytest` framework t
 #### TestDelcarations\.test\_extract\_function\_declarations<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_driver_test.TestDelcarations.test_extract_function_declarations}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L504>)
 
-Validates that function declarations are correctly extracted from C code using a parameterized test.
+Validates the extraction of function declarations from C code using expected names and line ranges.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
-    - `function_declaration_test_code`: A string containing C code to test for function declarations.
+    - `function_declaration_test_code`: A string containing C code to test function declaration extraction.
     - `expected_function_name`: The name of the function expected to be found in the declarations.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the function declaration.
 - **Logic and Control Flow**:
     - Create a `CppCDriverTree` object from the provided C code string.
     - Extract function declarations using the [`extract_function_declarations`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_declarations>) method of `CppCDriverTree`.
-    - Iterate over the extracted declarations to verify that each has an empty fully qualified path, asserting that all functions are in the global scope.
-    - Check for duplicate declarations in the extracted list and assert that there are none.
+    - Iterate over the extracted declarations to check that each has an empty fully qualified path, asserting if not.
+    - Check for duplicate declarations in the extracted list and assert if any are found.
     - Assert that the expected function name and line range are present in the extracted declarations.
-- **Output**: No output is returned; the function uses assertions to validate the correctness of the function declarations extraction.
+- **Output**: No output is returned; assertions are used to validate the test conditions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_declarations`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_declarations>)
@@ -59,14 +59,13 @@ Validates that function declarations are correctly extracted from C code using a
 
 Ensures that function definitions are not mistakenly included in function declarations.
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestDelcarations`.
     - `function_declaration_test_code`: A string containing C code to test for function declarations.
 - **Logic and Control Flow**:
-    - Creates a `CppCDriverTree` object from the provided C code string `function_declaration_test_code`.
-    - Extracts function declarations from the `CppCDriverTree` object.
-    - Generates a list of function names from the extracted declarations.
-    - Asserts that the function name 'some_function' is not present in the list of function names, indicating it is not included as a declaration.
-- **Output**: Does not return a value; raises an assertion error if a function definition is found in the declarations.
+    - Create a `CppCDriverTree` object from the provided C code string.
+    - Extract function declarations from the `CppCDriverTree` object.
+    - Create a list of function names from the extracted declarations.
+    - Assert that the function name 'some_function' is not in the list of function names, indicating it is not included as a declaration.
+- **Output**: No output is returned, but an assertion error is raised if 'some_function' is found in the declarations.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_declarations`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_declarations>)
@@ -77,17 +76,17 @@ Ensures that function definitions are not mistakenly included in function declar
 #### TestDelcarations\.test\_non\_function\_declarations\_excluded<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_driver_test.TestDelcarations.test_non_function_declarations_excluded}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L566>)
 
-Ensures that non-function declarations are not mistakenly included in the list of function declarations.
+Ensures non-function declarations are not included in extracted function declarations.
 - **Inputs**:
     - `self`: Represents the instance of the class to which this method belongs.
     - `function_declaration_test_code`: A string containing C code to test for function declarations.
 - **Logic and Control Flow**:
-    - Create a `CppCDriverTree` object from the provided C code string using `CppCDriverTree.from_code`.
-    - Extract function declarations from the `driver_tree` using [`extract_function_declarations`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_declarations>).
+    - Create a `CppCDriverTree` object from the provided C code string using [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Extract function declarations from the `driver_tree` using [`extract_function_declarations`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_declarations>) method.
     - Create a list of function names from the extracted declarations.
-    - Assert that the variable 'not_a_function' is not in the list of function names, raising an error if it is found.
-    - Assert that the typedef 'signal_handler_t' is not in the list of function names, raising an error if it is found.
-- **Output**: No output is returned; the function raises an assertion error if non-function declarations are found in the function declarations.
+    - Assert that the variable 'not_a_function' is not in the list of function names.
+    - Assert that the typedef 'signal_handler_t' is not in the list of function names.
+- **Output**: No output is returned; assertions are used to validate the test conditions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_declarations`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_declarations>)
@@ -106,9 +105,9 @@ Returns a string containing C code with various include directives and a main fu
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Returns a multi-line string that contains C code.
-    - The C code includes several `#include` directives for different headers.
+    - The C code includes several `#include` directives for different header files.
     - A conditional `#if` directive includes either `custom.h` or `default.h` based on the `USE_CUSTOM_HEADER` definition.
-    - Defines a `main` function that returns 1.
+    - Defines a simple `main` function that returns 1.
 - **Output**: A string containing C code with include directives and a main function.
 
 
@@ -117,7 +116,7 @@ Returns a string containing C code with various include directives and a main fu
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L25>)
 
 Tests the extraction of import statements from C code using the `CppCDriverTree` class.
-- **Decorators**: `@pytest.mark.parametrize`
+- **Decorators**: `@pytest.fixture`
 - **Inputs**:
     - `imports_c_code`: A string containing C code with various import statements.
 - **Logic and Control Flow**:
@@ -127,7 +126,7 @@ Tests the extraction of import statements from C code using the `CppCDriverTree`
     - Assert that the number of extracted imports matches the number of expected imports.
     - Extract the names of the imports from the `includes` list.
     - Assert that the extracted import names match the expected import names.
-- **Output**: No output is returned as this is a test function that uses assertions to validate behavior.
+- **Output**: No output is returned as the function is a test case that uses assertions to validate behavior.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_imports`](<c_cpp_driver.py.md#cppcdrivertreeextract_imports>)
@@ -138,14 +137,15 @@ Tests the extraction of import statements from C code using the `CppCDriverTree`
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L50>)
 
 Verifies that the extracted line numbers of import statements in C code match the expected line numbers.
+- **Decorators**: `@pytest.mark`
 - **Inputs**:
     - `imports_c_code`: A string containing C code with import statements to test.
 - **Logic and Control Flow**:
-    - Create a `CppCDriverTree` object from the provided C code string using [`from_code`](<base.py.md#drivertreefrom_code>) method.
-    - Call [`extract_imports`](<c_cpp_driver.py.md#cppcdrivertreeextract_imports>) on the `driver_tree` object to get a list of import statements.
-    - Define `expected_line_numbers` as a list of tuples representing the expected start and end line numbers for each import statement.
-    - Create `extracted_line_numbers` by iterating over `includes` and extracting the start and end line numbers for each import.
-    - Use an `assert` statement to compare `extracted_line_numbers` with `expected_line_numbers` and raise an error if they do not match.
+    - Create a `CppCDriverTree` object from the provided C code string using the [`from_code`](<base.py.md#drivertreefrom_code>) method.
+    - Call the [`extract_imports`](<c_cpp_driver.py.md#cppcdrivertreeextract_imports>) method on the `driver_tree` object to get a list of import statements.
+    - Define a list of expected line numbers for each import statement in the C code.
+    - Extract the start and end line numbers for each import statement from the `includes` list.
+    - Use an `assert` statement to compare the extracted line numbers with the expected line numbers, and raise an error if they do not match.
 - **Output**: None, but raises an assertion error if the extracted line numbers do not match the expected line numbers.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
@@ -178,11 +178,11 @@ Tests the extraction of function definitions from C code using the `CppCDriverTr
     - `expected_function_name`: The name of the function expected to be found in the C code.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the function definition in the C code.
 - **Logic and Control Flow**:
-    - Creates a `CppCDriverTree` object from the provided C code string.
-    - Extracts callable definitions from the `CppCDriverTree` object.
-    - Iterates over the extracted functions to ensure each has an empty fully qualified path, indicating global scope.
-    - Asserts that the expected function name and line range are present in the extracted functions.
-- **Output**: Does not return a value; it asserts the presence of expected function definitions in the extracted data.
+    - Create a `CppCDriverTree` object from the provided C code string.
+    - Extract callable definitions from the `CppCDriverTree` object.
+    - Iterate over the extracted functions to check that each function is in the global scope by asserting its fully qualified path is an empty string.
+    - Assert that the expected function name and line range are present in the extracted functions.
+- **Output**: The function does not return a value; it asserts the presence of expected function definitions in the extracted data.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_callable_definitions`](<c_cpp_driver.py.md#cppcdrivertreeextract_callable_definitions>)
@@ -196,7 +196,7 @@ Reads and returns the content of a C source file named 'test_enums.c' located in
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Constructs the file path to 'test_enums.c' using the current file's directory and the relative path 'treesitter_testcases/c/'.
+    - Constructs the file path to 'test_enums.c' by navigating to the 'treesitter_testcases/c' directory relative to the current file's directory.
     - Opens the file at the constructed path with UTF-8 encoding.
     - Reads the entire content of the file.
     - Returns the read content as a string.
@@ -214,11 +214,12 @@ Tests the extraction of enum definitions from C code using the `CppCDriverTree` 
     - `expected_enum_name`: The expected name of the enum to be extracted.
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the enum in the code.
 - **Logic and Control Flow**:
-    - Creates a `CppCDriverTree` object from the provided C code string.
-    - Extracts data structure definitions from the `CppCDriverTree` object.
-    - Iterates over the extracted data structures to verify that each is in the global scope by checking that the fully qualified path is an empty string.
-    - Asserts that the expected enum name and line range are present in the extracted data structures.
-- **Output**: No return value; the function uses assertions to validate the test conditions.
+    - Create a `CppCDriverTree` object from the provided C code string.
+    - Extract data structure definitions using the [`extract_data_structure_definitions`](<c_cpp_driver.py.md#cppcdrivertreeextract_data_structure_definitions>) method.
+    - Iterate over the extracted data structures to collect their names, line ranges, and fully qualified parent paths.
+    - Assert that each extracted data structure has an empty fully qualified parent path, indicating global scope.
+    - Check if the expected enum name and line range are present in the extracted data structures.
+- **Output**: No return value; the function uses assertions to validate the extraction of enums.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#cppcdrivertreeextract_data_structure_definitions>)
@@ -232,10 +233,10 @@ Reads and returns the content of a C source file named 'test_structs.c' located 
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Constructs the file path by navigating to the 'treesitter_testcases/c' directory relative to the current file's directory.
-    - Opens the file 'test_structs.c' in read mode with UTF-8 encoding.
+    - Constructs the file path to 'test_structs.c' by navigating to the parent directory of the current file and appending the path 'treesitter_testcases/c/test_structs.c'.
+    - Opens the file at the constructed path with UTF-8 encoding.
     - Reads the entire content of the file.
-    - Returns the content as a string.
+    - Returns the content of the file as a string.
 - **Output**: A string containing the content of the 'test_structs.c' file.
 
 
@@ -256,7 +257,7 @@ Tests the extraction of C struct definitions from code and verifies their presen
     - Assert that each extracted struct has an empty fully qualified path, indicating global scope.
     - Check for duplicate struct declarations and assert that none exist.
     - Verify that the expected struct name and line range are present in the extracted data structures.
-- **Output**: No return value; raises assertion errors if tests fail.
+- **Output**: No return value; the function uses assertions to validate the test conditions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<c_cpp_driver.py.md#cppcdrivertreeextract_data_structure_definitions>)
@@ -270,9 +271,10 @@ Reads and returns the content of a C source file named 'test_unions.c' located i
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Constructs the file path to 'test_unions.c' using the current file's directory and the relative path 'treesitter_testcases/c/'.
-    - Opens the file at the constructed path with UTF-8 encoding.
-    - Reads the entire content of the file and returns it as a string.
+    - Constructs the file path by navigating to the 'treesitter_testcases/c' directory relative to the current file's directory.
+    - Opens the file 'test_unions.c' in read mode with UTF-8 encoding.
+    - Reads the entire content of the file.
+    - Returns the content as a string.
 - **Output**: A string containing the content of the 'test_unions.c' file.
 
 
@@ -289,8 +291,8 @@ Tests the extraction of union definitions from C code using the `CppCDriverTree`
 - **Logic and Control Flow**:
     - Create a `CppCDriverTree` object from the provided C code string.
     - Extract data structure definitions using the [`extract_data_structure_definitions`](<c_cpp_driver.py.md#cppcdrivertreeextract_data_structure_definitions>) method.
-    - Iterate over the extracted data structures to collect their names, line ranges, and fully qualified parent paths.
-    - Assert that each extracted data structure has an empty fully qualified parent path, indicating global scope.
+    - Iterate over the extracted data structures to collect their names, line ranges, and fully qualified paths.
+    - Assert that each fully qualified path is an empty string, indicating global scope.
     - Check for duplicate declarations in the extracted data structures and assert that none exist.
     - Assert that the expected union name and line range are present in the extracted data structures.
 - **Output**: No return value; the function uses assertions to validate the test conditions.
@@ -307,7 +309,7 @@ Reads and returns the content of a C source file named 'test_globals.c' located 
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Logic and Control Flow**:
-    - Constructs the file path to 'test_globals.c' using the current file's directory and the relative path 'treesitter_testcases/c/'.
+    - Constructs the file path to 'test_globals.c' by navigating to the 'treesitter_testcases/c' directory relative to the current file's directory.
     - Opens the file at the constructed path with UTF-8 encoding.
     - Reads the entire content of the file.
     - Returns the content as a string.
@@ -326,15 +328,15 @@ Tests the extraction of global variables from C code using the `CppCDriverTree` 
     - `expected_line_range`: A tuple indicating the expected start and end line numbers of the global variable in the code.
 - **Logic and Control Flow**:
     - Create a `CppCDriverTree` object from the provided C code string.
-    - Extract global variables using the [`extract_variables`](<base.py.md#drivertreeextract_variables>) method of the `CppCDriverTree` object.
-    - Iterate over the extracted variables to ensure their fully qualified path is empty, indicating they are in the global scope.
-    - Check that no local variables or function declarations are incorrectly identified as global variables.
-    - Identify and assert that there are no duplicate global variable declarations in the extracted data.
-    - Verify that the expected global variable and its line range are present in the extracted data.
-- **Output**: The function does not return a value; it uses assertions to validate the correctness of global variable extraction.
+    - Extract global variables using the [`extract_variables`](<c_cpp_driver.py.md#cppcdrivertreeextract_variables>) method of the `CppCDriverTree` object.
+    - Iterate over the extracted global variables and check that their fully qualified path is empty, indicating they are in the global scope.
+    - Ensure that local variables and function declarations are not mistakenly identified as global variables.
+    - Check for duplicate global variable declarations and assert that none exist.
+    - Verify that the expected global variable and its line range are present in the extracted list.
+- **Output**: No return value; the function uses assertions to validate the test conditions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_variables`](<base.py.md#drivertreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables`](<c_cpp_driver.py.md#cppcdrivertreeextract_variables>)
 
 
 ---
@@ -356,20 +358,20 @@ Reads and returns the content of a C source file used for testing function calls
 ### test\_extract\_function\_calls<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_driver_test.test_extract_function_calls}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L445>)
 
-Validates that the function calls extracted from C code match the expected function call names, line ranges, and fully qualified parent paths.
+Tests the extraction of function calls from C code using the `CppCDriverTree` class.
 - **Decorators**: `@pytest.mark.parametrize`
 - **Inputs**:
     - `function_call_test_code`: A string containing C code to test for function calls.
-    - `expected_function_call_name`: The expected name of the function call to be found in the C code.
-    - `expected_line_range`: A tuple indicating the expected start and end line numbers of the function call in the C code.
-    - `expected_fully_qualified_parent_path`: The expected fully qualified parent path of the function call, indicating its enclosing function or scope.
+    - `expected_function_call_name`: The name of the function call expected to be found in the code.
+    - `expected_line_range`: A tuple indicating the start and end line numbers where the function call is expected.
+    - `expected_fully_qualified_parent_path`: The fully qualified path of the parent function or scope where the function call is expected.
 - **Logic and Control Flow**:
     - Create a `CppCDriverTree` object from the provided C code string.
-    - Extract function calls from the `CppCDriverTree` object using the [`extract_function_calls`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_calls>) method.
-    - Create a list of tuples containing the name, line range, and fully qualified parent path for each extracted function call.
+    - Extract function calls from the `CppCDriverTree` object.
+    - Create a list of tuples containing the name, line range, and fully qualified parent path of each extracted function call.
     - Check for duplicate function calls in the extracted list and assert that there are none.
-    - Assert that the expected function call details (name, line range, and fully qualified parent path) are present in the extracted list.
-- **Output**: No output is returned; the function uses assertions to validate the correctness of the extracted function calls.
+    - Assert that the expected function call details are present in the extracted list.
+- **Output**: No return value; the function uses assertions to validate the test conditions.
 - **Functions Called**:
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<base.py.md#drivertreefrom_code>)
     - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_function_calls`](<c_cpp_driver.py.md#cppcdrivertreeextract_function_calls>)
@@ -379,10 +381,9 @@ Validates that the function calls extracted from C code match the expected funct
 ### function\_declaration\_test\_code<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/c_driver_test.function_declaration_test_code}} -->
 [View Source →](<../../../../../../../content_services/inspector/src/utils/treesitter_drivers/c_driver_test.py#L491>)
 
-Reads and returns the content of a C source file for testing function declarations.
+Reads and returns the content of a C source file used for testing function declarations.
 - **Decorators**: `@pytest.fixture`
-- **Inputs**:
-    - `scope`: The scope of the fixture, set to 'module' to indicate that the fixture is shared across the module.
+- **Inputs**: None
 - **Logic and Control Flow**:
     - Constructs the file path by navigating to the 'treesitter_testcases/c/test_func_declarations.c' file relative to the current file's directory.
     - Opens the file at the constructed path with UTF-8 encoding.

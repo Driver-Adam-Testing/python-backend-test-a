@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Scripts for asset copying, database migration, server configuration, linting, S3 operations, app startup, and testing.
+Scripts for database and S3 operations, server configuration, linting, app startup, and testing.
 
 
 ## Files
-- **[copy_asset_bulk.py](copy_asset_bulk.py.md)**: Script for copying CODEBASE primary assets and related data between databases using bulk operations.
+- **[copy_asset_bulk.py](copy_asset_bulk.py.md)**: Script to copy primary assets and related data between databases using bulk operations for efficiency.
 - **[copy_records_and_s3.py](copy_records_and_s3.py.md)**: Script for migrating database records and copying S3 bucket contents between environments.
-- **[gunicorn_conf.py](gunicorn_conf.py.md)**: Configuration script for Gunicorn server settings using environment variables.
-- **[lint.sh](lint.sh.md)**: A shell script to run type checks and linting on the app and driver_db using mypy and ruff.
+- **[gunicorn_conf.py](gunicorn_conf.py.md)**: Configures Gunicorn server settings using environment variables for concurrency, logging, and timeouts.
+- **[lint.sh](lint.sh.md)**: A shell script to run type checks and linting on the app and driver_db directories using mypy and ruff.
 - **[move_s3_objects.py](move_s3_objects.py.md)**: Script to update S3 object keys for codebase versions using concurrent processing and SQL database queries.
-- **[start-reload.sh](start-reload.sh.md)**: Shell script to start a Python application with Uvicorn in reload mode, checking for a prestart script.
-- **[start.sh](start.sh.md)**: Shell script to configure and start a Gunicorn server with optional prestart script execution.
+- **[start-reload.sh](start-reload.sh.md)**: Shell script to start a Python app with Uvicorn, supporting automatic reload and prestart scripts.
+- **[start.sh](start.sh.md)**: Shell script to configure and start a Python application using Gunicorn with optional prestart script execution.
 - **[test-cov-html.sh](test-cov-html.sh.md)**: A script to run tests with HTML coverage report using `test.sh`.
-- **[test.sh](test.sh.md)**: A Bash script to run tests with coverage reporting and generate an HTML report.
+- **[test.sh](test.sh.md)**: A Bash script to run tests with coverage reporting for the Python backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

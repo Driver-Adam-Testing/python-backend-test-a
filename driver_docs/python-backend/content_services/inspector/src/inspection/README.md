@@ -3,18 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Templates, file and folder analysis, symbol management, and codebase description functions.
+Templates for structured prompts, changelog generation, file and folder analysis, and symbol management.
 
 ## Folders
-- **[prompt_templates](prompt_templates/README.md)**: Templates and instructions for analyzing, summarizing, and describing software files, folders, and codebases.
+- **[prompt_templates](prompt_templates/README.md)**: Templates for generating structured prompts, summarizing folder contents, and creating getting started guides.
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[extensions.py](extensions.py.md)**: Defines lists of code and metadata file extensions with comments for potential removal.
-- **[files.py](files.py.md)**: Functions and classes for determining file types, generating descriptions, and handling templates for code inspection.
+- **[changelog.py](changelog.py.md)**: Generates and organizes changelogs from commit data using AI models for summarization and categorization.
+- **[extensions.py](extensions.py.md)**: Lists of code and metadata file extensions with comments for potential removal.
+- **[files.py](files.py.md)**: Functions and classes for determining file types, generating descriptions, and handling code chunk processing using language models.
 - **[folders.py](folders.py.md)**: Functions and classes for generating concise descriptions of folder contents in a codebase.
 - **[symbols.py](symbols.py.md)**: Functions and classes for extracting, documenting, and managing symbols in source code files.
-- **[toplevel.py](toplevel.py.md)**: Functions for generating and processing descriptions of codebase content using language models.
+- **[toplevel.py](toplevel.py.md)**: Functions for generating and compressing descriptions of codebase content using language models, with support for different output formats and tagging.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

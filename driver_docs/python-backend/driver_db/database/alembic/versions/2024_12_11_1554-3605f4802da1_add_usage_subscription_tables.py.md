@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Alembic migration script to add and manage a subscription table with indexes and enums.
+Alembic migration script to add and remove a subscription table with related indexes and enums.
 
 # Purpose
 This code is a database migration script using Alembic, a database migration tool for SQLAlchemy. The script defines an upgrade and a downgrade function to manage changes to the database schema. The primary purpose of this script is to create a new table named `subscription` with several columns, including `id`, `organization_id`, `plan_type`, `status`, `billing_frequency`, `created_at`, and `updated_at`. The `plan_type`, `status`, and `billing_frequency` columns use enumerated types to restrict their values to predefined sets. The script also creates indexes on the `organization_id` and `plan_type` columns and enforces a unique constraint on active subscriptions per organization.
 
-The [`upgrade`](<#upgrade>) function is responsible for applying these changes to the database, while the [`downgrade`](<#downgrade>) function reverses them. The [`downgrade`](<#downgrade>) function drops the `subscription` table, its associated indexes, and the enumerated types. This script is part of a version-controlled database schema, allowing developers to apply and revert schema changes systematically. The use of Alembic ensures that the database schema can evolve over time while maintaining consistency and integrity.
+The [`upgrade`](<#upgrade>) function is responsible for applying the changes, such as creating the `subscription` table and its associated indexes. The [`downgrade`](<#downgrade>) function reverses these changes by dropping the table, indexes, and enumerated types. This script is part of a broader database schema management process, allowing developers to apply and revert schema changes in a controlled manner. The use of Alembic ensures that these changes are versioned and can be applied consistently across different environments.
 # Imports and Dependencies
 
 ---
@@ -22,22 +22,22 @@ The [`upgrade`](<#upgrade>) function is responsible for applying these changes t
 ---
 ### revision
 - **Type**: ``str``
-- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic to track the specific version of the database schema that this migration script represents.
-- **Use**: Identifies the current migration version in Alembic's version control system.
+- **Description**: The `revision` variable is a string that holds the unique identifier for the current database schema migration. It is used by Alembic to track and apply changes to the database schema.
+- **Use**: Used as a unique identifier for the current database schema migration in Alembic.
 
 
 ---
 ### down\_revision
 - **Type**: ``str``
-- **Description**: The `down_revision` variable is a string that specifies the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current migration and the one that immediately precedes it.
-- **Use**: Indicates the parent revision for the current migration, allowing Alembic to maintain a linear history of schema changes.
+- **Description**: Specifies the identifier of the previous database schema revision in an Alembic migration script. This identifier is used to track the sequence of database schema changes.
+- **Use**: Used by Alembic to determine the order of migrations and to apply them correctly.
 
 
 ---
 ### branch\_labels
 - **Type**: ``NoneType``
-- **Description**: `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata.
-- **Use**: Indicates that there are no branch labels associated with this migration script.
+- **Description**: `branch_labels` is a global variable set to `None`. It is used in the context of Alembic migrations to specify branch labels for the migration script.
+- **Use**: Indicates that this migration script does not have any branch labels associated with it.
 
 
 ---
@@ -53,15 +53,15 @@ The [`upgrade`](<#upgrade>) function is responsible for applying these changes t
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_12_11_1554-3605f4802da1_add_usage_subscription_tables.upgrade}} -->
 [View Source →](<../../../../../../driver_db/database/alembic/versions/2024_12_11_1554-3605f4802da1_add_usage_subscription_tables.py#L20>)
 
-Creates a new database table named `subscription` with specified columns and indexes.
+Creates a new table named `subscription` with specified columns and indexes in the database schema.
 - **Inputs**: None
 - **Logic and Control Flow**:
     - Calls `op.create_table` to create a table named `subscription` with columns `id`, `organization_id`, `plan_type`, `status`, `billing_frequency`, `created_at`, and `updated_at`.
-    - Defines `id` as the primary key for the `subscription` table.
+    - Defines `id` as the primary key of the `subscription` table.
     - Creates an index on the `organization_id` column using `op.create_index` with the name `ix_subscription_organization_id`.
     - Creates an index on the `plan_type` column using `op.create_index` with the name `ix_subscription_plan_type`.
-    - Creates a unique index on the `organization_id` column for rows where `status` is `ACTIVE` using `op.create_index` with the name `unique_active_subscription_per_org`.
-- **Output**: No direct output is returned, but the function modifies the database schema by creating a table and indexes.
+    - Creates a unique index on the `organization_id` column for rows where `status` is `ACTIVE`, using `op.create_index` with the name `unique_active_subscription_per_org`.
+- **Output**: No explicit return value; modifies the database schema by creating a table and indexes.
 
 
 ---

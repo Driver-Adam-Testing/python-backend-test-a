@@ -7,16 +7,16 @@ TypeScript test cases for functions, classes, enums, imports, interfaces, method
 
 
 ## Files
-- **[test_calls.ts](test_calls.ts.md)**: Tests for various TypeScript function and method call scenarios, including async, chaining, and templates.
+- **[test_calls.ts](test_calls.ts.md)**: Tests for various TypeScript function and method call scenarios, including async, chaining, and constructors.
 - **[test_classes.ts](test_classes.ts.md)**: Test cases for various TypeScript class features, including inheritance, generics, and decorators.
 - **[test_enums.ts](test_enums.ts.md)**: Test cases for various TypeScript enum definitions, including basic, string, and mixed enums.
-- **[test_functions.ts](test_functions.ts.md)**: Test cases for various TypeScript function definitions, including generics, async, and arrow functions.
-- **[test_imports.ts](test_imports.ts.md)**: Test file for various TypeScript import and export statement patterns.
-- **[test_interfaces.ts](test_interfaces.ts.md)**: Test file for TypeScript interfaces and type aliases, including inheritance, generics, and augmentations.
-- **[test_methods.ts](test_methods.ts.md)**: Test cases for various TypeScript class methods, including access modifiers, async, and static methods.
-- **[test_modules.ts](test_modules.ts.md)**: Test cases for TypeScript modules and namespaces, including declarations, merging, and augmentations.
+- **[test_functions.ts](test_functions.ts.md)**: Tests for various TypeScript function definitions, including generics, async, and arrow functions.
+- **[test_imports.ts](test_imports.ts.md)**: Tests for various TypeScript import and export statement patterns.
+- **[test_interfaces.ts](test_interfaces.ts.md)**: Test cases for TypeScript interfaces, including optional properties, inheritance, and module augmentation.
+- **[test_methods.ts](test_methods.ts.md)**: Test file for various TypeScript class methods, including access modifiers, async, static, and generic methods.
+- **[test_modules.ts](test_modules.ts.md)**: Tests for TypeScript modules and namespaces, including declarations, augmentations, and merging.
 - **[test_object_types.ts](test_object_types.ts.md)**: TypeScript type definitions for aliases, unions, intersections, tuples, functions, objects, mapped types, and more.
-- **[test_variables.ts](test_variables.ts.md)**: Tests for various TypeScript variable declarations, types, and export statements.
+- **[test_variables.ts](test_variables.ts.md)**: Test cases for various TypeScript variable declarations and features, including types and exports.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

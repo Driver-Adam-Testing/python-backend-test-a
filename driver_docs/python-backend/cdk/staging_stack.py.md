@@ -6,9 +6,9 @@
 Defines a CDK stack for the staging environment with metrics, backend, onboarding, and inspection components.
 
 # Purpose
-The code defines a `StagingStack` class, which is a part of an AWS Cloud Development Kit (CDK) application. This class extends the `Stack` class from the AWS CDK library and is used to set up a staging environment for a cloud application. The `StagingStack` class is responsible for creating and configuring several key components, including `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector`. Each of these components is instantiated with specific parameters tailored for the staging environment, such as environment identifiers, API URLs, and other configuration details.
+The code defines a class `StagingStack` that extends the AWS Cloud Development Kit (CDK) `Stack` class. This class is part of an infrastructure as code (IaC) setup, specifically for deploying resources in a staging environment. The `StagingStack` class initializes several constructs, each representing a different component of the infrastructure. These components include `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector`, each configured with parameters specific to the staging environment.
 
-The `MetricsLambda` component is configured to handle metrics-related tasks, while the `Backend` component manages API backend configurations, including CORS settings and IP allowances. The `AssetOnboardingLambda` is responsible for asset onboarding processes, interfacing with specified API and authentication URLs. The `Inspector` component is likely used for monitoring or auditing purposes within the staging environment. This code is intended to be part of a larger infrastructure setup, where it defines the necessary resources and configurations for a staging environment, facilitating testing and development before deployment to production.
+The `StagingStack` class is designed to be used within the AWS CDK framework, which allows developers to define cloud infrastructure using familiar programming languages. The class sets up a metrics lambda function, a backend API, an asset onboarding lambda function, and an inspector service. Each component is initialized with parameters such as environment settings, API URLs, and AWS-specific configurations like region and account details. The code is intended to be part of a larger application where these components interact to provide a cohesive staging environment for testing and development purposes.
 # Imports and Dependencies
 
 ---
@@ -31,11 +31,12 @@ The `MetricsLambda` component is configured to handle metrics-related tasks, whi
 [View Source →](<../../../cdk/staging_stack.py#L13>)
 
 - **Members**:
-    - `metrics_lambda`: An instance of `MetricsLambda` configured for the staging environment.
-    - `backend`: An instance of `Backend` configured for the staging environment with CORS and IP settings.
-    - `onboarding_lambda`: An instance of `AssetOnboardingLambda` configured for the staging environment with API and Auth0 settings.
-    - `inspector`: An instance of `Inspector` configured for the staging environment.
-- **Description**: Represents a staging environment stack that initializes and configures various AWS resources such as `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector` for the staging environment. It sets specific parameters like environment, CORS origins, and API URLs to tailor the stack for staging purposes.
+    - `cdkenv`: Stores the AWS environment configuration.
+    - `metrics_lambda`: Holds an instance of `MetricsLambda` for monitoring purposes.
+    - `backend`: Contains an instance of `Backend` for API backend configuration.
+    - `onboarding_lambda`: Includes an instance of `AssetOnboardingLambda` for asset onboarding tasks.
+    - `inspector`: Contains an instance of `Inspector` for inspection tasks.
+- **Description**: Defines a staging environment stack for AWS infrastructure, initializing components such as `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector` with specific parameters for the staging environment.
 - **Methods**:
     - [`python-backend/cdk/staging_stack.StagingStack.__init__`](<#stagingstack__init__>)
 - **Inherits From**:
@@ -47,18 +48,20 @@ The `MetricsLambda` component is configured to handle metrics-related tasks, whi
 #### StagingStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/staging_stack.StagingStack.__init__}} -->
 [View Source →](<../../../cdk/staging_stack.py#L14>)
 
-Initializes the `StagingStack` class by setting up various components such as [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>), [`Backend`](<constructs/backend.py.md#backend>), [`AssetOnboardingLambda`](<constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>), and [`Inspector`](<constructs/inspector.py.md#inspector>) with specific parameters for a staging environment.
+Initializes a `StagingStack` instance with AWS environment settings and constructs for metrics, backend, asset onboarding, and inspection.
 - **Inputs**:
-    - `scope`: A `Construct` object that defines the scope in which this stack is created.
+    - `scope`: A `Construct` object that defines the scope in which this stack is defined.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
-    - `kwargs`: Additional keyword arguments that are passed to the parent class `Stack`.
+    - `kwargs`: Additional keyword arguments that can include configuration options such as the AWS environment.
 - **Logic and Control Flow**:
-    - Calls the parent class `Stack`'s `__init__` method with `scope`, `construct_id`, and `kwargs` to initialize the base stack.
-    - Sets the `cors_origins` variable to a specific URL for the staging environment.
-    - Creates an instance of [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) with parameters for the staging environment and assigns it to `self.metrics_lambda`.
-    - Creates an instance of [`Backend`](<constructs/backend.py.md#backend>) with parameters for the staging environment, including `cors_origins` and `metrics_bus`, and assigns it to `self.backend`.
-    - Creates an instance of [`AssetOnboardingLambda`](<constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>) with parameters for the staging environment, including API and Auth0 URLs, and assigns it to `self.onboarding_lambda`.
-    - Creates an instance of [`Inspector`](<constructs/inspector.py.md#inspector>) with parameters for the staging environment and assigns it to `self.inspector`.
+    - Calls the parent class `__init__` method with `scope`, `construct_id`, and `kwargs` to initialize the base `Stack` class.
+    - Retrieves the AWS environment from `kwargs` and assigns it to `self.cdkenv`.
+    - Prints the AWS environment setting to the console.
+    - Sets the `cors_origins` variable to a specific URL for CORS configuration.
+    - Initializes a [`MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>) instance with parameters for the staging environment and assigns it to `self.metrics_lambda`.
+    - Initializes a [`Backend`](<constructs/backend.py.md#backend>) instance with parameters including CORS origins, allowed IPs, and AWS region/account, and assigns it to `self.backend`.
+    - Initializes an [`AssetOnboardingLambda`](<constructs/asset_onboarding_lambda.py.md#assetonboardinglambda>) instance with parameters for the staging environment and assigns it to `self.onboarding_lambda`.
+    - Initializes an [`Inspector`](<constructs/inspector.py.md#inspector>) instance with parameters for the staging environment and assigns it to `self.inspector`.
 - **Output**: None
 - **Functions Called**:
     - [`python-backend/dev_stack/cdk/constructs/metrics_lambda.MetricsLambda`](<../dev_stack/cdk/constructs/metrics_lambda.py.md#metricslambda>)

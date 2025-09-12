@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Configuration for a Python project using Poetry, specifying dependencies and build system details.
+Configuration for the Poetry package manager, specifying project metadata and dependencies.
 
 # Purpose
-The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. The `[tool.poetry]` section specifies the project's name as `dev-stack`, its version as `0.1.0`, and includes author information and a reference to the `README.md` file. The `[tool.poetry.dependencies]` section lists the required Python version and various dependencies with their respective version constraints, such as `auth0-python`, `asyncio`, and `fastapi`. The `[build-system]` section defines the build requirements, indicating that `poetry-core` is needed and specifying `poetry.core.masonry.api` as the build backend. This configuration ensures that the project has the necessary dependencies and build settings for development and deployment.
+The `pyproject.toml` file is a configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. The `[tool.poetry]` section specifies the project's name as `dev-stack`, its version as `0.1.0`, and includes author information. It also references a `README.md` file for project documentation. The `[tool.poetry.dependencies]` section lists the required dependencies for the project, specifying compatible versions for each package, such as `auth0-python`, `asyncio`, and `fastapi`. The `[build-system]` section defines the build requirements, indicating that `poetry-core` is necessary and specifying `poetry.core.masonry.api` as the build backend.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

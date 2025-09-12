@@ -6,7 +6,7 @@
 Defines an enumeration for various derived content type names.
 
 # Purpose
-The code defines an enumeration `DerivedContentTypeNames` using Python's `Enum` class. This enumeration provides a set of named constants that represent different types of content descriptions and document elements. Each member of the enumeration is associated with a string value that describes a specific content type, such as `SHORT_PARAGRAPH_DESCRIPTION`, `QUICK_START_ENTRY`, or `PDF_SUMMARY`. This code is useful for categorizing and managing different content types in a structured way, likely within a larger application that processes or generates documentation. The use of an enumeration ensures that these content type names are consistent and easily referenced throughout the codebase.
+The code defines an enumeration `DerivedContentTypeNames` using the `Enum` class from Python's `enum` module. This enumeration provides a set of named constants that represent different types of content descriptions and document elements. Each member of the enumeration is associated with a string value that describes a specific content type, such as `SHORT_PARAGRAPH_DESCRIPTION`, `QUICK_START_ENTRY`, or `PDF_SUMMARY`. This code is useful for categorizing and managing different content types in a structured way, likely within a larger application that processes or generates documentation. The use of an enumeration ensures that these content type names are consistent and easily referenced throughout the codebase.
 # Imports and Dependencies
 
 ---

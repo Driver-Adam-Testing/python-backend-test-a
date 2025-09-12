@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-Auth0 and OAuth2 authentication tools with FastAPI, including CLI interfaces and token management.
+Auth0 and OAuth2 authentication tools with CLI interfaces, token management, and server implementations.
 
 
 ## Files
@@ -11,7 +11,7 @@ Auth0 and OAuth2 authentication tools with FastAPI, including CLI interfaces and
 - **[auth_cli.py](auth_cli.py.md)**: Command-line interface for authentication using FastAPI and Auth0 with login, whoami, and logout commands.
 - **[auth_flow.py](auth_flow.py.md)**: Implements an OAuth2 authentication flow using FastAPI, PKCE, and Auth0 for token retrieval.
 - **[auth_server.py](auth_server.py.md)**: Implements an Auth0 authentication server using FastAPI and PKCE for token exchange.
-- **[cli2.py](cli2.py.md)**: Command-line interface for authentication using Auth0 device flow with login, whoami, and logout commands.
+- **[cli2.py](cli2.py.md)**: CLI for authentication using Auth0 device flow with login, whoami, and logout commands.
 - **[token_store.py](token_store.py.md)**: Manages token storage with functions to save, load, and clear tokens in a JSON file.
 
 ---
